@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
@@ -82,6 +83,7 @@ class KnownTypeResolver implements IPrincipalResolver {
  * The typed half of {@see UserTaskConfig}.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
@@ -123,12 +125,60 @@ final class UserTaskTypedPerformersTest extends TestCase {
 			}
 		);
 
-		return new UserTaskConfig(
-			l10n: $l10n,
-			forms: $this->formReader(),
+		return new UserTaskConfig(l10n: $l10n, forms: $this->formReader());
+	}//end configReader()
+
+	/**
+	 * The performer questions, over a registry that knows the given types.
+	 *
+	 * 🔑 THE TYPE REFUSAL LIVES HERE, NOT ON THE CONFIG READER. Every question
+	 * about WHO a step asks is one class's business — whether their type is
+	 * known, whether anybody holds them, and how an agent is asked — and the
+	 * reader's job is to read fields.
+	 *
+	 * @param array<int, string> $types The known types.
+	 *
+	 * @return UserTaskPerformers The performer questions.
+	 */
+	private function performers(array $types = ['user', 'group', 'position']): UserTaskPerformers {
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(
+			static function (Event $event) use ($types): void {
+				if (($event instanceof RegisterPrincipalResolversEvent) === false) {
+					return;
+				}
+
+				foreach ($types as $type) {
+					$event->registerResolver(new KnownTypeResolver($type));
+				}
+			}
+		);
+
+		return new UserTaskPerformers(
+			config: $this->configReader(),
 			principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))
 		);
-	}//end configReader()
+	}//end performers()
+
+	/**
+	 * The l10n double the refusal is worded through.
+	 *
+	 * @return IL10N The double.
+	 */
+	private function l10n(): IL10N {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static function (string $text, array $params = []): string {
+				if ($params === []) {
+					return $text;
+				}
+
+				return vsprintf($text, $params);
+			}
+		);
+
+		return $l10n;
+	}//end l10n()
 
 	/**
 	 * A form reader that reads a real form.
@@ -228,11 +278,12 @@ final class UserTaskTypedPerformersTest extends TestCase {
 	 */
 	public function testAnUnknownTypeIsRefusedAtSaveNamingTypeAndId(): void {
 		try {
-			$this->configReader()->validate(
-				[
+			$this->performers()->refuseUnknownTypes(
+				config: [
 					'title' => 'Approve it',
 					'assignee' => ['type' => 'gremium', 'id' => 'bezwaarcommissie'],
-				]
+				],
+				l10n: $this->l10n()
 			);
 			$this->fail('an unknown principal type should be refused');
 		} catch (UnexpectedValueException $e) {
@@ -256,11 +307,9 @@ final class UserTaskTypedPerformersTest extends TestCase {
 		$this->expectNotToPerformAssertions();
 
 		// `KnownTypeResolver` deliberately resolves to nobody.
-		$this->configReader()->validate(
-			[
-				'title' => 'Approve it',
-				'assignee' => ['type' => 'position', 'id' => 'vacant'],
-			]
+		$this->performers()->refuseUnknownTypes(
+			config: ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'vacant']],
+			l10n: $this->l10n()
 		);
 	}//end testAKnownTypeThatResolvesToNobodyStillSaves()
 
@@ -275,12 +324,9 @@ final class UserTaskTypedPerformersTest extends TestCase {
 	public function testWithoutARegistryNoTypeIsRefused(): void {
 		$this->expectNotToPerformAssertions();
 
-		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
-		$config = new UserTaskConfig(l10n: $l10n, forms: $this->formReader());
-
-		$config->validate(
-			['title' => 'Approve it', 'assignee' => ['type' => 'gremium', 'id' => 'bezwaar']]
+		(new UserTaskPerformers(config: $this->configReader()))->refuseUnknownTypes(
+			config: ['title' => 'Approve it', 'assignee' => ['type' => 'gremium', 'id' => 'bezwaar']],
+			l10n: $this->l10n()
 		);
 	}//end testWithoutARegistryNoTypeIsRefused()
 
@@ -299,6 +345,10 @@ final class UserTaskTypedPerformersTest extends TestCase {
 		$this->configReader()->validate(
 			['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'chair']]
 		);
+		$this->performers()->refuseUnknownTypes(
+			config: ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'chair']],
+			l10n: $this->l10n()
+		);
 	}//end testATypedAssigneeCountsAsAPerformer()
 
 	/**
@@ -311,4 +361,96 @@ final class UserTaskTypedPerformersTest extends TestCase {
 
 		$this->configReader()->validate(['title' => 'Approve it']);
 	}//end testAStepNamingNobodyIsStillRefused()
+
+	/**
+	 * 🔴 A TYPED ASSIGNEE IS NEVER FLATTENED INTO THE STRING "Array".
+	 *
+	 * Casting a `{type, id}` map to a string yields the literal "Array", and
+	 * that string was written into the task row and into the run's resume slot.
+	 * The answer guard reads a bare string as the old "uid OR group" union,
+	 * matches "Array" against no uid and no group, and leaves the task
+	 * answerable by NOBODY — the exact silence this capability exists to
+	 * remove, reintroduced by a cast.
+	 *
+	 * @return void
+	 */
+	public function testATypedAssigneeIsNotFlattenedIntoTheWordArray(): void {
+		$config = ['title' => 'Approve it', 'assignee' => ['type' => 'group', 'id' => 'bezwaar']];
+
+		$this->assertSame('group:bezwaar', $this->configReader()->assignee(config: $config));
+	}//end testATypedAssigneeIsNotFlattenedIntoTheWordArray()
+
+	/**
+	 * 🔑 `type:id` IS WHAT THE TASK ROW HOLDS, so the inbox can predicate on it
+	 * in the datastore. The resolver decides authorisation, not listing: an
+	 * inbox that resolved a reference per row would resolve it a hundred times
+	 * a page.
+	 *
+	 * @return void
+	 */
+	public function testASingleTypedAssigneeIsRenderedAsTypeAndId(): void {
+		$this->assertSame(
+			'user:alice',
+			$this->configReader()->assignee(
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'user', 'id' => 'alice']]
+			)
+		);
+	}//end testASingleTypedAssigneeIsRenderedAsTypeAndId()
+
+	/**
+	 * 🔴 SEVERAL REFERENCES ARE NOT AN ASSIGNEE, THEY ARE CANDIDATES.
+	 *
+	 * The column holds one value. Picking one of several would silently drop
+	 * the others and assign the task to whichever happened to be first, so the
+	 * column stays empty and the task pools.
+	 *
+	 * @return void
+	 */
+	public function testSeveralTypedReferencesLeaveTheTaskPooled(): void {
+		$this->assertSame(
+			'',
+			$this->configReader()->assignee(
+				config: [
+					'title' => 'Approve it',
+					'assignee' => [
+						['type' => 'user', 'id' => 'alice'],
+						['type' => 'group', 'id' => 'bezwaar'],
+					],
+				]
+			)
+		);
+	}//end testSeveralTypedReferencesLeaveTheTaskPooled()
+
+	/**
+	 * 🔑 THE SLOT KEEPS THE REFERENCE'S SHAPE, because the shape is the meaning.
+	 *
+	 * `FlowRunAssignee::mayAnswer()` reads a bare string as the wider union and
+	 * a typed reference as exactly what it says. Flattening either one here
+	 * would take that decision away from the only place that can make it.
+	 *
+	 * @return void
+	 */
+	public function testTheSlotKeepsATypedReferencesShape(): void {
+		$typed = ['type' => 'group', 'id' => 'bezwaar'];
+
+		$this->assertSame(
+			$typed,
+			$this->configReader()->assigneeValue(config: ['title' => 'Approve it', 'assignee' => $typed])
+		);
+	}//end testTheSlotKeepsATypedReferencesShape()
+
+	/**
+	 * A bare string assignee still reads as itself, trimmed.
+	 *
+	 * The anti-widening control: every stored flow on every instance names a
+	 * performer by bare string, and none of them may change meaning.
+	 *
+	 * @return void
+	 */
+	public function testABareStringAssigneeIsUnchanged(): void {
+		$config = ['title' => 'Approve it', 'assignee' => '  alice  '];
+
+		$this->assertSame('alice', $this->configReader()->assignee(config: $config));
+		$this->assertSame('alice', $this->configReader()->assigneeValue(config: $config));
+	}//end testABareStringAssigneeIsUnchanged()
 }//end class

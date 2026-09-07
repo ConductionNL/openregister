@@ -82,7 +82,7 @@ class TaskMapperRunAnchorTest extends TestCase {
 			);
 
 			$this->assertTrue($this->saw('expr.eq', 'run_uuid'), "$scope still anchors on the run");
-			$this->assertFalse($this->saw('expr.eq', 'assignee'), "$scope does not narrow a run view to the caller");
+			$this->assertFalse($this->saw('expr.in', 'assignee'), "$scope does not narrow a run view to the caller");
 		}
 	}//end testTheRunAnchorReplacesTheScopeNarrowing()
 
@@ -133,7 +133,7 @@ class TaskMapperRunAnchorTest extends TestCase {
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'alice'));
 
 		$this->assertFalse($this->saw('expr.eq', 'run_uuid'), 'no run predicate without a run');
-		$this->assertTrue($this->saw('expr.eq', 'assignee'), 'the default scope still narrows to the caller');
+		$this->assertTrue($this->saw('expr.in', 'assignee'), 'the default scope still narrows to the caller');
 		$this->assertTrue($this->saw('expr.neq', 'performer_type'), 'and still excludes external tasks');
 	}//end testWithoutAnAnchorNothingAboutTheInboxChanges()
 }//end class

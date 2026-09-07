@@ -201,4 +201,44 @@ final class PrincipalReference implements JsonSerializable {
 		return $this->type . ':' . $this->id;
 
 	}//end __toString()
+
+	/**
+	 * A configured performer value, as a single stored string.
+	 *
+	 * 🔴 A TYPED REFERENCE CAST TO A STRING PRODUCES THE LITERAL "Array". That
+	 * is not a near miss. It was written into the task row and into the run's
+	 * resume slot, where the answer guard reads it as a legacy bare string,
+	 * matches it against no uid and no group, and leaves the task answerable by
+	 * NOBODY — the exact silence typed principals exist to remove, put back by
+	 * a cast.
+	 *
+	 * A bare string passes through, trimmed, because every flow ever authored
+	 * names people that way. A single reference becomes `type:id`, which is
+	 * what an inbox can predicate on in the datastore: the resolver decides
+	 * authorisation, not listing.
+	 *
+	 * 🔑 SEVERAL REFERENCES ARE NOT ONE STORED VALUE. Picking one of them would
+	 * silently drop the others, so the answer is '' and the caller decides what
+	 * that means — for a task's assignee column it means the task pools, which
+	 * is what the candidate fields are for.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return string The stored form, or '' when there is no single one.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public static function storedString(mixed $value): string {
+		if (is_string($value) === true) {
+			return trim($value);
+		}
+
+		$references = self::listFrom(value: $value);
+		if (count($references) !== 1) {
+			return '';
+		}
+
+		return (string)$references[array_key_first($references)];
+
+	}//end storedString()
 }//end class

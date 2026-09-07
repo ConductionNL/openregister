@@ -34,7 +34,6 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
-use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
@@ -85,17 +84,10 @@ final class UserTaskConfig {
 	 *
 	 * @param IL10N $l10n Translations, for refusal messages an author reads.
 	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
-	 * @param PrincipalResolverRegistry|null $principals Says which principal TYPES
-	 *                             this instance understands, so an unknown one is
-	 *                             refused while the author is still looking at the
-	 *                             field. Absent, no type is refused: an instance
-	 *                             that cannot say which types exist must not decide
-	 *                             that none of them do.
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly TaskFormReader $forms,
-		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
 
 	}//end __construct()
@@ -139,7 +131,6 @@ final class UserTaskConfig {
 			);
 		}
 
-		$this->refuseUnknownPrincipalTypes(config: $config);
 		$this->refuseOutsideVocabulary(config: $config, key: 'performerType', vocabulary: Task::PERFORMER_TYPES);
 		$this->refuseOutsideVocabulary(config: $config, key: 'priority', vocabulary: Task::PRIORITIES);
 		$this->refuseOutsideVocabulary(config: $config, key: 'routingStrategy', vocabulary: Task::ROUTING_STRATEGIES);
@@ -195,7 +186,7 @@ final class UserTaskConfig {
 			'title' => $this->renderedTitle(config: $config, items: $items),
 			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
 			'state' => $state,
-			'performerType' => trim((string)($config['performerType'] ?? Task::PERFORMER_USER)),
+			'performerType' => UserTaskPerformers::kindFor(config: $config, performers: $this->performers(config: $config)),
 			'priority' => trim((string)($config['priority'] ?? 'normal')),
 			'assignee' => $this->nullIfEmpty(value: $assignee),
 			'candidateUsers' => $this->nullIfEmptyList(value: $this->listOf(value: ($config['candidateUsers'] ?? null))),
@@ -240,23 +231,45 @@ final class UserTaskConfig {
 			FlowTaskBridge::SLOT_TASK_UUID => $taskUuid,
 			FlowTaskBridge::SLOT_ASKED_AT => (new DateTime())->format('c'),
 			FlowTaskBridge::SLOT_ADVANCE => FlowAdvanceBudget::fromConfig(config: $config)->toStored(),
-			'assignee' => $this->assignee(config: $config),
+			'assignee' => $this->assigneeValue(config: $config),
 			'title' => $this->renderedTitle(config: $config, items: $items),
 		];
 	}//end slotValues()
 
 	/**
-	 * The directly configured assignee, trimmed; '' when the task is pooled.
+	 * The assignee as the task row stores it.
+	 *
+	 * Delegated to {@see UserTaskAssignee}, which owns both shapes: the two are
+	 * read by different consumers for different purposes, and keeping them here
+	 * put this class over its complexity budget.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
 	 *
-	 * @return string The assignee uid, or ''.
+	 * @return string The stored assignee, or ''.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function assignee(array $config): string {
-		return trim((string)($config['assignee'] ?? ''));
+		return PrincipalReference::storedString(value: ($config['assignee'] ?? ''));
 	}//end assignee()
+
+	/**
+	 * The assignee as configured, keeping a typed reference's shape.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return string|array<mixed> The configured assignee.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public function assigneeValue(array $config): string|array {
+		$value = ($config['assignee'] ?? '');
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return trim((string)$value);
+	}//end assigneeValue()
 
 	/**
 	 * The item key the outcome is written under.
@@ -359,47 +372,6 @@ final class UserTaskConfig {
 			PrincipalReference::listOfType(value: ($config['candidateRole'] ?? null), type: 'group')
 		);
 	}//end performers()
-
-	/**
-	 * Refuse a performer whose TYPE nothing on this instance understands.
-	 *
-	 * 🔴 REFUSED AT SAVE, AND NOT RESOLVED HERE. These are two different kinds
-	 * of wrongness found by two different people. An unknown TYPE is a defect
-	 * in the document: the author is at the keyboard, the field is on screen,
-	 * and the fix is to pick a different type. An EMPTY RESOLUTION is a fact
-	 * about the instance and it changes — a committee with no members today has
-	 * members next week — so refusing to SAVE over it would make the flow
-	 * unauthorable for a reason that has nothing to do with the flow.
-	 *
-	 * Without a registry nothing is refused. An instance that cannot say which
-	 * types exist must not decide that none of them do.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When a performer names an unknown type.
-	 *
-	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
-	 */
-	private function refuseUnknownPrincipalTypes(array $config): void {
-		if ($this->principals === null) {
-			return;
-		}
-
-		foreach ($this->performers(config: $config) as $reference) {
-			if ($this->principals->has(type: $reference->type) === true) {
-				continue;
-			}
-
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'This step asks a "%1$s" called "%2$s", and nothing on this server knows what a "%1$s" is. Is the app that provides it installed?',
-					[$reference->type, $reference->id]
-				)
-			);
-		}
-	}//end refuseUnknownPrincipalTypes()
 
 	/**
 	 * Refuse a set value outside a published vocabulary, naming both.

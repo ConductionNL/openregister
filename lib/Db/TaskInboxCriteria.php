@@ -119,4 +119,40 @@ final class TaskInboxCriteria {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Every stored `assignee` value that means "this caller".
+	 *
+	 * 🔑 THE RESOLVER DECIDES AUTHORISATION, NOT LISTING. A typed assignee is
+	 * stored as `type:id`, so the caller's identity expands to a small, fixed
+	 * set of strings the datastore can match with an IN. Resolving a reference
+	 * per ROW instead would resolve it a hundred times on one page, which is
+	 * exactly what the design forbids.
+	 *
+	 * Three shapes, and all three are needed. The BARE uid, because every flow
+	 * ever authored names people that way and none of them may stop working.
+	 * `user:<uid>`, because that is what the picker now writes. And
+	 * `group:<id>` for each group the caller is in, because a group reference
+	 * is a direct assignee, not a candidate pool.
+	 *
+	 * 🔴 `agent:` IS DELIBERATELY ABSENT. An agent's task must not appear in a
+	 * person's inbox, nor be answerable by them.
+	 *
+	 * @return array<int, string> The names, without duplicates.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public function assigneeNames(): array {
+		$names = [$this->uid, 'user:' . $this->uid];
+
+		foreach ($this->groupIds as $groupId) {
+			$groupId = trim((string)$groupId);
+			if ($groupId !== '') {
+				$names[] = 'group:' . $groupId;
+			}
+		}
+
+		return array_values(array_unique($names));
+
+	}//end assigneeNames()
 }//end class

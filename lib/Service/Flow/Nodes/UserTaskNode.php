@@ -76,6 +76,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -102,6 +103,13 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	private readonly UserTaskConfig $config;
 
 	/**
+	 * Who the step asks, and what asking them costs.
+	 *
+	 * @var UserTaskPerformers
+	 */
+	private readonly UserTaskPerformers $performers;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowTaskBridge $bridge Creates and reads the node's task.
@@ -112,6 +120,10 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @param PrincipalResolverRegistry|null $principals Passed to the config reader,
 	 *                             which refuses a performer whose type nothing on
 	 *                             this instance understands.
+	 * @param IEventDispatcher|null $events Where an agent performer's turn is
+	 *                             ASKED FOR. The node dispatches; it never
+	 *                             invokes a runtime, so the app that owns
+	 *                             agents stays unnamed here.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
 	 */
@@ -122,8 +134,14 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		TaskFormReader $forms,
 		private readonly FlowTimerService $timers,
 		private readonly ?PrincipalResolverRegistry $principals = null,
+		private readonly ?IEventDispatcher $events = null,
 	) {
-		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms, principals: $principals);
+		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
+		$this->performers = new UserTaskPerformers(
+			config: $this->config,
+			principals: $principals,
+			events: $events
+		);
 
 	}//end __construct()
 
@@ -202,6 +220,12 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			'title',
 			'description',
 			'assignee',
+			// One field expressing what three did, and able to mix types.
+			'candidates',
+			// WHAT an agent performer is asked, in place of a form. A person
+			// gets fields to fill in; an agent gets a prompt. Same step, same
+			// completion verbs, same audit.
+			'prompt',
 			'candidateUsers',
 			'candidateGroups',
 			'candidateRole',
@@ -263,6 +287,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function validateConfig(array $config): void {
+		$this->performers->refuseUnknownTypes(config: $config, l10n: $this->l10n);
 		$this->config->validate(config: $config);
 
 	}//end validateConfig()
@@ -363,7 +388,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			throw new RuntimeException('openregister.user-task cannot create a task outside a persisted run: the task must carry the run uuid.');
 		}
 
-		$this->refuseAPerformerNobodyHolds(config: $config);
+		$this->performers->refuseIfNobodyHoldsThem(config: $config);
 
 		$task = $this->bridge->createTask(
 			data: $this->config->taskData(config: $config, items: $items, nodeId: $resume->nodeId(), nodeType: $this->getId()),
@@ -381,6 +406,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		// (subjectType: 'task', subjectUuid) pair that
 		// FlowTimerSubjectTerminalListener already cancels on completion. Arm
 		// somewhere the uuid is not yet known and the two halves cannot meet.
+		$this->performers->askAnyAgent(config: $config, task: $task, context: $context);
+
 		$this->armDeadline(
 			config: $config,
 			taskUuid: (string)$task->getUuid(),
@@ -397,59 +424,6 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		);
 
 	}//end createTask()
-
-	/**
-	 * Refuse to raise a task nobody can perform.
-	 *
-	 * 🔴 THIS IS THE MEASURED DEFECT, INVERTED. A step naming a group that has
-	 * no members — or that does not exist — created a task addressed to
-	 * nobody. The run suspended, a heartbeat re-read it every few minutes, and
-	 * NOTHING said anything: the task existed, the run was healthy, and the
-	 * approval simply never happened. Silence was the defect.
-	 *
-	 * A loud step failure is strictly better even when the author chooses to
-	 * continue past it, because it is subject to the flow's own `onError`
-	 * policy — which is a decision the author gets to make, and silence is not.
-	 *
-	 * 🔑 REFUSED HERE AND NOT AT SAVE. An empty resolution is a fact about the
-	 * instance and it changes: a committee with no members today has members
-	 * next week. This is the moment somebody actually needs to be found.
-	 *
-	 * Only checked when the instance can resolve at all, and only for steps
-	 * that name somebody: an unassigned step is deliberately open, and refusing
-	 * one would close a door the spec holds open.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return void
-	 *
-	 * @throws RuntimeException When every named performer resolves to nobody.
-	 *
-	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
-	 */
-	private function refuseAPerformerNobodyHolds(array $config): void {
-		if ($this->principals === null) {
-			return;
-		}
-
-		$named = $this->config->performers(config: $config);
-		if ($named === []) {
-			return;
-		}
-
-		if ($this->principals->resolveAll(references: $named) !== []) {
-			return;
-		}
-
-		throw new RuntimeException(
-			sprintf(
-				'openregister.user-task cannot raise a task: it asks %s, and nobody currently holds any of them. '
-					. 'The step fails rather than creating a task addressed to nobody.',
-				implode(', ', array_map(static fn ($r): string => (string)$r, $named))
-			)
-		);
-
-	}//end refuseAPerformerNobodyHolds()
 
 	/**
 	 * Arm a business timer for the task this node just created.
@@ -632,25 +606,41 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			[
 				'key' => 'assignee',
 				'label' => $this->l10n->t('Assign directly to'),
-				'type' => 'text',
-				'help' => $this->l10n->t('A user id. The task is created active for this person; leave empty to offer it to a pool instead.'),
+				// 🔑 `principal`, not `text`. The field always accepted a
+				// person OR a group and could only ever say one of them, so
+				// authors typed a committee's name into a box labelled for a
+				// user and nothing recorded which they meant.
+				'type' => 'principal',
+				'help' => $this->l10n->t('A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead.'),
+			],
+			[
+				'key' => 'candidates',
+				'label' => $this->l10n->t('Candidates'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Anybody who may claim the task. People and groups may be mixed.'),
+			],
+			[
+				'key' => 'prompt',
+				'label' => $this->l10n->t('Prompt for an agent'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t('What an agent performer is asked, in place of a form. Ignored when a person is asked.'),
 			],
 			[
 				'key' => 'candidateUsers',
 				'label' => $this->l10n->t('Candidate users'),
-				'type' => 'text',
-				'help' => $this->l10n->t('User ids, comma separated. Any of them may claim the task.'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any of them may claim the task.'),
 			],
 			[
 				'key' => 'candidateGroups',
 				'label' => $this->l10n->t('Candidate groups'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Group ids, comma separated. Any member may claim the task.'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any member may claim the task.'),
 			],
 			[
 				'key' => 'candidateRole',
 				'label' => $this->l10n->t('Candidate role'),
-				'type' => 'text',
+				'type' => 'principal',
 				'help' => $this->l10n->t('A role that resolves to a group of performers.'),
 			],
 			[
@@ -664,16 +654,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			[
 				'key' => 'routingFallback',
 				'label' => $this->l10n->t('Fallback performer'),
-				'type' => 'text',
+				'type' => 'principal',
 				'help' => $this->l10n->t('Who gets the task when the strategy finds nobody.'),
-			],
-			[
-				'key' => 'performerType',
-				'label' => $this->l10n->t('Kind of performer'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'user, group, agent or worker. Defaults to user. An agent completes a task through the same verbs a person does.'
-				),
 			],
 		];
 	}//end whoFields()

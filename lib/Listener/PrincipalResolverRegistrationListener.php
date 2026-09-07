@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolver;
@@ -46,12 +47,15 @@ class PrincipalResolverRegistrationListener implements IEventListener {
 	 *
 	 * @param UserPrincipalResolver  $users  Resolves `user` references.
 	 * @param GroupPrincipalResolver $groups Resolves `group` references.
+	 * @param AgentPrincipalResolver $agents Resolves `agent` references — one
+	 *                                       identity, never a group's members.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly UserPrincipalResolver $users,
 		private readonly GroupPrincipalResolver $groups,
+		private readonly AgentPrincipalResolver $agents,
 	) {
 
 	}//end __construct()
@@ -72,6 +76,10 @@ class PrincipalResolverRegistrationListener implements IEventListener {
 
 		$event->registerResolver(resolver: $this->users);
 		$event->registerResolver(resolver: $this->groups);
+		// An agent is a performer of the same node, addressed the same way and
+		// completing through the same verbs — so it is a principal kind, not a
+		// second mechanism beside them.
+		$event->registerResolver(resolver: $this->agents);
 
 	}//end handle()
 }//end class
