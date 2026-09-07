@@ -357,6 +357,52 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 	}//end testAnAgentTaskReassignedToAPersonIsAnswerableByThatPerson()
 
 	/**
+	 * 🔴 THE RECORDED RESOLUTION IS EVIDENCE, AND NO GUARD READS IT.
+	 *
+	 * `flow-tasks` requires the task to record WHO WAS ASKED, and it does. The
+	 * danger is that a "who was asked" audit field quietly becomes an
+	 * authorisation list: it is a snapshot of a roster that has since moved,
+	 * so authorising from it keeps admitting whoever has left.
+	 *
+	 * Here the slot records alice as resolved at creation time, and she has
+	 * since left the committee. She still appears in the record — that is the
+	 * point of a record — and she may no longer answer.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordedResolutionIsEvidenceAndNotAnAuthorisationList(): void {
+		$positions = new RosterResolver();
+		$positions->holders['chair'] = ['bob'];
+
+		$assignee = new FlowRunAssignee(null, $this->registryOf($positions));
+
+		$run = new FlowRun();
+		$run->setContext(
+			[
+				FlowResumeState::CONTEXT_KEY => [
+					'ask' => [
+						'askedAt' => '2026-03-01T10:00:00+00:00',
+						'assignee' => ['type' => 'position', 'id' => 'chair'],
+						// March's resolution, kept as evidence of who was asked.
+						'resolved' => ['alice'],
+					],
+				],
+			]
+		);
+
+		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'bob'), 'whoever holds the post now may answer');
+		$this->assertFalse(
+			$assignee->mayAnswer(run: $run, uid: 'alice'),
+			'the recorded resolution must not authorise somebody who has since left'
+		);
+
+		// And the record itself is untouched: it is evidence, not a cache to
+		// be invalidated.
+		$slots = $run->getContext()[FlowResumeState::CONTEXT_KEY];
+		$this->assertSame(['alice'], $slots['ask']['resolved']);
+	}//end testTheRecordedResolutionIsEvidenceAndNotAnAuthorisationList()
+
+	/**
 	 * `recordedFor()` still answers with a string for callers that want one.
 	 *
 	 * @return void
