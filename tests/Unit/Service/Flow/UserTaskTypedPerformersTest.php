@@ -361,4 +361,96 @@ final class UserTaskTypedPerformersTest extends TestCase {
 
 		$this->configReader()->validate(['title' => 'Approve it']);
 	}//end testAStepNamingNobodyIsStillRefused()
+
+	/**
+	 * 🔴 A TYPED ASSIGNEE IS NEVER FLATTENED INTO THE STRING "Array".
+	 *
+	 * Casting a `{type, id}` map to a string yields the literal "Array", and
+	 * that string was written into the task row and into the run's resume slot.
+	 * The answer guard reads a bare string as the old "uid OR group" union,
+	 * matches "Array" against no uid and no group, and leaves the task
+	 * answerable by NOBODY — the exact silence this capability exists to
+	 * remove, reintroduced by a cast.
+	 *
+	 * @return void
+	 */
+	public function testATypedAssigneeIsNotFlattenedIntoTheWordArray(): void {
+		$config = ['title' => 'Approve it', 'assignee' => ['type' => 'group', 'id' => 'bezwaar']];
+
+		$this->assertSame('group:bezwaar', $this->configReader()->assignee(config: $config));
+	}//end testATypedAssigneeIsNotFlattenedIntoTheWordArray()
+
+	/**
+	 * 🔑 `type:id` IS WHAT THE TASK ROW HOLDS, so the inbox can predicate on it
+	 * in the datastore. The resolver decides authorisation, not listing: an
+	 * inbox that resolved a reference per row would resolve it a hundred times
+	 * a page.
+	 *
+	 * @return void
+	 */
+	public function testASingleTypedAssigneeIsRenderedAsTypeAndId(): void {
+		$this->assertSame(
+			'user:alice',
+			$this->configReader()->assignee(
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'user', 'id' => 'alice']]
+			)
+		);
+	}//end testASingleTypedAssigneeIsRenderedAsTypeAndId()
+
+	/**
+	 * 🔴 SEVERAL REFERENCES ARE NOT AN ASSIGNEE, THEY ARE CANDIDATES.
+	 *
+	 * The column holds one value. Picking one of several would silently drop
+	 * the others and assign the task to whichever happened to be first, so the
+	 * column stays empty and the task pools.
+	 *
+	 * @return void
+	 */
+	public function testSeveralTypedReferencesLeaveTheTaskPooled(): void {
+		$this->assertSame(
+			'',
+			$this->configReader()->assignee(
+				config: [
+					'title' => 'Approve it',
+					'assignee' => [
+						['type' => 'user', 'id' => 'alice'],
+						['type' => 'group', 'id' => 'bezwaar'],
+					],
+				]
+			)
+		);
+	}//end testSeveralTypedReferencesLeaveTheTaskPooled()
+
+	/**
+	 * 🔑 THE SLOT KEEPS THE REFERENCE'S SHAPE, because the shape is the meaning.
+	 *
+	 * `FlowRunAssignee::mayAnswer()` reads a bare string as the wider union and
+	 * a typed reference as exactly what it says. Flattening either one here
+	 * would take that decision away from the only place that can make it.
+	 *
+	 * @return void
+	 */
+	public function testTheSlotKeepsATypedReferencesShape(): void {
+		$typed = ['type' => 'group', 'id' => 'bezwaar'];
+
+		$this->assertSame(
+			$typed,
+			$this->configReader()->assigneeValue(config: ['title' => 'Approve it', 'assignee' => $typed])
+		);
+	}//end testTheSlotKeepsATypedReferencesShape()
+
+	/**
+	 * A bare string assignee still reads as itself, trimmed.
+	 *
+	 * The anti-widening control: every stored flow on every instance names a
+	 * performer by bare string, and none of them may change meaning.
+	 *
+	 * @return void
+	 */
+	public function testABareStringAssigneeIsUnchanged(): void {
+		$config = ['title' => 'Approve it', 'assignee' => '  alice  '];
+
+		$this->assertSame('alice', $this->configReader()->assignee(config: $config));
+		$this->assertSame('alice', $this->configReader()->assigneeValue(config: $config));
+	}//end testABareStringAssigneeIsUnchanged()
 }//end class

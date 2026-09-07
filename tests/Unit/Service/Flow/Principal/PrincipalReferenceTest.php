@@ -180,4 +180,60 @@ final class PrincipalReferenceTest extends TestCase {
 
 		$this->assertSame('group:bezwaar', (string)$reference);
 	}//end testTheLegacyValueSpellingIsStillRead()
+	/**
+	 * 🔴 A TYPED REFERENCE IS NEVER STORED AS THE LITERAL "Array".
+	 *
+	 * Casting a `{type, id}` map to a string yields "Array". That string went
+	 * into the task row and into the run's resume slot, where the answer guard
+	 * reads it as a legacy bare string, matches it against no uid and no group,
+	 * and leaves the task answerable by NOBODY.
+	 *
+	 * @return void
+	 */
+	public function testASingleReferenceIsStoredAsTypeAndId(): void {
+		$this->assertSame(
+			'group:bezwaar',
+			PrincipalReference::storedString(value: ['type' => 'group', 'id' => 'bezwaar'])
+		);
+	}//end testASingleReferenceIsStoredAsTypeAndId()
+
+	/**
+	 * A bare string passes through, trimmed.
+	 *
+	 * The anti-widening control: every flow ever authored names people that
+	 * way, and none of them may change meaning.
+	 *
+	 * @return void
+	 */
+	public function testABareStringIsStoredAsItself(): void {
+		$this->assertSame('alice', PrincipalReference::storedString(value: '  alice  '));
+	}//end testABareStringIsStoredAsItself()
+
+	/**
+	 * 🔑 SEVERAL REFERENCES ARE NOT ONE STORED VALUE.
+	 *
+	 * Picking one of them would silently drop the others and store whichever
+	 * happened to be first.
+	 *
+	 * @return void
+	 */
+	public function testSeveralReferencesStoreNothing(): void {
+		$this->assertSame(
+			'',
+			PrincipalReference::storedString(
+				value: [['type' => 'user', 'id' => 'alice'], ['type' => 'group', 'id' => 'bezwaar']]
+			)
+		);
+	}//end testSeveralReferencesStoreNothing()
+
+	/**
+	 * Nothing at all stores nothing.
+	 *
+	 * @return void
+	 */
+	public function testNothingStoresNothing(): void {
+		$this->assertSame('', PrincipalReference::storedString(value: null));
+		$this->assertSame('', PrincipalReference::storedString(value: []));
+	}//end testNothingStoresNothing()
+
 }//end class
