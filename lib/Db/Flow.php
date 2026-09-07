@@ -60,6 +60,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setVersion(?int $version)
  * @method string|null getLifecycleStatus()
  * @method void setLifecycleStatus(?string $lifecycleStatus)
+ * @method string|null getSemver()
+ * @method void setSemver(?string $semver)
  * @method string|null getTrigger()
  * @method void setTrigger(?string $trigger)
  * @method string|null getTriggerRegister()
@@ -224,6 +226,16 @@ class Flow extends Entity implements JsonSerializable {
 	 * @var integer|null
 	 */
 	protected ?int $version = 1;
+
+	/**
+	 * The head version's semantic version, mirrored from FlowVersion.
+	 *
+	 * Mirrored for the same reason `version` is: a list of flows shows it
+	 * without a join. The FlowVersion row remains the record.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $semver = null;
 
 	/**
 	 * The lifecycle status of this flow's head version.
@@ -458,6 +470,7 @@ class Flow extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'applicationSlug', type: 'string');
 		$this->addType(fieldName: 'enabled', type: 'boolean');
 		$this->addType(fieldName: 'version', type: 'integer');
+		$this->addType(fieldName: 'semver', type: 'string');
 		$this->addType(fieldName: 'lifecycleStatus', type: 'string');
 		$this->addType(fieldName: 'trigger', type: 'string');
 		$this->addType(fieldName: 'triggerRegister', type: 'string');
