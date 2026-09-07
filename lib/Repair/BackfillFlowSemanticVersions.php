@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
@@ -109,7 +110,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 		foreach ($flows as $flow) {
 			try {
 				$stamped += $this->stampOneFlow(
-					flowUuid: (string)$flow->getUuid(),
+					flow: $flow,
 					versions: $versions,
 					semver: $semver
 				);
@@ -177,7 +178,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * is a stronger fact than anything this step can produce, and overwriting
 	 * one would replace evidence with a guess.
 	 *
-	 * @param string             $flowUuid The flow.
+	 * @param Flow               $flow     The flow.
 	 * @param FlowVersionMapper  $versions The version rows.
 	 * @param FlowSemanticVersion $semver  The numbering.
 	 *
@@ -185,8 +186,8 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
-	private function stampOneFlow(string $flowUuid, FlowVersionMapper $versions, FlowSemanticVersion $semver): int {
-		$rows = $versions->findAllForFlow(flowUuid: $flowUuid);
+	private function stampOneFlow(Flow $flow, FlowVersionMapper $versions, FlowSemanticVersion $semver): int {
+		$rows = $versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
 
 		// Oldest first: the sequence is the flow's own history, and
 		// `findAllForFlow` answers newest first for the UI.
@@ -214,6 +215,49 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 			$stamped++;
 		}
 
+		$this->mirrorOntoFlow(flow: $flow, published: $published);
+
 		return $stamped;
 	}//end stampOneFlow()
+
+	/**
+	 * Copy the live version's number onto the flow row, marked as back-filled.
+	 *
+	 * 🔴 THE VERSION ROWS ALONE ARE NOT ENOUGH. `Flow` mirrors `semver` so a
+	 * list of flows can show it without a join, and a repair that stamped only
+	 * the version rows would leave every historic flow showing its ORDINAL in
+	 * the pill for ever — the rows would be right and the screen would be
+	 * wrong, which is the worst of both.
+	 *
+	 * Only a flow with no semantic version is touched: a derived one is a
+	 * stronger fact than anything this step can produce.
+	 *
+	 * @param Flow                     $flow      The flow to mirror onto.
+	 * @param array<int, FlowVersion>  $published Its published versions, oldest first.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
+	 */
+	private function mirrorOntoFlow(Flow $flow, array $published): void {
+		if (trim((string)$flow->getSemver()) !== '') {
+			return;
+		}
+
+		$live = null;
+		foreach ($published as $row) {
+			if ($row->getStatus() === FlowVersion::STATUS_PUBLISHED) {
+				$live = $row;
+			}
+		}
+
+		if ($live === null || trim((string)$live->getSemver()) === '') {
+			return;
+		}
+
+		$flow->setSemver($live->getSemver());
+		$flow->setSemverSource(FlowSemanticVersion::SOURCE_BACKFILL);
+		$this->container->get(FlowMapper::class)->update($flow);
+
+	}//end mirrorOntoFlow()
 }//end class

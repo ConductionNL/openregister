@@ -92,6 +92,15 @@ class Version1Date20260907100000 extends SimpleMigrationStep {
 				$flows->addColumn('semver', Types::STRING, ['notnull' => false, 'length' => 32, 'default' => null]);
 				$changed = true;
 			}
+
+			// The SOURCE travels with the mirrored value. A flow list showing
+			// "1.3.0" with no way to tell a derived number from a back-filled
+			// guess presents the guess as evidence, which is the failure this
+			// column exists to prevent.
+			if ($flows->hasColumn('semver_source') === false) {
+				$flows->addColumn('semver_source', Types::STRING, ['notnull' => false, 'length' => 16, 'default' => null]);
+				$changed = true;
+			}
 		}
 
 		if ($changed === false) {

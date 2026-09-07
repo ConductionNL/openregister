@@ -159,6 +159,125 @@ class FlowSemanticVersionTest extends TestCase {
 	}//end testAnUnknownRequestIsRefused()
 
 	/**
+	 * The preflight names the removed step AND the removed edge.
+	 *
+	 * The scenario the requirement is written against. A preview that says
+	 * "major" without saying what went is the version of this feature that
+	 * teaches an author to stop reading it.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewNamesTheRemovedStepAndTheRemovedEdge(): void {
+		$published = [
+			'nodes' => [
+				['id' => 'start', 'type' => 'openregister.trigger-manual', 'config' => []],
+				['id' => 'middle', 'type' => 'openregister.set-fields', 'config' => []],
+				['id' => 'done', 'type' => 'openregister.end', 'config' => []],
+			],
+			'edges' => [
+				['id' => 'e1', 'from' => 'start', 'to' => 'middle'],
+				['id' => 'e2', 'from' => 'middle', 'to' => 'done'],
+			],
+		];
+
+		$candidate = [
+			'nodes' => [
+				['id' => 'start', 'type' => 'openregister.trigger-manual', 'config' => []],
+				['id' => 'done', 'type' => 'openregister.end', 'config' => []],
+			],
+			'edges' => [['id' => 'e1', 'from' => 'start', 'to' => 'done']],
+		];
+
+		$preview = $this->semver->preview(
+			publishedGraph: $published,
+			candidateGraph: $candidate,
+			previousSemver: '1.4.0'
+		);
+
+		$this->assertSame(FlowGraphDiff::MAJOR, $preview['verdict']);
+		$this->assertSame('2.0.0', $preview['next'], 'the preview says the number, not just the component');
+		$this->assertFalse($preview['first']);
+
+		// BOTH, named. The step and the connection are separate losses to a
+		// consumer, and reporting only the step would hide a rewiring that
+		// removed a path while keeping every node.
+		$this->assertContains('middle', $preview['removedNodes']);
+		$this->assertStringContainsString('middle', $preview['removed']);
+		$this->assertNotSame([], $preview['removedEdges'], 'the removed connection must be named too');
+		$this->assertStringContainsString('start', implode(' ', $preview['removedEdges']));
+	}//end testThePreviewNamesTheRemovedStepAndTheRemovedEdge()
+
+	/**
+	 * An addition-only preview is minor and claims no removal.
+	 *
+	 * @return void
+	 */
+	public function testAnAdditionOnlyPreviewIsMinorAndNamesNothing(): void {
+		$published = [
+			'nodes' => [['id' => 'start', 'type' => 'openregister.trigger-manual', 'config' => []]],
+			'edges' => [],
+		];
+
+		$candidate = [
+			'nodes' => [
+				['id' => 'start', 'type' => 'openregister.trigger-manual', 'config' => []],
+				['id' => 'extra', 'type' => 'openregister.end', 'config' => []],
+			],
+			'edges' => [['id' => 'e1', 'from' => 'start', 'to' => 'extra']],
+		];
+
+		$preview = $this->semver->preview(
+			publishedGraph: $published,
+			candidateGraph: $candidate,
+			previousSemver: '2.1.0'
+		);
+
+		$this->assertSame(FlowGraphDiff::MINOR, $preview['verdict']);
+		$this->assertSame('2.2.0', $preview['next']);
+		$this->assertSame('', $preview['removed'], 'nothing was removed, so nothing is claimed');
+	}//end testAnAdditionOnlyPreviewIsMinorAndNamesNothing()
+
+	/**
+	 * With nothing published, the preview says so rather than inventing a diff.
+	 *
+	 * @return void
+	 */
+	public function testAPreviewWithNothingPublishedIsTheFirstVersion(): void {
+		$preview = $this->semver->preview(
+			publishedGraph: null,
+			candidateGraph: ['nodes' => [['id' => 'a', 'config' => []]], 'edges' => []],
+			previousSemver: null
+		);
+
+		$this->assertTrue($preview['first']);
+		$this->assertSame(FlowSemanticVersion::FIRST, $preview['next']);
+		$this->assertSame([], $preview['removedNodes'], 'a first publish removes nothing from nothing');
+	}//end testAPreviewWithNothingPublishedIsTheFirstVersion()
+
+	/**
+	 * The preview ASKS; it never refuses.
+	 *
+	 * An author has to be able to find out that a publish is major without
+	 * first asserting that it is not.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewNeverRefuses(): void {
+		$published = [
+			'nodes' => [['id' => 'gone', 'config' => ['k' => 1]]],
+			'edges' => [],
+		];
+
+		$preview = $this->semver->preview(
+			publishedGraph: $published,
+			candidateGraph: ['nodes' => [], 'edges' => []],
+			previousSemver: '1.0.0'
+		);
+
+		$this->assertSame(FlowGraphDiff::MAJOR, $preview['verdict']);
+	}//end testThePreviewNeverRefuses()
+
+	/**
 	 * The back-fill's sequence is minor throughout, because it does not know.
 	 *
 	 * @return void

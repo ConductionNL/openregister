@@ -62,6 +62,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLifecycleStatus(?string $lifecycleStatus)
  * @method string|null getSemver()
  * @method void setSemver(?string $semver)
+ * @method string|null getSemverSource()
+ * @method void setSemverSource(?string $semverSource)
  * @method string|null getTrigger()
  * @method void setTrigger(?string $trigger)
  * @method string|null getTriggerRegister()
@@ -236,6 +238,20 @@ class Flow extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $semver = null;
+
+	/**
+	 * Where that semantic version came from: `derived` or `backfill`.
+	 *
+	 * 🔴 A NUMBER THAT CANNOT SAY WHERE IT CAME FROM CANNOT BE DISTRUSTED
+	 * CORRECTLY. The back-fill numbered historic versions in ordinal order
+	 * because it had no graphs to compare; a reader who cannot tell that
+	 * apart from a derived version will read a guess as evidence.
+	 *
+	 * Mirrored from FlowVersion for the same reason `semver` is.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $semverSource = null;
 
 	/**
 	 * The lifecycle status of this flow's head version.
@@ -471,6 +487,7 @@ class Flow extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'enabled', type: 'boolean');
 		$this->addType(fieldName: 'version', type: 'integer');
 		$this->addType(fieldName: 'semver', type: 'string');
+		$this->addType(fieldName: 'semverSource', type: 'string');
 		$this->addType(fieldName: 'lifecycleStatus', type: 'string');
 		$this->addType(fieldName: 'trigger', type: 'string');
 		$this->addType(fieldName: 'triggerRegister', type: 'string');
@@ -666,6 +683,7 @@ class Flow extends Entity implements JsonSerializable {
 			// Null until the flow has been published: a draft has not been
 			// compared with anything yet, and a number would be a claim.
 			'semver' => $this->semver,
+			'semverSource' => $this->semverSource,
 			'lifecycleStatus' => ($this->lifecycleStatus ?? FlowVersion::STATUS_DRAFT),
 			'trigger' => $this->trigger,
 			'triggerRegister' => $this->triggerRegister,

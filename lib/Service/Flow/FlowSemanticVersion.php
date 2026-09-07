@@ -224,6 +224,65 @@ class FlowSemanticVersion {
 	}//end forPublish()
 
 	/**
+	 * What publishing WOULD do, without doing it.
+	 *
+	 * 🔴 IT NEVER THROWS AND IT NEVER REFUSES. A preflight is a question, and
+	 * an author asking "what would this be called" before they have chosen a
+	 * bump has done nothing wrong. The refusal belongs at the publish, where
+	 * the author has actually asserted something; raising it here would make
+	 * the editor unable to ASK without first committing to an answer.
+	 *
+	 * It reads the same comparison {@see forPublish()} does, deliberately. A
+	 * preflight computed a second way is a second opinion, and the first time
+	 * the two disagree the author learns to believe neither.
+	 *
+	 * @param array|null  $publishedGraph The graph that is live, or null.
+	 * @param array       $candidateGraph The graph being considered.
+	 * @param string|null $previousSemver The last semantic version, if any.
+	 *
+	 * @return array{
+	 *     verdict: string,
+	 *     next: string,
+	 *     removed: string,
+	 *     removedNodes: array<int, string>,
+	 *     removedEdges: array<int, string>,
+	 *     removedKeys: array<int, string>,
+	 *     first: bool
+	 * } What the publish would be called and why.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
+	 */
+	public function preview(?array $publishedGraph, array $candidateGraph, ?string $previousSemver): array {
+		if ($publishedGraph === null) {
+			// Nothing to have broken. The first publish is not "minor over
+			// nothing", it is the first publish, and saying so is the
+			// difference between a number and an explanation.
+			return [
+				'verdict'      => FlowGraphDiff::MINOR,
+				'next'         => self::FIRST,
+				'removed'      => '',
+				'removedNodes' => [],
+				'removedEdges' => [],
+				'removedKeys'  => [],
+				'first'        => true,
+			];
+		}
+
+		$comparison = $this->diff->compare(published: $publishedGraph, candidate: $candidateGraph);
+
+		return [
+			'verdict'      => $comparison['verdict'],
+			'next'         => $this->next(previous: $previousSemver, verdict: $comparison['verdict']),
+			'removed'      => $this->diff->summarise(diff: $comparison),
+			'removedNodes' => $comparison['removedNodes'],
+			'removedEdges' => $comparison['removedEdges'],
+			'removedKeys'  => $comparison['removedKeys'],
+			'first'        => false,
+		];
+
+	}//end preview()
+
+	/**
 	 * Read a semantic version into its three components.
 	 *
 	 * @param string|null $value The stored value.

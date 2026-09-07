@@ -229,6 +229,7 @@ class FlowVersionService {
 			$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
 			$flow->setVersion($stored->getVersion());
 			$flow->setSemver($semverValue);
+			$flow->setSemverSource(FlowSemanticVersion::SOURCE_DERIVED);
 			$this->flows->update($flow);
 
 			// Inside the transaction, deliberately. The trigger rows and the
@@ -384,32 +385,96 @@ class FlowVersionService {
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
 	 */
 	private function deriveSemver(?FlowVersion $previous, array $candidate, ?string $requested): string {
-		$before = null;
-
-		if ($previous !== null) {
-			try {
-				$before = $this->pin->graphFor($previous->getDefinitionHash());
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[FlowVersionService] Could not read the previously published graph; '
-						. 'the semantic version starts again: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
-
-		if (is_array($before) === false) {
-			$before = null;
-		}
-
 		return $this->semver->forPublish(
-			publishedGraph: $before,
+			publishedGraph: $this->publishedGraphOf(version: $previous),
 			candidateGraph: $candidate,
 			previousSemver: $previous?->getSemver(),
 			requested: $requested
 		);
 
 	}//end deriveSemver()
+
+	/**
+	 * What publishing this flow's head would be called, without publishing it.
+	 *
+	 * 🔑 THE PREFLIGHT AND THE PUBLISH READ THE SAME PAIR OF GRAPHS. Both go
+	 * through `publishedGraphOf()` and `FlowSemanticVersion`, so a preview
+	 * that says "major, this removes step X" cannot be followed by a publish
+	 * that quietly disagrees — which would be worse than showing nothing,
+	 * because the author would have believed it.
+	 *
+	 * It answers for a flow with nothing published yet too: `first` is true,
+	 * `next` is the first version, and no removal is claimed.
+	 *
+	 * @param Flow $flow The flow whose head would be published.
+	 *
+	 * @return array{
+	 *     verdict: string,
+	 *     next: string,
+	 *     removed: string,
+	 *     removedNodes: array<int, string>,
+	 *     removedEdges: array<int, string>,
+	 *     removedKeys: array<int, string>,
+	 *     first: bool,
+	 *     current: string|null
+	 * } What the publish would be called, and what it takes away.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
+	 */
+	public function previewPublish(Flow $flow): array {
+		$previous = $this->versions->findPublished(flowUuid: (string)$flow->getUuid());
+
+		$preview = $this->semver->preview(
+			publishedGraph: $this->publishedGraphOf(version: $previous),
+			candidateGraph: $this->graphOf(flow: $flow),
+			previousSemver: $previous?->getSemver()
+		);
+
+		$preview['current'] = $previous?->getSemver();
+
+		return $preview;
+
+	}//end previewPublish()
+
+	/**
+	 * The stored graph of a published version, or null when it cannot be read.
+	 *
+	 * 🔴 A FAILURE TO READ THE PREVIOUS GRAPH IS NOT A FAILURE TO PUBLISH. The
+	 * definition row may have been pruned, and refusing would let a LABELLING
+	 * feature block a release. A null graph is treated as no previous version
+	 * at all, which yields the first version rather than a confident major
+	 * nobody can check.
+	 *
+	 * @param FlowVersion|null $version The version to read.
+	 *
+	 * @return array<string, mixed>|null The graph, or null.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
+	 */
+	private function publishedGraphOf(?FlowVersion $version): ?array {
+		if ($version === null) {
+			return null;
+		}
+
+		try {
+			$graph = $this->pin->graphFor($version->getDefinitionHash());
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowVersionService] Could not read the previously published graph; '
+					. 'the semantic version starts again: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return null;
+		}
+
+		if (is_array($graph) === false) {
+			return null;
+		}
+
+		return $graph;
+
+	}//end publishedGraphOf()
 
 	/**
 	 * The version row for the flow's head, creating it when it does not exist.
