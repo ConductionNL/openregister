@@ -962,10 +962,20 @@ class FlowController extends Controller {
 				// From FlowAccess, which already holds the session — a second
 				// IUserSession here would push this constructor past the
 				// parameter limit for one string.
-				publishedBy: $this->access->currentUser()?->getUID()
+				publishedBy: $this->access->currentUser()?->getUID(),
+				// The author may RAISE the derived verdict and never lower it.
+				// A refusal to call a removal minor is an
+				// UnexpectedValueException rather than a lifecycle refusal:
+				// the flow's state is fine, the request is not.
+				bump: $this->request->getParam('bump')
 			);
 		} catch (FlowLifecycleRefused $e) {
 			return $this->refusal(refusal: $e);
+		} catch (\UnexpectedValueException $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'kind' => 'version-bump-refused'],
+				Http::STATUS_CONFLICT
+			);
 		}
 
 		return new JSONResponse($version->jsonSerialize());

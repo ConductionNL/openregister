@@ -43,6 +43,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void          setFlowUuid(?string $flowUuid)
  * @method integer|null  getVersion()
  * @method void          setVersion(?int $version)
+ * @method string|null   getSemver()
+ * @method void          setSemver(?string $semver)
+ * @method string|null   getSemverSource()
+ * @method void          setSemverSource(?string $semverSource)
  * @method string|null   getStatus()
  * @method void          setStatus(?string $status)
  * @method string|null   getDefinitionHash()
@@ -258,6 +262,10 @@ class FlowVersion extends Entity implements \JsonSerializable {
 			'id' => $this->getId(),
 			'flowUuid' => $this->flowUuid,
 			'version' => $this->version,
+			'semver' => $this->semver,
+			// Where it came from, beside the value: a back-filled version can
+			// then be distrusted correctly.
+			'semverSource' => $this->semverSource,
 			'status' => $this->status,
 			'definitionHash' => $this->definitionHash,
 			'owner' => $this->owner,

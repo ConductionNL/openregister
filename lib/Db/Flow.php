@@ -663,6 +663,9 @@ class Flow extends Entity implements JsonSerializable {
 			'applicationSlug' => $this->applicationSlug,
 			'enabled' => (bool)$this->enabled,
 			'version' => (int)($this->version ?? 1),
+			// Null until the flow has been published: a draft has not been
+			// compared with anything yet, and a number would be a claim.
+			'semver' => $this->semver,
 			'lifecycleStatus' => ($this->lifecycleStatus ?? FlowVersion::STATUS_DRAFT),
 			'trigger' => $this->trigger,
 			'triggerRegister' => $this->triggerRegister,
