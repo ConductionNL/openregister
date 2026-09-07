@@ -70,6 +70,7 @@ use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -108,6 +109,9 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @param IURLGenerator $urls For the palette icon.
 	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
 	 * @param FlowTimerService $timers Arms the task's business timer.
+	 * @param PrincipalResolverRegistry|null $principals Passed to the config reader,
+	 *                             which refuses a performer whose type nothing on
+	 *                             this instance understands.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
 	 */
@@ -117,8 +121,9 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly IURLGenerator $urls,
 		TaskFormReader $forms,
 		private readonly FlowTimerService $timers,
+		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
-		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
+		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms, principals: $principals);
 
 	}//end __construct()
 
@@ -141,7 +146,11 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function getDisplayName(): string {
-		return $this->l10n->t('Ask a person');
+		// "or group" because that is what the step has always done and never
+		// said: the guard resolved a bare name as a uid OR a group, so half
+		// the fleet's approvals are addressed to a committee under a label
+		// that named one person.
+		return $this->l10n->t('Ask a person or group');
 	}//end getDisplayName()
 
 	/**
@@ -153,7 +162,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
-			'Ask a person or an agent to do something, and wait for their answer. For a system that will call back, use "Wait for an answer" instead.'
+			'Ask a person, a group or an agent to do something, and wait for the answer. For a system that will call back, use "Wait for an answer" instead.'
 		);
 	}//end getDescription()
 
@@ -354,6 +363,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			throw new RuntimeException('openregister.user-task cannot create a task outside a persisted run: the task must carry the run uuid.');
 		}
 
+		$this->refuseAPerformerNobodyHolds(config: $config);
+
 		$task = $this->bridge->createTask(
 			data: $this->config->taskData(config: $config, items: $items, nodeId: $resume->nodeId(), nodeType: $this->getId()),
 			runUuid: $runUuid,
@@ -386,6 +397,59 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		);
 
 	}//end createTask()
+
+	/**
+	 * Refuse to raise a task nobody can perform.
+	 *
+	 * 🔴 THIS IS THE MEASURED DEFECT, INVERTED. A step naming a group that has
+	 * no members — or that does not exist — created a task addressed to
+	 * nobody. The run suspended, a heartbeat re-read it every few minutes, and
+	 * NOTHING said anything: the task existed, the run was healthy, and the
+	 * approval simply never happened. Silence was the defect.
+	 *
+	 * A loud step failure is strictly better even when the author chooses to
+	 * continue past it, because it is subject to the flow's own `onError`
+	 * policy — which is a decision the author gets to make, and silence is not.
+	 *
+	 * 🔑 REFUSED HERE AND NOT AT SAVE. An empty resolution is a fact about the
+	 * instance and it changes: a committee with no members today has members
+	 * next week. This is the moment somebody actually needs to be found.
+	 *
+	 * Only checked when the instance can resolve at all, and only for steps
+	 * that name somebody: an unassigned step is deliberately open, and refusing
+	 * one would close a door the spec holds open.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When every named performer resolves to nobody.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	private function refuseAPerformerNobodyHolds(array $config): void {
+		if ($this->principals === null) {
+			return;
+		}
+
+		$named = $this->config->performers(config: $config);
+		if ($named === []) {
+			return;
+		}
+
+		if ($this->principals->resolveAll(references: $named) !== []) {
+			return;
+		}
+
+		throw new RuntimeException(
+			sprintf(
+				'openregister.user-task cannot raise a task: it asks %s, and nobody currently holds any of them. '
+					. 'The step fails rather than creating a task addressed to nobody.',
+				implode(', ', array_map(static fn ($r): string => (string)$r, $named))
+			)
+		);
+
+	}//end refuseAPerformerNobodyHolds()
 
 	/**
 	 * Arm a business timer for the task this node just created.

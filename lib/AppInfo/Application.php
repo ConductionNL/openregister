@@ -2496,6 +2496,21 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\FlowOversightRegistrationListener::class
 		);
 
+		// Principal discovery. WHO a step may ask: `user` and `group` are
+		// Nextcloud's own and are contributed here; a position on a body, a
+		// function, a case role are contributed by the app that owns the
+		// concept. None of that knowledge can move into the engine without it
+		// growing opinions about municipal organisation charts.
+		//
+		// ⚠️ NOT the resolver registry the comment above disclaims. That one
+		// arbitrated between per-app object stores for flow OWNERSHIP; this
+		// one answers "who does this reference mean", which is a different
+		// question with a different answer per instance.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent::class,
+			\OCA\OpenRegister\Listener\PrincipalResolverRegistrationListener::class
+		);
+
 		// Federated configuration sharing. Any app declares its shareable config
 		// types (flows, registers, case types, themes …) through this event, the
 		// same idiom as flow nodes; OpenRegister contributes its own built-ins.
