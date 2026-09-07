@@ -26,8 +26,8 @@
  *
  * WHAT IT ASSERTS
  * ---------------
- *   1. the sidebar renders on a flow route, with its palette and actions
- *   2. a step can be added from the palette and reaches the canvas
+ *   1. the sidebar renders on a flow route, and the toolbar carries its actions
+ *   2. a step can be added from the toolbar's step picker and reaches the canvas
  *   3. Save persists — the route advances from `new` to the server's uuid
  *   4. Run now creates a run against that flow
  *
@@ -353,10 +353,27 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			'the flow sidebar did not render — the controls are unreachable again',
 		).toBeVisible()
 
-		const palette = page.locator('.cn-flow-sidebar__palette')
+		// 🔴 THE PALETTE IS NOT IN THE SIDEBAR ANY MORE, since nextcloud-vue
+		// 2.40.0. A live instance serves sixty-five step types, and a
+		// one-per-row list that long in a 300px column is a scroll rather than
+		// a chooser, so it became `CnFlowStepPickerModal`, opened from the
+		// toolbar, where the same entries render as a grid. With it went the
+		// Steps tab and the tab strip.
+		//
+		// `.cn-flow-sidebar__palette` survives ONLY as dead CSS in the sidebar,
+		// which is why the old assertion could never pass again and this job
+		// was red all day: the selector still matched a rule, so it read as a
+		// rendering failure rather than as a retired surface.
+		//
+		// The BUTTON is what belongs in this "the controls exist" block. The
+		// picker itself is opened where the step is added, further down: it is
+		// a modal, and holding one open across the toolbar assertions below
+		// would put a focus trap over every one of them.
+		const addStep = page.locator('[data-testid="flow-add-step"]')
 		await expect(
-			palette,
-			"the step palette did not render, so the empty state's own instruction cannot be followed",
+			addStep,
+			"the toolbar offers no way to add a step, so the empty state's own "
+				+ 'instruction cannot be followed',
 		).toBeVisible()
 
 		// Save and Run live on the canvas toolbar (flow-editor consolidation):
@@ -374,16 +391,6 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		await expect(toolbar).toBeVisible()
 		await expect(saveButton).toBeVisible()
 		await expect(runButton).toBeVisible()
-
-		// The palette is populated from /api/flow/node-catalog. An empty one
-		// renders the same container, so assert it has entries.
-		await expect
-			.poll(async () => await palette.locator('> *').count(), {
-				message:
-					'the palette rendered but is empty — the node catalog did not load',
-				timeout: 15_000,
-			})
-			.toBeGreaterThan(0)
 
 		// ── THE EDITOR IS INTERACTIVE BEFORE IT IS INITIALISED ──────────────
 		// This wait is the whole reason this spec used to fail 6 runs in 8.
@@ -440,8 +447,44 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// succession — terminal -> stop (4eac3a3), then stop -> end (7ba3c21) —
 		// and this locator was left on the middle spelling. That is the whole
 		// reason the job went red: `EndNode::getLabel()` returns `t('End')`, and
-		// the palette has carried no entry called "Stop" since that commit.
-		await clickThemed(palette.getByText('End', { exact: true }).first())
+		// the picker has carried no entry called "Stop" since that commit.
+		await clickThemed(addStep)
+
+		const picker = page.locator('[data-testid="flow-step-picker"]')
+		await expect(
+			picker,
+			"the step picker did not open, so the empty state's own instruction "
+				+ 'cannot be followed',
+		).toBeVisible()
+
+		// The picker is populated from /api/flow/node-catalog. An empty one
+		// renders the same dialog as a full one, so count the ITEMS rather than
+		// the container: without this, "no End step" reads as a catalogue entry
+		// that was removed when in fact nothing loaded at all.
+		await expect
+			.poll(
+				async () =>
+					await picker
+						.locator('[data-testid="flow-step-picker-item"]')
+						.count(),
+				{
+					message:
+						'the step picker opened but offers nothing — the node catalog did not load',
+					timeout: 15_000,
+				},
+			)
+			.toBeGreaterThan(0)
+
+		await clickThemed(
+			picker
+				.locator('[data-testid="flow-step-picker-item"]')
+				.filter({ hasText: 'End' })
+				.first(),
+		)
+		// Picking a step adds it and closes the dialog. Asserted rather than
+		// assumed: a dialog left open is a focus trap over every canvas and
+		// toolbar interaction below.
+		await expect(picker).toBeHidden()
 		const endCard = page.locator('.cn-flow-detail__node', {
 			hasText: 'End',
 		})
