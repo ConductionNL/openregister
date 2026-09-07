@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow\Principal;
 
 use OCA\OpenRegister\Listener\PrincipalResolverRegistrationListener;
+use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
@@ -47,6 +48,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolver
  * @covers \OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolver
+ * @covers \OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver
  * @covers \OCA\OpenRegister\Listener\PrincipalResolverRegistrationListener
  * @covers \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
@@ -101,6 +103,61 @@ final class BuiltInResolversTest extends TestCase {
 
 		return new GroupPrincipalResolver($manager);
 	}//end groupResolver()
+
+	/**
+	 * An agent resolver over an instance holding the given identities.
+	 *
+	 * @param array<int, string> $existing The agent identities that exist.
+	 *
+	 * @return AgentPrincipalResolver The resolver.
+	 */
+	private function agentResolver(array $existing): AgentPrincipalResolver {
+		$users = $this->createMock(IUserManager::class);
+		$users->method('userExists')->willReturnCallback(
+			static fn (string $uid): bool => in_array($uid, $existing, true)
+		);
+
+		return new AgentPrincipalResolver($users);
+	}//end agentResolver()
+
+	/**
+	 * 🔴 AN AGENT RESOLVES TO EXACTLY ONE IDENTITY, NEVER THROUGH A GROUP.
+	 *
+	 * The whole safety property. If an agent reference expanded through group
+	 * membership, an agent's step would become answerable by every human in
+	 * that group — and a human's step by the agent. The two must not be able to
+	 * answer for each other.
+	 *
+	 * Asserted by giving the resolver NO group manager at all: it cannot
+	 * consult groups because it was never handed anything that could.
+	 *
+	 * @return void
+	 */
+	public function testAnAgentResolvesToOneIdentityAndNeverThroughAGroup(): void {
+		$resolver = $this->agentResolver(['scribe']);
+
+		$this->assertSame('agent', $resolver->type());
+		$this->assertSame(['scribe'], $resolver->resolve(id: 'scribe'));
+
+		// A group every human is in resolves to nothing here, because this
+		// resolver has no notion of groups whatsoever.
+		$this->assertSame([], $resolver->resolve(id: 'bezwaar'));
+	}//end testAnAgentResolvesToOneIdentityAndNeverThroughAGroup()
+
+	/**
+	 * An agent with no identity resolves to nobody.
+	 *
+	 * An agent completes its turn as a REAL identity or the step fails loudly,
+	 * rather than raising a task addressed to something that cannot log in.
+	 *
+	 * @return void
+	 */
+	public function testAnAgentWithNoIdentityResolvesToNobody(): void {
+		$resolver = $this->agentResolver(['scribe']);
+
+		$this->assertSame([], $resolver->resolve(id: 'no-such-agent'));
+		$this->assertSame([], $resolver->resolve(id: '  '));
+	}//end testAnAgentWithNoIdentityResolvesToNobody()
 
 	/**
 	 * A user that exists resolves to itself.
@@ -169,7 +226,8 @@ final class BuiltInResolversTest extends TestCase {
 	public function testTheBuiltInsRegisterThroughTheContributionEvent(): void {
 		$listener = new PrincipalResolverRegistrationListener(
 			$this->userResolver(['alice']),
-			$this->groupResolver(['bezwaar' => ['alice']])
+			$this->groupResolver(['bezwaar' => ['alice']]),
+			$this->agentResolver(['scribe'])
 		);
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
@@ -181,7 +239,7 @@ final class BuiltInResolversTest extends TestCase {
 
 		$registry = new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class));
 
-		$this->assertSame(['group', 'user'], $registry->types());
+		$this->assertSame(['agent', 'group', 'user'], $registry->types());
 	}//end testTheBuiltInsRegisterThroughTheContributionEvent()
 
 	/**
@@ -194,7 +252,8 @@ final class BuiltInResolversTest extends TestCase {
 
 		$listener = new PrincipalResolverRegistrationListener(
 			$this->userResolver([]),
-			$this->groupResolver([])
+			$this->groupResolver([]),
+			$this->agentResolver([])
 		);
 
 		// Would fatal if it tried to register on something that is not the

@@ -287,6 +287,76 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 	}//end testAnUnresolvableTypeRefuses()
 
 	/**
+	 * 🔴 AN AGENT'S STEP IS NOT ANSWERABLE BY THE HUMANS, AND VICE VERSA.
+	 *
+	 * The trap the single-identity rule exists for. If an agent reference
+	 * expanded through group membership, every human in that group could answer
+	 * the agent's step — and the agent could answer theirs.
+	 *
+	 * @return void
+	 */
+	public function testAnAgentStepIsNotAnswerableByTheHumansAroundIt(): void {
+		$agents = new RosterResolver('agent');
+		$agents->holders['scribe'] = ['scribe'];
+
+		$groups = $this->createMock(IGroupManager::class);
+		// Every human is in the committee, and the agent is not one of them.
+		$groups->method('isInGroup')->willReturn(true);
+
+		$assignee = new FlowRunAssignee($groups, $this->registryOf($agents));
+		$run = $this->runAssignedTo(['type' => 'agent', 'id' => 'scribe']);
+
+		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'scribe'));
+		$this->assertFalse(
+			$assignee->mayAnswer(run: $run, uid: 'alice'),
+			'a human must not answer for the agent, however many groups they share'
+		);
+	}//end testAnAgentStepIsNotAnswerableByTheHumansAroundIt()
+
+	/**
+	 * 🔴 AN UNANSWERED AGENT TASK, REASSIGNED TO A PERSON, IS THEIRS TO ANSWER.
+	 *
+	 * The escape hatch that makes an agent performer safe to use at all: when
+	 * the agent cannot or does not answer, a person takes it over, and the
+	 * guard follows the REASSIGNMENT rather than the original addressee.
+	 *
+	 * It works because the reference is re-read on every answer. A frozen
+	 * resolution would keep authorising the agent and keep refusing the person
+	 * who now owns the decision.
+	 *
+	 * @return void
+	 */
+	public function testAnAgentTaskReassignedToAPersonIsAnswerableByThatPerson(): void {
+		$people = new RosterResolver('user');
+		$people->holders['alice'] = ['alice'];
+		$agents = new RosterResolver('agent');
+		$agents->holders['scribe'] = ['scribe'];
+
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(
+			static function (Event $event) use ($people, $agents): void {
+				if (($event instanceof RegisterPrincipalResolversEvent) === true) {
+					$event->registerResolver($people);
+					$event->registerResolver($agents);
+				}
+			}
+		);
+		$registry = new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class));
+		$assignee = new FlowRunAssignee(null, $registry);
+
+		// Raised for the agent…
+		$this->assertTrue(
+			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'agent', 'id' => 'scribe']), uid: 'scribe')
+		);
+
+		// …and reassigned to a person, who may now answer it while the agent
+		// may not.
+		$reassigned = $this->runAssignedTo(['type' => 'user', 'id' => 'alice']);
+		$this->assertTrue($assignee->mayAnswer(run: $reassigned, uid: 'alice'));
+		$this->assertFalse($assignee->mayAnswer(run: $reassigned, uid: 'scribe'));
+	}//end testAnAgentTaskReassignedToAPersonIsAnswerableByThatPerson()
+
+	/**
 	 * `recordedFor()` still answers with a string for callers that want one.
 	 *
 	 * @return void
