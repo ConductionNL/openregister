@@ -562,6 +562,9 @@ return [
         ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
         ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Asked BEFORE publishing: what would the next version be called, and
+        // what does this publish take away. A GET, and it changes nothing.
+        ['name' => 'flow#versionPreview', 'url' => '/api/flows/{id}/version-preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
