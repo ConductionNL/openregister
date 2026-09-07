@@ -680,7 +680,25 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const publishButton = page.locator('[data-testid="flow-publish"]')
 		await openFlowActionsMenu(page, publishButton)
 
-		await clickThemed(publishButton)
+		// 🔴 CLICK THE BUTTON, NOT THE LIST ITEM. `data-testid` is a
+		// fallthrough attribute on `NcActionButton`, and that component's root
+		// is the `<li>` — the handler is bound to the `<button>` inside it.
+		// `clickThemed` dispatches the event straight at the element it is
+		// given, so aiming it at the `<li>` fires an event nothing listens for:
+		// the menu stayed open with "Publish" plainly in it, and the dialog
+		// never mounted.
+		//
+		// The accessibility tree names it, so drive it the way a screen reader
+		// would. Falls back to the testid's inner button if the role is ever
+		// renamed, and both are scoped to the open menu.
+		const publishItem = page
+			.getByRole('menuitem', { name: 'Publish', exact: true })
+			.first()
+		if (await publishItem.isVisible().catch(() => false)) {
+			await clickThemed(publishItem)
+		} else {
+			await clickThemed(publishButton.locator('button').first())
+		}
 
 		// 🔴 THE MENU ITEM OPENS A DIALOG; IT DOES NOT PUBLISH. Its handler is
 		// `run: () => { this.publishOpen = true }`, which mounts
