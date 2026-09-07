@@ -257,4 +257,81 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 		$this->assertArrayNotHasKey('registerId', $anchor);
 		$this->assertArrayNotHasKey('schemaId', $anchor);
 	}//end testASubjectWithoutNumericIdsStillAttaches()
+
+	/**
+	 * One object under a role records it.
+	 *
+	 * @return void
+	 */
+	public function testRecordOneRecordsASingleObject(): void {
+		$this->recorder($this->aRun())->recordOne(
+			context: $this->context(),
+			role: 'case',
+			uuids: ['obj-1'],
+			register: '3',
+			schema: '7'
+		);
+
+		$this->assertSame('obj-1', $this->stored->getSubjects()['case']['uuid']);
+	}//end testRecordOneRecordsASingleObject()
+
+	/**
+	 * 🔴 A STEP THAT ACTED ON SEVERAL OBJECTS RECORDS NONE OF THEM.
+	 *
+	 * A role is a singular name, so a step that wrote forty objects has no
+	 * single one to mean by it. Recording the fortieth would be arbitrary, and
+	 * recording all forty in turn would fire thirty-nine replacement warnings
+	 * for a set that ends up holding one entry anyway.
+	 *
+	 * @return void
+	 */
+	public function testSeveralObjectsRecordNothing(): void {
+		$this->recorder($this->aRun())->recordOne(
+			context: $this->context(),
+			role: 'case',
+			uuids: ['obj-1', 'obj-2']
+		);
+
+		$this->assertFalse($this->written, 'a role names one object, so an ambiguous step records none');
+	}//end testSeveralObjectsRecordNothing()
+
+	/**
+	 * A step that wrote nothing records nothing.
+	 *
+	 * @return void
+	 */
+	public function testNoObjectsRecordNothing(): void {
+		$this->recorder($this->aRun())->recordOne(context: $this->context(), role: 'case', uuids: []);
+
+		$this->assertFalse($this->written);
+	}//end testNoObjectsRecordNothing()
+
+	/**
+	 * No role means nothing is recorded, whatever was written.
+	 *
+	 * @return void
+	 */
+	public function testRecordOneWithNoRoleRecordsNothing(): void {
+		$this->recorder($this->aRun())->recordOne(context: $this->context(), role: '  ', uuids: ['obj-1']);
+
+		$this->assertFalse($this->written);
+	}//end testRecordOneWithNoRoleRecordsNothing()
+
+	/**
+	 * 🔑 A RE-FIRED STEP LEAVES ONE ENTRY, which is what makes this safe on a
+	 * heartbeat: a user-task node is re-entered by design with its task still
+	 * open, so any node that records is re-entered too.
+	 *
+	 * @return void
+	 */
+	public function testARefiredStepLeavesOneEntry(): void {
+		$run = $this->aRun();
+		$recorder = $this->recorder($run);
+
+		for ($i = 0; $i < 12; $i++) {
+			$recorder->recordOne(context: $this->context(), role: 'case', uuids: ['obj-1']);
+		}
+
+		$this->assertSame(['case'], array_keys($run->getSubjects()));
+	}//end testARefiredStepLeavesOneEntry()
 }//end class

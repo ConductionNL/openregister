@@ -118,6 +118,68 @@ class FlowRunSubjectRecorder {
 	}//end record()
 
 	/**
+	 * Record the one object a step acted on, under the role it named.
+	 *
+	 * 🔑 THE COUNT IS THE DECISION, AND IT IS MADE HERE rather than in each
+	 * calling node. A role is a singular name — `case` is one case — so a step
+	 * that wrote or locked forty objects has no single one to mean by it.
+	 * Recording the fortieth would be arbitrary, and recording all forty in turn
+	 * would fire thirty-nine replacement warnings for a set that ends up holding
+	 * one entry anyway.
+	 *
+	 * 🔴 A MULTI-OBJECT STEP RECORDS NOTHING AND SAYS SO ONCE. It is a log line
+	 * and not a failure, because the author finds out at the point of use
+	 * instead: the later `attachTo` fails naming the roles the run DOES hold,
+	 * which is louder and closer to the mistake than a write step refusing after
+	 * its write already landed.
+	 *
+	 * @param array<string, mixed> $context  The run context.
+	 * @param string               $role     The role the step named, or '' for none.
+	 * @param array<int, string>   $uuids    The distinct objects the step acted on.
+	 * @param string               $register Their register, when the step resolved one.
+	 * @param string               $schema   Their schema, when the step resolved one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 */
+	public function recordOne(
+		array $context,
+		string $role,
+		array $uuids,
+		string $register = '',
+		string $schema = ''
+	): void {
+		$role = trim($role);
+		if ($role === '') {
+			// Recording is opt-in. See the class docblock.
+			return;
+		}
+
+		if (count($uuids) === 1) {
+			$this->record(
+				context: $context,
+				role: $role,
+				uuid: $uuids[array_key_first($uuids)],
+				register: $register,
+				schema: $schema
+			);
+
+			return;
+		}
+
+		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
+
+		$this->logger->info(
+			message: '[FlowRunSubjectRecorder] A step on run "' . $runUuid . '" records its object as "'
+				. $role . '" but acted on ' . (string)count($uuids) . ' of them, so nothing was recorded. '
+				. 'A subject role names one object; act on one per step, or split the step.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $runUuid]
+		);
+
+	}//end recordOne()
+
+	/**
 	 * The run a context belongs to, or null when it cannot be read.
 	 *
 	 * @param array<string, mixed> $context The run context.

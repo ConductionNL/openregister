@@ -71,6 +71,37 @@
  * after that is refused with `already exists` about an object every read reports
  * as absent (openregister#2459).
  *
+ * THE WRITES RUN AS THE OWNER
+ * ---------------------------
+ *
+ * `$owner` was resolved, passed down every path as `currentUser:` and
+ * documented as the subject the write is attributed to — and it is,
+ * in the audit trail. But it is NOT the subject the ACCESS CHECK uses:
+ * MagicRbacHandler and MagicOrganizationHandler read
+ * `IUserSession::getUser()` directly, so the permission gate answers
+ * for whoever the ambient session carries. Under a cron worker
+ * (`FlowRunWorker`) that is nobody, and a scheduled write is refused
+ * as `Anonymous` no matter who owns the run — measured on the hydra
+ * sequencer's `lock-issue`, which failed with "User 'Anonymous' does
+ * not have permission to 'create' objects in schema 'Agent flow'"
+ * while `triggeredBy` was `admin` all along.
+ *
+ * openregister#2272 fixed exactly this for `ObjectReadNode`, which had
+ * the mirror-image version of the bug (a sessionless read SKIPS the
+ * RBAC predicate and reads too much, where a sessionless write is
+ * DENIED and writes nothing). The write side was left behind. Same
+ * seam, same reason: the query layer has no acting-user parameter, so
+ * `runAs()` sets the subject for the duration and restores it in a
+ * `finally`.
+ *
+ * The whole loop is wrapped rather than each call, because `findMatch()`
+ * is a READ that decides what a write or delete then touches. Running
+ * the match under one subject and the write under another is how a
+ * delete finds a row it is not allowed to remove.
+ *
+ * This narrows; it never grants. A run whose owner cannot write is
+ * still refused, and now says so for the right reason.
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -97,6 +128,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -330,6 +362,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param IAppConfig $appConfig Holds the instance-wide write-cap default.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowRunSubjectRecorder|null $subjects Records a written object under the declared role.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
@@ -339,6 +372,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		private readonly IAppConfig $appConfig,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
+		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
 
 	}//end __construct()
@@ -437,6 +471,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			'onConflict',
 			'onMissing',
 			'onNoMatch',
+			'subjectRole',
 		];
 
 	}//end configKeys()
@@ -539,6 +574,16 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				'help' => $this->l10n->t(
 					'With a field name, the incoming item is preserved and the written object is added under it. '
 					.'Empty means the written object replaces the item.'
+				),
+			],
+			[
+				'key' => 'subjectRole',
+				'label' => $this->l10n->t('Record the written object as'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Your own word for what this object is to this flow, such as "case" or "besluit". '
+					.'A later step can then attach its task to it by that name. '
+					.'Leave it empty and the step records nothing.'
 				),
 			],
 		];
@@ -789,37 +834,10 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$replace = (($config['replace'] ?? false) === true);
 		$cap = $this->writeCap(config: $config);
 
-		// THE WRITES RUN AS THE OWNER, rather than merely naming one.
-		//
-		// `$owner` was resolved, passed down every path as `currentUser:` and
-		// documented as the subject the write is attributed to — and it is,
-		// in the audit trail. But it is NOT the subject the ACCESS CHECK uses:
-		// MagicRbacHandler and MagicOrganizationHandler read
-		// `IUserSession::getUser()` directly, so the permission gate answers
-		// for whoever the ambient session carries. Under a cron worker
-		// (`FlowRunWorker`) that is nobody, and a scheduled write is refused
-		// as `Anonymous` no matter who owns the run — measured on the hydra
-		// sequencer's `lock-issue`, which failed with "User 'Anonymous' does
-		// not have permission to 'create' objects in schema 'Agent flow'"
-		// while `triggeredBy` was `admin` all along.
-		//
-		// openregister#2272 fixed exactly this for `ObjectReadNode`, which had
-		// the mirror-image version of the bug (a sessionless read SKIPS the
-		// RBAC predicate and reads too much, where a sessionless write is
-		// DENIED and writes nothing). The write side was left behind. Same
-		// seam, same reason: the query layer has no acting-user parameter, so
-		// `runAs()` sets the subject for the duration and restores it in a
-		// `finally`.
-		//
-		// The whole loop is wrapped rather than each call, because `findMatch()`
-		// is a READ that decides what a write or delete then touches. Running
-		// the match under one subject and the write under another is how a
-		// delete finds a row it is not allowed to remove.
-		//
-		// This narrows; it never grants. A run whose owner cannot write is
-		// still refused, and now says so for the right reason.
+		// The whole loop runs as the owner, not merely attributed to them.
+		// See "The writes run as the owner" in the class docblock.
 		if (($config['bulk'] ?? false) === true) {
-			return $this->objects->runAs(
+			$written = $this->objects->runAs(
 				$owner,
 				fn (): array => $this->writeBulk(
 					items: $items,
@@ -833,9 +851,20 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					cap: $cap
 				)
 			);
+
+			$this->recordSubject(
+				written: $written,
+				config: $config,
+				context: $context,
+				operation: $operation,
+				register: $register,
+				schema: $schema
+			);
+
+			return $written;
 		}
 
-		return $this->objects->runAs(
+		$written = $this->objects->runAs(
 			$owner,
 			fn (): array => $this->writeItems(
 				items: $items,
@@ -853,7 +882,107 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			)
 		);
 
+		// AFTER the write, and never in a position to undo it. See
+		// recordSubject(): a failure to record is logged, not raised.
+		$this->recordSubject(
+			written: $written,
+			config: $config,
+			context: $context,
+			operation: $operation,
+			register: $register,
+			schema: $schema
+		);
+
+		return $written;
+
 	}//end execute()
+
+	/**
+	 * Record what this step wrote under the role its author named.
+	 *
+	 * 🔑 A STEP THAT NAMES NO ROLE RECORDS NOTHING. Opting in is the whole
+	 * interface: a set that filled itself would be the audit-derived object
+	 * list again, which already exists and answers a different question.
+	 *
+	 * 🔴 ONE OBJECT, OR NONE. A role is a singular name — `case` is one case —
+	 * and a step that wrote forty objects has no single one to mean by it.
+	 * Recording the fortieth would be arbitrary, and recording all forty in turn
+	 * would fire thirty-nine replacement warnings for a set that ends up holding
+	 * one entry anyway. So a multi-object write records nothing and says so
+	 * ONCE, and the author finds out at the point of use: the later `attachTo`
+	 * fails naming the roles the run does hold, which is the loud failure this
+	 * whole feature is built around.
+	 *
+	 * A DELETE RECORDS NOTHING EITHER. The object is gone; a role pointing at it
+	 * would attach a task to a record that no longer exists, which is precisely
+	 * the "attached to nothing" state `attachTo` refuses to create.
+	 *
+	 * @param array<int, array<string, mixed>> $written   The step's output items.
+	 * @param array<string, mixed>             $config    The step configuration.
+	 * @param array<string, mixed>             $context   The run context.
+	 * @param string                           $operation The resolved operation.
+	 * @param Register                         $register  The resolved register.
+	 * @param Schema                           $schema    The resolved schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 */
+	private function recordSubject(
+		array $written,
+		array $config,
+		array $context,
+		string $operation,
+		Register $register,
+		Schema $schema
+	): void {
+		$role = trim((string)($config['subjectRole'] ?? ''));
+		if ($role === '' || $operation === self::OP_DELETE) {
+			// Recording is opt-in, and a deleted object is not a subject.
+			return;
+		}
+
+		$this->subjects?->recordOne(
+			context: $context,
+			role: $role,
+			uuids: $this->writtenUuids(written: $written, config: $config),
+			register: (string)$register->getId(),
+			schema: (string)$schema->getId()
+		);
+
+	}//end recordSubject()
+
+	/**
+	 * The distinct objects this step's output names.
+	 *
+	 * Read through the same `output` key the items were shaped with, so the
+	 * uuid is found whether the written object replaced the record or was nested
+	 * under a field.
+	 *
+	 * @param array<int, array<string, mixed>> $written The step's output items.
+	 * @param array<string, mixed>             $config  The step configuration.
+	 *
+	 * @return array<int, string> The distinct uuids, in order.
+	 */
+	private function writtenUuids(array $written, array $config): array {
+		$key = trim((string)($config['output'] ?? ''));
+		$uuids = [];
+
+		foreach ($written as $item) {
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			if ($key !== '') {
+				$json = (array)($json[$key] ?? []);
+			}
+
+			$uuid = trim((string)($json['uuid'] ?? ''));
+			if ($uuid !== '' && in_array($uuid, $uuids, true) === false) {
+				$uuids[] = $uuid;
+			}
+		}
+
+		return $uuids;
+
+	}//end writtenUuids()
 
 	/**
 	 * The per-item write loop, executed as the run owner.
