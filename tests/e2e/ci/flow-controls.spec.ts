@@ -682,11 +682,42 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 
 		await clickThemed(publishButton)
 
+		// 🔴 THE MENU ITEM OPENS A DIALOG; IT DOES NOT PUBLISH. Its handler is
+		// `run: () => { this.publishOpen = true }`, which mounts
+		// `CnFlowPublishDialog` — the confirmation that shows the next version,
+		// what the bump removes, and any refusal. Publishing is what its own
+		// primary button does.
+		//
+		// Without this the spec pressed the menu item, sent NO request at all,
+		// and reported "the POST was rejected or swallowed". The trace is
+		// unambiguous: the only calls in the whole test were the flow's own
+		// POST /api/flows and the cleanup DELETE. There was no publish request
+		// to reject.
+		const publishDialog = page.locator('[data-testid="flow-publish-dialog"]')
+		await expect(
+			publishDialog,
+			'pressing Publish did not open the publish confirmation',
+		).toBeVisible({ timeout: 10_000 })
+
+		// A refusal is a legitimate answer and it renders IN the dialog, so
+		// read it out rather than letting the confirm below time out silently.
+		const refusal = publishDialog.locator('[data-testid="flow-publish-refusal"]')
+		if (await refusal.isVisible().catch(() => false)) {
+			throw new Error(
+				'the publish dialog refused the version bump: '
+					+ ((await refusal.textContent()) ?? '').trim(),
+			)
+		}
+
+		await clickThemed(
+			publishDialog.locator('[data-testid="flow-publish-confirm"]'),
+		)
+
 		await expect(
 			page.locator('[data-testid="flow-lifecycle"]'),
-			'Publish was pressed but the flow never became published — the store '
-				+ 'still shows the draft it started as, so the POST was rejected or '
-				+ 'swallowed',
+			'Publish was confirmed but the flow never became published — the '
+				+ 'store still shows the draft it started as, so the POST was '
+				+ 'rejected or swallowed',
 		).toHaveText('Published', { timeout: 10_000 })
 
 		// 5. RUN NOW CREATES A RUN. Asserted against the API rather than the
