@@ -419,15 +419,13 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
 	 */
 	private function recordSubject(array $targets, array $config, array $context): void {
-		$role = trim((string)($config['subjectRole'] ?? ''));
-		if ($role === '') {
-			// Recording is opt-in.
-			return;
-		}
-
+		// The empty role is NOT guarded here. Recording is opt-in and the
+		// recorder enforces that, so a second guard would be a second copy of
+		// one rule — and this class is at its complexity budget, which is the
+		// concrete cost of keeping the copy.
 		$this->subjects?->recordOne(
 			context: $context,
-			role: $role,
+			role: (string)($config['subjectRole'] ?? ''),
 			uuids: array_values(array_unique($targets))
 		);
 

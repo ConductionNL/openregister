@@ -406,11 +406,16 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	}//end testALockedObjectIsRecordedUnderItsRole()
 
 	/**
-	 * A lock that names no role records nothing.
+	 * A lock that names no role invents none.
+	 *
+	 * 🔑 THE NODE PASSES THE AUTHOR'S WORD THROUGH, AND NOTHING ELSE. Whether
+	 * an empty role records anything is the recorder's decision, made in one
+	 * place and tested there; what this asserts is that the node does not
+	 * substitute a role of its own when the author named none.
 	 *
 	 * @return void
 	 */
-	public function testALockWithNoRoleRecordsNothing(): void {
+	public function testALockWithNoRoleInventsNone(): void {
 		$this->objects->method('lockObject')->willReturn([]);
 
 		$this->lockNode($this->spy())->execute(
@@ -419,8 +424,8 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 			context: $this->lockContext()
 		);
 
-		$this->assertSame([], $this->recorded);
-	}//end testALockWithNoRoleRecordsNothing()
+		$this->assertSame('', $this->recorded[0]['role'], 'no role named, so none passed on');
+	}//end testALockWithNoRoleInventsNone()
 
 	/**
 	 * 🔴 A CONTENDED LOCK RECORDS NOTHING, because the run does not hold it.
