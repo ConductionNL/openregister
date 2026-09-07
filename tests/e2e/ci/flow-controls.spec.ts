@@ -141,6 +141,66 @@ test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
  * @param locator The themed control to click.
  * @return {Promise<void>}
  */
+/**
+ * Open the sidebar's flow-actions menu, so its items can be clicked.
+ *
+ * WHY THIS TRIES SEVERAL TRIGGERS. The menu that holds Publish is an NcActions,
+ * and which one depends on how the sidebar is hosted: `<CnFlowSidebar />` with
+ * no `embedded` prop puts its items in NcAppSidebar's own menu, while the
+ * embedded variant brings its own `<NcActions aria-label="Flow actions">`. The
+ * two hosts label their trigger differently, and this test cannot see which
+ * rendered without opening one.
+ *
+ * So it tries each candidate and stops at the first that reveals the item. A
+ * failure then names every trigger it tried AND every button actually on the
+ * page, because the previous version of this assertion pointed at a library
+ * version and cost an afternoon.
+ *
+ * @param page The page under test.
+ * @param item The menu item that proves the right menu opened.
+ */
+async function openFlowActionsMenu(page: Page, item: Locator): Promise<void> {
+	if (await item.isVisible().catch(() => false)) {
+		return
+	}
+
+	const triggers = [
+		page.getByRole('button', { name: 'Flow actions' }),
+		page.getByRole('button', {
+			name: /^(Actions|Open actions menu|More actions)$/i,
+		}),
+		page.locator('.app-sidebar-header__menu button').first(),
+	]
+
+	for (const trigger of triggers) {
+		if ((await trigger.count()) === 0) {
+			continue
+		}
+
+		await trigger
+			.first()
+			.click()
+			.catch(() => {})
+		if (await item.isVisible().catch(() => false)) {
+			return
+		}
+	}
+
+	const named = await page.getByRole('button').evaluateAll((nodes) =>
+		nodes
+			.map((n) => (n.getAttribute('aria-label') || n.textContent || '').trim())
+			.filter(Boolean)
+			.slice(0, 30),
+	)
+
+	throw new Error(
+		'could not open the flow-actions menu, so Publish was never reachable. '
+			+ 'Tried: "Flow actions", a generic actions label, and the sidebar '
+			+ 'header menu. Buttons present: '
+			+ JSON.stringify(named),
+	)
+}
+
 async function clickThemed(locator: Locator): Promise<void> {
 	await expect(locator).toBeVisible()
 	await expect(locator).toBeEnabled()
@@ -537,13 +597,21 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// lifecycle specs already give: a button that posts and silently fails
 		// looks exactly like one that worked, and the badge only reads
 		// "Published" once the store has re-read the flow from the server.
+		// ⚠️ PUBLISH IS A MENU ITEM, NOT A BUTTON, and the old failure here said
+		// otherwise. It read "Needs @conduction/nextcloud-vue >= 2.24.0" while
+		// the app was on 2.39.0, which sends anyone reading it after a release
+		// that shipped long ago.
+		//
+		// CnFlowSidebar pushes Publish into `flowActions` and renders it as an
+		// NcActionButton inside an NcActions menu — the `#secondary-actions`
+		// slot here, because this app mounts <CnFlowSidebar /> with no
+		// `embedded` prop and NcAppSidebar wraps that slot in its own menu.
+		// CnFlowLifecycleControls says so outright: "WHAT IS DELIBERATELY NOT
+		// HERE — THE VERBS. Publish, Create draft version and Deprecate live in
+		// the header's action menu." So the item cannot be visible until the
+		// menu is opened, and asserting on it directly can only ever time out.
 		const publishButton = page.locator('[data-testid="flow-publish"]')
-		await expect(
-			publishButton,
-			'the editor offers no Publish control, so a flow built here can never '
-				+ 'be run: a draft backs no run, and publishing is the only thing '
-				+ 'that changes that. Needs @conduction/nextcloud-vue >= 2.24.0.',
-		).toBeVisible({ timeout: 10_000 })
+		await openFlowActionsMenu(page, publishButton)
 
 		await clickThemed(publishButton)
 
