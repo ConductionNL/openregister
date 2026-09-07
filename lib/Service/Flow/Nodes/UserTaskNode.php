@@ -136,7 +136,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly ?PrincipalResolverRegistry $principals = null,
 		private readonly ?IEventDispatcher $events = null,
 	) {
-		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms, principals: $principals);
+		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
 		$this->performers = new UserTaskPerformers(
 			config: $this->config,
 			principals: $principals,
@@ -287,6 +287,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function validateConfig(array $config): void {
+		$this->performers->refuseUnknownTypes(config: $config, l10n: $this->l10n);
 		$this->config->validate(config: $config);
 
 	}//end validateConfig()
@@ -605,25 +606,41 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			[
 				'key' => 'assignee',
 				'label' => $this->l10n->t('Assign directly to'),
-				'type' => 'text',
-				'help' => $this->l10n->t('A user id. The task is created active for this person; leave empty to offer it to a pool instead.'),
+				// 🔑 `principal`, not `text`. The field always accepted a
+				// person OR a group and could only ever say one of them, so
+				// authors typed a committee's name into a box labelled for a
+				// user and nothing recorded which they meant.
+				'type' => 'principal',
+				'help' => $this->l10n->t('A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead.'),
+			],
+			[
+				'key' => 'candidates',
+				'label' => $this->l10n->t('Candidates'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Anybody who may claim the task. People and groups may be mixed.'),
+			],
+			[
+				'key' => 'prompt',
+				'label' => $this->l10n->t('Prompt for an agent'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t('What an agent performer is asked, in place of a form. Ignored when a person is asked.'),
 			],
 			[
 				'key' => 'candidateUsers',
 				'label' => $this->l10n->t('Candidate users'),
-				'type' => 'text',
-				'help' => $this->l10n->t('User ids, comma separated. Any of them may claim the task.'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any of them may claim the task.'),
 			],
 			[
 				'key' => 'candidateGroups',
 				'label' => $this->l10n->t('Candidate groups'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Group ids, comma separated. Any member may claim the task.'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any member may claim the task.'),
 			],
 			[
 				'key' => 'candidateRole',
 				'label' => $this->l10n->t('Candidate role'),
-				'type' => 'text',
+				'type' => 'principal',
 				'help' => $this->l10n->t('A role that resolves to a group of performers.'),
 			],
 			[
@@ -637,16 +654,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			[
 				'key' => 'routingFallback',
 				'label' => $this->l10n->t('Fallback performer'),
-				'type' => 'text',
+				'type' => 'principal',
 				'help' => $this->l10n->t('Who gets the task when the strategy finds nobody.'),
-			],
-			[
-				'key' => 'performerType',
-				'label' => $this->l10n->t('Kind of performer'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'user, group, agent or worker. Defaults to user. An agent completes a task through the same verbs a person does.'
-				),
 			],
 		];
 	}//end whoFields()

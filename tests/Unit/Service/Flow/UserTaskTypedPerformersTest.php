@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
@@ -124,12 +125,60 @@ final class UserTaskTypedPerformersTest extends TestCase {
 			}
 		);
 
-		return new UserTaskConfig(
-			l10n: $l10n,
-			forms: $this->formReader(),
+		return new UserTaskConfig(l10n: $l10n, forms: $this->formReader());
+	}//end configReader()
+
+	/**
+	 * The performer questions, over a registry that knows the given types.
+	 *
+	 * 🔑 THE TYPE REFUSAL LIVES HERE, NOT ON THE CONFIG READER. Every question
+	 * about WHO a step asks is one class's business — whether their type is
+	 * known, whether anybody holds them, and how an agent is asked — and the
+	 * reader's job is to read fields.
+	 *
+	 * @param array<int, string> $types The known types.
+	 *
+	 * @return UserTaskPerformers The performer questions.
+	 */
+	private function performers(array $types = ['user', 'group', 'position']): UserTaskPerformers {
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(
+			static function (Event $event) use ($types): void {
+				if (($event instanceof RegisterPrincipalResolversEvent) === false) {
+					return;
+				}
+
+				foreach ($types as $type) {
+					$event->registerResolver(new KnownTypeResolver($type));
+				}
+			}
+		);
+
+		return new UserTaskPerformers(
+			config: $this->configReader(),
 			principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))
 		);
-	}//end configReader()
+	}//end performers()
+
+	/**
+	 * The l10n double the refusal is worded through.
+	 *
+	 * @return IL10N The double.
+	 */
+	private function l10n(): IL10N {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static function (string $text, array $params = []): string {
+				if ($params === []) {
+					return $text;
+				}
+
+				return vsprintf($text, $params);
+			}
+		);
+
+		return $l10n;
+	}//end l10n()
 
 	/**
 	 * A form reader that reads a real form.
@@ -229,11 +278,12 @@ final class UserTaskTypedPerformersTest extends TestCase {
 	 */
 	public function testAnUnknownTypeIsRefusedAtSaveNamingTypeAndId(): void {
 		try {
-			$this->configReader()->validate(
-				[
+			$this->performers()->refuseUnknownTypes(
+				config: [
 					'title' => 'Approve it',
 					'assignee' => ['type' => 'gremium', 'id' => 'bezwaarcommissie'],
-				]
+				],
+				l10n: $this->l10n()
 			);
 			$this->fail('an unknown principal type should be refused');
 		} catch (UnexpectedValueException $e) {
@@ -257,11 +307,9 @@ final class UserTaskTypedPerformersTest extends TestCase {
 		$this->expectNotToPerformAssertions();
 
 		// `KnownTypeResolver` deliberately resolves to nobody.
-		$this->configReader()->validate(
-			[
-				'title' => 'Approve it',
-				'assignee' => ['type' => 'position', 'id' => 'vacant'],
-			]
+		$this->performers()->refuseUnknownTypes(
+			config: ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'vacant']],
+			l10n: $this->l10n()
 		);
 	}//end testAKnownTypeThatResolvesToNobodyStillSaves()
 
@@ -276,12 +324,9 @@ final class UserTaskTypedPerformersTest extends TestCase {
 	public function testWithoutARegistryNoTypeIsRefused(): void {
 		$this->expectNotToPerformAssertions();
 
-		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
-		$config = new UserTaskConfig(l10n: $l10n, forms: $this->formReader());
-
-		$config->validate(
-			['title' => 'Approve it', 'assignee' => ['type' => 'gremium', 'id' => 'bezwaar']]
+		(new UserTaskPerformers(config: $this->configReader()))->refuseUnknownTypes(
+			config: ['title' => 'Approve it', 'assignee' => ['type' => 'gremium', 'id' => 'bezwaar']],
+			l10n: $this->l10n()
 		);
 	}//end testWithoutARegistryNoTypeIsRefused()
 
@@ -299,6 +344,10 @@ final class UserTaskTypedPerformersTest extends TestCase {
 
 		$this->configReader()->validate(
 			['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'chair']]
+		);
+		$this->performers()->refuseUnknownTypes(
+			config: ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'chair']],
+			l10n: $this->l10n()
 		);
 	}//end testATypedAssigneeCountsAsAPerformer()
 

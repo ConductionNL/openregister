@@ -519,6 +519,10 @@ return [
         // Visual flow builder — trigger event catalog (read-only, all users).
         ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
         ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+        // Which kinds of principal this instance understands. The SERVER
+        // decides what is valid; an editor that offered only what it can
+        // search would silently refuse a type an app contributes.
+        ['name' => 'flowPrincipal#types', 'url' => '/api/flow/principal-types', 'verb' => 'GET'],
         // The links one run-log entry earns, asked of the node that wrote it.
         // POST because the entry is the input and a log entry carries payloads
         // — a GET would put a run's data in a URL, and in every access log that

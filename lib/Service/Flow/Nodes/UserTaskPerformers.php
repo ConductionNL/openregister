@@ -39,7 +39,9 @@ use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IL10N;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * Resolves and asks a user task's performers.
@@ -178,4 +180,87 @@ class UserTaskPerformers {
 		);
 
 	}//end askAnyAgent()
+
+	/**
+	 * What KIND of performer the task records.
+	 *
+	 * 🔑 DERIVED FROM THE REFERENCE, NOT AUTHORED. With every reference
+	 * carrying its own type, an authored `performerType` is a second, weaker
+	 * copy of the same fact, and two sources of one truth is how they drift —
+	 * a step assigned to a group and typed `user`, and nothing to say which was
+	 * meant.
+	 *
+	 * The COLUMN stays, because it is on the task row and other things read it.
+	 * An explicitly authored value still wins, so no stored flow changes
+	 * meaning; it is simply no longer something the form asks for.
+	 *
+	 * A type the task row has no word for — a position, a function — records as
+	 * `user`, because that is what the row's vocabulary can say, and the
+	 * reference itself carries the precise answer anyway.
+	 *
+	 * @param array<string, mixed>           $config     The step configuration.
+	 * @param array<int, PrincipalReference> $performers Who the step names.
+	 *
+	 * @return string One of Task::PERFORMER_TYPES.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public static function kindFor(array $config, array $performers): string {
+		$authored = trim((string)($config['performerType'] ?? ''));
+		if ($authored !== '') {
+			return $authored;
+		}
+
+		foreach ($performers as $reference) {
+			if (in_array($reference->type, Task::PERFORMER_TYPES, true) === true) {
+				return $reference->type;
+			}
+		}
+
+		return Task::PERFORMER_USER;
+
+	}//end kindFor()
+
+	/**
+	 * Refuse a performer whose TYPE nothing on this instance understands.
+	 *
+	 * 🔴 REFUSED AT SAVE, AND NOT RESOLVED HERE. These are two different kinds
+	 * of wrongness found by two different people. An unknown TYPE is a defect
+	 * in the document: the author is at the keyboard, the field is on screen,
+	 * and the fix is to pick a different type. An EMPTY RESOLUTION is a fact
+	 * about the instance and it changes — a committee with no members today has
+	 * members next week — so refusing to SAVE over it would make the flow
+	 * unauthorable for a reason that has nothing to do with the flow.
+	 *
+	 * Without a registry nothing is refused. An instance that cannot say which
+	 * types exist must not decide that none of them do.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 * @param IL10N                $l10n   For the refusal's wording.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When a performer names an unknown type.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public function refuseUnknownTypes(array $config, IL10N $l10n): void {
+		if ($this->principals === null) {
+			return;
+		}
+
+		foreach ($this->config->performers(config: $config) as $reference) {
+			if ($this->principals->has(type: $reference->type) === true) {
+				continue;
+			}
+
+			throw new UnexpectedValueException(
+				$l10n->t(
+					'This step asks a "%1$s" called "%2$s", and nothing on this server knows what a "%1$s" is. Is the app that provides it installed?',
+					[$reference->type, $reference->id]
+				)
+			);
+		}
+
+	}//end refuseUnknownTypes()
 }//end class
