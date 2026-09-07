@@ -164,25 +164,38 @@ async function openFlowActionsMenu(page: Page, item: Locator): Promise<void> {
 		return
 	}
 
-	const triggers = [
+	// 🔴 THREE BUTTONS ON THIS PAGE ARE CALLED "Actions". The canvas has one,
+	// and NcAppSidebar renders one in its header. This used to take `.first()`
+	// of each candidate group, so it opened a menu that does not contain the
+	// flow actions, found no Publish, and moved on having tried ONE of the
+	// three — then waited out the test's whole 45s budget on a page that was
+	// working. The reported failure was the CLEANUP that ran afterwards, which
+	// names neither the menu nor the button.
+	//
+	// So: try every button each selector matches, not just the first, and put
+	// a BOUND on each click. An unbounded click on a control that never becomes
+	// actionable spends the budget that the remaining candidates need.
+	const groups = [
+		page.locator('.app-sidebar-header__menu button'),
 		page.getByRole('button', { name: 'Flow actions' }),
 		page.getByRole('button', {
 			name: /^(Actions|Open actions menu|More actions)$/i,
 		}),
-		page.locator('.app-sidebar-header__menu button').first(),
 	]
 
-	for (const trigger of triggers) {
-		if ((await trigger.count()) === 0) {
-			continue
-		}
+	for (const group of groups) {
+		const count = await group.count().catch(() => 0)
+		for (let i = 0; i < count; i++) {
+			await group
+				.nth(i)
+				.click({ timeout: 5_000 })
+				.catch(() => {})
+			if (await item.isVisible().catch(() => false)) {
+				return
+			}
 
-		await trigger
-			.first()
-			.click()
-			.catch(() => {})
-		if (await item.isVisible().catch(() => false)) {
-			return
+			// Close whatever DID open, so it cannot cover the next candidate.
+			await page.keyboard.press('Escape').catch(() => {})
 		}
 	}
 
