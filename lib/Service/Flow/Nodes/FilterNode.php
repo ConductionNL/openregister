@@ -125,6 +125,8 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	 * @return void
 	 *
 	 * @throws UnexpectedValueException When the condition is missing or malformed.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		$condition = ($config['condition'] ?? null);

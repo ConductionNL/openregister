@@ -45,7 +45,38 @@ use ReflectionClass;
 /**
  * Every shipped node's declared kind and category.
  *
- * @coversNothing
+ * 🔑 `@covers` PER NODE, NOT `@coversNothing`. The first draft used the latter
+ * and the coverage guard was right to still refuse the change: a test that
+ * attributes no coverage leaves 54 new methods reading as untested, which is
+ * indistinguishable from not having written it.
+ *
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\FilterNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\IterateNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\LoopNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\MapNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\MergeNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\RouterNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
  */
 final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 
