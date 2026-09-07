@@ -53,6 +53,7 @@ use PHPUnit\Framework\TestCase;
  * The agent half of {@see UserTaskNode}.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers
  * @uses \OCA\OpenRegister\Event\AgentRunRequestedEvent
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
  */
