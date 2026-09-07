@@ -75,6 +75,8 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * The step's name, as `occ upgrade` prints it.
 	 *
 	 * @return string The name.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
 	public function getName(): string {
 		return 'Number existing flow versions semantically';
@@ -86,6 +88,8 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * @param IOutput $output Migration output.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
 	public function run(IOutput $output): void {
 		try {
@@ -144,6 +148,8 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * nothing. Only counting the rows afterwards found it.
 	 *
 	 * @return array<int, \OCA\OpenRegister\Db\Flow> Every flow.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
 	private function everyFlow(): array {
 		$mapper = $this->container->get(FlowMapper::class);
@@ -176,6 +182,8 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * @param FlowSemanticVersion $semver  The numbering.
 	 *
 	 * @return int How many rows were stamped.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
 	private function stampOneFlow(string $flowUuid, FlowVersionMapper $versions, FlowSemanticVersion $semver): int {
 		$rows = $versions->findAllForFlow(flowUuid: $flowUuid);

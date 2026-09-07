@@ -25,9 +25,24 @@ const JSON_HEADERS = { 'Content-Type': 'application/json', 'OCS-APIRequest': 'tr
 /** A three-step flow: a way in, a step, and a way out. */
 const GRAPH = {
 	nodes: [
-		{ id: 'start', type: 'openregister.trigger-manual', position: { x: 80, y: 200 }, config: {} },
-		{ id: 'middle', type: 'openregister.set-fields', position: { x: 360, y: 200 }, config: { set: { a: 1 }, note: 'keep' } },
-		{ id: 'done', type: 'openregister.end', position: { x: 640, y: 200 }, config: {} },
+		{
+			id: 'start',
+			type: 'openregister.trigger-manual',
+			position: { x: 80, y: 200 },
+			config: {},
+		},
+		{
+			id: 'middle',
+			type: 'openregister.set-fields',
+			position: { x: 360, y: 200 },
+			config: { set: { a: 1 }, note: 'keep' },
+		},
+		{
+			id: 'done',
+			type: 'openregister.end',
+			position: { x: 640, y: 200 },
+			config: {},
+		},
 	],
 	edges: [
 		{ id: 'e1', from: 'start', to: 'middle' },
@@ -46,7 +61,9 @@ async function publishedFlow(request: APIRequestContext, name: string) {
 	expect(created.status(), await created.text()).toBe(201)
 	const flow = await created.json()
 
-	const first = await request.post(`${API}/flows/${flow.uuid}/publish`, { headers: JSON_HEADERS })
+	const first = await request.post(`${API}/flows/${flow.uuid}/publish`, {
+		headers: JSON_HEADERS,
+	})
 	expect(first.status(), await first.text()).toBe(200)
 
 	return { uuid: flow.uuid as string, first: await first.json() }
@@ -62,15 +79,20 @@ async function reviseAndPublish(
 	// 201, not 200: opening a draft CREATES a version row. Asserting 200 here
 	// cost five red tests that had nothing to do with the versions they were
 	// checking.
-	const draft = await request.post(`${API}/flows/${uuid}/draft`, { headers: JSON_HEADERS })
+	const draft = await request.post(`${API}/flows/${uuid}/draft`, {
+		headers: JSON_HEADERS,
+	})
 	expect(draft.status(), await draft.text()).toBe(201)
 
-	const saved = await request.put(`${API}/flows/${uuid}`, { headers: JSON_HEADERS, data: graph })
+	const saved = await request.put(`${API}/flows/${uuid}`, {
+		headers: JSON_HEADERS,
+		data: graph,
+	})
 	expect(saved.status(), await saved.text()).toBe(200)
 
 	return request.post(`${API}/flows/${uuid}/publish`, {
 		headers: JSON_HEADERS,
-		data: (bump === null) ? {} : { bump },
+		data: bump === null ? {} : { bump },
 	})
 }
 
@@ -84,8 +106,13 @@ test.describe('flow-semantic-versions: what a publish is called', () => {
 	})
 
 	// @e2e flow-semantic-versions::the-first-publish-is-one-zero-zero
-	test('the first publish is 1.0.0, and the ordinal is untouched', async ({ request }) => {
-		const { uuid, first } = await publishedFlow(request, `semver first ${Date.now()}`)
+	test('the first publish is 1.0.0, and the ordinal is untouched', async ({
+		request,
+	}) => {
+		const { uuid, first } = await publishedFlow(
+			request,
+			`semver first ${Date.now()}`,
+		)
 		created.push(uuid)
 
 		expect(first.semver).toBe('1.0.0')
@@ -105,7 +132,12 @@ test.describe('flow-semantic-versions: what a publish is called', () => {
 		// the guard working — but it made this test fail for a reason that had
 		// nothing to do with versions.
 		const grown = JSON.parse(JSON.stringify(GRAPH))
-		grown.nodes.push({ id: 'extra', type: 'openregister.filter', position: { x: 360, y: 360 }, config: { when: 'x' } })
+		grown.nodes.push({
+			id: 'extra',
+			type: 'openregister.filter',
+			position: { x: 360, y: 360 },
+			config: { when: 'x' },
+		})
 		grown.edges.push({ id: 'e3', from: 'middle', to: 'extra' })
 		grown.edges.push({ id: 'e4', from: 'extra', to: 'done' })
 
@@ -136,7 +168,9 @@ test.describe('flow-semantic-versions: what a publish is called', () => {
 	})
 
 	// @e2e flow-semantic-versions::a-removed-config-key-is-major
-	test('removing a config key from a surviving step is MAJOR', async ({ request }) => {
+	test('removing a config key from a surviving step is MAJOR', async ({
+		request,
+	}) => {
 		const { uuid } = await publishedFlow(request, `semver key ${Date.now()}`)
 		created.push(uuid)
 
@@ -165,7 +199,9 @@ test.describe('flow-semantic-versions: what a publish is called', () => {
 	})
 
 	// @e2e flow-semantic-versions::an-author-may-not-lower
-	test('an author may NOT publish a removal as minor, and is told what went', async ({ request }) => {
+	test('an author may NOT publish a removal as minor, and is told what went', async ({
+		request,
+	}) => {
 		const { uuid } = await publishedFlow(request, `semver lower ${Date.now()}`)
 		created.push(uuid)
 

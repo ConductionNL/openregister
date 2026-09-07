@@ -42,6 +42,21 @@ use UnexpectedValueException;
 class FlowSemanticVersion {
 
 	/**
+	 * Constructor.
+	 *
+	 * Takes the comparison rather than leaving callers to orchestrate it. A
+	 * caller asking "what is the next version" should not also have to know
+	 * that answering it means reading two graphs.
+	 *
+	 * @param FlowGraphDiff $diff What a publish takes away.
+	 */
+	public function __construct(
+		private readonly FlowGraphDiff $diff = new FlowGraphDiff(),
+	) {
+
+	}//end __construct()
+
+	/**
 	 * What the first publish of a flow is called.
 	 *
 	 * @var string
@@ -162,11 +177,60 @@ class FlowSemanticVersion {
 	}//end backfilled()
 
 	/**
+	 * The version a publish should produce, from the two graphs and the
+	 * author's request.
+	 *
+	 * The one call a publisher makes. It compares, reconciles the verdict with
+	 * what the author asked for, and numbers the result — so the caller holds
+	 * one collaborator rather than two and never sees a verdict it has no use
+	 * for.
+	 *
+	 * A null previous graph means there is nothing to have broken, so the
+	 * answer is the first version whatever else is true. That covers both a
+	 * flow's first publish and a previous definition that can no longer be
+	 * read.
+	 *
+	 * @param array|null $publishedGraph The graph that was live, or null.
+	 * @param array $candidateGraph The graph being published.
+	 * @param string|null $previousSemver The last semantic version, if any.
+	 * @param string|null $requested `major`, `minor`, or null.
+	 *
+	 * @return string The semantic version to store.
+	 *
+	 * @throws UnexpectedValueException When the author asked to call a removal minor.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
+	 */
+	public function forPublish(
+		?array $publishedGraph,
+		array $candidateGraph,
+		?string $previousSemver,
+		?string $requested
+	): string {
+		if ($publishedGraph === null) {
+			return self::FIRST;
+		}
+
+		$comparison = $this->diff->compare(published: $publishedGraph, candidate: $candidateGraph);
+
+		$verdict = $this->reconcile(
+			derived: $comparison['verdict'],
+			requested: $requested,
+			removed: $this->diff->summarise(diff: $comparison)
+		);
+
+		return $this->next(previous: $previousSemver, verdict: $verdict);
+
+	}//end forPublish()
+
+	/**
 	 * Read a semantic version into its three components.
 	 *
 	 * @param string|null $value The stored value.
 	 *
 	 * @return array{0: int, 1: int, 2: int}|null The parts, or null when unreadable.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
 	 */
 	private function parse(?string $value): ?array {
 		$trimmed = trim((string)$value);

@@ -57,6 +57,8 @@ class Version1Date20260907100000 extends SimpleMigrationStep {
 	 * @param array $options Migration options.
 	 *
 	 * @return ISchemaWrapper|null The updated schema, or null when nothing changed.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

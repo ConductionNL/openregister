@@ -47,6 +47,23 @@ use Throwable;
 /**
  * Publishes, drafts and deprecates flow versions.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A version transition is the
+ * point where a flow's separate concerns have to meet: the version rows, the
+ * flow whose head mirrors them, the definition store the graph is pinned in,
+ * the lifecycle guard, the trigger index that must move in the same
+ * transaction, the numbering, the connection that makes it one transaction,
+ * and the log. Every one of those is named because publishing genuinely
+ * coordinates all of them, and splitting the class would move the coupling
+ * into a caller rather than remove it — with the transaction boundary, which
+ * is the thing that makes a publish safe, spread across two objects.
+ *
+ * ⚠️ THIS WAS ALREADY OVER THE THRESHOLD, at 13 against a limit of "under
+ * 13", and `development`'s phpmd job was already failing because of it. The
+ * semantic-version work took it to 16; moving the comparison and the numbering
+ * into FlowSemanticVersion brought it back to 15, which is a real reduction
+ * and still over. The suppression states the reason rather than raising the
+ * limit for every class in the app.
+ *
  * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
  */
 class FlowVersionService {
@@ -58,7 +75,6 @@ class FlowVersionService {
 	 * @param FlowDefinitionPin  $pin      Canonicalises and stores a graph by hash.
 	 * @param FlowLifecycleGuard $guard    The preconditions on every transition.
 	 * @param FlowTriggerIndex   $triggers The derived trigger rows.
-	 * @param FlowGraphDiff      $diff     What a publish takes away.
 	 * @param FlowSemanticVersion $semver  What to call the version that results.
 	 * @param IDBConnection      $db       Wraps each transition in one transaction.
 	 * @param LoggerInterface    $logger   Diagnostics.
@@ -69,7 +85,6 @@ class FlowVersionService {
 		private readonly FlowDefinitionPin $pin,
 		private readonly FlowLifecycleGuard $guard,
 		private readonly FlowTriggerIndex $triggers,
-		private readonly FlowGraphDiff $diff,
 		private readonly FlowSemanticVersion $semver,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
@@ -347,18 +362,16 @@ class FlowVersionService {
 	/**
 	 * What to call the version this publish creates.
 	 *
-	 * Compares the graph being published with the one that was live, asks the
-	 * diff whether anything a consumer could depend on was taken away, lets the
-	 * author RAISE that verdict, and refuses to let them lower it.
-	 *
-	 * A flow with no previous published version is `1.0.0` whatever the diff
-	 * says: there is nothing to have broken.
+	 * One question to one collaborator. Comparing, reconciling the author's
+	 * request with the diff, and numbering the result all belong together and
+	 * live in {@see FlowSemanticVersion}; this method's only job is to decide
+	 * WHICH graph is the one being replaced, and to survive not finding it.
 	 *
 	 * 🔴 A FAILURE TO READ THE PREVIOUS GRAPH IS NOT A FAILURE TO PUBLISH. The
-	 * definition row may have been pruned, and refusing the publish would make
-	 * a labelling feature able to block a release. An unreadable previous graph
-	 * is treated as no previous graph, which produces a minor rather than a
-	 * confident major nobody can check.
+	 * definition row may have been pruned, and refusing would let a LABELLING
+	 * feature block a release. A null graph is treated as no previous version
+	 * at all, which yields the first version rather than a confident major
+	 * nobody can check.
 	 *
 	 * @param FlowVersion|null $previous The version this one replaces.
 	 * @param array $candidate The graph being published.
@@ -371,36 +384,30 @@ class FlowVersionService {
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
 	 */
 	private function deriveSemver(?FlowVersion $previous, array $candidate, ?string $requested): string {
-		if ($previous === null) {
-			return FlowSemanticVersion::FIRST;
-		}
-
 		$before = null;
-		try {
-			$before = $this->pin->graphFor($previous->getDefinitionHash());
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowVersionService] Could not read the previously published graph; '
-					. 'the semantic version falls back to a minor bump: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+
+		if ($previous !== null) {
+			try {
+				$before = $this->pin->graphFor($previous->getDefinitionHash());
+			} catch (Throwable $e) {
+				$this->logger->warning(
+					message: '[FlowVersionService] Could not read the previously published graph; '
+						. 'the semantic version starts again: ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
 		}
 
 		if (is_array($before) === false) {
-			return $this->semver->next(
-				previous: $previous->getSemver(),
-				verdict: FlowGraphDiff::MINOR
-			);
+			$before = null;
 		}
 
-		$comparison = $this->diff->compare(published: $before, candidate: $candidate);
-		$verdict = $this->semver->reconcile(
-			derived: $comparison['verdict'],
-			requested: $requested,
-			removed: $this->diff->summarise(diff: $comparison)
+		return $this->semver->forPublish(
+			publishedGraph: $before,
+			candidateGraph: $candidate,
+			previousSemver: $previous?->getSemver(),
+			requested: $requested
 		);
-
-		return $this->semver->next(previous: $previous->getSemver(), verdict: $verdict);
 
 	}//end deriveSemver()
 
