@@ -475,10 +475,21 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			)
 			.toBeGreaterThan(0)
 
+		// MATCH THE NAME EXACTLY, NOT THE CARD LOOSELY. Each card carries the
+		// step's name, its role word, its description and its catalogue id, and
+		// `hasText` is a case-insensitive SUBSTRING match over all of that — so
+		// 'End' also matches "Send email" and any description containing the
+		// word. The first version of this fix used the loose filter, picked a
+		// different step, and failed at the canvas assertion below saying the
+		// step never arrived. It had arrived; it was the wrong one.
 		await clickThemed(
 			picker
 				.locator('[data-testid="flow-step-picker-item"]')
-				.filter({ hasText: 'End' })
+				.filter({
+					has: page.locator('.cn-step-picker__name', {
+						hasText: /^End$/,
+					}),
+				})
 				.first(),
 		)
 		// Picking a step adds it and closes the dialog. Asserted rather than
