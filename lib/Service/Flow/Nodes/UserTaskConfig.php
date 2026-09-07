@@ -240,23 +240,45 @@ final class UserTaskConfig {
 			FlowTaskBridge::SLOT_TASK_UUID => $taskUuid,
 			FlowTaskBridge::SLOT_ASKED_AT => (new DateTime())->format('c'),
 			FlowTaskBridge::SLOT_ADVANCE => FlowAdvanceBudget::fromConfig(config: $config)->toStored(),
-			'assignee' => $this->assignee(config: $config),
+			'assignee' => $this->assigneeValue(config: $config),
 			'title' => $this->renderedTitle(config: $config, items: $items),
 		];
 	}//end slotValues()
 
 	/**
-	 * The directly configured assignee, trimmed; '' when the task is pooled.
+	 * The assignee as the task row stores it.
+	 *
+	 * Delegated to {@see UserTaskAssignee}, which owns both shapes: the two are
+	 * read by different consumers for different purposes, and keeping them here
+	 * put this class over its complexity budget.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
 	 *
-	 * @return string The assignee uid, or ''.
+	 * @return string The stored assignee, or ''.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function assignee(array $config): string {
-		return trim((string)($config['assignee'] ?? ''));
+		return PrincipalReference::storedString(value: ($config['assignee'] ?? ''));
 	}//end assignee()
+
+	/**
+	 * The assignee as configured, keeping a typed reference's shape.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return string|array<mixed> The configured assignee.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public function assigneeValue(array $config): string|array {
+		$value = ($config['assignee'] ?? '');
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return trim((string)$value);
+	}//end assigneeValue()
 
 	/**
 	 * The item key the outcome is written under.

@@ -238,7 +238,9 @@ class TaskMapperQueriesTest extends TestCase {
 		$page = $mapper->findInbox(criteria: $criteria, limit: 25, offset: 50);
 
 		$this->assertCount(1, $page);
-		$this->assertTrue($this->saw('expr.eq', 'assignee'));
+		// An IN, not an eq: a typed assignee is stored as `type:id`, so the
+		// caller's identity expands to the few strings that mean them.
+		$this->assertTrue($this->saw('expr.in', 'assignee'));
 		$this->assertTrue($this->saw('expr.eq', 'requester'), 'visibility disjunction present for a non-admin');
 		$this->assertTrue($this->saw('setMaxResults', 25));
 		$this->assertTrue($this->saw('setFirstResult', 50));
@@ -270,7 +272,7 @@ class TaskMapperQueriesTest extends TestCase {
 
 		$this->calls = [];
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL));
-		$this->assertFalse($this->saw('expr.eq', 'assignee'));
+		$this->assertFalse($this->saw('expr.in', 'assignee'));
 	}//end testFindInboxScopesForAnAdmin()
 
 	/**
@@ -316,7 +318,9 @@ class TaskMapperQueriesTest extends TestCase {
 	public function testCountInboxReadsTheTotal(): void {
 		$counted = new TaskMapper(db: $this->connectionWith(rows: [['total' => '120']]));
 		$this->assertSame(120, $counted->countInbox(criteria: new TaskInboxCriteria(uid: 'alice')));
-		$this->assertTrue($this->saw('expr.eq', 'assignee'));
+		// An IN, not an eq: a typed assignee is stored as `type:id`, so the
+		// caller's identity expands to the few strings that mean them.
+		$this->assertTrue($this->saw('expr.in', 'assignee'));
 
 		$empty = new TaskMapper(db: $this->connectionWith(rows: []));
 		$this->assertSame(0, $empty->countInbox(criteria: new TaskInboxCriteria(uid: 'alice')));

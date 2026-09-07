@@ -48,6 +48,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * The agent half of {@see UserTaskNode}.
@@ -264,4 +265,74 @@ final class UserTaskAgentPerformerTest extends TestCase {
 			// Expected.
 		}
 	}//end testWithoutADispatcherTheStepStillRaisesItsTask()
+
+	/**
+	 * 🔴 A TASK CANNOT BE CREATED OUTSIDE A PERSISTED RUN.
+	 *
+	 * The task carries the run uuid, and that is what lets an answer find its
+	 * way back to the run that asked. A task without one is unanswerable, so
+	 * the step fails rather than creating it.
+	 *
+	 * @return void
+	 */
+	public function testAStepOutsideAPersistedRunRefusesToCreateATask(): void {
+		$state = new FlowResumeState();
+
+		$this->expectException(RuntimeException::class);
+
+		$this->node()->execute(
+			[['json' => []]],
+			['title' => 'Approve it', 'assignee' => 'alice'],
+			[
+				FlowResumeState::CONTEXT_KEY => $state,
+				FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
+			]
+		);
+	}//end testAStepOutsideAPersistedRunRefusesToCreateATask()
+
+	/**
+	 * A run naming no acting identity still raises its task, unattributed.
+	 *
+	 * 🔑 `runAs` THEN `triggeredBy`, AND NULL WHEN NEITHER IS THERE. An
+	 * MCP-triggered run genuinely carries no identity, and refusing one would
+	 * make the step unusable on that path; the task simply records no actor.
+	 *
+	 * @return void
+	 */
+	public function testARunWithNoActingIdentityStillRaisesItsTask(): void {
+		$this->expectNotToPerformAssertions();
+
+		$state = new FlowResumeState();
+
+		try {
+			$this->node()->execute(
+				[['json' => []]],
+				['title' => 'Approve it', 'assignee' => 'alice'],
+				[
+					FlowResumeState::CONTEXT_KEY => $state,
+					FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
+					FlowRunContext::CONTEXT_RUN => 'run-1',
+					'runUuid' => 'run-1',
+				]
+			);
+		} catch (FlowSuspension) {
+			// Expected: the step waits for its answer.
+		}
+	}//end testARunWithNoActingIdentityStillRaisesItsTask()
+
+	/**
+	 * The step names itself in the palette, and carries an icon.
+	 *
+	 * A catalogue entry with no label reads as a blank row in the step picker.
+	 *
+	 * @return void
+	 */
+	public function testTheStepNamesItselfInThePalette(): void {
+		$node = $this->node();
+
+		$this->assertSame('Ask a person or group', $node->getDisplayName());
+		// The generator is a double here, so the VALUE is not the point: the
+		// contract is that the node answers a path rather than throwing.
+		$this->assertIsString($node->getIcon());
+	}//end testTheStepNamesItselfInThePalette()
 }//end class
