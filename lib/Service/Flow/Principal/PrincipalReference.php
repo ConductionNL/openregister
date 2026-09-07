@@ -84,7 +84,11 @@ final class PrincipalReference implements JsonSerializable {
 		if (is_string($value) === true) {
 			$id = trim($value);
 
-			return ($id === '') ? null : new self(type: self::DEFAULT_TYPE, id: $id);
+			if ($id === '') {
+				return null;
+			}
+
+			return new self(type: self::DEFAULT_TYPE, id: $id);
 		}
 
 		if (is_array($value) === false) {

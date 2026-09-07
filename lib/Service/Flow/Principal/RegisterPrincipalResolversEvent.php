@@ -39,6 +39,8 @@ class RegisterPrincipalResolversEvent extends Event {
 	 * Constructor.
 	 *
 	 * @param PrincipalResolverRegistry $registry The registry to contribute to.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly PrincipalResolverRegistry $registry,

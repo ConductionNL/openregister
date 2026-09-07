@@ -46,6 +46,8 @@ class PrincipalResolverRegistrationListener implements IEventListener {
 	 *
 	 * @param UserPrincipalResolver  $users  Resolves `user` references.
 	 * @param GroupPrincipalResolver $groups Resolves `group` references.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly UserPrincipalResolver $users,

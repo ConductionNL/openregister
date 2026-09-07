@@ -40,6 +40,8 @@ class UserPrincipalResolver implements IPrincipalResolver {
 	 * Constructor.
 	 *
 	 * @param IUserManager $users Nextcloud's user manager.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(private readonly IUserManager $users) {
 

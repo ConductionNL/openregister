@@ -59,6 +59,8 @@ class PrincipalResolverRegistry {
 	 *
 	 * @param IEventDispatcher $dispatcher Dispatches the contribution event.
 	 * @param LoggerInterface  $logger     Where a failing resolver is reported.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly IEventDispatcher $dispatcher,

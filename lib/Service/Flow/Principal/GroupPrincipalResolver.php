@@ -49,6 +49,8 @@ class GroupPrincipalResolver implements IPrincipalResolver {
 	 * Constructor.
 	 *
 	 * @param IGroupManager $groups Nextcloud's group manager.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(private readonly IGroupManager $groups) {
 
