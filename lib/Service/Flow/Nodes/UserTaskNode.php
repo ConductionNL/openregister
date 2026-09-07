@@ -120,7 +120,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly IURLGenerator $urls,
 		TaskFormReader $forms,
 		private readonly FlowTimerService $timers,
-		?PrincipalResolverRegistry $principals = null,
+		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
 		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms, principals: $principals);
 
@@ -362,6 +362,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			throw new RuntimeException('openregister.user-task cannot create a task outside a persisted run: the task must carry the run uuid.');
 		}
 
+		$this->refuseAPerformerNobodyHolds(config: $config);
+
 		$task = $this->bridge->createTask(
 			data: $this->config->taskData(config: $config, items: $items, nodeId: $resume->nodeId(), nodeType: $this->getId()),
 			runUuid: $runUuid,
@@ -394,6 +396,59 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		);
 
 	}//end createTask()
+
+	/**
+	 * Refuse to raise a task nobody can perform.
+	 *
+	 * 🔴 THIS IS THE MEASURED DEFECT, INVERTED. A step naming a group that has
+	 * no members — or that does not exist — created a task addressed to
+	 * nobody. The run suspended, a heartbeat re-read it every few minutes, and
+	 * NOTHING said anything: the task existed, the run was healthy, and the
+	 * approval simply never happened. Silence was the defect.
+	 *
+	 * A loud step failure is strictly better even when the author chooses to
+	 * continue past it, because it is subject to the flow's own `onError`
+	 * policy — which is a decision the author gets to make, and silence is not.
+	 *
+	 * 🔑 REFUSED HERE AND NOT AT SAVE. An empty resolution is a fact about the
+	 * instance and it changes: a committee with no members today has members
+	 * next week. This is the moment somebody actually needs to be found.
+	 *
+	 * Only checked when the instance can resolve at all, and only for steps
+	 * that name somebody: an unassigned step is deliberately open, and refusing
+	 * one would close a door the spec holds open.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When every named performer resolves to nobody.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	private function refuseAPerformerNobodyHolds(array $config): void {
+		if ($this->principals === null) {
+			return;
+		}
+
+		$named = $this->config->performers(config: $config);
+		if ($named === []) {
+			return;
+		}
+
+		if ($this->principals->resolveAll(references: $named) !== []) {
+			return;
+		}
+
+		throw new RuntimeException(
+			sprintf(
+				'openregister.user-task cannot raise a task: it asks %s, and nobody currently holds any of them. '
+					. 'The step fails rather than creating a task addressed to nobody.',
+				implode(', ', array_map(static fn ($r): string => (string)$r, $named))
+			)
+		);
+
+	}//end refuseAPerformerNobodyHolds()
 
 	/**
 	 * Arm a business timer for the task this node just created.
