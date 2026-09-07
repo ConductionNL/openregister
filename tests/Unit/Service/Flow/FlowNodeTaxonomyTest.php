@@ -171,6 +171,7 @@ class DeclaredNode extends UndeclaredNode implements IFlowNodeTaxonomy {
  * Tests for the taxonomy the registry serves.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
+ * @covers \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
  * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  */
 final class FlowNodeTaxonomyTest extends TestCase {
