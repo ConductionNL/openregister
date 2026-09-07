@@ -698,7 +698,7 @@ class TaskMapper extends QBMapper {
 
 		switch ($criteria->scope) {
 			case TaskInboxCriteria::SCOPE_ASSIGNED:
-				$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($criteria->uid)));
+				$qb->andWhere($this->assigneeMatchesCaller(qb: $qb, criteria: $criteria));
 				break;
 			case TaskInboxCriteria::SCOPE_POOLED:
 				$qb->andWhere(
@@ -719,6 +719,35 @@ class TaskMapper extends QBMapper {
 	}//end applyScope()
 
 	/**
+	 * The task's assignee names the caller, by uid or by a reference they hold.
+	 *
+	 * 🔑 THE RESOLVER DECIDES AUTHORISATION, NOT LISTING. A typed assignee is
+	 * stored as `type:id`, so the caller's own identity expands to a small,
+	 * fixed set of strings the datastore can match with an IN — the caller's
+	 * bare uid (every flow ever authored names people that way), `user:<uid>`,
+	 * and `group:<id>` for each group they are in. Resolving a reference per
+	 * ROW instead would resolve it a hundred times on one page, which is
+	 * exactly what the design forbids.
+	 *
+	 * 🔴 AN AGENT'S TASK STAYS OUT OF A PERSON'S INBOX. Only `user:` and
+	 * `group:` are expanded, so `agent:scribe` matches nothing here — an agent
+	 * step must not be answerable by the humans, nor appear to be theirs.
+	 *
+	 * @param IQueryBuilder     $qb       The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the identity facts.
+	 *
+	 * @return string The predicate.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	private function assigneeMatchesCaller(IQueryBuilder $qb, TaskInboxCriteria $criteria): string {
+		return $qb->expr()->in(
+			'assignee',
+			$qb->createNamedParameter($criteria->assigneeNames(), IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end assigneeMatchesCaller()
+
+	/**
 	 * The visibility half: an administrator sees everything; anyone else
 	 * sees a task only through one of the five sanctioned relationships.
 	 *
@@ -733,7 +762,7 @@ class TaskMapper extends QBMapper {
 		if ($criteria->isAdmin === false) {
 			$qb->andWhere(
 				$qb->expr()->orX(
-					$qb->expr()->eq('assignee', $qb->createNamedParameter($criteria->uid)),
+					$this->assigneeMatchesCaller(qb: $qb, criteria: $criteria),
 					$qb->expr()->eq('requester', $qb->createNamedParameter($criteria->uid)),
 					$this->watcherPredicate(qb: $qb, uid: $criteria->uid),
 					$this->candidateMembershipPredicate(qb: $qb, criteria: $criteria)
