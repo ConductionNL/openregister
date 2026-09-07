@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.0.18-unstable.20260907112751</version>
+    <version>2.0.18-unstable.20260907165321</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -201,6 +201,20 @@ Vrij en open source onder de EUPL-licentie.
 			     published versions in ordinal order and marks them
 			     `backfill`, because it cannot know which were breaking. -->
 			<step>OCA\OpenRegister\Repair\BackfillFlowSemanticVersions</step>
+			<!-- AFTER the flows exist and BEFORE nothing in particular: it
+			     rewrites a stored performer STRING as a typed reference, but
+			     only where exactly one kind of thing answers to that name. An
+			     ambiguous or unresolvable one is reported by name and left
+			     exactly as it is — the guard still reads a bare string under
+			     its old, wider meaning, so nothing regresses by not touching
+			     it, and narrowing who may answer is a person's decision. -->
+			<step>OCA\OpenRegister\Repair\TypePerformerReferences</step>
+			<!-- The one subject an existing run can honestly be said to have
+			     declared: what it fired on. NOTHING is back-filled from the
+			     audit — those declarations would be addressable by `attachTo`,
+			     and a task attached to an object no author declared is worse
+			     than one that fails loudly the first time it is used. -->
+			<step>OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
@@ -322,6 +336,20 @@ Vrij en open source onder de EUPL-licentie.
 			     published versions in ordinal order and marks them
 			     `backfill`, because it cannot know which were breaking. -->
 			<step>OCA\OpenRegister\Repair\BackfillFlowSemanticVersions</step>
+			<!-- AFTER the flows exist and BEFORE nothing in particular: it
+			     rewrites a stored performer STRING as a typed reference, but
+			     only where exactly one kind of thing answers to that name. An
+			     ambiguous or unresolvable one is reported by name and left
+			     exactly as it is — the guard still reads a bare string under
+			     its old, wider meaning, so nothing regresses by not touching
+			     it, and narrowing who may answer is a person's decision. -->
+			<step>OCA\OpenRegister\Repair\TypePerformerReferences</step>
+			<!-- The one subject an existing run can honestly be said to have
+			     declared: what it fired on. NOTHING is back-filled from the
+			     audit — those declarations would be addressable by `attachTo`,
+			     and a task attached to an object no author declared is worse
+			     than one that fails loudly the first time it is used. -->
+			<step>OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
