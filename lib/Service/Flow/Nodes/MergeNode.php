@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -49,7 +50,7 @@ use UnexpectedValueException;
 /**
  * Merges branch item lists — append, merge-by-key, or unique.
  */
-class MergeNode implements IFlowNode, IFlowNodeConfigKeys {
+class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The modes this node understands.
@@ -251,4 +252,28 @@ class MergeNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		return $out;
 	}//end unique()
+
+	/**
+	 * What kind of step this is. A join: several ways in, one out.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_GATEWAY;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
+
+	}//end getCategory()
 }//end class

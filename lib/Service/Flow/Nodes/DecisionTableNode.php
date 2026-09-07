@@ -36,11 +36,13 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Flow\FlowFieldPath;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -49,7 +51,7 @@ use UnexpectedValueException;
 /**
  * Decides each item by its inline decision table.
  */
-class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -282,7 +284,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 			$result = $this->decide(table: $table, config: $config, json: $json, inputMapping: $inputMapping);
 
 			foreach ($this->columnNames(columns: (array)($table['outputs'] ?? [])) as $name) {
-				self::assign(
+				FlowFieldPath::assign(
 					json: $json,
 					path: (string)($outputMapping[$name] ?? $name),
 					value: ($result['outputs'][$name] ?? null)
@@ -290,7 +292,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 			}
 
 			if ($resultKey !== '') {
-				self::assign(
+				FlowFieldPath::assign(
 					json: $json,
 					path: $resultKey,
 					value: [
@@ -515,43 +517,26 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	}//end assertPath()
 
 	/**
-	 * Write a value at a dotted path, creating the containers it needs.
+	 * What kind of step this is. Evaluates a decision table.
 	 *
-	 * Same semantics as `openregister.set-fields` gives a literal path: the
-	 * structure is a property of the configuration. A segment whose current
-	 * value is not an array is replaced by a container, because merging into
-	 * a scalar has no meaning and skipping silently would be the invisible
-	 * no-op this node refuses everywhere else.
+	 * @return string The BPMN kind.
 	 *
-	 * @param array $json The item's record, modified in place.
-	 * @param string $path The field path, optionally dotted.
-	 * @param mixed $value The value to write.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
 	 */
-	private static function assign(array &$json, string $path, mixed $value): void {
-		if (str_contains($path, '.') === false) {
-			$json[$path] = $value;
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_BUSINESS_RULE_TASK;
 
-			return;
-		}
+	}//end getKind()
 
-		$segments = explode('.', $path);
-		$last = array_pop($segments);
-		$cursor = &$json;
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
 
-		foreach ($segments as $segment) {
-			if (isset($cursor[$segment]) === false || is_array($cursor[$segment]) === false) {
-				$cursor[$segment] = [];
-			}
-
-			$cursor = &$cursor[$segment];
-		}
-
-		$cursor[$last] = $value;
-		unset($cursor);
-
-	}//end assign()
+	}//end getCategory()
 }//end class
