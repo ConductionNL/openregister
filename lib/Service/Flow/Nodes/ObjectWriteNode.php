@@ -100,6 +100,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -121,7 +122,7 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
-class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * Insert a new object; never look for an existing one.
@@ -2489,4 +2490,28 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 		return (string)$schema->getId();
 	}//end labelOf()
+
+	/**
+	 * What kind of step this is. Calls the register to write.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
+
+	}//end getCategory()
 }//end class

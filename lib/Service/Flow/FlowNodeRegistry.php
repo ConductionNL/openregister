@@ -115,12 +115,28 @@ class FlowNodeRegistry {
 	 *                                 without a container; absent, such a node
 	 *                                 is served with no icon rather than being
 	 *                                 dropped.
+	 * @param FlowNodeTaxonomyResolver|null $taxonomy Reads what a node says it
+	 *                                 is, defaulting what it does not say.
+	 *                                 Optional, and built from this logger when
+	 *                                 absent: the resolver's refusal path is a
+	 *                                 warning naming the node that declared
+	 *                                 nonsense, and a null logger would swallow
+	 *                                 exactly the message it exists to make
+	 *                                 visible.
 	 */
 	public function __construct(
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
 		private readonly ?IURLGenerator $urls = null,
+		// 🔑 BUILT FROM THE LOGGER THIS ALREADY HOLDS, not defaulted to a null
+		// one. The resolver's whole refusal path is a warning naming the node
+		// that declared nonsense; a null logger would swallow exactly the
+		// message the fallback exists to make visible.
+		private ?FlowNodeTaxonomyResolver $taxonomy = null,
 	) {
+		if ($this->taxonomy === null) {
+			$this->taxonomy = new FlowNodeTaxonomyResolver($this->logger);
+		}
 
 	}//end __construct()
 
@@ -218,7 +234,17 @@ class FlowNodeRegistry {
 					// id against a naming convention, which mis-labels every
 					// node another app contributes under a name that does not
 					// fit the pattern. The engine knows; it says so.
-					'role' => $this->roleFor(node: $node),
+					'role' => $this->taxonomy->roleOf(node: $node),
+					// ALWAYS present, both of them, defaulted here rather than
+					// on the interface. 43 of 64 step types on a measured
+					// instance come from other repositories on their own
+					// release cycles, so a required declaration would mean
+					// either breaking those apps or guessing their semantics —
+					// and a guessed `serviceTask` in a BPMN export is a wrong
+					// answer wearing the appearance of a right one. An honest
+					// `other` in the palette is visible and gets fixed.
+					'kind' => $this->taxonomy->kindOf(node: $node),
+					'category' => $this->taxonomy->categoryOf(node: $node),
 					// Ids that used to mean this node. An editor resolving a
 					// STORED flow looks its types up in this catalogue, so
 					// without the aliases a flow saved before a rename shows a
@@ -439,7 +465,7 @@ class FlowNodeRegistry {
 		}
 
 		try {
-			return ($this->get(type: $type) instanceof IFlowEndNode);
+			return $this->taxonomy->isEnd(node: $this->get(type: $type));
 		} catch (UnexpectedValueException) {
 			return false;
 		}
@@ -465,7 +491,7 @@ class FlowNodeRegistry {
 		}
 
 		try {
-			return ($this->get(type: $type) instanceof IFlowTriggerNode);
+			return $this->taxonomy->isTrigger(node: $this->get(type: $type));
 		} catch (UnexpectedValueException) {
 			return false;
 		}
@@ -497,7 +523,7 @@ class FlowNodeRegistry {
 		}
 
 		try {
-			return $this->roleFor(node: $this->get(type: $type));
+			return $this->taxonomy->roleOf(node: $this->get(type: $type));
 		} catch (UnexpectedValueException) {
 			// An unregistered type is a STEP, not a guess at something else.
 			// Its own preflight finding already reports that it is unknown.
@@ -528,29 +554,6 @@ class FlowNodeRegistry {
 		return $aliases;
 	}//end aliasesFor()
 
-	/**
-	 * The role of a node INSTANCE the caller already holds.
-	 *
-	 * The one place the two marker interfaces are read, so `roleOf()`,
-	 * `palette()` and anything added later cannot answer differently.
-	 *
-	 * @param IFlowNode $node The node.
-	 *
-	 * @return string `'trigger'`, `'end'` or `'step'`.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
-	 */
-	private function roleFor(IFlowNode $node): string {
-		if (($node instanceof IFlowTriggerNode) === true) {
-			return 'trigger';
-		}
-
-		if (($node instanceof IFlowEndNode) === true) {
-			return 'end';
-		}
-
-		return 'step';
-	}//end roleFor()
 
 	/**
 	 * Collect contributions once per request.
