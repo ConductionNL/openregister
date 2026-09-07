@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
@@ -83,10 +85,17 @@ final class UserTaskConfig {
 	 *
 	 * @param IL10N $l10n Translations, for refusal messages an author reads.
 	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
+	 * @param PrincipalResolverRegistry|null $principals Says which principal TYPES
+	 *                             this instance understands, so an unknown one is
+	 *                             refused while the author is still looking at the
+	 *                             field. Absent, no type is refused: an instance
+	 *                             that cannot say which types exist must not decide
+	 *                             that none of them do.
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly TaskFormReader $forms,
+		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
 
 	}//end __construct()
@@ -130,6 +139,7 @@ final class UserTaskConfig {
 			);
 		}
 
+		$this->refuseUnknownPrincipalTypes(config: $config);
 		$this->refuseOutsideVocabulary(config: $config, key: 'performerType', vocabulary: Task::PERFORMER_TYPES);
 		$this->refuseOutsideVocabulary(config: $config, key: 'priority', vocabulary: Task::PRIORITIES);
 		$this->refuseOutsideVocabulary(config: $config, key: 'routingStrategy', vocabulary: Task::ROUTING_STRATEGIES);
@@ -309,20 +319,87 @@ final class UserTaskConfig {
 	 * @return boolean True when at least one performer source is set.
 	 */
 	private function namesAPerformer(array $config): bool {
-		foreach (['assignee', 'candidateRole', 'routingFallback'] as $key) {
-			if (trim((string)($config[$key] ?? '')) !== '') {
-				return true;
-			}
-		}
-
-		foreach (['candidateUsers', 'candidateGroups'] as $key) {
-			if ($this->listOf(value: ($config[$key] ?? null)) !== []) {
-				return true;
-			}
-		}
-
-		return false;
+		// Read as REFERENCES, not as strings. A `{type, id}` map casts to the
+		// string "Array", which is non-empty — so a string test would call a
+		// typed assignee "named" for the wrong reason today and would keep
+		// doing so if the shape ever changed.
+		return $this->performers(config: $config) !== [];
 	}//end namesAPerformer()
+
+	/**
+	 * Everybody this step could ask, as typed references.
+	 *
+	 * 🔑 THE THREE LEGACY FIELDS ARE READ BY THEIR NAMES. `candidateUsers`,
+	 * `candidateGroups` and `candidateRole` differ only in the kind of thing
+	 * you type into them — a type system implemented as field names, which
+	 * existed because the field was a text box. Each is read as candidates of
+	 * its own type, so no stored flow changes meaning and none needs migrating.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return array<int, PrincipalReference> Every performer the step names.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `PrincipalReference::listFrom()` and
+	 * `listOfType()` are named constructors on a value object, which is the
+	 * canonical PHP idiom and indistinguishable to this rule from a static call
+	 * into a service.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public function performers(array $config): array {
+		return array_merge(
+			PrincipalReference::listFrom(value: ($config['assignee'] ?? null)),
+			PrincipalReference::listFrom(value: ($config['candidates'] ?? null)),
+			PrincipalReference::listFrom(value: ($config['routingFallback'] ?? null)),
+			PrincipalReference::listOfType(value: ($config['candidateUsers'] ?? null), type: 'user'),
+			PrincipalReference::listOfType(value: ($config['candidateGroups'] ?? null), type: 'group'),
+			// `candidateRole` names a GROUP: the pre-typed guard resolved it
+			// through `isInGroup()`, so reading it as anything else would move
+			// who may answer on every stored flow that uses it.
+			PrincipalReference::listOfType(value: ($config['candidateRole'] ?? null), type: 'group')
+		);
+	}//end performers()
+
+	/**
+	 * Refuse a performer whose TYPE nothing on this instance understands.
+	 *
+	 * 🔴 REFUSED AT SAVE, AND NOT RESOLVED HERE. These are two different kinds
+	 * of wrongness found by two different people. An unknown TYPE is a defect
+	 * in the document: the author is at the keyboard, the field is on screen,
+	 * and the fix is to pick a different type. An EMPTY RESOLUTION is a fact
+	 * about the instance and it changes — a committee with no members today has
+	 * members next week — so refusing to SAVE over it would make the flow
+	 * unauthorable for a reason that has nothing to do with the flow.
+	 *
+	 * Without a registry nothing is refused. An instance that cannot say which
+	 * types exist must not decide that none of them do.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When a performer names an unknown type.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	private function refuseUnknownPrincipalTypes(array $config): void {
+		if ($this->principals === null) {
+			return;
+		}
+
+		foreach ($this->performers(config: $config) as $reference) {
+			if ($this->principals->has(type: $reference->type) === true) {
+				continue;
+			}
+
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'This step asks a "%1$s" called "%2$s", and nothing on this server knows what a "%1$s" is. Is the app that provides it installed?',
+					[$reference->type, $reference->id]
+				)
+			);
+		}
+	}//end refuseUnknownPrincipalTypes()
 
 	/**
 	 * Refuse a set value outside a published vocabulary, naming both.
