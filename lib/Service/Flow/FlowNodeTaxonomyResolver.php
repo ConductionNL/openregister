@@ -47,6 +47,8 @@ class FlowNodeTaxonomyResolver {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Where a declaration outside the vocabulary is reported.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-both-are-optional-and-a-node-that-declares-neither-still-works
 	 */
 	public function __construct(private readonly LoggerInterface $logger) {
 
