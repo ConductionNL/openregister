@@ -82,6 +82,7 @@ class KnownTypeResolver implements IPrincipalResolver {
  * The typed half of {@see UserTaskConfig}.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
