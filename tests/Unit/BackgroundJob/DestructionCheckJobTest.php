@@ -36,7 +36,7 @@ class DestructionCheckJobTest extends TestCase {
 	 * Test that the job can be instantiated.
 	 */
 	public function testConstructor(): void {
-		// The job constructor calls getArchivalSettingsOnly() via \OC::$server.
+		// The job resolves its collaborators through the injected container at run time.
 		// In unit tests without the full Nextcloud stack, we verify the class exists
 		// and has the expected methods.
 		$reflection = new ReflectionClass(DestructionCheckJob::class);

@@ -39,6 +39,7 @@ use OCP\BackgroundJob\TimedJob;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\Notification\IManager as INotificationManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -65,18 +66,20 @@ class DestructionCheckJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for parent class
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 * @param IDBConnection $db Database connection
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
+		private readonly ContainerInterface $container,
 		private readonly IDBConnection $db,
 	) {
 		parent::__construct(time: $time);
 
 		try {
-			$handler = \OC::$server->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ObjectRetentionHandler::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$interval = (int)($settings['destructionCheckInterval'] ?? self::DEFAULT_INTERVAL);
 		} catch (Exception $e) {
@@ -101,12 +104,12 @@ class DestructionCheckJob extends TimedJob {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	protected function run($argument): void {
-		$logger = \OC::$server->get(LoggerInterface::class);
+		$logger = $this->container->get(LoggerInterface::class);
 		$logger->info('[DestructionCheckJob] Starting destruction check');
 
 		try {
-			$retentionService = \OC::$server->get(RetentionService::class);
-			$settingsHandler = \OC::$server->get(ObjectRetentionHandler::class);
+			$retentionService = $this->container->get(RetentionService::class);
+			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
 			$settings = $settingsHandler->getArchivalSettingsOnly();
 
 			if (empty($settings['destructionListRegister']) === true
@@ -141,7 +144,7 @@ class DestructionCheckJob extends TimedJob {
 				return;
 			}
 
-			$saveObject = \OC::$server->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
+			$saveObject = $this->container->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
 			$savedList = $saveObject->saveObject(
 				$settings['destructionListRegister'],
 				$settings['destructionListSchema'],
@@ -187,9 +190,9 @@ class DestructionCheckJob extends TimedJob {
 		$today = (new DateTime())->format('Y-m-d');
 
 		try {
-			$objectMapper = \OC::$server->get(MagicMapper::class);
+			$objectMapper = $this->container->get(MagicMapper::class);
 
-			$appConfig = \OC::$server->get(\OCP\IAppConfig::class);
+			$appConfig = $this->container->get(\OCP\IAppConfig::class);
 			$notifiedJson = $appConfig->getValueString('openregister', self::NOTIFIED_KEY, '[]');
 			$notified = json_decode($notifiedJson, true) ?? [];
 			// Track which already-notified UUIDs are still inside the pre-destruction window
@@ -307,8 +310,8 @@ class DestructionCheckJob extends TimedJob {
 		LoggerInterface $logger,
 	): void {
 		try {
-			$notificationManager = \OC::$server->get(INotificationManager::class);
-			$groupManager = \OC::$server->get(IGroupManager::class);
+			$notificationManager = $this->container->get(INotificationManager::class);
+			$groupManager = $this->container->get(IGroupManager::class);
 
 			$group = $groupManager->get('archivaris');
 			if ($group === null) {
@@ -354,8 +357,8 @@ class DestructionCheckJob extends TimedJob {
 		LoggerInterface $logger,
 	): void {
 		try {
-			$notificationManager = \OC::$server->get(INotificationManager::class);
-			$groupManager = \OC::$server->get(IGroupManager::class);
+			$notificationManager = $this->container->get(INotificationManager::class);
+			$groupManager = $this->container->get(IGroupManager::class);
 
 			$group = $groupManager->get('archivaris');
 			if ($group === null) {
