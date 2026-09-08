@@ -28,6 +28,19 @@ use PHPUnit\Framework\TestCase;
 // PHPCS has its own autoloader (not exposed via composer's classmap).
 require_once __DIR__ . '/../../../vendor/squizlabs/php_codesniffer/autoload.php';
 
+// PHPCS's T_* token constants, T_ANON_CLASS among them, are defined by
+// top-level define() calls at the bottom of Util/Tokens.php. Nothing here
+// referenced the Tokens class, so on a run where no earlier code happened to
+// autoload it those constants did not exist, and constructing a Ruleset with
+// the Generic standard fataled in ConstructorNameSniff with
+// `Undefined constant "PHP_CodeSniffer\Standards\Generic\Sniffs\NamingConventions\T_ANON_CLASS"`
+// (PHP falling back to a namespace-relative lookup for a missing global).
+//
+// That is environment-dependent, not version-dependent: the failure appeared on
+// CI at exactly the PHPCS version this passes on locally, 3.13.6. Requiring the
+// file makes the constants unconditional instead of incidental.
+require_once __DIR__ . '/../../../vendor/squizlabs/php_codesniffer/src/Util/Tokens.php';
+
 // PHPCS runtime expects these constants to be defined (normally set by its CLI entry point).
 if (defined('PHP_CODESNIFFER_VERBOSITY') === false) {
 	define('PHP_CODESNIFFER_VERBOSITY', 0);
