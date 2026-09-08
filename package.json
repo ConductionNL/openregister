@@ -127,7 +127,7 @@
     "postcss": "^8.4.31",
     "postcss-html": "^1.8.1",
     "prettier": "^3.9.6",
-    "stylelint": "^17.9.1",
+    "stylelint": "^17.15.0",
     "stylelint-config-recommended-scss": "^17.0.1",
     "stylelint-config-recommended-vue": "^1.6.1",
     "stylelint-webpack-plugin": "^5.1.0",
