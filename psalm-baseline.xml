@@ -280,12 +280,6 @@
       <code><![CDATA[$vtodo->{'X-OPENREGISTER-DATA'}]]></code>
     </UndefinedPropertyFetch>
   </file>
-  <file src="lib/Service/TextExtraction/EntityRecognitionHandler.php">
-    <UnusedParam>
-      <code><![CDATA[$objectId]]></code>
-      <code><![CDATA[$relation]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Service/TextExtraction/SpreadsheetExtractor.php">
     <StringIncrement>
       <code><![CDATA[$col]]></code>

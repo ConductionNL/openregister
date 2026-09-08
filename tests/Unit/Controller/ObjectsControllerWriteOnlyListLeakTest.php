@@ -75,6 +75,13 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 	private IAppConfig&MockObject $config;
 	private IAppManager&MockObject $appManager;
 	private ContainerInterface&MockObject $container;
+
+	/**
+	 * Services the injected container hands out, keyed by id.
+	 *
+	 * @var array<string, callable>
+	 */
+	private array $services = [];
 	private RegisterMapper&MockObject $registerMapper;
 	private SchemaMapper&MockObject $schemaMapper;
 	private AuditTrailMapper&MockObject $auditTrailMapper;
@@ -90,6 +97,12 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		$this->config = $this->createMock(IAppConfig::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->container = $this->createMock(ContainerInterface::class);
+		// The controller resolves MagicMapper, RenderObject and OrganisationService
+		// through its injected container (never the global server), so the tests
+		// register what they need here instead of on OC::$server.
+		$this->container->method('get')->willReturnCallback(
+			fn (string $id): mixed => isset($this->services[$id]) === true ? ($this->services[$id])() : null
+		);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -257,12 +270,12 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([$this->sourceEntity()]);
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
-		\OC::$server->registerService(MagicMapper::class, fn () => $magicMapper);
+		$this->registerService(MagicMapper::class, fn () => $magicMapper);
 
 		// The REAL RenderObject — the whole point of this test. Mocking it here is what
 		// let #460 hide behind a green suite.
 		$renderObject = $this->realRenderObject();
-		\OC::$server->registerService(RenderObject::class, fn () => $renderObject);
+		$this->registerService(RenderObject::class, fn () => $renderObject);
 
 		$controller = new ObjectsController(
 			'openregister',
@@ -375,4 +388,16 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		$this->assertStringNotContainsString(self::SECRET_TOP, $encoded);
 		$this->assertStringNotContainsString(self::SECRET_NESTED, $encoded);
 	}
+
+	/**
+	 * Register a factory the injected container will answer with.
+	 *
+	 * @param string   $id      Service id.
+	 * @param callable $factory Factory returning the service.
+	 *
+	 * @return void
+	 */
+	private function registerService(string $id, callable $factory): void {
+		$this->services[$id] = $factory;
+	}//end registerService()
 }
