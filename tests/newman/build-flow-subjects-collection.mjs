@@ -13,13 +13,12 @@
  * case is locked, a person is asked with `attachTo: case`, and they answer with
  * a form value.
  *
- * ⚠️ WHAT THIS DOES NOT ASSERT. The flow carries a route edge on `answers.advice`
- * so the graph is the real shape, but the branch the run takes is NOT asserted
- * here: after the answer the run continues on the worker, and this collection
- * drives everything through the SYNCHRONOUS test endpoint precisely so it needs
- * no worker. Routing on an outcome bag is covered by the flow-engine
- * collection. Saying so is the point — a description that claims an assertion
- * the file does not make is how coverage gets counted twice.
+ * ⚠️ WHAT THIS DOES NOT ASSERT: the branch a run takes after the answer. That
+ * continues on the worker, and this collection drives everything through the
+ * SYNCHRONOUS test endpoint precisely so it needs none. Routing on an outcome
+ * bag is the flow-engine collection's subject. Saying so is the point — a
+ * description that claims an assertion the file does not make is how coverage
+ * gets counted twice.
  *
  * WHY NEWMAN AND NOT PLAYWRIGHT
  * -----------------------------
@@ -238,27 +237,18 @@ const scene = {
 					formSchema: '{{schemaSlug}}',
 					formFields: 'advice',
 				}),
-				setFields('approved', { branch: 'approved' }),
-				setFields('rejected', { branch: 'rejected' }),
+				setFields('after', { answered: true }),
 			],
+			// ⚠️ EDGES ARE SEQUENCE, NOTHING ELSE. An edge carrying `type` and
+			// `config` is the PRE-INVERSION shape and the engine refuses the whole
+			// run over it: "an edge is sequence and a NODE is the action". Copied
+			// from tests/e2e/api-direct/flow-engine.spec.ts, which still carries
+			// that shape because nothing runs it — which is the same reason this
+			// file is a Newman collection and not a Playwright spec.
 			[
 				{ id: 'e1', from: 'create', to: 'lock' },
 				{ id: 'e2', from: 'lock', to: 'ask' },
-				{
-					id: 'e3',
-					from: 'ask',
-					to: ['approved', 'rejected'],
-					type: 'openregister.route',
-					config: {
-						rules: [
-							{
-								condition: { '==': [{ var: 'json.answers.advice' }, 'grant it'] },
-								output: 'approved',
-							},
-						],
-						default: 'rejected',
-					},
-				},
+				{ id: 'e3', from: 'ask', to: 'after' },
 			],
 		),
 		runFlow('the whole scene', 'sceneFlow', 'sceneRun', [
