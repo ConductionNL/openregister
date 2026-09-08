@@ -55,6 +55,7 @@ use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapper;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -115,12 +116,14 @@ class AnalyticsLinkService {
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ContainerInterface $container App container NC Analytics' ReportService is resolved from.
 	 */
 	public function __construct(
 		private readonly AnalyticsLinkMapper $analyticsLinkMapper,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 
@@ -168,7 +171,7 @@ class AnalyticsLinkService {
 		}
 
 		try {
-			return \OCP\Server::get(self::REPORT_SERVICE);
+			return $this->container->get(self::REPORT_SERVICE);
 		} catch (Throwable $e) {
 			$this->logger->debug('AnalyticsLinkService: ReportService unavailable: ' . $e->getMessage());
 			return null;

@@ -6,8 +6,8 @@
  * Exercises the Tier-2 service contract (link/create/list/unlink +
  * board/stack discovery) against a mocked DeckLinkMapper. Tests that
  * touch Deck's internal services (CardService/BoardService/StackService)
- * use the "Deck unavailable" path because those classes are resolved
- * from `\OC::$server` and aren't injectable into this unit test scope.
+ * use the "Deck unavailable" path because those classes are guarded by
+ * class_exists() and Deck is not loaded in this unit test scope.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
@@ -35,6 +35,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -70,7 +71,8 @@ class DeckLinkServiceTest extends TestCase {
 			$this->appManager,
 			$this->userSession,
 			$this->userManager,
-			$this->logger
+			$this->logger,
+			$this->createMock(ContainerInterface::class)
 		);
 	}
 

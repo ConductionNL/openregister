@@ -20,8 +20,7 @@
  *     controller returns 404 — no enumeration oracle.
  *
  * Lazy-resolution policy mirrors {@see ShareLinkService}: ObjectService
- * is pulled from the server container on demand so the ctor stays light
- * and unit tests can inject a mock container.
+ * is pulled from the injected container on demand so the ctor stays light.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -72,15 +71,6 @@ class CaseTokenService {
 	private const TOKEN_LENGTH = 43;
 
 	/**
-	 * Optional server container override (tests inject a mock so the
-	 * ObjectService resolve path is exercisable without the full
-	 * container).
-	 *
-	 * @var ContainerInterface|null
-	 */
-	private ?ContainerInterface $container;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param CaseTokenMapper $mapper Token persistence.
@@ -88,7 +78,7 @@ class CaseTokenService {
 	 * @param IUserSession $userSession Current user (minter).
 	 * @param IURLGenerator $urlGenerator Public URL builder.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ContainerInterface|null $container Optional container (tests only).
+	 * @param ContainerInterface $container App container the ObjectService is resolved from on demand.
 	 *
 	 * @return void
 	 */
@@ -98,9 +88,8 @@ class CaseTokenService {
 		private IUserSession $userSession,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
-		?ContainerInterface $container = null,
+		private ContainerInterface $container,
 	) {
-		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -328,8 +317,7 @@ class CaseTokenService {
 	 */
 	private function resolveObjectService(): ?object {
 		try {
-			$container = $this->resolveContainer();
-			$service = $container->get('OCA\\OpenRegister\\Service\\ObjectService');
+			$service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
 			if (is_object($service) === true) {
 				return $service;
 			}
@@ -339,49 +327,4 @@ class CaseTokenService {
 			return null;
 		}
 	}//end resolveObjectService()
-
-	/**
-	 * Resolve the active container — the test override if injected,
-	 * otherwise NC's global server container.
-	 *
-	 * @return ContainerInterface
-	 */
-	private function resolveContainer(): ContainerInterface {
-		if ($this->container !== null) {
-			return $this->container;
-		}
-
-		return new class implements ContainerInterface {
-			/**
-			 * Resolve a service from NC's global server container.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return object
-			 *
-			 * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
-			 */
-			public function get(string $id): object {
-				return \OCP\Server::get($id);
-			}//end get()
-
-			/**
-			 * Whether NC's global server container can resolve the id.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return bool
-			 *
-			 * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
-			 */
-			public function has(string $id): bool {
-				try {
-					\OCP\Server::get($id);
-					return true;
-				} catch (Throwable $e) {
-					return false;
-				}
-			}//end has()
-		};
-	}//end resolveContainer()
 }//end class
