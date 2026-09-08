@@ -243,7 +243,15 @@ jobs:
           # the collections gain proper setUp steps that seed their own
           # test fixtures. Match agent-cms / federation pattern (extras).
           # Override via workflow_dispatch input to run them anyway.
-          COLLECTIONS: ${{ inputs.collections || 'crud graphql relations auth-matrix error-matrix referential-integrity' }}
+          #
+          # `flow-subjects` IS in the default set. It seeds its own register
+          # and schema in `00 — setup` and removes them in `99 — teardown`,
+          # so it hardcodes no dev-container state, and it drives every run
+          # through the SYNCHRONOUS test endpoint rather than the background
+          # worker — which is what keeps `flow-engine` out of this list.
+          # A collection missing from here runs nowhere, however carefully it
+          # is registered in run-all.sh.
+          COLLECTIONS: ${{ inputs.collections || 'crud graphql relations auth-matrix error-matrix referential-integrity flow-subjects' }}
         run: bash tests/newman/run-all.sh
 
       - name: Upload Newman reports

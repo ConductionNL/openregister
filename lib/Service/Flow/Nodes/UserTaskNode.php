@@ -65,6 +65,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
@@ -124,6 +125,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *                             ASKED FOR. The node dispatches; it never
 	 *                             invokes a runtime, so the app that owns
 	 *                             agents stays unnamed here.
+	 * @param FlowRunSubjectRecorder|null $subjects Resolves `attachTo` to the
+	 *                             object the run declared under that role.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
 	 */
@@ -135,6 +138,10 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly FlowTimerService $timers,
 		private readonly ?PrincipalResolverRegistry $principals = null,
 		private readonly ?IEventDispatcher $events = null,
+		// Appended LAST and nullable: a new argument inserted anywhere else
+		// shifts every positional caller, and the resulting TypeError names the
+		// argument AFTER the one that moved.
+		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
 		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
 		$this->performers = new UserTaskPerformers(
@@ -248,6 +255,9 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			'calendar',
 			'ladder',
 			'escalationRules',
+			// WHICH declared subject of the run this task hangs on. Empty leaves
+			// the task anchored to the item it was raised from, as before.
+			'attachTo',
 			'purpose',
 			'legalEffect',
 			'onExpiry',
@@ -390,8 +400,31 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 
 		$this->performers->refuseIfNobodyHoldsThem(config: $config);
 
+		$data = $this->config->taskData(
+			config: $config,
+			items: $items,
+			nodeId: $resume->nodeId(),
+			nodeType: $this->getId()
+		);
+
+		// 🔴 BEFORE THE TASK EXISTS, AND IT THROWS. `attachTo` naming a role the
+		// run never recorded fails the step and creates NOTHING: a task attached
+		// to nothing looks fine in every list and is exactly the task an author
+		// believed was attached to the case. The refusal names the roles the run
+		// does hold, which is what makes an unregistered role vocabulary
+		// workable.
+		//
+		// 🔑 IT OVERRIDES THE ITEM'S OWN ANCHOR, which is the point. Without
+		// `attachTo` the task hangs on whatever record the step was raised from;
+		// with it, the task hangs on the object the AUTHOR named, which may be
+		// one no item in this stream carries.
+		$data = array_merge(
+			$data,
+			($this->subjects?->anchorFor(context: $context, role: (string)($config['attachTo'] ?? '')) ?? [])
+		);
+
 		$task = $this->bridge->createTask(
-			data: $this->config->taskData(config: $config, items: $items, nodeId: $resume->nodeId(), nodeType: $this->getId()),
+			data: $data,
 			runUuid: $runUuid,
 			nodeId: $resume->nodeId(),
 			actor: $this->actingIdentity(context: $context)
@@ -591,6 +624,16 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 				'type' => 'text',
 				'help' => $this->l10n->t(
 					'The answers the flow will route on, comma separated, like "approved, rejected". Recorded on the task for the inbox to offer.'
+				),
+			],
+			[
+				'key' => 'attachTo',
+				'label' => $this->l10n->t('Hang this task on'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The name an earlier step recorded its object under, such as "case". The task then shows on that object. '
+					.'Leave it empty and the task stays with the item this step received. '
+					.'A name no earlier step recorded fails the step rather than making a task attached to nothing.'
 				),
 			],
 		];

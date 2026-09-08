@@ -48,7 +48,12 @@ final class FlowRunSerialisationTest extends TestCase {
 		$this->assertNull($json['resumeAt']);
 		$this->assertNull($json['created']);
 		$this->assertNull($json['updated']);
-		$this->assertSame([], $json['subjects'], 'an empty set, never a missing key');
+		// 🔴 AN OBJECT, NEVER AN EMPTY ARRAY. `json_encode` turns an empty PHP
+		// array into `[]`, so a run declaring nothing would serve a JSON ARRAY
+		// where a populated one serves a MAP, and a typed client cannot read
+		// both. Asserting the CAST is what keeps the wire shape one thing.
+		$this->assertEquals(new \stdClass(), $json['subjects'], 'an empty set, never an empty array');
+		$this->assertSame('{}', json_encode($json['subjects']), 'and it encodes as an object');
 	}//end testARunWithNoDatesSerialisesThemAsNull()
 
 	/**
@@ -81,6 +86,6 @@ final class FlowRunSerialisationTest extends TestCase {
 		$run = new FlowRun();
 		$run->setSubjects(['case' => ['uuid' => 'obj-1', 'register' => '3', 'schema' => '7']]);
 
-		$this->assertSame('obj-1', $run->jsonSerialize()['subjects']['case']['uuid']);
+		$this->assertSame('obj-1', ((array)$run->jsonSerialize()['subjects'])['case']['uuid']);
 	}//end testTheDeclaredSubjectsSurviveSerialisation()
 }//end class

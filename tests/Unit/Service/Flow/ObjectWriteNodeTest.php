@@ -1250,6 +1250,10 @@ class ObjectWriteNodeTest extends TestCase {
 				'onConflict',
 				'onMissing',
 				'onNoMatch',
+				// The author's own word for what this object is to this flow, so a
+				// later step can attach its task to it by that name. Empty records
+				// nothing: the subject set is declared, never derived.
+				'subjectRole',
 			],
 			$this->node->configKeys()
 		);
