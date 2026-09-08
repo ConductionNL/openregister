@@ -38,6 +38,7 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -136,6 +137,7 @@ class DeleteObject {
 	 * @param LoggerInterface $logger Logger for error handling
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
 	 * @param IDBConnection $db Database connection for transactions
+	 * @param OrganisationMapper $organisationMapper Resolves the deleting user's active organisation for the audit trail
 	 * @param FileService|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapper|null $registerMapper Register mapper for register lookups
@@ -153,6 +155,7 @@ class DeleteObject {
 		LoggerInterface $logger,
 		ReferentialIntegrityService $integrityService,
 		IDBConnection $db,
+		private readonly OrganisationMapper $organisationMapper,
 		private readonly ?FileService $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper = null,
@@ -309,14 +312,11 @@ class DeleteObject {
 		// Get the active organization from session at time of deletion for audit trail.
 		$activeOrganisation = null;
 		if ($user !== null) {
-			// Access OrganisationMapper via DI container to get active organization.
 			try {
-				$organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
-				$activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+				$activeOrganisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
 			} catch (\Throwable $e) {
 				// If we can't get the active organisation, log and continue with null.
-				// Catches Error too so a null DB in tests (or a missing binding) doesn't
-				// abort the whole delete path.
+				// Catches Error too so a null DB in tests doesn't abort the whole delete path.
 				$this->logger->warning(
 					message: '[DeleteObject] Failed to get active organisation during delete',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
@@ -1016,8 +1016,7 @@ class DeleteObject {
 		if ($user !== null) {
 			$userId = $user->getUID();
 			try {
-				$mapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
-				$org = $mapper->getActiveOrganisationWithFallback($user->getUID());
+				$org = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
 			} catch (\Exception $e) {
 				$org = null;
 			}

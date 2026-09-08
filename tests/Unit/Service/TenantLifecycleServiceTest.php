@@ -8,7 +8,10 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -19,6 +22,9 @@ class TenantLifecycleServiceTest extends TestCase {
 
 	/** @var IGroupManager&MockObject */
 	private IGroupManager $groupManager;
+
+	/** @var IUserManager&MockObject */
+	private IUserManager $userManager;
 
 	/** @var IEventDispatcher&MockObject */
 	private IEventDispatcher $eventDispatcher;
@@ -31,12 +37,14 @@ class TenantLifecycleServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->userManager = $this->createMock(IUserManager::class);
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new TenantLifecycleService(
 			$this->organisationMapper,
 			$this->groupManager,
+			$this->userManager,
 			$this->eventDispatcher,
 			$this->logger
 		);
@@ -115,6 +123,42 @@ class TenantLifecycleServiceTest extends TestCase {
 
 		$this->assertEquals('active', $result->getStatus());
 		$this->assertNull($result->getSuspendedAt());
+	}
+
+	public function testProvisionAddsTheAdminUserToBothDefaultGroups(): void {
+		$org = new Organisation();
+		$org->setStatus('provisioning');
+		$org->setUuid('org-uuid');
+		$org->setSlug('acme');
+
+		$admin = $this->createMock(IUser::class);
+		$this->userManager->expects($this->once())
+			->method('get')
+			->with('alice')
+			->willReturn($admin);
+
+		$adminGroup = $this->createMock(IGroup::class);
+		$adminGroup->expects($this->once())->method('addUser')->with($admin);
+		$usersGroup = $this->createMock(IGroup::class);
+		$usersGroup->expects($this->once())->method('addUser')->with($admin);
+
+		$this->groupManager->method('groupExists')->willReturn(false);
+		$this->groupManager->expects($this->exactly(2))->method('createGroup');
+		$this->groupManager->method('get')
+			->willReturnMap([
+				['acme-admin', $adminGroup],
+				['acme-users', $usersGroup],
+			]);
+
+		$this->organisationMapper->expects($this->once())
+			->method('update')
+			->willReturnCallback(fn ($entity) => $entity);
+
+		$result = $this->service->provision($org, 'alice');
+
+		$this->assertEquals('active', $result->getStatus());
+		$this->assertSame(['acme-admin', 'acme-users'], $result->getGroups());
+		$this->assertContains('alice', $result->getUsers());
 	}
 
 	public function testDeprovisionSetsStatusAndTimestamp(): void {

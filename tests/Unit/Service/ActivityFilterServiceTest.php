@@ -38,6 +38,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Tests for ActivityFilterService.
@@ -67,7 +68,7 @@ class ActivityFilterServiceTest extends TestCase {
 			);
 		}
 
-		return new ActivityFilterService(db: $db, appManager: $appManager);
+		return new ActivityFilterService(db: $db, appManager: $appManager, logger: $this->createMock(LoggerInterface::class));
 	}//end buildService()
 
 	/**

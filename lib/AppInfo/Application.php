@@ -1934,7 +1934,7 @@ class Application extends App implements IBootstrap {
 		];
 		// Each greenfield provider now uses MarkerLookupTrait to query
 		// its upstream app's main table directly via IDBConnection. All
-		// share the same constructor signature (db, appManager, l10n).
+		// share the same constructor signature (db, appManager, l10n, logger).
 		foreach ($greenfieldProviders as $providerClass) {
 			$context->registerService(
 				$providerClass,
@@ -1943,6 +1943,7 @@ class Application extends App implements IBootstrap {
 						db: $container->get('OCP\IDBConnection'),
 						appManager: $container->get('OCP\App\IAppManager'),
 						l10n: $container->get('OCP\IL10N'),
+						logger: $container->get('Psr\Log\LoggerInterface'),
 					);
 				}
 			);
@@ -1962,6 +1963,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					formLinkMapper: $container->get(\OCA\OpenRegister\Db\FormLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2196,6 +2198,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2232,6 +2235,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2268,6 +2272,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2286,6 +2291,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2383,6 +2389,7 @@ class Application extends App implements IBootstrap {
 					l10n: $container->get('OCP\IL10N'),
 					linkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
 					config: $container->get('OCP\IConfig'),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);

@@ -34,8 +34,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
+/**
+ * Every class using this trait must declare a `LoggerInterface $logger`
+ * property (constructor-injected); the degraded path logs through it.
+ */
 trait MarkerLookupTrait {
 	/**
 	 * Find rows in an upstream NC app's table whose marker column
@@ -84,22 +89,13 @@ trait MarkerLookupTrait {
 
 			return $rows;
 		} catch (Throwable $e) {
-			// Log defensively. This catch exists to DEGRADE gracefully (AD-23),
-			// so the logging must not be able to fail louder than the thing it
-			// reports. `\OCP\Server::get()` yields null when no server container
-			// is up — under unit tests, for instance — and calling ->debug() on
-			// that turned every handled query failure into a fatal
-			// "Call to a member function debug() on null". Seven provider tests
-			// died in the error handler rather than in the code under test.
-			try {
-				\OCP\Server::get(\Psr\Log\LoggerInterface::class)?->debug(
-					'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
-					['exception' => $e]
-				);
-			} catch (Throwable $loggingFailure) {
-				// No logger reachable at all — the degraded return below is
-				// still the correct outcome, so swallow and carry on.
-			}
+			// This catch exists to DEGRADE gracefully (AD-23); the logger is
+			// constructor-injected by every using provider, so logging cannot
+			// fail louder than the thing it reports.
+			$this->logger->debug(
+				'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
 
 			// Schema mismatch / app uninstalled / column missing — empty list (AD-23).
 			return [];

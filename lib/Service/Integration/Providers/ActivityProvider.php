@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 
 class ActivityProvider extends AbstractIntegrationProvider {
 	use MarkerLookupTrait;
@@ -47,6 +48,7 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * @param IDBConnection $db Database connection.
 	 * @param IAppManager $appManager App manager for installation checks.
 	 * @param IL10N $l10n Localisation service.
+	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
 	 */
@@ -54,6 +56,7 @@ class ActivityProvider extends AbstractIntegrationProvider {
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
+		private LoggerInterface $logger,
 	) {
 	}//end __construct()
 
