@@ -33,6 +33,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -180,6 +181,13 @@ class RelationsController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * App container the pluggable leaf link services are resolved from.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
@@ -192,6 +200,7 @@ class RelationsController extends Controller {
 	 * @param ContactService $contactService Contact service
 	 * @param DeckCardService $deckCardService Deck card service
 	 * @param LoggerInterface $logger PSR-3 logger
+	 * @param ContainerInterface $container App container the leaf link services are resolved from
 	 *
 	 * @return void
 	 *
@@ -208,6 +217,7 @@ class RelationsController extends Controller {
 		ContactService $contactService,
 		DeckCardService $deckCardService,
 		LoggerInterface $logger,
+		ContainerInterface $container,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -219,6 +229,7 @@ class RelationsController extends Controller {
 		$this->contactService = $contactService;
 		$this->deckCardService = $deckCardService;
 		$this->logger = $logger;
+		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -374,7 +385,7 @@ class RelationsController extends Controller {
 
 			// Resolving the owning app's service is NOT part of the lookup, and
 			// failing to resolve it is not an error to report. An app that is
-			// absent or disabled makes Server::get() throw, and folding that
+			// absent or disabled makes the container throw, and folding that
 			// into $errors put an `_errors` key on a response where every
 			// requested lookup actually succeeded — the opposite of the
 			// "silently skipped, never breaks the core response" contract above,
@@ -382,12 +393,12 @@ class RelationsController extends Controller {
 			// keys. Only a failure of an AVAILABLE service's own call is an
 			// error worth surfacing.
 			try {
-				$service = \OCP\Server::get($spec['class']);
+				$service = $this->container->get($spec['class']);
 			} catch (\Throwable $e) {
 				continue;
 			}
 
-			// Server::get() does not always THROW when it cannot supply a
+			// The container does not always THROW when it cannot supply a
 			// service — it can hand back null. Calling the availability probe on
 			// that produced "Call to a member function isXAvailable() on null"
 			// for every leaf, which then landed in $errors.

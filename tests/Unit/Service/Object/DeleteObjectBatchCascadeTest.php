@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -128,7 +129,8 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 			$this->settingsService,
 			$this->createMock(LoggerInterface::class),
 			$this->integrityService,
-			$this->createMock(IDBConnection::class)
+			$this->createMock(IDBConnection::class),
+			$this->createMock(OrganisationMapper::class)
 		);
 
 		$this->userSession->method('getUser')->willReturn(null);

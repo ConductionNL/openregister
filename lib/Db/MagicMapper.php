@@ -5658,9 +5658,9 @@ class MagicMapper extends AbstractObjectMapper {
 			]
 		);
 
-		// Get register and schema mappers.
-		$registerMapper = \OC::$server->get(RegisterMapper::class);
-		$schemaMapper = \OC::$server->get(SchemaMapper::class);
+		// The mappers are constructor-injected; alias them for the lookups below.
+		$registerMapper = $this->registerMapper;
+		$schemaMapper = $this->schemaMapper;
 
 		// `_id` is a bigint column, so a non-numeric identifier (a UUID, slug or URI)
 		// must never be bound against it — it would type-error on PostgreSQL. -1 is a
@@ -6348,9 +6348,9 @@ class MagicMapper extends AbstractObjectMapper {
 			$uuidsByTable[$table][] = $uuid;
 		}
 
-		// Get register and schema mappers.
-		$registerMapper = \OC::$server->get(RegisterMapper::class);
-		$schemaMapper = \OC::$server->get(SchemaMapper::class);
+		// The mappers are constructor-injected; alias them for the lookups below.
+		$registerMapper = $this->registerMapper;
+		$schemaMapper = $this->schemaMapper;
 
 		// Cache for register/schema lookups.
 		static $registerCache = [];
@@ -6690,9 +6690,9 @@ class MagicMapper extends AbstractObjectMapper {
 			$uuidsByTable[$table][] = $foundUuid;
 		}
 
-		// Get register and schema mappers.
-		$registerMapper = \OC::$server->get(RegisterMapper::class);
-		$schemaMapper = \OC::$server->get(SchemaMapper::class);
+		// The mappers are constructor-injected; alias them for the lookups below.
+		$registerMapper = $this->registerMapper;
+		$schemaMapper = $this->schemaMapper;
 
 		// Cache for register/schema lookups.
 		static $registerCache = [];

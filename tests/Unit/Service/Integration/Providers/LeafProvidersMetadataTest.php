@@ -229,6 +229,7 @@ class LeafProvidersMetadataTest extends TestCase {
 				l10n: $l10n,
 				linkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
 				config: $config,
+				logger: $this->createMock(LoggerInterface::class),
 			);
 		}
 
@@ -246,14 +247,16 @@ class LeafProvidersMetadataTest extends TestCase {
 				$appManager,
 				$l10n,
 				$this->buildLinkMapper($trailingMapper[$class]),
+				$this->createMock(LoggerInterface::class),
 			);
 		}
 
-		// Default: plain (db, appManager, l10n) providers (Activity, ...).
+		// Default: plain (db, appManager, l10n, logger) providers (Activity, ...).
 		return new $class(
 			db: $db,
 			appManager: $appManager,
 			l10n: $l10n,
+			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end instantiateGreenfieldProvider()
 

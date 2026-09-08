@@ -265,6 +265,7 @@ class DoriathApplicationRegistrar {
 		}
 
 		try {
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Optional sibling app (keepiq): guarded by class_exists and try/catch, absent on most instances, so it cannot be a constructor dependency.
 			return Server::get(self::APPLICATION_SERVICE);
 		} catch (Throwable $e) {
 			$this->logger->warning(

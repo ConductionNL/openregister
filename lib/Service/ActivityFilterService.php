@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -77,10 +78,12 @@ class ActivityFilterService {
 	 *
 	 * @param IDBConnection $db NC DB connection.
 	 * @param IAppManager $appManager NC app manager (availability check).
+	 * @param LoggerInterface $logger Logger for the degraded (empty result) path.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IAppManager $appManager,
+		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -392,7 +395,7 @@ class ActivityFilterService {
 	 * @return void
 	 */
 	private function logFailure(string $context, Throwable $e): void {
-		\OCP\Server::get(\Psr\Log\LoggerInterface::class)->debug(
+		$this->logger->debug(
 			'[ActivityFilterService] ' . $context . ' failed: ' . $e->getMessage(),
 			['exception' => $e]
 		);

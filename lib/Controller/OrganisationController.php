@@ -1267,7 +1267,7 @@ class OrganisationController extends Controller {
 			$status = $organisation->getStatus() ?? TenantLifecycleService::STATUS_ACTIVE;
 
 			if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
-				$userId = \OC::$server->get(\OCP\IUserSession::class)->getUser()?->getUID() ?? 'admin';
+				$userId = $this->userSession->getUser()?->getUID() ?? 'admin';
 				$result = $this->tenantLifecycleService->provision($organisation, $userId);
 				return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 			}

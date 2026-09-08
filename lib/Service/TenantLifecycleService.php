@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
+use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -93,12 +94,14 @@ class TenantLifecycleService {
 	 *
 	 * @param OrganisationMapper $organisationMapper Organisation mapper
 	 * @param IGroupManager $groupManager Nextcloud group manager
+	 * @param IUserManager $userManager Nextcloud user manager, to look up the org admin
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		private readonly OrganisationMapper $organisationMapper,
 		private readonly IGroupManager $groupManager,
+		private readonly IUserManager $userManager,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
 	) {
@@ -213,7 +216,7 @@ class TenantLifecycleService {
 			$usersGroup = $this->groupManager->get($usersGroupId);
 
 			if ($adminGroup !== null) {
-				$user = \OC::$server->get(\OCP\IUserManager::class)->get($adminUserId);
+				$user = $this->userManager->get($adminUserId);
 				if ($user !== null) {
 					$adminGroup->addUser($user);
 					if ($usersGroup !== null) {

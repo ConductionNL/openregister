@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -108,6 +109,7 @@ class ConfigurationSettingsHandler {
 	 * @param IUserManager $userManager User manager.
 	 * @param OrganisationMapper $organisationMapper Organisation mapper.
 	 * @param LoggerInterface $logger Logger.
+	 * @param IAppManager $appManager App manager, read for the app's own version info.
 	 * @param string $appName Application name.
 	 *
 	 * @return void
@@ -118,6 +120,7 @@ class ConfigurationSettingsHandler {
 		IUserManager $userManager,
 		OrganisationMapper $organisationMapper,
 		LoggerInterface $logger,
+		private readonly IAppManager $appManager,
 		string $appName = 'openregister',
 	) {
 		$this->appConfig = $appConfig;
@@ -1293,8 +1296,7 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getVersionInfoOnly(): array {
 		try {
-			$appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
-			$appInfo = $appManager->getAppInfo($this->appName);
+			$appInfo = $this->appManager->getAppInfo($this->appName);
 
 			return [
 				'version' => ($appInfo['version'] ?? null) ?? 'unknown',

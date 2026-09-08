@@ -20,6 +20,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -27,6 +28,8 @@ use ReflectionClass;
  * Test class for NameCacheWarmupJob
  */
 class NameCacheWarmupJobTest extends TestCase {
+	use RegistersContainerServices;
+
 	private CacheHandler&MockObject $cacheHandler;
 	private LoggerInterface&MockObject $logger;
 	private NameCacheWarmupJob $job;
@@ -38,15 +41,15 @@ class NameCacheWarmupJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Register mocks into the container so run() can resolve them.
-		\OC::$server->registerService(CacheHandler::class, function () {
+		$this->registerService(CacheHandler::class, function () {
 			return $this->cacheHandler;
 		});
-		\OC::$server->registerService(LoggerInterface::class, function () {
+		$this->registerService(LoggerInterface::class, function () {
 			return $this->logger;
 		});
 
 		$timeFactory = $this->createMock(ITimeFactory::class);
-		$this->job = new NameCacheWarmupJob($timeFactory);
+		$this->job = new NameCacheWarmupJob($timeFactory, $this->containerMock());
 	}
 
 	/**

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapper;
@@ -108,12 +109,14 @@ class EndpointService {
 	 * @param LoggerInterface   $logger            Logger.
 	 * @param IUserSession      $userSession       Current user context.
 	 * @param IGroupManager     $groupManager      Group membership lookups.
+	 * @param AgentMapper       $agentMapper       Agent lookups for agent-type endpoints.
 	 */
 	public function __construct(
 		EndpointLogMapper $endpointLogMapper,
 		LoggerInterface $logger,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
+		private readonly AgentMapper $agentMapper,
 	) {
 		$this->endpointLogMapper = $endpointLogMapper;
 		$this->logger = $logger;
@@ -281,26 +284,15 @@ class EndpointService {
 	 */
 	private function executeAgentEndpoint(Endpoint $endpoint, array $request): array {
 		try {
-			// Get required services.
-			$agentMapper = \OC::$server->get(\OCA\OpenRegister\Db\AgentMapper::class);
-
 			$agentId = $endpoint->getTargetId();
 			$this->logger->info(
 				message: '[EndpointService] Executing agent endpoint',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'agentId' => $agentId]
 			);
 
-			// Find agent by UUID.
-			$agent = $agentMapper->findByUuid($agentId);
-
-			if ($agent === null) {
-				return [
-					'success' => false,
-					'statusCode' => 404,
-					'response' => null,
-					'error' => 'Agent not found: ' . $agentId,
-				];
-			}
+			// Find agent by UUID; the mapper throws when there is none, and the
+			// catch below turns that into the 500 envelope.
+			$this->agentMapper->findByUuid($agentId);
 
 			// Extract message from request.
 			$message = $request['data']['message'] ?? $request['message'] ?? '';

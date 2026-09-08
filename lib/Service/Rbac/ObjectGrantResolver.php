@@ -121,11 +121,11 @@ class ObjectGrantResolver {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
-	 * @param ContainerInterface|null $container Optional container override (tests only).
+	 * @param ContainerInterface $container App container the share manager is resolved from on demand.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ?ContainerInterface $container = null,
+		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 
@@ -501,14 +501,10 @@ class ObjectGrantResolver {
 	 * anything.
 	 *
 	 * @return IManager|null The manager, or null when unreachable.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Server::get() is Nextcloud's prescribed
-	 * service locator for optional late-bound dependencies.
 	 */
 	private function shareManager(): ?IManager {
 		try {
-			$container = ($this->container ?? \OCP\Server::get(ContainerInterface::class));
-			$manager = $container->get(IManager::class);
+			$manager = $this->container->get(IManager::class);
 			if (($manager instanceof IManager) === true) {
 				return $manager;
 			}

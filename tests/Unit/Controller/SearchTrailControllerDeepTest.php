@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SearchTrailController;
+use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -39,6 +40,7 @@ class SearchTrailControllerDeepTest extends TestCase {
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
+			$this->createMock(SearchTrailMapper::class),
 			$this->userSession,
 			$this->groupManager
 		);

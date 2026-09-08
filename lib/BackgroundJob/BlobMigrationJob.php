@@ -35,6 +35,7 @@ use OCP\BackgroundJob\TimedJob;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -69,10 +70,11 @@ class BlobMigrationJob extends TimedJob {
 	 * Constructor
 	 *
 	 * @param ITimeFactory $time Time factory for parent class
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function __construct(ITimeFactory $time) {
+	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL);
 	}//end __construct()
@@ -97,12 +99,12 @@ class BlobMigrationJob extends TimedJob {
 	protected function run($argument): void {
 		$startTime = microtime(true);
 
-		$logger = \OC::$server->get(LoggerInterface::class);
-		$db = \OC::$server->get(IDBConnection::class);
-		$appConfig = \OC::$server->get(IAppConfig::class);
-		$registerMapper = \OC::$server->get(RegisterMapper::class);
-		$schemaMapper = \OC::$server->get(SchemaMapper::class);
-		$magicMapper = \OC::$server->get(MagicMapper::class);
+		$logger = $this->container->get(LoggerInterface::class);
+		$db = $this->container->get(IDBConnection::class);
+		$appConfig = $this->container->get(IAppConfig::class);
+		$registerMapper = $this->container->get(RegisterMapper::class);
+		$schemaMapper = $this->container->get(SchemaMapper::class);
+		$magicMapper = $this->container->get(MagicMapper::class);
 
 		$logger->info(
 			message: '[BlobMigrationJob] Starting blob-to-magic migration batch',

@@ -30,6 +30,7 @@ use OCP\IAppConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -37,6 +38,8 @@ use ReflectionClass;
  * Test class for BlobMigrationJob
  */
 class BlobMigrationJobTest extends TestCase {
+	use RegistersContainerServices;
+
 	private ITimeFactory&MockObject $timeFactory;
 	private LoggerInterface&MockObject $logger;
 	private IDBConnection&MockObject $db;
@@ -45,80 +48,8 @@ class BlobMigrationJobTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
 	private MagicMapper&MockObject $magicMapper;
 
-	/**
-	 * The real, container-resolved instances for every service id this test
-	 * overrides in \OC::$server, captured once (before this class's first
-	 * override) so tearDown() can restore them.
-	 *
-	 * BlobMigrationJob is instantiated by Nextcloud's background-job runner
-	 * with a fixed `ITimeFactory`-only constructor, so — unlike most services
-	 * in this suite — its other dependencies cannot be handed in via the
-	 * constructor; the job resolves them itself via `\OCP\Server::get()`.
-	 * That forces this test to fake resolution by registering mocks directly
-	 * on the process-wide `\OC::$server` container. Without a matching
-	 * restore, those mocks leak into every LATER test in the same PHPUnit
-	 * process that resolves the same service id (e.g.
-	 * RelationsControllerTest's pluggable leaf integrations, which construct
-	 * MapLinkService/PollLinkService/etc. through the real container and
-	 * transitively need a real IDBConnection) — the leaked mock has no
-	 * configured expectations by then and throws, which
-	 * RelationsController::gatherRelations() catches and surfaces as a
-	 * spurious `_errors` entry.
-	 *
-	 * @var array<class-string, object>
-	 */
-	private static array $originalServices = [];
-
-	/**
-	 * Whether {@see self::$originalServices} has been captured yet.
-	 *
-	 * @var bool
-	 */
-	private static bool $originalsCaptured = false;
-
 	protected function setUp(): void {
 		parent::setUp();
-
-		// 🔴 REFUSE BEFORE TOUCHING THE CONTAINER, and say what is unverified.
-		//
-		// This class resolves REAL services out of `\OC::$server` in order to
-		// restore them afterwards. On a box where the bootstrap found an NC root
-		// it could not initialise, that resolution does not fail — it RUNS AWAY.
-		// Measured 2026-08-26: `ServerContainer::get()` allocated until the
-		// process died, at 2GB and then identically at 5GB, at test 259 of
-		// 17,359. Raising the limit changed nothing because it is not a size
-		// problem, and the fatal takes the OTHER 17,100 TESTS WITH IT — the whole
-		// local suite reported as one PHP fatal rather than as one bad fixture.
-		//
-		// The bootstrap already knows this happened: its catch sets
-		// OPENREGISTER_TEST_SKIP_NC=1 when NC would not initialise. Its comment
-		// promises container-bound tests "will fail clearly"; this is the class
-		// where that promise was not kept.
-		//
-		// A skip is honest here ONLY because the message names what went
-		// untested. "Skipped" alone cannot tell "no NC" from "the job is broken",
-		// and reporting the second as the first is how a defect hides.
-		if (getenv('OPENREGISTER_TEST_SKIP_NC') === '1') {
-			$this->markTestSkipped(
-				'No initialised Nextcloud server in scope, so BlobMigrationJob\'s '
-				. '\\OCP\\Server::get() resolution is UNVERIFIED by this run — the blob '
-				. 'migration batching, its completion flag and its orphan grouping were '
-				. 'not exercised. Run inside a working NC checkout, or set '
-				. 'OPENREGISTER_TEST_NC_ROOT, to test them. CI always has one.'
-			);
-		}
-
-		if (self::$originalsCaptured === false) {
-			self::$originalServices = [
-				LoggerInterface::class => \OC::$server->get(LoggerInterface::class),
-				IDBConnection::class => \OC::$server->get(IDBConnection::class),
-				IAppConfig::class => \OC::$server->get(IAppConfig::class),
-				RegisterMapper::class => \OC::$server->get(RegisterMapper::class),
-				SchemaMapper::class => \OC::$server->get(SchemaMapper::class),
-				MagicMapper::class => \OC::$server->get(MagicMapper::class),
-			];
-			self::$originalsCaptured = true;
-		}
 
 		$this->timeFactory = $this->createMock(ITimeFactory::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -130,41 +61,29 @@ class BlobMigrationJobTest extends TestCase {
 	}
 
 	/**
-	 * Restore the real \OC::$server bindings captured in setUp() so this
-	 * test's mocks never leak into a later test's container resolution.
-	 */
-	protected function tearDown(): void {
-		foreach (self::$originalServices as $id => $instance) {
-			\OC::$server->registerService($id, static fn () => $instance);
-		}
-
-		parent::tearDown();
-	}
-
-	/**
-	 * Create the job instance and register mocks in \OC::$server.
+	 * Create the job instance and register mocks on the injected container.
 	 */
 	private function makeJob(): BlobMigrationJob {
-		\OC::$server->registerService(LoggerInterface::class, function () {
+		$this->registerService(LoggerInterface::class, function () {
 			return $this->logger;
 		});
-		\OC::$server->registerService(IDBConnection::class, function () {
+		$this->registerService(IDBConnection::class, function () {
 			return $this->db;
 		});
-		\OC::$server->registerService(IAppConfig::class, function () {
+		$this->registerService(IAppConfig::class, function () {
 			return $this->appConfig;
 		});
-		\OC::$server->registerService(RegisterMapper::class, function () {
+		$this->registerService(RegisterMapper::class, function () {
 			return $this->registerMapper;
 		});
-		\OC::$server->registerService(SchemaMapper::class, function () {
+		$this->registerService(SchemaMapper::class, function () {
 			return $this->schemaMapper;
 		});
-		\OC::$server->registerService(MagicMapper::class, function () {
+		$this->registerService(MagicMapper::class, function () {
 			return $this->magicMapper;
 		});
 
-		return new BlobMigrationJob($this->timeFactory);
+		return new BlobMigrationJob($this->timeFactory, $this->containerMock());
 	}
 
 	/**

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -137,7 +138,8 @@ class DeleteObjectScopedTest extends TestCase {
 			$this->settingsService,
 			$this->logger,
 			$this->integrityService,
-			$this->createMock(IDBConnection::class)
+			$this->createMock(IDBConnection::class),
+			$this->createMock(OrganisationMapper::class)
 		);
 
 	}//end setUp()

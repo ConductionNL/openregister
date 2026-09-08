@@ -50,6 +50,7 @@ use OCP\App\IAppManager;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 class TimeProvider extends AbstractIntegrationProvider {
@@ -85,6 +86,7 @@ class TimeProvider extends AbstractIntegrationProvider {
 	 * @param IL10N $l10n Localisation.
 	 * @param TimeTrackerLinkMapper $linkMapper Time-tracker-link mapper (Tier-2 link table).
 	 * @param IConfig $config NC config (reads the time-tracker.backend admin override).
+	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
 	 */
@@ -94,6 +96,7 @@ class TimeProvider extends AbstractIntegrationProvider {
 		private IL10N $l10n,
 		private TimeTrackerLinkMapper $linkMapper,
 		private IConfig $config,
+		private LoggerInterface $logger,
 	) {
 	}//end __construct()
 

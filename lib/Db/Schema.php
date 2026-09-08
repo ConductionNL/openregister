@@ -2604,11 +2604,14 @@ class Schema extends Entity implements JsonSerializable {
 	/**
 	 * Resolve the current set of registered integration ids.
 	 *
-	 * Schema is a Nextcloud Entity, not a service — DI doesn't
-	 * reach it. We pull the registry from the server container at
-	 * validation time. Failures (tests without a booted container,
-	 * missing service binding) fall through to an empty list so the
-	 * legacy allow-list path keeps working.
+	 * Schema is a Nextcloud Entity, not a service, so DI does not reach it,
+	 * and this is the one place in lib/ (outside AppInfo, AppHost and
+	 * Migration) that still reads the global server. It runs from
+	 * setConfiguration(), which every mapper calls while hydrating a row and
+	 * which some thirty call sites reach; threading the registry ids through
+	 * all of them is a change of its own. Until then the lookup stays behind
+	 * the isset() guard: without a booted container (unit tests, occ before
+	 * boot) it returns an empty list and the legacy allow-list keeps working.
 	 *
 	 * @return array<int,string> Registered integration ids, possibly empty.
 	 */
@@ -2618,6 +2621,7 @@ class Schema extends Entity implements JsonSerializable {
 		}
 
 		try {
+			// phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors,CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- entity, not DI-built; see the docblock above.
 			$registry = \OC::$server->get(
 				\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
 			);

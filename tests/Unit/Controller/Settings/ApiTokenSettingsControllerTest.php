@@ -6,6 +6,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\Http\Client\IClient;
+use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -17,6 +20,7 @@ class ApiTokenSettingsControllerTest extends TestCase {
 	private IRequest&MockObject $request;
 	private IAppConfig&MockObject $config;
 	private SettingsService&MockObject $settingsService;
+	private IClientService&MockObject $clientService;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -25,6 +29,7 @@ class ApiTokenSettingsControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->config = $this->createMock(IAppConfig::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
+		$this->clientService = $this->createMock(IClientService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new ApiTokenSettingsController(
@@ -32,6 +37,7 @@ class ApiTokenSettingsControllerTest extends TestCase {
 			$this->request,
 			$this->config,
 			$this->settingsService,
+			$this->clientService,
 			$this->logger
 		);
 	}
@@ -186,14 +192,45 @@ class ApiTokenSettingsControllerTest extends TestCase {
 	public function testTestGitHubTokenUsesTokenFromRequest(): void {
 		// When token is in request params, config is not queried.
 		$this->request->method('getParams')->willReturn(['token' => 'ghp_request_token']);
+		$this->config->expects($this->never())->method('getValueString');
 
-		// The actual HTTP call will fail in unit test context since OC::$server is
-		// bootstrapped but the HTTP client call to GitHub will fail.
-		// We verify the exception path (400 response).
+		$response = $this->createMock(IResponse::class);
+		$response->method('getBody')->willReturn(json_encode(['login' => 'octocat']));
+		$response->method('getHeader')->willReturn('repo, read:org');
+
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->once())
+			->method('get')
+			->with(
+				'https://api.github.com/user',
+				$this->callback(
+					fn (array $options): bool => ($options['headers']['Authorization'] ?? null) === 'Bearer ghp_request_token'
+				)
+			)
+			->willReturn($response);
+		$this->clientService->method('newClient')->willReturn($client);
+
 		$result = $this->controller->testGitHubToken();
 
-		// Either 200 (if HTTP call succeeds — unlikely in unit tests) or 400 (expected).
-		$this->assertContains($result->getStatus(), [200, 400]);
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertSame('octocat', $data['username']);
+	}
+
+	public function testTestGitHubTokenReturns400WhenTheProbeThrows(): void {
+		$this->request->method('getParams')->willReturn(['token' => 'ghp_bad']);
+
+		$client = $this->createMock(IClient::class);
+		$client->method('get')->willThrowException(new \RuntimeException('401 Unauthorized'));
+		$this->clientService->method('newClient')->willReturn($client);
+
+		$result = $this->controller->testGitHubToken();
+
+		$this->assertEquals(400, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertStringContainsString('401 Unauthorized', $data['message']);
 	}
 
 	public function testTestGitLabTokenUsesUrlFromRequest(): void {
@@ -203,11 +240,26 @@ class ApiTokenSettingsControllerTest extends TestCase {
 			'url' => 'https://mygitlab.example.com/api/v4',
 		]);
 
-		// The actual HTTP call will fail — verify exception path.
+		$response = $this->createMock(IResponse::class);
+		$response->method('getBody')->willReturn(json_encode(['username' => 'jdoe']));
+
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->once())
+			->method('get')
+			->with(
+				'https://mygitlab.example.com/api/v4/user',
+				['headers' => ['PRIVATE-TOKEN' => 'glpat_sometoken']]
+			)
+			->willReturn($response);
+		$this->clientService->method('newClient')->willReturn($client);
+
 		$result = $this->controller->testGitLabToken();
 
-		$this->assertContains($result->getStatus(), [200, 400]);
-		$this->assertArrayHasKey('success', $result->getData());
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertSame('jdoe', $data['username']);
+		$this->assertSame('https://mygitlab.example.com/api/v4', $data['instance']);
 	}
 
 	public function testTestGitLabTokenDefaultsToGitLabDotCom(): void {
@@ -219,10 +271,17 @@ class ApiTokenSettingsControllerTest extends TestCase {
 				['openregister', 'gitlab_api_url', 'https://gitlab.com/api/v4', ''],
 			]);
 
-		// HTTP call will fail — verify exception path returns 400.
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->once())
+			->method('get')
+			->with('https://gitlab.com/api/v4/user', $this->anything())
+			->willThrowException(new \RuntimeException('connection refused'));
+		$this->clientService->method('newClient')->willReturn($client);
+
 		$result = $this->controller->testGitLabToken();
 
-		$this->assertContains($result->getStatus(), [200, 400]);
+		$this->assertEquals(400, $result->getStatus());
+		$this->assertFalse($result->getData()['success']);
 	}
 
 	public function testSaveApiTokensMaskedGithubTokenNotSaved(): void {
