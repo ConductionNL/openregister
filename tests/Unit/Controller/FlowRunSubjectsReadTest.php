@@ -122,7 +122,7 @@ final class FlowRunSubjectsReadTest extends TestCase {
 		$data = $this->controller($this->aRun())->show('run-1')->getData();
 
 		$this->assertArrayHasKey('subjects', $data);
-		$this->assertSame('obj-case', $data['subjects']['case']['uuid']);
+		$this->assertSame('obj-case', ((array)$data['subjects'])['case']['uuid']);
 	}//end testTheRunReadCarriesTheDeclaredSubjects()
 
 	/**
@@ -138,7 +138,12 @@ final class FlowRunSubjectsReadTest extends TestCase {
 		$run = new FlowRun();
 		$run->setUuid('run-1');
 
-		$this->assertSame([], $this->controller($run)->show('run-1')->getData()['subjects']);
+		// An OBJECT, so the wire shape is one thing whether or not anything is
+		// declared: `json_encode` turns an empty PHP array into `[]`.
+		$this->assertSame(
+			'{}',
+			json_encode($this->controller($run)->show('run-1')->getData()['subjects'])
+		);
 	}//end testARunThatDeclaredNothingAnswersAnEmptySet()
 
 	/**
@@ -177,7 +182,7 @@ final class FlowRunSubjectsReadTest extends TestCase {
 
 		$controller = $this->controller($this->aRun(), $audits);
 
-		$declared = $controller->show('run-1')->getData()['subjects'];
+		$declared = (array)$controller->show('run-1')->getData()['subjects'];
 		$this->assertSame('obj-case', $declared['case']['uuid']);
 
 		$touched = json_encode($controller->objects('run-1')->getData());

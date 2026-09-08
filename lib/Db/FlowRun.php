@@ -468,7 +468,14 @@ class FlowRun extends Entity implements JsonSerializable {
 			'context' => ($this->context ?? []),
 			'log' => ($this->log ?? []),
 			'subjectUuid' => $this->subjectUuid,
-			'subjects' => ($this->subjects ?? []),
+			// 🔴 AN OBJECT, NEVER AN EMPTY ARRAY. `json_encode` turns an empty
+			// PHP array into `[]`, so a run that declared nothing served a JSON
+			// ARRAY where every populated run serves a MAP — and a typed client
+			// cannot read both. Casting keeps the shape one thing: `{}` when
+			// nothing is declared, `{"case": …}` when something is. Measured in
+			// CI, where the Newman collection read `[]` and could not tell an
+			// empty set from a wrong type.
+			'subjects' => (object)($this->subjects ?? []),
 			'subjectRegister' => $this->subjectRegister,
 			'subjectSchema' => $this->subjectSchema,
 			'triggeredBy' => $this->triggeredBy,
