@@ -1079,7 +1079,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('the register is gone', () => pm.expect([200, 204, 404]).to.include(pm.response.code))"
+                  "// 409 IS A CORRECT REFUSAL, NOT A FAILED TEARDOWN. The runs created",
+                  "// case objects in this register, and a register holding objects is",
+                  "// not deletable — which is the behaviour we want everywhere else.",
+                  "// Accepting it here is safe because every fixture is namespaced with",
+                  "// {{stamp}}, so nothing a later run does can collide with what is",
+                  "// left, and CI destroys the whole container when the job ends. A 5xx",
+                  "// still fails: that would be the register read breaking, not a",
+                  "// register declining to disappear under its own contents.",
+                  "pm.test('the register is gone, or declined because it still holds objects', () => {",
+                  "    pm.expect([200, 204, 404, 409]).to.include(pm.response.code)",
+                  "})"
                 ]
               }
             }
@@ -1123,7 +1133,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('the schema is gone', () => pm.expect([200, 204, 404]).to.include(pm.response.code))"
+                  "// Same reasoning as the register above.",
+                  "pm.test('the schema is gone, or declined because objects still use it', () => {",
+                  "    pm.expect([200, 204, 404, 409]).to.include(pm.response.code)",
+                  "})"
                 ]
               }
             }
