@@ -2621,7 +2621,7 @@ class Schema extends Entity implements JsonSerializable {
 		}
 
 		try {
-			// phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors -- entity, not DI-built; see the docblock above.
+			// phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors,CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- entity, not DI-built; see the docblock above.
 			$registry = \OC::$server->get(
 				\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
 			);

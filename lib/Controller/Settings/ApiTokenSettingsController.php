@@ -199,7 +199,7 @@ class ApiTokenSettingsController extends Controller {
 					'success' => true,
 					'message' => 'GitHub token is valid',
 					'username' => $data['login'] ?? 'Unknown',
-					'scopes' => $response->getHeader('X-OAuth-Scopes') ?? [],
+					'scopes' => $response->getHeader('X-OAuth-Scopes'),
 				]
 			);
 		} catch (\Throwable $e) {

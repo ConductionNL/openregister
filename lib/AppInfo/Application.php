@@ -2012,6 +2012,7 @@ class Application extends App implements IBootstrap {
 					userSession: $container->get('OCP\IUserSession'),
 					urlGenerator: $container->get('OCP\IURLGenerator'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
+					container: $container,
 				);
 			}
 		);
@@ -2161,6 +2162,7 @@ class Application extends App implements IBootstrap {
 				return new ActivityFilterService(
 					db: $container->get('OCP\IDBConnection'),
 					appManager: $container->get('OCP\App\IAppManager'),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2369,6 +2371,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					userSession: $container->get('OCP\IUserSession'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
+					container: $container,
 				);
 			}
 		);

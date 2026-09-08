@@ -290,17 +290,9 @@ class EndpointService {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'agentId' => $agentId]
 			);
 
-			// Find agent by UUID.
-			$agent = $this->agentMapper->findByUuid($agentId);
-
-			if ($agent === null) {
-				return [
-					'success' => false,
-					'statusCode' => 404,
-					'response' => null,
-					'error' => 'Agent not found: ' . $agentId,
-				];
-			}
+			// Find agent by UUID; the mapper throws when there is none, and the
+			// catch below turns that into the 500 envelope.
+			$this->agentMapper->findByUuid($agentId);
 
 			// Extract message from request.
 			$message = $request['data']['message'] ?? $request['message'] ?? '';
