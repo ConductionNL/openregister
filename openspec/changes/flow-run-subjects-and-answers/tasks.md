@@ -37,4 +37,13 @@
 
   ⚠️ **Newman, not Playwright.** `playwright.config.ts` excludes `**/api-direct/**` from every project, so a Playwright spec for an HTTP contract runs only when a developer invokes an ad-hoc config by hand and CI executes none of it — a green spec and zero CI coverage look identical from the outside. `tests/newman/openregister-flow-subjects.postman_collection.json`, registered in `run-all.sh`, which `api-test-coverage.yml` runs on every PR. Same move as the `delegation` and `register-descriptors` collections.
 - [x] 6.2 `attachTo` naming an unheld role fails the step and leaves no task — folder 3 of the same collection.
-- [ ] 6.3 `composer check:strict`, both l10n gates, full unit suite. Exit code, not summary line.
+- [x] 6.3 `composer check:strict`, both l10n gates, full unit suite. Exit code, not summary line.
+
+  Measured 2026-09-08, every one by exit code rather than by its summary:
+  `lint` clean, `phpcs` rc=0, `phpmd` swept PER DIRECTORY with the baseline
+  (E=0 — the whole-`lib/` run is OOM-killed and reports that as a pass),
+  `psalm` rc=0, `phpstan` rc=0 ("No errors"), `phpunit` rc=0 over 19,434
+  tests, `test:l10n` rc=0 and `test:l10n:parity` rc=0 across all 36 locales.
+
+  ⚠️ The CLAUDE.md "Known state" note saying `npm run test:l10n` is red at
+  HEAD is STALE: it passes, and the 17 keys it names are present.
