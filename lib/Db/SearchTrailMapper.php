@@ -777,6 +777,41 @@ class SearchTrailMapper extends QBMapper {
 	}//end clearLogs()
 
 	/**
+	 * Clear all search trail logs, expired or not.
+	 *
+	 * The admin clear-all endpoint deletes every row; {@see clearLogs()} only
+	 * removes the expired ones.
+	 *
+	 * @return bool True if any logs were deleted, false otherwise
+	 *
+	 * @throws \Exception Database operation exceptions
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+	 */
+	public function clearAllLogs(): bool {
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->delete($this->getTableName());
+
+			$result = $qb->executeStatement();
+
+			return $result > 0;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[SearchTrailMapper] Failed to clear all search trail logs: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'app' => 'openregister',
+					'exception' => $e,
+				]
+			);
+
+			throw $e;
+		}//end try
+	}//end clearAllLogs()
+
+	/**
 	 * Apply filters to the query builder
 	 *
 	 * @param IQueryBuilder $qb The query builder
