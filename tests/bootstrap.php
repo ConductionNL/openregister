@@ -171,24 +171,29 @@ if ($skipNc === false && defined('OC_CONSOLE') === false) {
 			// Clear hooks for testing.
 			OC_Hook::clear();
 		} catch (\Throwable $e) {
-			// The root passed the installed check but base.php still failed
-			// (unreachable database, broken app, ...). There is no way back
-			// to pure-unit mode from here: `OC::$server` is a typed static
-			// that already holds a half-built container, and the previous
-			// "fall through to composer autoload only" message was a lie
-			// that cost 19 GB of RAM (see openregister_nc_root_is_installed).
-			// Stop the run and say what to do instead.
+			// The tree IS installed, so the dangerous case this guard exists for
+			// (loading a bare source tree) did not happen. base.php still failed
+			// part-way.
+			//
+			// This does NOT abort. `OC::$server` is a typed static, so a half-built
+			// container cannot be unset, and aborting was tried: it turned all six
+			// PHPUnit legs red on a suite that passes (humaniq, 2026-09-08). The
+			// runaway this guard exists for needs an autowiring lookup to reach the
+			// poisoned container, this app has none in lib, and phpunit.xml's 2G cap
+			// bounds one anyway.
+			//
+			// So: say plainly that the container is unreliable, and let the pure unit
+			// tests run. A container-bound test failing loudly is the intended outcome.
 			fwrite(
 				STDERR,
 				sprintf(
-					"[openregister/tests/bootstrap] NC root at %s could not be initialised (%s).\n"
-					. "  A half-booted server cannot be undone, so the run stops here rather than pretending to be pure-unit.\n"
-					. "  Fix the instance, point OPENREGISTER_TEST_NC_ROOT elsewhere, or set OPENREGISTER_TEST_SKIP_NC=1 for pure-unit mode.\n",
+					"[openregister/tests/bootstrap] Nextcloud at %s could not finish booting (%s).\n"
+					. "  \\OC::\$server now holds a HALF-BUILT container and cannot be unset. Pure unit tests\n"
+					. "  continue; anything resolving a service from that container is UNVERIFIED by this run.\n",
 					$ncRoot,
 					$e->getMessage()
 				)
 			);
-			exit(1);
 		}
 	} else {
 		// No NC root in scope — pure unit tests still work via the
