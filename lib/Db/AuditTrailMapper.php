@@ -379,12 +379,19 @@ class AuditTrailMapper extends QBMapper {
 				continue;
 			}
 
-			$direction = 'ASC';
-			if (strtoupper($direction) === 'DESC') {
-				$direction = 'DESC';
+			// The default is assigned to a SEPARATE name. Writing it back over
+			// `$direction` first, then testing `$direction`, compares the
+			// default with itself, so the branch can never be taken and every
+			// sort this mapper is given comes back ASCENDING. `findAll()`
+			// defaults to `['created' => 'DESC']` and returned oldest-first
+			// regardless, which is how a case history read bottom-up on the
+			// page while both the caller and this signature said newest-first.
+			$order = 'ASC';
+			if (strtoupper((string)$direction) === 'DESC') {
+				$order = 'DESC';
 			}
 
-			$qb->addOrderBy($field, $direction);
+			$qb->addOrderBy($field, $order);
 		}//end foreach
 
 		// Apply pagination.
