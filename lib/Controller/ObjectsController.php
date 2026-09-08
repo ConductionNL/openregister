@@ -833,7 +833,7 @@ class ObjectsController extends Controller {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
-		$magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 		$registerMapper = $this->registerMapper;
 		$schemaMapper = $this->schemaMapper;
 
@@ -935,7 +935,7 @@ class ObjectsController extends Controller {
 		// and an admin is not exempt from the writeOnly render boundary (#389).
 		// No `?? true` fallback: this method sets $query['_rbac'] unconditionally
 		// a few lines above, so the key is always present here.
-		$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 		// No `?? true` on THIS path: `_rbac` is assigned unconditionally above and
 		// the unset() in between does not remove it, so the fallback was dead --
 		// and had it ever fired it would have forced the RBAC strip on exactly the
@@ -1171,7 +1171,7 @@ class ObjectsController extends Controller {
 			// which delegates to the registered provider (object-source-providers).
 			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
 				// Use MagicMapper for magic-mapped schemas.
-				$magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
 				// Build search query with resolved numeric IDs.
 				$query = $objectService->buildSearchQuery(
@@ -1214,7 +1214,7 @@ class ObjectsController extends Controller {
 
 				// Apply complex rendering if needed (extensions, fields, filters).
 				if ($hasComplexRendering === true && is_array($results) === true && empty($results) === false) {
-					$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+					$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 					$serializedResults = $renderHandler->renderEntities(
 						entities: $results,
 						_extend: $extend,
@@ -1235,7 +1235,7 @@ class ObjectsController extends Controller {
 					// `$rbac` is `($isAdmin === false)` and gates ONLY the property
 					// `authorization.read` strip — writeOnly strips unconditionally, admin
 					// included (#389/#460).
-					$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+					$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 					$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
 
 					$serializedResults = [];
@@ -1303,7 +1303,7 @@ class ObjectsController extends Controller {
 				// Get active organisation for debugging metadata.
 				$activeOrganisation = null;
 				try {
-					$organisationService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
+					$organisationService = $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
 					$activeOrg = $organisationService?->getActiveOrganisation();
 					$activeOrganisation = $activeOrg?->getUuid();
 				} catch (\Throwable $e) {
@@ -1688,7 +1688,7 @@ class ObjectsController extends Controller {
 			);
 
 			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
-				$magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
 				$countQuery = $query;
 				unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
@@ -2215,7 +2215,7 @@ class ObjectsController extends Controller {
 						|| in_array($schemaSlug, $magicMappingSchemas, true) === true)
 					) {
 						// Use MagicMapper for magic-mapped schemas.
-						$magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+						$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
 						// Build search query with resolved numeric IDs.
 						$query = $objectService->buildSearchQuery(
@@ -2235,7 +2235,7 @@ class ObjectsController extends Controller {
 						// ocon#147) — this direct-magic-mapper path bypasses renderEntity.
 						// `_rbac` (false for an admin) gates only the property
 						// `authorization.read` strip; writeOnly strips unconditionally (#460).
-						$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+						$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 						$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
 						// Convert ObjectEntity array to JSON-serializable format.

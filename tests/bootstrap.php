@@ -32,6 +32,49 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // live NC beat the stubs to declaring `OC`.
 
 /**
+ * Tell whether a Nextcloud root is an INSTALLED instance, not just a source tree.
+ *
+ * `lib/base.php` from a source tree that was never installed still declares
+ * `OC` and builds `\OC::$server` before it throws "Not installed". That server
+ * cannot be undone (`OC::$server` is a typed static), so from then on every
+ * `\OC::$server->get()` in the code under test hits a container that knows
+ * none of this app's registrations and autowires from scratch. Autowiring the
+ * MagicMapper -> SettingsService -> ValidationOperationsHandler -> ValidateObject
+ * cycle then recurses until memory runs out: one test took 19 GB and 6 GB of swap
+ * on 2026-09-08. So the decision has to be made BEFORE base.php is loaded, and
+ * the only cheap signal is the `installed` flag in config/config.php.
+ *
+ * @param string $ncRoot Candidate Nextcloud root.
+ *
+ * @return bool True when config/config.php declares `installed => true`.
+ */
+function openregister_nc_root_is_installed(string $ncRoot): bool {
+	$configFile = $ncRoot . '/config/config.php';
+	if (is_file($configFile) === false || filesize($configFile) === 0) {
+		return false;
+	}
+
+	// The config file is a plain `$CONFIG = [...]` script; including it in a
+	// closure keeps `$CONFIG` out of the global scope.
+	$config = (static function () use ($configFile): array {
+		$CONFIG = [];
+		try {
+			include $configFile;
+		} catch (\Throwable) {
+			return [];
+		}
+
+		if (is_array($CONFIG) === false) {
+			return [];
+		}
+
+		return $CONFIG;
+	})();
+
+	return ($config['installed'] ?? false) === true;
+}
+
+/**
  * Resolve the Nextcloud installation root.
  *
  * Priority:
@@ -41,7 +84,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
  *   2. Walk up from this file looking for a `lib/base.php` whose
  *      parent also looks like an NC root (must have `apps/` and
  *      `core/` siblings — the source tree shape, not just any random
- *      `lib/base.php`).
+ *      `lib/base.php`) AND is installed (see openregister_nc_root_is_installed).
+ *      A bare source tree is skipped, so the run stays in pure-unit mode.
  *   3. Legacy fallback: `__DIR__ . '/../../../'` (the original behaviour
  *      when openregister is checked out under `apps-extra/`).
  *
@@ -53,7 +97,20 @@ require_once __DIR__ . '/../vendor/autoload.php';
 function openregister_locate_nc_root(): ?string {
 	$explicit = getenv('OPENREGISTER_TEST_NC_ROOT');
 	if (is_string($explicit) === true && $explicit !== '' && is_file($explicit . '/lib/base.php') === true) {
-		return rtrim($explicit, '/');
+		$explicit = rtrim($explicit, '/');
+		if (openregister_nc_root_is_installed($explicit) === false) {
+			fwrite(
+				STDERR,
+				sprintf(
+					"[openregister/tests/bootstrap] OPENREGISTER_TEST_NC_ROOT=%s is not an installed Nextcloud (config/config.php lacks installed => true).\n"
+					. "  Loading it would leave a half-built server container behind. Point it at an installed instance, or unset it for pure-unit mode.\n",
+					$explicit
+				)
+			);
+			exit(1);
+		}
+
+		return $explicit;
 	}
 
 	$dir = __DIR__;
@@ -71,7 +128,13 @@ function openregister_locate_nc_root(): ?string {
 			&& is_dir($dir . '/apps') === true
 			&& is_dir($dir . '/core') === true
 		) {
-			return $dir;
+			// A bare source tree (config.php empty or absent) is not a root we
+			// can boot; the caller reports pure-unit mode once, below.
+			if (openregister_nc_root_is_installed($dir) === true) {
+				return $dir;
+			}
+
+			return null;
 		}
 	}
 
@@ -108,38 +171,24 @@ if ($skipNc === false && defined('OC_CONSOLE') === false) {
 			// Clear hooks for testing.
 			OC_Hook::clear();
 		} catch (\Throwable $e) {
-			// The NC root we found exists but isn't installed (e.g. a
-			// bare server checkout used as the parent of multiple
-			// worktrees). Fall through to pure-unit mode rather than
-			// aborting the test run — the failing message above is
-			// less actionable than the bootstrap message below.
+			// The root passed the installed check but base.php still failed
+			// (unreachable database, broken app, ...). There is no way back
+			// to pure-unit mode from here: `OC::$server` is a typed static
+			// that already holds a half-built container, and the previous
+			// "fall through to composer autoload only" message was a lie
+			// that cost 19 GB of RAM (see openregister_nc_root_is_installed).
+			// Stop the run and say what to do instead.
 			fwrite(
 				STDERR,
 				sprintf(
 					"[openregister/tests/bootstrap] NC root at %s could not be initialised (%s).\n"
-					. "  Falling through to composer autoload only — pure unit tests will run; container-bound tests will fail clearly.\n"
-					. "  Set OPENREGISTER_TEST_SKIP_NC=1 to silence this and skip NC bootstrap entirely.\n",
+					. "  A half-booted server cannot be undone, so the run stops here rather than pretending to be pure-unit.\n"
+					. "  Fix the instance, point OPENREGISTER_TEST_NC_ROOT elsewhere, or set OPENREGISTER_TEST_SKIP_NC=1 for pure-unit mode.\n",
 					$ncRoot,
 					$e->getMessage()
 				)
 			);
-
-			// Say it once, then silence any child process — the same guard the
-			// "no NC root" branch below already carries, which this branch was
-			// missing.
-			//
-			// A `@runInSeparateProcess` test re-runs this bootstrap in a forked
-			// PHPUnit worker, and ANY output from that worker corrupts the
-			// channel PHPUnit uses to read the child's result back. The test
-			// then fails with this very notice as its error message rather than
-			// on its own merits. Observed on
-			// AppHost\BootstrapTest::testSettingsPlaneRegistrationIsLazy, which
-			// never touches the container and passes with the switch set.
-			//
-			// The child inherits this process's environment, so setting the
-			// harness's existing skip switch here keeps the diagnostic for the
-			// human running the suite while making every forked worker quiet.
-			putenv('OPENREGISTER_TEST_SKIP_NC=1');
+			exit(1);
 		}
 	} else {
 		// No NC root in scope — pure unit tests still work via the
@@ -148,8 +197,8 @@ if ($skipNc === false && defined('OC_CONSOLE') === false) {
 		// bootstrapped" error rather than the previous silent skip.
 		fwrite(
 			STDERR,
-			"[openregister/tests/bootstrap] Nextcloud root not found; running with composer autoload only.\n"
-			. "  Set OPENREGISTER_TEST_NC_ROOT to the NC server source root if you need integration/DB tests.\n"
+			"[openregister/tests/bootstrap] No installed Nextcloud root in scope (a bare source tree does not count); running with composer autoload only.\n"
+			. "  Set OPENREGISTER_TEST_NC_ROOT to an installed Nextcloud root if you need integration/DB tests.\n"
 		);
 
 		// Say it once, then silence any child process.

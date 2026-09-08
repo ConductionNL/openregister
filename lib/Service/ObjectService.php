@@ -166,6 +166,9 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
+ *
+ * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  */
 class ObjectService implements ObjectServiceInterface
 {
@@ -1740,13 +1743,15 @@ class ObjectService implements ObjectServiceInterface
             // applied defaults), not the pre-save input array, so an email value
             // injected by a default/computed property is also invalidated.
             try {
-                $container = \OC::$server;
-                if ($container !== null) {
-                    $contactMatchingService = $container->get(
-                        \OCA\OpenRegister\Service\ContactMatchingService::class
-                    );
-                    $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
-                }
+                // Through the injected app container, never `\OC::$server`: outside a
+                // booted Nextcloud the global container autowires this app's
+                // services from scratch and recurses through a MagicMapper ->
+                // SettingsService -> ValidationOperationsHandler -> ValidateObject
+                // cycle until memory runs out (19 GB on 2026-09-08).
+                $contactMatchingService = $this->container->get(
+                    \OCA\OpenRegister\Service\ContactMatchingService::class
+                );
+                $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
             } catch (\Throwable $e) {
                 // BUG-OBJ-9 / BUG-OBJ-14: contact-match cache invalidation is a
                 // non-essential post-save side-effect and must NEVER fail the save.
@@ -1777,53 +1782,53 @@ class ObjectService implements ObjectServiceInterface
             // the providers actually match against (design.md D4). Best-effort:
             // never fails the save.
             try {
-                $container = \OC::$server;
-                if ($container !== null) {
-                    $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
-                    $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
-                    $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+                // Same rule as the contact-match block above: the injected app
+                // container, never `\OC::$server`.
+                $container = $this->container;
+                $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
+                $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
+                $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
 
-                    $invalidationRegisterId = (int)$this->currentRegister?->getId();
-                    $invalidationSchemaId = (int)$this->currentSchema?->getId();
-                    $invalidationUuid = (string)$savedObject->getUuid();
+                $invalidationRegisterId = (int)$this->currentRegister?->getId();
+                $invalidationSchemaId = (int)$this->currentSchema?->getId();
+                $invalidationUuid = (string)$savedObject->getUuid();
 
-                    $invalidatedPrefixes = [];
-                    foreach (
-                        $formatter->buildCanonicalUrls(
-                            registerId: $invalidationRegisterId,
-                            schemaId: $invalidationSchemaId,
-                            uuid: $invalidationUuid
-                        ) as $canonicalUrl
-                    ) {
-                        $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
-                        if (isset($invalidatedPrefixes[$prefix]) === false) {
-                            $referenceManager->invalidateCache(cachePrefix: $prefix);
-                            $invalidatedPrefixes[$prefix] = true;
-                        }
-                    }
-
-                    // Flat data shape deep link URL templates resolve placeholders
-                    // against — same shape ObjectPreviewFormatter::buildReference()
-                    // and ObjectSearchResultFormatter::format() build for the same
-                    // purpose: the object's own fields plus the identity triple.
-                    $deepLinkObjectData = array_merge(
-                        $savedObject->getObject(),
-                        [
-                            'uuid' => $invalidationUuid,
-                            'register' => $invalidationRegisterId,
-                            'schema' => $invalidationSchemaId,
-                        ]
-                    );
-
-                    $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                $invalidatedPrefixes = [];
+                foreach (
+                    $formatter->buildCanonicalUrls(
                         registerId: $invalidationRegisterId,
                         schemaId: $invalidationSchemaId,
-                        objectData: $deepLinkObjectData
-                    );
-                    if ($deepLinkUrl !== null) {
-                        $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+                        uuid: $invalidationUuid
+                    ) as $canonicalUrl
+                ) {
+                    $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
+                    if (isset($invalidatedPrefixes[$prefix]) === false) {
+                        $referenceManager->invalidateCache(cachePrefix: $prefix);
+                        $invalidatedPrefixes[$prefix] = true;
                     }
-                }//end if
+                }
+
+                // Flat data shape deep link URL templates resolve placeholders
+                // against — same shape ObjectPreviewFormatter::buildReference()
+                // and ObjectSearchResultFormatter::format() build for the same
+                // purpose: the object's own fields plus the identity triple.
+                $deepLinkObjectData = array_merge(
+                    $savedObject->getObject(),
+                    [
+                        'uuid' => $invalidationUuid,
+                        'register' => $invalidationRegisterId,
+                        'schema' => $invalidationSchemaId,
+                    ]
+                );
+
+                $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                    registerId: $invalidationRegisterId,
+                    schemaId: $invalidationSchemaId,
+                    objectData: $deepLinkObjectData
+                );
+                if ($deepLinkUrl !== null) {
+                    $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+                }
             } catch (\Throwable $e) {
                 // Smart Picker cache invalidation is a non-essential post-save
                 // side-effect and must NEVER fail the save. Catch \Throwable (the
