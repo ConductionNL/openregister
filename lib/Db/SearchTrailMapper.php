@@ -54,6 +54,11 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<SearchTrail>
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     A QBMapper for a table the
+ *          search-trail reporting reads through roughly thirty distinct query
+ *          shapes, each a method here. Adding clearAllLogs() for the admin
+ *          endpoint (which called a method that never existed) took the class
+ *          from just under phpmd's 1000-line threshold to just over it.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search trail tracking requires integration with many components
  */

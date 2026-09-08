@@ -5134,6 +5134,8 @@ class ImportHandler {
 	 * @param array $configData The configuration data.
 	 *
 	 * @return void
+	 *
+	 * @psalm-suppress UndefinedClass OC_App is a Nextcloud server internal with no OCP equivalent for loadApp()
 	 */
 	private function ensureDependenciesForSeedData(array $configData): void {
 		// GUARD: Prevent recursive dependency checking.
@@ -5242,6 +5244,13 @@ class ImportHandler {
 						);
 
 						// Load the app to ensure its services are available.
+						//
+						// OC_App is a Nextcloud server internal with no OCP
+						// equivalent for this call, so psalm cannot see the class
+						// (suppressed on this method's docblock). It exists
+						// whenever this branch can run: the branch is only
+						// reachable through an injected IAppManager, which only a
+						// booted server supplies.
 						\OC_App::loadApp($appId);
 						$this->logger->debug(
 							message: "[ImportHandler] Successfully loaded Nextcloud app '{$appId}'",
