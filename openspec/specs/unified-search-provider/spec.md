@@ -109,6 +109,36 @@ return an empty result set.
 - WHEN a search is performed with the custom filter `schema=17`
 - THEN the provider returns an empty result set
 
+### Requirement: The provider MUST bound the number of schemas one pipeline query spans
+
+Every schema is its own table, and the pipeline answers a cross-schema
+search with one statement that unions all of them; the database holds a
+lock on every table and every index for the whole statement. On an
+instance with 1,272 searchable schemas that exhausted Postgres's lock
+table (`max_locks_per_transaction`) and the section went blank. The
+provider MUST always pass the searchable allow-list (even when no schema
+opted out), split into chunks of at most 50 schemas, query each chunk
+separately, merge the chunk pages in the pipeline's order (relevance
+descending, then uuid ascending) and slice the requested page from the
+merge. A chunk that fails MUST be logged at error level, naming the
+schemas it spanned, and skipped; the other chunks MUST still answer.
+Raising the database setting is not the fix.
+
+#### Scenario: A many-schema instance still answers
+- GIVEN 120 searchable schemas
+- WHEN a user searches for `Dakkapel`
+- THEN the provider issues three pipeline queries, none spanning more than 50 schemas, together covering every searchable schema exactly once
+
+#### Scenario: Chunk pages are merged in pipeline order
+- GIVEN two chunks answer rows in their own order and one row carries a higher relevance
+- WHEN the first page of three is handled
+- THEN the entries are the most relevant row first, then the rest by uuid, cut at three, with cursor `3`
+
+#### Scenario: A failed chunk does not blank the section
+- GIVEN one chunk's query fails with `out of shared memory`
+- WHEN a user searches
+- THEN an error naming the chunk and its schema ids is logged and the other chunk's rows are returned
+
 ### Requirement: Results MUST be labeled per owning app and register
 
 Each `SearchResultEntry` MUST identify its owner: for a (register,
