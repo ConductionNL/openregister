@@ -1513,6 +1513,35 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end delete()
 
 	/**
+	 * Whether an active legal hold keeps this record from being destroyed.
+	 *
+	 * THE SINGLE DEFINITION OF "HELD". A legal hold is a property of the
+	 * record, not of its schema, so the answer lives on the record. Three
+	 * copies of this two-line predicate used to sit in
+	 * {@see \OCA\OpenRegister\Service\RetentionService::hasActiveLegalHold},
+	 * {@see \OCA\OpenRegister\Service\Archival\LegalHoldService::hasActiveHold}
+	 * and its `hasActiveHoldFromRetention()` sibling. The first two delegate
+	 * here now; the third still reads a raw retention array rather than a
+	 * record, so it cannot, and it drives no delete path.
+	 *
+	 * A RELEASED HOLD IS NOT A HOLD. `releaseLegalHold()` leaves the
+	 * `legalHold` key in place with `active: false` and the reason in
+	 * `history`, so "the key exists" is not the question and never was.
+	 *
+	 * @return bool True when the record carries an active legal hold.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function hasActiveLegalHold(): bool {
+		// Read through the accessor rather than the property, as every caller
+		// this method replaced did. The two are the same on a live entity, and
+		// the accessor is what existing tests stub.
+		$retention = ($this->getRetention() ?? []);
+
+		return ((($retention['legalHold'] ?? [])['active'] ?? false) === true);
+	}//end hasActiveLegalHold()
+
+	/**
 	 * Whether this object is in the trash.
 	 *
 	 * The one honest answer to "has this been soft-deleted?". The raw

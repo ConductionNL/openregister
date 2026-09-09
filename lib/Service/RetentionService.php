@@ -539,6 +539,10 @@ class RetentionService {
 	/**
 	 * Check if an object has an active legal hold.
 	 *
+	 * Delegates to {@see ObjectEntity::hasActiveLegalHold()}, the single
+	 * definition of "held". Kept as a service method because the destruction
+	 * and sweep jobs already ask the question here.
+	 *
 	 * @param ObjectEntity $object The object to check
 	 *
 	 * @return bool True if object has active legal hold
@@ -546,8 +550,7 @@ class RetentionService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function hasActiveLegalHold(ObjectEntity $object): bool {
-		$retention = $object->getRetention() ?? [];
-		return ($retention['legalHold']['active'] ?? false) === true;
+		return $object->hasActiveLegalHold();
 	}//end hasActiveLegalHold()
 
 	/**

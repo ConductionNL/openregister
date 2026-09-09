@@ -210,10 +210,7 @@ class LegalHoldService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function hasActiveHold(ObjectEntity $object): bool {
-		$retention = $object->getRetention() ?? [];
-		$legalHold = $retention['legalHold'] ?? [];
-
-		return ($legalHold['active'] ?? false) === true;
+		return $object->hasActiveLegalHold();
 	}//end hasActiveHold()
 
 	/**

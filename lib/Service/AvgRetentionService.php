@@ -65,7 +65,7 @@ class AvgRetentionService {
 	 * @param VerwerkingsactiviteitMapper $vrwMapper Catalog reader.
 	 * @param MagicMapper $objectMapper Object loader.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a legally retained record.
+	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a held or legally retained record.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
@@ -325,6 +325,13 @@ class AvgRetentionService {
 	 * archival obligation wins: the record is left live and named in `withheld`,
 	 * so an operator reading the run sees a record kept rather than one erased.
 	 * Withholding one record does not stop the pass.
+	 *
+	 * A LEGAL HOLD WINS TOO, AND IT USED NOT TO. This pass soft-deletes rather
+	 * than destroys, so a record it took was recoverable, but a record under
+	 * objection or under a court order still disappeared from every list the
+	 * handler reads. The guard now refuses a held record under its own ground,
+	 * so a hold on an ORDINARY schema, which declares no archival annotation at
+	 * all, is honoured here as well.
 	 *
 	 * USED TO RETURN A BARE INT, which is why a withheld record could not be told
 	 * apart from an erased one: there was no per-object channel at all.
