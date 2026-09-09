@@ -142,26 +142,113 @@ class Notifier implements INotifier {
 
 		$l = $this->factory->get('openregister', $languageCode);
 
-		switch ($notification->getSubject()) {
-			case 'configuration_update_available':
-				return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
-			case 'handoff_drain_failed':
-				return $this->prepareHandoffDrainFailed(notification: $notification, l: $l);
-			case 'scheduled_report_delivered':
-				return $this->prepareScheduledReportDelivered(notification: $notification, l: $l);
-			case 'scheduled_report_failed':
-				return $this->prepareScheduledReportFailed(notification: $notification, l: $l);
-			case 'delegation_consent_requested':
-				return $this->prepareDelegationConsentRequested(notification: $notification, l: $l);
-			case 'credential_relink_needed':
-				return $this->prepareCredentialRelinkNeeded(notification: $notification, l: $l);
-			default:
-				// Unknown subject. Object-lifecycle subjects
-				// (object_created / object_updated / object_transitioned)
-				// are rendered by AnnotationNotifier, not here.
-				throw new UnknownNotificationException('Unknown subject');
-		}//end switch
+		// A DISPATCH TABLE RATHER THAN A SWITCH. One branch per subject made
+		// this method's complexity grow by one with every notification the app
+		// learned to send, and it hit the ceiling on the eighth. A lookup does
+		// not grow at all, and it puts the whole set of renderable subjects on
+		// one screen.
+		//
+		// Unknown subjects are not an error worth logging loudly: object
+		// lifecycle subjects (object_created / object_updated /
+		// object_transitioned) are rendered by AnnotationNotifier, not here.
+		$handler = match ($notification->getSubject()) {
+			'configuration_update_available' => $this->prepareConfigurationUpdate(...),
+			'handoff_drain_failed' => $this->prepareHandoffDrainFailed(...),
+			'scheduled_report_delivered' => $this->prepareScheduledReportDelivered(...),
+			'scheduled_report_failed' => $this->prepareScheduledReportFailed(...),
+			'delegation_consent_requested' => $this->prepareDelegationConsentRequested(...),
+			'credential_relink_needed' => $this->prepareCredentialRelinkNeeded(...),
+			'retention_holds_skipped' => $this->prepareRetentionHoldsSkipped(...),
+			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
+			default => null,
+		};
+
+		if ($handler === null) {
+			throw new UnknownNotificationException('Unknown subject');
+		}
+
+		return $handler(notification: $notification, l: $l);
 	}//end prepare()
+
+	/**
+	 * Render "the retention sweep kept records that are under a legal hold".
+	 *
+	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS. An unknown subject
+	 * throws out of prepare(), so a job that sends one is telling nobody. The
+	 * destruction case below had exactly that problem since it was written.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function prepareRetentionHoldsSkipped(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$schemaSlug = (string)($parameters['schemaSlug'] ?? 'unknown');
+		$skippedCount = (int)($parameters['skippedCount'] ?? 0);
+
+		$notification->setParsedSubject(
+			$l->t('Retention sweep kept records that are under a legal hold')
+		);
+
+		$notification->setParsedMessage(
+			$l->n(
+				'The retention sweep on "%2$s" reached %1$d record past its retention period and left '
+				. 'it in place, because a legal hold is on it. Release the hold when the case it '
+				. 'belongs to is closed, and the next sweep will destroy it.',
+				'The retention sweep on "%2$s" reached %1$d records past their retention period and '
+				. 'left them in place, because a legal hold is on them. Release the holds when the '
+				. 'cases they belong to are closed, and the next sweep will destroy them.',
+				$skippedCount,
+				[$skippedCount, $schemaSlug]
+			)
+		);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareRetentionHoldsSkipped()
+
+	/**
+	 * Render "the destruction list skipped records that are under a legal hold".
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function prepareDestructionHoldsSkipped(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$listUuid = (string)($parameters['listUuid'] ?? 'unknown');
+		$skippedCount = (int)($parameters['skippedCount'] ?? 0);
+
+		$notification->setParsedSubject(
+			$l->t('Destruction list kept records that are under a legal hold')
+		);
+
+		$notification->setParsedMessage(
+			$l->n(
+				'%1$d record on destruction list %2$s was not destroyed, because a legal hold is on '
+				. 'it. Release the hold and run the list again, or take the record off the list.',
+				'%1$d records on destruction list %2$s were not destroyed, because a legal hold is on '
+				. 'them. Release the holds and run the list again, or take the records off the list.',
+				$skippedCount,
+				[$skippedCount, $listUuid]
+			)
+		);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareDestructionHoldsSkipped()
 
 	/**
 	 * Prepare configuration update notification.
