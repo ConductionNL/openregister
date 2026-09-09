@@ -59,7 +59,8 @@ use Psr\Log\LoggerInterface;
  * definition of "held", so the guard has no opinion of its own here either.
  * Note that {@see self::cascadeRefusal()} is handed a uuid rather than a
  * record, so it cannot ask the hold question; that gap is open on purpose and
- * tracked separately.
+ * tracked separately. There is deliberately NO cascade wording for this ground:
+ * an entry nobody can reach reads as coverage that does not exist.
  *
  * FAILS CLOSED. A record whose schema cannot be resolved is refused, because an
  * unresolvable schema is precisely the case where the annotation cannot be read
@@ -137,11 +138,6 @@ class ArchivalRetentionGuard {
 			self::GROUND_ARCHIVAL => [
 				'message' => 'The law requires us to keep this record. Its parent is gone, this record stays.',
 				'basis' => 'GDPR art. 17(3)(b) and the Archiefwet.',
-				'action' => 'Point this record at a live parent, or record why the reference may dangle.',
-			],
-			self::GROUND_LEGAL_HOLD => [
-				'message' => 'This record is under a legal hold. Its parent is gone, this record stays.',
-				'basis' => 'A hold placed by a records officer, usually for a case or an investigation.',
 				'action' => 'Point this record at a live parent, or record why the reference may dangle.',
 			],
 			self::GROUND_UNRESOLVED => [
