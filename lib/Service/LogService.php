@@ -193,9 +193,18 @@ class LogService {
 	 * Counts total number of audit trail entries for a specific object.
 	 * Validates that the object belongs to the specified register and schema.
 	 *
+	 * The count answers the SAME question the matching getLogs() call asks. A
+	 * count taken without the caller's filters is a count of a different
+	 * result set, and a caller paging on it walks off the end of a list that
+	 * ended pages ago: `?action=update` on an object with 1733 rows returned 7
+	 * of them and reported a total of 1733, which is 87 pages of nothing.
+	 *
 	 * @param string $register The register identifier (slug or ID)
 	 * @param string $schema The schema identifier (slug or ID)
 	 * @param string $id The object ID to count logs for
+	 * @param array $config Configuration array containing:
+	 *                      - filters: (array) The same filters passed to getLogs()
+	 *                      - search: (string|null) The same search term passed to getLogs()
 	 *
 	 * @return int Number of log entries (0 or positive integer)
 	 *
@@ -206,7 +215,7 @@ class LogService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
 	 */
-	public function count(string $register, string $schema, string $id): int {
+	public function count(string $register, string $schema, string $id, array $config = []): int {
 		// Step 1: Get the object to ensure it exists.
 		// Include deleted objects so audit trail count is accessible even after soft-delete.
 		// Use findAcrossAllSources to search across all magic tables.
@@ -235,10 +244,15 @@ class LogService {
 			// But we still allow audit trail access for the object.
 		}
 
-		// Step 3: Get all logs for this object using UUID filter.
+		// Step 3: Get the logs this object matches, under the caller's own
+		// filters, with the UUID filter added exactly as getLogs() adds it.
 		// No pagination needed since we're only counting.
+		$filters = $config['filters'] ?? [];
+		$filters['object_uuid'] = $object->getUuid();
+
 		$logs = $this->auditTrailMapper->findAll(
-			filters: ['object_uuid' => $object->getUuid()]
+			filters: $filters,
+			search: $config['search'] ?? null
 		);
 
 		// Step 4: Return count of log entries.
