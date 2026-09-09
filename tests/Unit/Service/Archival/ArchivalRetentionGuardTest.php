@@ -120,6 +120,62 @@ class ArchivalRetentionGuardTest extends TestCase {
 	}//end testAnArchivalRecordIsRefusedWithAGroundAndAnAction()
 
 	/**
+	 * A RECORD UNDER AN ACTIVE LEGAL HOLD IS REFUSED, whatever its schema says.
+	 *
+	 * The hold is a property of the record, not of the schema, so it has to be
+	 * asked before the archival annotation. `contact` here declares no archival
+	 * annotation at all: without this check the record would be erased.
+	 *
+	 * @return void
+	 */
+	public function testARecordUnderLegalHoldIsRefused(): void {
+		$guard = $this->guard(['contact' => false]);
+		$object = $this->record('held-1', 'contact');
+		$object->setRetention(
+			[
+				'legalHold' => [
+					'active' => true,
+					'reason' => 'Pending court case',
+				],
+			]
+		);
+
+		$refusal = $guard->erasureRefusal($object);
+
+		$this->assertNotNull($refusal, 'A record under legal hold must not be erasable.');
+		$this->assertSame(ArchivalRetentionGuard::GROUND_LEGAL_HOLD, $refusal['ground']);
+		$this->assertSame(ArchivalRetentionGuard::CONTEXT_ERASURE, $refusal['operation']);
+		$this->assertSame('held-1', $refusal['uuid']);
+		$this->assertNotSame(
+			ArchivalRetentionGuard::GROUND_ARCHIVAL,
+			$refusal['ground'],
+			'A hold placed by a person is not the same ground as a statutory retention period.'
+		);
+	}//end testARecordUnderLegalHoldIsRefused()
+
+	/**
+	 * A RELEASED HOLD DOES NOT REFUSE. `active: false` is the shape
+	 * `RetentionService::releaseLegalHold()` writes, and it must read as "may
+	 * be erased" rather than as "there is a legalHold key, so hold it".
+	 *
+	 * @return void
+	 */
+	public function testAReleasedLegalHoldDoesNotRefuse(): void {
+		$guard = $this->guard(['contact' => false]);
+		$object = $this->record('released-1', 'contact');
+		$object->setRetention(
+			[
+				'legalHold' => [
+					'active' => false,
+					'history' => [['reason' => 'Case closed']],
+				],
+			]
+		);
+
+		$this->assertNull($guard->erasureRefusal($object));
+	}//end testAReleasedLegalHoldDoesNotRefuse()
+
+	/**
 	 * `"archival": true` is a typo, not an annotation, so it arms nothing.
 	 *
 	 * Pinned here because the guard must inherit that judgement from the
