@@ -1,0 +1,178 @@
+name: Permanent-Delete Hotfix Release
+
+# Custom hotfix release voor de "hard delete" (permanent) plumbing in
+# DeleteObject/ObjectService, gevraagd om OpenConnector's
+# deleteInvalidObjects écht te laten hard-deleten i.p.v. soft-deleten.
+# Draait NIET op main; produceert een prerelease die door Nextcloud
+# NIET als "latest" wordt opgepikt (zie `prerelease: true` in de
+# release-action). Installatie op accept/productie gebeurt handmatig
+# via `occ` of de `app_versions` app.
+#
+# Naamgeving-conventie (zelfde als openconnector's hotfix-release.yaml,
+# Barry's voorstel, 2026-09-03):
+#   <base_tag>-<project>-<version>
+# Laatste echte release-tag op deze commit is v1.1.5 (info.xml's eigen
+# <version> liep hier los van — stond nog op 0.2.19 — dus is voor deze
+# hotfix-lijn opgetrokken naar 1.1.5-woo-1). Elke push naar deze branch
+# overschrijft dezelfde tag/release (via `allowUpdates` + `overwrite:
+# true`). Voor een tweede hotfix op dezelfde base-tag: bump `<version>`
+# in `appinfo/info.xml` (1.1.5-woo-1 → 1.1.5-woo-2).
+#
+# Basis: ConductionNL/integriq (openconnector) →
+#        .github/workflows/hotfix-release.yaml (Barry, 2026-09-03).
+on:
+  push:
+    branches:
+      - fix/deleteobject-permanent-param
+
+jobs:
+  release-management:
+    runs-on: ubuntu-latest
+    steps:
+
+      # Step 1: Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Step 2: The build's version IS the base version tracked in
+      # appinfo/info.xml. No per-build run number is appended — every push
+      # to this branch overwrites the same release/tag (allowed via
+      # `allowUpdates: true` on ncipollo/release-action + `overwrite: true`
+      # on svenstaro/upload-release-action). Bump the base version by hand
+      # in appinfo/info.xml when you want a NEW hotfix line.
+      - name: Set app env
+        run: |
+          echo "APP_NAME=openregister" >> $GITHUB_ENV
+          new_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
+          echo "NEW_VERSION=${new_version}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=v${new_version}" >> $GITHUB_ENV
+
+      # Step 3: Prepare the signing certificate and key
+      - name: Prepare Signing Certificate and Key
+        run: |
+          echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
+          echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+
+      # Step 4: Install Node.js
+      - name: Install npm dependencies
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      # Step 5: Set up PHP
+      - name: Set up PHP and install extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip, gd
+
+      # Step 6: Build
+      - run: npm ci
+      - run: npm run build
+      - run: composer install --no-dev
+
+      # Step 7: Copy the package files into the package directory
+      - name: Copy the package files into the package
+        run: |
+          mkdir -p package/${{ env.APP_NAME }}
+          rsync -av --progress \
+            --exclude='package' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.forgejo' \
+            --exclude='.vscode' \
+            --exclude='docker' \
+            --exclude='docs' \
+            --exclude='issues' \
+            --exclude='website' \
+            --exclude='node_modules' \
+            --exclude='/src' \
+            --exclude='test' \
+            --exclude='tests' \
+            --exclude='package-lock.json' \
+            --exclude='composer.lock' \
+            --exclude='composer-setup.php' \
+            --exclude='composer.phar' \
+            --exclude='.phpunit.result.cache' \
+            --exclude='.phpunit.cache' \
+            --exclude='phpmd.xml' \
+            --exclude='signing-key.key' \
+            --exclude='package.json' \
+            --exclude='composer.json' \
+            --exclude='coverage.txt' \
+            --exclude='signing-cert.crt' \
+            --exclude='docker-compose*.yml' \
+            --exclude='webpack.config.js' \
+            --exclude='.prettierrc' \
+            --exclude='psalm.xml' \
+            --exclude='phpunit.xml' \
+            --exclude='tsconfig.json' \
+            --exclude='changelog-ci-config.json' \
+            --exclude='jest.config.js' \
+            --exclude='.gitattributes' \
+            --exclude='.php-cs-fixer.dist.php' \
+            --exclude='.gitignore' \
+            --exclude='.eslintrc.js' \
+            --exclude='eslint.config.js' \
+            --exclude='stylelint.config.js' \
+            --exclude='.babelrc' \
+            --exclude='.nvmrc' \
+            --exclude='.phpqa.yml' \
+            --exclude='grumphp.yml' \
+            --exclude='bom-npm-test.cdx.json' \
+            --exclude='PLAN-*.md' \
+            --exclude='QUALITY_OVERVIEW.md' \
+            ./ package/${{ env.APP_NAME }}/
+
+      # Step 8: Stamp the branch release version into the packaged info.xml
+      # only (the repo's own info.xml / main version history is left
+      # untouched).
+      - name: Set package version
+        run: |
+          sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" package/${{ env.APP_NAME }}/appinfo/info.xml
+
+      # Step 9: Create the TAR.GZ archive
+      - name: Create Tarball
+        run: |
+          cd package && tar -czf ../nextcloud-release.tar.gz ${{ env.APP_NAME }}
+
+      # Step 10: Sign the TAR.GZ file with OpenSSL
+      - name: Sign the TAR.GZ file with OpenSSL
+        run: |
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
+      # Step 11: Create a new GitHub prerelease for this build.
+      # `prerelease: true` is the mechanism that keeps Nextcloud from
+      # picking this up as "latest" — this build only becomes available
+      # via manual `occ` installation or the `app_versions` app.
+      - name: Upload Permanent-Delete Hotfix Release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          tag: ${{ env.RELEASE_TAG }}
+          name: Permanent-Delete Hotfix Release ${{ env.NEW_VERSION }}
+          draft: false
+          prerelease: true
+          allowUpdates: true
+          removeArtifacts: true
+
+      # Step 12: Attach the tarball as a release asset (overwrites the
+      # previous asset).
+      - name: Attach tarball to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: nextcloud-release.tar.gz
+          asset_name: ${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}.tar.gz
+          tag: ${{ env.RELEASE_TAG }}
+          overwrite: true
+
+      # Step 13: Verify contents
+      - name: Verify version and contents
+        run: |
+          echo "App version: ${{ env.NEW_VERSION }}"
+          echo "Tarball contents:"
+          tar -tvf nextcloud-release.tar.gz
+          echo "info.xml contents:"
+          tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml
