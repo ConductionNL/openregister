@@ -102,7 +102,9 @@ class XwikiLinkServiceTest extends TestCase {
 	}//end setupUser()
 
 	private function connectorAvailable(bool $available = true): void {
-		$this->appManager->method('isInstalled')->with('openconnector')->willReturn($available);
+		$this->appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => ($id === 'openconnector' && $available === true)
+		);
 	}//end connectorAvailable()
 
 	private function providerResolves(): void {

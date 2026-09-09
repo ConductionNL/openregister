@@ -81,6 +81,38 @@ const GENERIC_INTEGRATION_DESCRIPTORS = [
 	},
 ]
 
+// The connector app answers to `integriq` on development and `openconnector`
+// on beta/main. `requiredApp` is read back by nc-vue as
+// `isAppInstalled(requiredApp)`, which looks the string up in
+// `OC.appswebroots` — so the wrong spelling does not error, it reports the
+// connector as missing and every descriptor below renders its "not installed"
+// state on an instance where the connector is installed and working. Resolve
+// against what the page actually has, newest spelling first.
+const CONNECTOR_APP_IDS = ['integriq', 'openconnector']
+
+/**
+ * The connector app id this instance registered.
+ *
+ * @return {string} The installed id, or the canonical name when neither is
+ *   present (in which case "not installed" is the truthful answer anyway).
+ */
+function connectorAppId() {
+	try {
+		const webroots = (typeof OC !== 'undefined' && OC && OC.appswebroots) || null
+		if (webroots) {
+			const found = CONNECTOR_APP_IDS.find((id) => Object.hasOwn(webroots, id))
+			if (found) {
+				return found
+			}
+		}
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn('[main] could not resolve the connector app id', e)
+	}
+
+	return CONNECTOR_APP_IDS[0]
+}
+
 try {
 	const registry = window?.OCA?.OpenRegister?.integrations
 	const pending = registry?.register
@@ -92,7 +124,7 @@ try {
 				pending.forEach((descriptor) => {
 					registry.register({
 						...descriptor,
-						requiredApp: 'openconnector',
+						requiredApp: connectorAppId(),
 						group: 'external',
 						tab: CnIntegrationTab,
 						widget: CnIntegrationCard,

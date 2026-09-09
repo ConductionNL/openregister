@@ -97,7 +97,11 @@ class BrpPersonProviderTest extends TestCase {
 		$this->assertSame('BRP Person Register (HaalCentraal)', $this->provider->getLabel());
 		$this->assertSame('AccountSearch', $this->provider->getIcon());
 		$this->assertSame('external', $this->provider->getGroup());
-		$this->assertSame('openconnector', $this->provider->getRequiredApp());
+		// The CANONICAL name: this fixture's app manager reports nothing
+		// installed, so FleetAppId finds neither spelling and falls back.
+		// The installed-id direction is asserted in
+		// LeafProvidersMetadataTest::testOpenProjectProviderMetadata*.
+		$this->assertSame('integriq', $this->provider->getRequiredApp());
 		$this->assertSame('external', $this->provider->getStorageStrategy());
 		$this->assertSame('brp-haalcentraal', $this->provider->getOpenConnectorSource());
 		$this->assertSame('brp-haalcentraal', BrpPersonProvider::SOURCE_ID);
@@ -114,7 +118,9 @@ class BrpPersonProviderTest extends TestCase {
 	}//end testAuthRequirementsAreExternalOAuthAndMtlsViaOpenConnector()
 
 	public function testIsEnabledMirrorsOpenConnectorInstall(): void {
-		$this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
+		$this->appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => ($id === 'openconnector' && true === true)
+		);
 		$this->assertTrue($this->provider->isEnabled());
 	}//end testIsEnabledMirrorsOpenConnectorInstall()
 

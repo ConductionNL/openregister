@@ -384,6 +384,16 @@ class ExternalIntegrationRouter {
 	 */
 	private function loadSource(string $sourceId, string $providerId) {
 		try {
+			// NOT repointed to OCA\Integriq\Db\SourceMapper: that class does
+			// not exist. The connector REMOVED SourceMapper — its own
+			// SynchronizationService now reimplements
+			// `SourceMapper::findOrCreateByLocation()` over object storage and
+			// its tests record that "OR removed that class". Renaming the
+			// namespace here would swap a lookup that misses for one that
+			// misses identically, while looking fixed. The `get()` throws into
+			// the catch below, which raises `openconnector-source-missing` and
+			// the UI shows "Reconfigure connector" — so this one at least
+			// fails visibly. It needs a real replacement seam, not a rename.
 			$mapper = $this->container->get('OCA\\OpenConnector\\Db\\SourceMapper');
 			$source = null;
 
@@ -542,6 +552,21 @@ class ExternalIntegrationRouter {
 	}//end mockMeta()
 
 	/**
+	 * The connector's CallService FQCN for the id this instance actually has.
+	 *
+	 * The class is OCA\Integriq\Service\CallService on development and
+	 * OCA\OpenConnector\Service\CallService on beta/main. Falls back to the
+	 * canonical spelling when neither loads, so the `get()` below still throws
+	 * into the caller's catch exactly as it does today.
+	 *
+	 * @return string The FQCN to resolve from the container.
+	 */
+	private function callServiceClass(): string {
+		return (FleetAppId::resolveClass('integriq', 'Service\\CallService')
+			?? 'OCA\\Integriq\\Service\\CallService');
+	}//end callServiceClass()
+
+	/**
 	 * Invoke the upstream call via OpenConnector's CallService.
 	 *
 	 * The CallService API has varied across OpenConnector versions;
@@ -559,7 +584,7 @@ class ExternalIntegrationRouter {
 	 *                           caller wraps this as ProviderUnavailableException.
 	 */
 	private function invoke($source, string $method, string $path, array $options): array {
-		$callService = $this->container->get('OCA\\OpenConnector\\Service\\CallService');
+		$callService = $this->container->get($this->callServiceClass());
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);
@@ -574,7 +599,7 @@ class ExternalIntegrationRouter {
 		}
 
 		throw new RuntimeException(
-			'OpenConnector\\Service\\CallService does not expose a known call/request method.'
+			'The connector CallService does not expose a known call/request method.'
 		);
 	}//end invoke()
 
@@ -594,7 +619,7 @@ class ExternalIntegrationRouter {
 	 *                           wraps this as ProviderUnavailableException.
 	 */
 	private function invokeWithMeta($source, string $method, string $path, array $options): array {
-		$callService = $this->container->get('OCA\\OpenConnector\\Service\\CallService');
+		$callService = $this->container->get($this->callServiceClass());
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);
@@ -615,7 +640,7 @@ class ExternalIntegrationRouter {
 		}
 
 		throw new RuntimeException(
-			'OCA\\OpenConnector\\Service\\CallService does not expose a known call/request method.'
+			'The connector CallService does not expose a known call/request method.'
 		);
 	}//end invokeWithMeta()
 

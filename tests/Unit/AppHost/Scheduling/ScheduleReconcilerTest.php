@@ -23,6 +23,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
@@ -53,6 +54,25 @@ class ScheduleReconcilerTest extends TestCase {
 	}
 
 	/**
+	 * An allow-list bound to a fake instance that has the connector installed.
+	 *
+	 * `openconnector` rather than `integriq`, because these fixtures assert the
+	 * literal `OCA\OpenConnector\…` jobClass and this keeps that assertion
+	 * about the RECONCILER rather than about which id the resolver picked —
+	 * that choice is covered in ScheduleActionAllowListTest.
+	 *
+	 * @return ScheduleActionAllowList The configured allow-list.
+	 */
+	private function allowList(): ScheduleActionAllowList {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => ($id === 'openconnector')
+		);
+
+		return new ScheduleActionAllowList($appManager);
+	}
+
+	/**
 	 * Build a testable reconciler with overridable I/O and recorded saves.
 	 *
 	 * @param array<int, array<string, mixed>> $virtual Virtual application fixtures.
@@ -65,7 +85,7 @@ class ScheduleReconcilerTest extends TestCase {
 			$this->createMock(ObjectService::class),
 			$this->loader,
 			new CronScheduleEvaluator(),
-			new ScheduleActionAllowList(),
+			$this->allowList(),
 			$this->userManager,
 			$this->createMock(LoggerInterface::class),
 			$virtual,
