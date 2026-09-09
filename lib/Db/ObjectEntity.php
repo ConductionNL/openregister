@@ -27,8 +27,8 @@ use DateInterval;
 use DateTime;
 use Exception;
 use JsonSerializable;
-use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OC\Files\Node\File;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 

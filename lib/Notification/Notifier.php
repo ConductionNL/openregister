@@ -365,7 +365,7 @@ class Notifier implements INotifier {
 	 * and did not would be worse than the sentence that names the page.
 	 *
 	 * @param INotification $notification The notification to prepare.
-	 * @param mixed         $l            The localization instance.
+	 * @param mixed $l The localization instance.
 	 *
 	 * @return INotification The prepared notification.
 	 *
@@ -416,7 +416,7 @@ class Notifier implements INotifier {
 	 * people dismiss, and dismissing is not deciding.
 	 *
 	 * @param INotification $notification The notification to prepare.
-	 * @param mixed         $l            The l10n factory.
+	 * @param mixed $l The l10n factory.
 	 *
 	 * @return INotification The prepared notification.
 	 *
