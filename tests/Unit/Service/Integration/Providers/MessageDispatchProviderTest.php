@@ -98,7 +98,11 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->assertSame('Outbound messaging (SMS / WhatsApp)', $this->provider->getLabel());
 		$this->assertSame('MessageText', $this->provider->getIcon());
 		$this->assertSame('external', $this->provider->getGroup());
-		$this->assertSame('openconnector', $this->provider->getRequiredApp());
+		// The CANONICAL name: this fixture's app manager reports nothing
+		// installed, so FleetAppId finds neither spelling and falls back.
+		// The installed-id direction is asserted in
+		// LeafProvidersMetadataTest::testOpenProjectProviderMetadata*.
+		$this->assertSame('integriq', $this->provider->getRequiredApp());
 		$this->assertSame('external', $this->provider->getStorageStrategy());
 		// Default advertised source (the real target is per-call).
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
@@ -122,7 +126,9 @@ class MessageDispatchProviderTest extends TestCase {
 	}//end testAuthRequirementsAreExternalApiKeyViaOpenConnector()
 
 	public function testIsEnabledMirrorsOpenConnectorInstall(): void {
-		$this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
+		$this->appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => ($id === 'openconnector' && true === true)
+		);
 		$this->assertTrue($this->provider->isEnabled());
 	}//end testIsEnabledMirrorsOpenConnectorInstall()
 

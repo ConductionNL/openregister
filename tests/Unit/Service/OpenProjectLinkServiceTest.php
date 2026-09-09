@@ -104,13 +104,32 @@ class OpenProjectLinkServiceTest extends TestCase {
 		return $user;
 	}//end setupUser()
 
+	/**
+	 * Report the connector app present under ONE concrete id.
+	 *
+	 * Stubs BOTH `isInstalled` and `isEnabledForUser`, because FleetAppId
+	 * resolves the id before it asks whether that id is enabled — stubbing only
+	 * the second returns false for every candidate and the service reads as
+	 * "connector down" no matter which spelling the fixture claims.
+	 *
+	 * @param string $appId   The single connector id this fake instance has.
+	 * @param bool   $present Whether it is present at all.
+	 *
+	 * @return void
+	 */
+	private function connectorInstalledAs(string $appId, bool $present = true): void {
+		$match = static fn (string $id): bool => ($present === true && $id === $appId);
+		$this->appManager->method('isInstalled')->willReturnCallback($match);
+		$this->appManager->method('isEnabledForUser')->willReturnCallback($match);
+	}//end connectorInstalledAs()
+
 	public function testIsOpenConnectorAvailableTrue(): void {
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(true);
+		$this->connectorInstalledAs('openconnector', true);
 		$this->assertTrue($this->service->isOpenConnectorAvailable());
 	}//end testIsOpenConnectorAvailableTrue()
 
 	public function testIsOpenConnectorAvailableFalse(): void {
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(false);
+		$this->connectorInstalledAs('openconnector', false);
 		$this->assertFalse($this->service->isOpenConnectorAvailable());
 	}//end testIsOpenConnectorAvailableFalse()
 
@@ -146,7 +165,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 	public function testLinkWorkPackagePersistsEvenWhenSourceUnconfigured(): void {
 		$this->setupUser();
 		// OpenConnector unavailable → metadata fetch skipped, link still persisted.
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(false);
+		$this->connectorInstalledAs('openconnector', false);
 		$this->mapper->method('findByObjectAndWorkPackage')->with('abc-123', 99)->willReturn(null);
 		$this->mapper->expects($this->once())
 			->method('insert')
@@ -258,7 +277,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 
 	public function testGetLinkedWorkPackagesReturnsRows(): void {
 		// OpenConnector unavailable → no refresh, rows returned as-is.
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(false);
+		$this->connectorInstalledAs('openconnector', false);
 
 		$link = new OpenProjectLink();
 		$link->setObjectUuid('abc-123');
@@ -277,14 +296,14 @@ class OpenProjectLinkServiceTest extends TestCase {
 	}//end testGetLinkedWorkPackagesReturnsRows()
 
 	public function testGetLinkedWorkPackagesEmpty(): void {
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(false);
+		$this->connectorInstalledAs('openconnector', false);
 		$this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([]);
 
 		$this->assertSame([], $this->service->getLinkedWorkPackages('abc-123'));
 	}//end testGetLinkedWorkPackagesEmpty()
 
 	public function testGetAvailableWorkPackagesThrowsWhenOpenConnectorUnavailable(): void {
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(false);
+		$this->connectorInstalledAs('openconnector', false);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
@@ -293,7 +312,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 	}//end testGetAvailableWorkPackagesThrowsWhenOpenConnectorUnavailable()
 
 	public function testGetAvailableWorkPackagesSurfaces503OnRouterFailure(): void {
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(true);
+		$this->connectorInstalledAs('openconnector', true);
 		$this->router->method('call')->willThrowException(
 			new ProviderUnavailableException(
 				'down',
@@ -308,7 +327,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 	}//end testGetAvailableWorkPackagesSurfaces503OnRouterFailure()
 
 	public function testGetAvailableWorkPackagesNormalisesRows(): void {
-		$this->appManager->method('isEnabledForUser')->with('openconnector')->willReturn(true);
+		$this->connectorInstalledAs('openconnector', true);
 		$this->router->method('call')->willReturn(
 			[
 				'results' => [

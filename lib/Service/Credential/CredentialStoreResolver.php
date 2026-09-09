@@ -9,7 +9,8 @@
  * of `DeckLinkService`. Doriath is ELIGIBLE only when ALL of the following
  * hold, evaluated in order and failing closed to the Nextcloud-vault leaf:
  *
- *   1. `IAppManager::isEnabledForUser('doriath')` — the app is enabled;
+ *   1. the credential app is enabled under EITHER of its ids (`keepiq` on
+ *      development, `doriath` on beta/main — see `FleetAppId`);
  *   2. `class_exists` succeeds for every Doriath service class the leaf calls
  *      (no compile-time dependency on the optional app);
  *   3. `method_exists` succeeds for the application-scoped seam methods
@@ -41,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -50,11 +52,17 @@ use Psr\Log\LoggerInterface;
  */
 class CredentialStoreResolver {
 	/**
-	 * The Doriath app id probed for eligibility.
+	 * Canonical (new) id of the credential app, for {@see FleetAppId}.
+	 *
+	 * The NAMESPACE half of this rename was already handled below; the app ID
+	 * half was not, and it gates everything under it. `isEnabledForUser`
+	 * against the id an instance does not carry returns FALSE rather than
+	 * erroring, so on every migrated instance this resolver returned the vault
+	 * fallback and the namespace probing underneath it never ran at all.
 	 *
 	 * @var string
 	 */
-	public const DORIATH_APP_ID = 'doriath';
+	public const CREDENTIAL_APP = 'keepiq';
 
 	/**
 	 * Credential-app namespaces to probe, NEWEST FIRST.
@@ -153,7 +161,7 @@ class CredentialStoreResolver {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	public function isDoriathEligible(): bool {
-		if ($this->appManager->isEnabledForUser(self::DORIATH_APP_ID) === false) {
+		if (FleetAppId::isEnabledForUser($this->appManager, self::CREDENTIAL_APP) === false) {
 			return false;
 		}
 

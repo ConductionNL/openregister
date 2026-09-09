@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -77,7 +78,11 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @var string
 	 */
-	private const REQUIRED_APP = 'openconnector';
+	// The connector answers to `integriq` on development and `openconnector`
+	// on beta/main; FleetAppId holds both spellings, so this names the app
+	// rather than one spelling of it. Never compare it to an id directly —
+	// go through FleetAppId, or the comparison is false on half the fleet.
+	private const REQUIRED_APP = 'integriq';
 
 	/**
 	 * Constructor.
@@ -141,7 +146,11 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 * @return string|null
 	 */
 	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
+		// The id the instance ACTUALLY registered. This value is published
+		// verbatim in the `integrations` capability and consumed client-side
+		// as `isAppInstalled(requiredApp)`, so returning the canonical name
+		// against a beta/main instance would report the connector missing.
+		return (FleetAppId::resolve($this->appManager, self::REQUIRED_APP) ?? self::REQUIRED_APP);
 	}//end getRequiredApp()
 
 	/**
@@ -172,7 +181,7 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 * @return bool
 	 */
 	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
+		return FleetAppId::isInstalled($this->appManager, self::REQUIRED_APP);
 	}//end isEnabled()
 
 	/**
