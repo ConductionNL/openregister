@@ -86,6 +86,25 @@ Measured: `beperkingGebruik`, `dekkingInTijd`, `aggregatieniveau` and
 how MDTO carries a WOO/AVG access restriction; without it the export cannot say
 that a record is restricted, and a receiving e-Depot cannot enforce it.
 
+**A4 · `archiefstatus` carries two different vocabularies under one name.**
+
+Found while implementing A1, not during the read-through.
+
+`RetentionService::applyArchivalMetadata()` writes
+`retention.archiefstatus = 'nog_te_archiveren'`. `TmloService` writes
+`tmlo.archiefstatus` from `VALID_ARCHIEFSTATUS` — `actief`, `semi_statisch`,
+`overgebracht`, `vernietigd` — and `nog_te_archiveren` is not among them. The
+TMLO validator would reject the value the retention service writes, into a field
+of the same name.
+
+So `archiefstatus` means one of two things depending on which block it sits in,
+and nothing in the code says which.
+
+The resolver maps `nog_te_archiveren` onto `active` so the abstract answer is
+coherent — a record "still to be archived" is live and not yet transferred. That
+makes `_retention` usable. **It does not fix the two writers**, which still
+disagree, and a single-vocabulary decision belongs in the next pass.
+
 ### B — Selectielijst provenance is not reconstructable
 
 **B1 · The selectielijst VERSION is never recorded.**
