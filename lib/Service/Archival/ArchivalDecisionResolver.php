@@ -95,25 +95,9 @@ class ArchivalDecisionResolver {
 			$retention = [];
 		}
 
-		// The object's OWN archival properties, in the ZGW zaak vocabulary.
-		//
-		// 🔴 THIS IS WHAT MAKES `_retention` ABSTRACT RATHER THAN THEORETICAL.
-		// `archiefnominatie` / `archiefactiedatum` / `archiefstatus` are the ZGW
-		// contract, and an app that implements the zaak API declares them as
-		// ordinary schema properties on its own record — dossiq derives them
-		// from a case's resultaattype on close (zrc-021) and writes them there.
-		// Reading only `@self.retention` would have meant `_retention` stayed
-		// empty on exactly the records that HAVE an archival decision, while
-		// each app kept reading its own field names, which is the per-app
-		// duplication this resolver exists to end.
-		//
-		// These are not app-specific names: openregister already speaks the
-		// same vocabulary in `retention`, in Dutch. This reads the English
-		// spelling too, and normalises both into one answer.
-		//
-		// `@self.retention` still WINS where both are present: that is a
-		// decision recorded against the object through the retention service,
-		// and a schema property is what an app wrote for its own API consumers.
+		// The object's OWN archival properties, in the ZGW zaak vocabulary. This
+		// is what makes `_retention` abstract rather than theoretical; see
+		// {@see declaredArchivalFields()} for why it is read at all.
 		$declared = $this->declaredArchivalFields(entity: $entity);
 		if ($retention === [] && $declared === []) {
 			return null;
@@ -255,8 +239,9 @@ class ArchivalDecisionResolver {
 	 *
 	 * @param array<string, mixed> $retention The stored retention block.
 	 * @param array<string, mixed> $annotation The schema annotation evaluation.
+	 * @param array<string, string> $declared The ZGW archival fields the record itself declares.
 	 *
-	 * @return string|null One of `selectielijst`, `schema`, `annotation`, or null.
+	 * @return string|null One of `selectielijst`, `schema`, `record`, `annotation`, or null.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
@@ -282,6 +267,23 @@ class ArchivalDecisionResolver {
 
 	/**
 	 * Read the ZGW archival properties the object itself declares.
+	 *
+	 * 🔴 THIS IS WHAT MAKES `_retention` ABSTRACT RATHER THAN THEORETICAL.
+	 * `archiefnominatie` / `archiefactiedatum` / `archiefstatus` are the ZGW
+	 * contract, and an app that implements the zaak API declares them as
+	 * ordinary schema properties on its own record — dossiq derives them from a
+	 * case's resultaattype on close (zrc-021) and writes them there. Reading
+	 * only `@self.retention` would have left `_retention` empty on exactly the
+	 * records that HAVE an archival decision, while each app kept reading its
+	 * own field names, which is the per-app duplication this resolver exists to
+	 * end.
+	 *
+	 * These are not app-specific names: openregister already speaks the same
+	 * vocabulary in `retention`, in Dutch.
+	 *
+	 * `@self.retention` still WINS where both are present: that is a decision
+	 * recorded against the object through the retention service, and a schema
+	 * property is what an app wrote for its own API consumers.
 	 *
 	 * Both spellings are accepted for each field, because an app writes
 	 * whichever its own API speaks: the Dutch `archiefnominatie` when it mirrors
