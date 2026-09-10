@@ -225,6 +225,87 @@ graph TB
     style ADMIN fill:#E74C3C
 ```
 
+### A schema with no authorization block is readable by every account that can log in
+
+Read this before you decide your schema does not need a block.
+
+**An absent `authorization` block does not mean "no access". It means open.**
+A schema that declares nothing answers `GET /api/objects/{register}/{schema}`
+with every non-private row, to every caller the login accepted. There is no
+group check, because there is no rule to check against.
+
+This surprises people, so here is the shape of it:
+
+| The schema declares | A list read returns |
+|---|---|
+| No `authorization` at all | Every non-private row, to anyone authenticated |
+| `"read": ["some-group"]` | Rows only to members of that group |
+| `"read": []` | Nothing. An empty list means "grant to nobody" |
+| A block with no `read` key | Nothing, beyond the caller's own rows |
+
+The last two rows are the fail-closed half. Once your block is non-empty,
+OpenRegister denies any action you did not name. So `{"read": ["admins"]}` on
+its own does not leave `create`, `update` and `delete` as they were. It closes
+them to owners and admins. **Name all four actions, or accept that you changed
+the write posture too.**
+
+#### Why the anonymous check reassures you and should not
+
+Point an anonymous request at an unprotected schema and you get an empty list.
+That looks like a working boundary. It is not one. Anonymous callers are empty
+for a different reason: they own no rows and belong to no organisation. Log in
+as any account, including one in no groups at all, and the same endpoint
+returns everything.
+
+Measured on a fleet app in September 2026: an account created with
+`occ user:add` and given no group membership read ten rows of admin-only
+integration status. A wrong password returned 401 and anonymous returned an
+empty list, so the instance looked correctly locked from both ends anyone had
+checked. Access control held at the login line and nowhere past it.
+
+**Test the boundary with an authenticated account that should not pass it.** An
+anonymous probe cannot tell an enforced schema from an open one.
+
+#### `"rbac": true` in the response is not evidence of filtering
+
+The `@self.rbac` field echoes what was asked for, not what happened. It reads
+`true` whenever the caller is not an admin. A schema with no block returns
+`"rbac": true` alongside every row it holds.
+
+To find out whether a schema is actually protected, read the schema itself.
+The schemas API returns the stored block, and `null` there is the open case:
+
+```bash
+curl -s -u admin:… -H 'OCS-APIRequest: true' \
+  'https://your-instance/index.php/apps/openregister/api/schemas?_limit=500' \
+  | jq '.results[] | select(.slug=="yourSchema") | {slug, authorization}'
+```
+
+See [Check Authorization Config](#check-authorization-config) for the same
+lookup through `SchemaMapper` when you are already inside the container.
+
+#### A guard on the page does not guard the data
+
+Leaf apps put admin-only configuration in a register and then hide the page
+behind a route guard or a `permission: "admin"` manifest entry. Both stop the
+page from rendering. Neither narrows a list read, because the rows come from
+OpenRegister and a client cannot restrict a server. If the page is admin-only,
+the schema behind it needs `read` restricted too.
+
+#### The list path evaluates `read`, never `list`
+
+`list` is a real action in the vocabulary, but `GET /api/objects/{register}/{schema}`
+does not use it. It filters on `read`. A block that grants `{"list": [...]}`
+and omits `read` falls into the fail-closed branch and returns the caller's own
+rows only.
+
+A denial on a list is `HTTP 200` with an empty `results` array, not a `403`.
+OpenRegister narrows a list in SQL rather than refusing it, so that enumerating
+a schema cannot tell you what you were not allowed to see.
+
+Next: pick the groups your schema should answer to, then write the block using
+the samples under [Code Examples](#code-examples) below.
+
 ### The action vocabulary: closed by default, extensible by declaration
 
 An `authorization` block may name `create`, `read`, `update` or `delete`, plus
