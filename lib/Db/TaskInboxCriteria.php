@@ -98,6 +98,15 @@ final class TaskInboxCriteria {
 	 *                                 strictly before this instant — the
 	 *                                 derived-overdue filter, handed the clock
 	 *                                 by TaskTemporalProjection.
+	 * @param DateTime|null $dueAfter When set, only tasks whose effective
+	 *                                deadline is at or after this instant.
+	 *                                Pairs with `dueBefore` to express a
+	 *                                WINDOW ("due this week"), which
+	 *                                `overdueAt` cannot: that one is
+	 *                                open-ended in the past by design.
+	 * @param DateTime|null $dueBefore When set, only tasks whose effective
+	 *                                 deadline is strictly before this
+	 *                                 instant.
 	 * @param string $sort One of the SORT_* values.
 	 * @param bool $sortDescending Whether to invert the sort.
 	 *
@@ -114,6 +123,8 @@ final class TaskInboxCriteria {
 		public readonly ?string $objectUuid = null,
 		public readonly ?string $runUuid = null,
 		public readonly ?DateTime $overdueAt = null,
+		public readonly ?DateTime $dueAfter = null,
+		public readonly ?DateTime $dueBefore = null,
 		public readonly string $sort = self::SORT_DUE,
 		public readonly bool $sortDescending = false,
 	) {

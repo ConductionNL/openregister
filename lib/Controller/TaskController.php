@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Task;
+use DateTime;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -195,6 +196,11 @@ class TaskController extends Controller {
 	 *                             view asks what the run asked, not what it
 	 *                             asked the caller. Visibility still applies.
 	 * @param string|null $overdue 'true' to restrict to derived-overdue tasks.
+	 * @param string|null $dueAfter ISO-8601 instant; only tasks due at or
+	 *                              after it. Pairs with `dueBefore` to make a
+	 *                              window, which `overdue` cannot express.
+	 * @param string|null $dueBefore ISO-8601 instant; only tasks due strictly
+	 *                               before it.
 	 * @param string $sort dueAt|priority|created. A leading `-` inverts
 	 *                     the order (`-dueAt`), so sort and direction travel
 	 *                     as one parameter.
@@ -215,6 +221,8 @@ class TaskController extends Controller {
 		?string $objectUuid = null,
 		?string $runUuid = null,
 		?string $overdue = null,
+		?string $dueAfter = null,
+		?string $dueBefore = null,
 		string $sort = TaskInboxCriteria::SORT_DUE,
 		int $limit = 25,
 		int $offset = 0,
@@ -241,6 +249,15 @@ class TaskController extends Controller {
 			$overdueAt = $this->temporal->now();
 		}
 
+		// A window over the same effective deadline `overdue` uses.
+		$window = $this->dueWindow(dueAfter: $dueAfter, dueBefore: $dueBefore);
+		if ($window['error'] !== null) {
+			return new JSONResponse(['error' => $window['error']], Http::STATUS_BAD_REQUEST);
+		}
+
+		$dueAfterAt = $window['after'];
+		$dueBeforeAt = $window['before'];
+
 		$descending = str_starts_with($sort, '-');
 		$sortKey = ltrim($sort, '-');
 
@@ -255,6 +272,8 @@ class TaskController extends Controller {
 			objectUuid: $objectUuid,
 			runUuid: $this->trimmedOrNull(value: $runUuid),
 			overdueAt: $overdueAt,
+			dueAfter: $dueAfterAt,
+			dueBefore: $dueBeforeAt,
 			sort: $sortKey,
 			sortDescending: $descending,
 		);
@@ -671,6 +690,68 @@ class TaskController extends Controller {
 
 		return $trimmed;
 	}//end trimmedOrNull()
+
+	/**
+	 * An ISO-8601 instant, or null.
+	 *
+	 * Null for an absent value AND for an unparseable one: the caller
+	 * distinguishes the two, because a dropped date filter WIDENS the result
+	 * set and a list quietly showing more than was asked for is worse than a
+	 * refusal.
+	 *
+	 * @param string|null $value The raw query value.
+	 *
+	 * @return DateTime|null The instant, or null.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function parseInstant(?string $value): ?DateTime {
+		$raw = trim((string) ($value ?? ''));
+		if ($raw === '') {
+			return null;
+		}
+
+		try {
+			return new DateTime($raw);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end parseInstant()
+
+	/**
+	 * Parse both ends of a due window, or name the one that is wrong.
+	 *
+	 * Extracted from `index()` rather than inlined: two parses and two
+	 * guards took that method's NPath complexity from 162 to 324, over
+	 * phpmd's threshold of 200. The rule is right — `index()` is already a
+	 * long parameter funnel — so the parsing moves out instead of the
+	 * threshold moving up.
+	 *
+	 * 🔴 An UNPARSEABLE instant is REFUSED, not dropped. A dropped date
+	 * filter WIDENS the result set, and a task list quietly showing more
+	 * than was asked for is exactly the failure this endpoint's scope rules
+	 * exist to prevent.
+	 *
+	 * @param string|null $dueAfter  The raw lower bound.
+	 * @param string|null $dueBefore The raw upper bound.
+	 *
+	 * @return array{after: DateTime|null, before: DateTime|null, error: string|null}
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function dueWindow(?string $dueAfter, ?string $dueBefore): array {
+		$after = $this->parseInstant(value: $dueAfter);
+		if ($dueAfter !== null && $after === null) {
+			return ['after' => null, 'before' => null, 'error' => 'dueAfter is not a valid instant'];
+		}
+
+		$before = $this->parseInstant(value: $dueBefore);
+		if ($dueBefore !== null && $before === null) {
+			return ['after' => null, 'before' => null, 'error' => 'dueBefore is not a valid instant'];
+		}
+
+		return ['after' => $after, 'before' => $before, 'error' => null];
+	}//end dueWindow()
 
 	/**
 	 * The acting identity, or null without a session.
