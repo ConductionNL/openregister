@@ -248,8 +248,48 @@ Split by cost. Only the first group is proposed for immediate implementation.
    `selectielijstBron`, taken from the row's own `versie` where it declares
    one and from the stored entry's `@self.version` where it does not. They
    surface abstractly as `sourceVersion` and `sourceConsultedAt`.
-8. **C1** — implement the six missing `afleidingswijzen`. C2 makes them refuse
-   in the meantime; this makes them work.
+8. ~~**C1** — implement the six missing `afleidingswijzen`.~~ **DONE.** All nine
+   are supported. Five of the six that were missing turned out to share one
+   mechanic — follow a reference held on this record, read a date property off
+   the record it points at — so openregister implements that mechanic once,
+   configured by `sourceRelation` and `sourceRelationProperty`, and never
+   learns what a zaak or a besluit is. `ander_datumkenmerk` reads a named date
+   property on the record itself via `sourceDateProperty`.
+
+   The six refuse to produce a disposal date at all when their source cannot be
+   resolved, rather than falling back to the creation date. `afgehandeld` and
+   `termijn` keep that fallback, because a record with no recorded closure was
+   created and has been open since, which is defensible. `eigenschap` keeps it
+   too, deliberately: it predates the change and existing installs may rely on
+   it, so moving it is a separate decision.
+
+### Found while implementing, and fixed here
+
+**F1 · The pending-destruction-list exclusion was a no-op.**
+
+`getObjectsOnPendingDestructionLists()` filtered on `object->status`.
+`MagicSearchHandler` compares a filter key against the schema's OWN property
+names and turns anything it does not recognise into `1 = 0` rather than
+raising, so the query returned nothing on every run. The exclusion it feeds is
+"objects already on a pending destruction list", so every sweep re-listed
+objects that were already awaiting approval, and nothing said so. The key is
+now `status`.
+
+**F2 · `DestructionService::findEligibleObjects()` cannot return anything.
+NOT FIXED HERE.**
+
+It calls `MagicMapper::findAll()` with no `register`/`schema`, and `findAll()`
+returns `[]` immediately in that case. It also filters on
+`retention.archiefstatus`, a dotted JSON path the search handler does not
+support outside the TMLO-specific branch, which would compile to `1 = 0` even
+with the context supplied.
+
+It has no production caller: `DestructionCheckJob` uses
+`RetentionService::findEligibleForDestruction()`, which reads the objects table
+directly and filters in PHP, and `TransferCheckJob::findEligibleObjects()` is
+its own separate method that returns `[]` as a documented no-op. So nothing is
+broken by it today. It is recorded here because it looks like a working query
+and is not, and because the next person to wire it up will believe it works.
 
 ### Later — export completeness
 

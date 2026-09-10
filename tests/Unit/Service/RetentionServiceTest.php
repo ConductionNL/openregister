@@ -216,6 +216,212 @@ class RetentionServiceTest extends TestCase {
 	}//end stubSelectielijstEntry()
 
 	/**
+	 * GAP C1: a relation-based derivation follows the reference and reads the
+	 * date off the record it points at.
+	 *
+	 * ZGW names five methods after zaak and besluit concepts, but the mechanic
+	 * is one: the schema says which property holds the reference and which
+	 * property on the target holds the date. openregister never learns what a
+	 * besluit is, which is what keeps it schema-agnostic.
+	 */
+	public function testDatesFromARelatedRecord(): void {
+		$object = new ObjectEntity();
+		$object->setObject(['besluit' => 'related-uuid']);
+
+		$related = new ObjectEntity();
+		$related->setObject(['ingangsdatum' => '2020-03-01']);
+		$this->objectMapper->method('find')->willReturn($related);
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'ingangsdatum_besluit',
+			'sourceRelation' => 'besluit',
+			'sourceRelationProperty' => 'ingangsdatum',
+		]);
+
+		$date = $this->service->calculateArchiveActionDate($object, $schema, 'P5Y');
+
+		$this->assertSame('2025-03-01', $date);
+	}//end testDatesFromARelatedRecord()
+
+	/**
+	 * A relation holding a LIST resolves through its first entry.
+	 *
+	 * A disposal date derived from several unrelated dates is not derived at
+	 * all, so the choice is deliberate and logged rather than silent.
+	 */
+	public function testDatesFromTheFirstOfSeveralRelations(): void {
+		$object = new ObjectEntity();
+		$object->setObject(['zaken' => ['first-uuid', 'second-uuid']]);
+
+		$related = new ObjectEntity();
+		$related->setObject(['startdatum' => '2021-06-15']);
+		$this->objectMapper->expects($this->once())
+			->method('find')
+			->with('first-uuid')
+			->willReturn($related);
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'gerelateerde_zaak',
+			'sourceRelation' => 'zaken',
+			'sourceRelationProperty' => 'startdatum',
+		]);
+
+		$this->assertSame('2026-06-15', $this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+	}//end testDatesFromTheFirstOfSeveralRelations()
+
+	/**
+	 * GAP C1: an unresolvable relation produces NO date, not a date from
+	 * creation.
+	 *
+	 * This is the whole point of the gap. Dating from creation when the schema
+	 * asked for the related decision's date is a plausible wrong answer, and a
+	 * wrong disposal date in that direction keeps personal data past its term.
+	 * No date is a visible gap a records officer can act on.
+	 */
+	public function testRefusesADateWhenTheRelationCannotBeResolved(): void {
+		$object = new ObjectEntity();
+		$object->setObject(['besluit' => 'missing-uuid']);
+		$object->setCreated(new \DateTime('2019-01-01'));
+
+		$this->objectMapper->method('find')->willThrowException(new \Exception('not found'));
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'ingangsdatum_besluit',
+			'sourceRelation' => 'besluit',
+			'sourceRelationProperty' => 'ingangsdatum',
+		]);
+
+		$this->assertNull($this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+	}//end testRefusesADateWhenTheRelationCannotBeResolved()
+
+	/**
+	 * A relation-based method with no relation configured refuses too.
+	 *
+	 * A validation list that validates nothing is the defect this whole gap is
+	 * about, so the missing configuration has to be as loud as the missing
+	 * record.
+	 */
+	public function testRefusesADateWhenTheRelationIsNotConfigured(): void {
+		$object = new ObjectEntity();
+		$object->setObject([]);
+		$object->setCreated(new \DateTime('2019-01-01'));
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'hoofdzaak',
+		]);
+
+		$this->assertNull($this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+	}//end testRefusesADateWhenTheRelationIsNotConfigured()
+
+	/**
+	 * GAP C1: `ander_datumkenmerk` reads a named date property on this record.
+	 *
+	 * The one method of the six that needs no relation: ZGW's catch-all for a
+	 * date attribute that is not a zaak-eigenschap.
+	 */
+	public function testDatesFromANamedDatePropertyOnTheRecord(): void {
+		$object = new ObjectEntity();
+		$object->setObject(['vervaldatum' => '2022-12-31']);
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'ander_datumkenmerk',
+			'sourceDateProperty' => 'vervaldatum',
+		]);
+
+		$this->assertSame('2027-12-31', $this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+	}//end testDatesFromANamedDatePropertyOnTheRecord()
+
+	/**
+	 * `afgehandeld` keeps its creation-date fallback.
+	 *
+	 * A record with no recorded closure was created and has been open since,
+	 * which is a defensible source. The six new methods are the ones where it
+	 * is not, so only they refuse. This test is what stops the refusal being
+	 * widened by accident.
+	 */
+	public function testAfgehandeldStillFallsBackToCreation(): void {
+		$object = new ObjectEntity();
+		$object->setObject([]);
+		$object->setCreated(new \DateTime('2019-01-01'));
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'afgehandeld',
+		]);
+
+		$this->assertSame('2024-01-01', $this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+	}//end testAfgehandeldStillFallsBackToCreation()
+
+	/**
+	 * A method ZGW does not define is still refused outright.
+	 *
+	 * Gap C2 wired VALID_AFLEIDINGSWIJZEN up; widening it to nine must not
+	 * have quietly turned it back into a list that validates nothing.
+	 */
+	public function testStillRefusesAMethodZgwDoesNotDefine(): void {
+		$object = new ObjectEntity();
+		$object->setObject([]);
+		$object->setCreated(new \DateTime('2019-01-01'));
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'zomaar_iets',
+		]);
+
+		$this->assertNull($this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+	}//end testStillRefusesAMethodZgwDoesNotDefine()
+
+	/**
+	 * The pending-destruction-list exclusion filters on a REAL schema property.
+	 *
+	 * MagicSearchHandler compares a filter key against the schema's own
+	 * property names and turns anything it does not recognise into `1 = 0`
+	 * rather than raising. The key was `object->status`, which is not a
+	 * property name, so this query returned nothing on every run and the
+	 * exclusion it feeds was a no-op: every sweep re-listed objects that were
+	 * already awaiting approval.
+	 *
+	 * The assertion is on the filter KEY rather than on the result, because
+	 * the result was empty both before and after: a test that only checked the
+	 * return value could not tell the bug from the fix.
+	 */
+	public function testExcludesObjectsAlreadyOnAPendingList(): void {
+		$this->settingsHandler->method('getArchivalSettingsOnly')->willReturn([
+			'destructionListRegister' => 1,
+			'destructionListSchema' => 2,
+		]);
+
+		$list = new ObjectEntity();
+		$list->setObject(['objects' => [['uuid' => 'already-listed']]]);
+
+		$this->objectMapper->expects($this->once())
+			->method('findAll')
+			->with(
+				$this->anything(),
+				$this->anything(),
+				$this->callback(function (array $filters): bool {
+					return array_key_exists('status', $filters)
+						&& array_key_exists('object->status', $filters) === false;
+				})
+			)
+			->willReturn([$list]);
+
+		$this->assertSame(['already-listed'], $this->service->getObjectsOnPendingDestructionLists());
+	}//end testExcludesObjectsAlreadyOnAPendingList()
+
+	/**
 	 * Test that archival metadata is NOT applied when schema has no archive config.
 	 */
 	public function testApplyArchivalMetadataSkipsWhenDisabled(): void {
