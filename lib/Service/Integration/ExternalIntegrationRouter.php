@@ -394,6 +394,15 @@ class ExternalIntegrationRouter {
 			// the catch below, which raises `openconnector-source-missing` and
 			// the UI shows "Reconfigure connector" — so this one at least
 			// fails visibly. It needs a real replacement seam, not a rename.
+			//
+			// @stale-fleet-app-id exclude integriq has no lib/Db/ at all. Re-verified
+			// 2026-09-10: ac47457f deleted SourceMapper with 14 other mapper and
+			// entity shims in the chain-C OpenRegister cutover, and no
+			// OCA\Integriq\Db\SourceMapper was ever added in its place. The only
+			// remaining mention in that repo is a docblock in
+			// SynchronizationService recording that it reimplements the legacy
+			// SourceMapper::findOrCreateByLocation() over object storage. Renaming
+			// the namespace swaps one missing class for another.
 			$mapper = $this->container->get('OCA\\OpenConnector\\Db\\SourceMapper');
 			$source = null;
 
