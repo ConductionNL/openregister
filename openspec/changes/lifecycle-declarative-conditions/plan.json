@@ -1,0 +1,123 @@
+{
+  "change": "lifecycle-declarative-conditions",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "base_branch": "development",
+  "feature_branch": "feature/3586/lifecycle-declarative-conditions",
+  "created": "2026-09-10",
+  "tracking_issue": 3586,
+  "tasks": [
+    {
+      "id": "1.1",
+      "title": "In `LifecycleAnnotationValidator::validate()`, beside the existing `requires` check, validate a transition's optional `condition`: it MUST be a JSONLogic rule object accepted by `FlowExpression::isValid()`, else collect `lifecycle-condition-malformed` naming the transition. Verify with a unit test asserting the code for an unknown-operator rule.",
+      "section": "1. Annotation validation at schema-save time",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "1.2",
+      "title": "In the same loop, refuse a SCALAR `condition` with `lifecycle-condition-malformed` and a message pointing at the JSONLogic rule-object form. Verify with a unit test using the action dialect string `\"@self.settlementMode == 'reimbursable'\"`, which `isValid()` accepts as a literal and which would otherwise authorize every transition.",
+      "section": "1. Annotation validation at schema-save time",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "1.3",
+      "title": "Validate a transition's optional `message` as either a non-empty string or a per-locale map with an optional `defaultLocale`, mirroring `NotificationAnnotationValidator::validateMessage()` and returning the single code `lifecycle-message-malformed` for every malformed shape. Verify with unit tests for a valid string, a valid map, a number, an empty string, an empty map, an all-empty-values map, and a `defaultLocale` naming an undeclared locale.",
+      "section": "1. Annotation validation at schema-save time",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "1.4",
+      "title": "In `validateGraphMode()`, refuse a `condition` declared on the `graph` block with `lifecycle-condition-graph-unsupported`, stating that graph-mode conditions are not yet enforced. Verify with unit tests: a graph block with a condition is refused, a graph block without one validates as today, and a schema declaring both a static conditioned transition and a condition-free graph block raises no graph error.",
+      "section": "1. Annotation validation at schema-save time",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "1.5",
+      "title": "Confirm no regression for annotations declaring neither key. Verify by running the existing `LifecycleAnnotationValidator` test class green and unchanged.",
+      "section": "1. Annotation validation at schema-save time",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "2.1",
+      "title": "Add a private data-document builder to `LifecycleValidationListener` returning exactly `object`, `previous`, `user` (`uid` plus `groups`, empty string and empty list with no session user) and `transition` (`action`, `from`, `to`). Verify with a unit test asserting the four keys and the session-less shape.",
+      "section": "2. Runtime evaluation in the listener",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "2.2",
+      "title": "Evaluate the matched transition's `condition` through `FlowExpression::isTrue()` AFTER the `authorization` gate and immediately BEFORE the `requires` guard resolution at `LifecycleValidationListener.php:230`. On false, reject with code `lifecycle-condition-unmet` and log at debug level naming the schema, the action and the field so a mistyped `var` path is diagnosable. Verify with unit tests for the passing and refusing paths, asserting the log fires only on refusal.",
+      "section": "2. Runtime evaluation in the listener",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "2.3",
+      "title": "Resolve the declared `message` for the refusal: a string verbatim, a map by caller language from `IL10N::getLanguageCode()` (not `Accept-Language` negotiation), then `defaultLocale`, then `en`, then the first declared locale, passed through untranslated either way. Verify with unit tests for the string, an exact locale hit, and a miss falling through each step.",
+      "section": "2. Runtime evaluation in the listener",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "2.4",
+      "title": "Inject `IL10N` and produce the engine's generic fallback message, naming the action and the field, when the transition declares a `condition` and no `message`. Verify with a unit test asserting the text comes from the translation layer, not a bare literal.",
+      "section": "2. Runtime evaluation in the listener",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "3.1",
+      "title": "Cover the listener paths in `tests/Unit/Listener/`: condition holds, condition refuses with a string message, with a map message and with no message, ordering against `authorization`, and no-condition passthrough. Include a `LifecycleGuardRegistry` double that fails the test if `resolve()` is called on a refused condition. Verify the class is green.",
+      "section": "3. Tests, each proven to fail first",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "3.2",
+      "title": "Cover the fail-closed runtime rule: a stored condition that cannot be evaluated for the object at hand refuses with `lifecycle-condition-unmet` rather than allowing the transition. Verify the class is green.",
+      "section": "3. Tests, each proven to fail first",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "3.3",
+      "title": "Cover both transition routes reaching the same refusal: a `TransitionEngine::transition()` call and a direct lifecycle-field `saveObject()` both raise `HookStoppedException` carrying `lifecycle-condition-unmet`. Verify the test asserts the code on both paths.",
+      "section": "3. Tests, each proven to fail first",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "3.4",
+      "title": "Mutation-check every test added in 1.x, 2.x and 3.x: delete the validator branch, separately invert the runtime refusal, and separately drop the graph-mode refusal; run PHPUnit after each and record that the intended test went RED for the intended reason before restoring. Verify by exit code, not by the summary line; a test that stays green is not finished.",
+      "section": "3. Tests, each proven to fail first",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "4.1",
+      "title": "Verify the `condition` and per-locale `message` added to the `dataSubjectRequest` `refuse` transition in `lib/Settings/openregister_mock_register.json` import cleanly and enforce as specified: refusing without a `denialGround`, or with `not-applicable`, is refused with the Dutch message for an `nl` caller. Verify by importing the register and attempting both transitions.",
+      "section": "4. Worked example and documentation",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "4.2",
+      "title": "Document `condition` and `message` in the lifecycle annotation reference: the JSONLogic form, the four data-document keys, why it is not the flow engine's `json` shape, both `message` shapes and their resolution order, the empty `user` under `occ` and any session-less caller, the evaluation order against `authorization` and `requires`, the distinction from the `@self` string `condition` an `actions[]` entry declares, and that graph-mode conditions are refused pending save-path enforcement. Verify the reference carries the mock register's `refuse` example.",
+      "section": "4. Worked example and documentation",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    },
+    {
+      "id": "5.1",
+      "title": "Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and fix every finding on the touched files, pre-existing ones included. Verify by exit code 0.",
+      "section": "5. Quality gate",
+      "status": "pending",
+      "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
+    }
+  ]
+}
