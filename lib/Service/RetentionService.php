@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -75,18 +76,23 @@ class RetentionService {
 
 	/**
 	 * Valid archiefstatus values.
+	 *
+	 * GAP A4. One vocabulary now, the Archiefwet lifecycle in English, shared
+	 * with TmloService and with the abstract `_retention` layer. The Dutch
+	 * spellings this service and TmloService each used are accepted on READ
+	 * through {@see RecordState}'s alias lists, because stored data carries
+	 * whatever was current when it was written and there is no migration.
+	 *
+	 * @var string[]
 	 */
-	private const VALID_STATUSES = [
-		'nog_te_archiveren',
-		'gearchiveerd',
-		'vernietigd',
-		'overgebracht',
-	];
+	private const VALID_STATUSES = RecordState::ALL_ALIASES;
 
 	/**
 	 * Immutable archival statuses (no further updates allowed).
+	 *
+	 * @var string[]
 	 */
-	private const IMMUTABLE_STATUSES = ['vernietigd', 'overgebracht'];
+	private const IMMUTABLE_STATUSES = RecordState::IMMUTABLE_ALIASES;
 
 	/**
 	 * Constructor.
@@ -155,7 +161,7 @@ class RetentionService {
 
 		// Build archival metadata.
 		$retention['archiefnominatie'] = $applied['archiefnominatie'];
-		$retention['archiefstatus'] = 'nog_te_archiveren';
+		$retention['archiefstatus'] = RecordState::ACTIVE;
 		$retention['classification'] = ($archiveConfig['classification'] ?? null);
 		$retention['bewaartermijn'] = $retentionPeriod;
 		$retention['selectielijstBron'] = $applied['selectielijstBron'];
@@ -500,11 +506,15 @@ class RetentionService {
 		$retention = $object->getRetention() ?? [];
 		$status = $retention['archiefstatus'] ?? null;
 
-		if ($status === 'vernietigd') {
+		// Both spellings of both states. An install that has not written a
+		// record since the vocabulary landed still holds the Dutch one, and a
+		// guard that stopped recognising `overgebracht` would unlock every
+		// transferred record it has.
+		if (in_array($status, RecordState::DESTROYED_ALIASES, true) === true) {
 			return 'OBJECT_DESTROYED';
 		}
 
-		if ($status === 'overgebracht') {
+		if (in_array($status, RecordState::TRANSFERRED_ALIASES, true) === true) {
 			return 'OBJECT_TRANSFERRED';
 		}
 
@@ -652,7 +662,7 @@ class RetentionService {
 	 * Find objects eligible for destruction.
 	 *
 	 * Objects with archiefactiedatum < now, archiefnominatie = vernietigen,
-	 * archiefstatus = nog_te_archiveren, no active legal hold, and not already
+	 * the record state is still active, no active legal hold, and not already
 	 * on a pending destruction list.
 	 *
 	 * @param array $excludeUuids UUIDs to exclude (already on pending lists)
@@ -696,7 +706,10 @@ class RetentionService {
 					continue;
 				}
 
-				if (($retention['archiefstatus'] ?? '') !== 'nog_te_archiveren') {
+				// Every spelling that means live. Matching only the English one
+				// would make every pre-existing record invisible to this sweep,
+				// which is the direction that keeps personal data past its term.
+				if (in_array(($retention['archiefstatus'] ?? ''), RecordState::ACTIVE_ALIASES, true) === false) {
 					continue;
 				}
 

@@ -103,6 +103,21 @@ class ArchivalDecisionResolver {
         // openspec/changes/archival-conformance; this mapping makes the
         // abstract answer usable, it does not fix the two writers.
         'nog_te_archiveren' => 'active',
+        // GAP A4 IS NOW FIXED AT THE WRITER. RetentionService writes
+        // RecordState::ACTIVE and the rest of the Archiefwet lifecycle in
+        // English, sharing one vocabulary with this layer. The Dutch keys above
+        // stay because stored data is not migrated: they are a compatibility
+        // shim for records written before the change, not a translation between
+        // two live conventions. TmloService keeps its own Dutch spellings for
+        // `tmlo.archiefstatus`, which is its own block with its own transition
+        // matrix and its own MDTO export mapping; that is a separate move.
+        //
+        // The English spellings map to themselves so a stored value that is
+        // already canonical still resolves rather than falling through.
+        'active' => 'active',
+        'semi_static' => 'semi_static',
+        'transferred' => 'transferred',
+        'destroyed' => 'destroyed',
     ];
 
     /**

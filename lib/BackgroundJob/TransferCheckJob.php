@@ -150,7 +150,7 @@ class TransferCheckJob extends TimedJob {
 	 * Objects are eligible when:
 	 * - archiefnominatie = 'bewaren'
 	 * - archiefactiedatum <= today
-	 * - archiefstatus = 'nog_te_archiveren'
+	 * - the record state is still active
 	 * - Not already on an active transfer list
 	 *
 	 * @return array<int, \OCA\OpenRegister\Db\ObjectEntity> Eligible objects.

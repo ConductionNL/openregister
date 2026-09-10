@@ -3311,9 +3311,15 @@ class SaveObject {
 		// Check archival immutability: destroyed and transferred objects cannot be modified.
 		$retention = $existingObject->getRetention() ?? [];
 		$archStatus = $retention['archiefstatus'] ?? null;
+		// Both vocabularies. GAP A4 moved the stored spelling to English, and
+		// stored data is not migrated, so a guard that only knew `destroyed`
+		// would let every already-destroyed record in an existing install be
+		// modified again.
 		$immutableMap = [
 			'vernietigd' => 'OBJECT_DESTROYED',
+			'destroyed' => 'OBJECT_DESTROYED',
 			'overgebracht' => 'OBJECT_TRANSFERRED',
+			'transferred' => 'OBJECT_TRANSFERRED',
 		];
 
 		if ($archStatus !== null && isset($immutableMap[$archStatus]) === true) {
