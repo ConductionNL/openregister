@@ -303,6 +303,14 @@ A denial on a list is `HTTP 200` with an empty `results` array, not a `403`.
 OpenRegister narrows a list in SQL rather than refusing it, so that enumerating
 a schema cannot tell you what you were not allowed to see.
 
+#### This default is scheduled to change
+
+The `rbac-default-authenticated` change proposes flipping the absent-block
+default, and `rbac-unmarked-schema-audit.md` tracks which schemas still declare
+nothing. Do not wait for it. A schema that names its groups today keeps the
+same behaviour after the flip; one that says nothing gets whatever the flip
+decides.
+
 Next: pick the groups your schema should answer to, then write the block using
 the samples under [Code Examples](#code-examples) below.
 
