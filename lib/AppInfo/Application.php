@@ -42,6 +42,7 @@ use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Controller\AnalyticsSeriesController;
 use OCA\OpenRegister\Controller\CaseTokenController;
 use OCA\OpenRegister\Controller\IntegrationsController;
@@ -98,6 +99,7 @@ use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -232,6 +234,7 @@ use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PhotoLinkService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\RegisterSlugResolver;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
@@ -282,6 +285,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\Security\IContentSecurityPolicyManager;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class Application
@@ -420,6 +424,32 @@ class Application extends App implements IBootstrap {
 			FlowRunContext::class,
 			function () {
 				return new FlowRunContext();
+			}
+		);
+
+		// The register-slug resolver MUST be shared. It memoises one indexed
+		// read per candidate list for the life of the request, and a sweep asks
+		// the same question at every call site of the same tick. Nextcloud
+		// auto-wires a fresh instance at every injection point, so without this
+		// registration the memo would be empty every time and the probe would
+		// re-read the register table once per call site.
+		$context->registerService(
+			RegisterSlugResolver::class,
+			function ($c) {
+				return new RegisterSlugResolver(
+					registerMapper: $c->get(RegisterMapper::class),
+					logger: $c->get(LoggerInterface::class)
+				);
+			}
+		);
+
+		// The published contract (ADR-084) consuming apps type-hint. Bound to
+		// the same shared instance, so an app that injects the interface and one
+		// that injects the class share a memo rather than probing twice.
+		$context->registerService(
+			RegisterSlugResolverInterface::class,
+			function ($c) {
+				return $c->get(RegisterSlugResolver::class);
 			}
 		);
 
@@ -2901,6 +2931,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
+
+		// Facet freshness on every object write: bumps the counter for the written
+		// object's (register, schema) scope so the next facet read cannot serve a
+		// bucket list computed before the write (openregister#3560).
+		$context->registerEventListener(ObjectCreatedEvent::class, FacetCacheInvalidationListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, FacetCacheInvalidationListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, FacetCacheInvalidationListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, FacetCacheInvalidationListener::class);
 
 		// Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
 		$context->registerEventListener(ObjectCreatedEvent::class, TranslationProjectionListener::class);

@@ -621,9 +621,10 @@ return [
         // — read-only, object-independent company-lookup leaves. No NC app
         // gate; the OpenConnector `kvk` / `opencorporates` sources carry the
         // base URL + API key. Unconfigured/down → 503 with details.cause.
-        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md.
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-kvk-company-lookup
         ['name' => 'companyLookup#kvkCompany',           'url' => '/api/integrations/kvk/company',            'verb' => 'GET'],
         ['name' => 'companyLookup#kvkSearch',            'url' => '/api/integrations/kvk/search',             'verb' => 'GET'],
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-opencorporates-company-search
         ['name' => 'companyLookup#openCorporatesSearch', 'url' => '/api/integrations/opencorporates/search',  'verb' => 'GET'],
         // BRP HaalCentraal person lookup (external, OpenConnector-routed) —
         // read-only, object-independent person-lookup leaf. No NC app gate; the
@@ -631,7 +632,7 @@ return [
         // client_credentials secret + PKIoverheid mutual-TLS client certificate
         // (both applied natively by CallService). Unconfigured/down → 503 with
         // details.cause. The BSN travels in the request body only, never logged.
-        // @spec openspec/changes/integration-brp-haalcentraal/specs/integration-person-lookup/spec.md.
+        // @spec openspec/specs/integration-person-lookup/spec.md#requirement-brp-person-lookup-relays-wet-brp-audit-metadata
         ['name' => 'personLookup#brpPerson',             'url' => '/api/integrations/brp/person',             'verb' => 'GET'],
         // Outbound-messaging dispatch (external, OpenConnector-routed) —
         // side-effecting send leaf. No NC app gate; the OpenConnector
@@ -642,7 +643,7 @@ return [
         // selection, STOP opt-out, template-approval, 24h session, dedupe,
         // delivery-status); this leaf only POSTs the message. Unconfigured/down
         // → 503 with details.cause.
-        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md.
+        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md#requirement-outbound-messaging-send-endpoints
         ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
         ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
@@ -696,7 +697,7 @@ return [
         // route MUST precede the wildcard `/analytics/{reportId}` unlink
         // route, and the app-global `available` picker route MUST precede
         // the per-object wildcard routes.
-        // @spec openspec/changes/integration-analytics/tasks.md.
+        // @spec openspec/specs/generic-integrations/spec.md#requirement-object-scoped-integration-link-rest-contract
         ['name' => 'analyticsLinks#available',    'url' => '/api/integrations/analytics/available',                  'verb' => 'GET'],
         ['name' => 'analyticsLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'analyticsLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/analytics/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -707,8 +708,9 @@ return [
         // A leaf (procest SLA dashboard) registers a pre-computed series
         // (labels + datasets); the render layer fetches it as a chart
         // widget. RBAC-scoped inside AnalyticsSeriesService.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-register-a-page-level-analytics-series
         ['name' => 'analyticsSeries#register', 'url' => '/api/integrations/analytics/series',              'verb' => 'POST'],
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-fetch-a-page-level-analytics-series-rbac-scoped
         ['name' => 'analyticsSeries#fetch',    'url' => '/api/integrations/analytics/series/{seriesKey}',  'verb' => 'GET',  'requirements' => ['seriesKey' => '[^/]+']],
 
         // Maps page-level overview — multi-object "cases on map" render
@@ -716,21 +718,22 @@ return [
         // widget; points queries the RBAC-scoped marker set for a
         // register/schema. RBAC enforced inside MapsOverviewService via the
         // canonical OR read path (_rbac:true for non-admins, fail-closed).
-        // @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md.
+        // @spec openspec/specs/integration-maps-overview/spec.md#requirement-register-a-page-level-map-overview-widget
         ['name' => 'mapsOverview#register', 'url' => '/api/integrations/maps/overviews',                            'verb' => 'POST'],
+        // @spec openspec/specs/integration-maps-overview/spec.md#requirement-query-the-map-marker-point-set-rbac-scoped
         ['name' => 'mapsOverview#points',   'url' => '/api/integrations/maps/overviews/{register}/{schema}/points', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 
         // Public "track your case" token resolve — anonymous, RBAC-scoped
         // public-safe object view minted via the Shares integration
         // provider. Fails closed (404) on unknown/revoked/expired tokens.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-resolve-a-public-case-token-rbac-respecting
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
         // (uri/scheme values are full URIs, unsafe as path segments). 404
         // standard error shape on unknown uri/scheme/notation (SKOS-004).
-        // @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+        // @spec openspec/specs/skos-concept-registers/spec.md#skos-004
         ['name' => 'vocabulary#resolveByUri', 'url' => '/api/vocabulary/concept', 'verb' => 'GET'],
         ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
         ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
@@ -743,7 +746,7 @@ return [
         // app-global `types`/`actors` dropdown routes MUST precede the
         // per-object wildcard route so they aren't grabbed as register
         // slugs.
-        // @spec openspec/changes/integration-activity/tasks.md.
+        // @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
         ['name' => 'activityLinks#types',  'url' => '/api/integrations/activity/types',                  'verb' => 'GET'],
         ['name' => 'activityLinks#actors', 'url' => '/api/integrations/activity/actors',                 'verb' => 'GET'],
         ['name' => 'activityLinks#index',  'url' => '/api/objects/{register}/{schema}/{id}/activity',    'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
