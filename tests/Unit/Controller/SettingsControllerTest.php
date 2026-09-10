@@ -1663,6 +1663,128 @@ class SettingsControllerTest extends TestCase {
 	}
 
 	/**
+	 * A slug resolver answering as an instance that carries the stackiq register.
+	 *
+	 * The debug endpoint resolves the register rather than naming
+	 * `voorzieningen`, because stackiq's repair step renames that slug per
+	 * instance and a read with the name this instance does not carry returns an
+	 * empty set. This endpoint would then have rendered that as "no
+	 * organisations", the one answer a filtering diagnostic must never invent.
+	 *
+	 * @param string|null $carries The slug this instance carries, or null for none.
+	 *
+	 * @return \OCA\OpenRegister\Contract\RegisterSlugResolverInterface The double.
+	 */
+	private function stackiqSlugResolver(?string $carries = 'stackiq'): \OCA\OpenRegister\Contract\RegisterSlugResolverInterface {
+		$resolver = $this->createMock(\OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class);
+		$resolver->method('slugOrNull')->willReturn($carries);
+		return $resolver;
+	}
+
+	/**
+	 * An absent stackiq register is a 404, not an empty diagnostic.
+	 *
+	 * The distinction this endpoint exists to make. Before the register was
+	 * resolved it named `voorzieningen` outright; on an instance that has run
+	 * stackiq's repair step that slug matches no register, the search returns
+	 * an empty set, and the endpoint answered 200 with zero organisations in
+	 * every bucket: a filtering diagnostic reporting that filtering works
+	 * perfectly on nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	public function testDebugTypeFilteringRefusesWhenTheRegisterIsAbsent(): void {
+		$mockObjectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$mockObjectService->expects($this->never())->method('searchObjectsPaginated');
+
+		$this->container->method('get')
+			->willReturnCallback(function (string $id) use ($mockObjectService) {
+				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+					return $mockObjectService;
+				}
+
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver(carries: null);
+				}
+
+				throw new \Exception("Unknown service: $id");
+			});
+
+		$response = $this->controller->debugTypeFiltering();
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertArrayHasKey('error', $response->getData());
+	}
+
+	/**
+	 * The read names the slug this instance carries, whichever that is.
+	 *
+	 * Both cases, because only one of them can catch a pinned literal. On an
+	 * UNMIGRATED instance the pinned `voorzieningen` happens to be the right
+	 * answer, so that case passes whether the code resolves or not; measured
+	 * against a mutation that reinstated the literal, the migrated case is the
+	 * only one that reddened. Asserting the unmigrated case alone would be a
+	 * test that cannot fail for the defect it was written for.
+	 *
+	 * @param string $carries  The slug this instance's register row holds.
+	 * @param string $expected The slug the endpoint must read with.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider provideInstanceSlugStates
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	public function testDebugTypeFilteringReadsTheSlugTheInstanceCarries(string $carries, string $expected): void {
+		$seen = null;
+		$mockObjectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$mockObjectService->method('setRegister')->willReturnCallback(
+			function (string|int $register) use (&$seen, $mockObjectService): \OCA\OpenRegister\Service\ObjectService {
+				$seen = $register;
+				return $mockObjectService;
+			}
+		);
+		$mockObjectService->method('searchObjectsPaginated')->willReturn(['results' => []]);
+
+		$mockConnection = $this->createDebugDbConnection([]);
+
+		$this->container->method('get')
+			->willReturnCallback(function (string $id) use ($mockObjectService, $mockConnection, $carries) {
+				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+					return $mockObjectService;
+				}
+
+				if ($id === \OCP\IDBConnection::class) {
+					return $mockConnection;
+				}
+
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver(carries: $carries);
+				}
+
+				throw new \Exception("Unknown service: $id");
+			});
+
+		$this->controller->debugTypeFiltering();
+
+		$this->assertSame($expected, $seen);
+	}
+
+	/**
+	 * The two instance states that are both live across the estate.
+	 *
+	 * @return array<string, array{0: string, 1: string}> Carried slug, expected read slug.
+	 */
+	public static function provideInstanceSlugStates(): array {
+		return [
+			'migrated instance carries stackiq'          => ['stackiq', 'stackiq'],
+			'unmigrated instance carries voorzieningen'  => ['voorzieningen', 'voorzieningen'],
+		];
+	}
+
+	/**
 	 * Test debugTypeFiltering returns results when ObjectService works with empty results
 	 *
 	 * @return void
@@ -1682,6 +1804,10 @@ class SettingsControllerTest extends TestCase {
 
 				if ($id === \OCP\IDBConnection::class) {
 					return $mockConnection;
+				}
+
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver();
 				}
 
 				throw new \Exception("Unknown service: $id");
@@ -1736,6 +1862,10 @@ class SettingsControllerTest extends TestCase {
 
 				if ($id === \OCP\IDBConnection::class) {
 					return $mockConnection;
+				}
+
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver();
 				}
 
 				throw new \Exception("Unknown service: $id");
@@ -1798,6 +1928,10 @@ class SettingsControllerTest extends TestCase {
 					return $mockConnection;
 				}
 
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver();
+				}
+
 				throw new \Exception("Unknown service: $id");
 			});
 
@@ -1823,6 +1957,10 @@ class SettingsControllerTest extends TestCase {
 			->willReturnCallback(function (string $id) use ($mockObjectService) {
 				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
 					return $mockObjectService;
+				}
+
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver();
 				}
 
 				throw new \Exception("Unknown service: $id");
@@ -1852,6 +1990,10 @@ class SettingsControllerTest extends TestCase {
 			->willReturnCallback(function (string $id) use ($mockObjectService) {
 				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
 					return $mockObjectService;
+				}
+
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver();
 				}
 
 				throw new \Exception("Unknown service: $id");
@@ -1887,6 +2029,10 @@ class SettingsControllerTest extends TestCase {
 
 				if ($id === \OCP\IDBConnection::class) {
 					return $mockConnection;
+				}
+
+				if ($id === \OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class) {
+					return $this->stackiqSlugResolver();
 				}
 
 				throw new \Exception("Unknown service: $id");

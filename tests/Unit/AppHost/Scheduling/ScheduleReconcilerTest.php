@@ -29,6 +29,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+require_once __DIR__ . '/FakeSlugResolver.php';
 require_once __DIR__ . '/TestableReconciler.php';
 
 /**
@@ -88,6 +89,7 @@ class ScheduleReconcilerTest extends TestCase {
 			$this->allowList(),
 			$this->userManager,
 			$this->createMock(LoggerInterface::class),
+			new FakeSlugResolver(['integriq', 'buildiq']),
 			$virtual,
 			$managed
 		);

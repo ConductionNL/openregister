@@ -423,6 +423,32 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The register-slug resolver MUST be shared. It memoises one indexed
+		// read per candidate list for the life of the request, and a sweep asks
+		// the same question at every call site of the same tick. Nextcloud
+		// auto-wires a fresh instance at every injection point, so without this
+		// registration the memo would be empty every time and the probe would
+		// re-read the register table once per call site.
+		$context->registerService(
+			\OCA\OpenRegister\Service\RegisterSlugResolver::class,
+			function ($c) {
+				return new \OCA\OpenRegister\Service\RegisterSlugResolver(
+					registerMapper: $c->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+					logger: $c->get(\Psr\Log\LoggerInterface::class)
+				);
+			}
+		);
+
+		// The published contract (ADR-084) consuming apps type-hint. Bound to
+		// the same shared instance, so an app that injects the interface and one
+		// that injects the class share a memo rather than probing twice.
+		$context->registerService(
+			\OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class,
+			function ($c) {
+				return $c->get(\OCA\OpenRegister\Service\RegisterSlugResolver::class);
+			}
+		);
+
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);
 

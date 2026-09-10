@@ -25,11 +25,14 @@ use OCA\OpenRegister\AppHost\Scheduling\CronScheduleEvaluator;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleReconciler;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+
+require_once __DIR__ . '/FakeSlugResolver.php';
 
 /**
  * Exposes the protected loadVirtualApplications() seam for direct testing.
@@ -43,6 +46,15 @@ class IoProbeReconciler extends ScheduleReconciler {
 	public function callLoadVirtualApplications(): array {
 		return $this->loadVirtualApplications();
 	}//end callLoadVirtualApplications()
+
+	/**
+	 * Public passthrough to the managed-job read seam.
+	 *
+	 * @return array<string, array<string, mixed>>|null Managed jobs, or null.
+	 */
+	public function callLoadManagedJobs(): ?array {
+		return $this->loadManagedJobs();
+	}//end callLoadManagedJobs()
 }//end class
 
 /**
@@ -75,7 +87,7 @@ class ScheduleReconcilerIoTest extends TestCase {
 	 *
 	 * @return IoProbeReconciler
 	 */
-	private function makeReconciler(ObjectService $objectService): IoProbeReconciler {
+	private function makeReconciler(ObjectService $objectService, ?RegisterSlugResolverInterface $slugResolver=null): IoProbeReconciler {
 		$loader = $this->createMock(originalClassName: ScheduleManifestLoader::class);
 		$userManager = $this->createMock(originalClassName: IUserManager::class);
 		$logger = $this->createMock(originalClassName: LoggerInterface::class);
@@ -86,7 +98,8 @@ class ScheduleReconcilerIoTest extends TestCase {
 			new CronScheduleEvaluator(),
 			$this->allowList(),
 			$userManager,
-			$logger
+			$logger,
+			($slugResolver ?? new FakeSlugResolver(['integriq', 'buildiq']))
 		);
 	}//end makeReconciler()
 
@@ -148,4 +161,135 @@ class ScheduleReconcilerIoTest extends TestCase {
 		$this->assertFalse($captured['rbac']);
 		$this->assertTrue($captured['multitenancy']);
 	}//end testSweepPassesLimitAndRbacFalseOnly()
+	/**
+	 * The read uses the slug this instance carries, not a compiled-in literal.
+	 *
+	 * The unmigrated case: the register row still says `openbuild`, so that is
+	 * what must reach ObjectService. A reconciler pinned to the canonical
+	 * `buildiq` would pass a slug no register carries, get an empty set back,
+	 * and report zero virtual applications, which is exactly what an instance
+	 * with no virtual applications reports.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	public function testAnUnmigratedInstanceIsReadWithItsOldSlug(): void {
+		$seen = null;
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
+		$objectService->method('findAll')->willReturnCallback(
+			/**
+			 * @param array<string, mixed> $config Read config.
+			 *
+			 * @return array<int, mixed>
+			 */
+			function (array $config) use (&$seen): array {
+				$seen = ($config['filters']['register'] ?? null);
+				return [];
+			}
+		);
+
+		$reconciler = $this->makeReconciler(
+			objectService: $objectService,
+			slugResolver: new FakeSlugResolver(['openbuild'])
+		);
+		$reconciler->callLoadVirtualApplications();
+
+		$this->assertSame('openbuild', $seen, 'The read must name the slug this instance actually carries.');
+	}//end testAnUnmigratedInstanceIsReadWithItsOldSlug()
+
+	/**
+	 * A migrated instance is read with the new slug.
+	 *
+	 * The other half of the estate, and the half a literal `openbuild` breaks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	public function testAMigratedInstanceIsReadWithItsNewSlug(): void {
+		$seen = null;
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
+		$objectService->method('findAll')->willReturnCallback(
+			/**
+			 * @param array<string, mixed> $config Read config.
+			 *
+			 * @return array<int, mixed>
+			 */
+			function (array $config) use (&$seen): array {
+				$seen = ($config['filters']['register'] ?? null);
+				return [];
+			}
+		);
+
+		$reconciler = $this->makeReconciler(
+			objectService: $objectService,
+			slugResolver: new FakeSlugResolver(['buildiq'])
+		);
+		$reconciler->callLoadVirtualApplications();
+
+		$this->assertSame('buildiq', $seen);
+	}//end testAMigratedInstanceIsReadWithItsNewSlug()
+
+	/**
+	 * An absent register means no read at all, not an empty read.
+	 *
+	 * The distinction is the whole point. An empty read returns `[]`, and `[]`
+	 * is indistinguishable from a register that genuinely holds nothing. Not
+	 * reading is what lets the `info` line say the register is missing rather
+	 * than that there is nothing to schedule.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	public function testAnAbsentRegisterIsNotReadAtAll(): void {
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
+		$objectService->expects($this->never())->method('findAll');
+
+		$reconciler = $this->makeReconciler(
+			objectService: $objectService,
+			slugResolver: new FakeSlugResolver([])
+		);
+
+		$this->assertSame([], $reconciler->callLoadVirtualApplications());
+		$this->assertNull($reconciler->callLoadManagedJobs());
+	}//end testAnAbsentRegisterIsNotReadAtAll()
+
+	/**
+	 * The job register is resolved too, not only the application register.
+	 *
+	 * Two registers were pinned in this class and they are renamed by two
+	 * different apps' repair steps, so an instance can be migrated for one and
+	 * not the other. Fixing one and not the other leaves the reconciler just as
+	 * inert on half the cases it was inert on before.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	public function testTheJobRegisterIsResolvedIndependently(): void {
+		$seen = null;
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
+		$objectService->method('findAll')->willReturnCallback(
+			/**
+			 * @param array<string, mixed> $config Read config.
+			 *
+			 * @return array<int, mixed>
+			 */
+			function (array $config) use (&$seen): array {
+				$seen = ($config['filters']['register'] ?? null);
+				return [];
+			}
+		);
+
+		// Migrated for buildiq, NOT migrated for integriq.
+		$reconciler = $this->makeReconciler(
+			objectService: $objectService,
+			slugResolver: new FakeSlugResolver(['buildiq', 'openconnector'])
+		);
+		$reconciler->callLoadManagedJobs();
+
+		$this->assertSame('openconnector', $seen);
+	}//end testTheJobRegisterIsResolvedIndependently()
 }//end class
