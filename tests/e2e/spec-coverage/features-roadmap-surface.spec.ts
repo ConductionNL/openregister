@@ -35,7 +35,7 @@ import type { Page } from '@playwright/test'
  *   4. No `test.skip()`.
  *
  * @e2e openspec/specs/features-roadmap-menu/spec.md#empty-features-manifest
- * @e2e openspec/specs/features-roadmap-menu/spec.md#submit-requires-title-and-body
+ * @e2e openspec/specs/features-roadmap-menu/spec.md#the-header-offers-a-link-to-the-forge-not-a-form
  * @e2e openspec/specs/features-roadmap-menu/spec.md#default-behavior
  */
 import { expect, test } from '@playwright/test'
