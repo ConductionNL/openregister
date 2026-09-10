@@ -103,6 +103,119 @@ class RetentionServiceTest extends TestCase {
 	}//end testApplyArchivalMetadataWithEnabledSchema()
 
 	/**
+	 * GAP B1: the selectielijst VERSION is recorded, not only its name.
+	 *
+	 * The same category carries different retention periods across
+	 * selectielijst revisions, so a decision justified by "Selectielijst
+	 * gemeenten 2020" alone cannot be defended once that list moves. The row's
+	 * own `versie` is what an auditor outside this install can check.
+	 */
+	public function testApplyArchivalMetadataRecordsTheSelectielijstVersion(): void {
+		$object = new ObjectEntity();
+		$object->setRetention([]);
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'classification' => '4.1.2',
+		]);
+
+		$this->stubSelectielijstEntry([
+			'categorie' => '4.1.2',
+			'archiefnominatie' => 'vernietigen',
+			'bewaartermijn' => 'P10Y',
+			'bron' => 'Selectielijst gemeenten 2020',
+			'versie' => '2020.2',
+		]);
+
+		$retention = $this->service->applyArchivalMetadata($object, $schema)->getRetention();
+
+		$this->assertSame('Selectielijst gemeenten 2020', $retention['selectielijstBron']);
+		$this->assertSame('2020.2', $retention['selectionListVersion']);
+		$this->assertNotEmpty($retention['selectionListConsultedAt']);
+	}//end testApplyArchivalMetadataRecordsTheSelectielijstVersion()
+
+	/**
+	 * A row that numbers nothing still says WHICH STORED REVISION was read.
+	 *
+	 * `@self.version` is not the publisher's numbering and does not travel, but
+	 * it separates "the row as it stood then" from "the row as it stands now",
+	 * which is more than the name alone could ever say.
+	 */
+	public function testApplyArchivalMetadataFallsBackToTheStoredRowVersion(): void {
+		$object = new ObjectEntity();
+		$object->setRetention([]);
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'classification' => '4.1.2',
+		]);
+
+		$this->stubSelectielijstEntry(
+			[
+				'categorie' => '4.1.2',
+				'archiefnominatie' => 'vernietigen',
+				'bewaartermijn' => 'P10Y',
+				'bron' => 'Selectielijst gemeenten 2020',
+			],
+			version: '0.0.3'
+		);
+
+		$retention = $this->service->applyArchivalMetadata($object, $schema)->getRetention();
+
+		$this->assertSame('0.0.3', $retention['selectionListVersion']);
+	}//end testApplyArchivalMetadataFallsBackToTheStoredRowVersion()
+
+	/**
+	 * No selectielijst, no provenance keys. An absent key is silence; a key
+	 * holding null is a recorded answer of "no version", which is a different
+	 * and false claim.
+	 */
+	public function testApplyArchivalMetadataOmitsProvenanceWithoutASelectielijst(): void {
+		$object = new ObjectEntity();
+		$object->setRetention([]);
+
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'defaultNominatie' => 'vernietigen',
+			'defaultBewaartermijn' => 'P5Y',
+		]);
+
+		$this->settingsHandler->method('getArchivalSettingsOnly')->willReturn([
+			'selectielijstRegister' => null,
+			'selectielijstSchema' => null,
+		]);
+
+		$retention = $this->service->applyArchivalMetadata($object, $schema)->getRetention();
+
+		$this->assertArrayNotHasKey('selectionListVersion', $retention);
+		$this->assertArrayNotHasKey('selectionListConsultedAt', $retention);
+	}//end testApplyArchivalMetadataOmitsProvenanceWithoutASelectielijst()
+
+	/**
+	 * Stub a configured selectielijst that answers with one entry.
+	 *
+	 * @param array       $data    The entry's stored object data
+	 * @param string|null $version The entry's own `@self.version`, if any
+	 */
+	private function stubSelectielijstEntry(array $data, ?string $version = null): void {
+		$this->settingsHandler->method('getArchivalSettingsOnly')->willReturn([
+			'selectielijstRegister' => 1,
+			'selectielijstSchema' => 2,
+		]);
+
+		$entry = new ObjectEntity();
+		$entry->setObject($data);
+		if ($version !== null) {
+			$entry->setVersion($version);
+		}
+
+		$this->objectMapper->method('findAll')->willReturn([$entry]);
+	}//end stubSelectielijstEntry()
+
+	/**
 	 * Test that archival metadata is NOT applied when schema has no archive config.
 	 */
 	public function testApplyArchivalMetadataSkipsWhenDisabled(): void {

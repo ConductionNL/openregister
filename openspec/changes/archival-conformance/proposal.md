@@ -243,7 +243,11 @@ Split by cost. Only the first group is proposed for immediate implementation.
 
 ### Next — provenance and derivation
 
-7. **B1** — record the selectielijst version alongside its name.
+7. ~~**B1** — record the selectielijst version alongside its name.~~ **DONE.**
+   `selectionListVersion` and `selectionListConsultedAt` are written beside
+   `selectielijstBron`, taken from the row's own `versie` where it declares
+   one and from the stored entry's `@self.version` where it does not. They
+   surface abstractly as `sourceVersion` and `sourceConsultedAt`.
 8. **C1** — implement the six missing `afleidingswijzen`. C2 makes them refuse
    in the meantime; this makes them work.
 
