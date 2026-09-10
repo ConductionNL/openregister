@@ -211,6 +211,28 @@ class RetentionService {
 		$archiveConfig = $schema->getArchive();
 		$afleidingswijze = $archiveConfig['afleidingswijze'] ?? 'afgehandeld';
 
+		// GAP C2. VALID_AFLEIDINGSWIJZEN was declared and NEVER REFERENCED, so
+		// a schema configured with one of ZGW's six other derivation methods
+		// was not rejected, not warned about and not logged: determineBrondatum
+		// fell through `default: return null` and the date was computed from
+		// the fallback instead. A permit that must run from
+		// `ingangsdatum_besluit` silently ran from somewhere else.
+		//
+		// Refusing is the honest answer. No date at all is a visible gap a
+		// records officer can act on; a plausible wrong date is not.
+		if (in_array($afleidingswijze, self::VALID_AFLEIDINGSWIJZEN, true) === false) {
+			$this->logger->error(
+				'[RetentionService] Unsupported afleidingswijze; no archiefactiedatum calculated',
+				[
+					'afleidingswijze' => $afleidingswijze,
+					'supported' => self::VALID_AFLEIDINGSWIJZEN,
+					'objectUuid' => $object->getUuid(),
+				]
+			);
+
+			return null;
+		}
+
 		try {
 			$interval = new DateInterval($retentionPeriod);
 		} catch (Exception $e) {
@@ -224,9 +246,24 @@ class RetentionService {
 		$brondatum = $this->determineBrondatum(object: $object, schema: $schema, afleidingswijze: $afleidingswijze);
 
 		if ($brondatum === null) {
-			// If no brondatum can be determined, use creation date as fallback.
-			$brondatum = new DateTime();
+			// The object's CREATED date, which is what this comment always
+			// claimed and what the code did not do: `new DateTime()` is *now*,
+			// so two identical records processed a year apart got disposal
+			// dates a year apart, and a record recalculated long after the fact
+			// got one far later than lawful. Gap C3 in
+			// openspec/changes/archival-conformance.
+			$brondatum = $object->getCreated();
+			if ($brondatum === null) {
+				$brondatum = new DateTime();
+			}
 		}
+
+		// Never mutate the entity's own DateTime: `->add()` below is in-place,
+		// and getCreated() hands back the LIVE object, so a disposal-date
+		// calculation would silently move the object's created timestamp.
+		// `clone` rather than DateTime::createFromInterface() because phpmd
+		// refuses static access and every path here already yields a DateTime.
+		$brondatum = clone $brondatum;
 
 		// For 'termijn' method, add procestermijn first.
 		if ($afleidingswijze === 'termijn') {

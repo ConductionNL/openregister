@@ -87,12 +87,14 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('vernietigen', $decision['nomination']);
-		$this->assertSame('nog_te_archiveren', $decision['status']);
-		$this->assertSame('4.1.2', $decision['classification']);
-		$this->assertSame('P10Y', $decision['period']);
-		$this->assertSame('2036-09-10', $decision['actionDate']);
-		$this->assertSame('selectielijst', $decision['basis']);
+		$this->assertSame('destroy', $decision['appraisal']);
+		// RetentionService's own status vocabulary, mapped into the Archiefwet
+		// lifecycle so the abstract layer answers in one set of terms (gap A4).
+		$this->assertSame('active', $decision['recordState']);
+		$this->assertSame('4.1.2', $decision['disposalCategory']);
+		$this->assertSame('P10Y', $decision['retentionPeriod']);
+		$this->assertSame('2036-09-10', $decision['disposalDate']);
+		$this->assertSame('selection_list', $decision['basis']);
 		$this->assertSame('Selectielijst gemeenten 2020', $decision['source']);
 	}
 
@@ -113,9 +115,9 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('P5Y', $decision['period']);
-		$this->assertSame('2031-01-01T00:00:00+00:00', $decision['actionDate']);
-		$this->assertSame('annotation', $decision['basis']);
+		$this->assertSame('P5Y', $decision['retentionPeriod']);
+		$this->assertSame('2031-01-01T00:00:00+00:00', $decision['disposalDate']);
+		$this->assertSame('schema_annotation', $decision['basis']);
 		$this->assertSame(2, $decision['annotation']['matchedRule']);
 	}
 
@@ -137,8 +139,8 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('P20Y', $decision['period']);
-		$this->assertSame('2046-09-10', $decision['actionDate']);
+		$this->assertSame('P20Y', $decision['retentionPeriod']);
+		$this->assertSame('2046-09-10', $decision['disposalDate']);
 		$this->assertSame('schema', $decision['basis']);
 	}
 
@@ -151,7 +153,7 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('blijvend_bewaren', $decision['nomination']);
+		$this->assertSame('retain_permanently', $decision['appraisal']);
 	}
 
 	/**
@@ -164,7 +166,7 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('overbrengen', $decision['nomination']);
+		$this->assertSame('overbrengen', $decision['appraisal']);
 	}
 
 	/**
@@ -243,9 +245,11 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('vernietigen', $decision['nomination']);
-		$this->assertSame('2036-09-10', $decision['actionDate']);
-		$this->assertSame('nog_te_archiveren', $decision['status']);
+		$this->assertSame('destroy', $decision['appraisal']);
+		$this->assertSame('2036-09-10', $decision['disposalDate']);
+		// RetentionService's own status vocabulary, mapped into the Archiefwet
+		// lifecycle so the abstract layer answers in one set of terms (gap A4).
+		$this->assertSame('active', $decision['recordState']);
 		$this->assertSame('record', $decision['basis']);
 	}
 
@@ -261,8 +265,8 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('blijvend_bewaren', $decision['nomination']);
-		$this->assertSame('2040-01-01', $decision['actionDate']);
+		$this->assertSame('retain_permanently', $decision['appraisal']);
+		$this->assertSame('2040-01-01', $decision['disposalDate']);
 	}
 
 	/**
@@ -276,8 +280,8 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertSame('blijvend_bewaren', $decision['nomination']);
-		$this->assertSame('2099-01-01', $decision['actionDate']);
+		$this->assertSame('retain_permanently', $decision['appraisal']);
+		$this->assertSame('2099-01-01', $decision['disposalDate']);
 	}
 
 	/**
@@ -302,7 +306,121 @@ class ArchivalDecisionResolverTest extends TestCase {
 		$entity->setArchivalRetention($this->resolver->resolve(entity: $entity));
 		$serialized = $entity->jsonSerialize();
 
-		$this->assertSame('vernietigen', $serialized['@self']['_retention']['nomination']);
+		$this->assertSame('destroy', $serialized['@self']['_retention']['appraisal']);
+	}
+
+	/**
+	 * GAP A1, the defect this whole pass exists for: the TMLO block is a source.
+	 *
+	 * An object whose archival metadata lives only in `tmlo` used to resolve to
+	 * NO decision at all — the exact silence `_retention` was built to end.
+	 */
+	public function testReadsTheTmloBlock(): void {
+		$entity = new ObjectEntity();
+		$entity->setTmlo(
+			[
+				'archiefnominatie' => 'blijvend_bewaren',
+				'bewaarTermijn' => 'P20Y',
+				'archiefactiedatum' => '2046-01-01',
+				'archiefstatus' => 'semi_statisch',
+				'vernietigingsCategorie' => '4.1.2',
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertNotNull($decision, 'a tmlo-only object must resolve to a decision');
+		$this->assertSame('retain_permanently', $decision['appraisal']);
+		$this->assertSame('P20Y', $decision['retentionPeriod']);
+		$this->assertSame('2046-01-01', $decision['disposalDate']);
+		$this->assertSame('semi_static', $decision['recordState']);
+		$this->assertSame('4.1.2', $decision['disposalCategory']);
+		$this->assertSame('tmlo', $decision['basis']);
+	}
+
+	/**
+	 * GAP A2: the Archiefwet lifecycle, and whether the record is still ours.
+	 *
+	 * A transferred or destroyed record is no longer this system's to alter, and
+	 * a consumer must be able to grey an edit from the boolean alone rather than
+	 * having to know the lifecycle.
+	 */
+	public function testATransferredRecordIsReportedImmutable(): void {
+		$entity = new ObjectEntity();
+		$entity->setTmlo(['archiefstatus' => 'overgebracht']);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertSame('transferred', $decision['recordState']);
+		$this->assertTrue($decision['immutable']);
+	}
+
+	/**
+	 * An active record is mutable, so the same boolean answers both ways.
+	 */
+	public function testAnActiveRecordIsNotImmutable(): void {
+		$entity = new ObjectEntity();
+		$entity->setTmlo(['archiefstatus' => 'actief']);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertSame('active', $decision['recordState']);
+		$this->assertFalse($decision['immutable']);
+	}
+
+	/**
+	 * The stored retention block still wins over TMLO where both speak.
+	 *
+	 * `retention` is what the retention service decided against THIS object;
+	 * `tmlo` may be older metadata carried in.
+	 */
+	public function testTheRetentionBlockWinsOverTmlo(): void {
+		$entity = new ObjectEntity();
+		$entity->setRetention(['bewaartermijn' => 'P5Y']);
+		$entity->setTmlo(['bewaarTermijn' => 'P20Y']);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertSame('P5Y', $decision['retentionPeriod']);
+	}
+
+	/**
+	 * GAP B2: "the selectielijst was never consulted" is its own answer.
+	 *
+	 * A schema that declares a `classification` EXPECTS a list to be applied.
+	 * Reporting `schema` when none came back is true but hides the fact that the
+	 * lookup an operator believed was running never ran.
+	 */
+	public function testSaysWhenTheSelectionListWasExpectedAndNotConsulted(): void {
+		$entity = new ObjectEntity();
+		$entity->setRetention(
+			[
+				'classification' => '4.1.2',
+				'archiefnominatie' => 'vernietigen',
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertSame('selection_list_not_consulted', $decision['basis']);
+	}
+
+	/**
+	 * And when the list DID answer, it is named as the authority.
+	 */
+	public function testNamesTheSelectionListWhenItAnswered(): void {
+		$entity = new ObjectEntity();
+		$entity->setRetention(
+			[
+				'classification' => '4.1.2',
+				'selectielijstBron' => 'Selectielijst gemeenten 2020',
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertSame('selection_list', $decision['basis']);
+		$this->assertSame('Selectielijst gemeenten 2020', $decision['source']);
 	}
 
 }//end class
