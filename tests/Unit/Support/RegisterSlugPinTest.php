@@ -97,7 +97,13 @@ class RegisterSlugPinTest extends TestCase {
 				continue;
 			}
 
-			$lines = file($absolute, (FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+			// NOT FILE_SKIP_EMPTY_LINES. Skipping blank lines renumbers every
+			// line after the first one, so `$index + 1` stops being the line
+			// number and becomes the count of non-blank lines. Measured on the
+			// reconciler: a pin on line 590 was reported as line 528, because
+			// 62 blank lines preceded it. A guard that names the wrong line is
+			// a guard whose next reader concludes it is broken.
+			$lines = file($absolute, FILE_IGNORE_NEW_LINES);
 			if ($lines === false) {
 				continue;
 			}
