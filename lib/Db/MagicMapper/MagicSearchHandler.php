@@ -2424,7 +2424,11 @@ class MagicSearchHandler {
 							$value = $normalised->format('Y-m-d');
 						}
 					} elseif ($propertyFormat === 'date-time') {
-						$value = $this->dateTimeNormalizer->formatForIso8601($value);
+						// The column is a DATETIME and carries no offset, so the value
+						// must be read back in the timezone the write path stored it
+						// in (UTC) rather than in the server's `date.timezone`
+						// (WOO-567).
+						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
 					}
 				}
 

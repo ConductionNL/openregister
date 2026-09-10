@@ -59,6 +59,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -3728,13 +3729,22 @@ class MagicMapper extends AbstractObjectMapper {
 				}
 
 				if ($value instanceof \DateTimeInterface) {
-					$value = $value->format('Y-m-d H:i:s');
+					// Convert to the column's timezone BEFORE formatting: format()
+					// renders in whatever timezone the instance carries, so a
+					// non-UTC one was written as its own clock time and read back
+					// as UTC (WOO-567). Done inline rather than through
+					// DateTimeNormalizer so this path keeps working without a
+					// resolvable container.
+					$value = \DateTimeImmutable::createFromInterface($value)
+						->setTimezone(new \DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
+						->format(DateTimeNormalizer::DATABASE_FORMAT);
 				} elseif (is_string($value) === true) {
 					// Delegate string parsing to DateTimeNormalizer so that empty/whitespace
-					// input becomes null rather than silently becoming "now". The outer
+					// input becomes null rather than silently becoming "now", and a
+					// non-UTC offset is converted rather than dropped. The outer
 					// default-to-now logic for absent created/updated is preserved above.
 					$value = $this->container
-						->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+						->get(DateTimeNormalizer::class)
 						->formatForDatabase($value);
 				}
 			}
@@ -3845,10 +3855,15 @@ class MagicMapper extends AbstractObjectMapper {
 					$propertyFormat = $propertyConfig['format'] ?? null;
 					if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
 						if ($value instanceof \DateTimeInterface) {
-							$value = $value->format('Y-m-d H:i:s');
+							// Convert to the column's timezone before formatting,
+							// for the same reason as the metadata fields above
+							// (WOO-567).
+							$value = \DateTimeImmutable::createFromInterface($value)
+								->setTimezone(new \DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
+								->format(DateTimeNormalizer::DATABASE_FORMAT);
 						} elseif (is_string($value) === true) {
 							$value = $this->container
-								->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+								->get(DateTimeNormalizer::class)
 								->formatForDatabase($value);
 						}
 					}
