@@ -110,13 +110,13 @@ async function gotoScoped(page: Page, route: string): Promise<boolean> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#merge-action-is-offered-per-candidate-pair
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#preview-renders-the-projected-survivor
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#reason-is-mandatory
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#reason-selector-is-accessibly-labelled
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#confirming-a-merge-executes-it-and-refreshes-candidates
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#reverse-offered-only-within-the-window
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#reversing-restores-the-objects-and-updates-the-row
+// @e2e openspec/specs/mdm-merge-ui/spec.md#merge-action-is-offered-per-candidate-pair
+// @e2e openspec/specs/mdm-merge-ui/spec.md#preview-renders-the-projected-survivor
+// @e2e openspec/specs/mdm-merge-ui/spec.md#reason-is-mandatory
+// @e2e openspec/specs/mdm-merge-ui/spec.md#reason-selector-is-accessibly-labelled
+// @e2e openspec/specs/mdm-merge-ui/spec.md#confirming-a-merge-executes-it-and-refreshes-candidates
+// @e2e openspec/specs/mdm-merge-ui/spec.md#reverse-offered-only-within-the-window
+// @e2e openspec/specs/mdm-merge-ui/spec.md#reversing-restores-the-objects-and-updates-the-row
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -222,8 +222,8 @@ test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#merge-operations-list-renders-audit-rows
-// @e2e openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#view-is-registered-and-navigable
+// @e2e openspec/specs/mdm-merge-ui/spec.md#merge-operations-list-renders-audit-rows
+// @e2e openspec/specs/mdm-merge-ui/spec.md#view-is-registered-and-navigable
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-merge-ui — Merge Operations view', () => {
 	test.use({ storageState: STORAGE_STATE })
