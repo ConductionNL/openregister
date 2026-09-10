@@ -259,6 +259,27 @@
                 "in-progress"
               ],
               "to": "refused",
+              "condition": {
+                "and": [
+                  {
+                    "!!": {
+                      "var": "object.denialGround"
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "object.denialGround"
+                      },
+                      "not-applicable"
+                    ]
+                  }
+                ]
+              },
+              "message": {
+                "nl": "Een afwijzing vereist een geldige weigeringsgrond.",
+                "en": "A refusal requires a valid denial ground."
+              },
               "description": "Refuse the request (a lawful exemption applies)."
             },
             "close": {
