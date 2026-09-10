@@ -167,6 +167,18 @@ class SaveObject {
 	private Environment $twig;
 
 	/**
+	 * Stamps `@self.version` on create and bumps it on update.
+	 *
+	 * Constructed here rather than injected: it is stateless, dependency-free
+	 * arithmetic over one string, and adding a required constructor parameter
+	 * to a signature this wide costs every manual construction in the test
+	 * suite for no isolation gained.
+	 *
+	 * @var ObjectVersionHandler
+	 */
+	private ObjectVersionHandler $versionHandler;
+
+	/**
 	 * Cache for sub-objects created during cascade operations.
 	 *
 	 * Stores created sub-objects indexed by their UUID for inclusion in @self.objects.
@@ -352,6 +364,7 @@ class SaveObject {
 		private readonly ?ContainerInterface $container = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
+		$this->versionHandler = new ObjectVersionHandler();
 	}//end __construct()
 
 	/**
@@ -3744,6 +3757,12 @@ class SaveObject {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
 
+		// Start the object's version sequence. Nothing wrote this before, so on
+		// the magic tables (which carry no column default) every object read
+		// back a NULL version, and on the legacy table every object read back
+		// the same `0.0.1` forever. See ObjectVersionHandler.
+		$this->versionHandler->stampInitialVersion(entity: $objectEntity);
+
 		// Set UUID if provided, otherwise generate a new one.
 		if ($objectEntity->getUuid() === null) {
 			$objectEntity->setUuid(Uuid::v4()->toRfc4122());
@@ -3904,6 +3923,11 @@ class SaveObject {
 	): ObjectEntity {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
+
+		// A save is a patch. Bumped here rather than after the write so the
+		// value the audit trail copies onto its own `version` column is the
+		// version this save produced, not the one it replaced.
+		$this->versionHandler->bumpVersion(entity: $existingObject);
 
 		// Set folder ID if provided.
 		if ($folderId !== null) {

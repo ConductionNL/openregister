@@ -590,6 +590,15 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setRegister($objectEntity->getRegister());
 		$auditTrail->setSchema($objectEntity->getSchema());
 
+		// The object version this change produced. `oc_openregister_audit_trails`
+		// has carried a `version` column and AuditTrail a `version` property
+		// since the table was created, and nothing ever wrote either — because
+		// nothing wrote the object's version either. Now that ObjectVersionHandler
+		// maintains it, the audit row can say which version each entry left
+		// behind, which is what makes "revert to version X" answerable from the
+		// trail rather than by counting rows.
+		$auditTrail->setVersion($objectEntity->getVersion());
+
 		// AVG / GDPR Art 30 trigger contract — resolve the
 		// processing-activity reference and tag the audit row. Resolution
 		// order is action-override > schema-default > register-default;

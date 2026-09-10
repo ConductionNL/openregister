@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
@@ -2104,8 +2105,52 @@ class RenderObject {
 		// never collide. See add-archival-annotation-support design R3 + D7.
 		$this->applyArchivalRetentionBlock(entity: $entity, schema: $renderSchema);
 
+		// Merge everything the object now knows about its own archiving into the
+		// ONE abstract answer consumers read: `@self._retention`. Runs after the
+		// annotation block above on purpose, because it reads that block's
+		// output. See ArchivalDecisionResolver for why this merge exists at all.
+		$this->applyArchivalDecision(entity: $entity);
+
 		return $entity;
 	}//end renderEntity()
+
+	/**
+	 * Attach the resolved `@self._retention` decision.
+	 *
+	 * The slot has been declared on the entity since add-archival-annotation-support
+	 * and, until this method existed, was filled by nothing outside a unit test —
+	 * so every client asking an object for its archival constraints got silence
+	 * while the facts sat unmerged in three sub-blocks of `retention`.
+	 *
+	 * Failures are logged and swallowed for the same reason the annotation block
+	 * above swallows them: a records-management edge case must never take out
+	 * object rendering.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function applyArchivalDecision(ObjectEntity $entity): void {
+		try {
+			$resolver = new ArchivalDecisionResolver();
+			$decision = $resolver->resolve(entity: $entity);
+			if ($decision === null) {
+				return;
+			}
+
+			$entity->setArchivalRetention($decision);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] archival decision resolve failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}//end try
+	}//end applyArchivalDecision()
 
 	/**
 	 * Compute + attach the annotation-driven `_retention.annotation` block.
