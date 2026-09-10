@@ -311,6 +311,59 @@ class TaskMapperQueriesTest extends TestCase {
 	}//end testFindInboxFiltersAndSortsInTheDatastore()
 
 	/**
+	 * A due WINDOW becomes two comparisons over the SAME effective deadline
+	 * the overdue filter uses.
+	 *
+	 * `overdueAt` cannot express a window: it is open-ended in the past by
+	 * design, and "due this week" needs both ends. The COALESCE is shared on
+	 * purpose, so a deadline-less task falls out of a window exactly as it
+	 * falls out of overdue, with no separate null check to keep in step.
+	 *
+	 * @return void
+	 */
+	public function testFindInboxFiltersOnADueWindow(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith());
+
+		$mapper->findInbox(criteria: new TaskInboxCriteria(
+			uid: 'root',
+			isAdmin: true,
+			scope: TaskInboxCriteria::SCOPE_ALL,
+			dueAfter: new DateTime('2026-09-01T00:00:00+00:00'),
+			dueBefore: new DateTime('2026-09-08T00:00:00+00:00'),
+		));
+
+		$ge = array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) >='));
+		$lt = array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) <'));
+		$this->assertNotEmpty($ge, 'dueAfter must become a >= over the effective deadline');
+		$this->assertNotEmpty($lt, 'dueBefore must become a < over the effective deadline');
+	}//end testFindInboxFiltersOnADueWindow()
+
+	/**
+	 * Each end of the window is independent: one without the other filters
+	 * on one side only, rather than being ignored.
+	 *
+	 * @return void
+	 */
+	public function testEachEndOfTheDueWindowStandsAlone(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith());
+
+		$mapper->findInbox(criteria: new TaskInboxCriteria(
+			uid: 'root',
+			isAdmin: true,
+			dueAfter: new DateTime('2026-09-01T00:00:00+00:00'),
+		));
+		$this->assertNotEmpty(array_filter($this->functions, static fn (string $f): bool => str_contains($f, '>=')));
+
+		$this->calls = [];
+		$this->functions = [];
+		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true));
+		$this->assertEmpty(
+			array_filter($this->functions, static fn (string $f): bool => str_contains($f, 'COALESCE')),
+			'no window and no overdue means no deadline predicate at all'
+		);
+	}//end testEachEndOfTheDueWindowStandsAlone()
+
+	/**
 	 * countInbox reads the total off the same predicates; no row is zero.
 	 *
 	 * @return void

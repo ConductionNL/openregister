@@ -821,7 +821,55 @@ class TaskMapper extends QBMapper {
 				)
 			);
 		}
+
+		$this->applyDueWindow(qb: $qb, criteria: $criteria);
 	}//end applyFilters()
+
+	/**
+	 * A due WINDOW, over the same effective deadline the overdue filter and
+	 * the projection use.
+	 *
+	 * `overdueAt` cannot express one: it is open-ended in the past by
+	 * design, and "due this week" needs both ends. The COALESCE is shared on
+	 * purpose, so a deadline-less task falls out of a window exactly as it
+	 * falls out of overdue, with no separate null check to keep in step.
+	 *
+	 * Its own method rather than two more branches in `applyFilters()`,
+	 * which phpmd measured at NPath 256 against a threshold of 200 once they
+	 * were inlined. The rule is right: that method is a filter funnel and
+	 * every added branch doubles its paths.
+	 *
+	 * @param IQueryBuilder     $qb       The query being built.
+	 * @param TaskInboxCriteria $criteria The inbox criteria.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function applyDueWindow(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
+		foreach (
+			[
+				['value' => $criteria->dueAfter, 'operator' => '>='],
+				['value' => $criteria->dueBefore, 'operator' => '<'],
+			] as $bound
+		) {
+			if ($bound['value'] === null) {
+				continue;
+			}
+
+			$qb->andWhere(
+				$qb->createFunction(
+					sprintf(
+						'COALESCE(%s, %s) %s %s',
+						$this->quote(identifier: 'due_at'),
+						$this->quote(identifier: 'expires_at'),
+						$bound['operator'],
+						$qb->createNamedParameter($bound['value'], IQueryBuilder::PARAM_DATETIME_MUTABLE)
+					)
+				)
+			);
+		}
+	}//end applyDueWindow()
 
 	/**
 	 * The caller is in the task's candidate pool (by uid or by group).
