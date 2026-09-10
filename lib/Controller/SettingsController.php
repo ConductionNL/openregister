@@ -733,7 +733,7 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with type filtering debug information
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|404|500,
 	 *     array{error?: string, trace?: string,
 	 *     all_organizations?: array{count: int<0, max>,
 	 *     organizations: array<array{id: int, name: null|string,
@@ -765,8 +765,23 @@ class SettingsController extends Controller {
 			// Get services.
 			$objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
 
-			// Set register and schema context.
-			$objectService->setRegister('voorzieningen');
+			// Set register and schema context. The register slug is RESOLVED,
+			// not written: stackiq's repair step renames it from
+			// `voorzieningen` to `stackiq` per instance, and reading with the
+			// name this instance does not carry returns an empty set that this
+			// endpoint would have rendered as "no organisations". That is the
+			// wrong answer for a diagnostic whose whole job is to say whether
+			// filtering works.
+			$slugResolver = $this->container->get(\OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class);
+			$register = $slugResolver->slugOrNull(canonical: 'stackiq');
+			if ($register === null) {
+				return new JSONResponse(
+					data: ['error' => 'No stackiq register on this instance under any of its known slugs.'],
+					statusCode: 404
+				);
+			}
+
+			$objectService->setRegister($register);
 			$objectService->setSchema('organisation');
 
 			$results = [];
