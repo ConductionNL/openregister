@@ -4,9 +4,8 @@
  *
  * UI-only Playwright e2e tests for spec `saved-search-views`.
  *
- * TAG CONVENTION: each test carries an `@e2e` tag naming
- * `openspec/specs/saved-search-views/spec.md#<scenario-slug>`. The placeholder is quoted so this line
- * reads as prose rather than as a live anchor of its own.
+ * TAG CONVENTION: each test carries
+ *   @e2e `openspec/specs/saved-search-views/spec.md#<scenario-slug>`
  *
  * Methodology: drive the real SearchSideBar.vue UI on the /tables route.
  * The OR REST API is used ONLY for test-data teardown.

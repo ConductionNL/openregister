@@ -4,9 +4,8 @@
  *
  * Spec-coverage e2e tests for: mdm-merge-ui (ADR-045 follow-on #C).
  *
- * TAG CONVENTION: each test carries an `@e2e` tag naming
- * `openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#<scenario-slug>`. The placeholder is quoted so this line
- * reads as prose rather than as a live anchor of its own.
+ * TAG CONVENTION: each test carries
+ *   @e2e `openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#<scenario-slug>`
  *
  * Methodology: drive the real UI. When the self-seeding MDM fixture
  * (tests/e2e/mdm-seed.ts, run in globalSetup) has planted a duplicate pair,

@@ -36,6 +36,7 @@ import type { Page } from '@playwright/test'
  *
  * @e2e openspec/specs/features-roadmap-menu/spec.md#empty-features-manifest
  * @e2e openspec/specs/features-roadmap-menu/spec.md#the-header-offers-a-link-to-the-forge-not-a-form
+ * @e2e openspec/specs/features-roadmap-menu/spec.md#nothing-is-submitted-from-the-app
  * @e2e openspec/specs/features-roadmap-menu/spec.md#default-behavior
  */
 import { expect, test } from '@playwright/test'
