@@ -5,7 +5,7 @@
  * UI-only Playwright e2e tests for spec `files-sidebar-tabs`.
  *
  * TAG CONVENTION: each test carries
- *   @e2e openspec/specs/files-sidebar-tabs/spec.md#<scenario-slug>
+ *   @e2e `openspec/specs/files-sidebar-tabs/spec.md#<scenario-slug>`
  *
  * Methodology: drive the real UI (EntitiesSideBar on /entities,
  * DeletedSideBar on /deleted).
