@@ -21,6 +21,7 @@ use OCA\OpenRegister\AppHost\Scheduling\CronScheduleEvaluator;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleReconciler;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -46,6 +47,7 @@ class TestableReconciler extends ScheduleReconciler {
 	 * @param ScheduleActionAllowList $allowList Allow-list.
 	 * @param IUserManager $userManager User manager.
 	 * @param LoggerInterface $logger Logger.
+	 * @param RegisterSlugResolverInterface $slugResolver Register-slug resolver.
 	 * @param array<int, array<string, mixed>> $virtual Virtual application fixtures.
 	 * @param array<string, array<string, mixed>> $managed Managed-job fixtures keyed by reference.
 	 */
@@ -56,10 +58,11 @@ class TestableReconciler extends ScheduleReconciler {
 		ScheduleActionAllowList $allowList,
 		IUserManager $userManager,
 		LoggerInterface $logger,
+		RegisterSlugResolverInterface $slugResolver,
 		private readonly array $virtual,
 		private readonly array $managed,
 	) {
-		parent::__construct($objectService, $manifestLoader, $cron, $allowList, $userManager, $logger);
+		parent::__construct($objectService, $manifestLoader, $cron, $allowList, $userManager, $logger, $slugResolver);
 	}
 
 	protected function loadManagedJobs(): ?array {
