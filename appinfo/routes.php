@@ -1368,6 +1368,29 @@ return [
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
 
+		// The notes and calendar leaves, anchored on the TASK. Both leaves
+		// were reachable only under /api/objects/{register}/{schema}/{id},
+		// and a task is not an object: it has no register and no schema, so
+		// a task page had nowhere to hang either one. The STORAGE never
+		// needed them — NoteService and CalendarLinkService are both
+		// addressed by a bare uuid — so these routes carry the same services
+		// behind a different GUARD: the task's own visibility, answering 404
+		// for the unreadable exactly as task#show above does, so the leaf
+		// cannot become the existence oracle the task surface refused to be.
+		// The calendar block mirrors calendarEvents#* verb for verb, `link`
+		// and `unlink` included and with no `update`, because no event
+		// update exists behind the object leaf either.
+		['name' => 'taskNotes#index', 'url' => '/api/flow-tasks/{uuid}/notes', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskNotes#create', 'url' => '/api/flow-tasks/{uuid}/notes', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskNotes#update', 'url' => '/api/flow-tasks/{uuid}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+', 'noteId' => '[^/]+']],
+		['name' => 'taskNotes#destroy', 'url' => '/api/flow-tasks/{uuid}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'noteId' => '[^/]+']],
+		// `link` is registered before `{eventId}` so the literal segment wins.
+		['name' => 'taskEvents#index', 'url' => '/api/flow-tasks/{uuid}/events', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#create', 'url' => '/api/flow-tasks/{uuid}/events', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#link', 'url' => '/api/flow-tasks/{uuid}/events/link', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#unlink', 'url' => '/api/flow-tasks/{uuid}/events/{eventUid}/link', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'eventUid' => '[^/]+']],
+		['name' => 'taskEvents#destroy', 'url' => '/api/flow-tasks/{uuid}/events/{eventId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'eventId' => '[^/]+']],
+
 		// The portal seam (flow-portal-task): a party OUTSIDE the instance,
 		// authenticated at portaliq's edge, acts here under a signed
 		// X-Portal-Subject assertion, never a Nextcloud session. The subject
