@@ -842,6 +842,39 @@ class ImportHandler {
 			}//end try
 
 			if ($existingRegister !== null) {
+				// A SKIPPED REGISTER UPDATE MUST STILL ADOPT THE SCHEMAS THIS
+				// RUN CREATED.
+				//
+				// The version gate below is about the register's OWN fields
+				// (title, description, …): nothing to write when the incoming
+				// definition is not newer. It is NOT about the schema links.
+				// `$data['schemas']` arriving here is the id list the schema
+				// pass just resolved, and that pass creates rows whatever the
+				// register version says — a register.d fragment adds a schema
+				// without ever touching the register's version. Returning on
+				// the version gate without that list therefore leaves those
+				// brand-new schema rows attached to nothing.
+				//
+				// That orphaning is what makes the NEXT import fork a twin.
+				// `computeRegisterScopedSchemaIds()` builds each slug's
+				// candidate set from the register's stored `schemas` list, so
+				// the missing ids are missing from the set too;
+				// `findBySlugInIds()` cannot see the app's own row, and the
+				// register-scoped branch of resolveExistingSchemaForImport()
+				// concludes — correctly, from what it was given — that the
+				// target register does not own this slug yet and creates a new
+				// schema. Every re-import repeats it. That is how one
+				// opencatalogi install reached 92 schemas with 25 slugs
+				// duplicated and page/menu/glossary present three times over
+				// (28 Aug / 3 Sep / 4 Sep), each copy identical but for its
+				// uuid: the slugs that STAYED in the register's list
+				// (publication, document) upserted correctly, and only the
+				// unlinked ones forked. See WOO-563 and
+				// ImportHandlerRegisterSchemaLinkOnVersionSkipTest.
+				//
+				// Union, never replace, for the same reason the update path
+				// below unions (#2935): a link this run can prove gets added,
+				// a link it merely cannot see is left alone.
 				// Compare versions using version_compare for proper semver comparison.
 				$existingVersion = $existingRegister->getVersion() ?? '0.0.0';
 				if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
@@ -849,8 +882,16 @@ class ImportHandler {
 						message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
 						context: ['file' => __FILE__, 'line' => __LINE__]
 					);
+
+					// Skip the register's own fields, NOT its schema links.
+					// The full-update path below already unions them (#2935);
+					// this path is the one that used to drop them, so it needs
+					// the same union before it returns.
 					// Even though we're skipping the update, we still need to add it to the map.
-					return $existingRegister;
+					return $this->linkImportedSchemas(
+						register: $existingRegister,
+						importedSchemaIds: ($data['schemas'] ?? null)
+					);
 				}
 
 				// NEVER DROP A SCHEMA LINK THIS IMPORT COULD NOT RE-ESTABLISH.
@@ -932,6 +973,64 @@ class ImportHandler {
 			throw new Exception('Failed to import register: ' . $e->getMessage());
 		}//end try
 	}//end importRegister()
+
+	/**
+	 * Attach the schema ids this import resolved to an existing register,
+	 * without ever removing a link the register already holds.
+	 *
+	 * Called from the version-gated skip path, which is the one that used to
+	 * drop them (the full-update path has unioned since #2935). The schema
+	 * pass creates rows independently of the register's version — an app that
+	 * adds a schema through a `register.d` fragment routinely leaves the
+	 * register's own `version` untouched — so a register that returns early
+	 * from the version gate without adopting those ids leaves them orphaned,
+	 * and the next import cannot resolve them (see the comment at the call
+	 * site, and WOO-563).
+	 *
+	 * Union semantics, matching the update path: an id this run proved is
+	 * added, and an id the register already lists is kept even when this run
+	 * could not see it. Persists only when the merge actually adds something,
+	 * so a no-op import stays a no-op write.
+	 *
+	 * @param Register   $register          The register already stored.
+	 * @param mixed      $importedSchemaIds The `schemas` value this import resolved (an id list, or null).
+	 *
+	 * @return Register The register, updated in the database when links were added.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function linkImportedSchemas(Register $register, mixed $importedSchemaIds): Register {
+		if (is_array($importedSchemaIds) === false || $importedSchemaIds === []) {
+			return $register;
+		}
+
+		$currentIds = $register->getSchemas();
+		if (is_array($currentIds) === false) {
+			$currentIds = [];
+		}
+
+		$merged = array_values(array_unique(array_merge($currentIds, $importedSchemaIds), SORT_REGULAR));
+		if (count($merged) === count($currentIds)) {
+			// Nothing new to link — leave the row untouched.
+			return $register;
+		}
+
+		$this->logger->info(
+			message: '[ImportHandler] Linking schemas created by this import to the existing register.',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'registerSlug' => $register->getSlug(),
+				'schemasBefore' => count($currentIds),
+				'schemasAfter' => count($merged),
+			]
+		);
+
+		$register->setSchemas($merged);
+
+		return $this->registerMapper->update($register);
+	}//end linkImportedSchemas()
 
 	/**
 	 * Import a single mapping from configuration data.
