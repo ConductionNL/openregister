@@ -5,7 +5,7 @@
  * Spec-coverage e2e tests for: mdm-frontend (ADR-045 #3).
  *
  * TAG CONVENTION: each test carries
- *   @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#<scenario-slug>
+ *   @e2e `openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#<scenario-slug>`
  *
  * Methodology: drive the real UI. The five MDM views live under the hash-mode
  * router (`/index.php/apps/openregister/<route>`); the shared
