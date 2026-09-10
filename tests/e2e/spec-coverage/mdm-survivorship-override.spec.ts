@@ -4,8 +4,9 @@
  *
  * Spec-coverage e2e tests for: mdm-survivorship-override (ADR-045 follow-on #E).
  *
- * TAG CONVENTION: each test carries
- *   @e2e openspec/changes/mdm-survivorship-override/specs/<capability>/spec.md#<scenario-slug>
+ * TAG CONVENTION: each test carries an `@e2e` tag naming
+ * `openspec/changes/mdm-survivorship-override/specs/<capability>/spec.md#<scenario-slug>`. The placeholder is quoted so this line
+ * reads as prose rather than as a live anchor of its own.
  *
  * Methodology: drive the real UI. When the self-seeding MDM fixture
  * (tests/e2e/mdm-seed.ts, run in globalSetup) has planted a multi-source

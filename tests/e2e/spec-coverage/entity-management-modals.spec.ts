@@ -4,8 +4,9 @@
  *
  * UI-only Playwright e2e tests for spec `entity-management-modals`.
  *
- * TAG CONVENTION: each test carries
- *   @e2e openspec/specs/entity-management-modals/spec.md#<scenario-slug>
+ * TAG CONVENTION: each test carries an `@e2e` tag naming
+ * `openspec/specs/entity-management-modals/spec.md#<scenario-slug>`. The placeholder is quoted so this line
+ * reads as prose rather than as a live anchor of its own.
  *
  * Methodology: drive the real UI — log in, click buttons, fill forms,
  * assert the rendered DOM.  The OR REST API is used ONLY for test-data
