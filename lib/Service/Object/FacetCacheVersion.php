@@ -114,6 +114,20 @@ class FacetCacheVersion {
 	private ?ICache $cache = null;
 
 	/**
+	 * Scope keys already bumped during this request.
+	 *
+	 * A bump makes every entry written BEFORE it unreachable, so a second bump of
+	 * the same key with no read in between changes nothing. Skipping it turns a
+	 * thousand-object import into four increments instead of four thousand.
+	 *
+	 * Any read clears this, because a read may have written a fresh entry that a
+	 * later write in the same request must still invalidate.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $bumpedThisRequest = [];
+
+	/**
 	 * Wire the counter store.
 	 *
 	 * @param ICacheFactory   $cacheFactory Factory used to create the distributed cache.
@@ -158,7 +172,12 @@ class FacetCacheVersion {
 		}
 
 		foreach ($this->scopeKeysToBump(register: $register, schema: $schema) as $key) {
+			if (isset($this->bumpedThisRequest[$key]) === true) {
+				continue;
+			}
+
 			$this->increment(key: $key);
+			$this->bumpedThisRequest[$key] = true;
 		}
 	}//end bump()
 
@@ -176,6 +195,10 @@ class FacetCacheVersion {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
 	 */
 	public function version(?string $register, ?string $schema): int {
+		// A read may cache a response keyed on what it reads here, so a later
+		// write in this same request has to bump again even if it already did.
+		$this->bumpedThisRequest = [];
+
 		if ($this->cache === null) {
 			return 0;
 		}

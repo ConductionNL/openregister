@@ -201,6 +201,47 @@ final class FacetCacheVersionTest extends TestCase {
 	}//end testOneWriteCostsFourCounterIncrementsAndNothingElse()
 
 	/**
+	 * A bulk import pays for its scope once, not once per object.
+	 *
+	 * A thousand-object import into one schema dispatches a thousand write
+	 * events. Repeating a bump with no read in between changes nothing, so the
+	 * repeats are skipped.
+	 *
+	 * @return void
+	 */
+	public function testRepeatedWritesToOneScopeInOneRequestBumpOnce(): void {
+		$this->cache->writes = 0;
+
+		for ($i = 0; $i < 100; $i++) {
+			$this->versions->bump('7', '42');
+		}
+
+		$this->assertSame(4, $this->cache->writes, '100 writes into one scope cost 4 increments');
+	}//end testRepeatedWritesToOneScopeInOneRequestBumpOnce()
+
+	/**
+	 * A read between two writes forces the second write to bump again.
+	 *
+	 * The read may have cached a response keyed on the counter it just read, and
+	 * only a further bump can make that response unreachable. Skipping the second
+	 * bump here would reintroduce the defect inside a single request.
+	 *
+	 * @return void
+	 */
+	public function testAReadBetweenTwoWritesMakesTheSecondWriteBumpAgain(): void {
+		$this->versions->bump('7', '42');
+		$afterFirst = $this->versions->tokenForScope(['7'], ['42']);
+
+		$this->versions->bump('7', '42');
+
+		$this->assertNotSame(
+			$afterFirst,
+			$this->versions->tokenForScope(['7'], ['42']),
+			'a write after a read must still invalidate what that read cached'
+		);
+	}//end testAReadBetweenTwoWritesMakesTheSecondWriteBumpAgain()
+
+	/**
 	 * A backend without atomic increment still records a bump, with headroom.
 	 *
 	 * The fallback writes an explicit TTL. It has to outlive the facet entries
