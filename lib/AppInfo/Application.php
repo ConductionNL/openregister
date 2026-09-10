@@ -42,6 +42,7 @@ use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Controller\AnalyticsSeriesController;
 use OCA\OpenRegister\Controller\CaseTokenController;
 use OCA\OpenRegister\Controller\IntegrationsController;
@@ -232,6 +233,7 @@ use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PhotoLinkService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\RegisterSlugResolver;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
@@ -282,6 +284,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\Security\IContentSecurityPolicyManager;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class Application
@@ -430,11 +433,11 @@ class Application extends App implements IBootstrap {
 		// registration the memo would be empty every time and the probe would
 		// re-read the register table once per call site.
 		$context->registerService(
-			\OCA\OpenRegister\Service\RegisterSlugResolver::class,
+			RegisterSlugResolver::class,
 			function ($c) {
-				return new \OCA\OpenRegister\Service\RegisterSlugResolver(
-					registerMapper: $c->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					logger: $c->get(\Psr\Log\LoggerInterface::class)
+				return new RegisterSlugResolver(
+					registerMapper: $c->get(RegisterMapper::class),
+					logger: $c->get(LoggerInterface::class)
 				);
 			}
 		);
@@ -443,9 +446,9 @@ class Application extends App implements IBootstrap {
 		// the same shared instance, so an app that injects the interface and one
 		// that injects the class share a memo rather than probing twice.
 		$context->registerService(
-			\OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class,
+			RegisterSlugResolverInterface::class,
 			function ($c) {
-				return $c->get(\OCA\OpenRegister\Service\RegisterSlugResolver::class);
+				return $c->get(RegisterSlugResolver::class);
 			}
 		);
 
