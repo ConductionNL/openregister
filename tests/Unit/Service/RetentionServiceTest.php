@@ -103,7 +103,9 @@ class RetentionServiceTest extends TestCase {
 		$retention = $result->getRetention();
 
 		$this->assertEquals('vernietigen', $retention['archiefnominatie']);
-		$this->assertEquals('nog_te_archiveren', $retention['archiefstatus']);
+		// GAP A4: the Archiefwet lifecycle in English, one vocabulary shared
+		// with TmloService and the abstract `_retention` layer.
+		$this->assertEquals('active', $retention['archiefstatus']);
 		$this->assertEquals('P5Y', $retention['bewaartermijn']);
 		$this->assertNotNull($retention['archiefactiedatum']);
 	}//end testApplyArchivalMetadataWithEnabledSchema()
@@ -426,6 +428,72 @@ class RetentionServiceTest extends TestCase {
 
 		$this->assertSame(['already-listed'], $this->service->getObjectsOnPendingDestructionLists());
 	}//end testExcludesObjectsAlreadyOnAPendingList()
+
+	/**
+	 * GAP A4: the immutability guard still recognises the Dutch spellings.
+	 *
+	 * This is the half of the vocabulary change that could destroy something.
+	 * Stored data carries whatever spelling was current when it was written and
+	 * there is no migration, so a guard that only knew `transferred` would
+	 * unlock every record an existing install had already handed to an e-Depot.
+	 *
+	 * @dataProvider immutableSpellings
+	 *
+	 * @param string $stored   The spelling held in storage
+	 * @param string $expected The error code it must still produce
+	 */
+	public function testTheImmutabilityGuardKnowsBothVocabularies(string $stored, string $expected): void {
+		$object = new ObjectEntity();
+		$object->setRetention(['archiefstatus' => $stored]);
+
+		$this->assertSame($expected, $this->service->validateNotImmutable($object));
+	}//end testTheImmutabilityGuardKnowsBothVocabularies()
+
+	/**
+	 * Every spelling of every immutable state, and what it means.
+	 *
+	 * @return array<string, array{string, string}>
+	 */
+	public static function immutableSpellings(): array {
+		return [
+			'english transferred' => ['transferred', 'OBJECT_TRANSFERRED'],
+			'dutch transferred' => ['overgebracht', 'OBJECT_TRANSFERRED'],
+			'english destroyed' => ['destroyed', 'OBJECT_DESTROYED'],
+			'dutch destroyed' => ['vernietigd', 'OBJECT_DESTROYED'],
+		];
+	}//end immutableSpellings()
+
+	/**
+	 * A live record is not immutable, in either vocabulary.
+	 *
+	 * The mirror of the test above: widening the guard until it matched
+	 * everything would pass that one and freeze every record in the install.
+	 *
+	 * @dataProvider liveSpellings
+	 *
+	 * @param string $stored The spelling held in storage
+	 */
+	public function testALiveRecordIsNotImmutableInEitherVocabulary(string $stored): void {
+		$object = new ObjectEntity();
+		$object->setRetention(['archiefstatus' => $stored]);
+
+		$this->assertNull($this->service->validateNotImmutable($object));
+	}//end testALiveRecordIsNotImmutableInEitherVocabulary()
+
+	/**
+	 * Every spelling that means the record is still live.
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public static function liveSpellings(): array {
+		return [
+			'english active' => ['active'],
+			'dutch actief' => ['actief'],
+			'dutch nog_te_archiveren' => ['nog_te_archiveren'],
+			'english semi static' => ['semi_static'],
+			'dutch semi statisch' => ['semi_statisch'],
+		];
+	}//end liveSpellings()
 
 	/**
 	 * Test that archival metadata is NOT applied when schema has no archive config.

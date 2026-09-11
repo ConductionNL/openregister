@@ -34,6 +34,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -164,7 +165,7 @@ class DestructionExecutionJob extends QueuedJob {
 
 						// Update archiefstatus before deletion.
 						$retention = $object->getRetention() ?? [];
-						$retention['archiefstatus'] = 'vernietigd';
+						$retention['archiefstatus'] = RecordState::DESTROYED;
 						$object->setRetention($retention);
 
 						// Create audit trail entry.

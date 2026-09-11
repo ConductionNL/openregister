@@ -148,7 +148,7 @@ class DestructionService {
 	 * Objects are eligible when:
 	 * - archiefactiedatum is in the past
 	 * - archiefnominatie is 'vernietigen'
-	 * - archiefstatus is 'nog_te_archiveren'
+	 * - the record state is still active
 	 * - No active legal hold
 	 * - Not already on an existing in_review destruction list
 	 *
@@ -169,7 +169,16 @@ class DestructionService {
 			$objects = $this->objectMapper->findAll(
 				filters: [
 					'retention.archiefnominatie' => 'vernietigen',
-					'retention.archiefstatus' => 'nog_te_archiveren',
+					// Every spelling that means live. ⚠️ This whole query cannot
+					// return anything today (F2 in
+					// openspec/changes/archival-conformance): findAll() answers
+					// [] without register/schema, and `retention.archiefstatus`
+					// is a dotted JSON path the search handler compiles to
+					// `1 = 0`. It has no production caller. The value is kept
+					// correct so that whoever wires it up inherits the right
+					// vocabulary rather than a silent miss on top of a silent
+					// miss.
+					'retention.archiefstatus' => RecordState::ACTIVE_ALIASES,
 				],
 				includeDeleted: true
 			);

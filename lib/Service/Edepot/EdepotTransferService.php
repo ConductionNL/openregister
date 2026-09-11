@@ -33,6 +33,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportResult;
 use OCP\IAppConfig;
@@ -116,7 +117,7 @@ class EdepotTransferService {
 	 *
 	 * No in-process `sleep()`: exactly one transport send per outstanding
 	 * package. Objects already confirmed on a prior attempt
-	 * (`retention.archiefstatus === 'overgebracht'`) are excluded from the
+	 * (a transferred record state) are excluded from the
 	 * rebuild/resend so a retry never re-ingests them (partial-success
 	 * awareness). The attempt (number, timestamp, transport, per-package
 	 * outcome, error) is appended to the list's append-only `attempts[]`; the
@@ -262,7 +263,9 @@ class EdepotTransferService {
 			try {
 				$object = $this->objectMapper->find($ref['uuid']);
 				$retention = ($object->getRetention() ?? []);
-				if (($retention['archiefstatus'] ?? '') === 'overgebracht') {
+				// Both vocabularies: stored data is not migrated, so a record
+				// transferred before GAP A4 still holds `overgebracht`.
+				if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true) {
 					// Already ingested on a prior attempt — never resend.
 					continue;
 				}
@@ -303,7 +306,7 @@ class EdepotTransferService {
 			try {
 				$object = $this->objectMapper->find($ref['uuid']);
 				$retention = ($object->getRetention() ?? []);
-				if (($retention['archiefstatus'] ?? '') !== 'overgebracht') {
+				if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === false) {
 					return TransferListService::STATUS_FAILED;
 				}
 			} catch (\Throwable $e) {
@@ -615,7 +618,7 @@ class EdepotTransferService {
 	 */
 	private function markObjectTransferred(ObjectEntity $object, string $reference, string $timestamp): void {
 		$retention = ($object->getRetention() ?? []);
-		$retention['archiefstatus'] = 'overgebracht';
+		$retention['archiefstatus'] = RecordState::TRANSFERRED;
 		$retention['eDepotReferentie'] = $reference;
 		$retention['transferDate'] = $timestamp;
 		$object->setRetention($retention);

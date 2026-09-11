@@ -102,8 +102,28 @@ and nothing in the code says which.
 
 The resolver maps `nog_te_archiveren` onto `active` so the abstract answer is
 coherent — a record "still to be archived" is live and not yet transferred. That
-makes `_retention` usable. **It does not fix the two writers**, which still
-disagree, and a single-vocabulary decision belongs in the next pass.
+makes `_retention` usable.
+
+**RESOLVED.** `retention.archiefstatus` now carries the Archiefwet lifecycle in
+English — `active`, `semi_static`, `transferred`, `destroyed` — defined once in
+`lib/Service/Archival/RecordState.php` and shared with the abstract layer.
+`RetentionService`, `EdepotTransferService` and `DestructionExecutionJob` all
+write from it.
+
+Reads accept the old spellings and there is no migration, deliberately. A guard
+that stopped recognising `overgebracht` would unlock every record an existing
+install had already handed to an e-Depot, and a destruction sweep that stopped
+recognising `nog_te_archiveren` would silently skip every pre-existing record —
+the direction that keeps personal data past its lawful term. So each state
+carries an alias list holding its English name and the Dutch spellings it
+replaces, and every comparison goes through that list. Both directions are
+mutation-checked: dropping the Dutch aliases reddens the immutability tests, and
+widening one alias list to swallow the live states reddens the mutable tests.
+
+`tmlo.archiefstatus` KEEPS ITS DUTCH SPELLINGS. It is its own block with its own
+transition matrix and its own MDTO export mapping, and moving it is a separate
+change. The two writers no longer disagree about what `retention.archiefstatus`
+means, which was the defect; the abstract layer continues to read both.
 
 ### B — Selectielijst provenance is not reconstructable
 
