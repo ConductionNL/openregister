@@ -58,6 +58,16 @@ use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The count went to the
+ * threshold when reading both filter spellings (openregister#3611) added three
+ * references: `FilterParams` for the grammar, `Schema` to pass the already
+ * resolved entity into it, and a logger for the one warning an unknown key
+ * raises. The cheap way back under the limit is to re-resolve the schema
+ * instead of passing it, which would let the validator police one schema's
+ * property list while the aggregate ran over another's, and that is exactly
+ * the mismatch `timeseries()` resolves the schema up front to avoid.
+ */
 class AggregationController extends Controller {
 	/**
 	 * Constructor.
