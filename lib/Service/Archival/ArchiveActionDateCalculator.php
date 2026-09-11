@@ -134,6 +134,7 @@ class ArchiveActionDateCalculator {
 	 *
 	 * @return DateTime|null The source date or null
 	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 */
 	public function determineBrondatum(
 		ObjectEntity $object,
