@@ -130,6 +130,9 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) One mapped column costs a
+ * property, an accessor pair, a type registration and a serialised key, so the
+ * entity grows with the table. Splitting it would split one row's mapping.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -434,21 +437,9 @@ class Organisation extends Entity implements JsonSerializable {
 	/**
 	 * The name the organisation is registered under (statutaire naam).
 	 *
-	 * Distinct from `name`, which is what the organisation is called day to day
-	 * and what every list shows. "Gemeente Voorbeeld" is a name; the legal name
-	 * in the Handelsregister is what a contract, an invoice or a formal letter
-	 * addresses. Several apps kept the two side by side in their own tenant or
-	 * party records, which is why it lives here rather than being re-modelled in
-	 * each of them.
-	 *
-	 * Nullable with no fallback to `name`. A copy of `name` written here would
-	 * read as a legal name someone had verified, and a reader cannot tell the
-	 * two apart afterwards. A consumer that needs something to print falls back
-	 * to `name` itself, at the point of use.
-	 *
-	 * Identity only, never a key: nothing may match, merge or scope on it. Two
-	 * bodies can share a legal name, and the identifiers for that are `kvk`,
-	 * `rsin` and `oin`.
+	 * Distinct from `name`, what every list shows. Never a copy of it: a reader
+	 * needing something to print falls back to `name` at the point of use.
+	 * Identity only, never a key; `kvk`, `rsin` and `oin` are the identifiers.
 	 *
 	 * @var string|null The registered legal name.
 	 */
