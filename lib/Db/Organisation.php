@@ -99,6 +99,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setRsin(?string $rsin)
  * @method string|null getKvk()
  * @method void setKvk(?string $kvk)
+ * @method string|null getLegalName()
+ * @method void setLegalName(?string $legalName)
  * @method string|null getPki()
  * @method void setPki(?string $pki)
  * @method string|null getImage()
@@ -430,6 +432,29 @@ class Organisation extends Entity implements JsonSerializable {
 	protected ?string $kvk = null;
 
 	/**
+	 * The name the organisation is registered under (statutaire naam).
+	 *
+	 * Distinct from `name`, which is what the organisation is called day to day
+	 * and what every list shows. "Gemeente Voorbeeld" is a name; the legal name
+	 * in the Handelsregister is what a contract, an invoice or a formal letter
+	 * addresses. Several apps kept the two side by side in their own tenant or
+	 * party records, which is why it lives here rather than being re-modelled in
+	 * each of them.
+	 *
+	 * Nullable with no fallback to `name`. A copy of `name` written here would
+	 * read as a legal name someone had verified, and a reader cannot tell the
+	 * two apart afterwards. A consumer that needs something to print falls back
+	 * to `name` itself, at the point of use.
+	 *
+	 * Identity only, never a key: nothing may match, merge or scope on it. Two
+	 * bodies can share a legal name, and the identifiers for that are `kvk`,
+	 * `rsin` and `oin`.
+	 *
+	 * @var string|null The registered legal name.
+	 */
+	protected ?string $legalName = null;
+
+	/**
 	 * PKIoverheid certificate reference.
 	 *
 	 * @var string|null
@@ -605,6 +630,7 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'tooi', type: 'string');
 		$this->addType(fieldName: 'rsin', type: 'string');
 		$this->addType(fieldName: 'kvk', type: 'string');
+		$this->addType(fieldName: 'legalName', type: 'string');
 		$this->addType(fieldName: 'pki', type: 'string');
 		$this->addType(fieldName: 'image', type: 'string');
 		// Relationship facet.
@@ -1062,6 +1088,7 @@ class Organisation extends Entity implements JsonSerializable {
 			'tooi' => $this->tooi,
 			'rsin' => $this->rsin,
 			'kvk' => $this->kvk,
+			'legalName' => $this->legalName,
 			'pki' => $this->pki,
 			'image' => $this->image,
 			'registrationStatus' => $this->registrationStatus,
