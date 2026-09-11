@@ -18,17 +18,17 @@
 
 - [x] 3.1 Cover the listener paths in `tests/Unit/Listener/`: condition holds, condition refuses with a string message, with a map message and with no message, ordering against `authorization`, and no-condition passthrough. Include a `LifecycleGuardRegistry` double that fails the test if `resolve()` is called on a refused condition. Verify the class is green.
 - [x] 3.2 Cover the fail-closed runtime rule: a stored condition that cannot be evaluated for the object at hand refuses with `lifecycle-condition-unmet` rather than allowing the transition. Verify the class is green.
-- [ ] 3.3 Cover both transition routes reaching the same refusal: a `TransitionEngine::transition()` call and a direct lifecycle-field `saveObject()` both raise `HookStoppedException` carrying `lifecycle-condition-unmet`. Verify the test asserts the code on both paths.
+- [x] 3.3 Cover both transition routes reaching the same refusal: a `TransitionEngine::transition()` call and a direct lifecycle-field `saveObject()` both raise `HookStoppedException` carrying `lifecycle-condition-unmet`. Verify the test asserts the code on both paths.
 - [x] 3.4 Mutation-check every test added in 1.x, 2.x and 3.x: delete the validator branch, separately invert the runtime refusal, and separately drop the graph-mode refusal; run PHPUnit after each and record that the intended test went RED for the intended reason before restoring. Verify by exit code, not by the summary line; a test that stays green is not finished.
 
 ## 4. Worked example and documentation
 
-- [ ] 4.1 Verify the `condition` and per-locale `message` added to the `dataSubjectRequest` `refuse` transition in `lib/Settings/openregister_mock_register.json` import cleanly and enforce as specified: refusing without a `denialGround`, or with `not-applicable`, is refused with the Dutch message for an `nl` caller. Verify by importing the register and attempting both transitions.
+- [x] 4.1 Verify the `condition` and per-locale `message` added to the `dataSubjectRequest` `refuse` transition in `lib/Settings/openregister_mock_register.json` import cleanly and enforce as specified: refusing without a `denialGround`, or with `not-applicable`, is refused with the Dutch message for an `nl` caller. Verify by importing the register and attempting both transitions.
 - [x] 4.2 Document `condition` and `message` in the lifecycle annotation reference: the JSONLogic form, the four data-document keys, why it is not the flow engine's `json` shape, both `message` shapes and their resolution order, the empty `user` under `occ` and any session-less caller, the evaluation order against `authorization` and `requires`, the distinction from the `@self` string `condition` an `actions[]` entry declares, and that graph-mode conditions are refused pending save-path enforcement. Verify the reference carries the mock register's `refuse` example.
 
 ## 5. Quality gate
 
-- [ ] 5.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and fix every finding on the touched files, pre-existing ones included. Verify by exit code 0.
+- [x] 5.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and fix every finding on the touched files, pre-existing ones included. Verify by exit code 0.
 
 ## Acceptance criteria
 

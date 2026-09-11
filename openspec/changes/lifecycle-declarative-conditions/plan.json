@@ -88,7 +88,7 @@
       "id": "3.3",
       "title": "Cover both transition routes reaching the same refusal: a `TransitionEngine::transition()` call and a direct lifecycle-field `saveObject()` both raise `HookStoppedException` carrying `lifecycle-condition-unmet`. Verify the test asserts the code on both paths.",
       "section": "3. Tests, each proven to fail first",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
     },
     {
@@ -102,7 +102,7 @@
       "id": "4.1",
       "title": "Verify the `condition` and per-locale `message` added to the `dataSubjectRequest` `refuse` transition in `lib/Settings/openregister_mock_register.json` import cleanly and enforce as specified: refusing without a `denialGround`, or with `not-applicable`, is refused with the Dutch message for an `nl` caller. Verify by importing the register and attempting both transitions.",
       "section": "4. Worked example and documentation",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
     },
     {
@@ -116,7 +116,7 @@
       "id": "5.1",
       "title": "Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and fix every finding on the touched files, pre-existing ones included. Verify by exit code 0.",
       "section": "5. Quality gate",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md"
     }
   ]
