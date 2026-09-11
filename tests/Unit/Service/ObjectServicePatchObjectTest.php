@@ -90,6 +90,9 @@ class ObjectServicePatchObjectTest extends TestCase {
 	/** @var MockObject&IAppContainer */
 	private $container;
 
+	/** What the container hands back for SchemaTypeConverter::class. */
+	private mixed $converterAnswer = null;
+
 	private Register $register;
 
 	private Schema $schema;
@@ -104,11 +107,13 @@ class ObjectServicePatchObjectTest extends TestCase {
 		$this->container = $this->createMock(IAppContainer::class);
 
 		// The container answers with the REAL converter: the encode half of the
-		// rule is the thing under test, so mocking it would test nothing.
+		// rule is the thing under test, so mocking it would test nothing. A
+		// test that needs a container with no converter overwrites the answer.
+		$this->converterAnswer = new SchemaTypeConverter();
 		$this->container->method('get')->willReturnCallback(
-			static function (string $id): mixed {
+			function (string $id): mixed {
 				if ($id === SchemaTypeConverter::class) {
-					return new SchemaTypeConverter();
+					return $this->converterAnswer;
 				}
 
 				throw new \RuntimeException('unexpected container lookup: ' . $id);
@@ -358,19 +363,31 @@ class ObjectServicePatchObjectTest extends TestCase {
 	 *
 	 * @param array<string, mixed> $storedObject The object as a read hands it back.
 	 * @param array<string, mixed> $properties   The schema's property declarations.
-	 * @param array<string, mixed> $patch        The caller's partial payload.
+	 * @param array<string, mixed> $patch             The caller's partial payload.
+	 * @param bool                 $schemaLookupFails Make the schema lookup throw.
+	 * @param string|null          $schemaId          The schema the stored object names.
 	 *
 	 * @return array<string, mixed>|null The payload as the save pipeline saw it.
 	 */
-	private function payloadReachingTheSave(array $storedObject, array $properties, array $patch): ?array {
-		$schema = new Schema();
-		$schema->setId(2);
-		$schema->setProperties($properties);
-		$this->schemaMapper->method('find')->willReturn($schema);
+	private function payloadReachingTheSave(
+		array $storedObject,
+		array $properties,
+		array $patch,
+		bool $schemaLookupFails = false,
+		?string $schemaId = '2'
+	): ?array {
+		if ($schemaLookupFails === true) {
+			$this->schemaMapper->method('find')->willThrowException(new \RuntimeException('schema gone'));
+		} else {
+			$schema = new Schema();
+			$schema->setId(2);
+			$schema->setProperties($properties);
+			$this->schemaMapper->method('find')->willReturn($schema);
+		}
 
 		$existing = new ObjectEntity();
 		$existing->setUuid('u-1');
-		$existing->setSchema('2');
+		$existing->setSchema($schemaId);
 		$existing->setObject($storedObject);
 
 		$this->objectMapper->method('find')->willReturn($existing);
@@ -430,6 +447,52 @@ class ObjectServicePatchObjectTest extends TestCase {
 		);
 
 	}//end testAnArrayTheCallerSuppliedReachesValidationUnchanged()
+
+	public function testASchemaThatWillNotResolveLeavesTheMergedDataAlone(): void {
+		$seen = $this->payloadReachingTheSave(
+			['title' => 'Alpha', 'statusHistory' => [['status' => 'open']]],
+			['title' => ['type' => 'string'], 'statusHistory' => ['type' => 'string']],
+			['title' => 'probe'],
+			schemaLookupFails: true
+		);
+
+		$this->assertNotNull($seen);
+		$this->assertSame(
+			[['status' => 'open']],
+			$seen['statusHistory'],
+			'no schema, no claim: the caller keeps the behaviour it had before this change'
+		);
+
+	}//end testASchemaThatWillNotResolveLeavesTheMergedDataAlone()
+
+	public function testAnObjectWithNoSchemaLeavesTheMergedDataAlone(): void {
+		$seen = $this->payloadReachingTheSave(
+			['title' => 'Alpha', 'statusHistory' => [['status' => 'open']]],
+			['title' => ['type' => 'string'], 'statusHistory' => ['type' => 'string']],
+			['title' => 'probe'],
+			schemaId: null
+		);
+
+		$this->assertNotNull($seen);
+		$this->assertSame([['status' => 'open']], $seen['statusHistory']);
+
+	}//end testAnObjectWithNoSchemaLeavesTheMergedDataAlone()
+
+	public function testAContainerThatAnswersWithNoConverterDoesNotFatal(): void {
+		// Calling a method on null would turn a patch into a fatal error, which
+		// is a worse failure than the refusal this change exists to remove.
+		$this->converterAnswer = null;
+
+		$seen = $this->payloadReachingTheSave(
+			['title' => 'Alpha', 'statusHistory' => [['status' => 'open']]],
+			['title' => ['type' => 'string'], 'statusHistory' => ['type' => 'string']],
+			['title' => 'probe']
+		);
+
+		$this->assertNotNull($seen, 'the patch ran rather than fatalling');
+		$this->assertSame([['status' => 'open']], $seen['statusHistory']);
+
+	}//end testAContainerThatAnswersWithNoConverterDoesNotFatal()
 
 	public function testAnArrayTypedPropertyIsNotEncodedByTheRestore(): void {
 		$seen = $this->payloadReachingTheSave(
