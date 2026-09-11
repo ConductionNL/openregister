@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -68,6 +69,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 * @param ApprovalChainAnnotationInstaller $installer Compiles the declared chain into a task template.
 	 * @param IUserSession $userSession Current user session (requester identity).
 	 * @param LoggerInterface $logger Logger for gate diagnostics.
+	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -76,6 +78,7 @@ class ApprovalChainGateListener implements IEventListener {
 		private readonly ApprovalChainAnnotationInstaller $installer,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleTransitionResolver $transitionResolver,
 	) {
 	}//end __construct()
 
@@ -126,11 +129,15 @@ class ApprovalChainGateListener implements IEventListener {
 			return;
 		}
 
-		$action = $this->matchTransition(
+		// The shared resolver, so a named call is gated by its OWN chain and not
+		// by an earlier transition that happens to share its from/to pair.
+		$matched = $this->transitionResolver->resolve(
 			transitions: $transitions,
+			uuid: (string)$newObject->getUuid(),
 			oldValue: (string)$oldValue,
 			newValue: $newValue
 		);
+		$action = $matched[0] ?? null;
 		if ($action === null) {
 			// Not a recognised transition — LifecycleValidationListener rejects
 			// this on its own; the approval gate has nothing to evaluate.
@@ -302,36 +309,6 @@ class ApprovalChainGateListener implements IEventListener {
 
 		return [$best];
 	}//end resolveTierPositions()
-
-	/**
-	 * Find the transition (action name) whose `to` matches the new value AND
-	 * whose `from` list contains the old value. Mirrors
-	 * `LifecycleValidationListener::findTransitionByTarget()`.
-	 *
-	 * @param array<string, mixed> $transitions Transition map from the annotation.
-	 * @param string $oldValue Current lifecycle field value.
-	 * @param string $newValue Attempted lifecycle field value.
-	 *
-	 * @return string|null The matched action name, or null.
-	 */
-	private function matchTransition(array $transitions, string $oldValue, string $newValue): ?string {
-		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === false || ($spec['to'] ?? null) !== $newValue) {
-				continue;
-			}
-
-			$from = ($spec['from'] ?? []);
-			if (is_string($from) === true) {
-				$from = [$from];
-			}
-
-			if (is_array($from) === true && in_array($oldValue, $from, true) === true) {
-				return (string)$action;
-			}
-		}
-
-		return null;
-	}//end matchTransition()
 
 	/**
 	 * Load the schema referenced by an object, returning null on failure.

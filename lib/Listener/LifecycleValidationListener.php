@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -74,6 +75,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param LifecycleConditionEvaluator $conditionEvaluator Decides whether a transition `condition` lets it through.
+	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
 	 *
 	 * @return void
 	 *
@@ -86,6 +88,7 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly PermissionHandler $permissionHandler,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleConditionEvaluator $conditionEvaluator,
+		private readonly LifecycleTransitionResolver $transitionResolver,
 	) {
 	}//end __construct()
 
@@ -161,7 +164,7 @@ class LifecycleValidationListener implements IEventListener {
 		// while OWNING transition validation itself (procest routes every status
 		// change through its workflow-template state engine). With no declared
 		// `transitions` there is nothing for OR to enforce, so validating here
-		// fail-closes EVERY status change (findTransitionByTarget([]) === null →
+		// fail-closes EVERY status change (no transition resolves →
 		// reject), silently breaking those apps' status advancement. Treat an
 		// empty/absent transition set as "app-managed" and skip enforcement; the
 		// initial state is still pinned by LifecycleInitialStateListener.
@@ -169,8 +172,9 @@ class LifecycleValidationListener implements IEventListener {
 			return;
 		}
 
-		$matched = $this->findTransitionByTarget(
+		$matched = $this->transitionResolver->resolve(
 			transitions: $transitions,
+			uuid: (string)$newObject->getUuid(),
 			oldValue: (string)$oldValue,
 			newValue: $newValue
 		);
@@ -267,45 +271,6 @@ class LifecycleValidationListener implements IEventListener {
 			}
 		}
 	}//end handle()
-
-	/**
-	 * Find the transition (action, spec) whose `to` matches the new value
-	 * AND whose `from` list contains the old value.
-	 *
-	 * @param array<string, mixed> $transitions Transition map from the annotation.
-	 * @param string $oldValue Current lifecycle field value.
-	 * @param string $newValue Attempted lifecycle field value.
-	 *
-	 * @return array{0: string, 1: array<string, mixed>}|null
-	 */
-	private function findTransitionByTarget(array $transitions, string $oldValue, string $newValue): ?array {
-		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === false) {
-				continue;
-			}
-
-			if (($spec['to'] ?? null) !== $newValue) {
-				continue;
-			}
-
-			// `from` may be a single state string or a list of states. Coerce
-			// a string to a one-element list so both authoring shapes work.
-			$from = ($spec['from'] ?? []);
-			if (is_string($from) === true) {
-				$from = [$from];
-			}
-
-			if (is_array($from) === false) {
-				continue;
-			}
-
-			if (in_array($oldValue, $from, true) === true) {
-				return [(string)$action, $spec];
-			}
-		}//end foreach
-
-		return null;
-	}//end findTransitionByTarget()
 
 	/**
 	 * Look up the schema referenced by an object instance.

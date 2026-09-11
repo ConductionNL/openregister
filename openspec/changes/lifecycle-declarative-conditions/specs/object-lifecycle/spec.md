@@ -289,3 +289,38 @@ gap visible to the author who would otherwise depend on it.
 - **WHEN** the schema is saved
 - **THEN** no `lifecycle-condition-graph-unsupported` error MUST be raised
 - **AND** the static transition's condition MUST be validated and enforced as specified above
+
+### Requirement: A named transition MUST be judged by its own declaration, not by a same-pair twin
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+When a caller performs a transition by name through `TransitionEngine`, the
+lifecycle listeners MUST gate and act on THAT transition: its `authorization`,
+`condition`, `requires` and `actions`. This holds even when an earlier declared
+transition shares the same `from` and `to` values. `TransitionEngine` SHALL
+declare the action on a shared, request-scoped context for the duration of its
+save and SHALL release it afterwards, including when the save fails. A declared
+action SHALL be honoured only when it genuinely moves the old value to the new
+one; it MUST NEVER make an otherwise undeclared move legal. A direct edit of
+the lifecycle field, which names no action, SHALL keep resolving to the first
+declared transition matching the values.
+
+#### Scenario: A named action is gated by its own condition
+- **GIVEN** transitions `openen` and `beslissen`, both from `in-behandeling` to `besloten`, declared in that order, where only `beslissen` declares a condition
+- **WHEN** `beslissen` is performed by name and its condition does not hold
+- **THEN** the save MUST be refused with `lifecycle-condition-unmet` naming `beslissen`
+
+#### Scenario: A direct edit keeps first-match resolution
+- **GIVEN** the same two transitions
+- **WHEN** the lifecycle field is edited directly from `in-behandeling` to `besloten`
+- **THEN** the edit MUST be resolved as `openen` and pass
+
+#### Scenario: A declared action cannot legalise a move
+- **GIVEN** a declared action whose `to` differs from the attempted new value
+- **WHEN** the change is resolved
+- **THEN** the declaration MUST be ignored and resolution MUST fall back to matching by value
+
+#### Scenario: The declaration does not outlive the save
+- **GIVEN** a named transition whose save throws
+- **WHEN** the exception leaves `TransitionEngine`
+- **THEN** no action MUST remain declared for that object

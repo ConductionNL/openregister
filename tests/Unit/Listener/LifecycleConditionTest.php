@@ -110,7 +110,8 @@ class LifecycleConditionTest extends TestCase {
 				$this->groupManager,
 				$this->l10n,
 				$this->logger
-			)
+			),
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
 		);
 	}//end setUp()
 
@@ -223,7 +224,8 @@ class LifecycleConditionTest extends TestCase {
 				$this->groupManager,
 				$this->l10n,
 				$this->logger
-			)
+			),
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
 		);
 
 		$this->schemaWithTransition(
@@ -463,6 +465,62 @@ class LifecycleConditionTest extends TestCase {
 		$this->schemaWithTransition(self::TRANSITION + ['condition' => 'yes']);
 		$this->listener->handle($this->event());
 	}//end testAMalformedStoredConditionIsLoggedAsAWarning()
+
+	public function testANamedActionIsJudgedByItsOwnConditionNotItsTwin(): void {
+		// `openen` and `beslissen` share a from/to pair and `openen` is declared
+		// first, so first-match by value would judge every such edit as
+		// `openen`, which has no condition. A named `beslissen` must be held to
+		// ITS condition, and that only works through the declared action.
+		$context = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
+		$listener = new LifecycleValidationListener(
+			$this->schemaMapper,
+			new LifecycleGuardRegistry(
+				$this->guardContainer,
+				$this->createMock(IServerContainer::class),
+				$this->logger
+			),
+			$this->userSession,
+			$this->permissionHandler,
+			$this->logger,
+			new LifecycleConditionEvaluator($this->userSession, $this->groupManager, $this->l10n, $this->logger),
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context)
+		);
+
+		$schema = new Schema();
+		$schema->setSlug('bezwaar');
+		$schema->setConfiguration(
+			[
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'initial' => 'in-behandeling',
+					'transitions' => [
+						'openen' => self::TRANSITION,
+						'beslissen' => self::TRANSITION + ['condition' => self::HAS_MOTIVERING],
+					],
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$uuid = '00000000-0000-0000-0000-0000000000be';
+		$event = $this->event();
+		$event->getNewObject()->setUuid($uuid);
+
+		// Named: beslissen's own condition applies, and there is no motivering.
+		$context->declare(uuid: $uuid, action: 'beslissen');
+		$listener->handle($event);
+		$context->release(uuid: $uuid);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('beslissen', $event->getErrors()['action']);
+
+		// Unnamed direct edit: value matching picks `openen`, which lets it through.
+		$direct = $this->event();
+		$direct->getNewObject()->setUuid($uuid);
+		$listener->handle($direct);
+
+		$this->assertFalse($direct->isPropagationStopped());
+	}//end testANamedActionIsJudgedByItsOwnConditionNotItsTwin()
 
 	public function testATransitionWithoutAConditionIsUnaffected(): void {
 		$this->schemaWithTransition(self::TRANSITION);

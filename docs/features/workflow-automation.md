@@ -325,6 +325,11 @@ A transition checks its guards in a fixed order: `authorization`, then
 the condition, and a refused condition never resolves the `requires` guard.
 Cheap, in-process checks run before anything that reads external state.
 
+Two transitions may share the same `from` and `to`. When you call one by name,
+its own guards and actions apply, not those of the other. When you edit the
+lifecycle field directly, no transition is named, so the first matching one in
+the schema applies.
+
 > **`user` is empty under `occ`.** The CLI has no session, so `user.uid` is an
 > empty string and `user.groups` an empty list on every `occ`-driven call.
 > Because a condition is fail-closed, one that reads `user.uid` refuses every

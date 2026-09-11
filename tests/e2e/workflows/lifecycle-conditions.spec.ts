@@ -116,6 +116,9 @@ const LIFECYCLE = {
 	},
 }
 
+/** Both translations of the `beslissen` refusal; the caller's language picks one. */
+const DECLARED_MESSAGES = Object.values(LIFECYCLE.transitions.beslissen.message)
+
 test.describe('lifecycle transition conditions', () => {
 	let register: SeededRegister
 	let schema: SeededSchema
@@ -162,9 +165,13 @@ test.describe('lifecycle transition conditions', () => {
 		expect(serialised, 'the refusal names its code').toContain(
 			'lifecycle-condition-unmet',
 		)
-		expect(serialised, 'the refusal carries the author message').toContain(
-			'motivering',
-		)
+		// The map resolves to the caller's language, which is the CI admin's
+		// (English) rather than the Dutch the example is written in. Accept
+		// either declared translation, and nothing else.
+		expect(
+			DECLARED_MESSAGES.some((text) => serialised.includes(text)),
+			`the refusal carries a declared message: ${DECLARED_MESSAGES.join(' | ')}`,
+		).toBe(true)
 		expect(serialised, 'the refusal never leaks the expression').not.toContain(
 			'"var"',
 		)
@@ -241,7 +248,11 @@ test.describe('lifecycle transition conditions', () => {
 		})
 
 		expect(resp.status(), 'the named action is refused too').toBe(422)
-		expect(JSON.stringify(await resp.json())).toContain('motivering')
+		const named = JSON.stringify(await resp.json())
+		expect(
+			DECLARED_MESSAGES.some((text) => named.includes(text)),
+			'the named route carries a declared message',
+		).toBe(true)
 
 		const after = await getObject(
 			request,

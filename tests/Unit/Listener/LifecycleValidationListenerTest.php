@@ -117,7 +117,8 @@ class LifecycleValidationListenerTest extends TestCase {
 				$this->groupManager,
 				$this->l10n,
 				$this->logger
-			)
+			),
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
 		);
 	}//end setUp()
 
