@@ -131,10 +131,12 @@ class ImportHandlerRegisterSchemaLinkOnVersionSkipTest extends TestCase {
 			}
 		);
 
+		// Same parameter-name contract as the RegisterMapper::find() double
+		// below — SchemaMapper::find() additionally takes `$_extend`.
 		$this->schemaMapper->method('find')->willReturnCallback(
-			function (string $id): Schema {
+			function (string|int $id, ?array $_extend = [], bool $_rbac = true, bool $_multitenancy = true): Schema {
 				foreach ($this->schemaStore as $candidate) {
-					if (strtolower((string)$candidate->getSlug()) === strtolower($id)) {
+					if (strtolower((string)$candidate->getSlug()) === strtolower((string)$id)) {
 						return $candidate;
 					}
 				}
@@ -176,9 +178,18 @@ class ImportHandlerRegisterSchemaLinkOnVersionSkipTest extends TestCase {
 
 		// --- RegisterMapper fake -----------------------------------------------
 
+		// The signature must mirror RegisterMapper::find() down to the parameter
+		// NAMES. Production calls it as
+		// `find(id: …, _rbac: false, _multitenancy: false)`, and PHPUnit
+		// forwards an invocation's named arguments to the callback as named
+		// arguments. A closure taking only `$id` therefore dies on "Unknown
+		// named parameter $_rbac" — an Error, not a DoesNotExistException, so
+		// the catch below it does not see it and the whole register import is
+		// skipped by the per-register Throwable guard. The test then looks like
+		// the fix failed when it was never reached.
 		$this->registerMapper->method('find')->willReturnCallback(
-			function (string $id): Register {
-				$existing = ($this->registerStore[strtolower($id)] ?? null);
+			function (string|int $id, bool $_rbac = true, bool $_multitenancy = true): Register {
+				$existing = ($this->registerStore[strtolower((string)$id)] ?? null);
 				if ($existing !== null) {
 					return $existing;
 				}
