@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -104,8 +105,12 @@ class LifecycleConditionTest extends TestCase {
 			$this->userSession,
 			$this->permissionHandler,
 			$this->logger,
-			$this->groupManager,
-			$this->l10n
+			new LifecycleConditionEvaluator(
+				$this->userSession,
+				$this->groupManager,
+				$this->l10n,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
@@ -213,8 +218,12 @@ class LifecycleConditionTest extends TestCase {
 			$this->userSession,
 			$this->permissionHandler,
 			$this->logger,
-			$this->groupManager,
-			$this->l10n
+			new LifecycleConditionEvaluator(
+				$this->userSession,
+				$this->groupManager,
+				$this->l10n,
+				$this->logger
+			)
 		);
 
 		$this->schemaWithTransition(

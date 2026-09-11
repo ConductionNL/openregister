@@ -1130,14 +1130,16 @@ class SchemaMapper extends QBMapper {
 	 * Validate the optional `x-openregister-lifecycle` annotation.
 	 *
 	 * The annotation is stored under `configuration['x-openregister-lifecycle']`.
-	 * Errors are aggregated by LifecycleAnnotationValidator and thrown here as
-	 * a single message so callers see a clear schema-save failure.
+	 * A broken transition `condition` refuses the save; every other lifecycle
+	 * error is advisory and only logged, and the schema is stored as written.
 	 *
 	 * @param Schema $schema Schema to validate.
 	 *
-	 * @throws Exception When the annotation is malformed.
+	 * @throws Exception When a transition `condition` is malformed or declared on a graph block.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	private function validateLifecycleAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);

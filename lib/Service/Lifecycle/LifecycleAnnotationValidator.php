@@ -50,6 +50,7 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-lifecycle']) === false) {
@@ -293,6 +294,7 @@ final class LifecycleAnnotationValidator {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each check maps to one distinct, irreducible graph-shape rule.
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	private function validateGraphMode(array $annotation, array $schema): array {
 		$errors = [];
@@ -567,6 +569,24 @@ final class LifecycleAnnotationValidator {
 			];
 		}
 
+		return $this->validateMessageMap(message: $message, action: $action);
+	}//end validateTransitionMessage()
+
+	/**
+	 * Shape-check the per-locale map form of a transition `message`.
+	 *
+	 * At least one locale, every locale a non-empty string, and a
+	 * `defaultLocale` (when present) naming a declared locale.
+	 *
+	 * @param array<mixed> $message The per-locale map.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function validateMessageMap(array $message, string $action): array {
+		$code = 'lifecycle-message-malformed';
 		$errors = [];
 		$localeKeys = array_filter(
 			array_keys($message),
@@ -595,30 +615,46 @@ final class LifecycleAnnotationValidator {
 			}
 		}
 
-		if (isset($message['defaultLocale']) === true) {
-			$defaultLocale = $message['defaultLocale'];
-			$defaultLocaleBad = (is_string($defaultLocale) === false);
-			if ($defaultLocaleBad === false) {
-				$defaultLocaleBad = (isset($message[$defaultLocale]) === false);
-			}
-
-			$shown = gettype($defaultLocale);
-			if (is_string($defaultLocale) === true) {
-				$shown = $defaultLocale;
-			}
-
-			if ($defaultLocaleBad === true) {
-				$errors[] = [
-					'code' => $code,
-					'message' => sprintf(
-						'Transition "%s" `message` defaultLocale "%s" is not declared in the message map.',
-						$action,
-						$shown
-					),
-				];
-			}
+		$defaultLocaleError = $this->validateDefaultLocale(message: $message, action: $action);
+		if ($defaultLocaleError !== null) {
+			$errors[] = $defaultLocaleError;
 		}
 
 		return $errors;
-	}//end validateTransitionMessage()
+	}//end validateMessageMap()
+
+	/**
+	 * Check that a message map's `defaultLocale`, when present, names a declared locale.
+	 *
+	 * @param array<mixed> $message The per-locale map.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when absent or valid.
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function validateDefaultLocale(array $message, string $action): ?array {
+		if (isset($message['defaultLocale']) === false) {
+			return null;
+		}
+
+		$defaultLocale = $message['defaultLocale'];
+		if (is_string($defaultLocale) === true && isset($message[$defaultLocale]) === true) {
+			return null;
+		}
+
+		$shown = gettype($defaultLocale);
+		if (is_string($defaultLocale) === true) {
+			$shown = $defaultLocale;
+		}
+
+		return [
+			'code' => 'lifecycle-message-malformed',
+			'message' => sprintf(
+				'Transition "%s" `message` defaultLocale "%s" is not declared in the message map.',
+				$action,
+				$shown
+			),
+		];
+	}//end validateDefaultLocale()
 }//end class

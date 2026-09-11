@@ -37,6 +37,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -111,8 +112,12 @@ class LifecycleValidationListenerTest extends TestCase {
 			$this->userSession,
 			$this->permissionHandler,
 			$logger,
-			$this->groupManager,
-			$this->l10n
+			new LifecycleConditionEvaluator(
+				$this->userSession,
+				$this->groupManager,
+				$this->l10n,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
