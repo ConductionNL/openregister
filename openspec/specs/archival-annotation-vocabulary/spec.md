@@ -240,13 +240,30 @@ The platform SHALL register `OCA\OpenRegister\Cron\ArchivalRetentionTask` in `ap
 
 ### Requirement: GET on an archival schema row surfaces _retention block
 
-When a schema declares `x-openregister-archival`, `ObjectEntity::jsonSerialize()` (or the renderer above it) SHALL attach a `_retention` block to the JSON response with `{ effectiveRetention, matchedRule, expiresAt }` computed by `RetentionEvaluator` from the row's columns + the schema annotation + the row's `_created` timestamp. The block SHALL be absent when the schema does NOT declare archival.
+When an object carries any archival obligation, the renderer SHALL attach a
+`_retention` block to the JSON response holding the RESOLVED archival decision
+that `ArchivalDecisionResolver` merges from the stored retention block, the
+record's own ZGW archival properties, the schema's `x-openregister-archival`
+evaluation, the TMLO block and any legal hold. The block SHALL be absent when
+nothing established a decision.
 
-#### Scenario: Archival row read shows _retention
+The decision's keys are MDTO concepts under English names: `appraisal`,
+`retentionPeriod`, `disposalDate`, `recordState`, `immutable`,
+`disposalCategory`, `basis`, `source`, `sourceVersion`, `sourceConsultedAt` and
+`legalHold`. A key SHALL be omitted rather than nulled when nothing established
+it, because an absent key is silence and a null is an answer.
+
+The schema annotation's own evaluation — `{ effectiveRetention, matchedRule,
+expiresAt }` — is one of the five inputs, not the block itself. It SHALL be
+passed through under `_retention.annotation` so a wrong disposal date can be
+traced back to the rule that produced it.
+
+#### Scenario: Archival row read shows the resolved decision
 - **GIVEN** a `call_log` row with `statusCode: 200` and `_created` 30 minutes ago
 - **AND** the schema declares `retention.rules = [{ condition: "statusCode < 400", retention: "PT1H" }]` and `retention.default = "P30D"`
 - **WHEN** `GET /api/objects/openconnector/call_log/<uuid>` returns the row
-- **THEN** the JSON SHALL include `"_retention": { "effectiveRetention": "PT1H", "matchedRule": 0, "expiresAt": "<created+1h, ATOM>" }`
+- **THEN** the JSON SHALL include `"_retention"` carrying `"retentionPeriod": "PT1H"`, `"disposalDate": "<created+1h>"` and `"basis": "schema_annotation"`
+- **AND** `_retention.annotation` SHALL carry `{ "effectiveRetention": "PT1H", "matchedRule": 0, "expiresAt": "<created+1h, ATOM>" }`
 
 #### Scenario: Non-archival schema read does not show _retention
 - **GIVEN** a `register/widget` schema with no `x-openregister-archival`

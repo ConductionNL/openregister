@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -88,11 +89,6 @@ class RetentionService {
 	private const IMMUTABLE_STATUSES = ['vernietigd', 'overgebracht'];
 
 	/**
-	 * Valid afleidingswijze methods.
-	 */
-	private const VALID_AFLEIDINGSWIJZEN = ['afgehandeld', 'eigenschap', 'termijn'];
-
-	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapper $objectMapper Object mapper for queries
@@ -104,6 +100,12 @@ class RetentionService {
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
 	 * @param IDBConnection $db Database connection for eligibility queries
+	 * @param ArchiveActionDateCalculator $actionDateCalculator Calculates the archiefactiedatum
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
+	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
+	 *              arrived by EXTRACTING logic out of this class rather than adding any: collapsing them
+	 *              behind a parameter object would hide the dependency graph without reducing it.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectMapper,
@@ -115,6 +117,7 @@ class RetentionService {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly IDBConnection $db,
+		private readonly ArchiveActionDateCalculator $actionDateCalculator,
 	) {
 	}//end __construct()
 
@@ -225,8 +228,19 @@ class RetentionService {
 		return $applied;
 	}//end resolveArchivalDefaults()
 
+
+
+
+
+
+
 	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
+	 *
+	 * Delegates to {@see ArchiveActionDateCalculator}, which owns the whole
+	 * question of where a retention period starts counting from and what to do
+	 * when it cannot be answered. Kept here because callers and the spec both
+	 * name this method.
 	 *
 	 * @param ObjectEntity $object The object to calculate for
 	 * @param Schema $schema The schema with afleidingswijze config
@@ -242,135 +256,12 @@ class RetentionService {
 		Schema $schema,
 		string $retentionPeriod,
 	): ?string {
-		$archiveConfig = $schema->getArchive();
-		$afleidingswijze = $archiveConfig['afleidingswijze'] ?? 'afgehandeld';
-
-		// GAP C2. VALID_AFLEIDINGSWIJZEN was declared and NEVER REFERENCED, so
-		// a schema configured with one of ZGW's six other derivation methods
-		// was not rejected, not warned about and not logged: determineBrondatum
-		// fell through `default: return null` and the date was computed from
-		// the fallback instead. A permit that must run from
-		// `ingangsdatum_besluit` silently ran from somewhere else.
-		//
-		// Refusing is the honest answer. No date at all is a visible gap a
-		// records officer can act on; a plausible wrong date is not.
-		if (in_array($afleidingswijze, self::VALID_AFLEIDINGSWIJZEN, true) === false) {
-			$this->logger->error(
-				'[RetentionService] Unsupported afleidingswijze; no archiefactiedatum calculated',
-				[
-					'afleidingswijze' => $afleidingswijze,
-					'supported' => self::VALID_AFLEIDINGSWIJZEN,
-					'objectUuid' => $object->getUuid(),
-				]
-			);
-
-			return null;
-		}
-
-		try {
-			$interval = new DateInterval($retentionPeriod);
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'[RetentionService] Invalid bewaartermijn format: ' . $retentionPeriod,
-				['exception' => $e]
-			);
-			return null;
-		}
-
-		$brondatum = $this->determineBrondatum(object: $object, schema: $schema, afleidingswijze: $afleidingswijze);
-
-		if ($brondatum === null) {
-			// The object's CREATED date, which is what this comment always
-			// claimed and what the code did not do: `new DateTime()` is *now*,
-			// so two identical records processed a year apart got disposal
-			// dates a year apart, and a record recalculated long after the fact
-			// got one far later than lawful. Gap C3 in
-			// openspec/changes/archival-conformance.
-			$brondatum = $object->getCreated();
-			if ($brondatum === null) {
-				$brondatum = new DateTime();
-			}
-		}
-
-		// Never mutate the entity's own DateTime: `->add()` below is in-place,
-		// and getCreated() hands back the LIVE object, so a disposal-date
-		// calculation would silently move the object's created timestamp.
-		// `clone` rather than DateTime::createFromInterface() because phpmd
-		// refuses static access and every path here already yields a DateTime.
-		$brondatum = clone $brondatum;
-
-		// For 'termijn' method, add procestermijn first.
-		if ($afleidingswijze === 'termijn') {
-			$procestermijn = $archiveConfig['procestermijn'] ?? null;
-			if ($procestermijn !== null) {
-				try {
-					$brondatum->add(new DateInterval($procestermijn));
-				} catch (Exception $e) {
-					$this->logger->warning(
-						'[RetentionService] Invalid procestermijn format: ' . $procestermijn,
-						['exception' => $e]
-					);
-				}
-			}
-		}
-
-		$brondatum->add($interval);
-
-		return $brondatum->format('Y-m-d');
+		return $this->actionDateCalculator->calculate(
+			object: $object,
+			schema: $schema,
+			retentionPeriod: $retentionPeriod
+		);
 	}//end calculateArchiveActionDate()
-
-	/**
-	 * Determine the brondatum (source date) based on afleidingswijze.
-	 *
-	 * @param ObjectEntity $object The object
-	 * @param Schema $schema The schema
-	 * @param string $afleidingswijze The derivation method
-	 *
-	 * @return DateTime|null The source date or null
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 */
-	private function determineBrondatum(
-		ObjectEntity $object,
-		Schema $schema,
-		string $afleidingswijze,
-	): ?DateTime {
-		$archiveConfig = $schema->getArchive();
-		$objectData = $object->getObject();
-
-		switch ($afleidingswijze) {
-			case 'eigenschap':
-				$sourceAttribute = $archiveConfig['bronEigenschap'] ?? null;
-				if ($sourceAttribute !== null && isset($objectData[$sourceAttribute]) === true) {
-					try {
-						return new DateTime($objectData[$sourceAttribute]);
-					} catch (Exception $e) {
-						$this->logger->warning(
-							'[RetentionService] Cannot parse bronEigenschap date: ' . $objectData[$sourceAttribute]
-						);
-					}
-				}
-				return null;
-			case 'afgehandeld':
-			case 'termijn':
-				// Check for closure date via configured closure field.
-				$closureField = $archiveConfig['closureField'] ?? null;
-				if ($closureField !== null && isset($objectData[$closureField]) === true) {
-					try {
-						return new DateTime($objectData[$closureField]);
-					} catch (Exception $e) {
-						$this->logger->warning(
-							'[RetentionService] Cannot parse closure date: ' . $objectData[$closureField]
-						);
-					}
-				}
-
-				// Fallback: use current date (object creation).
-				return null;
-			default:
-				return null;
-		}//end switch
-	}//end determineBrondatum()
 
 	/**
 	 * Recalculate archiefactiedatum when a source property changes.
@@ -863,9 +754,16 @@ class RetentionService {
 			$register = $this->registerMapper->find((int)$registerId);
 			$schema = $this->schemaMapper->find((int)$schemaId);
 
+			// `status`, NOT `object->status`. MagicSearchHandler compares the
+			// filter key against the schema's OWN property names, and anything
+			// it does not recognise becomes `1 = 0` rather than an error, so
+			// this query returned an empty list on every run. The exclusion it
+			// feeds is "objects already on a pending destruction list", which
+			// means every sweep re-listed objects that were already awaiting
+			// approval, and nothing said so.
 			$pendingLists = $this->objectMapper->findAll(
 				filters: [
-					'object->status' => ['in_review', 'approved', 'awaiting_second_approval'],
+					'status' => ['in_review', 'approved', 'awaiting_second_approval'],
 				],
 				register: $register,
 				schema: $schema
