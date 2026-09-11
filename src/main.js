@@ -4,6 +4,7 @@ import {
 	defaultPageTypes,
 	registerBuiltinDashboardWidgets,
 	registerIcons,
+	registerTranslations,
 } from '@conduction/nextcloud-vue'
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -20,6 +21,24 @@ import registry from './registry.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import 'gridstack/dist/gridstack.min.css'
+
+// Register nextcloud-vue's own catalogue for the reader's language. The library
+// translates every label it draws under its own `nextcloud-vue` app id, and
+// nothing registers that catalogue unless the host app asks: every leaf app's
+// bootstrap calls this, and openregister's never did. So on this page a Dutch
+// reader got OpenRegister's strings in Dutch and every library string in
+// English, the object metadata's Archiving group included ("Archiving" instead
+// of "Archivering"). First, so no library label resolves before it lands.
+try {
+	registerTranslations()
+} catch (e) {
+	// Non-fatal: the library's labels fall back to their English source.
+	// eslint-disable-next-line no-console
+	console.warn(
+		'[main] registerTranslations failed; library labels stay English',
+		e,
+	)
+}
 
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.
@@ -133,6 +152,7 @@ try {
 				})
 			})
 			.catch((e) =>
+				// eslint-disable-next-line no-console
 				console.error(
 					'[main] failed to register generic integration descriptors',
 					e,
@@ -140,6 +160,7 @@ try {
 			)
 	}
 } catch (e) {
+	// eslint-disable-next-line no-console
 	console.error('[main] integration registry guard failed', e)
 }
 
