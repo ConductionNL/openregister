@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
@@ -71,6 +72,11 @@ class RetentionServiceTest extends TestCase {
 			$this->userSession,
 			$this->logger,
 			$this->db,
+			// The REAL resolver over the SAME mapper mock the tests program, not
+			// a mock of its own: the derivation tests below assert what the
+			// resolver actually does with a relation, and a mocked resolver
+			// would assert only that this class called it.
+			new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
 		);
 	}//end setUp()
 
