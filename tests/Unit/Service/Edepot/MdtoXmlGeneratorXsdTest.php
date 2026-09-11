@@ -17,6 +17,8 @@ namespace Unit\Service\Edepot;
 
 use DOMDocument;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
@@ -47,6 +49,11 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 	private const VERSION_FILE = __DIR__ . '/../../../../lib/Resources/mdto/version.json';
 
 	/**
+	 * The Nationaal Archief's own example documents.
+	 */
+	private const EXAMPLES = __DIR__ . '/../../../fixtures/mdto';
+
+	/**
 	 * Representative objects: minimal, with files, with every optional element.
 	 *
 	 * @return array<string, array{0: array<string,mixed>, 1: array<string,mixed>, 2: list<array<string,mixed>>, 3: list<array<string,mixed>>}>
@@ -59,6 +66,7 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 			'size' => 20480,
 			'format' => 'application/pdf',
 			'checksum' => str_repeat('ab', 32),
+			'checksumDate' => '2026-09-11T10:15:00+00:00',
 		];
 
 		$event = [
@@ -80,11 +88,22 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 			'with two files' => [
 				$base,
 				[],
-				[$file, ['name' => 'bijlage.docx', 'size' => 1, 'format' => 'application/msword', 'checksum' => 'ff']],
+				[
+					$file,
+					[
+						'name' => 'bijlage.docx',
+						'size' => 1,
+						'format' => 'application/msword; charset=binary',
+						'checksum' => str_repeat('CD', 32),
+						'checksumDate' => '2026-09-11T10:15:00Z',
+					],
+				],
 				[],
 			],
 			'every optional element, legal hold as the restriction' => [
 				$base + [
+					'archiefactiedatum' => '2046-09-11',
+					'selectielijstBron' => 'Selectielijst gemeenten en intergemeentelijke organen 2020',
 					'toelichting' => 'Dossier bij besluit 2026/14',
 					'aggregationLevel' => 'Dossier',
 					'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021-01-01', 'end' => '2021-12-31'],
@@ -110,6 +129,18 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 	}//end representativeObjects()
 
 	/**
+	 * The representative objects that carry files, for the bestand documents.
+	 *
+	 * @return array<string, array{0: array<string,mixed>, 1: array<string,mixed>, 2: list<array<string,mixed>>, 3: list<array<string,mixed>>}>
+	 */
+	public static function representativeObjectsWithFiles(): array {
+		return array_filter(
+			self::representativeObjects(),
+			static fn (array $case): bool => $case[2] !== []
+		);
+	}//end representativeObjectsWithFiles()
+
+	/**
 	 * Every representative object produces a document the XSD accepts.
 	 *
 	 * @param array<string,mixed> $retention The retention block.
@@ -131,15 +162,50 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 			$files
 		);
 
-		$errors = $this->schemaErrors(xml: $xml);
-
-		$this->assertSame(
-			[],
-			$errors,
-			"The generated document does not validate against MDTO-XML1.0.1.xsd:\n  "
-			. implode("\n  ", $errors) . "\n\nDocument:\n" . $xml
-		);
+		$this->assertValidMdto(xml: $xml, what: 'informatieobject');
 	}//end testGeneratedDocumentValidatesAgainstTheMdtoXsd()
+
+	/**
+	 * Every file's own `bestand` document validates too.
+	 *
+	 * @param array<string,mixed> $retention The retention block.
+	 * @param array<string,mixed> $tmlo The TMLO block.
+	 * @param list<array<string,mixed>> $files The file entries.
+	 * @param list<array<string,mixed>> $events The events the mapper returns.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('representativeObjectsWithFiles')]
+	public function testEveryBestandDocumentValidatesAgainstTheMdtoXsd(
+		array $retention,
+		array $tmlo,
+		array $files,
+		array $events,
+	): void {
+		$generator = $this->generator(events: $events);
+		$object = $this->objectEntity(retention: $retention, tmlo: $tmlo);
+
+		foreach ($files as $file) {
+			$this->assertValidMdto(xml: $generator->generateBestand($object, $file), what: 'bestand ' . $file['name']);
+		}
+	}//end testEveryBestandDocumentValidatesAgainstTheMdtoXsd()
+
+	/**
+	 * Positive control: the Nationaal Archief's own example documents validate.
+	 *
+	 * Paired with the negative control below, this shows the harness accepts
+	 * a document the publisher calls valid and rejects one that is not.
+	 *
+	 * @return void
+	 */
+	public function testThePublishersOwnExamplesValidate(): void {
+		$examples = glob(self::EXAMPLES . '/*.xml');
+
+		$this->assertNotEmpty($examples, 'No official example documents found under ' . self::EXAMPLES);
+		foreach ($examples as $example) {
+			$this->assertValidMdto(xml: (string)file_get_contents($example), what: basename($example));
+		}
+	}//end testThePublishersOwnExamplesValidate()
 
 	/**
 	 * Negative control: the validator really rejects a non-conforming document.
@@ -174,6 +240,25 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 		$this->assertIsArray($recorded);
 		$this->assertSame($recorded['sha256'], hash_file('sha256', self::XSD));
 	}//end testTheVendoredXsdMatchesItsRecordedChecksum()
+
+	/**
+	 * Assert a document validates, naming every schema error when it does not.
+	 *
+	 * @param string $xml The document.
+	 * @param string $what What the document is, for the failure message.
+	 *
+	 * @return void
+	 */
+	private function assertValidMdto(string $xml, string $what): void {
+		$errors = $this->schemaErrors(xml: $xml);
+
+		$this->assertSame(
+			[],
+			$errors,
+			'The ' . $what . " document does not validate against MDTO-XML1.0.1.xsd:\n  "
+			. implode("\n  ", $errors) . "\n\nDocument:\n" . $xml
+		);
+	}//end assertValidMdto()
 
 	/**
 	 * Validate a document and return libxml's error lines.
@@ -226,11 +311,15 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 		$eventMapper = $this->createMock(MdtoEventMapper::class);
 		$eventMapper->method('forObject')->willReturn($events);
 
+		$writer = new MdtoDocumentWriter();
+
 		return new MdtoXmlGenerator(
 			$appConfig,
 			$this->createMock(LoggerInterface::class),
 			$eventMapper,
-			new MdtoSourceReader()
+			new MdtoSourceReader(),
+			$writer,
+			new MdtoBestandGenerator($writer)
 		);
 	}//end generator()
 

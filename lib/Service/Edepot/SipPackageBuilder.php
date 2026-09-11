@@ -229,6 +229,14 @@ class SipPackageBuilder {
 							'size' => $file['size'],
 							'checksum' => $file['checksum'],
 						];
+
+						// MDTO gives every file its own document, placed next to
+						// the file and named `<bestandsnaam>.bestand.MDTO.xml`
+						// (MDTO SIP specification, "Naamgeving").
+						$bestandXml = $this->mdtoGenerator->generateBestand($object, $file);
+						$bestandPath = $filePath . MdtoBestandGenerator::SIDECAR_SUFFIX;
+						$entries[] = ['path' => $bestandPath, 'kind' => 'string', 'content' => $bestandXml];
+						$manifest[] = $this->createManifestEntry(path: $bestandPath, content: $bestandXml);
 					}
 				}
 			}

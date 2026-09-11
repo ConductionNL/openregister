@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MDTO xmlns="https://www.nationaalarchief.nl/mdto" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://www.nationaalarchief.nl/mdto https://www.nationaalarchief.nl/mdto/MDTO-XML1.0.1.xsd">
+	<informatieobject>
+		<identificatie>
+			<identificatieKenmerk>DC/155</identificatieKenmerk>
+			<identificatieBron>Archief Deltacommissaris</identificatieBron>
+		</identificatie>
+		<naam>Deelprogramma Kust. Voorbereiding 2010-2014 adviezen en voorstellen voorkeursstrategie Kust en strategische beslissing Zand</naam>
+		<aggregatieniveau>
+			<begripLabel>Serie</begripLabel>
+			<begripBegrippenlijst>
+				<verwijzingNaam>Begrippenlijst Aggregatieniveaus MDTO</verwijzingNaam>
+			</begripBegrippenlijst>
+		</aggregatieniveau>
+		<classificatie>
+			<begripLabel>Deelprogramma's</begripLabel>
+			<begripCode>3.1.1</begripCode>
+			<begripBegrippenlijst>
+				<verwijzingNaam>Ministerie IenW zaaksysteem begrippenlijst</verwijzingNaam>
+			</begripBegrippenlijst>
+		</classificatie>
+		<trefwoord>Noordzee</trefwoord>
+		<omschrijving>Deelprogramma van het deltaprogramma, waarin periode 2010-2014 adviezen en voorstellen voor deltabeslissingen en voorkeursstrategieën zijn voorbereid en uitgewerkt</omschrijving>
+		<raadpleeglocatie>
+			<raadpleeglocatieOnline>https://www.nationaalarchief.nl/onderzoeken/archief/2.16.133/invnr/%40DC%7C%7C153~DC%7C%7C155</raadpleeglocatieOnline>
+		</raadpleeglocatie>
+		<dekkingInTijd>
+			<dekkingInTijdType>
+				<begripLabel>Looptijd dossier</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Ministerie IenW zaaksysteem begrippenlijst</verwijzingNaam>
+				</begripBegrippenlijst>
+			</dekkingInTijdType>
+			<dekkingInTijdBegindatum>2010-01-01</dekkingInTijdBegindatum>
+			<dekkingInTijdEinddatum>2014-12-31</dekkingInTijdEinddatum>
+		</dekkingInTijd>
+		<dekkingInRuimte>
+			<verwijzingNaam>Noordzee</verwijzingNaam>
+		</dekkingInRuimte>
+		<taal>nl</taal>
+		<event>
+			<eventType>
+				<begripLabel>Migratie</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Begrippenlijst EventTypeLijst MDTO</verwijzingNaam>
+				</begripBegrippenlijst>
+			</eventType>
+			<eventTijd>2020-01-12T23:20:00</eventTijd>
+			<eventVerantwoordelijkeActor>
+				<verwijzingNaam>Beleidsmedewerker informatiebeheer</verwijzingNaam>
+				<verwijzingIdentificatie>
+					<identificatieKenmerk>M94739921</identificatieKenmerk>
+					<identificatieBron>ZZ-TRIMADDIN</identificatieBron>
+				</verwijzingIdentificatie>
+			</eventVerantwoordelijkeActor>
+			<eventResultaat>Serie is volledig</eventResultaat>
+		</event>
+		<waardering>
+			<begripLabel>Nader te bepalen</begripLabel>
+			<begripCode>N</begripCode>
+			<begripBegrippenlijst>
+				<verwijzingNaam>Begrippenlijst Waarderingen MDTO</verwijzingNaam>
+			</begripBegrippenlijst>
+		</waardering>
+		<informatiecategorie>
+			<begripLabel>Toestemming verlenen</begripLabel>
+			<begripCode>11</begripCode>
+			<begripBegrippenlijst>
+				<verwijzingNaam>Selectielijst ministerie van Infrastructuur en Milieu 2017</verwijzingNaam>
+			</begripBegrippenlijst>
+		</informatiecategorie>
+		<bevatOnderdeel>
+			<verwijzingNaam>Brondocumenten en literatuur bij synthesedocument voorkeursstrategie Kust en strategische beslissing Zand</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>DC/358</identificatieKenmerk>
+				<identificatieBron>Archief Deltacommissaris</identificatieBron>
+			</verwijzingIdentificatie>
+		</bevatOnderdeel>
+		<archiefvormer>
+			<verwijzingNaam>Ministerie van Infrastructuur en Waterstaat</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>https://organisaties.overheid.nl/112773/Infrastructuur_en_Waterstaat</identificatieKenmerk>
+				<identificatieBron>Register van Overheidsorganisaties</identificatieBron>
+			</verwijzingIdentificatie>
+		</archiefvormer>
+		<activiteit>
+			<verwijzingNaam>Primair beleid</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>2.1.1</identificatieKenmerk>
+				<identificatieBron>Documentair Structuurplan ministerie van Infrastructuur en Water</identificatieBron>
+			</verwijzingIdentificatie>
+		</activiteit>
+		<beperkingGebruik>
+			<beperkingGebruikType>
+				<begripLabel>Geen beperking</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Begrippenlijst Beperkingen MDTO</verwijzingNaam>
+				</begripBegrippenlijst>
+			</beperkingGebruikType>
+		</beperkingGebruik>
+	</informatieobject>
+</MDTO>
