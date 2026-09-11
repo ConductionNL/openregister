@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
@@ -3498,6 +3499,21 @@ class ObjectsController extends Controller {
 
 			// Return 204 No Content for successful delete (REST convention).
 			return new JSONResponse(data: null, statusCode: 204);
+		} catch (ArchivalImmutableException $exception) {
+			// 🔴 THE REFUSAL HAS A WIRE CONTRACT AND THIS ENDPOINT WAS NOT
+			// HONOURING IT. `ArchivalImmutableException::toResponseBody()`
+			// exists and DeletedController and BulkController both use it, but
+			// this catch was missing here, so a refusal on the endpoint clients
+			// actually call fell through to the generic handler and answered
+			// `{"error": "SCHEMA_ARCHIVAL_IMMUTABLE: Schema ... declares ..."}`
+			// as one flattened string. A client following the spec and testing
+			// `body.error === 'SCHEMA_ARCHIVAL_IMMUTABLE'` matched nothing, and
+			// `schema`, `operation` and `hint` were not there to read at all.
+			//
+			// 403, not the trait's 405: the spec says 403 and the route already
+			// answered 403 through the generic path, so the status stays put
+			// and only the body becomes what was promised.
+			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (AppendOnlyException $exception) {
 			// Reject delete on append-only schema with HTTP 405.
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
