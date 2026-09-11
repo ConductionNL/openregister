@@ -165,6 +165,67 @@ class MdtoXmlGeneratorTest extends TestCase {
 	}
 
 	/**
+	 * Every per-file input is refused when absent or malformed, not just the checksum.
+	 *
+	 * `name` and `format` matter most here because the XSD cannot catch them:
+	 * an empty string is a valid `xsd:string`, so an empty `naam` or
+	 * `begripLabel` validates while saying nothing.
+	 *
+	 * @param string $key The file key to break.
+	 * @param mixed $value The broken value, or null to remove the key.
+	 * @param string $named The fragment the error must name.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('brokenFileInputs')]
+	public function testEachFileInputIsRequired(string $key, mixed $value, string $named): void {
+		$object = $this->createObjectEntity(uuid: 'u', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P1Y']);
+		$file = $this->file();
+		if ($value === null) {
+			unset($file[$key]);
+		} else {
+			$file[$key] = $value;
+		}
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage($named);
+
+		$this->generator->generate($object, [$file]);
+	}
+
+	/**
+	 * Each per-file input, broken one at a time.
+	 *
+	 * @return array<string, array{0: string, 1: mixed, 2: string}>
+	 */
+	public static function brokenFileInputs(): array {
+		return [
+			'name missing' => ['name', null, 'file[0].name'],
+			'name empty' => ['name', '', 'file[0].name'],
+			'format missing' => ['format', null, 'file[0].format'],
+			'format empty' => ['format', '', 'file[0].format'],
+			'size missing' => ['size', null, 'file[0].size (a non-negative integer)'],
+			'size not an integer' => ['size', '1.5kB', 'file[0].size (a non-negative integer)'],
+		];
+	}
+
+	/**
+	 * A declared dekkingInTijd start outside the XSD's date union drops the entry.
+	 */
+	public function testTemporalCoverageWithADateTimeStartIsDropped(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'cov-uuid',
+			retention: [
+				'archiefnominatie' => 'bewaren',
+				'bewaartermijn' => 'P5Y',
+				'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021-01-01T10:00:00'],
+			]
+		);
+
+		$this->assertStringNotContainsString('dekkingInTijd', $this->generator->generate($object));
+	}
+
+	/**
 	 * Deviation 5: a file without a checksum date is refused rather than stamped.
 	 */
 	public function testGenerateRefusesAFileWithoutAChecksumDate(): void {

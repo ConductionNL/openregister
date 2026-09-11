@@ -119,6 +119,15 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 				[],
 				[$event],
 			],
+			'malformed declared dates are dropped, not written' => [
+				$base + [
+					'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021', 'end' => '31-12-2021'],
+					'useRestriction' => ['type' => 'Overig', 'startDate' => 'gisteren'],
+				],
+				[],
+				[],
+				[],
+			],
 			'nog niet bepaald waardering' => [
 				['archiefnominatie' => 'nog_niet_bepaald', 'bewaartermijn' => 'P1Y'],
 				[],
