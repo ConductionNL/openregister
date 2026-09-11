@@ -238,6 +238,30 @@ export default defineConfig({
 		//   4. No test.skip at all.
 		'workflows/lifecycle-auto-transitions.spec.ts',
 
+		// Admitted 2026-09-11 with the change it covers: the object detail
+		// view's Metadata tab, which is the only place openregister's own UI
+		// draws an object's resolved archival decision. It is the only proof
+		// that the decision reaches a screen: the API specs read `_retention`
+		// over HTTP, which was never the part that was missing.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds its own register, schema (with the
+		//      `x-openregister-archival` annotation inline) and object through
+		//      `_fixtures.ts`, and its own Dutch-language user through the OCS
+		//      provisioning API. No occ, no docker, no pre-seeded rows, and it
+		//      does not lean on seed.sh's accounts.
+		//   2. Self-cleaning, by the second branch. An archival object refuses
+		//      DELETE with 403, and that refusal is decided from the schema's
+		//      CURRENT annotation, so `afterAll` strips the annotation first and
+		//      then removes the object (soft, then hard via /api/deleted/{uuid}),
+		//      the schema, the register and the user. Verified on an isolated
+		//      instance: no row, schema, register or user survives a run.
+		//   3. No conditional asserts: every assertion is unconditional, and the
+		//      expected values come from the fixture and the row's `created`,
+		//      never from the `_retention` block under test.
+		//   4. No test.skip at all.
+		'object-metadata-archival.spec.ts',
+
 		// Admitted 2026-08-29. The ADR-111 demo-data step, which had no coverage
 		// here at all: this file shipped to development with the setup wizard and
 		// never ran, because nothing runs unless it is named in this list. It is
