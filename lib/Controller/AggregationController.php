@@ -45,14 +45,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 class AggregationController extends Controller {
@@ -63,15 +66,88 @@ class AggregationController extends Controller {
 	 * @param IRequest $request The current request.
 	 * @param AggregationRunner $runner The aggregation runner.
 	 * @param TimeseriesRequestValidator $validator Ad-hoc request validator.
+	 * @param LoggerInterface|null $logger Where the unknown-filter-key warning goes (optional).
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly AggregationRunner $runner,
 		private readonly TimeseriesRequestValidator $validator,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
+
+	/**
+	 * Read this request's filter map in BOTH spellings.
+	 *
+	 * The aggregations have always read `filter[x]=v` and dropped a bare
+	 * `x=v`, while object search did the opposite, so one query answered two
+	 * different numbers depending on which sibling endpoint served it and
+	 * neither errored (openregister#3611). A bare key now joins the filter
+	 * map here, on one condition: it must name a property the schema
+	 * declares. A parameter that names nothing (a cache-buster, a stray
+	 * `v=2`) is still ignored, exactly as before, because turning those into
+	 * filters would silently zero every widget that carries one.
+	 *
+	 * Whatever the endpoint could not make sense of is logged once, naming
+	 * the keys, the endpoint and the schema. A warning, not a refusal: a 400
+	 * would break every caller on the old spelling in the same minute.
+	 *
+	 * The schema is looked up only when the request carries something that
+	 * could be a filter, so the common control-params-only request pays
+	 * nothing. The lookup is the register-scoped one `runAdhocByRef()` will
+	 * repeat, so both resolve the same schema.
+	 *
+	 * @param string $action The controller action, keying its control params.
+	 * @param string $register Register reference from the URL.
+	 * @param string $schema Schema reference from the URL.
+	 * @param Schema|null $schemaEntity Already-resolved schema, when the caller has one.
+	 *
+	 * @return array<string, mixed> The normalised filter map.
+	 *
+	 * @throws RuntimeException When the schema cannot be resolved.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private function resolveFilter(
+		string $action,
+		string $register,
+		string $schema,
+		?Schema $schemaEntity = null,
+	): array {
+		$bracket = (array)($this->request->getParam(FilterParams::FILTER_KEY, []));
+		$params = $this->request->getParams();
+		$controlParams = FilterParams::AGGREGATION_CONTROL_PARAMS[$action];
+
+		if ($bracket === []
+			&& FilterParams::hasBareCandidates(params: $params, controlParams: $controlParams) === false
+		) {
+			return [];
+		}
+
+		$resolvedSchema = $schemaEntity;
+		if ($resolvedSchema === null) {
+			$resolvedSchema = $this->runner->findSchema(schemaRef: $schema, registerRef: $register);
+		}
+
+		$normalised = FilterParams::forAggregation(
+			bracket: $bracket,
+			params: $params,
+			controlParams: $controlParams,
+			properties: ($resolvedSchema->getProperties() ?? [])
+		);
+
+		FilterParams::warnUnknownKeys(
+			logger: $this->logger,
+			keys: $normalised['unknown'],
+			endpoint: 'aggregation#' . $action,
+			register: $register,
+			schema: $schema
+		);
+
+		return $normalised['filter'];
+	}//end resolveFilter()
 
 	/**
 	 * Run a named aggregation declared on the schema.
@@ -105,10 +181,10 @@ class AggregationController extends Controller {
 			// context: `$currentUser` is the only placeholder the resolver
 			// knows, so a per-tenant figure declared once could not be asked
 			// for per tenant.
-			$extraFilter = $this->request->getParam('filter', []);
-			if (is_array($extraFilter) === false) {
-				$extraFilter = [];
-			}
+			//
+			// Both spellings narrow: `filter[administrationId]=X` and a bare
+			// `administrationId=X` reach the runner as the same constraint.
+			$extraFilter = $this->resolveFilter(action: 'aggregate', register: $register, schema: $schema);
 
 			$result = $this->runner->run(
 				registerRef: $register,
@@ -161,8 +237,13 @@ class AggregationController extends Controller {
 	public function value(string $register, string $schema): JSONResponse {
 		$metric = (string)$this->request->getParam('metric', 'count');
 		$field = $this->request->getParam('field');
-		$filter = (array)($this->request->getParam('filter', []));
 		$metrics = $this->parseMetricsParam();
+
+		try {
+			$filter = $this->resolveFilter(action: 'value', register: $register, schema: $schema);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
 
 		$resolvedField = $field;
 		if ($field === '') {
@@ -292,12 +373,17 @@ class AggregationController extends Controller {
 	public function grouped(string $register, string $schema): JSONResponse {
 		$metric = (string)$this->request->getParam('metric', 'count');
 		$field = $this->request->getParam('field');
-		$filter = (array)($this->request->getParam('filter', []));
 		$metrics = $this->parseMetricsParam();
 
 		$groupFields = $this->parseGroupByParam();
 		if (count($groupFields) === 0) {
 			return new JSONResponse(['error' => 'groupBy is required'], Http::STATUS_BAD_REQUEST);
+		}
+
+		try {
+			$filter = $this->resolveFilter(action: 'grouped', register: $register, schema: $schema);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
 		// A single field keeps the pre-existing `{field: ...}` shape
@@ -454,7 +540,12 @@ class AggregationController extends Controller {
 			'to' => $this->request->getParam('to'),
 			'metric' => $this->request->getParam('metric', 'count'),
 			'metricField' => $this->request->getParam('metricField'),
-			'filter' => (array)($this->request->getParam('filter', [])),
+			'filter' => $this->resolveFilter(
+				action: 'timeseries',
+				register: $register,
+				schema: $schema,
+				schemaEntity: $schemaEntity
+			),
 			'cumulative' => $this->request->getParam('cumulative', false),
 		];
 
