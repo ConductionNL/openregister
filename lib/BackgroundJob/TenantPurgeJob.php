@@ -6,6 +6,10 @@
  * Permanently deletes archived organisations and their data after the
  * configured retention period (default: 90 days).
  *
+ * Only an organisation in TenantLifecycleService::PURGEABLE_STATUS is ever
+ * deleted. A `retained` organisation, whose access ended but whose data must
+ * be kept, is outside this job's reach by construction.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -77,7 +81,8 @@ class TenantPurgeJob extends TimedJob {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-deprovisioned-organisations-must-transition-to-archived-with-data-retention
-	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
 	 */
 	protected function run(mixed $argument): void {
 		$this->logger->info('[TenantPurgeJob] Starting purge check');
@@ -96,7 +101,7 @@ class TenantPurgeJob extends TimedJob {
 			// organisation in this table but NOT a tenant of this installation, and
 			// selecting on status alone would sweep it up with the tenants.
 			$organisations = $this->organisationMapper->findLocalTenants(
-				filters: ['status' => TenantLifecycleService::STATUS_ARCHIVED]
+				filters: ['status' => TenantLifecycleService::PURGEABLE_STATUS]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -108,6 +113,18 @@ class TenantPurgeJob extends TimedJob {
 
 		$purgedCount = 0;
 		foreach ($organisations as $organisation) {
+			// The query above selects on the status, and this re-checks it on the
+			// row itself. The query is the only thing between a retained
+			// organisation and a permanent delete, so a filter that was dropped
+			// or ignored must not be enough to delete one.
+			if ($organisation->getStatus() !== TenantLifecycleService::PURGEABLE_STATUS) {
+				$this->logger->warning(
+					'[TenantPurgeJob] Skipped an organisation that is not in the purgeable state',
+					['uuid' => $organisation->getUuid(), 'status' => $organisation->getStatus()]
+				);
+				continue;
+			}
+
 			$deprovisionedAt = $organisation->getDeprovisionedAt();
 			if ($deprovisionedAt === null) {
 				continue;
@@ -117,11 +134,17 @@ class TenantPurgeJob extends TimedJob {
 				continue;
 			}
 
-			try {
-				$orgUuid = $organisation->getUuid();
+			// Every delete below is scoped by this uuid. Without one there is
+			// nothing to scope by, so the organisation is left alone.
+			$orgUuid = $organisation->getUuid();
+			if ($orgUuid === null || $orgUuid === '') {
+				$this->logger->error('[TenantPurgeJob] Skipped an archived organisation without a uuid');
+				continue;
+			}
 
-				// Delete usage records for this organisation.
-				$this->tenantUsageMapper->deleteOlderThan(new DateTime('2099-12-31'));
+			try {
+				// Delete this organisation's usage records, and only this one's.
+				$this->tenantUsageMapper->deleteByOrganisation(organisationUuid: $orgUuid);
 
 				// Delete the organisation entity.
 				$this->organisationMapper->delete($organisation);

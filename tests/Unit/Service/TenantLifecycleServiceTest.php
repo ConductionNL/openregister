@@ -67,6 +67,9 @@ class TenantLifecycleServiceTest extends TestCase {
 			'suspended to active' => ['suspended', 'active'],
 			'suspended to deprovisioning' => ['suspended', 'deprovisioning'],
 			'deprovisioning to archived' => ['deprovisioning', 'archived'],
+			'active to retained' => ['active', 'retained'],
+			'suspended to retained' => ['suspended', 'retained'],
+			'retained to deprovisioning' => ['retained', 'deprovisioning'],
 		];
 	}
 
@@ -87,6 +90,13 @@ class TenantLifecycleServiceTest extends TestCase {
 			'active to provisioning' => ['active', 'provisioning'],
 			'deprovisioning to active' => ['deprovisioning', 'active'],
 			'active to archived' => ['active', 'archived'],
+			'retained to active' => ['retained', 'active'],
+			'retained to suspended' => ['retained', 'suspended'],
+			'retained to archived' => ['retained', 'archived'],
+			'retained to provisioning' => ['retained', 'provisioning'],
+			'provisioning to retained' => ['provisioning', 'retained'],
+			'deprovisioning to retained' => ['deprovisioning', 'retained'],
+			'archived to retained' => ['archived', 'retained'],
 		];
 	}
 
@@ -178,6 +188,72 @@ class TenantLifecycleServiceTest extends TestCase {
 		$this->assertInstanceOf(DateTime::class, $result->getDeprovisionedAt());
 	}
 
+	public function testRetainSetsStatusAndRetainedAtButNotDeprovisionedAt(): void {
+		$org = new Organisation();
+		$org->setStatus('active');
+		$org->setUuid('test-uuid');
+
+		$this->organisationMapper->expects($this->once())
+			->method('update')
+			->willReturnCallback(function ($entity) {
+				return $entity;
+			});
+
+		$result = $this->service->retain($org);
+
+		$this->assertEquals('retained', $result->getStatus());
+		$this->assertInstanceOf(DateTime::class, $result->getRetainedAt());
+		// deprovisionedAt is the purge job's clock. Setting it here would start
+		// the deletion window on an organisation that is meant to be kept.
+		$this->assertNull($result->getDeprovisionedAt());
+	}
+
+	public function testRetainFromArchivedThrowsAndWritesNothing(): void {
+		$org = new Organisation();
+		$org->setStatus('archived');
+
+		$this->organisationMapper->expects($this->never())->method('update');
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(409);
+
+		$this->service->retain($org);
+	}
+
+	public function testReactivatingARetainedOrganisationThrows(): void {
+		$org = new Organisation();
+		$org->setStatus('retained');
+
+		$this->organisationMapper->expects($this->never())->method('update');
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(409);
+
+		$this->service->reactivate($org);
+	}
+
+	public function testDeprovisioningARetainedOrganisationStartsTheDeletionClock(): void {
+		$org = new Organisation();
+		$org->setStatus('retained');
+		$org->setUuid('test-uuid');
+		$org->setRetainedAt(new DateTime('2025-01-01'));
+
+		$this->organisationMapper->expects($this->once())
+			->method('update')
+			->willReturnCallback(fn ($entity) => $entity);
+
+		$result = $this->service->deprovision($org);
+
+		$this->assertEquals('deprovisioning', $result->getStatus());
+		$this->assertInstanceOf(DateTime::class, $result->getDeprovisionedAt());
+		$this->assertEquals(new DateTime('2025-01-01'), $result->getRetainedAt(), 'the retention start stays on record');
+	}
+
+	public function testOnlyTheArchivedStateIsPurgeable(): void {
+		$this->assertSame('archived', TenantLifecycleService::PURGEABLE_STATUS);
+		$this->assertNotSame(TenantLifecycleService::STATUS_RETAINED, TenantLifecycleService::PURGEABLE_STATUS);
+	}
+
 	public function testSuspendFromArchivedThrowsException(): void {
 		$org = new Organisation();
 		$org->setStatus('archived');
@@ -190,8 +266,11 @@ class TenantLifecycleServiceTest extends TestCase {
 
 	public function testGetValidTransitions(): void {
 		$this->assertEquals(['active'], $this->service->getValidTransitions('provisioning'));
-		$this->assertEquals(['suspended', 'deprovisioning'], $this->service->getValidTransitions('active'));
+		$this->assertEquals(['suspended', 'deprovisioning', 'retained'], $this->service->getValidTransitions('active'));
+		$this->assertEquals(['active', 'deprovisioning', 'retained'], $this->service->getValidTransitions('suspended'));
 		$this->assertEquals([], $this->service->getValidTransitions('archived'));
+		$this->assertEquals(['deprovisioning'], $this->service->getValidTransitions('retained'));
+		$this->assertTrue($this->service->isValidStatus('retained'));
 	}
 
 	public function testIsValidEnvironment(): void {

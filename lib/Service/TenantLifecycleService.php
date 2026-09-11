@@ -5,7 +5,8 @@
  *
  * Manages the lifecycle state machine for tenant organisations:
  * provisioning -> active -> suspended -> deprovisioning -> archived.
- * Also handles reactivation from suspended back to active.
+ * Also handles reactivation from suspended back to active, and the retained
+ * state: an organisation whose access has ended but whose data is kept.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -21,6 +22,7 @@
  *
  * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisation-entities-must-have-a-lifecycle-status-field-with-defined-state-transitions
  * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-tenant-provisioning-must-create-default-resources-automatically
+ * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
  * @spec openspec/specs/tenant-lifecycle/spec.md
  * @spec openspec/specs/tenant-lifecycle/spec.md
  * @spec openspec/specs/tenant-lifecycle/spec.md
@@ -61,14 +63,44 @@ class TenantLifecycleService {
 	public const STATUS_ARCHIVED = 'archived';
 
 	/**
+	 * Access has ended and the data is kept.
+	 *
+	 * The terminal state for an organisation with a retention duty: a tenant
+	 * whose contract ended, whose records must still be kept for a legal
+	 * period. API access is blocked exactly as for `suspended`, and nothing is
+	 * deleted. No background job selects this state, and TenantPurgeJob can
+	 * only ever delete a row in PURGEABLE_STATUS, so a retained organisation
+	 * keeps its data for as long as it stays here.
+	 *
+	 * It is entered from `active` or `suspended`, the same two states
+	 * `deprovisioning` is entered from: the operator ending a tenancy chooses
+	 * between deleting it and keeping it. There is no way back to `active`.
+	 * The one way out is `deprovisioning`, taken on purpose when the retention
+	 * period is over, so the data leaves through the same deletion path and
+	 * grace period as every other organisation.
+	 */
+	public const STATUS_RETAINED = 'retained';
+
+	/**
+	 * The one lifecycle state TenantPurgeJob may permanently delete.
+	 *
+	 * Declared here, beside the transitions, so which states are deletable is
+	 * a property of the lifecycle and not of the job. The job selects on it and
+	 * re-checks every row against it before deleting anything, so a state that
+	 * is not this one, `retained` above all, is never purged.
+	 */
+	public const PURGEABLE_STATUS = self::STATUS_ARCHIVED;
+
+	/**
 	 * Valid state transitions: current-state => [allowed-next-states]
 	 */
 	private const STATE_TRANSITIONS = [
 		self::STATUS_PROVISIONING => [self::STATUS_ACTIVE],
-		self::STATUS_ACTIVE => [self::STATUS_SUSPENDED, self::STATUS_DEPROVISIONING],
-		self::STATUS_SUSPENDED => [self::STATUS_ACTIVE, self::STATUS_DEPROVISIONING],
+		self::STATUS_ACTIVE => [self::STATUS_SUSPENDED, self::STATUS_DEPROVISIONING, self::STATUS_RETAINED],
+		self::STATUS_SUSPENDED => [self::STATUS_ACTIVE, self::STATUS_DEPROVISIONING, self::STATUS_RETAINED],
 		self::STATUS_DEPROVISIONING => [self::STATUS_ARCHIVED],
 		self::STATUS_ARCHIVED => [],
+		self::STATUS_RETAINED => [self::STATUS_DEPROVISIONING],
 	];
 
 	/**
@@ -353,6 +385,40 @@ class TenantLifecycleService {
 
 		return $result;
 	}//end deprovision()
+
+	/**
+	 * End an organisation's access and keep its data.
+	 *
+	 * Moves an active or suspended organisation to `retained`. Nothing is
+	 * deleted and no deletion is scheduled: `deprovisionedAt`, which the purge
+	 * job measures its retention window from, is left untouched. The moment
+	 * the retention began is stamped on `retainedAt` instead, so the end of a
+	 * retention period can be computed from the organisation itself.
+	 *
+	 * @param Organisation $organisation The organisation to retain
+	 *
+	 * @return Organisation The organisation in retained state
+	 *
+	 * @throws Exception If transition is invalid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
+	 */
+	public function retain(Organisation $organisation): Organisation {
+		$currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
+		$this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_RETAINED);
+
+		$organisation->setStatus(self::STATUS_RETAINED);
+		$organisation->setRetainedAt(new DateTime());
+
+		$result = $this->organisationMapper->update($organisation);
+
+		$this->logger->info(
+			'[TenantLifecycleService] Organisation retained, access ended and data kept',
+			['uuid' => $organisation->getUuid()]
+		);
+
+		return $result;
+	}//end retain()
 
 	/**
 	 * Archive a deprovisioning organisation (called by background job).

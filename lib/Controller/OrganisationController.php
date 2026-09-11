@@ -1318,6 +1318,35 @@ class OrganisationController extends Controller {
 	}//end deprovision()
 
 	/**
+	 * End an organisation's access and keep its data (the retained state).
+	 *
+	 * @param string $uuid Organisation UUID to retain
+	 *
+	 * @return JSONResponse Success or error response
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
+	 */
+	public function retain(string $uuid): JSONResponse {
+		try {
+			$organisation = $this->organisationMapper->findByUuid($uuid);
+			$result = $this->tenantLifecycleService->retain($organisation);
+			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+		} catch (Exception $e) {
+			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+			if ($e->getCode() >= 400) {
+				$statusCode = $e->getCode();
+			}
+
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $statusCode
+			);
+		}
+	}//end retain()
+
+	/**
 	 * Get usage data for an organisation.
 	 *
 	 * @param string $uuid Organisation UUID
@@ -1464,6 +1493,7 @@ class OrganisationController extends Controller {
 				'suspended' => 0,
 				'deprovisioning' => 0,
 				'archived' => 0,
+				'retained' => 0,
 			];
 
 			foreach ($organisations as $org) {
