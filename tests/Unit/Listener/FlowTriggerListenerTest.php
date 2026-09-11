@@ -140,12 +140,38 @@ class FlowTriggerListenerTest extends TestCase {
 				'object.transitioned',
 				$this->callback(static fn (array $s): bool => ($s['uuid'] ?? null) === 'obj-1'),
 				null,
-				['action' => 'approve', 'from' => 'draft', 'to' => 'published']
+				['action' => 'approve', 'from' => 'draft', 'to' => 'published', 'automatic' => 'false']
 			)
 			->willReturn(1);
 
 		$this->listener->handle(
 			new ObjectTransitionedEvent($this->object(), 'approve', 'draft', 'published', null, 'reg', 'sch')
+		);
+	}
+
+	public function testAnAutomaticTransitionCarriesTheFlagOnTheRunContext(): void {
+		// A flow branching on a state change needs to tell a person's click
+		// from a rule firing on that person's save.
+		$this->triggers->expects($this->once())->method('fire')
+			->with(
+				'object.transitioned',
+				$this->anything(),
+				null,
+				['action' => 'beslissen', 'from' => 'open', 'to' => 'besloten', 'automatic' => 'true']
+			)
+			->willReturn(1);
+
+		$this->listener->handle(
+			new ObjectTransitionedEvent(
+				$this->object(),
+				'beslissen',
+				'open',
+				'besloten',
+				null,
+				'reg',
+				'sch',
+				true
+			)
 		);
 	}
 

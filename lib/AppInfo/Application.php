@@ -96,6 +96,7 @@ use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
+use OCA\OpenRegister\Listener\AutoTransitionRecordListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
@@ -166,6 +167,8 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\FlowLinkService;
@@ -437,6 +440,24 @@ class Application extends App implements IBootstrap {
 			LifecycleActionContext::class,
 			function () {
 				return new LifecycleActionContext();
+			}
+		);
+
+		// The automatic-transition pass MUST be shared, and for a sharper reason
+		// than the two above: it IS the request's state. The listener records
+		// into it, ObjectService and TransitionEngine open and close boundaries
+		// on it, and the drain reads the lineage the boundary counted. Auto-
+		// wired fresh at each injection point, every one of those would hold its
+		// own counter: nothing would ever reach depth zero with a record in it,
+		// so no automatic transition would ever fire, silently and with no
+		// error anywhere.
+		$context->registerService(
+			AutoTransitionPass::class,
+			function ($c) {
+				return new AutoTransitionPass(
+					runner: $c->get(AutoTransitionRunner::class),
+					logger: $c->get(LoggerInterface::class)
+				);
 			}
 		);
 
@@ -2590,6 +2611,15 @@ class Application extends App implements IBootstrap {
 		// ObjectChangeListener for automatic object text extraction.
 		$context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
+
+		// Automatic lifecycle transitions: note the written object so the
+		// request-scoped pass can decide its `autoWhen` rules once the write is
+		// finished. The listener records and nothing else; applying here would
+		// be lost to the second write a file-bearing save makes. NOT wired to
+		// ObjectTransitionedEvent: a named transition's save already dispatched
+		// ObjectUpdatedEvent, so both would record it twice.
+		$context->registerEventListener(ObjectCreatedEvent::class, AutoTransitionRecordListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, AutoTransitionRecordListener::class);
 
 		// Object-lifecycle flow triggers: queue a run for every flow wired to a
 		// lifecycle event. Create / update / delete plus lock / unlock / revert /

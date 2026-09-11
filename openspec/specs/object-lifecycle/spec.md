@@ -11,6 +11,7 @@ retrofit: true
 - `tighten-relation-detection-heuristic` (active) — relation detection records a string in `@self.relations` only when it is a UUID/prefixed-UUID/URL or a schema-declared reference property; removes the loose "8+ chars with hyphen/underscore" heuristic that polluted the map with dates, enum values, and business identifiers. Correctness fix to a derived field; no schema/lifecycle/aggregation/notification change.
 - `fk-graph-lifecycle-transitions` — adds declarative FK-scoped graph transition mode (in-progress)
 - `lifecycle-declarative-conditions` — adds an optional declarative JSONLogic `condition` (plus a `message`) on a lifecycle transition, refusing the save with `lifecycle-condition-unmet` when it does not hold; malformed conditions are rejected at schema-save time (in-progress)
+- `lifecycle-auto-transitions`: lets a transition declare `autoWhen` (a JSONLogic rule) and `executionMode` (`sync` by default, or `async`), so OpenRegister fires it through the named-transition engine after a write, bounded by a loop cap; malformed or graph-mode declarations are refused at schema-save time (in-progress)
 
 ## Purpose
 
