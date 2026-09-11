@@ -15,6 +15,8 @@ namespace Unit\Service\Edepot;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
@@ -55,11 +57,27 @@ class MdtoXmlGeneratorTest extends TestCase {
 		// make every absence test pass for the wrong reason.
 		$this->sourceReader = new MdtoSourceReader();
 
-		$this->generator = new MdtoXmlGenerator(
-			$this->appConfig,
+		$this->generator = $this->makeGenerator(appConfig: $this->appConfig, eventMapper: $this->eventMapper);
+	}
+
+	/**
+	 * Build a generator with real collaborators except the ones a test varies.
+	 *
+	 * @param IAppConfig $appConfig The app config.
+	 * @param MdtoEventMapper $eventMapper The event mapper.
+	 *
+	 * @return MdtoXmlGenerator The generator.
+	 */
+	private function makeGenerator(IAppConfig $appConfig, MdtoEventMapper $eventMapper): MdtoXmlGenerator {
+		$writer = new MdtoDocumentWriter();
+
+		return new MdtoXmlGenerator(
+			$appConfig,
 			$this->logger,
-			$this->eventMapper,
-			$this->sourceReader
+			$eventMapper,
+			$this->sourceReader,
+			$writer,
+			new MdtoBestandGenerator($writer)
 		);
 	}
 
@@ -89,35 +107,136 @@ class MdtoXmlGeneratorTest extends TestCase {
 	}
 
 	/**
-	 * Test generating MDTO XML with file references.
+	 * Deviation 2: a file is referenced from the informatieobject, never nested in it.
 	 */
-	public function testGenerateWithFiles(): void {
+	public function testFilesAreReferencedNotNested(): void {
 		$object = $this->createObjectEntity(
 			uuid: 'test-uuid-456',
+			retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P10Y', 'classification' => 'B1']
+		);
+
+		$xml = $this->generator->generate($object, [$this->file()]);
+
+		$this->assertStringNotContainsString('<mdto:bestand>', $xml);
+		$this->assertStringContainsString('<mdto:heeftRepresentatie>', $xml);
+		$this->assertStringContainsString('<mdto:verwijzingNaam>document.pdf</mdto:verwijzingNaam>', $xml);
+		$this->assertStringContainsString('<mdto:identificatieKenmerk>' . str_repeat('ab', 32) . '</mdto:identificatieKenmerk>', $xml);
+	}
+
+	/**
+	 * Deviation 2: each file gets its own bestand document, pointing back at its object.
+	 */
+	public function testGenerateBestandDescribesTheFileAndItsObject(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'test-uuid-456',
+			retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P10Y'],
+			objectData: ['title' => 'Besluit 14']
+		);
+
+		$xml = $this->generator->generateBestand($object, $this->file());
+
+		$this->assertStringContainsString('<mdto:MDTO', $xml);
+		$this->assertStringContainsString('<mdto:bestand>', $xml);
+		$this->assertStringNotContainsString('<mdto:informatieobject>', $xml);
+		$this->assertStringContainsString('<mdto:omvang>1024</mdto:omvang>', $xml);
+		// bestandsformaat as the standard's own example shows a media type.
+		$this->assertStringContainsString('<mdto:begripLabel>pdf</mdto:begripLabel>', $xml);
+		$this->assertStringContainsString('<mdto:begripCode>application/pdf</mdto:begripCode>', $xml);
+		$this->assertStringContainsString('<mdto:verwijzingNaam>IANA Media types</mdto:verwijzingNaam>', $xml);
+		// Deviation 5: checksumDatum is present.
+		$this->assertStringContainsString('<mdto:checksumDatum>2026-09-11T10:15:00+00:00</mdto:checksumDatum>', $xml);
+		$this->assertStringContainsString('<mdto:verwijzingNaam>Begrippenlijst ChecksumAlgoritme MDTO</mdto:verwijzingNaam>', $xml);
+		// isRepresentatieVan names the object by the identificatie its own document carries.
+		$this->assertStringContainsString('<mdto:isRepresentatieVan>', $xml);
+		$this->assertStringContainsString('<mdto:verwijzingNaam>Besluit 14</mdto:verwijzingNaam>', $xml);
+		$this->assertStringContainsString('<mdto:identificatieKenmerk>test-uuid-456</mdto:identificatieKenmerk>', $xml);
+	}
+
+	/**
+	 * A file whose checksum is not a SHA-256 is refused, because the document declares SHA-256.
+	 */
+	public function testGenerateBestandRefusesAChecksumThatIsNotSha256(): void {
+		$object = $this->createObjectEntity(uuid: 'u', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P1Y']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/file\[0\]\.checksum \(a SHA-256\)/');
+
+		$this->generator->generateBestand($object, ['checksum' => 'abc123def456'] + $this->file());
+	}
+
+	/**
+	 * Every per-file input is refused when absent or malformed, not just the checksum.
+	 *
+	 * `name` and `format` matter most here because the XSD cannot catch them:
+	 * an empty string is a valid `xsd:string`, so an empty `naam` or
+	 * `begripLabel` validates while saying nothing.
+	 *
+	 * @param string $key The file key to break.
+	 * @param mixed $value The broken value, or null to remove the key.
+	 * @param string $named The fragment the error must name.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('brokenFileInputs')]
+	public function testEachFileInputIsRequired(string $key, mixed $value, string $named): void {
+		$object = $this->createObjectEntity(uuid: 'u', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P1Y']);
+		$file = $this->file();
+		if ($value === null) {
+			unset($file[$key]);
+		} else {
+			$file[$key] = $value;
+		}
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage($named);
+
+		$this->generator->generate($object, [$file]);
+	}
+
+	/**
+	 * Each per-file input, broken one at a time.
+	 *
+	 * @return array<string, array{0: string, 1: mixed, 2: string}>
+	 */
+	public static function brokenFileInputs(): array {
+		return [
+			'name missing' => ['name', null, 'file[0].name'],
+			'name empty' => ['name', '', 'file[0].name'],
+			'format missing' => ['format', null, 'file[0].format'],
+			'format empty' => ['format', '', 'file[0].format'],
+			'size missing' => ['size', null, 'file[0].size (a non-negative integer)'],
+			'size not an integer' => ['size', '1.5kB', 'file[0].size (a non-negative integer)'],
+		];
+	}
+
+	/**
+	 * A declared dekkingInTijd start outside the XSD's date union drops the entry.
+	 */
+	public function testTemporalCoverageWithADateTimeStartIsDropped(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'cov-uuid',
 			retention: [
 				'archiefnominatie' => 'bewaren',
-				'bewaartermijn' => 'P10Y',
-				'classification' => 'B1',
+				'bewaartermijn' => 'P5Y',
+				'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021-01-01T10:00:00'],
 			]
 		);
 
-		$files = [
-			[
-				'name' => 'document.pdf',
-				'size' => 1024,
-				'format' => 'application/pdf',
-				'checksum' => 'abc123def456',
-			],
-		];
+		$this->assertStringNotContainsString('dekkingInTijd', $this->generator->generate($object));
+	}
 
-		$xml = $this->generator->generate($object, $files);
+	/**
+	 * Deviation 5: a file without a checksum date is refused rather than stamped.
+	 */
+	public function testGenerateRefusesAFileWithoutAChecksumDate(): void {
+		$object = $this->createObjectEntity(uuid: 'u', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P1Y']);
+		$file = $this->file();
+		unset($file['checksumDate']);
 
-		$this->assertStringContainsString('mdto:bestand', $xml);
-		$this->assertStringContainsString('document.pdf', $xml);
-		$this->assertStringContainsString('1024', $xml);
-		$this->assertStringContainsString('application/pdf', $xml);
-		$this->assertStringContainsString('SHA-256', $xml);
-		$this->assertStringContainsString('abc123def456', $xml);
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/file\[0\]\.checksumDate/');
+
+		$this->generator->generate($object, [$file]);
 	}
 
 	/**
@@ -134,10 +253,154 @@ class MdtoXmlGeneratorTest extends TestCase {
 
 		$xml = $this->generator->generate($object);
 
-		// classificatie should default to 'onbekend' when missing.
-		$this->assertStringContainsString('onbekend', $xml);
-		// toelichting should not appear.
+		// Deviation 3: no category means no informatiecategorie, not the old 'onbekend' placeholder.
+		$this->assertStringNotContainsString('informatiecategorie', $xml);
+		$this->assertStringNotContainsString('onbekend', $xml);
+		// No toelichting means no omschrijving.
+		$this->assertStringNotContainsString('omschrijving', $xml);
 		$this->assertStringNotContainsString('toelichting', $xml);
+	}
+
+	/**
+	 * Deviation 1: the root is MDTO, carrying the schema version, with one informatieobject in it.
+	 */
+	public function testTheRootIsMdtoWithTheSchemaLocation(): void {
+		$object = $this->createObjectEntity(uuid: 'root-uuid', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P5Y']);
+
+		$dom = new \DOMDocument();
+		$dom->loadXML($this->generator->generate($object));
+
+		$this->assertSame('MDTO', $dom->documentElement->localName);
+		$this->assertSame(MdtoDocumentWriter::MDTO_NAMESPACE, $dom->documentElement->namespaceURI);
+		$this->assertStringContainsString(
+			MdtoDocumentWriter::SCHEMA_LOCATION,
+			$dom->documentElement->getAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'schemaLocation')
+		);
+		$this->assertSame(1, $dom->documentElement->childNodes->length - $this->whitespaceNodes($dom->documentElement));
+		$this->assertSame('informatieobject', $dom->documentElement->firstElementChild->localName);
+	}
+
+	/**
+	 * Deviation 6: toelichting is exported as MDTO's omschrijving.
+	 */
+	public function testToelichtingBecomesOmschrijving(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'desc-uuid',
+			retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P5Y', 'toelichting' => 'Bij besluit 14']
+		);
+
+		$xml = $this->generator->generate($object);
+
+		$this->assertStringContainsString('<mdto:omschrijving>Bij besluit 14</mdto:omschrijving>', $xml);
+		$this->assertStringNotContainsString('toelichting', $xml);
+	}
+
+	/**
+	 * Deviation 3: waardering is a begripGegevens from the CLOSED Waarderingen list.
+	 *
+	 * @param string $nominatie The stored archiefnominatie.
+	 * @param string $code The expected Waarderingen code.
+	 * @param string $label The expected Waarderingen label.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('appraisals')]
+	public function testWaarderingUsesTheClosedWaarderingenList(string $nominatie, string $code, string $label): void {
+		$object = $this->createObjectEntity(uuid: 'w', retention: ['archiefnominatie' => $nominatie, 'bewaartermijn' => 'P5Y']);
+
+		$xml = $this->generator->generate($object);
+
+		$this->assertMatchesRegularExpression(
+			'#<mdto:waardering>\s*<mdto:begripLabel>' . $label . '</mdto:begripLabel>\s*<mdto:begripCode>' . $code
+			. '</mdto:begripCode>\s*<mdto:begripBegrippenlijst>\s*<mdto:verwijzingNaam>Waarderingen</mdto:verwijzingNaam>#',
+			$xml
+		);
+	}
+
+	/**
+	 * Every archiefnominatie the codebase writes, and its Waarderingen term.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public static function appraisals(): array {
+		return [
+			'bewaren' => ['bewaren', 'B', 'Blijvend te bewaren'],
+			'blijvend_bewaren' => ['blijvend_bewaren', 'B', 'Blijvend te bewaren'],
+			'vernietigen' => ['vernietigen', 'V', 'Tijdelijk te bewaren'],
+			'nog_niet_bepaald' => ['nog_niet_bepaald', 'N', 'Nader te bepalen'],
+		];
+	}
+
+	/**
+	 * A value outside the closed list is refused, not written as an invalid label.
+	 */
+	public function testAnAppraisalOutsideTheClosedListIsRefused(): void {
+		$object = $this->createObjectEntity(uuid: 'w', retention: ['archiefnominatie' => 'misschien', 'bewaartermijn' => 'P5Y']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/retention\.archiefnominatie \(one of: /');
+
+		$this->generator->generate($object);
+	}
+
+	/**
+	 * Deviation 4: bewaartermijn is a termijnGegevens, with the end date when the record has one.
+	 */
+	public function testBewaartermijnIsATermijnGegevens(): void {
+		$object = $this->createObjectEntity(
+			uuid: 't',
+			retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P20Y', 'archiefactiedatum' => '2046-09-11']
+		);
+
+		$xml = $this->generator->generate($object);
+
+		$this->assertMatchesRegularExpression(
+			'#<mdto:bewaartermijn>\s*<mdto:termijnLooptijd>P20Y</mdto:termijnLooptijd>\s*'
+			. '<mdto:termijnEinddatum>2046-09-11</mdto:termijnEinddatum>\s*</mdto:bewaartermijn>#',
+			$xml
+		);
+	}
+
+	/**
+	 * A retention period that is not an xsd:duration is refused.
+	 *
+	 * `P2W` is the case that matters: PHP's DateInterval accepts it, the XSD does not.
+	 */
+	public function testABewaartermijnThatIsNotAnXsdDurationIsRefused(): void {
+		$object = $this->createObjectEntity(uuid: 't', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P2W']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/retention\.bewaartermijn \(an ISO-8601/');
+
+		$this->generator->generate($object);
+	}
+
+	/**
+	 * Deviation 3: informatiecategorie names its selectielijst, or says it is a selectielijst.
+	 */
+	public function testInformatiecategorieNamesItsSelectielijst(): void {
+		$named = $this->createObjectEntity(
+			uuid: 'c',
+			retention: [
+				'archiefnominatie' => 'bewaren',
+				'bewaartermijn' => 'P5Y',
+				'classification' => 'A1',
+				'selectielijstBron' => 'Selectielijst gemeenten 2020',
+			]
+		);
+		$unnamed = $this->createObjectEntity(
+			uuid: 'c',
+			retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P5Y', 'classification' => 'A1']
+		);
+
+		$this->assertStringContainsString(
+			'<mdto:verwijzingNaam>Selectielijst gemeenten 2020</mdto:verwijzingNaam>',
+			$this->generator->generate($named)
+		);
+		$this->assertStringContainsString(
+			'<mdto:verwijzingNaam>' . MdtoXmlGenerator::CATEGORY_LIST_FALLBACK . '</mdto:verwijzingNaam>',
+			$this->generator->generate($unnamed)
+		);
 	}
 
 	/**
@@ -163,7 +426,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 		$appConfig->method('getValueString')
 			->willReturn('');
 
-		$generator = new MdtoXmlGenerator($appConfig, $this->logger, $this->eventMapper, $this->sourceReader);
+		$generator = $this->makeGenerator(appConfig: $appConfig, eventMapper: $this->eventMapper);
 
 		$object = $this->createObjectEntity(
 			uuid: 'test-uuid',
@@ -323,9 +586,12 @@ class MdtoXmlGeneratorTest extends TestCase {
 	}
 
 	/**
-	 * A3: a RELEASED legal hold is not a restriction.
+	 * A RELEASED legal hold is not a restriction, so the unrecorded term is used.
+	 *
+	 * The XSD requires beperkingGebruik, so "no restriction known" is written
+	 * as the standard's own "Nader te bepalen", never as the hold's "Overig".
 	 */
-	public function testUseRestrictionAbsentWhenLegalHoldReleased(): void {
+	public function testAReleasedLegalHoldYieldsTheUnrecordedTerm(): void {
 		$object = $this->createObjectEntity(
 			uuid: 'hold-uuid',
 			retention: [
@@ -337,7 +603,9 @@ class MdtoXmlGeneratorTest extends TestCase {
 
 		$xml = $this->generator->generate($object);
 
-		$this->assertStringNotContainsString('beperkingGebruik', $xml);
+		$this->assertStringContainsString('<mdto:beperkingGebruik>', $xml);
+		$this->assertStringContainsString('<mdto:begripLabel>Nader te bepalen</mdto:begripLabel>', $xml);
+		$this->assertStringNotContainsString('<mdto:begripLabel>Overig</mdto:begripLabel>', $xml);
 	}
 
 	/**
@@ -423,7 +691,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 			]
 		);
 
-		$generator = new MdtoXmlGenerator($this->appConfig, $this->logger, $eventMapper, $this->sourceReader);
+		$generator = $this->makeGenerator(appConfig: $this->appConfig, eventMapper: $eventMapper);
 		$object = $this->createObjectEntity(
 			uuid: 'event-uuid',
 			retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P5Y']
@@ -469,30 +737,34 @@ class MdtoXmlGeneratorTest extends TestCase {
 			[['type' => 'Creatie', 'time' => '2026-01-01T09:00:00+00:00', 'actorName' => null, 'actorId' => null]]
 		);
 
-		$generator = new MdtoXmlGenerator($this->appConfig, $this->logger, $eventMapper, $this->sourceReader);
+		$generator = $this->makeGenerator(appConfig: $this->appConfig, eventMapper: $eventMapper);
 		$object = $this->createObjectEntity(
 			uuid: 'order-uuid',
 			retention: [
 				'archiefnominatie' => 'bewaren',
 				'bewaartermijn' => 'P5Y',
 				'aggregationLevel' => 'Dossier',
+				'toelichting' => 'Omschrijving',
+				'classification' => 'A1',
 				'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021-01-01'],
 				'useRestriction' => 'Geen beperking',
 			]
 		);
 
-		$xml = $generator->generate($object);
+		$xml = $generator->generate($object, [$this->file()]);
 
 		$positions = [];
 		foreach (
 			[
 				'<mdto:naam>',
 				'<mdto:aggregatieniveau>',
+				'<mdto:omschrijving>',
 				'<mdto:dekkingInTijd>',
 				'<mdto:event>',
 				'<mdto:waardering>',
 				'<mdto:bewaartermijn>',
 				'<mdto:informatiecategorie>',
+				'<mdto:heeftRepresentatie>',
 				'<mdto:archiefvormer>',
 				'<mdto:beperkingGebruik>',
 			] as $tag
@@ -505,6 +777,39 @@ class MdtoXmlGeneratorTest extends TestCase {
 		$sorted = $positions;
 		sort($sorted);
 		$this->assertSame($sorted, $positions, 'Elements are not in the MDTO XSD sequence order');
+	}
+
+	/**
+	 * A well-formed file entry, as EdepotTransferService builds one.
+	 *
+	 * @return array<string, mixed> The file.
+	 */
+	private function file(): array {
+		return [
+			'name' => 'document.pdf',
+			'size' => 1024,
+			'format' => 'application/pdf',
+			'checksum' => str_repeat('ab', 32),
+			'checksumDate' => '2026-09-11T10:15:00+00:00',
+		];
+	}
+
+	/**
+	 * Count the whitespace-only text nodes directly under an element.
+	 *
+	 * @param \DOMElement $element The element.
+	 *
+	 * @return int The count.
+	 */
+	private function whitespaceNodes(\DOMElement $element): int {
+		$count = 0;
+		foreach ($element->childNodes as $node) {
+			if ($node instanceof \DOMText && trim($node->textContent) === '') {
+				$count++;
+			}
+		}
+
+		return $count;
 	}
 
 	/**

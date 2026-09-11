@@ -79,6 +79,7 @@ class EdepotTransferService {
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param INotificationManager $notificationManager The notification manager.
 	 * @param LoggerInterface $logger Logger.
+	 * @param PackagedFileChecksum $packagedFileChecksum Computes, dates and fixity-checks each file's checksum.
 	 */
 	public function __construct(
 		private readonly SipPackageBuilder $sipBuilder,
@@ -89,6 +90,7 @@ class EdepotTransferService {
 		private readonly IAppConfig $appConfig,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
+		private readonly PackagedFileChecksum $packagedFileChecksum,
 	) {
 	}//end __construct()
 
@@ -431,6 +433,12 @@ class EdepotTransferService {
 	/**
 	 * Get file metadata for an object.
 	 *
+	 * Each checksum is computed and dated at packaging by
+	 * {@see PackagedFileChecksum}, which also refuses a file whose stored
+	 * SHA-256 no longer matches its bytes. That refusal reaches the per-object
+	 * catch in {@see self::gatherObjectsWithFiles()}, which excludes the object
+	 * from this transfer and logs it by uuid.
+	 *
 	 * @param ObjectEntity $object The object.
 	 *
 	 * @return array<int, array{
@@ -438,9 +446,12 @@ class EdepotTransferService {
 	 *     size: int,
 	 *     format: string,
 	 *     checksum: string,
+	 *     checksumDate: string,
 	 *     path: string,
 	 *     isRendition: bool
 	 * }> File metadata array.
+	 *
+	 * @throws \RuntimeException When a file cannot be read or its stored SHA-256 no longer matches.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
@@ -464,11 +475,14 @@ class EdepotTransferService {
 				continue;
 			}
 
+			$checksum = $this->packagedFileChecksum->compute(path: $path, stored: ($fileRef['checksum'] ?? null));
+
 			$files[] = [
 				'name' => ($fileRef['name'] ?? basename($path)),
 				'size' => (int)($fileRef['size'] ?? filesize($path)),
 				'format' => ($fileRef['mimeType'] ?? ($fileRef['format'] ?? 'application/octet-stream')),
-				'checksum' => ($fileRef['checksum'] ?? hash_file('sha256', $path)),
+				'checksum' => $checksum['checksum'],
+				'checksumDate' => $checksum['checksumDate'],
 				'path' => $path,
 				'isRendition' => (bool)($fileRef['isRendition'] ?? false),
 			];

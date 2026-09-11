@@ -175,7 +175,7 @@ class MdtoSourceReader {
 			return [
 				'type' => $label,
 				'description' => $this->stringAt(value: $declared, key: 'description'),
-				'startDate' => $this->stringAt(value: $declared, key: 'startDate'),
+				'startDate' => $this->dateOnly(value: $this->stringAt(value: $declared, key: 'startDate')),
 			];
 		}
 
@@ -212,7 +212,11 @@ class MdtoSourceReader {
 	}//end legalHoldRestriction()
 
 	/**
-	 * Accept one dekkingInTijd entry only when it is complete.
+	 * Accept one dekkingInTijd entry only when it is complete and well-formed.
+	 *
+	 * Both dates must be an `xsd:gYear`, `xsd:gYearMonth` or `xsd:date`, the
+	 * union the XSD declares. A start in any other form makes the entry
+	 * incomplete, so it is dropped; an end in any other form is dropped alone.
 	 *
 	 * @param mixed $entry The declared entry.
 	 *
@@ -226,12 +230,12 @@ class MdtoSourceReader {
 		}
 
 		$type = $this->stringAt(value: $entry, key: 'type');
-		$start = $this->stringAt(value: $entry, key: 'start');
+		$start = $this->coverageDate(value: $this->stringAt(value: $entry, key: 'start'));
 		if ($type === null || $start === null) {
 			return null;
 		}
 
-		return ['type' => $type, 'start' => $start, 'end' => $this->stringAt(value: $entry, key: 'end')];
+		return ['type' => $type, 'start' => $start, 'end' => $this->coverageDate(value: $this->stringAt(value: $entry, key: 'end'))];
 	}//end completeCoverageEntry()
 
 	/**
@@ -315,6 +319,23 @@ class MdtoSourceReader {
 
 		return null;
 	}//end stringAt()
+
+	/**
+	 * Accept a date only in a form the XSD's dekkingInTijd union allows.
+	 *
+	 * @param string|null $value The declared date.
+	 *
+	 * @return string|null The value when it is a gYear, gYearMonth or date; null otherwise.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	private function coverageDate(?string $value): ?string {
+		if ($value === null || preg_match('/^\d{4}(-\d{2}(-\d{2})?)?$/', $value) !== 1) {
+			return null;
+		}
+
+		return $value;
+	}//end coverageDate()
 
 	/**
 	 * Reduce an ISO-8601 timestamp to the xsd:date the termijn element needs.
