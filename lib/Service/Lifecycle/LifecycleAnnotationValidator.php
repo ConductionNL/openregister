@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Service\Flow\FlowExpression;
+
 /**
  * Pure validation logic for the `x-openregister-lifecycle` annotation.
  *
@@ -242,6 +244,32 @@ final class LifecycleAnnotationValidator {
 					$errors[] = $authError;
 				}
 			}
+
+			// Optional `condition` — a declarative JSONLogic precondition on
+			// the object's own data. Shape-checked here so a broken expression
+			// cannot be stored; see validateTransitionCondition() for why a
+			// scalar is refused rather than accepted as a literal.
+			if (isset($spec['condition']) === true) {
+				$conditionError = $this->validateTransitionCondition(
+					condition: $spec['condition'],
+					action: (string)$action
+				);
+				if ($conditionError !== null) {
+					$errors[] = $conditionError;
+				}
+			}
+
+			// Optional `message` — the refusal text a declined `condition`
+			// carries. A non-empty string, or a per-locale map.
+			if (isset($spec['message']) === true) {
+				$errors = array_merge(
+					$errors,
+					$this->validateTransitionMessage(
+						message: $spec['message'],
+						action: (string)$action
+					)
+				);
+			}
 		}//end foreach
 
 		return $errors;
@@ -309,6 +337,24 @@ final class LifecycleAnnotationValidator {
 					'message' => sprintf('x-openregister-lifecycle.graph is missing required string key "%s".', $key),
 				];
 			}
+		}
+
+		// A `condition` on the graph block is REFUSED, not ignored and not
+		// half-enforced. Graph-mode moves are derived inside TransitionEngine;
+		// a graph annotation declares no `transitions`, so LifecycleValidation-
+		// Listener returns through its app-managed branch and the ordinary save
+		// path enforces nothing. A condition honoured on the engine route but
+		// absent on the save path would leave an author believing a state is
+		// unreachable when it is one direct write away — the silent direction
+		// of the failure is why this refuses instead. Unblocked by graph-mode
+		// enforcement on the save path (`lifecycle-graph-enforcement`).
+		if (isset($graph['condition']) === true) {
+			$errors[] = [
+				'code' => 'lifecycle-condition-graph-unsupported',
+				'message' => 'x-openregister-lifecycle.graph does not support `condition`: '
+					. 'graph-mode moves are not enforced on the save path, so a condition '
+					. 'declared here would not hold. Declare conditions on static transitions.',
+			];
 		}
 
 		// `allowedMoves`: required, one of forward|adjacent|any.
@@ -413,4 +459,166 @@ final class LifecycleAnnotationValidator {
 
 		return null;
 	}//end validateTransitionAuthorization()
+
+	/**
+	 * Shape-check a transition's optional JSONLogic `condition`.
+	 *
+	 * 🔴 A SCALAR IS REFUSED, AND THAT IS THE POINT OF THIS METHOD.
+	 * `FlowExpression::isValid()` answers TRUE for any non-array, because in a
+	 * flow a scalar is a literal and a literal is always well-formed. Here the
+	 * expression decides whether a transition may proceed, and a truthy literal
+	 * authorises EVERY attempt — it fails OPEN, silently, in the one place that
+	 * exists to say no.
+	 *
+	 * The trap is not hypothetical. This annotation already carries a second
+	 * `condition` key one level deeper, on `transitions.<action>.actions[]`,
+	 * written in a different dialect: the `@self.<field> == '<value>'` string
+	 * that {@see LifecycleActionExecutor::evaluateCondition()} parses by regex.
+	 * An author who copies that form up one level writes something that looks
+	 * right, stores cleanly, and gates nothing.
+	 *
+	 * @param mixed $condition Raw value of the transition's `condition` key.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when well-formed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
+	 * stateless expression facade; calling it statically IS the reuse.
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function validateTransitionCondition(mixed $condition, string $action): ?array {
+		if (is_array($condition) === false) {
+			return [
+				'code' => 'lifecycle-condition-malformed',
+				'message' => sprintf(
+					'Transition "%s" `condition` must be a JSONLogic rule object such as '
+					. '{"!!": {"var": "object.motivering"}}. A string or other scalar is refused: '
+					. 'it would evaluate as a literal and allow every attempt. The '
+					. '"@self.field == \'value\'" form belongs on an `actions[]` entry, not here.',
+					$action
+				),
+			];
+		}
+
+		if ($condition === []) {
+			return [
+				'code' => 'lifecycle-condition-malformed',
+				'message' => sprintf('Transition "%s" `condition` must not be empty.', $action),
+			];
+		}
+
+		if (FlowExpression::isValid(logic: $condition) === false) {
+			return [
+				'code' => 'lifecycle-condition-malformed',
+				'message' => sprintf(
+					'Transition "%s" `condition` is not a valid JSONLogic expression.',
+					$action
+				),
+			];
+		}
+
+		return null;
+	}//end validateTransitionCondition()
+
+	/**
+	 * Shape-check a transition's optional refusal `message`.
+	 *
+	 * Accepts a non-empty string, or a per-locale map optionally carrying
+	 * `defaultLocale`. The map form mirrors the `x-openregister-notifications`
+	 * dialect key for key, so an author who has written one has written both.
+	 * Every malformed shape returns the single code `lifecycle-message-malformed`.
+	 *
+	 * @param mixed $message Raw value of the transition's `message` key.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function validateTransitionMessage(mixed $message, string $action): array {
+		$code = 'lifecycle-message-malformed';
+
+		if (is_string($message) === true) {
+			if ($message === '') {
+				return [
+					[
+						'code' => $code,
+						'message' => sprintf(
+							'Transition "%s" `message` must be a non-empty string when present.',
+							$action
+						),
+					],
+				];
+			}
+
+			return [];
+		}
+
+		if (is_array($message) === false) {
+			return [
+				[
+					'code' => $code,
+					'message' => sprintf(
+						'Transition "%s" `message` must be a string or a per-locale map.',
+						$action
+					),
+				],
+			];
+		}
+
+		$errors = [];
+		$localeKeys = array_filter(
+			array_keys($message),
+			static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
+		);
+		if (count($localeKeys) === 0) {
+			$errors[] = [
+				'code' => $code,
+				'message' => sprintf(
+					'Transition "%s" `message` map must declare at least one locale (e.g. nl, en).',
+					$action
+				),
+			];
+		}
+
+		foreach ($localeKeys as $localeKey) {
+			if (is_string($message[$localeKey]) === false || $message[$localeKey] === '') {
+				$errors[] = [
+					'code' => $code,
+					'message' => sprintf(
+						'Transition "%s" `message` for locale "%s" must be a non-empty string.',
+						$action,
+						$localeKey
+					),
+				];
+			}
+		}
+
+		if (isset($message['defaultLocale']) === true) {
+			$defaultLocale = $message['defaultLocale'];
+			$defaultLocaleBad = (is_string($defaultLocale) === false);
+			if ($defaultLocaleBad === false) {
+				$defaultLocaleBad = (isset($message[$defaultLocale]) === false);
+			}
+
+			$shown = gettype($defaultLocale);
+			if (is_string($defaultLocale) === true) {
+				$shown = $defaultLocale;
+			}
+
+			if ($defaultLocaleBad === true) {
+				$errors[] = [
+					'code' => $code,
+					'message' => sprintf(
+						'Transition "%s" `message` defaultLocale "%s" is not declared in the message map.',
+						$action,
+						$shown
+					),
+				];
+			}
+		}
+
+		return $errors;
+	}//end validateTransitionMessage()
 }//end class

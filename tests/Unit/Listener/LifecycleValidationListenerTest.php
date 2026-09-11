@@ -39,6 +39,8 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IServerContainer;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -62,6 +64,12 @@ class LifecycleValidationListenerTest extends TestCase {
 
 	private PermissionHandler&MockObject $permissionHandler;
 
+	private IGroupManager&MockObject $groupManager;
+
+	private IL10N&MockObject $l10n;
+
+	private LoggerInterface&MockObject $logger;
+
 	private LifecycleValidationListener $listener;
 
 	/**
@@ -72,6 +80,19 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 		$logger = $this->createMock(LoggerInterface::class);
+		$this->logger = $logger;
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+
+		// The engine's fallback message is the only translated string here; an
+		// author's own `message` must reach the refusal untouched, so a test
+		// that saw t() called for one could not tell the two apart. Echoing the
+		// key back keeps that distinction visible in assertions.
+		$this->l10n = $this->createMock(IL10N::class);
+		$this->l10n->method('getLanguageCode')->willReturn('en');
+		$this->l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $parameters = []): string => vsprintf($text, $parameters)
+		);
 
 		// LifecycleGuardRegistry is final and cannot be doubled; drive a real
 		// instance through a mocked container that returns the test guard.
@@ -89,7 +110,9 @@ class LifecycleValidationListenerTest extends TestCase {
 			$this->guardRegistry,
 			$this->userSession,
 			$this->permissionHandler,
-			$logger
+			$logger,
+			$this->groupManager,
+			$this->l10n
 		);
 	}//end setUp()
 

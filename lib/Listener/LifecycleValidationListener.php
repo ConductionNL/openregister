@@ -30,10 +30,13 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -72,6 +75,8 @@ class LifecycleValidationListener implements IEventListener {
 	 * @param IUserSession $userSession Current user session.
 	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
 	 * @param LoggerInterface $logger PSR logger for warnings.
+	 * @param IGroupManager $groupManager Group manager, resolving the caller's group ids for a `condition`.
+	 * @param IL10N $l10n Translation layer for the engine's own refusal message.
 	 *
 	 * @return void
 	 */
@@ -81,6 +86,8 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly LoggerInterface $logger,
+		private readonly IGroupManager $groupManager,
+		private readonly IL10N $l10n,
 	) {
 	}//end __construct()
 
@@ -224,6 +231,55 @@ class LifecycleValidationListener implements IEventListener {
 			}
 		}//end if
 
+		// Declarative JSONLogic precondition on the object's own data. Runs
+		// AFTER `authorization` so an unauthorized caller is turned away
+		// before any condition is evaluated, and BEFORE `requires` so a
+		// refused condition never resolves — let alone runs — a guard.
+		$condition = ($spec['condition'] ?? null);
+		if ($condition !== null && $condition !== []) {
+			$holds = FlowExpression::isTrue(
+				logic: $condition,
+				data: $this->conditionData(
+					newData: $newData,
+					oldData: $oldData,
+					action: (string)$action,
+					from: (string)$oldValue,
+					to: $newValue
+				)
+			);
+
+			if ($holds === false) {
+				// Debug rather than warning: a condition that does not hold is
+				// the feature working, not a fault. It is logged at all because
+				// `isTrue()` also answers false for an expression it cannot
+				// evaluate — a mistyped `var` path resolves to null and is
+				// indistinguishable from an honest refusal in the response.
+				$this->logger->debug(
+					'[LifecycleValidationListener] Transition condition did not hold.',
+					[
+						'schema' => $schema->getSlug(),
+						'action' => (string)$action,
+						'field' => $field,
+					]
+				);
+
+				$this->reject(
+					event: $event,
+					error: [
+						'code' => 'lifecycle-condition-unmet',
+						'field' => $field,
+						'action' => (string)$action,
+						'message' => $this->conditionMessage(
+							declared: ($spec['message'] ?? null),
+							action: (string)$action,
+							field: $field
+						),
+					]
+				);
+				return;
+			}
+		}//end if
+
 		$requires = ($spec['requires'] ?? null);
 		if (is_string($requires) === true && $requires !== '') {
 			$userId = ($this->userSession->getUser()?->getUID() ?? '');
@@ -334,4 +390,114 @@ class LifecycleValidationListener implements IEventListener {
 		$event->setErrors($error);
 		$event->stopPropagation();
 	}//end reject()
+
+	/**
+	 * Build the document a transition `condition` is evaluated against.
+	 *
+	 * Exactly four keys, and deliberately NOT the flow engine's `json` /
+	 * `binary` / `itemIndex` shape: a schema author writing a lifecycle rule is
+	 * looking at an object and a transition, not at a flow item, and naming the
+	 * object `json` would be a riddle at the point of authoring. The expression
+	 * language is shared with flows; the document it reads is not.
+	 *
+	 * `user` is empty under `occ`, which has no session, so every
+	 * ObjectService call there runs unauthenticated. A condition that reads
+	 * `user.uid` therefore refuses on the CLI unless it accounts for that.
+	 *
+	 * @param array<string, mixed> $newData The object as it would be saved.
+	 * @param array<string, mixed> $oldData The object as currently stored.
+	 * @param string $action The matched transition's name.
+	 * @param string $from The lifecycle value being moved away from.
+	 * @param string $to The lifecycle value being moved to.
+	 *
+	 * @return array<string, mixed> The expression document.
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function conditionData(
+		array $newData,
+		array $oldData,
+		string $action,
+		string $from,
+		string $to,
+	): array {
+		$user = $this->userSession->getUser();
+		$uid = '';
+		$groups = [];
+		if ($user !== null) {
+			$uid = $user->getUID();
+			$groups = $this->groupManager->getUserGroupIds($user);
+		}
+
+		return [
+			'object' => $newData,
+			'previous' => $oldData,
+			'user' => [
+				'uid' => $uid,
+				'groups' => $groups,
+			],
+			'transition' => [
+				'action' => $action,
+				'from' => $from,
+				'to' => $to,
+			],
+		];
+	}//end conditionData()
+
+	/**
+	 * Resolve the refusal text for a condition that did not hold.
+	 *
+	 * An author's `message` is passed through UNTRANSLATED in both shapes: it
+	 * is their words, and running it through the translation layer would look
+	 * up a string that was never in a catalogue. Only the engine's own fallback
+	 * is translated, which is why this method is the one place `IL10N` is used.
+	 *
+	 * A map resolves by the caller's configured language, then `defaultLocale`,
+	 * then `en`, then the first declared locale — so a map always yields text
+	 * rather than falling through to the generic message.
+	 *
+	 * @param mixed $declared The transition's `message`: string, map, or absent.
+	 * @param string $action The matched transition's name.
+	 * @param string $field The lifecycle field's name.
+	 *
+	 * @return string The message the refusal carries.
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function conditionMessage(mixed $declared, string $action, string $field): string {
+		if (is_string($declared) === true && $declared !== '') {
+			return $declared;
+		}
+
+		if (is_array($declared) === true && $declared !== []) {
+			$locales = $declared;
+			$default = ($locales['defaultLocale'] ?? null);
+			unset($locales['defaultLocale']);
+
+			$candidates = [$this->l10n->getLanguageCode()];
+			if (is_string($default) === true && $default !== '') {
+				$candidates[] = $default;
+			}
+
+			$candidates[] = 'en';
+
+			foreach ($candidates as $candidate) {
+				$text = ($locales[$candidate] ?? null);
+				if (is_string($text) === true && $text !== '') {
+					return $text;
+				}
+			}
+
+			foreach ($locales as $text) {
+				if (is_string($text) === true && $text !== '') {
+					return $text;
+				}
+			}
+		}//end if
+
+		return $this->l10n->t(
+			'The conditions for "%1$s" are not met, so "%2$s" cannot change yet.',
+			[$action, $field]
+		);
+	}//end conditionMessage()
 }//end class

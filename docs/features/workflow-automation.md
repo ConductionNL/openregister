@@ -240,6 +240,130 @@ or the parent's `field` value is empty. Seeding dispatches no
 `ObjectTransitionedEvent` — it is an initialisation, not a transition. The legacy
 literal-string `initial` keeps its static-mode semantics and is not auto-seeded.
 
+### Conditions and refusal messages (`condition`, `message`)
+
+A transition can also carry a `condition`: a declarative precondition on the
+object's own data, evaluated by `FlowExpression`, the same JSONLogic engine
+flows already use for router and switch edges. A one-line business rule no
+longer needs a PHP guard class.
+
+```json
+"refuse": {
+  "from": ["received", "verifying", "in-progress"],
+  "to": "refused",
+  "condition": {
+    "and": [
+      { "!!": { "var": "object.denialGround" } },
+      { "!=": [{ "var": "object.denialGround" }, "not-applicable"] }
+    ]
+  },
+  "message": {
+    "nl": "Een afwijzing vereist een geldige weigeringsgrond.",
+    "en": "A refusal requires a valid denial ground."
+  }
+}
+```
+
+This is the `dataSubjectRequest` schema's `refuse` transition, shipped in
+`lib/Settings/openregister_mock_register.json`. Refusing a request requires a
+`denialGround` that is set and is not `not-applicable`. Import the mock
+register and the example is a real transition you can inspect and copy.
+
+#### The condition document
+
+`condition` is evaluated against a document with exactly four keys:
+
+| Key | Contents |
+|---|---|
+| `object` | The incoming data (the object as it would be saved) |
+| `previous` | The stored data (the object as it currently is) |
+| `user` | `uid` and `groups` of the caller |
+| `transition` | `action`, `from`, `to` of the matched transition |
+
+This is deliberately not the flow engine's `json` / `binary` / `itemIndex`
+shape. A schema author writing a lifecycle rule is looking at an object and a
+transition, not at an item moving through a graph. `{"var":
+"object.denialGround"}` reads the way the schema reads; naming the object
+`json` would be a riddle at the point of authoring. The expression language is
+shared with flows, but the document it reads is not.
+
+> **A scalar `condition` is refused, and that is the point.** This annotation
+> already carries a second `condition` key one level deeper, on
+> `transitions.<action>.actions[]`, written in a different dialect: the string
+> `@self.<field> == '<value>'`. Copying that form up to the transition level
+> looks right and stores cleanly, but it fails open. `FlowExpression::isValid()`
+> treats any scalar as a literal, so the string passes validation and then
+> evaluates truthy at runtime, allowing every attempt it was written to block.
+> `condition` on a transition must be a JSONLogic rule object. `condition`
+> inside `actions[]` stays the `@self.field == 'value'` string. Same key name,
+> two different dialects, one nesting level apart.
+
+#### Refusal messages (`message`)
+
+`message` pairs with `condition` to explain a refusal in words. It accepts
+either a plain string, or a per-locale map with an optional `defaultLocale`:
+
+```json
+"message": {
+  "nl": "Een afwijzing vereist een geldige weigeringsgrond.",
+  "en": "A refusal requires a valid denial ground.",
+  "defaultLocale": "nl"
+}
+```
+
+Resolution order when a caller hits the refusal: the caller's own language
+(`IL10N::getLanguageCode()`), then `defaultLocale`, then `en`, then the first
+declared locale. That order only picks between locales the author already
+wrote: the author's text is never translated by the engine. Only the engine's
+generic fallback message, used when a transition declares no `message` at all,
+is translated.
+
+#### Evaluation order
+
+A transition checks its guards in a fixed order: `authorization`, then
+`condition`, then `requires`. A caller who fails authorization never reaches
+the condition, and a refused condition never resolves the `requires` guard.
+Cheap, in-process checks run before anything that reads external state.
+
+> **`user` is empty under `occ`.** The CLI has no session, so `user.uid` is an
+> empty string and `user.groups` an empty list on every `occ`-driven call.
+> Because a condition is fail-closed, one that reads `user.uid` refuses every
+> CLI transition unless it is written to allow for that. Put identity checks in
+> `authorization`, which exists for exactly that, and keep `condition` reading
+> `object` and `previous`.
+
+#### Failure is closed, not open
+
+An expression that cannot be evaluated for the object at hand refuses the
+transition; it never allows one. That is the safe default for a gate, but it
+has a sharp edge: a mistyped `var` path, `object.denialGrund` instead of
+`object.denialGround`, resolves to `null`, which is a legal JSONLogic
+evaluation, not an error. Nothing catches that at schema-save time, because the
+expression is well-formed. When a condition does not hold, the listener logs a
+debug line naming the schema, the transition action and the field, so a
+mistyped path is diagnosable from the log instead of reported as "the button
+does nothing."
+
+#### Graph mode refuses `condition`
+
+A `graph`-mode lifecycle (see above) does not support `condition` at all. The
+schema-save validator refuses it with `lifecycle-condition-graph-unsupported`
+instead of silently ignoring it. Graph-mode moves are derived and enforced
+inside `TransitionEngine`, not on the ordinary object-save path, so a condition
+declared on a `graph` block would hold on one route and not the other: an
+author who wrote it would believe a state is unreachable when it is one direct
+write away. Refusing the annotation is safer than a gate that only sometimes
+gates. Enforcing `condition` in graph mode is pending save-path enforcement for
+graph transitions.
+
+#### Error codes
+
+| Code | Fires when |
+|---|---|
+| `lifecycle-condition-malformed` | `condition` is not a JSONLogic rule object (a scalar included), is an empty array, or fails `FlowExpression::isValid()` |
+| `lifecycle-message-malformed` | `message` is neither a non-empty string nor a valid per-locale map: no locale keys, an empty locale value, or a `defaultLocale` not present in the map |
+| `lifecycle-condition-unmet` | A matched transition's `condition` evaluates false, or cannot be evaluated, at save time. The response carries the resolved `message` |
+
 ## Standards
 
 | Standard | Role |
