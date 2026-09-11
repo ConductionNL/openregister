@@ -19,13 +19,14 @@ import type { APIRequestContext } from '@playwright/test'
  *
  * WHY TWO OF THE THREE GROUPS ASSERT OVER THE API
  * ----------------------------------------------
- * There is no UI that renders an archival decision. `git grep` over `src/`
- * finds no reference to `_retention`, `recordState`, `disposalDate` or
- * `appraisal` in any `.vue` or `.js` file, so a records officer cannot see a
- * disposal date, an appraisal or a transferred record's immutability anywhere
- * in the app. The decision is currently an API-only contract, and an e2e test
- * cannot assert on screen what the app never draws. The settings group below
- * IS driven through the browser, because that surface does exist.
+ * When this file was written no UI rendered an archival decision: `git grep`
+ * over `src/` found no `_retention`, `recordState`, `disposalDate` or
+ * `appraisal`. The object detail view now has a Metadata tab that mounts
+ * `CnObjectMetadataWidget`, whose Archiving group draws the decision, and
+ * `object-metadata-archival.spec.ts` reads it off the page. The two groups
+ * below stay on the API because what they assert (which rule fired, every
+ * record-state spelling, the refused delete) is the resolver's contract, not
+ * its rendering. The settings group IS driven through the browser.
  *
  * The alternative — filing these under `tests/e2e/api-direct/` per the gate-19
  * convention — would mean they never execute: `playwright.config.ts` excludes
