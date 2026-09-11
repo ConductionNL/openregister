@@ -29,7 +29,7 @@
 ## 5. Documentation and quality gate
 
 - [x] 5.1 Document `autoWhen` and `executionMode` in the lifecycle annotation reference: the four-key document and how `object` differs from a `condition`'s, sync as the default and why, the async decide-now-apply-if-unchanged contract, the ambiguity and shadow refusals, the cap and that it is fixed, the acting identity and the session-less CLI case, create firing, system operations and bulk, revert and deferred-create behaviour, the graph refusal, and the async-flow loop the cap does not bound. Verify the reference carries one worked example per execution mode.
-- [ ] 5.2 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and fix every finding on the touched files, pre-existing ones included. Verify by exit code 0.
+- [x] 5.2 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and fix every finding on the touched files, pre-existing ones included. Verify by exit code 0.
 
 ## Acceptance criteria
 
@@ -71,3 +71,9 @@
   record marked inside a boundary, so a listener-side drain is inert. That
   hole was real: nothing tested the ordering the drain depends on. Two tests
   now do, and both are mutation-checked.
+
+- **5.2** was run as its individual tools rather than the `composer check:strict`
+  wrapper, which dies on composer's own 300 second process timeout on a repo this
+  size. PHPCS, PHPMD (both rulesets), PHPStan, Psalm and the 19,779-test unit
+  suite each exit 0 on `development` at 3bf4a357, and CI's six PHP Quality jobs
+  agree on the same commit.
