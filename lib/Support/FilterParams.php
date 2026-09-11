@@ -174,7 +174,7 @@ final class FilterParams {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
 	public static function forAggregation(array $bracket, array $params, array $controlParams, array $properties): array {
-		$reserved = array_merge($controlParams, self::AGGREGATION_ROUTE_PARAMS, [self::FILTER_KEY]);
+		$reserved = self::reservedForAggregation(controlParams: $controlParams);
 		$filter = [];
 		$unknown = [];
 
@@ -220,7 +220,7 @@ final class FilterParams {
 	 * @return bool True when at least one parameter is a candidate filter name.
 	 */
 	public static function hasBareCandidates(array $params, array $controlParams): bool {
-		$reserved = array_merge($controlParams, self::AGGREGATION_ROUTE_PARAMS, [self::FILTER_KEY]);
+		$reserved = self::reservedForAggregation(controlParams: $controlParams);
 		foreach (array_keys($params) as $key) {
 			if (self::isFilterName(key: $key, reserved: $reserved) === true) {
 				return true;
@@ -310,6 +310,23 @@ final class FilterParams {
 			]
 		);
 	}//end warnUnknownKeys()
+
+	/**
+	 * The names an aggregation action never reads as a filter: its own control
+	 * parameters, the route placeholders, and `filter` itself.
+	 *
+	 * One builder for both readers on purpose. {@see hasBareCandidates()}
+	 * decides whether the schema is worth resolving and {@see forAggregation()}
+	 * decides what filters; if those two disagreed, a key could be called a
+	 * candidate and then dropped, or skipped before it was ever considered.
+	 *
+	 * @param string[] $controlParams The action's control parameters.
+	 *
+	 * @return string[] Every name that is never a filter on this action.
+	 */
+	private static function reservedForAggregation(array $controlParams): array {
+		return array_merge($controlParams, self::AGGREGATION_ROUTE_PARAMS, [self::FILTER_KEY]);
+	}//end reservedForAggregation()
 
 	/**
 	 * Whether a request key can name a property filter at all.
