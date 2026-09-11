@@ -54,6 +54,35 @@ const JSON_HEADERS = {
 
 const runId = makeRunId()
 
+/**
+ * Remove every object a describe block created, then its schema and register.
+ *
+ * Soft-delete first, then a hard DELETE on /api/deleted/{uuid}, because a
+ * soft-deleted row would otherwise survive the run. Admission to the CI
+ * allowlist requires a spec that writes to clean up after itself.
+ */
+async function purge(
+	request: APIRequestContext,
+	register: SeededRegister | undefined,
+	schema: SeededSchema | undefined,
+	uuids: string[],
+): Promise<void> {
+	for (const uuid of uuids) {
+		if (register?.id && schema?.id) {
+			await request
+				.delete(`${API}/objects/${register.id}/${schema.id}/${uuid}`)
+				.catch(() => {})
+		}
+		await request.delete(`${API}/deleted/${uuid}`).catch(() => {})
+	}
+	if (schema?.id) {
+		await deleteSchema(request, schema.id)
+	}
+	if (register?.id) {
+		await deleteRegister(request, register.id)
+	}
+}
+
 /** The bezwaar shape: a status field plus the motivation a decision requires. */
 const PROPERTIES = {
 	status: {
@@ -90,6 +119,7 @@ const LIFECYCLE = {
 test.describe('lifecycle transition conditions', () => {
 	let register: SeededRegister
 	let schema: SeededSchema
+	const createdIds: string[] = []
 
 	test.beforeAll(async ({ request }) => {
 		register = await createRegister(request, runId)
@@ -104,19 +134,17 @@ test.describe('lifecycle transition conditions', () => {
 	// still runs when an assertion fails — a failed run must not leave fixture
 	// registers behind for the next one to trip over.
 	test.afterAll(async ({ request }) => {
-		if (schema?.id) {
-			await deleteSchema(request, schema.id)
-		}
-		if (register?.id) {
-			await deleteRegister(request, register.id)
-		}
+		await purge(request, register, schema, createdIds)
 	})
 
-	test('a transition whose condition does not hold is refused', async ({ request }) => {
+	test('a transition whose condition does not hold is refused', async ({
+		request,
+	}) => {
 		const created = await createObject(request, register.id, schema.id, {
 			status: 'in-behandeling',
 		})
 		const uuid = objectId(created)
+		createdIds.push(uuid as string)
 		expect(uuid, 'created object has an id').toBeTruthy()
 
 		const resp = await request.put(
@@ -146,34 +174,52 @@ test.describe('lifecycle transition conditions', () => {
 		// `getObject` returns an {status, body} envelope, so the lifecycle
 		// field is read off `body` — reading `.status` here would assert the
 		// HTTP code against a state name and pass for the wrong reason.
-		const after = await getObject(request, register.id, schema.id, uuid as string)
+		const after = await getObject(
+			request,
+			register.id,
+			schema.id,
+			uuid as string,
+		)
 		expect(after.status, 'the object is still readable').toBe(200)
 		expect(after.body?.status, 'the refused write did not land').toBe(
 			'in-behandeling',
 		)
 	})
 
-	test('the same transition passes once its condition holds', async ({ request }) => {
+	test('the same transition passes once its condition holds', async ({
+		request,
+	}) => {
 		const created = await createObject(request, register.id, schema.id, {
 			status: 'in-behandeling',
 		})
 		const uuid = objectId(created)
+		createdIds.push(uuid as string)
 
 		const resp = await request.put(
 			`${API}/objects/${register.id}/${schema.id}/${uuid}`,
 			{
 				headers: JSON_HEADERS,
-				data: { status: 'besloten', motivering: 'Het bezwaar is ongegrond.' },
+				data: {
+					status: 'besloten',
+					motivering: 'Het bezwaar is ongegrond.',
+				},
 			},
 		)
 
 		expect(resp.status(), 'a motivated decision is allowed').toBe(200)
 
-		const after = await getObject(request, register.id, schema.id, uuid as string)
+		const after = await getObject(
+			request,
+			register.id,
+			schema.id,
+			uuid as string,
+		)
 		expect(after.body?.status, 'the allowed write landed').toBe('besloten')
 	})
 
-	test('the named-action route refuses the same transition', async ({ request }) => {
+	test('the named-action route refuses the same transition', async ({
+		request,
+	}) => {
 		// The other way in. `TransitionEngine::transition()` does not check
 		// conditions itself; it reaches the same listener through saveObject.
 		// If that ever stopped being true, this route would silently become a
@@ -187,6 +233,7 @@ test.describe('lifecycle transition conditions', () => {
 			status: 'in-behandeling',
 		})
 		const uuid = objectId(created)
+		createdIds.push(uuid as string)
 
 		const resp = await request.post(`${API}/objects/${uuid}/transition`, {
 			headers: JSON_HEADERS,
@@ -196,19 +243,27 @@ test.describe('lifecycle transition conditions', () => {
 		expect(resp.status(), 'the named action is refused too').toBe(422)
 		expect(JSON.stringify(await resp.json())).toContain('motivering')
 
-		const after = await getObject(request, register.id, schema.id, uuid as string)
+		const after = await getObject(
+			request,
+			register.id,
+			schema.id,
+			uuid as string,
+		)
 		expect(after.body?.status, 'the refused action did not land').toBe(
 			'in-behandeling',
 		)
 	})
 
-	test('a transition declaring no condition is unaffected', async ({ request }) => {
+	test('a transition declaring no condition is unaffected', async ({
+		request,
+	}) => {
 		// The regression guard. Conditions are additive, so the transition that
 		// declares none must behave exactly as it did before the feature.
 		const created = await createObject(request, register.id, schema.id, {
 			status: 'in-behandeling',
 		})
 		const uuid = objectId(created)
+		createdIds.push(uuid as string)
 
 		const resp = await request.put(
 			`${API}/objects/${register.id}/${schema.id}/${uuid}`,
@@ -274,7 +329,15 @@ test.describe('lifecycle transition conditions', () => {
  */
 const MOCK_REGISTER = JSON.parse(
 	fs.readFileSync(
-		path.resolve(__dirname, '..', '..', '..', 'lib', 'Settings', 'openregister_mock_register.json'),
+		path.resolve(
+			__dirname,
+			'..',
+			'..',
+			'..',
+			'lib',
+			'Settings',
+			'openregister_mock_register.json',
+		),
 		'utf-8',
 	),
 )
@@ -285,6 +348,7 @@ const REFUSE = DSAR_LIFECYCLE.transitions.refuse
 test.describe('the mock register refuse example', () => {
 	let register: SeededRegister
 	let schema: SeededSchema
+	const createdIds: string[] = []
 	const properties = {
 		[DSAR_LIFECYCLE.field]: DSAR.properties[DSAR_LIFECYCLE.field],
 		denialGround: DSAR.properties.denialGround,
@@ -306,23 +370,16 @@ test.describe('the mock register refuse example', () => {
 	})
 
 	test.afterAll(async ({ request }) => {
-		if (schema?.id) {
-			await deleteSchema(request, schema.id)
-		}
-		if (register?.id) {
-			await deleteRegister(request, register.id)
-		}
+		await purge(request, register, schema, createdIds)
 	})
 
 	/** Attempt `refuse` with the given denial ground; returns the response. */
-	async function attemptRefuse(
-		request: APIRequestContext,
-		denialGround?: string,
-	) {
+	async function attemptRefuse(request: APIRequestContext, denialGround?: string) {
 		const created = await createObject(request, register.id, schema.id, {
 			[DSAR_LIFECYCLE.field]: DSAR_LIFECYCLE.initial,
 		})
 		const uuid = objectId(created) as string
+		createdIds.push(uuid)
 		const data: Record<string, unknown> = { [DSAR_LIFECYCLE.field]: REFUSE.to }
 		if (denialGround !== undefined) {
 			data.denialGround = denialGround
@@ -334,7 +391,9 @@ test.describe('the mock register refuse example', () => {
 		return { resp, uuid }
 	}
 
-	test('refusing without a denial ground is refused, with the shipped message', async ({ request }) => {
+	test('refusing without a denial ground is refused, with the shipped message', async ({
+		request,
+	}) => {
 		const { resp, uuid } = await attemptRefuse(request)
 
 		expect(resp.status()).toBe(422)
@@ -343,7 +402,7 @@ test.describe('the mock register refuse example', () => {
 		// accept either declared translation, but nothing else.
 		const declared = Object.values(REFUSE.message) as string[]
 		expect(
-			declared.some(text => serialised.includes(text)),
+			declared.some((text) => serialised.includes(text)),
 			`the refusal carries one of the shipped messages: ${declared.join(' | ')}`,
 		).toBe(true)
 
@@ -351,7 +410,9 @@ test.describe('the mock register refuse example', () => {
 		expect(after.body?.[DSAR_LIFECYCLE.field]).toBe(DSAR_LIFECYCLE.initial)
 	})
 
-	test('refusing with the not-applicable ground is refused', async ({ request }) => {
+	test('refusing with the not-applicable ground is refused', async ({
+		request,
+	}) => {
 		const { resp } = await attemptRefuse(request, 'not-applicable')
 		expect(resp.status()).toBe(422)
 	})

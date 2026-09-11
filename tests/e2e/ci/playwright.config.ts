@@ -195,6 +195,26 @@ export default defineConfig({
 		// trail fails loudly before this skip is ever reachable.
 		'workflows/object-lifecycle-workflows.spec.ts',
 
+		// Admitted 2026-09-11 with the change it covers (#3601, declarative
+		// lifecycle conditions). It is the only proof that a refused condition
+		// refuses on the REAL save path: every unit test drives the listener
+		// with a mocked schema mapper, and the defect this change found (a
+		// broken condition stored anyway, then evaluated as a truthy literal)
+		// was invisible to all of them.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds through `_fixtures.ts`. The one file it reads
+		//      from disk is lib/Settings/openregister_mock_register.json, which
+		//      ships in the repo; it needs no pre-seeded rows, occ or docker.
+		//   2. Self-cleaning: records every object it creates and, in afterAll,
+		//      soft-deletes then hard-deletes each via /api/deleted/{uuid}
+		//      before dropping its schema and register, the same shape as the
+		//      spec above.
+		//   3. No conditional asserts: every assertion is unconditional, and
+		//      each refusal is re-read so a 422 that wrote anyway still fails.
+		//   4. No test.skip at all.
+		'workflows/lifecycle-conditions.spec.ts',
+
 		// Admitted 2026-08-29. The ADR-111 demo-data step, which had no coverage
 		// here at all: this file shipped to development with the setup wizard and
 		// never ran, because nothing runs unless it is named in this list. It is
