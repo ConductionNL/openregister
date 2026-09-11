@@ -5013,6 +5013,13 @@ class ObjectsController extends Controller {
 			return $mergedData;
 		}
 
+		// A container may answer with something other than a converter, or with
+		// nothing at all. Returning the data unchanged keeps the pre-existing
+		// refusal; calling a method on null would turn a patch into a fatal.
+		if (($converter instanceof SchemaTypeConverter) === false) {
+			return $mergedData;
+		}
+
 		return $converter->restoreStringTypedValues(
 			data: $mergedData,
 			properties: ($schemaEntity->getProperties() ?? []),

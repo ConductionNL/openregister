@@ -232,6 +232,48 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 		);
 	}//end testPatchLeavesAnArrayTheCallerSuppliedAloneSoValidationStillRefusesIt()
 
+	public function testAContainerThatAnswersWithNoConverterLeavesThePatchAloneRatherThanFatal(): void {
+		// A container can answer with null. Calling a method on that would turn
+		// a patch into a fatal error, which is a worse failure than the
+		// validation refusal this whole change exists to remove.
+		$emptyContainer = $this->createMock(ContainerInterface::class);
+		$emptyContainer->method('get')->willReturn(null);
+
+		$this->controller = new ObjectsController(
+			'openregister',
+			$this->request,
+			$this->createMock(IAppConfig::class),
+			$this->createMock(IAppManager::class),
+			$emptyContainer,
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->objectService,
+			$this->userSession,
+			$this->groupManager,
+			$this->createMock(ExportService::class),
+			$this->createMock(ImportService::class),
+			$this->createMock(WebhookService::class),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$captured = null;
+		$this->stubPatch(
+			['title' => 'Old', 'statusHistory' => json_decode(self::STORED, true)],
+			$this->stringSchemaProperties(),
+			['title' => 'probe'],
+			$captured
+		);
+
+		$result = $this->controller->patch('1', '2', 'uuid-123', $this->objectService);
+
+		$this->assertSame(200, $result->getStatus(), 'the patch ran rather than fatalling');
+		$this->assertIsArray(
+			$captured['statusHistory'],
+			'nothing was restored, so the caller keeps the behaviour it had before this change'
+		);
+	}//end testAContainerThatAnswersWithNoConverterLeavesThePatchAloneRatherThanFatal()
+
 	public function testPatchDoesNotEncodeAPropertyTheSchemaReallyCallsAnArray(): void {
 		$captured = null;
 		$this->stubPatch(
