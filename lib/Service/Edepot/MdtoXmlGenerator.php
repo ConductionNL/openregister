@@ -41,10 +41,20 @@ use Psr\Log\LoggerInterface;
  *
  * Its output validates against `lib/Resources/mdto/MDTO-XML1.0.1.xsd`, a
  * verbatim copy of the Nationaal Archief's schema. `MdtoXmlGeneratorXsdTest`
- * runs `DOMDocument::schemaValidate()` over documents for representative
- * objects, with and without files and optional elements, so the claim is
- * tested rather than asserted. Where the XSD cannot see a problem because the
- * value is a free string, the rule is stated at the element below.
+ * validates documents for representative objects, with and without files and
+ * optional elements, so the claim is tested rather than asserted. Where the
+ * XSD cannot see a problem because the value is a free string, the rule is
+ * stated at the element below.
+ *
+ * ## If you validate at runtime, use schemaValidateSource()
+ *
+ * Nextcloud's XXE protection sets libxml's external-entity loader to return
+ * null, so `DOMDocument::schemaValidate($path)` cannot even read the schema
+ * from disk inside a running instance: it fails with "Failed to load external
+ * entity because the resolver function returned null". Read the file with
+ * `file_get_contents()` and pass it to `schemaValidateSource()`, which never
+ * consults the loader for the top-level schema. That is enough because the
+ * vendored XSD imports and includes nothing; do not loosen the loader.
  *
  * ## Where MDTO requires a value openregister cannot source
  *

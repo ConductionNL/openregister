@@ -340,13 +340,25 @@ recorded beside it in `version.json`. The licence is CC BY-SA: "Het Nationaal
 Archief hanteert de licentie CC BY SA voor al diens kennisproducten en dus ook
 voor MDTO" (Forum Standaardisatie, Intakeadvies MDTO, FS-20241002.3C).
 
-`MdtoXmlGeneratorXsdTest` MUST hold this true by running
-`DOMDocument::schemaValidate()` over documents for representative objects,
-with and without files and with and without the optional elements, and MUST
-name libxml's own error lines when a document fails. It MUST include a
-negative control (a document the schema rejects) and a positive control (the
-Nationaal Archief's own example documents), so neither a schema that failed
-to load nor a validator that accepts anything can make it pass. The vendored
+`MdtoXmlGeneratorXsdTest` MUST hold this true by validating documents for
+representative objects, with and without files and with and without the
+optional elements, and MUST name libxml's own error lines when a document
+fails.
+
+Validation MUST work under Nextcloud's XXE protection, which sets libxml's
+external-entity loader to return null. `DOMDocument::schemaValidate($path)`
+cannot read the schema from disk under that loader, so validation MUST read
+the schema's contents and use `schemaValidateSource()`. That suffices because
+the vendored XSD imports and includes nothing; the loader MUST NOT be
+loosened to make validation work. The test MUST install that null loader for
+its own duration, because CI runs it inside a booted Nextcloud and a local run
+does not, and a test that only passes without the loader passes for the wrong
+reason. It MUST include a
+negative control (a document the schema rejects, where the rejection must be
+the schema naming the missing element and not a failure to load the schema)
+and a positive control (the Nationaal Archief's own example documents), so
+neither a schema that failed to load nor a validator that accepts anything
+can make it pass. The vendored
 schema's checksum MUST be pinned, so the file the export is held to cannot
 change unnoticed.
 

@@ -257,8 +257,10 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 	/**
 	 * Negative control: the validator really rejects a non-conforming document.
 	 *
-	 * Without this, a validator that could not load the schema, or that
-	 * accepted anything, would make every case above pass for no reason.
+	 * Without this, a validator that accepted anything would make every case
+	 * above pass for no reason. It must also be the SCHEMA that rejects: a
+	 * schema that failed to load rejects everything too, and that is not a
+	 * verdict on the document.
 	 *
 	 * @return void
 	 */
@@ -271,6 +273,15 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 		);
 
 		$this->assertNotSame([], $errors, 'A document missing identificatie was accepted, so the validator is not validating');
+
+		// A rejection only counts if the SCHEMA made it. Under Nextcloud's
+		// null entity loader, schemaValidate(path) fails to load the schema
+		// and returns errors for every document, which satisfied the check
+		// above while proving nothing.
+		$joined = implode("\n", $errors);
+		$this->assertStringNotContainsString('Failed to load external entity', $joined, 'The schema never loaded');
+		$this->assertStringNotContainsString('Failed to parse the XML resource', $joined, 'The schema never loaded');
+		$this->assertStringContainsString('identificatie', $joined, 'The rejection must name the missing element');
 	}//end testTheValidatorRejectsANonConformingDocument()
 
 	/**
@@ -318,9 +329,16 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 		$previous = libxml_use_internal_errors(true);
 		libxml_clear_errors();
 
+		// schemaValidateSource over the schema's CONTENTS, never
+		// schemaValidate(path). Reading the file is plain PHP I/O, outside
+		// libxml's external-entity loader, so it works under Nextcloud's XXE
+		// protection without loosening it. That is sufficient only because
+		// MDTO-XML1.0.1.xsd imports and includes nothing: a schema that did
+		// would still ask the loader for those.
 		$dom = new DOMDocument();
 		$loaded = $dom->loadXML($xml);
-		$valid = ($loaded === true && $dom->schemaValidate(self::XSD) === true);
+		$schema = (string)file_get_contents(self::XSD);
+		$valid = ($loaded === true && $dom->schemaValidateSource($schema) === true);
 
 		$errors = [];
 		foreach (libxml_get_errors() as $error) {
