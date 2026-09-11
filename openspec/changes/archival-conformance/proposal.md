@@ -102,8 +102,28 @@ and nothing in the code says which.
 
 The resolver maps `nog_te_archiveren` onto `active` so the abstract answer is
 coherent — a record "still to be archived" is live and not yet transferred. That
-makes `_retention` usable. **It does not fix the two writers**, which still
-disagree, and a single-vocabulary decision belongs in the next pass.
+makes `_retention` usable.
+
+**RESOLVED.** `retention.archiefstatus` now carries the Archiefwet lifecycle in
+English — `active`, `semi_static`, `transferred`, `destroyed` — defined once in
+`lib/Service/Archival/RecordState.php` and shared with the abstract layer.
+`RetentionService`, `EdepotTransferService` and `DestructionExecutionJob` all
+write from it.
+
+Reads accept the old spellings and there is no migration, deliberately. A guard
+that stopped recognising `overgebracht` would unlock every record an existing
+install had already handed to an e-Depot, and a destruction sweep that stopped
+recognising `nog_te_archiveren` would silently skip every pre-existing record —
+the direction that keeps personal data past its lawful term. So each state
+carries an alias list holding its English name and the Dutch spellings it
+replaces, and every comparison goes through that list. Both directions are
+mutation-checked: dropping the Dutch aliases reddens the immutability tests, and
+widening one alias list to swallow the live states reddens the mutable tests.
+
+`tmlo.archiefstatus` KEEPS ITS DUTCH SPELLINGS. It is its own block with its own
+transition matrix and its own MDTO export mapping, and moving it is a separate
+change. The two writers no longer disagree about what `retention.archiefstatus`
+means, which was the defect; the abstract layer continues to read both.
 
 ### B — Selectielijst provenance is not reconstructable
 
@@ -243,9 +263,53 @@ Split by cost. Only the first group is proposed for immediate implementation.
 
 ### Next — provenance and derivation
 
-7. **B1** — record the selectielijst version alongside its name.
-8. **C1** — implement the six missing `afleidingswijzen`. C2 makes them refuse
-   in the meantime; this makes them work.
+7. ~~**B1** — record the selectielijst version alongside its name.~~ **DONE.**
+   `selectionListVersion` and `selectionListConsultedAt` are written beside
+   `selectielijstBron`, taken from the row's own `versie` where it declares
+   one and from the stored entry's `@self.version` where it does not. They
+   surface abstractly as `sourceVersion` and `sourceConsultedAt`.
+8. ~~**C1** — implement the six missing `afleidingswijzen`.~~ **DONE.** All nine
+   are supported. Five of the six that were missing turned out to share one
+   mechanic — follow a reference held on this record, read a date property off
+   the record it points at — so openregister implements that mechanic once,
+   configured by `sourceRelation` and `sourceRelationProperty`, and never
+   learns what a zaak or a besluit is. `ander_datumkenmerk` reads a named date
+   property on the record itself via `sourceDateProperty`.
+
+   The six refuse to produce a disposal date at all when their source cannot be
+   resolved, rather than falling back to the creation date. `afgehandeld` and
+   `termijn` keep that fallback, because a record with no recorded closure was
+   created and has been open since, which is defensible. `eigenschap` keeps it
+   too, deliberately: it predates the change and existing installs may rely on
+   it, so moving it is a separate decision.
+
+### Found while implementing, and fixed here
+
+**F1 · The pending-destruction-list exclusion was a no-op.**
+
+`getObjectsOnPendingDestructionLists()` filtered on `object->status`.
+`MagicSearchHandler` compares a filter key against the schema's OWN property
+names and turns anything it does not recognise into `1 = 0` rather than
+raising, so the query returned nothing on every run. The exclusion it feeds is
+"objects already on a pending destruction list", so every sweep re-listed
+objects that were already awaiting approval, and nothing said so. The key is
+now `status`.
+
+**F2 · `DestructionService::findEligibleObjects()` cannot return anything.
+NOT FIXED HERE.**
+
+It calls `MagicMapper::findAll()` with no `register`/`schema`, and `findAll()`
+returns `[]` immediately in that case. It also filters on
+`retention.archiefstatus`, a dotted JSON path the search handler does not
+support outside the TMLO-specific branch, which would compile to `1 = 0` even
+with the context supplied.
+
+It has no production caller: `DestructionCheckJob` uses
+`RetentionService::findEligibleForDestruction()`, which reads the objects table
+directly and filters in PHP, and `TransferCheckJob::findEligibleObjects()` is
+its own separate method that returns `[]` as a documented no-op. So nothing is
+broken by it today. It is recorded here because it looks like a working query
+and is not, and because the next person to wire it up will believe it works.
 
 ### Later — export completeness
 

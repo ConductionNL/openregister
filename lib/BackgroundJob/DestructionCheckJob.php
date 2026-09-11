@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -230,7 +231,11 @@ class DestructionCheckJob extends TimedJob {
 					$actionDate = $retention['archiefactiedatum'] ?? null;
 					$nominatie = $retention['archiefnominatie'] ?? null;
 
-					if ($actionDate === null || $status !== 'nog_te_archiveren') {
+					// Every spelling that means live. Matching only the English
+					// one would make every pre-existing record invisible to the
+					// pre-destruction warning, so the first a records officer
+					// would hear of a destruction is after it happened.
+					if ($actionDate === null || in_array($status, RecordState::ACTIVE_ALIASES, true) === false) {
 						continue;
 					}
 

@@ -46,6 +46,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -74,23 +76,23 @@ class RetentionService {
 
 	/**
 	 * Valid archiefstatus values.
+	 *
+	 * GAP A4. One vocabulary now, the Archiefwet lifecycle in English, shared
+	 * with TmloService and with the abstract `_retention` layer. The Dutch
+	 * spellings this service and TmloService each used are accepted on READ
+	 * through {@see RecordState}'s alias lists, because stored data carries
+	 * whatever was current when it was written and there is no migration.
+	 *
+	 * @var string[]
 	 */
-	private const VALID_STATUSES = [
-		'nog_te_archiveren',
-		'gearchiveerd',
-		'vernietigd',
-		'overgebracht',
-	];
+	private const VALID_STATUSES = RecordState::ALL_ALIASES;
 
 	/**
 	 * Immutable archival statuses (no further updates allowed).
+	 *
+	 * @var string[]
 	 */
-	private const IMMUTABLE_STATUSES = ['vernietigd', 'overgebracht'];
-
-	/**
-	 * Valid afleidingswijze methods.
-	 */
-	private const VALID_AFLEIDINGSWIJZEN = ['afgehandeld', 'eigenschap', 'termijn'];
+	private const IMMUTABLE_STATUSES = RecordState::IMMUTABLE_ALIASES;
 
 	/**
 	 * Constructor.
@@ -104,6 +106,12 @@ class RetentionService {
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
 	 * @param IDBConnection $db Database connection for eligibility queries
+	 * @param ArchiveActionDateCalculator $actionDateCalculator Calculates the archiefactiedatum
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
+	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
+	 *              arrived by EXTRACTING logic out of this class rather than adding any: collapsing them
+	 *              behind a parameter object would hide the dependency graph without reducing it.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectMapper,
@@ -115,6 +123,7 @@ class RetentionService {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly IDBConnection $db,
+		private readonly ArchiveActionDateCalculator $actionDateCalculator,
 	) {
 	}//end __construct()
 
@@ -147,35 +156,26 @@ class RetentionService {
 			return $object;
 		}
 
-		// Try selectielijst lookup first.
-		$classification = $archiveConfig['classification'] ?? null;
-		$selectielijstEntry = null;
-
-		if ($classification !== null) {
-			$selectielijstEntry = $this->lookupSelectielijstEntry(category: $classification);
-		}
-
-		// Determine nominatie and bewaartermijn (default to schema config).
-		$nominatie = $archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald';
-		$retentionPeriod = $archiveConfig['defaultBewaartermijn'] ?? null;
-		$source = null;
-		if ($selectielijstEntry !== null) {
-			$nominatie = $selectielijstEntry['archiefnominatie'] ?? 'nog_niet_bepaald';
-			$retentionPeriod = $selectielijstEntry['bewaartermijn'] ?? null;
-			$source = $selectielijstEntry['bron'] ?? null;
-		}
-
-		// Apply schema-level override if configured.
-		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
-			$retentionPeriod = $archiveConfig['bewaartermijnOverride'];
-		}
+		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig);
+		$retentionPeriod = $applied['bewaartermijn'];
 
 		// Build archival metadata.
-		$retention['archiefnominatie'] = $nominatie;
-		$retention['archiefstatus'] = 'nog_te_archiveren';
-		$retention['classification'] = $classification;
+		$retention['archiefnominatie'] = $applied['archiefnominatie'];
+		$retention['archiefstatus'] = RecordState::ACTIVE;
+		$retention['classification'] = ($archiveConfig['classification'] ?? null);
 		$retention['bewaartermijn'] = $retentionPeriod;
-		$retention['selectielijstBron'] = $source;
+		$retention['selectielijstBron'] = $applied['selectielijstBron'];
+
+		// GAP B1. WHICH list is not WHICH VERSION OF THAT LIST. The same
+		// category carries different retention periods across revisions, so a
+		// decision recorded with only the list's name cannot be justified once
+		// the list moves. These are English keys beside a Dutch one on purpose:
+		// `selectielijstBron` predates the vocabulary decision and existing
+		// consumers read it, while everything new speaks the abstract layer's
+		// language.
+		foreach ($applied['provenance'] as $key => $value) {
+			$retention[$key] = $value;
+		}
 
 		// Calculate archiefactiedatum if bewaartermijn is set.
 		if ($retentionPeriod !== null) {
@@ -192,7 +192,61 @@ class RetentionService {
 	}//end applyArchivalMetadata()
 
 	/**
+	 * Decide the nominatie, the retention period and where they came from.
+	 *
+	 * Three sources in precedence order: the selectielijst entry the schema's
+	 * classification points at, then the schema's own defaults, then the
+	 * schema's explicit `bewaartermijnOverride`, which wins over both because
+	 * it is a deliberate local decision rather than a fallback.
+	 *
+	 * @param array $archiveConfig The schema's archive block
+	 *
+	 * @return array{archiefnominatie: string, bewaartermijn: string|null, selectielijstBron: string|null, provenance: array<string, string>}
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function resolveArchivalDefaults(array $archiveConfig): array {
+		$applied = [
+			'archiefnominatie' => ($archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald'),
+			'bewaartermijn' => ($archiveConfig['defaultBewaartermijn'] ?? null),
+			'selectielijstBron' => null,
+			'provenance' => [],
+		];
+
+		$classification = $archiveConfig['classification'] ?? null;
+		$entry = null;
+		if ($classification !== null) {
+			$entry = $this->findSelectielijstEntry(category: $classification);
+		}
+
+		if ($entry !== null) {
+			$data = $entry->getObject();
+			$applied['archiefnominatie'] = ($data['archiefnominatie'] ?? 'nog_niet_bepaald');
+			$applied['bewaartermijn'] = ($data['bewaartermijn'] ?? null);
+			$applied['selectielijstBron'] = ($data['bron'] ?? null);
+			$applied['provenance'] = $this->selectielijstProvenance(entry: $entry);
+		}
+
+		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
+			$applied['bewaartermijn'] = $archiveConfig['bewaartermijnOverride'];
+		}
+
+		return $applied;
+	}//end resolveArchivalDefaults()
+
+
+
+
+
+
+
+	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
+	 *
+	 * Delegates to {@see ArchiveActionDateCalculator}, which owns the whole
+	 * question of where a retention period starts counting from and what to do
+	 * when it cannot be answered. Kept here because callers and the spec both
+	 * name this method.
 	 *
 	 * @param ObjectEntity $object The object to calculate for
 	 * @param Schema $schema The schema with afleidingswijze config
@@ -208,135 +262,12 @@ class RetentionService {
 		Schema $schema,
 		string $retentionPeriod,
 	): ?string {
-		$archiveConfig = $schema->getArchive();
-		$afleidingswijze = $archiveConfig['afleidingswijze'] ?? 'afgehandeld';
-
-		// GAP C2. VALID_AFLEIDINGSWIJZEN was declared and NEVER REFERENCED, so
-		// a schema configured with one of ZGW's six other derivation methods
-		// was not rejected, not warned about and not logged: determineBrondatum
-		// fell through `default: return null` and the date was computed from
-		// the fallback instead. A permit that must run from
-		// `ingangsdatum_besluit` silently ran from somewhere else.
-		//
-		// Refusing is the honest answer. No date at all is a visible gap a
-		// records officer can act on; a plausible wrong date is not.
-		if (in_array($afleidingswijze, self::VALID_AFLEIDINGSWIJZEN, true) === false) {
-			$this->logger->error(
-				'[RetentionService] Unsupported afleidingswijze; no archiefactiedatum calculated',
-				[
-					'afleidingswijze' => $afleidingswijze,
-					'supported' => self::VALID_AFLEIDINGSWIJZEN,
-					'objectUuid' => $object->getUuid(),
-				]
-			);
-
-			return null;
-		}
-
-		try {
-			$interval = new DateInterval($retentionPeriod);
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'[RetentionService] Invalid bewaartermijn format: ' . $retentionPeriod,
-				['exception' => $e]
-			);
-			return null;
-		}
-
-		$brondatum = $this->determineBrondatum(object: $object, schema: $schema, afleidingswijze: $afleidingswijze);
-
-		if ($brondatum === null) {
-			// The object's CREATED date, which is what this comment always
-			// claimed and what the code did not do: `new DateTime()` is *now*,
-			// so two identical records processed a year apart got disposal
-			// dates a year apart, and a record recalculated long after the fact
-			// got one far later than lawful. Gap C3 in
-			// openspec/changes/archival-conformance.
-			$brondatum = $object->getCreated();
-			if ($brondatum === null) {
-				$brondatum = new DateTime();
-			}
-		}
-
-		// Never mutate the entity's own DateTime: `->add()` below is in-place,
-		// and getCreated() hands back the LIVE object, so a disposal-date
-		// calculation would silently move the object's created timestamp.
-		// `clone` rather than DateTime::createFromInterface() because phpmd
-		// refuses static access and every path here already yields a DateTime.
-		$brondatum = clone $brondatum;
-
-		// For 'termijn' method, add procestermijn first.
-		if ($afleidingswijze === 'termijn') {
-			$procestermijn = $archiveConfig['procestermijn'] ?? null;
-			if ($procestermijn !== null) {
-				try {
-					$brondatum->add(new DateInterval($procestermijn));
-				} catch (Exception $e) {
-					$this->logger->warning(
-						'[RetentionService] Invalid procestermijn format: ' . $procestermijn,
-						['exception' => $e]
-					);
-				}
-			}
-		}
-
-		$brondatum->add($interval);
-
-		return $brondatum->format('Y-m-d');
+		return $this->actionDateCalculator->calculate(
+			object: $object,
+			schema: $schema,
+			retentionPeriod: $retentionPeriod
+		);
 	}//end calculateArchiveActionDate()
-
-	/**
-	 * Determine the brondatum (source date) based on afleidingswijze.
-	 *
-	 * @param ObjectEntity $object The object
-	 * @param Schema $schema The schema
-	 * @param string $afleidingswijze The derivation method
-	 *
-	 * @return DateTime|null The source date or null
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 */
-	private function determineBrondatum(
-		ObjectEntity $object,
-		Schema $schema,
-		string $afleidingswijze,
-	): ?DateTime {
-		$archiveConfig = $schema->getArchive();
-		$objectData = $object->getObject();
-
-		switch ($afleidingswijze) {
-			case 'eigenschap':
-				$sourceAttribute = $archiveConfig['bronEigenschap'] ?? null;
-				if ($sourceAttribute !== null && isset($objectData[$sourceAttribute]) === true) {
-					try {
-						return new DateTime($objectData[$sourceAttribute]);
-					} catch (Exception $e) {
-						$this->logger->warning(
-							'[RetentionService] Cannot parse bronEigenschap date: ' . $objectData[$sourceAttribute]
-						);
-					}
-				}
-				return null;
-			case 'afgehandeld':
-			case 'termijn':
-				// Check for closure date via configured closure field.
-				$closureField = $archiveConfig['closureField'] ?? null;
-				if ($closureField !== null && isset($objectData[$closureField]) === true) {
-					try {
-						return new DateTime($objectData[$closureField]);
-					} catch (Exception $e) {
-						$this->logger->warning(
-							'[RetentionService] Cannot parse closure date: ' . $objectData[$closureField]
-						);
-					}
-				}
-
-				// Fallback: use current date (object creation).
-				return null;
-			default:
-				return null;
-		}//end switch
-	}//end determineBrondatum()
 
 	/**
 	 * Recalculate archiefactiedatum when a source property changes.
@@ -435,6 +366,33 @@ class RetentionService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function lookupSelectielijstEntry(string $category): ?array {
+		$entry = $this->findSelectielijstEntry(category: $category);
+
+		if ($entry === null) {
+			return null;
+		}
+
+		return $entry->getObject();
+	}//end lookupSelectielijstEntry()
+
+	/**
+	 * Find the selectielijst entry ENTITY for a categorie code.
+	 *
+	 * Split out from lookupSelectielijstEntry because `getObject()` drops the
+	 * `@self` envelope, and the envelope is where the row's own version and
+	 * update timestamp live. Gap B1 in openspec/changes/archival-conformance:
+	 * without them a disposal decision can say WHICH list it came from but not
+	 * WHICH VERSION OF THAT LIST, and the same category carries different
+	 * retention periods across selectielijst revisions. Five years on, that is
+	 * the difference between a decision you can justify and one you cannot.
+	 *
+	 * @param string $category The selectielijst category code (e.g., B1, A1)
+	 *
+	 * @return ObjectEntity|null The entry, or null when unconfigured or absent
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function findSelectielijstEntry(string $category): ?ObjectEntity {
 		$settings = $this->settingsHandler->getArchivalSettingsOnly();
 
 		$registerId = $settings['selectielijstRegister'] ?? null;
@@ -459,8 +417,7 @@ class RetentionService {
 				return null;
 			}
 
-			$entry = $results[0];
-			return $entry->getObject();
+			return $results[0];
 		} catch (Exception $e) {
 			$this->logger->warning(
 				'[RetentionService] Failed to lookup selectielijst entry for ' . $category,
@@ -468,7 +425,72 @@ class RetentionService {
 			);
 			return null;
 		}//end try
-	}//end lookupSelectielijstEntry()
+	}//end findSelectielijstEntry()
+
+	/**
+	 * Read the provenance of a selectielijst entry: which version, read when.
+	 *
+	 * Three sources, in the order an auditor would trust them:
+	 *
+	 *  1. a `versie` or `version` the row itself declares, which is the list
+	 *     publisher's own numbering and the only one that means anything
+	 *     outside this install;
+	 *  2. failing that, the entry object's own `@self.version`, which says
+	 *     which revision of the stored row was read even when the publisher
+	 *     numbered nothing;
+	 *  3. the moment it was read, always, because a version alone does not say
+	 *     whether the decision predates a later revision.
+	 *
+	 * Returns an empty array rather than nulls when nothing can be
+	 * established: an absent key is honest, and a key holding null reads as a
+	 * recorded answer of "no version".
+	 *
+	 * @param ObjectEntity $entry The selectielijst entry that was applied
+	 *
+	 * @return array<string, string> The provenance keys, possibly empty
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function selectielijstProvenance(ObjectEntity $entry): array {
+		$provenance = ['selectionListConsultedAt' => (new DateTime())->format('c')];
+
+		$data = $entry->getObject();
+		$declared = null;
+		if (is_array($data) === true) {
+			$declared = ($data['versie'] ?? ($data['version'] ?? null));
+		}
+
+		$version = $this->stringOrNull(value: $declared);
+		if ($version === null) {
+			$version = $this->stringOrNull(value: $entry->getVersion());
+		}
+
+		if ($version !== null) {
+			$provenance['selectionListVersion'] = $version;
+		}
+
+		return $provenance;
+	}//end selectielijstProvenance()
+
+	/**
+	 * A non-empty trimmed string, or null.
+	 *
+	 * @param mixed $value The candidate value
+	 *
+	 * @return string|null The string, or null when it says nothing
+	 */
+	private function stringOrNull(mixed $value): ?string {
+		if (is_string($value) === false && is_int($value) === false) {
+			return null;
+		}
+
+		$text = trim((string)$value);
+		if ($text === '') {
+			return null;
+		}
+
+		return $text;
+	}//end stringOrNull()
 
 	/**
 	 * Validate that an object is not in an immutable archival status.
@@ -484,11 +506,15 @@ class RetentionService {
 		$retention = $object->getRetention() ?? [];
 		$status = $retention['archiefstatus'] ?? null;
 
-		if ($status === 'vernietigd') {
+		// Both spellings of both states. An install that has not written a
+		// record since the vocabulary landed still holds the Dutch one, and a
+		// guard that stopped recognising `overgebracht` would unlock every
+		// transferred record it has.
+		if (in_array($status, RecordState::DESTROYED_ALIASES, true) === true) {
 			return 'OBJECT_DESTROYED';
 		}
 
-		if ($status === 'overgebracht') {
+		if (in_array($status, RecordState::TRANSFERRED_ALIASES, true) === true) {
 			return 'OBJECT_TRANSFERRED';
 		}
 
@@ -636,7 +662,7 @@ class RetentionService {
 	 * Find objects eligible for destruction.
 	 *
 	 * Objects with archiefactiedatum < now, archiefnominatie = vernietigen,
-	 * archiefstatus = nog_te_archiveren, no active legal hold, and not already
+	 * the record state is still active, no active legal hold, and not already
 	 * on a pending destruction list.
 	 *
 	 * @param array $excludeUuids UUIDs to exclude (already on pending lists)
@@ -680,7 +706,10 @@ class RetentionService {
 					continue;
 				}
 
-				if (($retention['archiefstatus'] ?? '') !== 'nog_te_archiveren') {
+				// Every spelling that means live. Matching only the English one
+				// would make every pre-existing record invisible to this sweep,
+				// which is the direction that keeps personal data past its term.
+				if (in_array(($retention['archiefstatus'] ?? ''), RecordState::ACTIVE_ALIASES, true) === false) {
 					continue;
 				}
 
@@ -738,9 +767,16 @@ class RetentionService {
 			$register = $this->registerMapper->find((int)$registerId);
 			$schema = $this->schemaMapper->find((int)$schemaId);
 
+			// `status`, NOT `object->status`. MagicSearchHandler compares the
+			// filter key against the schema's OWN property names, and anything
+			// it does not recognise becomes `1 = 0` rather than an error, so
+			// this query returned an empty list on every run. The exclusion it
+			// feeds is "objects already on a pending destruction list", which
+			// means every sweep re-listed objects that were already awaiting
+			// approval, and nothing said so.
 			$pendingLists = $this->objectMapper->findAll(
 				filters: [
-					'object->status' => ['in_review', 'approved', 'awaiting_second_approval'],
+					'status' => ['in_review', 'approved', 'awaiting_second_approval'],
 				],
 				register: $register,
 				schema: $schema

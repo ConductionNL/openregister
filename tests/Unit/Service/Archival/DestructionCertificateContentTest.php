@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\RetentionService;
@@ -100,7 +101,8 @@ class DestructionCertificateContentTest extends TestCase {
 			$appConfig,
 			$userSession,
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IDBConnection::class)
+			$this->createMock(IDBConnection::class),
+			$this->createMock(ArchiveActionDateCalculator::class)
 		);
 	}
 

@@ -244,6 +244,7 @@ use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -3172,6 +3173,24 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class,
 			function (ContainerInterface $container) {
 				return new PrometheusRenderer();
+			}
+		);
+
+		// OpenRegister's own IMetricsProvider, under the alias
+		// ProviderMetricSource looks up for this app id. It carries the one
+		// metric the declarative kinds cannot express: overdue is
+		// COALESCE(due_at, expires_at) < now, and a tableCount filter
+		// compares one column to a literal. Registered here, in OR's own
+		// container, because the source resolves the alias from the CALLING
+		// app's container (#390) and OR is the calling app when it scrapes
+		// itself.
+		$context->registerService(
+			\OCA\OpenRegister\AppHost\IMetricsProvider::class . '::' . self::APP_ID,
+			function (ContainerInterface $container) {
+				return new TaskMetricsProvider(
+					mapper: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
+					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class)
+				);
 			}
 		);
 

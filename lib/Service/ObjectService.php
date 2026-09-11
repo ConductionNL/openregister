@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -2679,7 +2680,9 @@ class ObjectService implements ObjectServiceInterface
             );
 
             $retention = ($object->getRetention() ?? []);
-            if (isset($retention['archiefstatus']) === true && $retention['archiefstatus'] === 'overgebracht') {
+            // Both vocabularies: stored data is not migrated, so an install
+            // that transferred a record before GAP A4 holds `overgebracht`.
+            if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true) {
                 throw new OcpDoesNotExistException(
                     'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
                 );

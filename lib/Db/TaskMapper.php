@@ -803,27 +803,76 @@ class TaskMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('run_uuid', $qb->createNamedParameter($criteria->runUuid)));
 		}
 
-		// Derived overdue as a filter: the SAME comparison
-		// TaskTemporalProjection makes — effective deadline
-		// (due_at, else expires_at) strictly before now — expressed as a
-		// predicate, with the clock instant handed in from that one class.
-		// COALESCE(NULL, NULL) < x is NULL, so deadline-less tasks fall out
-		// without a separate null check.
 		if ($criteria->overdueAt !== null) {
-			$qb->andWhere(
-				$qb->createFunction(
-					sprintf(
-						'COALESCE(%s, %s) < %s',
-						$this->quote(identifier: 'due_at'),
-						$this->quote(identifier: 'expires_at'),
-						$qb->createNamedParameter($criteria->overdueAt, IQueryBuilder::PARAM_DATETIME_MUTABLE)
-					)
-				)
-			);
+			$this->applyOverdue(qb: $qb, now: $criteria->overdueAt);
 		}
 
 		$this->applyDueWindow(qb: $qb, criteria: $criteria);
 	}//end applyFilters()
+
+	/**
+	 * Derived overdue as a predicate: the SAME comparison
+	 * TaskTemporalProjection makes — effective deadline (due_at, else
+	 * expires_at) strictly before the given instant — with the clock handed
+	 * in from that one class. COALESCE(NULL, NULL) < x is NULL, so
+	 * deadline-less tasks fall out without a separate null check.
+	 *
+	 * Its own method because two readers need it: the inbox filter and the
+	 * instance-wide overdue count behind the `openregister_tasks_overdue_total`
+	 * gauge. Written twice it would be two definitions of overdue, which is
+	 * exactly what this class's one derivation exists to prevent.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param DateTime      $now The clock instant to compare against.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 */
+	private function applyOverdue(IQueryBuilder $qb, DateTime $now): void {
+		$qb->andWhere(
+			$qb->createFunction(
+				sprintf(
+					'COALESCE(%s, %s) < %s',
+					$this->quote(identifier: 'due_at'),
+					$this->quote(identifier: 'expires_at'),
+					$qb->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+				)
+			)
+		);
+	}//end applyOverdue()
+
+	/**
+	 * How many OPEN tasks are overdue, instance-wide.
+	 *
+	 * No visibility predicate on purpose: this is the operator's gauge, not
+	 * an inbox, and a scrape has no user. Openness is `is_terminal = false`,
+	 * the materialised column Task::TERMINAL_STATES is written into, so a
+	 * completed, terminated or disabled task is never counted however long
+	 * its deadline has been past.
+	 *
+	 * @param DateTime $now The clock instant, from TaskTemporalProjection::now().
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 */
+	public function countOverdueOpen(DateTime $now): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->func()->count('id'), 'total')->from($this->getTableName());
+		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+		$this->applyOverdue(qb: $qb, now: $now);
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false) {
+			return 0;
+		}
+
+		return (int)$row['total'];
+	}//end countOverdueOpen()
 
 	/**
 	 * A due WINDOW, over the same effective deadline the overdue filter and
