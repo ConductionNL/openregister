@@ -238,6 +238,23 @@ export default defineConfig({
 		//   4. No test.skip at all.
 		'workflows/lifecycle-auto-transitions.spec.ts',
 
+		// Admitted 2026-09-11 with the fix it covers: `@self._retention` now
+		// reads the same on create, update, patch and GET. Every unit test
+		// drives the resolver or the read path's strip on its own, and only an
+		// HTTP round trip can show two verbs answering in different shapes.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds its own register and annotated schema through
+		//      the REST controllers. No occ, no docker, no pre-seeded rows.
+		//   2. Self-cleaning, even though its rows are archival. `afterAll`
+		//      first drops `x-openregister-archival` from the schema, which is
+		//      the way out the refusal's own hint names, then deletes each
+		//      object (soft, then hard via /api/deleted/{uuid}), the schema
+		//      and the register. Nothing is left in the registers list.
+		//   3. No conditional asserts: every assertion is unconditional.
+		//   4. No test.skip at all.
+		'workflows/archival-retention-shape.spec.ts',
+
 		// Admitted 2026-08-29. The ADR-111 demo-data step, which had no coverage
 		// here at all: this file shipped to development with the setup wizard and
 		// never ran, because nothing runs unless it is named in this list. It is
