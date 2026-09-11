@@ -1064,7 +1064,17 @@ class ImportHandler {
 
 		$register->setSchemas($merged);
 
-		return $this->registerMapper->update($register);
+		// Persist, but hand back the entity we mutated rather than update()'s
+		// return value. QBMapper::update() returns that same instance, so the
+		// two are identical at runtime; the difference is the declared type.
+		// update() is typed as the generic Entity, and a test double that never
+		// configured it returns a bare Entity stub, which the Register return
+		// type here then rejects with a TypeError — on a path that, before
+		// WOO-563, never wrote at all and so never met that stub
+		// (ImportServiceRegisterAutoCreateTest, CI run of #3638).
+		$this->registerMapper->update($register);
+
+		return $register;
 	}//end linkImportedSchemas()
 
 	/**
