@@ -40,6 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
@@ -3735,8 +3737,8 @@ class MagicMapper extends AbstractObjectMapper {
 					// as UTC (WOO-567). Done inline rather than through
 					// DateTimeNormalizer so this path keeps working without a
 					// resolvable container.
-					$value = \DateTimeImmutable::createFromInterface($value)
-						->setTimezone(new \DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
+					$value = DateTimeImmutable::createFromInterface($value)
+						->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
 						->format(DateTimeNormalizer::DATABASE_FORMAT);
 				} elseif (is_string($value) === true) {
 					// Delegate string parsing to DateTimeNormalizer so that empty/whitespace
@@ -3865,10 +3867,10 @@ class MagicMapper extends AbstractObjectMapper {
 						// from a client that sends an offset.
 						$isCalendarDate = ($propertyFormat === 'date');
 						if ($value instanceof \DateTimeInterface) {
-							$moment = \DateTimeImmutable::createFromInterface($value);
+							$moment = DateTimeImmutable::createFromInterface($value);
 							if ($isCalendarDate === false) {
 								$moment = $moment->setTimezone(
-									new \DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE)
+									new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE)
 								);
 							}
 
