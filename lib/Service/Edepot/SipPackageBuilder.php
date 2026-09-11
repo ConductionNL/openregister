@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
 use DOMDocument;
+use DOMElement;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
@@ -575,31 +576,62 @@ class SipPackageBuilder {
 				$objectDiv->appendChild($fptr);
 			}//end foreach
 
-			foreach (($metadataFiles[$uuid] ?? []) as $metadataFile) {
-				$metadataId = 'MD-' . $fileCounter;
-				$fileCounter++;
-
-				$metadataElement = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
-				$metadataElement->setAttribute('ID', $metadataId);
-				$metadataElement->setAttribute('SIZE', (string)$metadataFile['size']);
-				$metadataElement->setAttribute('MIMETYPE', 'application/xml');
-				$metadataElement->setAttribute('CHECKSUM', $metadataFile['checksum']);
-				$metadataElement->setAttribute('CHECKSUMTYPE', 'SHA-256');
-
-				$metadataLocat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
-				$metadataLocat->setAttribute('LOCTYPE', 'URL');
-				$metadataLocat->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $metadataFile['path']);
-				$metadataElement->appendChild($metadataLocat);
-				$metadataGrp->appendChild($metadataElement);
-
-				$metadataPointer = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
-				$metadataPointer->setAttribute('FILEID', $metadataId);
-				$objectDiv->appendChild($metadataPointer);
-			}//end foreach
+			$fileCounter = $this->appendMetadataFiles(
+				dom: $dom,
+				group: $metadataGrp,
+				objectDiv: $objectDiv,
+				rows: ($metadataFiles[$uuid] ?? []),
+				fileCounter: $fileCounter
+			);
 		}//end foreach
 
 		return $dom->saveXML();
 	}//end generateMetsXml()
+
+	/**
+	 * List an object's MDTO documents in the METS file section.
+	 *
+	 * @param DOMDocument $dom The METS document.
+	 * @param DOMElement $group The METADATA file group.
+	 * @param DOMElement $objectDiv The object's div, which points at them.
+	 * @param array $rows The manifest rows for this object's MDTO documents.
+	 * @param int $fileCounter The running METS file id counter.
+	 *
+	 * @return int The counter after these files.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	private function appendMetadataFiles(
+		DOMDocument $dom,
+		DOMElement $group,
+		DOMElement $objectDiv,
+		array $rows,
+		int $fileCounter,
+	): int {
+		foreach ($rows as $row) {
+			$metadataId = 'MD-' . $fileCounter;
+			$fileCounter++;
+
+			$element = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
+			$element->setAttribute('ID', $metadataId);
+			$element->setAttribute('SIZE', (string)$row['size']);
+			$element->setAttribute('MIMETYPE', 'application/xml');
+			$element->setAttribute('CHECKSUM', $row['checksum']);
+			$element->setAttribute('CHECKSUMTYPE', 'SHA-256');
+
+			$locat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
+			$locat->setAttribute('LOCTYPE', 'URL');
+			$locat->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $row['path']);
+			$element->appendChild($locat);
+			$group->appendChild($element);
+
+			$pointer = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
+			$pointer->setAttribute('FILEID', $metadataId);
+			$objectDiv->appendChild($pointer);
+		}
+
+		return $fileCounter;
+	}//end appendMetadataFiles()
 
 	/**
 	 * Generate PREMIS XML preservation metadata.

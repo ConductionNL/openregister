@@ -196,10 +196,11 @@ class MdtoXmlGenerator {
 		$this->addAggregationLevel(parent: $root, object: $object);
 		$this->addClassification(parent: $root, object: $object);
 
-		$description = $this->sourceReader->description(object: $object);
-		if ($description !== null) {
-			$this->writer->text(parent: $root, name: 'omschrijving', content: $description);
-		}
+		$this->writer->textIfPresent(
+			parent: $root,
+			name: 'omschrijving',
+			content: $this->sourceReader->description(object: $object)
+		);
 
 		$this->addTemporalCoverage(parent: $root, object: $object);
 		$this->addEvents(parent: $root, object: $object);
@@ -425,15 +426,12 @@ class MdtoXmlGenerator {
 	 */
 	private function addAggregationLevel(DOMElement $parent, ObjectEntity $object): void {
 		$level = $this->sourceReader->aggregationLevel(object: $object);
-		if ($level === null) {
-			return;
-		}
 
-		$this->writer->begrip(
+		$this->addOptionalBegrip(
 			parent: $parent,
 			name: 'aggregatieniveau',
-			label: $level['label'],
-			code: $level['code'],
+			label: ($level['label'] ?? null),
+			code: ($level['code'] ?? null),
 			list: self::AGGREGATION_LEVEL_LIST
 		);
 	}//end addAggregationLevel()
@@ -463,9 +461,7 @@ class MdtoXmlGenerator {
 			);
 			$this->writer->text(parent: $coverage, name: 'dekkingInTijdBegindatum', content: $entry['start']);
 
-			if ($entry['end'] !== null) {
-				$this->writer->text(parent: $coverage, name: 'dekkingInTijdEinddatum', content: $entry['end']);
-			}
+			$this->writer->textIfPresent(parent: $coverage, name: 'dekkingInTijdEinddatum', content: $entry['end']);
 		}
 	}//end addTemporalCoverage()
 
@@ -494,9 +490,7 @@ class MdtoXmlGenerator {
 				list: MdtoEventMapper::EVENT_TYPE_LIST
 			);
 
-			if ($event['time'] !== null) {
-				$this->writer->text(parent: $element, name: 'eventTijd', content: $event['time']);
-			}
+			$this->writer->textIfPresent(parent: $element, name: 'eventTijd', content: $event['time']);
 
 			if ($event['actorName'] !== null) {
 				$this->writer->verwijzing(
@@ -549,13 +543,8 @@ class MdtoXmlGenerator {
 		}
 
 		$term = $this->writer->element(parent: $parent, name: 'bewaartermijn');
-		if ($period !== null) {
-			$this->writer->text(parent: $term, name: 'termijnLooptijd', content: $period);
-		}
-
-		if ($end !== null) {
-			$this->writer->text(parent: $term, name: 'termijnEinddatum', content: $end);
-		}
+		$this->writer->textIfPresent(parent: $term, name: 'termijnLooptijd', content: $period);
+		$this->writer->textIfPresent(parent: $term, name: 'termijnEinddatum', content: $end);
 	}//end addRetentionPeriod()
 
 	/**
@@ -575,16 +564,13 @@ class MdtoXmlGenerator {
 	 */
 	private function addInformatiecategorie(DOMElement $parent, ObjectEntity $object): void {
 		$category = $this->sourceReader->disposalCategory(object: $object);
-		if ($category === null) {
-			return;
-		}
 
-		$this->writer->begrip(
+		$this->addOptionalBegrip(
 			parent: $parent,
 			name: 'informatiecategorie',
-			label: $category['label'],
+			label: ($category['label'] ?? null),
 			code: null,
-			list: $category['list']
+			list: ($category['list'] ?? self::CATEGORY_LIST_FALLBACK)
 		);
 	}//end addInformatiecategorie()
 
@@ -602,19 +588,45 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/tmlo-export/spec.md#requirement-mdto-compliant-xml-export
 	 */
 	private function addClassification(DOMElement $parent, ObjectEntity $object): void {
-		$code = $this->sourceReader->classification(object: $object);
-		if ($code === null) {
-			return;
-		}
-
-		$this->writer->begrip(
+		$this->addOptionalBegrip(
 			parent: $parent,
 			name: 'classificatie',
-			label: $code,
+			label: $this->sourceReader->classification(object: $object),
 			code: null,
 			list: self::CLASSIFICATION_LIST
 		);
 	}//end addClassification()
+
+	/**
+	 * Add a `begripGegevens` element, or nothing when there is no label.
+	 *
+	 * Every optional begrip element follows the same rule: emit it when the
+	 * object supplies a term, omit it entirely otherwise, never a placeholder.
+	 * One method so that rule cannot drift between the three.
+	 *
+	 * @param DOMElement $parent The informatieobject element.
+	 * @param string $name The element name, without prefix.
+	 * @param string|null $label The term, or null to omit the element.
+	 * @param string|null $code The code, omitted when null.
+	 * @param string $list The begrippenlijst name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
+	 */
+	private function addOptionalBegrip(
+		DOMElement $parent,
+		string $name,
+		?string $label,
+		?string $code,
+		string $list,
+	): void {
+		if ($label === null) {
+			return;
+		}
+
+		$this->writer->begrip(parent: $parent, name: $name, label: $label, code: $code, list: $list);
+	}//end addOptionalBegrip()
 
 	/**
 	 * Add one `heeftRepresentatie` reference per file.
@@ -691,13 +703,11 @@ class MdtoXmlGenerator {
 			list: self::USE_RESTRICTION_LIST
 		);
 
-		if ($restriction['description'] !== null) {
-			$this->writer->text(
-				parent: $element,
-				name: 'beperkingGebruikNadereBeschrijving',
-				content: $restriction['description']
-			);
-		}
+		$this->writer->textIfPresent(
+			parent: $element,
+			name: 'beperkingGebruikNadereBeschrijving',
+			content: $restriction['description']
+		);
 
 		if ($restriction['startDate'] !== null) {
 			$term = $this->writer->element(parent: $element, name: 'beperkingGebruikTermijn');

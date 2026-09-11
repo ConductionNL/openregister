@@ -85,6 +85,21 @@ class MdtoSourceReader {
 	public const CATEGORY_LIST_FALLBACK = 'Selectielijst';
 
 	/**
+	 * An `xsd:date`.
+	 */
+	private const XSD_DATE = '/^(\d{4}-\d{2}-\d{2})$/';
+
+	/**
+	 * The `xsd:gYear`, `xsd:gYearMonth` or `xsd:date` union the XSD declares.
+	 */
+	private const XSD_DATE_UNION = '/^(\d{4}(?:-\d{2}(?:-\d{2})?)?)$/';
+
+	/**
+	 * The date at the head of an ISO-8601 timestamp.
+	 */
+	private const XSD_DATE_PREFIX = '/^(\d{4}-\d{2}-\d{2})/';
+
+	/**
 	 * The appraisal decision, MDTO's `waardering`.
 	 *
 	 * @param ObjectEntity $object The object to read.
@@ -125,12 +140,8 @@ class MdtoSourceReader {
 	 */
 	public function disposalDate(ObjectEntity $object): ?string {
 		$value = $this->declaredValue(object: $object, abstractKey: 'archiefactiedatum', tmloKey: 'archiefactiedatum');
-		$date = $this->nonEmptyString(value: $value);
-		if ($date === null || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-			return null;
-		}
 
-		return $date;
+		return $this->matchOrNull(value: $value, pattern: self::XSD_DATE);
 	}//end disposalDate()
 
 	/**
@@ -478,11 +489,7 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
 	private function coverageDate(?string $value): ?string {
-		if ($value === null || preg_match('/^\d{4}(-\d{2}(-\d{2})?)?$/', $value) !== 1) {
-			return null;
-		}
-
-		return $value;
+		return $this->matchOrNull(value: $value, pattern: self::XSD_DATE_UNION);
 	}//end coverageDate()
 
 	/**
@@ -495,14 +502,29 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	private function dateOnly(mixed $value): ?string {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $value, $matches) !== 1) {
-			return null;
-		}
-
-		return $matches[1];
+		return $this->matchOrNull(value: $value, pattern: self::XSD_DATE_PREFIX);
 	}//end dateOnly()
+
+	/**
+	 * Return a value's first capture group when it matches, else null.
+	 *
+	 * One place where a stored value is checked against the lexical form its
+	 * XSD type demands, so a date can only reach a document in a form the
+	 * schema accepts.
+	 *
+	 * @param mixed $value The stored value.
+	 * @param string $pattern The pattern, whose first group is the result.
+	 *
+	 * @return string|null The matched text, or null when it does not match.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	private function matchOrNull(mixed $value, string $pattern): ?string {
+		$text = $this->nonEmptyString(value: $value);
+		if ($text !== null && preg_match($pattern, $text, $matches) === 1) {
+			return $matches[1];
+		}
+
+		return null;
+	}//end matchOrNull()
 }//end class
