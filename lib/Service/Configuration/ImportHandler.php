@@ -921,8 +921,9 @@ class ImportHandler {
 				if (isset($data['schemas']) === true && is_array($data['schemas']) === true) {
 					$existingSchemaIds = $existingRegister->getSchemas();
 					if (is_array($existingSchemaIds) === true && $existingSchemaIds !== []) {
-						$data['schemas'] = array_values(
-							array_unique(array_merge($existingSchemaIds, $data['schemas']))
+						$data['schemas'] = $this->unionSchemaIds(
+							currentIds: $existingSchemaIds,
+							incomingIds: $data['schemas']
 						);
 					}
 				}
@@ -975,6 +976,33 @@ class ImportHandler {
 	}//end importRegister()
 
 	/**
+	 * Merge two schema-id lists, keeping every id either side can prove.
+	 *
+	 * ONE implementation of the union rule, called from both places that need
+	 * it: the full register update and the version-gated skip path. They used
+	 * to carry a copy each, with different `array_unique` flags — harmless for
+	 * the ids actually stored (ints, or numeric strings after a JSON round
+	 * trip) but exactly the shape that rots, since the rule is stated at length
+	 * beside each copy. #2935 was this rule holding in one place and not
+	 * another.
+	 *
+	 * The rule: union, never replace. A link this run can prove gets added, a
+	 * link it merely cannot see is left alone. The failure direction is then a
+	 * STALE link, which `occ openregister:registers:relink-schemas` reports and
+	 * repairs; replacing instead loses reachable data with no error anywhere.
+	 *
+	 * @param array $currentIds  The ids the register already lists.
+	 * @param array $incomingIds The ids this import resolved.
+	 *
+	 * @return array The merged list, de-duplicated and re-indexed.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function unionSchemaIds(array $currentIds, array $incomingIds): array {
+		return array_values(array_unique(array_merge($currentIds, $incomingIds)));
+	}//end unionSchemaIds()
+
+	/**
 	 * Attach the schema ids this import resolved to an existing register,
 	 * without ever removing a link the register already holds.
 	 *
@@ -999,6 +1027,7 @@ class ImportHandler {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
+
 	private function linkImportedSchemas(Register $register, mixed $importedSchemaIds): Register {
 		if (is_array($importedSchemaIds) === false || $importedSchemaIds === []) {
 			return $register;
@@ -1009,8 +1038,14 @@ class ImportHandler {
 			$currentIds = [];
 		}
 
-		$merged = array_values(array_unique(array_merge($currentIds, $importedSchemaIds), SORT_REGULAR));
-		if (count($merged) === count($currentIds)) {
+		$merged = $this->unionSchemaIds(currentIds: $currentIds, incomingIds: $importedSchemaIds);
+
+		// Compare against the DEDUPED current list, not the raw one. Comparing
+		// against the raw list would report "something changed" for a register
+		// whose stored list already held a duplicate, and write a silently
+		// de-duplicated row from a path whose whole premise is that it writes
+		// nothing. Repairing that duplicate is not this path's job.
+		if ($merged === array_values(array_unique($currentIds))) {
 			// Nothing new to link — leave the row untouched.
 			return $register;
 		}
