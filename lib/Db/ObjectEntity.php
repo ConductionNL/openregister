@@ -555,6 +555,23 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $archivalRetention = null;
 
 	/**
+	 * Registry subscription state for this object (`registry-subscriptions`,
+	 * finding B22).
+	 *
+	 * Transient property populated by the render layer from
+	 * `RegistrySubscriptionService::stateFor()`/`statesFor()` — shape:
+	 *   `['registry' => 'brp', 'state' => 'active', 'lastUpdate' => '...',
+	 *      'lastUpdateSource' => '...', 'refusalReason' => null|string]`.
+	 * Not persisted on this entity (the state lives in
+	 * `openregister_registry_subs`, keyed by object uuid). Exposed in @self
+	 * as `registry`, and omitted entirely for an object whose schema does
+	 * not declare `x-openregister-registry` or that never requested one.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $registryState = null;
+
+	/**
 	 * AVG / GDPR Art 30 processing-activity override.
 	 *
 	 * Transient field — set by callers that want to tag an upcoming
@@ -700,6 +717,28 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setArchivalRetention(?array $retention): void {
 		$this->archivalRetention = $retention;
 	}//end setArchivalRetention()
+
+	/**
+	 * Get the registry subscription state, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function getRegistryState(): ?array {
+		return $this->registryState;
+	}//end getRegistryState()
+
+	/**
+	 * Write the registry subscription state.
+	 *
+	 * Surfaced in the @self envelope as `registry` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $state The subscription state mirror.
+	 *
+	 * @return void
+	 */
+	public function setRegistryState(?array $state): void {
+		$this->registryState = $state;
+	}//end setRegistryState()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1077,6 +1116,13 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// omitted entirely when the object carries no retention metadata.
 		if ($this->archivalRetention !== null) {
 			$objectArray['_retention'] = $this->archivalRetention;
+		}
+
+		// Add the registry subscription state when set by the render layer
+		// (`registry-subscriptions`, finding B22). Exposed as `registry` and
+		// omitted entirely for an object that never requested one.
+		if ($this->registryState !== null) {
+			$objectArray['registry'] = $this->registryState;
 		}
 
 		// Check for '@self' in the provided object array (this is the case if the object metadata is extended).

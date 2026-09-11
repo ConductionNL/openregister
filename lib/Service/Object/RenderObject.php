@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\IRequest;
 use OCP\SystemTag\ISystemTagManager;
@@ -190,6 +191,7 @@ class RenderObject {
 	 * @param IRequest|null $request Current request, used to read `?recurrenceOccurrences=N`.
 	 * @param ObjectSourceRegistry|null $objectSourceRegistry Resolves object-source providers for `$ref` extends into virtual schemas.
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler (x-openregister-encrypted).
+	 * @param RegistrySubscriptionService|null $registrySubscriptionService Materialises `@self.registry` (registry-subscriptions).
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 *
@@ -219,6 +221,7 @@ class RenderObject {
 		private readonly ?IRequest $request = null,
 		private readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
+		private readonly ?RegistrySubscriptionService $registrySubscriptionService = null,
 	) {
 	}//end __construct()
 
@@ -2091,6 +2094,32 @@ class RenderObject {
 			$this->logger->debug(
 				sprintf(
 					'[RenderObject] translation completeness lookup failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}
+
+		// Registry subscription state (`registry-subscriptions`, finding
+		// B22). Only looked up when the schema actually declares
+		// `x-openregister-registry` — a cheap in-memory check on the
+		// already-loaded schema — so the common case (no annotation) costs
+		// no extra query per rendered row.
+		try {
+			if ($this->registrySubscriptionService !== null
+				&& $renderSchema !== null
+				&& $entity->getUuid() !== null
+				&& $this->registrySubscriptionService->annotationFor(schema: $renderSchema) !== null
+			) {
+				$registryState = $this->registrySubscriptionService->stateFor((string)$entity->getUuid());
+				if ($registryState !== null) {
+					$entity->setRegistryState($registryState);
+				}
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] registry subscription state lookup failed for %s: %s',
 					(string)$entity->getUuid(),
 					$e->getMessage()
 				)
