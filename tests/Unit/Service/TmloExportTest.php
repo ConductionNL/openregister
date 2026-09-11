@@ -26,7 +26,13 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
+use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
+use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use OCA\OpenRegister\Service\TmloService;
+use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -50,10 +56,37 @@ class TmloExportTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
+		// A REAL MdtoXmlGenerator, because the point of this change is that
+		// this endpoint emits the same format as the e-Depot export. A mock
+		// would assert only that a string came back.
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnMap(
+			[
+				['openregister', 'organisation_identifier', '', 'ORG-001'],
+				['openregister', 'organisation_identifier', 'OpenRegister', 'ORG-001'],
+				['openregister', 'organisation_name', '', 'Gemeente Voorbeeld'],
+				['openregister', 'organisation_name', 'OpenRegister', 'Gemeente Voorbeeld'],
+			]
+		);
+
+		$eventMapper = $this->createMock(MdtoEventMapper::class);
+		$eventMapper->method('forObject')->willReturn([]);
+
+		$writer = new MdtoDocumentWriter();
+		$generator = new MdtoXmlGenerator(
+			$appConfig,
+			$this->createMock(LoggerInterface::class),
+			$eventMapper,
+			new MdtoSourceReader(),
+			$writer,
+			new MdtoBestandGenerator($writer)
+		);
+
 		$this->service = new TmloService(
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(SchemaMapper::class),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$generator
 		);
 	}//end setUp()
 
@@ -78,12 +111,19 @@ class TmloExportTest extends TestCase {
 		$xml = $this->service->generateMdtoXml($object);
 
 		$this->assertStringContainsString('<?xml', $xml);
-		$this->assertStringContainsString('mdto:informatieobject', $xml);
+		$this->assertStringContainsString('<mdto:MDTO', $xml);
+		$this->assertStringContainsString('<mdto:informatieobject>', $xml);
 		$this->assertStringContainsString('test-uuid-123', $xml);
 		$this->assertStringContainsString('Test Object', $xml);
-		$this->assertStringContainsString('1.1', $xml);
-		$this->assertStringContainsString('2030-01-01', $xml);
-		$this->assertStringContainsString('P7Y', $xml);
+		// TMLO's own fields, each under the MDTO element that carries it.
+		$this->assertStringContainsString('<mdto:classificatie>', $xml);
+		$this->assertStringContainsString('<mdto:begripLabel>1.1</mdto:begripLabel>', $xml);
+		$this->assertStringContainsString('<mdto:termijnLooptijd>P7Y</mdto:termijnLooptijd>', $xml);
+		$this->assertStringContainsString('<mdto:termijnEinddatum>2030-01-01</mdto:termijnEinddatum>', $xml);
+		// archiefstatus is not an MDTO element and is not smuggled in.
+		$this->assertStringNotContainsString('archiefstatus', $xml);
+		$this->assertStringNotContainsString('semi_statisch', $xml);
+		$this->assertStringNotContainsString('vernietigingsCategorie', $xml);
 	}//end testGenerateMdtoXmlFullObject()
 
 	/**
@@ -117,8 +157,33 @@ class TmloExportTest extends TestCase {
 
 		$xml = $this->service->generateMdtoXml($object);
 
-		$this->assertStringContainsString('bewaren', $xml);
+		// The CLOSED Waarderingen list, not TMLO's own spelling.
+		$this->assertStringContainsString('<mdto:begripLabel>Blijvend te bewaren</mdto:begripLabel>', $xml);
+		$this->assertStringContainsString('<mdto:begripCode>B</mdto:begripCode>', $xml);
+		$this->assertStringContainsString('<mdto:verwijzingNaam>Waarderingen</mdto:verwijzingNaam>', $xml);
+		// No bewaarTermijn on this object, and MDTO allows the element to be absent.
+		$this->assertStringNotContainsString('bewaartermijn', $xml);
 	}//end testGenerateMdtoXmlMapsArchiefnominatie()
+
+	/**
+	 * An object whose appraisal is unknown cannot be valid MDTO, and is refused.
+	 *
+	 * `waardering` is minOccurs="1". The previous exporter emitted a document
+	 * without it, which no e-Depot could accept.
+	 *
+	 * @return void
+	 */
+	public function testGenerateMdtoXmlRefusesAnObjectWithoutAnAppraisal(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('uuid-no-appraisal');
+		$object->setName('No appraisal');
+		$object->setTmlo(['archiefstatus' => 'actief']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/archiefnominatie \(one of: /');
+
+		$this->service->generateMdtoXml($object);
+	}//end testGenerateMdtoXmlRefusesAnObjectWithoutAnAppraisal()
 
 	/**
 	 * Test generateBatchMdtoXml with multiple objects.
@@ -132,6 +197,7 @@ class TmloExportTest extends TestCase {
 		$object1->setTmlo([
 			'archiefstatus' => 'actief',
 			'classification' => '1.1',
+			'archiefnominatie' => 'blijvend_bewaren',
 		]);
 
 		$object2 = new ObjectEntity();
@@ -140,12 +206,17 @@ class TmloExportTest extends TestCase {
 		$object2->setTmlo([
 			'archiefstatus' => 'semi_statisch',
 			'classification' => '2.1',
+			'archiefnominatie' => 'vernietigen',
 		]);
 
 		$xml = $this->service->generateBatchMdtoXml([$object1, $object2]);
 
 		$this->assertStringContainsString('<?xml', $xml);
-		$this->assertStringContainsString('mdto:informatieobjecten', $xml);
+		// The envelope is openregister's own element, not a made-up MDTO one.
+		$this->assertStringContainsString('<or:mdtoExport', $xml);
+		$this->assertStringContainsString('https://www.openregister.app/mdto-export', $xml);
+		$this->assertStringNotContainsString('informatieobjecten', $xml);
+		$this->assertSame(2, substr_count($xml, '<mdto:MDTO'));
 		$this->assertStringContainsString('uuid-1', $xml);
 		$this->assertStringContainsString('uuid-2', $xml);
 	}//end testGenerateBatchMdtoXml()
@@ -159,7 +230,7 @@ class TmloExportTest extends TestCase {
 		$withTmlo = new ObjectEntity();
 		$withTmlo->setUuid('uuid-with');
 		$withTmlo->setName('With TMLO');
-		$withTmlo->setTmlo(['archiefstatus' => 'actief']);
+		$withTmlo->setTmlo(['archiefstatus' => 'actief', 'archiefnominatie' => 'blijvend_bewaren']);
 
 		$withoutTmlo = new ObjectEntity();
 		$withoutTmlo->setUuid('uuid-without');
@@ -180,7 +251,8 @@ class TmloExportTest extends TestCase {
 		$xml = $this->service->generateBatchMdtoXml([]);
 
 		$this->assertStringContainsString('<?xml', $xml);
-		$this->assertStringContainsString('mdto:informatieobjecten', $xml);
+		$this->assertStringContainsString('<or:mdtoExport', $xml);
+		$this->assertStringNotContainsString('<mdto:MDTO', $xml);
 	}//end testGenerateBatchMdtoXmlEmpty()
 
 	/**
@@ -195,6 +267,7 @@ class TmloExportTest extends TestCase {
 		$object->setTmlo([
 			'classification' => '1.1 & 2.2',
 			'archiefstatus' => 'actief',
+			'archiefnominatie' => 'blijvend_bewaren',
 		]);
 
 		$xml = $this->service->generateMdtoXml($object);

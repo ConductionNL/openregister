@@ -50,6 +50,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
  * 2. The `tmlo` block under the Dutch key (`aggregatieniveau`,
  *    `dekkingInTijd`, `beperkingGebruik`).
  *
+ * The same two layers carry the CORE archival facts, which is what lets one
+ * generator serve both exports. An object written through the retention
+ * pipeline keeps them in `retention`; an object written through TMLO keeps
+ * them in `tmlo`, under TMLO's own spellings (`bewaarTermijn` with its
+ * capital T, `vernietigingsCategorie` for the disposal category). Reading
+ * both here is why `MdtoXmlGenerator` is the only implementation of the
+ * format and `TmloService` no longer has a second one.
+ *
  * Measured on 2026-09-11: NOTHING in this repository writes either key for any
  * of the three, so on current data all three elements are absent. They are
  * read rather than derived because no other stored field answers the
@@ -69,6 +77,146 @@ class MdtoSourceReader {
 	 * legal-hold type, so this is the term the standard provides for the case.
 	 */
 	public const USE_RESTRICTION_OTHER = 'Overig';
+
+	/**
+	 * The begrippenlijst name used for `informatiecategorie` when the record
+	 * does not say which selectielijst its category came from.
+	 */
+	public const CATEGORY_LIST_FALLBACK = 'Selectielijst';
+
+	/**
+	 * The appraisal decision, MDTO's `waardering`.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return string|null The stored archiefnominatie, or null when neither block carries one.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function appraisal(ObjectEntity $object): ?string {
+		$value = $this->declaredValue(object: $object, abstractKey: 'archiefnominatie', tmloKey: 'archiefnominatie');
+
+		return $this->nonEmptyString(value: $value);
+	}//end appraisal()
+
+	/**
+	 * The retention period, MDTO's `bewaartermijn`.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return string|null An ISO-8601 duration, or null when neither block carries one.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function retentionPeriod(ObjectEntity $object): ?string {
+		$value = $this->declaredValue(object: $object, abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn');
+
+		return $this->nonEmptyString(value: $value);
+	}//end retentionPeriod()
+
+	/**
+	 * The date the retention period ends, MDTO's `termijnEinddatum`.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return string|null An xsd:date, or null when there is none in that form.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function disposalDate(ObjectEntity $object): ?string {
+		$value = $this->declaredValue(object: $object, abstractKey: 'archiefactiedatum', tmloKey: 'archiefactiedatum');
+		$date = $this->nonEmptyString(value: $value);
+		if ($date === null || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+			return null;
+		}
+
+		return $date;
+	}//end disposalDate()
+
+	/**
+	 * The disposal category and the list it came from, MDTO's `informatiecategorie`.
+	 *
+	 * TMLO calls this `vernietigingsCategorie`; the retention block calls it
+	 * `classification`. They are the same fact, the selectielijst category
+	 * that decides disposal, which is why MDTO has one element for it.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return array{label: string, list: string}|null The category, or null when there is none.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function disposalCategory(ObjectEntity $object): ?array {
+		$value = $this->declaredValue(
+			object: $object,
+			abstractKey: 'classification',
+			tmloKey: 'vernietigingsCategorie'
+		);
+
+		$label = $this->nonEmptyString(value: $value);
+		if ($label === null) {
+			return null;
+		}
+
+		$retention = ($object->getRetention() ?? []);
+		$list = $this->nonEmptyString(value: ($retention['selectielijstBron'] ?? null));
+
+		return ['label' => $label, 'list' => ($list ?? self::CATEGORY_LIST_FALLBACK)];
+	}//end disposalCategory()
+
+	/**
+	 * The classification scheme code, MDTO's `classificatie`.
+	 *
+	 * Only the TMLO block carries this as a fact of its own. In the retention
+	 * block `classification` is the disposal category, which is a different
+	 * element; see {@see self::disposalCategory()}.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return string|null The code, or null when the TMLO block carries none.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function classification(ObjectEntity $object): ?string {
+		$tmlo = ($object->getTmlo() ?? []);
+		if (is_array($tmlo) === false) {
+			return null;
+		}
+
+		return $this->nonEmptyString(value: ($tmlo['classification'] ?? null));
+	}//end classification()
+
+	/**
+	 * The free-text description, MDTO's `omschrijving`.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return string|null The text, or null when neither block carries one.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function description(ObjectEntity $object): ?string {
+		$value = $this->declaredValue(object: $object, abstractKey: 'toelichting', tmloKey: 'toelichting');
+
+		return $this->nonEmptyString(value: $value);
+	}//end description()
+
+	/**
+	 * A scalar read back as a non-empty string.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null The string, or null when it is absent or empty.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	private function nonEmptyString(mixed $value): ?string {
+		if (is_scalar($value) === false || (string)$value === '') {
+			return null;
+		}
+
+		return (string)$value;
+	}//end nonEmptyString()
 
 	/**
 	 * Resolve the object's aggregatieniveau.

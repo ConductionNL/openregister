@@ -251,6 +251,11 @@ class SipPackageBuilder {
 			$uuid = $object->getUuid();
 			$objectDir = "objects/{$uuid}";
 
+			// The retention period is required to TRANSFER, though MDTO allows
+			// the element to be absent. Asking here keeps the export endpoint
+			// able to serialise a record whose period is unknown.
+			$this->mdtoGenerator->assertTransferPreconditions($object);
+
 			$mdtoXml = $this->mdtoGenerator->generate($object, $files);
 			$entries[] = ['path' => "{$objectDir}/mdto.xml", 'kind' => 'string', 'content' => $mdtoXml];
 			$manifest[] = $this->createManifestEntry(path: "{$objectDir}/mdto.xml", content: $mdtoXml);

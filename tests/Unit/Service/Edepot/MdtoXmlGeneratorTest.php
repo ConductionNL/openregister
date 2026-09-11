@@ -338,7 +338,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 		$object = $this->createObjectEntity(uuid: 'w', retention: ['archiefnominatie' => 'misschien', 'bewaartermijn' => 'P5Y']);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessageMatches('/retention\.archiefnominatie \(one of: /');
+		$this->expectExceptionMessageMatches('/archiefnominatie \(one of: /');
 
 		$this->generator->generate($object);
 	}
@@ -370,7 +370,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 		$object = $this->createObjectEntity(uuid: 't', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P2W']);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessageMatches('/retention\.bewaartermijn \(an ISO-8601/');
+		$this->expectExceptionMessageMatches('/bewaartermijn \(an ISO-8601/');
 
 		$this->generator->generate($object);
 	}
@@ -413,7 +413,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessageMatches('/retention\.archiefnominatie/');
+		$this->expectExceptionMessageMatches('/archiefnominatie/');
 
 		$this->generator->generate($object);
 	}
