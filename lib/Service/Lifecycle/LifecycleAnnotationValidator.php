@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 
 /**
@@ -51,6 +52,7 @@ final class LifecycleAnnotationValidator {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-lifecycle']) === false) {
@@ -260,6 +262,15 @@ final class LifecycleAnnotationValidator {
 				}
 			}
 
+			// Optional `autoWhen` / `executionMode` — the declaration that makes
+			// this transition fire on its own. Refused rather than warned about,
+			// because a stored malformed rule fires on EVERY write from its
+			// `from` state; see the change's design.md.
+			$errors = array_merge(
+				$errors,
+				$this->validateAutomaticTransition(spec: $spec, action: (string)$action)
+			);
+
 			// Optional `message` — the refusal text a declined `condition`
 			// carries. A non-empty string, or a per-locale map.
 			if (isset($spec['message']) === true) {
@@ -295,6 +306,7 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function validateGraphMode(array $annotation, array $schema): array {
 		$errors = [];
@@ -356,6 +368,22 @@ final class LifecycleAnnotationValidator {
 				'message' => 'x-openregister-lifecycle.graph does not support `condition`: '
 					. 'graph-mode moves are not enforced on the save path, so a condition '
 					. 'declared here would not hold. Declare conditions on static transitions.',
+			];
+		}
+
+		// An `autoWhen` on the graph block is REFUSED for the reason its
+		// `condition` sibling above is: a graph block declares no transitions,
+		// so the ordinary save path enforces nothing on a graph-mode move, and
+		// an automatic move made through the engine could be undone by one
+		// unchecked direct write. A graph block also has no per-transition
+		// object in which an author could say which derived sibling to move to.
+		// Unblocked by `lifecycle-graph-enforcement`.
+		if (isset($graph['autoWhen']) === true) {
+			$errors[] = [
+				'code' => 'lifecycle-autowhen-graph-unsupported',
+				'message' => 'x-openregister-lifecycle.graph does not support `autoWhen`: '
+					. 'graph-mode automatic transitions are not supported while graph-mode '
+					. 'moves are unenforced on the save path. Declare `autoWhen` on a static transition.',
 			];
 		}
 
@@ -522,6 +550,162 @@ final class LifecycleAnnotationValidator {
 
 		return null;
 	}//end validateTransitionCondition()
+
+	/**
+	 * Shape-check a transition's optional `autoWhen` and `executionMode`.
+	 *
+	 * All four codes this method can return REFUSE the schema save rather than
+	 * warn, which is a departure from the advisory treatment most lifecycle
+	 * errors get. The reason is the direction each failure takes:
+	 *
+	 * - a stored scalar `autoWhen` evaluates as a truthy literal, so the
+	 *   transition would fire on every write from its `from` state, writing an
+	 *   audit row and a round of notifications each time;
+	 * - an unknown `executionMode`, a required input beside `autoWhen` and an
+	 *   `autoWhen` on a graph block all describe a move that can NEVER happen,
+	 *   which is the silent no-op class the declarative-conditions link refused.
+	 *
+	 * Refusing breaks no existing import: no register can carry either key
+	 * before this change ships them.
+	 *
+	 * @param array<string, mixed> $spec The transition's spec.
+	 * @param string $action The transition name, for the error messages.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function validateAutomaticTransition(array $spec, string $action): array {
+		$errors = [];
+
+		if (array_key_exists('autoWhen', $spec) === true) {
+			$ruleError = $this->validateAutoWhenRule(autoWhen: $spec['autoWhen'], action: $action);
+			if ($ruleError !== null) {
+				$errors[] = $ruleError;
+			}
+
+			if ($this->declaresRequiredInput(inputs: ($spec['inputs'] ?? [])) === true) {
+				$errors[] = [
+					'code' => 'lifecycle-autowhen-requires-input',
+					'message' => sprintf(
+						'Transition "%s" declares `autoWhen` beside a required `inputs` entry. '
+						. 'An automatic move carries no payload, so this transition could only ever '
+						. 'be refused. Drop `required: true`, or drop `autoWhen`.',
+						$action
+					),
+				];
+			}
+		}
+
+		if (array_key_exists('executionMode', $spec) === true
+			&& in_array($spec['executionMode'], [Flow::MODE_SYNC, Flow::MODE_ASYNC], true) === false
+		) {
+			$shown = gettype($spec['executionMode']);
+			if (is_scalar($spec['executionMode']) === true) {
+				$shown = (string)$spec['executionMode'];
+			}
+
+			$errors[] = [
+				'code' => 'lifecycle-execution-mode-malformed',
+				'message' => sprintf(
+					'Transition "%s" `executionMode` "%s" must be exactly "%s" or "%s". '
+					. 'Case variants are refused rather than normalised, so the lifecycle and the '
+					. 'flow engine cannot drift into two spellings of the same two words.',
+					$action,
+					$shown,
+					Flow::MODE_SYNC,
+					Flow::MODE_ASYNC
+				),
+			];
+		}
+
+		return $errors;
+	}//end validateAutomaticTransition()
+
+	/**
+	 * Shape-check the rule object of a transition's `autoWhen`.
+	 *
+	 * 🔴 A SCALAR IS REFUSED, AND THAT IS THE POINT OF THIS METHOD, for the
+	 * same reason {@see validateTransitionCondition()} refuses one: a scalar
+	 * handed to `FlowExpression::isValid()` is a literal and always valid. Here
+	 * a truthy literal does not merely fail open once, it fires the transition
+	 * again on every write.
+	 *
+	 * @param mixed $autoWhen Raw value of the transition's `autoWhen` key.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when well-formed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
+	 * stateless expression facade; calling it statically IS the reuse.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function validateAutoWhenRule(mixed $autoWhen, string $action): ?array {
+		$code = 'lifecycle-autowhen-malformed';
+
+		if (is_array($autoWhen) === false) {
+			return [
+				'code' => $code,
+				'message' => sprintf(
+					'Transition "%s" `autoWhen` must be a JSONLogic rule object such as '
+					. '{"!!": {"var": "object.motivering"}}. A string or other scalar is refused: '
+					. 'it would evaluate as a literal and fire the transition on every write from '
+					. 'its `from` state. The "@self.field == \'value\'" form belongs on an '
+					. '`actions[]` entry, not here.',
+					$action
+				),
+			];
+		}
+
+		if ($autoWhen === []) {
+			return [
+				'code' => $code,
+				'message' => sprintf('Transition "%s" `autoWhen` must not be empty.', $action),
+			];
+		}
+
+		if (FlowExpression::isValid(logic: $autoWhen) === false) {
+			return [
+				'code' => $code,
+				'message' => sprintf(
+					'Transition "%s" `autoWhen` is not a valid JSONLogic expression. '
+					. 'Write it as a rule object, for example {"!!": {"var": "object.motivering"}}.',
+					$action
+				),
+			];
+		}
+
+		return null;
+	}//end validateAutoWhenRule()
+
+	/**
+	 * Whether a transition's `inputs` declaration carries a required entry.
+	 *
+	 * Malformed entries are skipped rather than fatal, matching
+	 * {@see TransitionEngine::normaliseDeclaredInputs()}: a broken declaration
+	 * allowlists nothing, and reporting it is that method's `inputs` contract,
+	 * not this one's.
+	 *
+	 * @param mixed $inputs The transition's declared `inputs` list.
+	 *
+	 * @return bool True when at least one declared input is `required`.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function declaresRequiredInput(mixed $inputs): bool {
+		if (is_array($inputs) === false) {
+			return false;
+		}
+
+		foreach ($inputs as $input) {
+			if (is_array($input) === true && ($input['required'] ?? false) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end declaresRequiredInput()
 
 	/**
 	 * Shape-check a transition's optional refusal `message`.

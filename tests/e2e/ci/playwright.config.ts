@@ -215,6 +215,29 @@ export default defineConfig({
 		//   4. No test.skip at all.
 		'workflows/lifecycle-conditions.spec.ts',
 
+		// Admitted 2026-09-11 with the change it covers (lifecycle-auto-
+		// transitions, `autoWhen` / `executionMode`). It is the only proof that
+		// an automatic move is applied through the REAL write path before a
+		// response is produced: every PHPUnit test in this change drives
+		// `AutoTransitionPass`/`AutoTransitionRunner` directly or through a
+		// mocked schema mapper, so none of them can catch a regression in the
+		// HTTP round trip itself — e.g. a controller that stopped returning the
+		// pass-drained entity and started returning the pre-drain one instead.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds one register/schema through `_fixtures.ts`, with
+		//      the whole `x-openregister-lifecycle` annotation declared inline
+		//      in the file. No `occ`, no docker, no pre-seeded rows.
+		//   2. Self-cleaning: records every object it creates and, in afterAll,
+		//      soft-deletes then hard-deletes each via /api/deleted/{uuid}
+		//      before dropping its schema and register — the same shape as the
+		//      spec above.
+		//   3. No conditional asserts: every assertion is unconditional, and
+		//      each automatic move is re-read after the triggering response so
+		//      a response that lied about the state cannot pass.
+		//   4. No test.skip at all.
+		'workflows/lifecycle-auto-transitions.spec.ts',
+
 		// Admitted 2026-08-29. The ADR-111 demo-data step, which had no coverage
 		// here at all: this file shipped to development with the setup wizard and
 		// never ran, because nothing runs unless it is named in this list. It is

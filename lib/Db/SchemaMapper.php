@@ -1130,16 +1130,19 @@ class SchemaMapper extends QBMapper {
 	 * Validate the optional `x-openregister-lifecycle` annotation.
 	 *
 	 * The annotation is stored under `configuration['x-openregister-lifecycle']`.
-	 * A broken transition `condition` refuses the save; every other lifecycle
-	 * error is advisory and only logged, and the schema is stored as written.
+	 * A broken transition `condition`, `autoWhen` or `executionMode` refuses the
+	 * save; every other lifecycle error is advisory and only logged, and the
+	 * schema is stored as written.
 	 *
 	 * @param Schema $schema Schema to validate.
 	 *
-	 * @throws Exception When a transition `condition` is malformed or declared on a graph block.
+	 * @throws Exception When a transition `condition` or automatic-transition
+	 *                   declaration is malformed or unsupported.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function validateLifecycleAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -1165,12 +1168,29 @@ class SchemaMapper extends QBMapper {
 		// silently gates nothing while its author believes it holds. No register
 		// shipped a condition before this key existed, so refusing here breaks
 		// no existing import, which is what the advisory policy below protects.
+		//
+		// The four `autoWhen` / `executionMode` codes join it for the same two
+		// reasons. A stored scalar `autoWhen` is WORSE than a stored broken
+		// condition: it evaluates as a truthy literal, so the transition fires
+		// on every write from its `from` state, each move writing an audit row
+		// and feeding the next decision. The loop cap bounds that, but "bounded
+		// damage on every save" is not an acceptable failure mode for a typo.
+		// An unknown `executionMode`, a required input beside `autoWhen` and an
+		// `autoWhen` on a graph block each describe a move that can never
+		// happen as written. And no register carries either key yet.
 		$blocking = array_values(
 			array_filter(
 				$errors,
 				static fn (array $err): bool => in_array(
 					$err['code'],
-					['lifecycle-condition-malformed', 'lifecycle-condition-graph-unsupported'],
+					[
+						'lifecycle-condition-malformed',
+						'lifecycle-condition-graph-unsupported',
+						'lifecycle-autowhen-malformed',
+						'lifecycle-execution-mode-malformed',
+						'lifecycle-autowhen-requires-input',
+						'lifecycle-autowhen-graph-unsupported',
+					],
 					true
 				)
 			)
@@ -1183,7 +1203,7 @@ class SchemaMapper extends QBMapper {
 				static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
 				$blocking
 			);
-			throw new Exception('Invalid x-openregister-lifecycle condition: ' . implode(' ', $details));
+			throw new Exception('Invalid x-openregister-lifecycle declaration: ' . implode(' ', $details));
 		}
 
 		// Every other lifecycle error is ADVISORY: rejecting the whole schema

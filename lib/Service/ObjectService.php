@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -283,6 +284,7 @@ class ObjectService implements ObjectServiceInterface
      * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container            Application container.
      * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
+     * @param AutoTransitionPass|null        $autoTransitions      Request-scoped pass applying automatic lifecycle moves.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -335,7 +337,12 @@ class ObjectService implements ObjectServiceInterface
         private readonly SettingsService $settingsService,
         private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container,
-        private readonly ObjectSourceRegistry $objectSourceRegistry
+        private readonly ObjectSourceRegistry $objectSourceRegistry,
+        // The request-scoped automatic-transition pass. Nullable with a null
+        // default so the many unit tests that build this service positionally
+        // keep working; the container resolves the real, SHARED instance by
+        // type in production, as it does for FlowRunController's attribution.
+        private readonly ?AutoTransitionPass $autoTransitions = null
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
         // - ExportService → uses SaveObjects → potentially loops back
@@ -1555,6 +1562,7 @@ class ObjectService implements ObjectServiceInterface
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1579,6 +1587,15 @@ class ObjectService implements ObjectServiceInterface
         // unaffected: the snapshot and the restore are the same context.
         $previousRegister = $this->currentRegister;
         $previousSchema   = $this->currentSchema;
+
+        // OPEN THE AUTOMATIC-TRANSITION BOUNDARY. Leaving the OUTERMOST one is
+        // the first moment at which this write is finished in every sense that
+        // matters: the object row, its audit row, and the second update a
+        // file-bearing save makes from an in-memory entity. A move applied any
+        // earlier is lost to that second write. See AutoTransitionPass.
+        $this->autoTransitions?->enter();
+        $automatic = [];
+        $result    = null;
 
         try {
             $this->discardPendingSchemaRef();
@@ -1871,10 +1888,27 @@ class ObjectService implements ObjectServiceInterface
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
             \OCA\OpenRegister\Service\WritePhaseProbe::flush();
 
-            return $renderedObject;
+            // Assigned rather than returned: the boundary below may apply an
+            // automatic transition whose entity is the one the caller must see.
+            $result = $renderedObject;
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
+
+            // Always in a `finally`, never conditionally: an unbalanced enter
+            // would leave the pass believing a boundary is still open, and
+            // nothing in this request would ever drain again.
+            $automatic = ($this->autoTransitions?->leave() ?? []);
         }
+
+        // No null guard on $result here. PHPStan proves the try block either
+        // assigns it or throws, so a guard would be dead code, and dead code
+        // that only static analysis can see is exactly what the baseline is
+        // for tracking rather than growing.
+        if ($this->autoTransitions === null) {
+            return $result;
+        }
+
+        return $this->autoTransitions->preferAutomatic(saved: $result, applied: $automatic);
     }//end saveObject()
 
     /**
