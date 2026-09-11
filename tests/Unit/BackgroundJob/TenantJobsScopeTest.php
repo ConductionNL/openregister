@@ -280,6 +280,35 @@ class TenantJobsScopeTest extends TestCase {
 	}//end testPurgeDeletesUsageOnlyForThePurgedOrganisation()
 
 	/**
+	 * A retained organisation is never purged, even if the status filter fails.
+	 *
+	 * Both rows are past the retention window. The mapper hands the job both of
+	 * them regardless of the filter, so only the job's own status check can
+	 * spare the retained one.
+	 *
+	 * @return void
+	 */
+	public function testPurgeNeverDeletesARetainedOrganisationEvenWhenTheFilterIsIgnored(): void {
+		$deletedOrgs = [];
+		$deletedUsage = [];
+
+		$this->runJob(
+			$this->purgeJobOver(
+				[
+					$this->organisation('retained-1', TenantLifecycleService::STATUS_RETAINED, '2020-01-01'),
+					$this->organisation('archived-1', TenantLifecycleService::STATUS_ARCHIVED, '2020-01-01'),
+				],
+				$deletedOrgs,
+				$deletedUsage
+			)
+		);
+
+		$this->assertSame(['archived-1'], $deletedOrgs, 'only the archived row is purged');
+		$this->assertSame(['archived-1'], $deletedUsage, 'and the retained row keeps its usage');
+
+	}//end testPurgeNeverDeletesARetainedOrganisationEvenWhenTheFilterIsIgnored()
+
+	/**
 	 * An archived organisation without a uuid is left alone.
 	 *
 	 * Every delete the purge makes is scoped by the uuid. Without one there is

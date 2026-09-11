@@ -1058,6 +1058,7 @@ return [
         ['name' => 'organisation#suspend', 'url' => '/api/organisations/{uuid}/suspend', 'verb' => 'PUT'],
         ['name' => 'organisation#activate', 'url' => '/api/organisations/{uuid}/activate', 'verb' => 'PUT'],
         ['name' => 'organisation#deprovision', 'url' => '/api/organisations/{uuid}/deprovision', 'verb' => 'PUT'],
+        ['name' => 'organisation#retain', 'url' => '/api/organisations/{uuid}/retain', 'verb' => 'PUT'],
         ['name' => 'organisation#usage', 'url' => '/api/organisations/{uuid}/usage', 'verb' => 'GET'],
 
         // Admin - Tenant isolation verification and metrics.

@@ -245,4 +245,25 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 
 	}//end testPurgingOneOrganisationLeavesAnothersUsageRecords()
 
+	/**
+	 * A retained organisation keeps its row and its usage through a purge.
+	 *
+	 * Seeded with a deprovisionedAt far past the retention window, which is the
+	 * only other thing the job checks, so the status is all that stands between
+	 * it and deletion.
+	 *
+	 * @return void
+	 */
+	public function testARetainedOrganisationSurvivesAPurge(): void {
+		$purged = $this->seed('archived', '2020-01-01 00:00:00');
+		$retained = $this->seed('retained', '2020-01-01 00:00:00');
+
+		$this->runPurge();
+
+		$this->assertFalse($this->exists($purged), 'control: the archived organisation is purged in the same run');
+		$this->assertTrue($this->exists($retained), 'a retained organisation is never purged');
+		$this->assertCount(2, $this->usageOf($retained), 'nor are its usage records');
+
+	}//end testARetainedOrganisationSurvivesAPurge()
+
 }//end class

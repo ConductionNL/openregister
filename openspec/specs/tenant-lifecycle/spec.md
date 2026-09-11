@@ -14,7 +14,7 @@ Define the provisioning, suspension, and deprovisioning workflow for tenant orga
 **Source**: SaaS deployment requirements; BIO/ISO 27001 tenant management; 67% of government tenders require demonstrable tenant isolation with controlled provisioning.
 ## Requirements
 ### Requirement: Organisation entities MUST have a lifecycle status field with defined state transitions
-The Organisation entity MUST include a `status` field representing the tenant lifecycle state. Valid states are: `provisioning`, `active`, `suspended`, `deprovisioning`, `archived`. State transitions MUST follow the defined state machine and MUST be enforced at the service layer.
+The Organisation entity MUST include a `status` field representing the tenant lifecycle state. Valid states are: `provisioning`, `active`, `suspended`, `deprovisioning`, `archived`, `retained`. State transitions MUST follow the defined state machine and MUST be enforced at the service layer.
 
 #### Scenario: New organisation starts in provisioning state
 - **WHEN** an administrator creates a new Organisation via the API with `name: "Gemeente Utrecht"`
@@ -83,6 +83,39 @@ After deprovisioning completes, the Organisation MUST transition to `archived` s
 - **THEN** a background job MUST permanently delete all objects, schemas, and configuration for that Organisation
 - **AND** the Organisation entity itself MUST be permanently deleted
 - **AND** an audit trail entry MUST be created recording the permanent deletion
+
+### Requirement: A terminated organisation MUST be able to keep its data in the retained state
+An organisation whose tenancy ended can carry a legal duty to keep its records, often for a fixed period. The lifecycle MUST offer a terminal `retained` state for it: access is blocked as for `suspended`, and nothing is deleted. `retained` MUST be enterable from `active` and `suspended` only, the same two states `deprovisioning` is entered from, so an operator ending a tenancy chooses between deleting it and keeping it. There MUST be no transition from `retained` back to `active`. The one transition out of `retained` MUST be to `deprovisioning`, taken on purpose when the retention period is over, so the data leaves through the same deletion path and grace period as every other organisation. No background job may select a `retained` organisation, and `TenantPurgeJob` MUST NOT delete one.
+
+#### Scenario: An active organisation is retained
+- **WHEN** an administrator retains an active Organisation via `PUT /api/organisations/{uuid}/retain`
+- **THEN** the Organisation status MUST transition to `retained`
+- **AND** a `retainedAt` timestamp MUST be set, marking the start of its retention period
+- **AND** `deprovisionedAt` MUST NOT be set, because the purge job measures its deletion window from it
+
+#### Scenario: A suspended organisation is retained
+- **WHEN** an administrator retains a suspended Organisation
+- **THEN** the Organisation status MUST transition to `retained`
+
+#### Scenario: A retained organisation has its API access blocked
+- **WHEN** an API request is scoped to an Organisation with `status: "retained"`
+- **THEN** the middleware MUST return HTTP 403 Forbidden
+- **AND** the response MUST include `{"error": "Organisation access has ended and its data is retained", "status": "retained"}`
+
+#### Scenario: A retained organisation cannot be reactivated
+- **WHEN** an administrator attempts to transition a `retained` Organisation to `active`
+- **THEN** the API MUST return HTTP 409 Conflict
+
+#### Scenario: Retention ends through deprovisioning
+- **WHEN** an administrator deprovisions a `retained` Organisation after its retention period
+- **THEN** the Organisation status MUST transition to `deprovisioning` and `deprovisionedAt` MUST be set
+- **AND** it MUST then follow the ordinary path to `archived` and, after the retention window, to purge
+
+#### Scenario: The purge job never deletes a retained organisation
+- **GIVEN** a `retained` Organisation, even one carrying a `deprovisionedAt` older than the retention window
+- **WHEN** `TenantPurgeJob` runs, including when its status filter is not applied
+- **THEN** the Organisation MUST NOT be deleted
+- **AND** its usage records MUST NOT be deleted
 
 ### Requirement: A purge MUST touch only the organisation it purges
 When `TenantPurgeJob` permanently deletes an archived Organisation, every delete it issues MUST be scoped to that Organisation. The usage records of every other Organisation MUST survive, whatever their period. An Organisation without a uuid MUST be skipped, because a delete that cannot name its Organisation cannot be scoped.

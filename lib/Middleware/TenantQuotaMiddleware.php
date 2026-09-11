@@ -97,6 +97,7 @@ class TenantQuotaMiddleware extends Middleware {
 	 *
 	 * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
 	 * @spec openspec/specs/tenant-quotas/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
 	 */
 	public function beforeController(string|Controller $controller, string $methodName): void {
 		// Skip for non-authenticated requests (public endpoints).
@@ -132,6 +133,15 @@ class TenantQuotaMiddleware extends Middleware {
 		if ($status === TenantLifecycleService::STATUS_DEPROVISIONING) {
 			throw new TenantStatusException(
 				'Organisation is being deprovisioned',
+				$status,
+				403
+			);
+		}
+
+		// Retained: the tenancy ended and the data is kept, so nobody works in it.
+		if ($status === TenantLifecycleService::STATUS_RETAINED) {
+			throw new TenantStatusException(
+				'Organisation access has ended and its data is retained',
 				$status,
 				403
 			);

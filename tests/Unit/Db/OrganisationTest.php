@@ -57,6 +57,7 @@ class OrganisationTest extends TestCase {
 		$this->assertSame('datetime', $fieldTypes['provisionedAt']);
 		$this->assertSame('datetime', $fieldTypes['suspendedAt']);
 		$this->assertSame('datetime', $fieldTypes['deprovisionedAt']);
+		$this->assertSame('datetime', $fieldTypes['retainedAt']);
 	}
 
 	/**
@@ -77,6 +78,7 @@ class OrganisationTest extends TestCase {
 				'provisioned_at' => '2026-01-02 10:00:00',
 				'suspended_at' => '2026-01-03 11:00:00',
 				'deprovisioned_at' => '2026-01-04 12:00:00',
+				'retained_at' => '2026-01-06 14:00:00',
 				'merged_at' => '2026-01-05 13:00:00',
 			]
 		);
@@ -84,10 +86,23 @@ class OrganisationTest extends TestCase {
 		$this->assertInstanceOf(DateTime::class, $organisation->getProvisionedAt());
 		$this->assertInstanceOf(DateTime::class, $organisation->getSuspendedAt());
 		$this->assertInstanceOf(DateTime::class, $organisation->getDeprovisionedAt());
+		$this->assertInstanceOf(DateTime::class, $organisation->getRetainedAt());
+		$this->assertSame('2026-01-06 14:00:00', $organisation->getRetainedAt()->format('Y-m-d H:i:s'));
 		$this->assertInstanceOf(DateTime::class, $organisation->getMergedAt());
 
 		$this->assertSame('2026-01-02 10:00:00', $organisation->getProvisionedAt()->format('Y-m-d H:i:s'));
 		$this->assertSame('2026-01-05 13:00:00', $organisation->getMergedAt()->format('Y-m-d H:i:s'));
+	}
+
+	/**
+	 * The retention start is serialised as ISO 8601, and as null when unset.
+	 */
+	public function testRetainedAtIsSerialised(): void {
+		$this->assertNull($this->organisation->jsonSerialize()['retainedAt']);
+
+		$this->organisation->setRetainedAt(new DateTime('2026-02-03T04:05:06+00:00'));
+
+		$this->assertSame('2026-02-03T04:05:06+00:00', $this->organisation->jsonSerialize()['retainedAt']);
 	}
 
 	public function testConstructorDefaultValues(): void {

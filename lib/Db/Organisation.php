@@ -75,6 +75,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setSuspendedAt(?DateTime $suspendedAt)
  * @method DateTime|null getDeprovisionedAt()
  * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
+ * @method DateTime|null getRetainedAt()
+ * @method void setRetainedAt(?DateTime $retainedAt)
  * @method string|null getType()
  * @method void setType(?string $type)
  * @method bool|null getIsLocalTenant()
@@ -258,7 +260,8 @@ class Organisation extends Entity implements JsonSerializable {
 	/**
 	 * Tenant lifecycle status
 	 *
-	 * Valid values: provisioning, active, suspended, deprovisioning, archived
+	 * Valid values: provisioning, active, suspended, deprovisioning, archived,
+	 * retained
 	 *
 	 * @var string|null Lifecycle status
 	 */
@@ -293,6 +296,16 @@ class Organisation extends Entity implements JsonSerializable {
 	 * @var DateTime|null Deprovisioning timestamp
 	 */
 	protected ?DateTime $deprovisionedAt = null;
+
+	/**
+	 * Timestamp when the organisation entered the retained state
+	 *
+	 * The start of its retention period. Never read by the purge job, which
+	 * measures from `deprovisionedAt` only.
+	 *
+	 * @var DateTime|null Retention start timestamp
+	 */
+	protected ?DateTime $retainedAt = null;
 
 	/**
 	 * UUID of parent organisation for hierarchical organisation structures
@@ -607,6 +620,7 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'provisionedAt', type: 'datetime');
 		$this->addType(fieldName: 'suspendedAt', type: 'datetime');
 		$this->addType(fieldName: 'deprovisionedAt', type: 'datetime');
+		$this->addType(fieldName: 'retainedAt', type: 'datetime');
 		// Identity facet (ADR-022 §3): the statutory identifiers a leaf app
 		// used to keep in its own publisher/vendor record.
 		$this->addType(fieldName: 'type', type: 'string');
@@ -1088,6 +1102,7 @@ class Organisation extends Entity implements JsonSerializable {
 			'provisionedAt' => $provisionedAt,
 			'suspendedAt' => $suspendedAt,
 			'deprovisionedAt' => $deprovisionedAt,
+			'retainedAt' => $this->retainedAt?->format('c'),
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
 			'_mail' => $this->mail,
