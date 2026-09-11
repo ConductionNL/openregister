@@ -245,6 +245,39 @@ export default defineConfig({
 		// is a REAL import, measured at 42.8s on dossiq and 49.6s on shillinq,
 		// and it exceeded the 30s default on one run before the annotation.
 		'spec-coverage/demo-data-setup-step.spec.ts',
+
+		// Admitted 2026-09-11 with the archival e2e coverage it carries. Nothing
+		// here touched archival or retention: the resolved `@self._retention`
+		// decision, the record-state vocabulary and the Retention settings section
+		// were unit-tested only, and the one archival spec on disk
+		// (`workflows/archival-transfer-hardening.spec.ts`) skips all three of its
+		// tests unless `OR_EDEPOT_*_FIXTURE` names pre-existing rows, so it
+		// executes nothing on a fresh instance and is correctly NOT admitted.
+		//
+		// Checked per criterion:
+		//   1. Hermetic — seeds its own register, schemas and objects through the
+		//      documented REST controllers. No occ, no docker, no pre-seeded data.
+		//   3. No conditional-assert guards — zero `.catch(() => false)` in any
+		//      assertion. The only `.catch()` calls are inside `_fixtures.ts`
+		//      teardown helpers.
+		//   4. No `test.skip` at all, conditional or otherwise.
+		//
+		// ⚠️ CRITERION 2 IS THE ONE THAT NEEDS SAYING OUT LOUD, because this file
+		// CANNOT fully satisfy it and that is the behaviour under test, not an
+		// oversight. `DELETE /api/objects/...` on a schema declaring
+		// `x-openregister-archival` is refused with 403 for every HTTP caller —
+		// the sanctioned removal path is `occ openregister:objects:purge --apply
+		// --force`, which criterion 1 rightly forbids — so the seeded archival
+		// rows, and the schema and register holding them, stay behind. A spec that
+		// tore them down would be a spec proving the archival gate does not hold.
+		//
+		// This is admissible on the reasoning this config already sets out above:
+		// the CI instance is created and destroyed per run on its own runner with
+		// its own postgres service, so nothing outside the job can see what is
+		// left. Every entity carries the `e2e-<timestamp>` prefix, and the ONE
+		// piece of instance state the file writes — the `objectArchiveRetention`
+		// setting — is read first and written back at the end of the same test.
+		'archival-retention.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,
