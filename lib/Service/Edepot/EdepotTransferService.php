@@ -39,7 +39,6 @@ use OCA\OpenRegister\Service\Edepot\Transport\TransportResult;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * Orchestrator for e-Depot transfer operations.
@@ -80,6 +79,7 @@ class EdepotTransferService {
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param INotificationManager $notificationManager The notification manager.
 	 * @param LoggerInterface $logger Logger.
+	 * @param PackagedFileChecksum $packagedFileChecksum Computes, dates and fixity-checks each file's checksum.
 	 */
 	public function __construct(
 		private readonly SipPackageBuilder $sipBuilder,
@@ -90,6 +90,7 @@ class EdepotTransferService {
 		private readonly IAppConfig $appConfig,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
+		private readonly PackagedFileChecksum $packagedFileChecksum,
 	) {
 	}//end __construct()
 
@@ -432,21 +433,11 @@ class EdepotTransferService {
 	/**
 	 * Get file metadata for an object.
 	 *
-	 * ## The checksum is computed here, every time, and dated here
-	 *
-	 * MDTO requires `checksumDatum`, defined as "Datum waarop de checksum is
-	 * gemaakt". A checksum read from stored data carries no such date, so the
-	 * only honest date is one this method can vouch for: it hashes the bytes
-	 * it is about to package and records that moment.
-	 *
-	 * Recomputing alone would launder a changed file. If the bytes on disk no
-	 * longer match a SHA-256 recorded for them, a fresh checksum would describe
-	 * the changed bytes and the package would look intact. So a stored SHA-256
-	 * that disagrees with the computed one is a fixity failure, and the file is
-	 * refused: the exception reaches the per-object catch in
-	 * {@see self::gatherObjectsWithFiles()}, which excludes the object from
-	 * this transfer and logs it by uuid. A stored value that is not
-	 * SHA-256-shaped cannot be compared and is not used.
+	 * Each checksum is computed and dated at packaging by
+	 * {@see PackagedFileChecksum}, which also refuses a file whose stored
+	 * SHA-256 no longer matches its bytes. That refusal reaches the per-object
+	 * catch in {@see self::gatherObjectsWithFiles()}, which excludes the object
+	 * from this transfer and logs it by uuid.
 	 *
 	 * @param ObjectEntity $object The object.
 	 *
@@ -460,7 +451,7 @@ class EdepotTransferService {
 	 *     isRendition: bool
 	 * }> File metadata array.
 	 *
-	 * @throws RuntimeException When a stored SHA-256 does not match the file's bytes.
+	 * @throws \RuntimeException When a file cannot be read or its stored SHA-256 no longer matches.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
@@ -484,16 +475,14 @@ class EdepotTransferService {
 				continue;
 			}
 
-			$checksum = (string)hash_file('sha256', $path);
-			$checksumDate = (new DateTime())->format(DateTime::ATOM);
-			$this->assertFixity(stored: ($fileRef['checksum'] ?? null), computed: $checksum, path: $path);
+			$checksum = $this->packagedFileChecksum->compute(path: $path, stored: ($fileRef['checksum'] ?? null));
 
 			$files[] = [
 				'name' => ($fileRef['name'] ?? basename($path)),
 				'size' => (int)($fileRef['size'] ?? filesize($path)),
 				'format' => ($fileRef['mimeType'] ?? ($fileRef['format'] ?? 'application/octet-stream')),
-				'checksum' => $checksum,
-				'checksumDate' => $checksumDate,
+				'checksum' => $checksum['checksum'],
+				'checksumDate' => $checksum['checksumDate'],
 				'path' => $path,
 				'isRendition' => (bool)($fileRef['isRendition'] ?? false),
 			];
@@ -501,32 +490,6 @@ class EdepotTransferService {
 
 		return $files;
 	}//end getObjectFiles()
-
-	/**
-	 * Refuse a file whose bytes no longer match the SHA-256 recorded for it.
-	 *
-	 * @param mixed $stored The checksum stored with the file reference, if any.
-	 * @param string $computed The SHA-256 of the bytes about to be packaged.
-	 * @param string $path The file path, for the error message.
-	 *
-	 * @return void
-	 *
-	 * @throws RuntimeException On a mismatch.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
-	 */
-	private function assertFixity(mixed $stored, string $computed, string $path): void {
-		if (is_string($stored) === false || preg_match('/^[0-9a-fA-F]{64}$/', $stored) !== 1) {
-			return;
-		}
-
-		if (hash_equals(strtolower($stored), $computed) === false) {
-			throw new RuntimeException(
-				'Fixity failure: the SHA-256 recorded for ' . $path
-				. ' does not match its bytes, so it is not transferred'
-			);
-		}
-	}//end assertFixity()
 
 	/**
 	 * Process transport results and update object statuses.

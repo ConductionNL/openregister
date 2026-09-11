@@ -13,19 +13,24 @@ declare(strict_types=1);
 
 namespace Unit\Service\Edepot;
 
+use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
+use OCA\OpenRegister\Service\Edepot\PackagedFileChecksum;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;
 
 /**
- * The checksum the SIP carries is computed and dated at packaging, and a
- * stored SHA-256 that no longer matches the bytes is refused.
+ * File gathering takes its checksum and date from PackagedFileChecksum.
  *
- * `getObjectFiles()` touches none of the service's collaborators, so the
- * service is built without its constructor and the method reached by
- * reflection. That keeps the test about this one behaviour.
+ * The rule itself is tested in PackagedFileChecksumTest. This proves the
+ * transfer path uses it: that the SIP's file entries carry the computed
+ * checksum and its date, and that a fixity failure propagates to the
+ * per-object catch instead of being swallowed here.
+ *
+ * `getObjectFiles()` touches no other collaborator, so the service is built
+ * without its constructor and only the checksum dependency is initialised.
  */
 class EdepotTransferServiceFilesTest extends TestCase {
 
@@ -44,49 +49,24 @@ class EdepotTransferServiceFilesTest extends TestCase {
 	}
 
 	/**
-	 * With no stored checksum, one is computed and dated as an xsd:dateTime.
+	 * Each gathered file carries the computed checksum and its date.
 	 */
-	public function testTheChecksumIsComputedAndDated(): void {
+	public function testGatheredFilesCarryTheComputedChecksumAndDate(): void {
 		$files = $this->gather(fileRef: ['path' => $this->path, 'name' => 'a.txt']);
 
 		$this->assertSame(hash('sha256', 'archival bytes'), $files[0]['checksum']);
-		$this->assertMatchesRegularExpression(
-			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/',
-			$files[0]['checksumDate']
-		);
+		$this->assertArrayHasKey('checksumDate', $files[0]);
+		$this->assertNotSame('', $files[0]['checksumDate']);
 	}
 
 	/**
-	 * A stored SHA-256 that matches is accepted, and the fresh one is used.
+	 * A fixity failure propagates, so the per-object catch can exclude the object.
 	 */
-	public function testAMatchingStoredChecksumIsAccepted(): void {
-		$stored = strtoupper(hash('sha256', 'archival bytes'));
-
-		$files = $this->gather(fileRef: ['path' => $this->path, 'checksum' => $stored]);
-
-		$this->assertSame(hash('sha256', 'archival bytes'), $files[0]['checksum']);
-	}
-
-	/**
-	 * A stored SHA-256 that does NOT match the bytes is a fixity failure.
-	 *
-	 * Recomputing silently would launder the changed file into a package
-	 * that looks intact, so the file is refused.
-	 */
-	public function testAStaleStoredChecksumIsRefused(): void {
+	public function testAFixityFailurePropagates(): void {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/Fixity failure/');
 
 		$this->gather(fileRef: ['path' => $this->path, 'checksum' => hash('sha256', 'other bytes')]);
-	}
-
-	/**
-	 * A stored value that is not SHA-256-shaped cannot be compared, and is not used.
-	 */
-	public function testAStoredChecksumOfAnotherShapeIsIgnored(): void {
-		$files = $this->gather(fileRef: ['path' => $this->path, 'checksum' => md5('archival bytes')]);
-
-		$this->assertSame(hash('sha256', 'archival bytes'), $files[0]['checksum']);
 	}
 
 	/**
@@ -105,8 +85,16 @@ class EdepotTransferServiceFilesTest extends TestCase {
 
 		$reflection = new ReflectionClass(EdepotTransferService::class);
 		$service = $reflection->newInstanceWithoutConstructor();
-		$method = $reflection->getMethod('getObjectFiles');
 
-		return $method->invoke($service, $object);
+		// A readonly property may be initialised once, from inside its class.
+		Closure::bind(
+			function (): void {
+				$this->packagedFileChecksum = new PackagedFileChecksum();
+			},
+			$service,
+			EdepotTransferService::class
+		)();
+
+		return $reflection->getMethod('getObjectFiles')->invoke($service, $object);
 	}
 }
