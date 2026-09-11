@@ -69,10 +69,10 @@ trait HandlesExceptionsTrait {
 	 *
 	 * Typed map (tasks.md 1.2 / ADR-051):
 	 *   - not-found shapes                → 404
-	 *   - forbidden shapes                → 403
+	 *   - forbidden shapes, archival      → 403
 	 *   - validation shapes               → 422 (typed) / 400 (InvalidArgumentException)
 	 *   - conflict shapes                 → 409
-	 *   - append-only / archival shapes   → 405
+	 *   - append-only shapes              → 405
 	 *   - foundation/config unavailable   → 503
 	 *   - anything else                   → 500 with a generic body; the real
 	 *     message is logged server-side only (leak-safe).
@@ -138,9 +138,18 @@ trait HandlesExceptionsTrait {
 		// Conflict → 409.
 		MultipleObjectsReturnedException::class => Http::STATUS_CONFLICT,
 		DatabaseConstraintException::class => Http::STATUS_CONFLICT,
-		// Append-only / archival immutability → 405.
+		// Append-only → 405: the resource type supports no such operation at all.
 		AppendOnlyException::class => Http::STATUS_METHOD_NOT_ALLOWED,
-		ArchivalImmutableException::class => Http::STATUS_METHOD_NOT_ALLOWED,
+		// Archival immutability → 403, NOT 405, and the two are not a family.
+		// The archival spec says 403, and every controller that catches this
+		// exception explicitly (BulkController, DeletedController,
+		// SchemasController, ObjectsController) answers 403. This fallback was
+		// the only place that said 405, so a refusal reaching it contradicted
+		// every other refusal for the same record. It is also the more honest
+		// code: the operation exists and is allowed in general, it is refused
+		// for THIS record because the law keeps it, and the body's `hint` says
+		// how deletion lawfully happens instead.
+		ArchivalImmutableException::class => Http::STATUS_FORBIDDEN,
 		// Foundation / configuration unavailable (ADR-049 fail-closed) → 503.
 		FoundationUnavailableException::class => Http::STATUS_SERVICE_UNAVAILABLE,
 		ConfigurationMissingException::class => Http::STATUS_SERVICE_UNAVAILABLE,
