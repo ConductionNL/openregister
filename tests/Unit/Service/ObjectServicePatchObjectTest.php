@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -83,6 +84,12 @@ class ObjectServicePatchObjectTest extends TestCase {
 	/** @var MockObject&PermissionHandler */
 	private $permissionHandler;
 
+	/** @var MockObject&SchemaMapper */
+	private $schemaMapper;
+
+	/** @var MockObject&IAppContainer */
+	private $container;
+
 	private Register $register;
 
 	private Schema $schema;
@@ -93,6 +100,20 @@ class ObjectServicePatchObjectTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->cascadingHandler = $this->createMock(CascadingHandler::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->container = $this->createMock(IAppContainer::class);
+
+		// The container answers with the REAL converter: the encode half of the
+		// rule is the thing under test, so mocking it would test nothing.
+		$this->container->method('get')->willReturnCallback(
+			static function (string $id): mixed {
+				if ($id === SchemaTypeConverter::class) {
+					return new SchemaTypeConverter();
+				}
+
+				throw new \RuntimeException('unexpected container lookup: ' . $id);
+			}
+		);
 
 		$this->register = new Register();
 		$this->register->setId(1);
@@ -124,7 +145,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$this->cascadingHandler,
 			$this->createMock(MigrationHandler::class),
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
+			$this->schemaMapper,
 			$this->createMock(ViewMapper::class),
 			$this->objectMapper,
 			$this->createMock(FileService::class),
@@ -137,7 +158,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
 			$this->createMock(DateTimeNormalizer::class),
-			$this->createMock(IAppContainer::class),
+			$this->container,
 			$this->createMock(ObjectSourceRegistry::class)
 		);
 
@@ -322,6 +343,105 @@ class ObjectServicePatchObjectTest extends TestCase {
 		$this->assertSame('u-1', $seen['id'], 'the save is addressed at the object that was resolved');
 
 	}//end testTheMergedResultIsWhatTravelsOnToTheSave()
+
+	// ── The decode/encode seam ──────────────────────────────────────────
+	//
+	// The read path decodes: SchemaTypeConverter::convertString() turns a
+	// `type: string` value that looks like JSON into an ARRAY. So
+	// $existing->getObject() hands back an array where the schema says string,
+	// the merge puts it straight back, and validation refuses the save —
+	// failing a patch because of a property the caller never mentioned. These
+	// pin the re-encode that closes the seam, and the limit on it.
+
+	/**
+	 * Run a patch far enough to observe the payload that reaches the save.
+	 *
+	 * @param array<string, mixed> $storedObject The object as a read hands it back.
+	 * @param array<string, mixed> $properties   The schema's property declarations.
+	 * @param array<string, mixed> $patch        The caller's partial payload.
+	 *
+	 * @return array<string, mixed>|null The payload as the save pipeline saw it.
+	 */
+	private function payloadReachingTheSave(array $storedObject, array $properties, array $patch): ?array {
+		$schema = new Schema();
+		$schema->setId(2);
+		$schema->setProperties($properties);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$existing = new ObjectEntity();
+		$existing->setUuid('u-1');
+		$existing->setSchema('2');
+		$existing->setObject($storedObject);
+
+		$this->objectMapper->method('find')->willReturn($existing);
+		$this->setProperty('currentRegister', $this->register);
+		$this->setProperty('currentSchema', $this->schema);
+
+		$seen = null;
+		$this->cascadingHandler->method('handlePreValidationCascading')->willReturnCallback(
+			static function (array $object, ?Schema $schema = null, ?string $uuid = null) use (&$seen): array {
+				$seen = $object;
+
+				return [$object, $uuid];
+			}
+		);
+
+		try {
+			$this->service->patchObject(objectId: 'u-1', data: $patch);
+		} catch (Throwable $e) {
+			// Expected — the rest of the save pipeline is mocked out.
+		}
+
+		return $seen;
+	}//end payloadReachingTheSave()
+
+	public function testAStringTypedPropertyHoldingJsonSurvivesAPatchThatNeverMentionsIt(): void {
+		$stored = '[{"status":"open","at":"2026-09-11"},{"status":"closed","at":"2026-09-12"}]';
+
+		$seen = $this->payloadReachingTheSave(
+			// What a read actually hands back: the JSON-looking string decoded.
+			['title' => 'Alpha', 'statusHistory' => json_decode($stored, true)],
+			['title' => ['type' => 'string'], 'statusHistory' => ['type' => 'string']],
+			['title' => 'probe']
+		);
+
+		$this->assertNotNull($seen, 'the merged payload reached the save pipeline');
+		$this->assertSame('probe', $seen['title']);
+		$this->assertSame(
+			$stored,
+			$seen['statusHistory'],
+			'without the re-encode this arrives as an array and validation refuses a patch that never named it'
+		);
+
+	}//end testAStringTypedPropertyHoldingJsonSurvivesAPatchThatNeverMentionsIt()
+
+	public function testAnArrayTheCallerSuppliedReachesValidationUnchanged(): void {
+		$seen = $this->payloadReachingTheSave(
+			['title' => 'Alpha', 'statusHistory' => [['status' => 'open']]],
+			['title' => ['type' => 'string'], 'statusHistory' => ['type' => 'string']],
+			['statusHistory' => [['status' => 'closed']]]
+		);
+
+		$this->assertNotNull($seen);
+		$this->assertSame(
+			[['status' => 'closed']],
+			$seen['statusHistory'],
+			'a caller that passes an array for a string property keeps its loud refusal rather than a silent rewrite'
+		);
+
+	}//end testAnArrayTheCallerSuppliedReachesValidationUnchanged()
+
+	public function testAnArrayTypedPropertyIsNotEncodedByTheRestore(): void {
+		$seen = $this->payloadReachingTheSave(
+			['title' => 'Alpha', 'tags' => ['a', 'b']],
+			['title' => ['type' => 'string'], 'tags' => ['type' => 'array']],
+			['title' => 'probe']
+		);
+
+		$this->assertNotNull($seen);
+		$this->assertSame(['a', 'b'], $seen['tags'], 'the restore must not reach properties the schema really does call arrays');
+
+	}//end testAnArrayTypedPropertyIsNotEncodedByTheRestore()
 
 	// ── Attribution and enforcement (REQ-OWN-013) ───────────────────────
 

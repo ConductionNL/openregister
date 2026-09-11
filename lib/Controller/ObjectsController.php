@@ -36,6 +36,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -53,6 +54,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
@@ -3145,6 +3147,15 @@ class ObjectsController extends Controller {
 			// Get the existing object data and merge with patch data.
 			$existingData = $existingObject->getObject();
 			$mergedData = array_merge($existingData ?? [], $patchData);
+
+			// The read decoded, so the write re-encodes. Only keys the caller
+			// did NOT send are restored — see restoreStringTypedValues().
+			$mergedData = $this->restoreStringTypedValues(
+				mergedData: $mergedData,
+				schemaEntity: $resolved['schemaEntity'],
+				suppliedKeys: array_keys($patchData)
+			);
+
 			// Use the object service to validate and update the object.
 			$objectEntity = $objectService->saveObject(
 				register: $resolved['register'],
@@ -3357,6 +3368,14 @@ class ObjectsController extends Controller {
 			// Merge existing data with patch data (patch semantics).
 			$existingData = $existingObject->getObject();
 			$mergedData = array_merge($existingData ?? [], $patchData);
+
+			// The read decoded, so the write re-encodes. Only keys the caller
+			// did NOT send are restored — see restoreStringTypedValues().
+			$mergedData = $this->restoreStringTypedValues(
+				mergedData: $mergedData,
+				schemaEntity: $resolved['schemaEntity'],
+				suppliedKeys: array_keys($patchData)
+			);
 
 			$objectService->clearCreatedSubObjects();
 
@@ -4956,6 +4975,50 @@ class ObjectsController extends Controller {
 
 		return $flowContext->currentRunUuid();
 	}//end callerRunUuid()
+
+	/**
+	 * Restore the stored form of string-typed properties the read path decoded.
+	 *
+	 * ONE helper for both patch doors, and it holds no rule of its own: the
+	 * rule lives in `SchemaTypeConverter::restoreStringTypedValues()`, beside
+	 * the decode it undoes. All this does is find the schema's property
+	 * declarations and say which keys the caller sent.
+	 *
+	 * Why it is needed at all: the magic-table read decodes a `type: string`
+	 * value that looks like JSON, so `$existingObject->getObject()` hands back
+	 * an ARRAY where the schema declares a string. Merging that array into the
+	 * payload and saving it makes validation refuse a PATCH that never
+	 * mentioned the property — the "only the provided fields change" promise in
+	 * this method's own docblock, broken by a property nobody named.
+	 *
+	 * If the schema entity is not resolvable the data is returned unchanged,
+	 * leaving today's loud validation refusal in place rather than guessing.
+	 *
+	 * @param array $mergedData   The merged object data about to be saved.
+	 * @param mixed $schemaEntity The resolved schema entity, or whatever resolution produced.
+	 * @param array $suppliedKeys Keys the caller actually sent in the patch payload.
+	 *
+	 * @return array The data with untouched string-typed JSON values restored.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function restoreStringTypedValues(array $mergedData, mixed $schemaEntity, array $suppliedKeys): array {
+		if (($schemaEntity instanceof Schema) === false) {
+			return $mergedData;
+		}
+
+		try {
+			$converter = $this->container->get(SchemaTypeConverter::class);
+		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $unavailable) {
+			return $mergedData;
+		}
+
+		return $converter->restoreStringTypedValues(
+			data: $mergedData,
+			properties: ($schemaEntity->getProperties() ?? []),
+			suppliedKeys: $suppliedKeys
+		);
+	}//end restoreStringTypedValues()
 
 	/**
 	 * Refuse a write to a locked object, or return null when it may proceed.

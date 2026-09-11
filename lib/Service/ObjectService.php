@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -5509,6 +5510,18 @@ class ObjectService implements ObjectServiceInterface
                 patch: $data
             );
 
+            // The read decoded, so the write has to re-encode. A `type: string`
+            // property whose stored value looks like JSON comes back from
+            // getObject() as an ARRAY (SchemaTypeConverter::convertString), and
+            // feeding that array back in makes validation refuse a patch that
+            // never mentioned the property. Only keys the caller did NOT supply
+            // are restored — see restoreStringTypedValues() for why.
+            $merged = $this->restoreStringTypedValues(
+                data: $merged,
+                existing: $existing,
+                suppliedKeys: array_keys($data)
+            );
+
             // Address the save at the object we actually resolved, not at whatever
             // form of the identifier the caller happened to hold.
             $merged['id'] = ($existing->getUuid() ?? $objectId);
@@ -5567,6 +5580,67 @@ class ObjectService implements ObjectServiceInterface
 
         return $stored;
     }//end mergePatchData()
+
+    /**
+     * Restore the stored form of string-typed properties the read path decoded.
+     *
+     * Thin resolver around `SchemaTypeConverter::restoreStringTypedValues()`,
+     * which owns the rule. All this does is find the schema whose property
+     * declarations say which keys are string-typed.
+     *
+     * The schema lookup runs with RBAC and multitenancy off: it reads type
+     * declarations to persist an object correctly, not data on the caller's
+     * behalf, and `saveObject()` still applies every check to the write itself.
+     * Leaving them on would make the repair depend on the caller's schema
+     * permissions, so the defect would come back for exactly the callers least
+     * able to diagnose it.
+     *
+     * If the schema cannot be resolved the data is returned unchanged, which
+     * leaves the pre-existing loud validation refusal in place. That is the
+     * intended failure direction: never swallow, never silently rewrite.
+     *
+     * @param array        $data         The merged object data about to be saved.
+     * @param ObjectEntity $existing     The object as it was read.
+     * @param array        $suppliedKeys Keys the caller actually sent.
+     *
+     * @return array The data with untouched string-typed JSON values restored.
+     *
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
+     */
+    private function restoreStringTypedValues(array $data, ObjectEntity $existing, array $suppliedKeys): array
+    {
+        $schemaId = $existing->getSchema();
+        if ($schemaId === null) {
+            return $data;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find(
+                $schemaId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $schemaError) {
+            $this->logger->warning(
+                message: '[ObjectService] Could not resolve schema to restore string-typed values',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'schema' => $schemaId,
+                    'exception' => $schemaError->getMessage(),
+                ]
+            );
+            return $data;
+        }
+
+        $converter = $this->container->get(SchemaTypeConverter::class);
+
+        return $converter->restoreStringTypedValues(
+            data: $data,
+            properties: ($schema->getProperties() ?? []),
+            suppliedKeys: $suppliedKeys
+        );
+    }//end restoreStringTypedValues()
 
     /**
      * Build search query from request parameters
