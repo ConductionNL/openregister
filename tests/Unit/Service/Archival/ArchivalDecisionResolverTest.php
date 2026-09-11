@@ -22,6 +22,7 @@ namespace Unit\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -470,6 +471,89 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$this->assertSame('selection_list', $decision['basis']);
 		$this->assertSame('Selectielijst gemeenten 2020', $decision['source']);
+	}
+
+	/**
+	 * EVERY SPELLING RecordState ACCEPTS RESOLVES TO ITS ENGLISH STATE.
+	 *
+	 * This resolver used to keep its own alias map, and the copy had drifted:
+	 * `gearchiveerd` was listed as semi-static by RecordState and was missing
+	 * here, so a record stored with it answered the raw Dutch word from the one
+	 * layer whose job is to hand out a single vocabulary. The two lists are now
+	 * one list, and this walks it so a future addition to RecordState that is
+	 * not understood here fails instead of passing through.
+	 *
+	 * @dataProvider storedStateProvider
+	 *
+	 * @param string $stored The spelling as stored on the record.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function testEveryStoredSpellingResolvesToItsEnglishState(
+		string $stored
+	): void {
+		$entity = $this->entityWith(
+			retention: [
+				'archiefnominatie' => 'vernietigen',
+				'archiefstatus' => $stored,
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertNotNull($decision);
+		$this->assertContains(
+			$decision['recordState'],
+			RecordState::ALL,
+			sprintf(
+				'the stored spelling "%s" is accepted by RecordState, so it must resolve to one '
+				. 'of the English states and not to itself; it resolved to "%s"',
+				$stored,
+				$decision['recordState']
+			)
+		);
+	}
+
+	/**
+	 * Every spelling RecordState says it accepts.
+	 *
+	 * 🔴 THIS READS `ALL_ALIASES`, NOT `CANONICAL`, AND THE DIFFERENCE IS THE
+	 * WHOLE TEST. Deriving the cases from the same map the assertion checks
+	 * would be a tautology: delete a spelling from `CANONICAL` and the test
+	 * would simply run one case fewer and stay green, which is exactly how the
+	 * `gearchiveerd` gap survived in the first place. `ALL_ALIASES` is the
+	 * independent claim about what stored data may contain, so a spelling that
+	 * is accepted there and unmapped here now fails.
+	 *
+	 * @return array<string, array{0: string}> The cases.
+	 */
+	public static function storedStateProvider(): array {
+		$cases = [];
+		foreach (RecordState::ALL_ALIASES as $stored) {
+			$cases[$stored] = [$stored];
+		}
+
+		return $cases;
+	}
+
+	/**
+	 * A spelling nobody declared passes through rather than being forced into a
+	 * state the record does not carry. Guessing here would be worse than not
+	 * answering: it would report a lifecycle position nobody wrote.
+	 */
+	public function testAnUnknownSpellingIsNotForcedIntoAState(): void {
+		$decision = $this->resolver->resolve(
+			entity: $this->entityWith(
+				retention: [
+					'archiefnominatie' => 'vernietigen',
+					'archiefstatus' => 'in_de_kast',
+				]
+			)
+		);
+
+		$this->assertNotNull($decision);
+		$this->assertSame('in_de_kast', $decision['recordState']);
+		$this->assertFalse($decision['immutable']);
 	}
 
 }//end class

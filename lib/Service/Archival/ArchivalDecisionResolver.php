@@ -63,44 +63,21 @@ use OCA\OpenRegister\Db\ObjectEntity;
 class ArchivalDecisionResolver {
 
     /**
-     * Record states, in the Archiefwet lifecycle TmloService models.
+     * The record-state vocabulary lives in RecordState, not here.
      *
-     * @var array<string, string>
+     * 🔴 THIS CLASS USED TO KEEP ITS OWN COPY, AND THE COPY HAD DRIFTED. It
+     * knew `actief`, `semi_statisch`, `overgebracht`, `vernietigd` and
+     * `nog_te_archiveren`, but not `gearchiveerd`, which RecordState has always
+     * listed as semi-static. A record stored with that spelling resolved to the
+     * raw Dutch word, so a consumer comparing against `semi_static` saw no
+     * match, from the one layer whose job is to hand out a single vocabulary.
+     *
+     * The Dutch spellings are a compatibility shim for stored data, not a
+     * translation between two live conventions: RetentionService now writes the
+     * English lifecycle. TmloService keeps its own Dutch spellings for
+     * `tmlo.archiefstatus`, which is a separate block with its own transition
+     * matrix and its own MDTO export mapping.
      */
-    private const STATE_ALIASES = [
-        'actief' => 'active',
-        'semi_statisch' => 'semi_static',
-        'overgebracht' => 'transferred',
-        'vernietigd' => 'destroyed',
-        // 🔴 A SECOND VOCABULARY FOR THE SAME FIELD NAME. RetentionService
-        // writes `retention.archiefstatus = 'nog_te_archiveren'`, which is not
-        // in TmloService::VALID_ARCHIEFSTATUS and which that service's own
-        // validator would reject. So `archiefstatus` means one of two different
-        // things depending on which block it sits in.
-        //
-        // "Still to be archived" is a record that is live and not yet
-        // transferred, which is `actief` in the Archiefwet lifecycle, so it
-        // maps there and the abstract layer stays coherent. The underlying
-        // collision is real and is recorded as gap A4 in
-        // openspec/changes/archival-conformance; this mapping makes the
-        // abstract answer usable, it does not fix the two writers.
-        'nog_te_archiveren' => 'active',
-        // GAP A4 IS NOW FIXED AT THE WRITER. RetentionService writes
-        // RecordState::ACTIVE and the rest of the Archiefwet lifecycle in
-        // English, sharing one vocabulary with this layer. The Dutch keys above
-        // stay because stored data is not migrated: they are a compatibility
-        // shim for records written before the change, not a translation between
-        // two live conventions. TmloService keeps its own Dutch spellings for
-        // `tmlo.archiefstatus`, which is its own block with its own transition
-        // matrix and its own MDTO export mapping; that is a separate move.
-        //
-        // The English spellings map to themselves so a stored value that is
-        // already canonical still resolves rather than falling through.
-        'active' => 'active',
-        'semi_static' => 'semi_static',
-        'transferred' => 'transferred',
-        'destroyed' => 'destroyed',
-    ];
 
     /**
      * States after which the record may not be changed.
@@ -260,7 +237,7 @@ class ArchivalDecisionResolver {
         // An unknown state passes through for the same reason an unknown
         // appraisal does: reporting "no state" for a record that carries one is
         // the failure mode that hides a records obligation.
-        $state = (self::STATE_ALIASES[$raw] ?? $raw);
+        $state = (RecordState::CANONICAL[$raw] ?? $raw);
         $decision['recordState'] = $state;
         $decision['immutable'] = in_array($state, self::IMMUTABLE_STATES, true);
 

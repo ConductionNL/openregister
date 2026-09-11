@@ -135,6 +135,36 @@ final class RecordState {
 	public const IMMUTABLE_ALIASES = ['transferred', 'overgebracht', 'destroyed', 'vernietigd'];
 
 	/**
+	 * Every accepted spelling, mapped to the state it means.
+	 *
+	 * 🔴 ONE HOME, BECAUSE A SECOND COPY DRIFTS. ArchivalDecisionResolver
+	 * carried its own private alias map and it had already drifted: it knew
+	 * `actief`, `semi_statisch`, `overgebracht`, `vernietigd` and
+	 * `nog_te_archiveren`, but NOT `gearchiveerd`, which this class has always
+	 * listed as semi-static. A record stored with that spelling resolved to
+	 * the raw Dutch word in `_retention.recordState`, so a consumer comparing
+	 * against `semi_static` saw no match and the abstract layer, whose whole
+	 * job is to hand out one vocabulary, handed out two.
+	 *
+	 * A spelling this map does not know passes through unchanged rather than
+	 * being forced to a state nobody stored.
+	 *
+	 * @var array<string,string>
+	 */
+	public const CANONICAL = [
+		'active' => self::ACTIVE,
+		'actief' => self::ACTIVE,
+		'nog_te_archiveren' => self::ACTIVE,
+		'semi_static' => self::SEMI_STATIC,
+		'semi_statisch' => self::SEMI_STATIC,
+		'gearchiveerd' => self::SEMI_STATIC,
+		'transferred' => self::TRANSFERRED,
+		'overgebracht' => self::TRANSFERRED,
+		'destroyed' => self::DESTROYED,
+		'vernietigd' => self::DESTROYED,
+	];
+
+	/**
 	 * Every accepted spelling of every state.
 	 *
 	 * @var string[]
