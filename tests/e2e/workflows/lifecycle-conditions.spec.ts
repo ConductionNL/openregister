@@ -1,3 +1,4 @@
+import type { APIRequestContext } from '@playwright/test'
 import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
 
 /*
@@ -27,6 +28,8 @@ import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
  * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
  */
 import { expect, test } from '@playwright/test'
+import * as fs from 'fs'
+import * as path from 'path'
 import {
 	createObject,
 	createRegister,
@@ -253,5 +256,111 @@ test.describe('lifecycle transition conditions', () => {
 		expect(JSON.stringify(await resp.json())).toContain(
 			'lifecycle-condition-malformed',
 		)
+	})
+})
+
+/*
+ * The shipped worked example, exercised at runtime.
+ *
+ * The mock register is what a developer imports to see the platform work, and
+ * its `dataSubjectRequest.refuse` transition is the reference example for
+ * declarative conditions. This block takes that transition VERBATIM from the
+ * file, condition and message included, so the example in the register and
+ * the behaviour under test cannot drift apart: edit the example and this test
+ * exercises the edit.
+ *
+ * Only the two fields the condition reads are declared, so the test does not
+ * depend on the rest of the DSAR schema's required fields.
+ */
+const MOCK_REGISTER = JSON.parse(
+	fs.readFileSync(
+		path.resolve(__dirname, '..', '..', '..', 'lib', 'Settings', 'openregister_mock_register.json'),
+		'utf-8',
+	),
+)
+const DSAR = MOCK_REGISTER.components.schemas.dataSubjectRequest
+const DSAR_LIFECYCLE = DSAR['x-openregister-lifecycle']
+const REFUSE = DSAR_LIFECYCLE.transitions.refuse
+
+test.describe('the mock register refuse example', () => {
+	let register: SeededRegister
+	let schema: SeededSchema
+	const properties = {
+		[DSAR_LIFECYCLE.field]: DSAR.properties[DSAR_LIFECYCLE.field],
+		denialGround: DSAR.properties.denialGround,
+	}
+
+	test.beforeAll(async ({ request }) => {
+		register = await createRegister(request, runId, 'dsar-reg')
+		schema = await createSchema(request, runId, 'dsar', properties)
+		await linkSchemaToRegister(request, register, schema)
+		await updateSchema(request, schema, properties, {
+			configuration: {
+				'x-openregister-lifecycle': {
+					field: DSAR_LIFECYCLE.field,
+					initial: DSAR_LIFECYCLE.initial,
+					transitions: { refuse: REFUSE },
+				},
+			},
+		})
+	})
+
+	test.afterAll(async ({ request }) => {
+		if (schema?.id) {
+			await deleteSchema(request, schema.id)
+		}
+		if (register?.id) {
+			await deleteRegister(request, register.id)
+		}
+	})
+
+	/** Attempt `refuse` with the given denial ground; returns the response. */
+	async function attemptRefuse(
+		request: APIRequestContext,
+		denialGround?: string,
+	) {
+		const created = await createObject(request, register.id, schema.id, {
+			[DSAR_LIFECYCLE.field]: DSAR_LIFECYCLE.initial,
+		})
+		const uuid = objectId(created) as string
+		const data: Record<string, unknown> = { [DSAR_LIFECYCLE.field]: REFUSE.to }
+		if (denialGround !== undefined) {
+			data.denialGround = denialGround
+		}
+		const resp = await request.put(
+			`${API}/objects/${register.id}/${schema.id}/${uuid}`,
+			{ headers: JSON_HEADERS, data },
+		)
+		return { resp, uuid }
+	}
+
+	test('refusing without a denial ground is refused, with the shipped message', async ({ request }) => {
+		const { resp, uuid } = await attemptRefuse(request)
+
+		expect(resp.status()).toBe(422)
+		const serialised = JSON.stringify(await resp.json())
+		// The caller's language decides which entry of the map is used, so
+		// accept either declared translation, but nothing else.
+		const declared = Object.values(REFUSE.message) as string[]
+		expect(
+			declared.some(text => serialised.includes(text)),
+			`the refusal carries one of the shipped messages: ${declared.join(' | ')}`,
+		).toBe(true)
+
+		const after = await getObject(request, register.id, schema.id, uuid)
+		expect(after.body?.[DSAR_LIFECYCLE.field]).toBe(DSAR_LIFECYCLE.initial)
+	})
+
+	test('refusing with the not-applicable ground is refused', async ({ request }) => {
+		const { resp } = await attemptRefuse(request, 'not-applicable')
+		expect(resp.status()).toBe(422)
+	})
+
+	test('refusing with a real ground is allowed', async ({ request }) => {
+		const { resp, uuid } = await attemptRefuse(request, 'manifestly-unfounded')
+		expect(resp.status()).toBe(200)
+
+		const after = await getObject(request, register.id, schema.id, uuid)
+		expect(after.body?.[DSAR_LIFECYCLE.field]).toBe(REFUSE.to)
 	})
 })
