@@ -42,15 +42,15 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RecordState;
+use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -105,7 +105,7 @@ class RetentionService {
 	 * @param IAppConfig $appConfig App configuration
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
-	 * @param IDBConnection $db Database connection for eligibility queries
+	 * @param RetentionRowScanner $rowScanner Walks every table a retention decision can live in
 	 * @param ArchiveActionDateCalculator $actionDateCalculator Calculates the archiefactiedatum
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
@@ -122,7 +122,7 @@ class RetentionService {
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly IDBConnection $db,
+		private readonly RetentionRowScanner $rowScanner,
 		private readonly ArchiveActionDateCalculator $actionDateCalculator,
 	) {
 	}//end __construct()
@@ -659,92 +659,216 @@ class RetentionService {
 	}//end extendArchiveActionDate()
 
 	/**
+	 * Visit every object carrying a retention decision, wherever it lives.
+	 *
+	 * Delegates to {@see RetentionRowScanner}, which owns the whole question of
+	 * WHERE a retention decision is stored: the per-schema magic tables and the
+	 * legacy blob table both, paged, with a cap per run. Kept here because both
+	 * archival background jobs already ask this service for the sweep.
+	 *
+	 * @param callable $accept     Predicate answering whether one object is a match.
+	 * @param int|null $maxMatches Cap for this run; defaults to the scanner's own.
+	 *
+	 * @return array{objects: ObjectEntity[], scanned: int, truncated: bool} The matches,
+	 *               how many rows were inspected, and whether the cap stopped the run.
+	 *
+	 * @psalm-param callable(ObjectEntity): bool $accept
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
+	 */
+	public function scanObjectsWithRetention(callable $accept, ?int $maxMatches = null): array {
+		return $this->rowScanner->scan(accept: $accept, maxMatches: $maxMatches);
+	}//end scanObjectsWithRetention()
+
+	/**
 	 * Find objects eligible for destruction.
 	 *
-	 * Objects with archiefactiedatum < now, archiefnominatie = vernietigen,
-	 * the record state is still active, no active legal hold, and not already
-	 * on a pending destruction list.
+	 * Objects whose appraisal is destroy, whose archiefactiedatum has passed,
+	 * whose record state is still live, that are not immutable, carry no active
+	 * legal hold, and are not already on a pending destruction list.
 	 *
 	 * @param array $excludeUuids UUIDs to exclude (already on pending lists)
 	 *
 	 * @return ObjectEntity[] Array of eligible objects
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function findEligibleForDestruction(array $excludeUuids = []): array {
 		$today = (new DateTime())->format('Y-m-d');
 
-		try {
-			// Query objects with archival metadata indicating destruction eligibility.
-			$qb = $this->db->getQueryBuilder();
+		$scan = $this->scanObjectsWithRetention(
+			accept: fn (ObjectEntity $object): bool => $this->isEligibleForDestruction(
+				object: $object,
+				today: $today,
+				excludeUuids: $excludeUuids
+			)
+		);
 
-			$qb->select('id')
-				->from('openregister_objects')
-				->where(
-					$qb->expr()->isNotNull('retention')
-				);
-
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
-
-			$eligible = [];
-
-			foreach ($rows as $row) {
-				try {
-					$object = $this->objectMapper->find(intval($row['id']), null, null, false, false, false);
-				} catch (Exception $e) {
-					continue;
-				}
-
-				$retention = $object->getRetention() ?? [];
-
-				// Check eligibility criteria.
-				if (($retention['archiefnominatie'] ?? '') !== 'vernietigen') {
-					continue;
-				}
-
-				// Every spelling that means live. Matching only the English one
-				// would make every pre-existing record invisible to this sweep,
-				// which is the direction that keeps personal data past its term.
-				if (in_array(($retention['archiefstatus'] ?? ''), RecordState::ACTIVE_ALIASES, true) === false) {
-					continue;
-				}
-
-				$actiedatum = $retention['archiefactiedatum'] ?? null;
-				if ($actiedatum === null || $actiedatum > $today) {
-					continue;
-				}
-
-				// Skip objects in an immutable archival status (vernietigd, overgebracht).
-				if ($this->validateNotImmutable(object: $object) !== null) {
-					continue;
-				}
-
-				// Skip objects with active legal hold.
-				if (($retention['legalHold']['active'] ?? false) === true) {
-					continue;
-				}
-
-				// Skip objects already on pending lists.
-				if (in_array($object->getUuid(), $excludeUuids, true) === true) {
-					continue;
-				}
-
-				$eligible[] = $object;
-			}//end foreach
-
-			return $eligible;
-		} catch (Exception $e) {
-			$this->logger->error(
-				'[RetentionService] Failed to find eligible objects for destruction: ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return [];
-		}//end try
+		return $scan['objects'];
 	}//end findEligibleForDestruction()
+
+	/**
+	 * Decide whether one object is eligible for destruction today.
+	 *
+	 * @param ObjectEntity $object       The object to judge.
+	 * @param string       $today        Today, as Y-m-d.
+	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 *
+	 * @return bool True when every destruction rule is satisfied.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One rule per branch; collapsing
+	 *              them would hide which rule rejected an object.
+	 */
+	private function isEligibleForDestruction(ObjectEntity $object, string $today, array $excludeUuids): bool {
+		$retention = ($object->getRetention() ?? []);
+
+		// Every spelling that means destroy. Matching only the English one
+		// would make every pre-existing record invisible to this sweep, which
+		// is the direction that keeps personal data past its lawful term.
+		if (in_array(($retention['archiefnominatie'] ?? ''), Appraisal::DESTROY_ALIASES, true) === false) {
+			return false;
+		}
+
+		if ($this->recordStateIsLive(retention: $retention) === false) {
+			return false;
+		}
+
+		$actiedatum = ($retention['archiefactiedatum'] ?? null);
+		if ($actiedatum === null || $actiedatum > $today) {
+			return false;
+		}
+
+		// Skip objects in an immutable archival status (destroyed, transferred).
+		//
+		// ⚠️ THIS IS A BELT OVER BRACES AND NO TEST CAN REDDEN ON IT ALONE: every
+		// spelling {@see validateNotImmutable()} rejects is already outside
+		// ACTIVE_ALIASES, so the check above has excluded the object first. It
+		// is kept, and its redundancy named rather than quietly relied on,
+		// because the live-state list is the thing most likely to grow: the day
+		// a new state counts as live, this line is what stops a transferred
+		// record being swept while nobody is looking at this method.
+		if ($this->validateNotImmutable(object: $object) !== null) {
+			return false;
+		}
+
+		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
+			return false;
+		}
+
+		return (in_array($object->getUuid(), $excludeUuids, true) === false);
+	}//end isEligibleForDestruction()
+
+	/**
+	 * Is this record still live, for the purposes of a disposal sweep?
+	 *
+	 * 🔴 AN ABSENT RECORD STATE MEANS LIVE, AND SAYING OTHERWISE FINDS NOTHING.
+	 * Nothing writes `archiefstatus` until something actually happens to a
+	 * record, so the common case carries no state at all. Measured on a live
+	 * instance: a dossiq case resolved through OpenRegister came back as
+	 * `{"appraisal":"retain_permanently","retentionPeriod":"P10Y",`
+	 * `"disposalDate":"2036-09-11T07:22:48+00:00","recordState":null,`
+	 * `"basis":"record"}`, and `recordState` was null for every case measured.
+	 *
+	 * The previous comparison was `in_array($retention['archiefstatus'] ?? '',
+	 * ACTIVE_ALIASES)`. `''` is in no alias list, so every record nothing had
+	 * happened to yet was skipped. Reading the magic tables would have fixed
+	 * where the sweep looks and still returned nothing for the ordinary case.
+	 *
+	 * Same reasoning as the Dutch aliases: being too strict here keeps personal
+	 * data past its lawful term, and it does it in silence. An explicit
+	 * `transferred` or `destroyed`, in any spelling, still excludes, and
+	 * {@see validateNotImmutable()} still runs after this.
+	 *
+	 * This is the SWEEP's reading of the field only. It does not change what
+	 * {@see \OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver} emits:
+	 * null is the honest answer there and consumers render it as a blank.
+	 *
+	 * @param array $retention The object's retention block.
+	 *
+	 * @return bool True when the record is live or has no recorded state yet.
+	 */
+	private function recordStateIsLive(array $retention): bool {
+		$state = ($retention['archiefstatus'] ?? null);
+
+		if ($state === null || (is_string($state) === true && trim($state) === '')) {
+			return true;
+		}
+
+		// Every spelling that means live.
+		return in_array($state, RecordState::ACTIVE_ALIASES, true);
+	}//end recordStateIsLive()
+
+	/**
+	 * Find objects eligible for transfer to an e-Depot.
+	 *
+	 * Objects whose appraisal is retain-permanently, whose archiefactiedatum has
+	 * passed, whose record state is not already transferred or destroyed, that
+	 * carry no active legal hold, and are not already on an active transfer
+	 * list.
+	 *
+	 * @param array $excludeUuids UUIDs to exclude (already on active transfer lists)
+	 *
+	 * @return ObjectEntity[] Array of eligible objects
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+	 */
+	public function findEligibleForTransfer(array $excludeUuids = []): array {
+		$today = (new DateTime())->format('Y-m-d');
+
+		$scan = $this->scanObjectsWithRetention(
+			accept: fn (ObjectEntity $object): bool => $this->isEligibleForTransfer(
+				object: $object,
+				today: $today,
+				excludeUuids: $excludeUuids
+			)
+		);
+
+		return $scan['objects'];
+	}//end findEligibleForTransfer()
+
+	/**
+	 * Decide whether one object is eligible for e-Depot transfer today.
+	 *
+	 * A record already transferred has nothing left to hand over and a
+	 * destroyed one no longer exists, so both are excluded by state rather than
+	 * by requiring the state to be live: a semi-static record is exactly the one
+	 * an archivist expects to see on a transfer list.
+	 *
+	 * @param ObjectEntity $object       The object to judge.
+	 * @param string       $today        Today, as Y-m-d.
+	 * @param array        $excludeUuids UUIDs already on an active transfer list.
+	 *
+	 * @return bool True when every transfer rule is satisfied.
+	 */
+	private function isEligibleForTransfer(ObjectEntity $object, string $today, array $excludeUuids): bool {
+		$retention = ($object->getRetention() ?? []);
+
+		// Every spelling that means keep forever: `bewaren` from a ZGW
+		// resultaattype, `blijvend_bewaren` from MDTO and the selectielijst.
+		if (in_array(($retention['archiefnominatie'] ?? ''), Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === false) {
+			return false;
+		}
+
+		// Only an EXPLICIT transferred or destroyed state excludes. An absent,
+		// null or empty state means nothing has happened to this record yet,
+		// which is exactly the record an archivist expects to see on a transfer
+		// list; see {@see recordStateIsLive()} for the measurement behind that.
+		if (in_array(($retention['archiefstatus'] ?? ''), self::IMMUTABLE_STATUSES, true) === true) {
+			return false;
+		}
+
+		$actiedatum = ($retention['archiefactiedatum'] ?? null);
+		if ($actiedatum === null || $actiedatum > $today) {
+			return false;
+		}
+
+		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
+			return false;
+		}
+
+		return (in_array($object->getUuid(), $excludeUuids, true) === false);
+	}//end isEligibleForTransfer()
 
 	/**
 	 * Get UUIDs of objects already on pending destruction lists.
@@ -842,7 +966,14 @@ class RetentionService {
 
 			$objectEntries[] = [
 				'uuid' => $object->getUuid(),
-				'title' => $object->getTitle() ?? $object->getUuid(),
+				// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title` PROPERTY,
+				// so Entity's magic accessor threw "title is not a valid
+				// attribute" here, uncaught, and took the whole
+				// DestructionCheckJob run down with it. Every sweep that got
+				// this far therefore failed at list creation, which is a second
+				// reason no destruction list was ever produced. `name` is the
+				// property that exists.
+				'title' => $object->getName() ?? $object->getUuid(),
 				'schema' => $object->getSchema(),
 				'register' => $object->getRegister(),
 				'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,

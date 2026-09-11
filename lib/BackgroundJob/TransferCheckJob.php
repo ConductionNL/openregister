@@ -27,9 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use DateTime;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
+use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -57,8 +57,9 @@ class TransferCheckJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
-	 * @param MagicMapper $objectMapper The object mapper.
+	 * @param RetentionService $retentionService Owns the retention sweep both archival jobs share.
 	 * @param TransferListService $transferListService The transfer list service.
+	 * @param TransferRecordService $transferRecords Durable transfer-list records.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -66,8 +67,9 @@ class TransferCheckJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly MagicMapper $objectMapper,
+		private readonly RetentionService $retentionService,
 		private readonly TransferListService $transferListService,
+		private readonly TransferRecordService $transferRecords,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -148,28 +150,38 @@ class TransferCheckJob extends TimedJob {
 	 * Find objects eligible for e-Depot transfer.
 	 *
 	 * Objects are eligible when:
-	 * - archiefnominatie = 'bewaren'
+	 * - the appraisal is retain-permanently (`bewaren` / `blijvend_bewaren`)
 	 * - archiefactiedatum <= today
-	 * - the record state is still active
+	 * - the record state is not already transferred or destroyed
+	 * - there is no active legal hold
 	 * - Not already on an active transfer list
+	 *
+	 * 🔴 THIS USED TO RETURN `[]` UNCONDITIONALLY, behind a comment saying a
+	 * real implementation would query JSON field conditions. It ran daily on
+	 * every install with an e-Depot configured and produced no transfer list,
+	 * ever. The decision itself now lives in
+	 * {@see RetentionService::findEligibleForTransfer()}, beside the destruction
+	 * sweep it shares a scanner with.
 	 *
 	 * @return array<int, \OCA\OpenRegister\Db\ObjectEntity> Eligible objects.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
 	 */
 	private function findEligibleObjects(): array {
-		// Use a broad search and filter in PHP since the retention field is JSON.
-		// This is a simplified approach; production would use a more targeted query.
-		$today = (new DateTime())->format('Y-m-d');
-
-		$this->logger->debug(
-			message: '[TransferCheckJob] Scanning for eligible objects',
-			context: ['cutoffDate' => $today]
+		// Objects already awaiting or approved for transfer are excluded the way
+		// the destruction sweep excludes objects on a pending destruction list,
+		// so a second run does not re-list what an archivist is already holding.
+		$excludeUuids = $this->transferListService->getObjectsOnActiveTransferLists(
+			activeTransferLists: $this->transferRecords->listTransferLists()
 		);
 
-		// Note: In a real implementation, this would query using JSON field conditions.
-		// For now, we return an empty array as a safe no-op that can be extended
-		// when the magic table JSON querying supports retention field filtering.
-		return [];
+		$eligible = $this->retentionService->findEligibleForTransfer($excludeUuids);
+
+		$this->logger->debug(
+			message: '[TransferCheckJob] Scanned for eligible objects',
+			context: ['eligibleCount' => count($eligible), 'excludedCount' => count($excludeUuids)]
+		);
+
+		return $eligible;
 	}//end findEligibleObjects()
 }//end class
