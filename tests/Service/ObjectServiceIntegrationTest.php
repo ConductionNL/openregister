@@ -771,7 +771,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$this->service->setRegister($this->testRegister);
 		$this->service->setSchema($this->testSchema);
 
-		$result = $this->service->deleteObject($uuid, false, false);
+		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
@@ -792,7 +792,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$uuid = $saved->getUuid();
 
 		// Don't set schema context - let delete derive it
-		$result = $this->service->deleteObject($uuid, false, false);
+		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
