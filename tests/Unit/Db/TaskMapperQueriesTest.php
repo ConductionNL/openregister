@@ -378,4 +378,26 @@ class TaskMapperQueriesTest extends TestCase {
 		$empty = new TaskMapper(db: $this->connectionWith(rows: []));
 		$this->assertSame(0, $empty->countInbox(criteria: new TaskInboxCriteria(uid: 'alice')));
 	}//end testCountInboxReadsTheTotal()
+
+	/**
+	 * countOverdueOpen is the inbox's overdue comparison without the inbox:
+	 * the SAME COALESCE over the effective deadline, plus the openness guard,
+	 * and no visibility predicate because a metrics scrape has no user.
+	 *
+	 * @return void
+	 */
+	public function testCountOverdueOpenGuardsOnTerminalityAndTheSharedCoalesce(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith(rows: [['total' => '9']]));
+
+		$this->assertSame(9, $mapper->countOverdueOpen(now: new DateTime('2026-09-11T09:00:00+00:00')));
+		$this->assertTrue(
+			(bool)array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) <')),
+			'the gauge MUST use the one effective-deadline comparison, not a second definition of overdue'
+		);
+		$this->assertTrue($this->saw('expr.eq', 'is_terminal'), 'a terminal task is never open, however long its deadline has passed');
+		$this->assertFalse($this->saw('expr.in', 'assignee'), 'an instance-wide gauge MUST NOT be scoped to a caller');
+
+		$empty = new TaskMapper(db: $this->connectionWith(rows: []));
+		$this->assertSame(0, $empty->countOverdueOpen(now: new DateTime('2026-09-11T09:00:00+00:00')));
+	}//end testCountOverdueOpenGuardsOnTerminalityAndTheSharedCoalesce()
 }//end class
