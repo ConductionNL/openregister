@@ -153,19 +153,13 @@ function recordStateCases(): StateCase[] {
 	return cases
 }
 
-/**
- * Spellings `ArchivalDecisionResolver::STATE_ALIASES` does not translate.
- *
- * `gearchiveerd` is in `RecordState::SEMI_STATIC_ALIASES` but is absent from the
- * resolver's own map, so `@self._retention.recordState` answers the stored Dutch
- * word instead of `semi_static`. Its immutability is still correct, which is why
- * this is a legibility gap and not a retention one, and it is reported on the PR
- * rather than fixed here (this branch may not touch `lib/**`).
- *
- * The list is NAMED rather than the assertion loosened: a spelling that starts
- * failing to translate and is not on this list still reddens the test.
- */
-const UNTRANSLATED_BY_RESOLVER = ['gearchiveerd']
+// NO EXCEPTIONS. This spec used to name `gearchiveerd` as the one spelling the
+// resolver answered in Dutch: it was in `RecordState::SEMI_STATIC_ALIASES` and
+// missing from the resolver's private copy of the map. #3628 removed that copy,
+// so the resolver now reads `RecordState::CANONICAL`, and every spelling must
+// come back canonical. The alias lists this spec reads and the CANONICAL map the
+// resolver reads are still two declarations in one file, so this test is the
+// thing that notices if they drift apart again.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -239,7 +233,21 @@ async function createdAtOf(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Seeded fixtures: one archival schema, one plain schema, in one register.
+// Seeded fixtures: ONE register, ONE archival schema, ONE plain schema, for the
+// whole file.
+//
+// 🔴 ONE REGISTER IS A BUDGET, NOT TIDINESS. An archival row refuses every HTTP
+// delete, so the register holding it refuses too (409 `register-has-objects`)
+// and this file's fixtures are PERMANENT for the rest of the run. The registers
+// list is sliced client-side at 20 rows per page (`RegistersIndex`
+// `paginatedRegisters`), and a fresh instance already ships 16 registers, so
+// what this file leaves behind is subtracted from a budget of four that later
+// specs share. It used to seed two registers and two archival schemas, one per
+// describe; that took half the budget and, with the two registers
+// `tests/e2e/ci/object-sharing.spec.ts` and `ci/object-shares-tab.spec.ts` also
+// leak, pushed the count to 21 so `crud/register-crud.spec.ts` could not find
+// its own brand-new register on page one. Measured, reproduced, and the reason
+// both describes below now share one register and one archival schema.
 // ─────────────────────────────────────────────────────────────────────────────
 
 let registerId = 0
@@ -247,38 +255,41 @@ let archivalSchemaId = 0
 let plainSchemaId = 0
 let plainObjectId = ''
 
+// File-level, so the record-state describe reuses the same pair rather than
+// seeding a second one.
+test.beforeAll(async ({ request }) => {
+	const register = await createRegister(request, RUN, 'arch-reg')
+	const archival = await createSchema(
+		request,
+		RUN,
+		'arch-sch',
+		archivalProperties(),
+		archivalAnnotation(),
+	)
+	const plain = await createSchema(request, RUN, 'plain-sch', {
+		title: { type: 'string', title: 'Title' },
+	})
+	await linkSchemaToRegister(request, register, [archival.id, plain.id])
+
+	registerId = register.id
+	archivalSchemaId = archival.id
+	plainSchemaId = plain.id
+})
+
+test.afterAll(async ({ request }) => {
+	// Best-effort, and deliberately incomplete. The archival rows refuse to be
+	// deleted (asserted below), so the archival schema and the register refuse to
+	// go with them; the plain schema and its object do come out, which is the
+	// half that CAN be given back.
+	if (plainObjectId !== '') {
+		await deleteObject(request, registerId, plainSchemaId, plainObjectId)
+	}
+	await deleteSchema(request, plainSchemaId)
+	await deleteRegister(request, registerId)
+})
+
 test.describe('archival — the resolved decision on an annotated schema', () => {
 	test.use({ storageState: STORAGE_STATE })
-
-	test.beforeAll(async ({ request }) => {
-		const register = await createRegister(request, RUN, 'arch-reg')
-		const archival = await createSchema(
-			request,
-			RUN,
-			'arch-sch',
-			archivalProperties(),
-			archivalAnnotation(),
-		)
-		const plain = await createSchema(request, RUN, 'plain-sch', {
-			title: { type: 'string', title: 'Title' },
-		})
-		await linkSchemaToRegister(request, register, [archival.id, plain.id])
-
-		registerId = register.id
-		archivalSchemaId = archival.id
-		plainSchemaId = plain.id
-	})
-
-	test.afterAll(async ({ request }) => {
-		// Best-effort, and deliberately incomplete. The archival rows refuse to
-		// be deleted (asserted below), so the schema and the register refuse to
-		// go with them; the plain schema's own object does come out.
-		if (plainObjectId !== '') {
-			await deleteObject(request, registerId, plainSchemaId, plainObjectId)
-		}
-		await deleteSchema(request, plainSchemaId)
-		await deleteRegister(request, registerId)
-	})
 
 	/**
 	 * The schema annotation alone establishes a decision: no ZGW field on the
@@ -450,22 +461,9 @@ test.describe('archival — the resolved decision on an annotated schema', () =>
 test.describe('archival — the record-state vocabulary honours both spellings', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	let stateRegisterId = 0
-	let stateSchemaId = 0
-
-	test.beforeAll(async ({ request }) => {
-		const register = await createRegister(request, RUN, 'state-reg')
-		const schema = await createSchema(
-			request,
-			RUN,
-			'state-sch',
-			archivalProperties(),
-			archivalAnnotation(),
-		)
-		await linkSchemaToRegister(request, register, [schema.id])
-		stateRegisterId = register.id
-		stateSchemaId = schema.id
-	})
+	// Reuses the file's one archival register and schema. A second pair would
+	// prove nothing this one does not, and would cost another permanent row in
+	// the registers list every later spec has to page past.
 
 	/**
 	 * Every spelling RecordState accepts must reach the same verdict about
@@ -494,8 +492,8 @@ test.describe('archival — the record-state vocabulary honours both spellings',
 		for (const { alias, canonical, immutable } of cases) {
 			const object = await createObject(
 				request,
-				stateRegisterId,
-				stateSchemaId,
+				registerId,
+				archivalSchemaId,
 				{
 					title: `${RUN} state ${alias}`,
 					statusCode: 500,
@@ -504,8 +502,8 @@ test.describe('archival — the record-state vocabulary honours both spellings',
 			)
 			const decision = await retentionOf(
 				request,
-				stateRegisterId,
-				stateSchemaId,
+				registerId,
+				archivalSchemaId,
 				object.id,
 			)
 
@@ -519,17 +517,12 @@ test.describe('archival — the record-state vocabulary honours both spellings',
 				`'${alias}' means ${canonical}, so immutable must be ${immutable}`,
 			).toBe(immutable)
 
-			// The legibility half: the abstract layer answers in English. One
-			// spelling is not yet translated by the resolver (see
-			// UNTRANSLATED_BY_RESOLVER); accept the stored word for THOSE only,
-			// so a new untranslated spelling still fails here.
-			const acceptable = UNTRANSLATED_BY_RESOLVER.includes(alias)
-				? [canonical, alias]
-				: [canonical]
+			// The legibility half: the abstract layer answers in English, for
+			// every spelling, with no exceptions.
 			expect(
-				acceptable,
+				decision?.recordState,
 				`'${alias}' must resolve to the canonical '${canonical}'`,
-			).toContain(decision?.recordState)
+			).toBe(canonical)
 		}
 	})
 })
