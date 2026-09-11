@@ -173,6 +173,18 @@ const LIFECYCLE = {
 			condition: NEVER_HOLDS,
 		},
 		// Group 4: a chain of two automatic moves in one pass, A to B to C.
+		// The two entry moves below carry no autoWhen. They exist because the
+		// triggering write must itself be a DECLARED transition: a PUT straight
+		// from `nieuw` into a chain's first state is refused with
+		// lifecycle-invalid-transition, which is the engine working, not a bug.
+		beginnen: {
+			from: ['nieuw'],
+			to: 'stap-1',
+		},
+		vertrekken: {
+			from: ['nieuw'],
+			to: 'heen',
+		},
 		stapEen: {
 			from: ['stap-1'],
 			to: 'stap-2',
