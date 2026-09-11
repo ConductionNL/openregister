@@ -148,7 +148,15 @@ class TmloMdtoExportXsdTest extends TestCase {
 
 		$envelope = new DOMDocument();
 		$this->assertTrue($envelope->loadXML($xml));
-		$this->assertSame(TmloService::EXPORT_NAMESPACE, $envelope->documentElement->namespaceURI);
+		// The LITERAL namespace, not the constant: asserting against the
+		// constant under test compares a value with itself, and a change that
+		// pointed the envelope back at the MDTO namespace would pass.
+		$this->assertSame('https://www.openregister.app/mdto-export', $envelope->documentElement->namespaceURI);
+		$this->assertNotSame(
+			'https://www.nationaalarchief.nl/mdto',
+			$envelope->documentElement->namespaceURI,
+			'The envelope is openregister\'s own element and must not claim to be MDTO'
+		);
 
 		$children = 0;
 		foreach ($envelope->documentElement->childNodes as $child) {
