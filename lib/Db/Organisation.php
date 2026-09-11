@@ -99,6 +99,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setRsin(?string $rsin)
  * @method string|null getKvk()
  * @method void setKvk(?string $kvk)
+ * @method string|null getLegalName()
+ * @method void setLegalName(?string $legalName)
  * @method string|null getPki()
  * @method void setPki(?string $pki)
  * @method string|null getImage()
@@ -128,6 +130,9 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) One mapped column costs a
+ * property, an accessor pair, a type registration and a serialised key, so the
+ * entity grows with the table. Splitting it would split one row's mapping.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -430,6 +435,17 @@ class Organisation extends Entity implements JsonSerializable {
 	protected ?string $kvk = null;
 
 	/**
+	 * The name the organisation is registered under (statutaire naam).
+	 *
+	 * Distinct from `name`, what every list shows. Never a copy of it: a reader
+	 * needing something to print falls back to `name` at the point of use.
+	 * Identity only, never a key; `kvk`, `rsin` and `oin` are the identifiers.
+	 *
+	 * @var string|null The registered legal name.
+	 */
+	protected ?string $legalName = null;
+
+	/**
 	 * PKIoverheid certificate reference.
 	 *
 	 * @var string|null
@@ -605,6 +621,7 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'tooi', type: 'string');
 		$this->addType(fieldName: 'rsin', type: 'string');
 		$this->addType(fieldName: 'kvk', type: 'string');
+		$this->addType(fieldName: 'legalName', type: 'string');
 		$this->addType(fieldName: 'pki', type: 'string');
 		$this->addType(fieldName: 'image', type: 'string');
 		// Relationship facet.
@@ -1062,6 +1079,7 @@ class Organisation extends Entity implements JsonSerializable {
 			'tooi' => $this->tooi,
 			'rsin' => $this->rsin,
 			'kvk' => $this->kvk,
+			'legalName' => $this->legalName,
 			'pki' => $this->pki,
 			'image' => $this->image,
 			'registrationStatus' => $this->registrationStatus,
