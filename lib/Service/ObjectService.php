@@ -5160,26 +5160,36 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Delete all objects belonging to a specific register
      *
-     * This method efficiently deletes all objects that belong to the specified register.
-     * It uses bulk operations for optimal performance and maintains data integrity.
+     * Empties every magic table of every schema the register lists, in one
+     * transaction, snapshotting each object to the audit trail first. Refuses the
+     * whole request with ArchivalImmutableException, before touching any row, when
+     * any of those schemas is archival. The work lives in SchemaDeletionService,
+     * resolved lazily for the reason deleteObjectsBySchema() gives.
      *
-     * @param int $registerId The ID of the register whose objects should be deleted
+     * @param int  $registerId The ID of the register whose objects should be deleted
+     * @param bool $hardDelete Whether to force hard delete (default: false)
      *
      * @return (int|string[])[]
      *
-     * @throws \Exception If the deletion operation fails
+     * @throws \OCA\OpenRegister\Exception\ArchivalImmutableException If any schema of the register is archival
+     * @throws \Exception If the deletion operation fails (nothing is deleted)
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
      *
      * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, register_id: int}
      *
-     * @spec exclude Deprecated throwing stub; register-wide delete awaits MagicMapper reimplementation (blob table retired).
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
      */
-    public function deleteObjectsByRegister(int $registerId): array
+    public function deleteObjectsByRegister(int $registerId, bool $hardDelete=false): array
     {
-        // TODO: Reimplement using MagicMapper for register-wide delete on magic tables.
-        throw new RuntimeException(
-            'deleteObjectsByRegister needs reimplementation using MagicMapper (blob objects table retired)'
+        $register = $this->registerMapper->find(id: $registerId);
+        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+
+        return $schemaDeletionService->deleteObjectsByRegister(
+            register: $register,
+            hardDelete: $hardDelete
         );
     }//end deleteObjectsByRegister()
 

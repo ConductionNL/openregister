@@ -196,6 +196,33 @@ class BulkController extends Controller {
 	}//end checkRegisterManagePermission()
 
 	/**
+	 * Find the first schema of a register the current user may not manage.
+	 *
+	 * Walks the register's own `schemas` list, the set a register-wide delete
+	 * empties. A listed id that does not resolve is skipped: it has no table the
+	 * delete could reach, and the service skips it the same way.
+	 *
+	 * @param Register $register The register about to be emptied.
+	 *
+	 * @return string|null The id of the first unmanageable schema, or null when all pass.
+	 */
+	private function firstUnmanageableSchemaOf(Register $register): ?string {
+		foreach ($register->getSchemas() as $schemaId) {
+			try {
+				$schema = $this->schemaMapper->find((int)$schemaId);
+			} catch (\Throwable $e) {
+				continue;
+			}
+
+			if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+				return (string)$schemaId;
+			}
+		}
+
+		return null;
+	}//end firstUnmanageableSchemaOf()
+
+	/**
 	 * Resolve a register/schema path pair to numeric ids.
 	 *
 	 * This method used to hold its own copy of the resolution logic. That copy
@@ -809,7 +836,7 @@ class BulkController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with register delete result
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
 	 */
 	public function deleteRegister(string $register): JSONResponse {
 		try {
@@ -841,11 +868,28 @@ class BulkController extends Controller {
 				);
 			}
 
+			// Managing the register is not enough: this empties every schema the
+			// register lists, so each must pass the same manage gate that
+			// delete-objects applies to one schema. Resolved exactly as
+			// SchemaDeletionService::resolveSchemasOfRegister() resolves the set it
+			// deletes (the register's list; an id nothing answers to is skipped).
+			$unmanageable = $this->firstUnmanageableSchemaOf(register: $registerEntity);
+			if ($unmanageable !== null) {
+				return new JSONResponse(
+					data: ['error' => 'User does not have permission to manage schema ' . $unmanageable . ' of this register'],
+					statusCode: Http::STATUS_FORBIDDEN
+				);
+			}
+
+			// Same normalisation as deleteSchemaObjects(): a form or query request
+			// delivers the string "true".
+			$hardDelete = filter_var(($this->request->getParams()['hardDelete'] ?? false), FILTER_VALIDATE_BOOLEAN);
+
 			// Set register context.
 			$this->objectService->setRegister($register);
 
 			// Perform register deletion operation.
-			$result = $this->objectService->deleteObjectsByRegister((int)$register);
+			$result = $this->objectService->deleteObjectsByRegister(registerId: (int)$register, hardDelete: $hardDelete);
 
 			return new JSONResponse(
 				data: [
@@ -854,8 +898,14 @@ class BulkController extends Controller {
 					'deleted_count' => $result['deleted_count'],
 					'deleted_uuids' => $result['deleted_uuids'],
 					'register_id' => $result['register_id'],
+					'hard_delete' => $hardDelete,
 				]
 			);
+		} catch (ArchivalImmutableException $e) {
+			// A schema of the register holds legally retained records, and the whole
+			// request was refused before any row was touched. A deliberate refusal,
+			// so it is not left to the generic handler below to report as a 500.
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Register objects deletion failed: ' . $e->getMessage()],

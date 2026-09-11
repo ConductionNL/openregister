@@ -1327,6 +1327,81 @@ class BulkControllerTest extends TestCase {
 		$this->assertStringContainsString('Register delete error', $data['error']);
 	}
 
+	/**
+	 * An archival schema in the register is a deliberate 403, not a 500.
+	 *
+	 * @return void
+	 */
+	public function testDeleteRegisterRefusesAnArchivalRegisterWith403(): void {
+		$this->stubAdminUser();
+		$this->stubRegisterLookup(1);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('deleteObjectsByRegister')
+			->willThrowException(new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete'));
+
+		$result = $this->controller->deleteRegister('1');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $result->getData()['error']);
+		$this->assertSame('retained-case', $result->getData()['schema']);
+	}
+
+	/**
+	 * Managing the register is not enough: every schema it empties must be manageable.
+	 *
+	 * @return void
+	 */
+	public function testDeleteRegisterRefusesWhenOneOfItsSchemasIsNotManageable(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['editors']);
+
+		$register = new Register();
+		$register->setId(1);
+		$register->setAuthorization(['manage' => ['editors']]);
+		$register->setSchemas([42, 43]);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$manageable = new Schema();
+		$manageable->setId(42);
+		$manageable->setAuthorization(['manage' => ['editors']]);
+		// No manage rule: admin-only, so alice may not empty it.
+		$locked = new Schema();
+		$locked->setId(43);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn (int|string $id): Schema => ((int)$id === 42 ? $manageable : $locked)
+		);
+
+		$this->objectService->expects($this->never())->method('deleteObjectsByRegister');
+
+		$result = $this->controller->deleteRegister('1');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$this->assertStringContainsString('43', $result->getData()['error']);
+	}
+
+	/**
+	 * The hard/soft choice reaches the service, as it does on delete-objects.
+	 *
+	 * @return void
+	 */
+	public function testDeleteRegisterPassesHardDeleteThrough(): void {
+		$this->stubAdminUser();
+		$this->stubRegisterLookup(1);
+		$this->request->method('getParams')->willReturn(['hardDelete' => 'true']);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->expects($this->once())
+			->method('deleteObjectsByRegister')
+			->with(1, true)
+			->willReturn(['deleted_count' => 0, 'deleted_uuids' => [], 'register_id' => 1]);
+
+		$result = $this->controller->deleteRegister('1');
+
+		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
+	}
+
 	// ========================================================================
 	// runSchemaValidation() tests
 	// ========================================================================
