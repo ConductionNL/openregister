@@ -249,17 +249,33 @@ Split by cost. Only the first group is proposed for immediate implementation.
 
 ### Now — the abstract layer tells the truth
 
-1. **A1** — `ArchivalDecisionResolver` reads `@self.tmlo` alongside the other four
-   sources.
-2. **A2** — `recordState` in `_retention`, resolved from the TMLO lifecycle, with
-   `overgebracht` / `vernietigd` marked immutable so a consumer can grey an edit.
-3. **B2** — when a selectielijst was expected and not consulted, say so in
-   `basis` rather than reporting `schema`.
-4. **C2** — wire `VALID_AFLEIDINGSWIJZEN` up, or delete it. A configured method
-   the code cannot honour must refuse loudly; today it is silently mis-dated.
-5. **C3** — date the fallback from the object's `created`, which is what the
-   comment already claims, not from `new DateTime()`.
-6. Vocabulary → **MDTO concepts, English keys**, per the table above.
+**ALL SIX ARE DONE.** They landed across #3584 and the changes listed below, and
+this list said "proposed" long after the code said otherwise. Verified in the
+tree on 2026-09-11, each against the file that implements it:
+
+1. ~~**A1** — `ArchivalDecisionResolver` reads `@self.tmlo` alongside the other
+   four sources.~~ **DONE.** `ArchivalDecisionResolver::resolve()` reads
+   `$entity->getTmlo()` as its fifth source.
+2. ~~**A2** — `recordState` in `_retention`, resolved from the TMLO lifecycle,
+   with `overgebracht` / `vernietigd` marked immutable.~~ **DONE.** The resolver
+   emits `recordState` and derives `immutable` from `IMMUTABLE_STATES`, so a
+   consumer never has to know the vocabulary to grey an edit.
+3. ~~**B2** — when a selectielijst was expected and not consulted, say so in
+   `basis`.~~ **DONE.** `basis` answers `selection_list_not_consulted` rather
+   than reporting `schema`.
+4. ~~**C2** — wire `VALID_AFLEIDINGSWIJZEN` up, or delete it.~~ **DONE.** It is
+   referenced, and an unsupported method now refuses loudly instead of being
+   silently mis-dated.
+5. ~~**C3** — date the fallback from the object's `created`.~~ **DONE.**
+   `brondatumFallback()` reads `$object->getCreated()`. `new DateTime()` remains
+   only for a record with no creation date at all.
+6. ~~Vocabulary → **MDTO concepts, English keys**.~~ **DONE.** `RecordState` and
+   `Appraisal` are the two vocabularies, each holding the Dutch spellings as
+   aliases so stored data keeps resolving.
+
+**A3 is NOT done** and is tracked under "Later" with D1: `beperkingGebruik`,
+`openbaarheid`, `aggregatieniveau` and `dekkingInTijd` still have no writer, so
+nothing populates them to export.
 
 ### Next — provenance and derivation
 
@@ -296,20 +312,27 @@ objects that were already awaiting approval, and nothing said so. The key is
 now `status`.
 
 **F2 · `DestructionService::findEligibleObjects()` cannot return anything.
-NOT FIXED HERE.**
+DELETED.**
 
-It calls `MagicMapper::findAll()` with no `register`/`schema`, and `findAll()`
-returns `[]` immediately in that case. It also filters on
+It called `MagicMapper::findAll()` with no `register`/`schema`, and `findAll()`
+returns `[]` immediately in that case. It also filtered on
 `retention.archiefstatus`, a dotted JSON path the search handler does not
 support outside the TMLO-specific branch, which would compile to `1 = 0` even
 with the context supplied.
 
-It has no production caller: `DestructionCheckJob` uses
-`RetentionService::findEligibleForDestruction()`, which reads the objects table
-directly and filters in PHP, and `TransferCheckJob::findEligibleObjects()` is
-its own separate method that returns `[]` as a documented no-op. So nothing is
-broken by it today. It is recorded here because it looks like a working query
-and is not, and because the next person to wire it up will believe it works.
+It had no caller anywhere, tests included: `DestructionCheckJob` uses
+`RetentionService::findEligibleForDestruction()`, and
+`TransferCheckJob::findEligibleObjects()` was its own separate method that
+returned `[]`. It was left in place on the first pass and recorded here because
+it looks like a working query and is not.
+
+Leaving it was the wrong call, because that is precisely the harm it does: the
+next person to wire it up believes it works. It is now deleted, along with the
+`LegalHoldService` dependency `DestructionService` held only to serve it. The
+eligibility question has one home,
+`RetentionService::findEligibleForDestruction()`, which scans the per-schema
+magic tables as well as the legacy blob table and filters in PHP; the transfer
+side gained its sibling, `findEligibleForTransfer()`.
 
 ### Later — export completeness
 

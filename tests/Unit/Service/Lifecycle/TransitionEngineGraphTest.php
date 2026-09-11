@@ -103,7 +103,9 @@ class TransitionEngineGraphTest extends TestCase {
 			$this->registerMapper,
 			$this->appConfig,
 			$this->logger,
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(
+				new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()
+			)
 		);
 	}//end setUp()
 

@@ -89,6 +89,13 @@ class ObjectTransitionedEvent extends Event {
 	private string $schema;
 
 	/**
+	 * Whether a rule made this move rather than a caller asking for it.
+	 *
+	 * @var boolean
+	 */
+	private bool $automatic;
+
+	/**
 	 * Capture the post-transition state for downstream listeners.
 	 *
 	 * @param ObjectEntity $object Object after the transition.
@@ -98,6 +105,18 @@ class ObjectTransitionedEvent extends Event {
 	 * @param string|null $userId Caller uid (null for system-applied transitions).
 	 * @param string $register Register slug.
 	 * @param string $schema Schema slug.
+	 * @param bool $automatic True when a transition's `autoWhen` fired this move. Additive
+	 *                       and defaulting to false, so every existing dispatcher and
+	 *                       listener is unaffected.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `automatic` records WHO caused
+	 * the move, which is data this event carries, not a switch that changes what
+	 * the constructor does. A listener needs it precisely because "notify the
+	 * applicant" is right for a person's move and wrong for a rule's. Splitting
+	 * the event into two classes to avoid one boolean would force every existing
+	 * listener to subscribe twice.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		ObjectEntity $object,
@@ -107,6 +126,7 @@ class ObjectTransitionedEvent extends Event {
 		?string $userId,
 		string $register,
 		string $schema,
+		bool $automatic = false,
 	) {
 		parent::__construct();
 		$this->object = $object;
@@ -116,7 +136,23 @@ class ObjectTransitionedEvent extends Event {
 		$this->userId = $userId;
 		$this->register = $register;
 		$this->schema = $schema;
+		$this->automatic = $automatic;
 	}//end __construct()
+
+	/**
+	 * Whether a rule made this move rather than a caller asking for it.
+	 *
+	 * An auditor reading a trail needs to tell a user's click from a rule
+	 * firing on that user's save. Both are attributed to the same user, because
+	 * an automatic move acts as the identity whose write triggered it.
+	 *
+	 * @return bool True when the move was made by a transition's `autoWhen`.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 */
+	public function isAutomatic(): bool {
+		return $this->automatic;
+	}//end isAutomatic()
 
 	/**
 	 * Read the object after the transition.

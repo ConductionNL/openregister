@@ -189,3 +189,122 @@ Every transfer lifecycle event MUST produce an immutable audit trail entry for l
 #### Scenario: Audit trail for transfer failure
 - **WHEN** a transfer fails (partially or completely)
 - **THEN** an audit trail entry MUST be created with action `archival.transfer_failed` containing the transfer list UUID, error details, number of failed objects, and transport protocol used
+
+### Requirement: The MDTO generator MUST report the limits of its own validation
+
+`MdtoXmlGenerator` MUST NOT present its pre-generation check as an MDTO
+validity check. The check MUST be named and documented for what it is (the
+inputs the generator needs), and the generator MUST separately report which
+MDTO-required elements the produced document will be missing.
+
+The required-element list is taken from two authoritative sources published by
+the Nationaal Archief: the MDTO metagegevensschema
+(`github.com/NationaalArchief/MDTO-Metagegevensschema`, `markdown/attributenKlassen.md`)
+and the XML syntax `MDTO-XML1.0.1.xsd`
+(`nationaalarchief.nl/sites/default/mdto/MDTO-XML1.0.1.xsd`). Against those:
+
+- `identificatie` is `minOccurs="1"` on `objectType`, and both
+  `identificatieKenmerk` and `identificatieBron` are `minOccurs="1"` on
+  `identificatieGegevens`. The schema states for `identificatie`:
+  "Verplicht | Ja".
+- `naam` is `minOccurs="1"` on `objectType`. The schema states:
+  "Verplicht | Ja".
+- `waardering` is `minOccurs="1"` on `informatieobjectType`. The schema
+  states: "Verplicht | Ja".
+- `archiefvormer` is `minOccurs="1" maxOccurs="unbounded"`. The schema states:
+  "Verplicht | Ja".
+- `beperkingGebruik` is `minOccurs="1" maxOccurs="unbounded"`. The schema
+  states: "Verplicht | Ja". The XSD carries a dated comment recording the
+  change: "20230109 ONDERWERP: aanpassing schema. WAT: maxOccurs bij attribuut
+  archiefvormer aangepast naar 'unbounded', minOccurs bij attribuut
+  beperkingGebruik aangepast naar '1'."
+- On `bestandType`: `omvang`, `bestandsformaat`, `checksum` and
+  `isRepresentatieVan` are all `minOccurs="1"`, and `checksumGegevens`
+  requires `checksumAlgoritme`, `checksumWaarde` and `checksumDatum`.
+- `bewaartermijn` is `minOccurs="0"` and the schema states "Verplicht | Ja,
+  indien bekend". openregister's stricter refusal to export without one is a
+  LOCAL policy and MUST be documented as such rather than attributed to MDTO.
+
+#### Scenario: A generator input is missing
+- **WHEN** an object has no `retention.archiefnominatie`, or a file entry has no `checksum`
+- **THEN** generation MUST fail with an error naming the missing input
+- **AND** the error MUST state that the check covers generator inputs only and is not an MDTO validity check
+
+#### Scenario: A required MDTO element cannot be sourced
+- **WHEN** an object declares no use restriction and carries no active legal hold
+- **THEN** generation MUST still succeed
+- **AND** the generator MUST report `beperkingGebruik` as an absent MDTO-required element
+
+### Requirement: The system MUST emit MDTO aggregatieniveau beperkingGebruik and dekkingInTijd from their declared sources
+
+`aggregatieniveau`, `beperkingGebruik` and `dekkingInTijd` MUST be emitted when
+the object carries a value for them, and MUST be omitted entirely when it does
+not. A placeholder or a derived guess MUST NOT be written.
+
+Sources, in order: the abstract English key on the `retention` block
+(`aggregationLevel`, `useRestriction`, `temporalCoverage`), then the Dutch key
+on the `tmlo` block (`aggregatieniveau`, `beperkingGebruik`, `dekkingInTijd`).
+For `beperkingGebruik` only, an ACTIVE `retention.legalHold` is a further
+source and is reported with the `BeperkingGebruikTypeLijst` term "Overig",
+which the standard defines as "Niet nader gespecificeerde beperking. Deze
+waarde wordt gebruikt als er geen ander geschikt type gedefinieerd is en er in
+de documentatie wel een beperking is omschreven."
+
+`aggregatieniveau` values MUST come from the `Aggregatieniveaus`
+begrippenlijst, whose terms are Archief, Serie, Dossier and Archiefstuk.
+
+`dekkingInTijd` MUST be emitted only when the declared entry supplies both a
+type and a start date, because `dekkingInTijdType` and
+`dekkingInTijdBegindatum` are both `minOccurs="1"`. The record's own `created`
+timestamp MUST NOT be used: MDTO defines dekkingInTijd as "Datum waar de
+inhoud van het informatieobject betrekking op heeft".
+
+#### Scenario: Declared aggregation level is exported
+- **WHEN** an object carries `retention.aggregationLevel` = `Dossier`
+- **THEN** the XML MUST contain `mdto:aggregatieniveau` with `begripLabel` `Dossier` and `begripBegrippenlijst/verwijzingNaam` `Aggregatieniveaus`
+
+#### Scenario: An unsourced element is omitted
+- **WHEN** an object carries no aggregation level in either the retention or the tmlo block
+- **THEN** the XML MUST NOT contain an `mdto:aggregatieniveau` element at all, empty or otherwise
+
+#### Scenario: An active legal hold is exported as a use restriction
+- **WHEN** an object carries `retention.legalHold` with `active` true and a reason
+- **THEN** the XML MUST contain `mdto:beperkingGebruik` with `beperkingGebruikType/begripLabel` `Overig` and the reason in `beperkingGebruikNadereBeschrijving`
+
+### Requirement: The system MUST derive MDTO event entries from the audit trail
+
+MDTO `event` entries MUST be derived from `openregister_audit_trails` rather
+than from a separate store. The audit trail records action, actor, timestamp
+and a hash chain, which is the event history MDTO asks for.
+
+The trail is not itself an archival event log, so the derivation MUST be
+bounded on three axes:
+
+- An ALLOW-LIST of audit actions, so an action nobody has mapped cannot start
+  appearing in an export: `create`, `update`, `archival.transferred`,
+  `archival.destroyed` and `archival.legal_hold_placed`.
+- Labels drawn only from MDTO's `EventTypeLijst`, mapping to `Creatie`,
+  `Wijziging`, `Overbrenging`, `Vernietigen` and `Bevriezing` respectively.
+- A hard cap on the number of events emitted for one object, applied in the
+  database query, with the record's creation event kept when the cap truncates.
+
+`read`, `list`, `search` and `delete` MUST NOT become events. `delete` in
+particular is written for a reversible trash operation as well as a purge,
+while MDTO defines `Vernietigen` as "het blijvend ontoegankelijk maken van die
+informatie".
+
+`eventResultaat` MUST NOT be populated from the audit hash chain: the hash
+attests to the integrity of the audit row, not to an outcome of the event.
+
+#### Scenario: Create and update rows become events
+- **WHEN** an object's audit trail holds one `create` row and two `update` rows
+- **THEN** the XML MUST contain three `mdto:event` elements with `eventType/begripLabel` `Creatie`, `Wijziging` and `Wijziging`, oldest first
+
+#### Scenario: Reads are not events
+- **WHEN** an object's audit trail holds `read` and `list` rows
+- **THEN** those rows MUST NOT produce `mdto:event` elements
+
+#### Scenario: The event list is bounded
+- **WHEN** an object's audit trail holds more qualifying rows than the cap
+- **THEN** the XML MUST contain at most the capped number of `mdto:event` elements
+- **AND** the record's `Creatie` event MUST be among them

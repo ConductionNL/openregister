@@ -48,8 +48,13 @@ use Psr\Log\LoggerInterface;
  *   SchemaMapper stores most invalid lifecycle annotations with only a warning,
  *   and handed to FlowExpression a scalar evaluates as a truthy literal, which
  *   would authorise every transition the condition was written to block.
+ *
+ * Not `final`, and only so that {@see AutoTransitionSelector}'s tests can hand
+ * it a double and prove the selector evaluates no JSONLogic of its own. It is
+ * not designed for subclassing in production: there is meant to be exactly one
+ * implementation of {@see holds()}, which is the whole point of the class.
  */
-final class LifecycleConditionEvaluator {
+class LifecycleConditionEvaluator {
 
 	/**
 	 * The code every condition refusal carries, malformed or merely unmet.
@@ -92,10 +97,8 @@ final class LifecycleConditionEvaluator {
 	 *
 	 * @return array{code: string, field: string, action: string, message: string}|null
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
-	 * stateless expression facade; calling it statically IS the reuse.
-	 *
 	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function refusal(
 		array $spec,
@@ -112,33 +115,103 @@ final class LifecycleConditionEvaluator {
 		}
 
 		$condition = $spec['condition'];
-		$context = ['schema' => $schemaSlug, 'action' => $action, 'field' => $field];
 
-		if (is_array($condition) === false || $condition === []) {
-			// A fault in the schema, not the rule working, hence a warning.
-			$this->logger->warning(
-				'[LifecycleConditionEvaluator] Transition condition is not a JSONLogic rule object; refusing.',
-				$context
-			);
-			return $this->refusalFor(spec: $spec, action: $action, field: $field);
-		}
-
-		$holds = FlowExpression::isTrue(
-			logic: $condition,
-			data: $this->document(newData: $newData, oldData: $oldData, action: $action, from: $from, to: $to)
-		);
-		if ($holds === true) {
+		if (
+			$this->holds(
+				rule: $condition,
+				newData: $newData,
+				oldData: $oldData,
+				action: $action,
+				from: $from,
+				to: $to,
+				schemaSlug: $schemaSlug,
+				field: $field
+			) === true
+		) {
 			return null;
 		}
 
-		// Debug rather than warning: a condition that does not hold is the
-		// feature working. It is logged at all because a mistyped `var` path
-		// resolves to null and is indistinguishable, in the response, from an
-		// honest refusal; this line is what makes one diagnosable.
-		$this->logger->debug('[LifecycleConditionEvaluator] Transition condition did not hold.', $context);
+		// LOG LEVEL ONLY, NOT A GUARD. The fail-closed refusal of a value that
+		// is not a rule object lives in holds(), which has already warned about
+		// it by the time this runs. This reads the same shape to decide whether
+		// the miss deserves the quieter line: a well-formed rule that simply
+		// does not hold is the feature working, and is debug. It is logged at
+		// all because a mistyped `var` path resolves to null and is
+		// indistinguishable, in the response, from an honest refusal.
+		if (is_array($condition) === true && $condition !== []) {
+			$this->logger->debug(
+				'[LifecycleConditionEvaluator] Transition condition did not hold.',
+				['schema' => $schemaSlug, 'action' => $action, 'field' => $field]
+			);
+		}
 
 		return $this->refusalFor(spec: $spec, action: $action, field: $field);
 	}//end refusal()
+
+	/**
+	 * Whether a lifecycle rule holds for this object and transition.
+	 *
+	 * THE ONE PLACE A LIFECYCLE RULE IS EVALUATED. Both a transition's
+	 * `condition` (may this move proceed) and its `autoWhen` (should this move
+	 * be made) come through here, against the same document built by the same
+	 * method, so the two guards the declarative-conditions link paid for are
+	 * shared rather than rediscovered:
+	 *
+	 * - a value that is present but is NOT a non-empty rule object never
+	 *   reaches `FlowExpression`, where a scalar evaluates as a truthy literal;
+	 * - an expression that cannot be evaluated counts as not holding, because
+	 *   `FlowExpression::isTrue()` answers false for it.
+	 *
+	 * Both directions fail closed, which means the opposite thing for the two
+	 * callers and the right thing for each: a condition that cannot be trusted
+	 * refuses the move, an `autoWhen` that cannot be trusted does not make one.
+	 *
+	 * A well-formed rule that simply does not hold logs NOTHING here. For an
+	 * `autoWhen` that is the common case on every write, and a line per write
+	 * per candidate would drown the log that the malformed case needs to reach.
+	 *
+	 * @param mixed $rule The rule to evaluate: a `condition` or an `autoWhen`.
+	 * @param array<string, mixed> $newData The object as it would be saved, or as stored.
+	 * @param array<string, mixed> $oldData The object as it was before the write.
+	 * @param string $action The transition's name.
+	 * @param string $from The lifecycle value being moved away from.
+	 * @param string $to The lifecycle value being moved to.
+	 * @param string $schemaSlug The schema's slug, for the log line.
+	 * @param string $field The lifecycle field's name.
+	 *
+	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
+	 * stateless expression facade; calling it statically IS the reuse.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 */
+	public function holds(
+		mixed $rule,
+		array $newData,
+		array $oldData,
+		string $action,
+		string $from,
+		string $to,
+		string $schemaSlug,
+		string $field,
+	): bool {
+		if (is_array($rule) === false || $rule === []) {
+			// A fault in the schema, not the rule working, hence a warning.
+			// The runtime does not trust save-time validation: a schema written
+			// by a path that skipped the mapper can still carry a scalar here.
+			$this->logger->warning(
+				'[LifecycleConditionEvaluator] Transition condition is not a JSONLogic rule object; refusing.',
+				['schema' => $schemaSlug, 'action' => $action, 'field' => $field]
+			);
+			return false;
+		}
+
+		return FlowExpression::isTrue(
+			logic: $rule,
+			data: $this->document(newData: $newData, oldData: $oldData, action: $action, from: $from, to: $to)
+		);
+	}//end holds()
 
 	/**
 	 * Build the refusal error for a transition.

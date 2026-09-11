@@ -465,6 +465,8 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function buildAuditTrail(
 		?ObjectEntity $old = null,
@@ -562,6 +564,31 @@ class AuditTrailMapper extends QBMapper {
 				'action_type' => $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete',
 				'property' => $cascadeContext['property'] ?? null,
 			];
+		}
+
+		// Mark a row an automatic lifecycle transition produced, so an auditor
+		// can tell a move a user asked for from a move a rule made on that
+		// user's save. Applied HERE, before the row is built and sealed, for
+		// the reason AuditFlowAttribution is applied at the same point: the
+		// hash chain covers whatever is in the row, so a field added after the
+		// insert would sit outside the hash it is later given. The row is still
+		// attributed to the acting user, because that is who the move acted as.
+		// Read off the request-scoped pass through the container rather than an
+		// injected dependency: this mapper is constructed in contexts where the
+		// lifecycle services are not wired, and an audit row must never fail to
+		// be built because of that. A resolution failure means "no automatic move
+		// in flight", which is the pre-existing behaviour.
+		$automaticAction = null;
+		try {
+			$automaticAction = $this->container
+				->get(\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class)
+				->applyingAction();
+		} catch (\Throwable $passUnavailable) {
+			$automaticAction = null;
+		}
+
+		if ($automaticAction !== null) {
+			$changed['automaticTransition'] = $automaticAction;
 		}
 
 		// Get the current user.

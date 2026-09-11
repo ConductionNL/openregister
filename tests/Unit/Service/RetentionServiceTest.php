@@ -23,10 +23,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,7 +46,7 @@ class RetentionServiceTest extends TestCase {
 	private IAppConfig&MockObject $appConfig;
 	private IUserSession&MockObject $userSession;
 	private LoggerInterface&MockObject $logger;
-	private IDBConnection&MockObject $db;
+	private RetentionRowScanner&MockObject $rowScanner;
 	private RetentionService $service;
 
 	protected function setUp(): void {
@@ -60,7 +60,7 @@ class RetentionServiceTest extends TestCase {
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->db = $this->createMock(IDBConnection::class);
+		$this->rowScanner = $this->createMock(RetentionRowScanner::class);
 
 		$this->service = new RetentionService(
 			$this->objectMapper,
@@ -71,7 +71,7 @@ class RetentionServiceTest extends TestCase {
 			$this->appConfig,
 			$this->userSession,
 			$this->logger,
-			$this->db,
+			$this->rowScanner,
 			// The REAL resolver over the SAME mapper mock the tests program, not
 			// a mock of its own: the derivation tests below assert what the
 			// resolver actually does with a relation, and a mocked resolver
