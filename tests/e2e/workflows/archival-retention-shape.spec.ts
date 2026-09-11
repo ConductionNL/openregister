@@ -109,14 +109,11 @@ async function createAndReadBack(
 	request: APIRequestContext,
 	statusCode: number,
 ): Promise<{ id: string; created: Record<string, any>; read: Record<string, any> }> {
-	const resp = await request.post(
-		`${API}/objects/${register?.id}/${schemaId}`,
-		{
-			headers: JSON_HEADERS,
-			data: { title: `${RUN} status ${statusCode}`, statusCode },
-			timeout: REQUEST_TIMEOUT,
-		},
-	)
+	const resp = await request.post(`${API}/objects/${register?.id}/${schemaId}`, {
+		headers: JSON_HEADERS,
+		data: { title: `${RUN} status ${statusCode}`, statusCode },
+		timeout: REQUEST_TIMEOUT,
+	})
 	expect(resp.status(), 'the create must succeed').toBe(201)
 	const body = await resp.json()
 	const id = objectId(body)
@@ -174,7 +171,10 @@ test.describe('archival: _retention reads the same on create and on GET', () => 
 			},
 			timeout: REQUEST_TIMEOUT,
 		})
-		expect(resp.status(), 'the annotated schema must be created').toBeLessThanOrEqual(201)
+		expect(
+			resp.status(),
+			'the annotated schema must be created',
+		).toBeLessThanOrEqual(201)
 		const schema = await resp.json()
 		schemaId = schema.id
 		expect(
@@ -244,7 +244,10 @@ test.describe('archival: _retention reads the same on create and on GET', () => 
 		expect(created.retentionPeriod).toBe('P30D')
 
 		// Nothing in the block is a null, because a null does not survive a GET.
-		expect(nullPaths(created, '_retention'), 'nulls in the create response').toEqual([])
+		expect(
+			nullPaths(created, '_retention'),
+			'nulls in the create response',
+		).toEqual([])
 
 		// THE ASSERTION THIS FILE EXISTS FOR.
 		expect(
@@ -306,7 +309,10 @@ test.describe('archival: _retention reads the same on create and on GET', () => 
 		expect(created.annotation?.defaulted).toBe(false)
 		expect(created.retentionPeriod).toBe('PT1H')
 		expect(created.basis).toBe('schema_annotation')
-		expect(nullPaths(created, '_retention'), 'nulls in the create response').toEqual([])
+		expect(
+			nullPaths(created, '_retention'),
+			'nulls in the create response',
+		).toEqual([])
 
 		expect(
 			JSON.stringify(read),
