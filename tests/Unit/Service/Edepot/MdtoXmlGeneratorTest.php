@@ -813,6 +813,98 @@ class MdtoXmlGeneratorTest extends TestCase {
 	}
 
 	/**
+	 * MDTO allows an unknown retention period, so the element is omitted.
+	 */
+	public function testBewaartermijnIsOmittedWhenUnknown(): void {
+		$object = $this->createObjectEntity(uuid: 'no-term', retention: ['archiefnominatie' => 'bewaren']);
+
+		$xml = $this->generator->generate($object);
+
+		$this->assertStringNotContainsString('bewaartermijn', $xml);
+		$this->assertStringContainsString('<mdto:waardering>', $xml);
+	}
+
+	/**
+	 * Transferring without a retention period is refused, which is local policy.
+	 */
+	public function testTransferPreconditionsRefuseAnUnknownRetentionPeriod(): void {
+		$object = $this->createObjectEntity(uuid: 'no-term', retention: ['archiefnominatie' => 'bewaren']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/no retention period/');
+
+		$this->generator->assertTransferPreconditions($object);
+	}
+
+	/**
+	 * A record that has a retention period passes the transfer precondition.
+	 */
+	public function testTransferPreconditionsAcceptAKnownRetentionPeriod(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'term',
+			retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P5Y']
+		);
+
+		$this->generator->assertTransferPreconditions($object);
+
+		$this->expectNotToPerformAssertions();
+	}
+
+	/**
+	 * The core archival facts are read from the TMLO block as well.
+	 *
+	 * This is what lets the TMLO export endpoint share this generator.
+	 */
+	public function testCoreFactsAreReadFromTheTmloBlock(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'tmlo-uuid',
+			retention: [],
+			objectData: [],
+			tmlo: [
+				'archiefnominatie' => 'vernietigen',
+				'bewaarTermijn' => 'P7Y',
+				'archiefactiedatum' => '2033-01-01',
+				'vernietigingsCategorie' => '1.1.3',
+				'classification' => '1.1',
+			]
+		);
+
+		$xml = $this->generator->generate($object);
+
+		$this->assertStringContainsString('<mdto:begripLabel>Tijdelijk te bewaren</mdto:begripLabel>', $xml);
+		$this->assertStringContainsString('<mdto:termijnLooptijd>P7Y</mdto:termijnLooptijd>', $xml);
+		$this->assertStringContainsString('<mdto:termijnEinddatum>2033-01-01</mdto:termijnEinddatum>', $xml);
+		// vernietigingsCategorie is the disposal category, MDTO's informatiecategorie.
+		$this->assertMatchesRegularExpression(
+			'#<mdto:informatiecategorie>\s*<mdto:begripLabel>1\.1\.3</mdto:begripLabel>#',
+			$xml
+		);
+		// classification is the classification scheme code, a different element.
+		$this->assertMatchesRegularExpression(
+			'#<mdto:classificatie>\s*<mdto:begripLabel>1\.1</mdto:begripLabel>#',
+			$xml
+		);
+	}
+
+	/**
+	 * naam falls back to the entity's own name column before the uuid.
+	 */
+	public function testNaamFallsBackToTheEntityName(): void {
+		$object = $this->getMockBuilder(ObjectEntity::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['getUuid', 'getObject'])
+			->addMethods(['getRetention', 'getTmlo', 'getName'])
+			->getMock();
+		$object->method('getUuid')->willReturn('name-uuid');
+		$object->method('getObject')->willReturn([]);
+		$object->method('getName')->willReturn('Besluit 14');
+		$object->method('getRetention')->willReturn(['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P5Y']);
+		$object->method('getTmlo')->willReturn([]);
+
+		$this->assertStringContainsString('<mdto:naam>Besluit 14</mdto:naam>', $this->generator->generate($object));
+	}
+
+	/**
 	 * Create a mock ObjectEntity with the given data.
 	 *
 	 * @param string $uuid The UUID.
