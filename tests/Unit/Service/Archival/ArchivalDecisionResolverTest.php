@@ -99,6 +99,55 @@ class ArchivalDecisionResolverTest extends TestCase {
 	}
 
 	/**
+	 * GAP B1: the abstract layer carries the list's version and the moment it
+	 * was consulted, not only its name.
+	 *
+	 * A destruction date justified by a list name alone cannot be defended
+	 * once that list revises, because the same category carries different
+	 * retention periods across revisions.
+	 */
+	public function testCarriesTheSelectionListProvenance(): void {
+		$entity = $this->entityWith(
+			retention: [
+				'archiefnominatie' => 'vernietigen',
+				'bewaartermijn' => 'P10Y',
+				'selectielijstBron' => 'Selectielijst gemeenten 2020',
+				'selectionListVersion' => '2020.2',
+				'selectionListConsultedAt' => '2026-09-10T12:00:00+00:00',
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertSame('Selectielijst gemeenten 2020', $decision['source']);
+		$this->assertSame('2020.2', $decision['sourceVersion']);
+		$this->assertSame('2026-09-10T12:00:00+00:00', $decision['sourceConsultedAt']);
+	}
+
+	/**
+	 * A decision recorded before the provenance keys existed reports no
+	 * version rather than a null one.
+	 *
+	 * An absent key is silence, which is the truth about a decision taken when
+	 * nothing recorded the version. A key holding null is a claim that the
+	 * version was looked for and found to be nothing, which is false.
+	 */
+	public function testOmitsProvenanceItDoesNotHave(): void {
+		$entity = $this->entityWith(
+			retention: [
+				'archiefnominatie' => 'vernietigen',
+				'bewaartermijn' => 'P10Y',
+				'selectielijstBron' => 'Selectielijst gemeenten 2020',
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertArrayNotHasKey('sourceVersion', $decision);
+		$this->assertArrayNotHasKey('sourceConsultedAt', $decision);
+	}
+
+	/**
 	 * With no stored decision, the schema annotation's evaluation supplies the
 	 * period and the date, and says so.
 	 */

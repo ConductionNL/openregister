@@ -147,35 +147,26 @@ class RetentionService {
 			return $object;
 		}
 
-		// Try selectielijst lookup first.
-		$classification = $archiveConfig['classification'] ?? null;
-		$selectielijstEntry = null;
-
-		if ($classification !== null) {
-			$selectielijstEntry = $this->lookupSelectielijstEntry(category: $classification);
-		}
-
-		// Determine nominatie and bewaartermijn (default to schema config).
-		$nominatie = $archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald';
-		$retentionPeriod = $archiveConfig['defaultBewaartermijn'] ?? null;
-		$source = null;
-		if ($selectielijstEntry !== null) {
-			$nominatie = $selectielijstEntry['archiefnominatie'] ?? 'nog_niet_bepaald';
-			$retentionPeriod = $selectielijstEntry['bewaartermijn'] ?? null;
-			$source = $selectielijstEntry['bron'] ?? null;
-		}
-
-		// Apply schema-level override if configured.
-		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
-			$retentionPeriod = $archiveConfig['bewaartermijnOverride'];
-		}
+		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig);
+		$retentionPeriod = $applied['bewaartermijn'];
 
 		// Build archival metadata.
-		$retention['archiefnominatie'] = $nominatie;
+		$retention['archiefnominatie'] = $applied['archiefnominatie'];
 		$retention['archiefstatus'] = 'nog_te_archiveren';
-		$retention['classification'] = $classification;
+		$retention['classification'] = ($archiveConfig['classification'] ?? null);
 		$retention['bewaartermijn'] = $retentionPeriod;
-		$retention['selectielijstBron'] = $source;
+		$retention['selectielijstBron'] = $applied['selectielijstBron'];
+
+		// GAP B1. WHICH list is not WHICH VERSION OF THAT LIST. The same
+		// category carries different retention periods across revisions, so a
+		// decision recorded with only the list's name cannot be justified once
+		// the list moves. These are English keys beside a Dutch one on purpose:
+		// `selectielijstBron` predates the vocabulary decision and existing
+		// consumers read it, while everything new speaks the abstract layer's
+		// language.
+		foreach ($applied['provenance'] as $key => $value) {
+			$retention[$key] = $value;
+		}
 
 		// Calculate archiefactiedatum if bewaartermijn is set.
 		if ($retentionPeriod !== null) {
@@ -190,6 +181,49 @@ class RetentionService {
 
 		return $object;
 	}//end applyArchivalMetadata()
+
+	/**
+	 * Decide the nominatie, the retention period and where they came from.
+	 *
+	 * Three sources in precedence order: the selectielijst entry the schema's
+	 * classification points at, then the schema's own defaults, then the
+	 * schema's explicit `bewaartermijnOverride`, which wins over both because
+	 * it is a deliberate local decision rather than a fallback.
+	 *
+	 * @param array $archiveConfig The schema's archive block
+	 *
+	 * @return array{archiefnominatie: string, bewaartermijn: string|null, selectielijstBron: string|null, provenance: array<string, string>}
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function resolveArchivalDefaults(array $archiveConfig): array {
+		$applied = [
+			'archiefnominatie' => ($archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald'),
+			'bewaartermijn' => ($archiveConfig['defaultBewaartermijn'] ?? null),
+			'selectielijstBron' => null,
+			'provenance' => [],
+		];
+
+		$classification = $archiveConfig['classification'] ?? null;
+		$entry = null;
+		if ($classification !== null) {
+			$entry = $this->findSelectielijstEntry(category: $classification);
+		}
+
+		if ($entry !== null) {
+			$data = $entry->getObject();
+			$applied['archiefnominatie'] = ($data['archiefnominatie'] ?? 'nog_niet_bepaald');
+			$applied['bewaartermijn'] = ($data['bewaartermijn'] ?? null);
+			$applied['selectielijstBron'] = ($data['bron'] ?? null);
+			$applied['provenance'] = $this->selectielijstProvenance(entry: $entry);
+		}
+
+		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
+			$applied['bewaartermijn'] = $archiveConfig['bewaartermijnOverride'];
+		}
+
+		return $applied;
+	}//end resolveArchivalDefaults()
 
 	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
@@ -435,6 +469,33 @@ class RetentionService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function lookupSelectielijstEntry(string $category): ?array {
+		$entry = $this->findSelectielijstEntry(category: $category);
+
+		if ($entry === null) {
+			return null;
+		}
+
+		return $entry->getObject();
+	}//end lookupSelectielijstEntry()
+
+	/**
+	 * Find the selectielijst entry ENTITY for a categorie code.
+	 *
+	 * Split out from lookupSelectielijstEntry because `getObject()` drops the
+	 * `@self` envelope, and the envelope is where the row's own version and
+	 * update timestamp live. Gap B1 in openspec/changes/archival-conformance:
+	 * without them a disposal decision can say WHICH list it came from but not
+	 * WHICH VERSION OF THAT LIST, and the same category carries different
+	 * retention periods across selectielijst revisions. Five years on, that is
+	 * the difference between a decision you can justify and one you cannot.
+	 *
+	 * @param string $category The selectielijst category code (e.g., B1, A1)
+	 *
+	 * @return ObjectEntity|null The entry, or null when unconfigured or absent
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function findSelectielijstEntry(string $category): ?ObjectEntity {
 		$settings = $this->settingsHandler->getArchivalSettingsOnly();
 
 		$registerId = $settings['selectielijstRegister'] ?? null;
@@ -459,8 +520,7 @@ class RetentionService {
 				return null;
 			}
 
-			$entry = $results[0];
-			return $entry->getObject();
+			return $results[0];
 		} catch (Exception $e) {
 			$this->logger->warning(
 				'[RetentionService] Failed to lookup selectielijst entry for ' . $category,
@@ -468,7 +528,72 @@ class RetentionService {
 			);
 			return null;
 		}//end try
-	}//end lookupSelectielijstEntry()
+	}//end findSelectielijstEntry()
+
+	/**
+	 * Read the provenance of a selectielijst entry: which version, read when.
+	 *
+	 * Three sources, in the order an auditor would trust them:
+	 *
+	 *  1. a `versie` or `version` the row itself declares, which is the list
+	 *     publisher's own numbering and the only one that means anything
+	 *     outside this install;
+	 *  2. failing that, the entry object's own `@self.version`, which says
+	 *     which revision of the stored row was read even when the publisher
+	 *     numbered nothing;
+	 *  3. the moment it was read, always, because a version alone does not say
+	 *     whether the decision predates a later revision.
+	 *
+	 * Returns an empty array rather than nulls when nothing can be
+	 * established: an absent key is honest, and a key holding null reads as a
+	 * recorded answer of "no version".
+	 *
+	 * @param ObjectEntity $entry The selectielijst entry that was applied
+	 *
+	 * @return array<string, string> The provenance keys, possibly empty
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function selectielijstProvenance(ObjectEntity $entry): array {
+		$provenance = ['selectionListConsultedAt' => (new DateTime())->format('c')];
+
+		$data = $entry->getObject();
+		$declared = null;
+		if (is_array($data) === true) {
+			$declared = ($data['versie'] ?? ($data['version'] ?? null));
+		}
+
+		$version = $this->stringOrNull(value: $declared);
+		if ($version === null) {
+			$version = $this->stringOrNull(value: $entry->getVersion());
+		}
+
+		if ($version !== null) {
+			$provenance['selectionListVersion'] = $version;
+		}
+
+		return $provenance;
+	}//end selectielijstProvenance()
+
+	/**
+	 * A non-empty trimmed string, or null.
+	 *
+	 * @param mixed $value The candidate value
+	 *
+	 * @return string|null The string, or null when it says nothing
+	 */
+	private function stringOrNull(mixed $value): ?string {
+		if (is_string($value) === false && is_int($value) === false) {
+			return null;
+		}
+
+		$text = trim((string)$value);
+		if ($text === '') {
+			return null;
+		}
+
+		return $text;
+	}//end stringOrNull()
 
 	/**
 	 * Validate that an object is not in an immutable archival status.

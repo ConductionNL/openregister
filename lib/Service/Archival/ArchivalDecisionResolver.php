@@ -197,6 +197,7 @@ class ArchivalDecisionResolver {
         // records officer sees a destruction date and cannot say who claimed it.
         $decision['basis'] = $this->resolveBasis(retention: $retention, tmlo: $tmlo, annotation: $annotation, declared: $declared);
         $decision['source'] = $this->stringOrNull(value: ($retention['selectielijstBron'] ?? null));
+        $decision = $this->withSourceProvenance(decision: $decision, retention: $retention);
 
         // The raw annotation evaluation is passed through rather than folded
         // away: `matchedRule` is the only thing that says WHICH rule in the
@@ -382,6 +383,39 @@ class ArchivalDecisionResolver {
 
         return $state;
     }//end resolveLegalHold()
+
+    /**
+     * Add the selection list's version and the moment it was consulted.
+     *
+     * GAP B1. The list's NAME is not its VERSION, and the same category
+     * carries different retention periods across selectielijst revisions. A
+     * decision recorded with only the name says which list it came from but
+     * not which list AS IT STOOD, which is the provenance an audit asks for.
+     *
+     * Each key is omitted rather than nulled when nothing was recorded: an
+     * absent key is silence, and a null is a claim that the version was looked
+     * for and found to be nothing.
+     *
+     * @param array $decision  The decision so far
+     * @param array $retention The object's stored retention block
+     *
+     * @return array The decision, with whatever provenance exists
+     *
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     */
+    private function withSourceProvenance(array $decision, array $retention): array {
+        $version = $this->stringOrNull(value: ($retention['selectionListVersion'] ?? null));
+        if ($version !== null) {
+            $decision['sourceVersion'] = $version;
+        }
+
+        $consultedAt = $this->stringOrNull(value: ($retention['selectionListConsultedAt'] ?? null));
+        if ($consultedAt !== null) {
+            $decision['sourceConsultedAt'] = $consultedAt;
+        }
+
+        return $decision;
+    }//end withSourceProvenance()
 
     /**
      * Decide which authority the retention period rests on.
