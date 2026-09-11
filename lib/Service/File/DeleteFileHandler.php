@@ -87,9 +87,12 @@ class DeleteFileHandler {
 		// A Node is used as it is. Only a path or an id is resolved, and only
 		// those are cast for the log line: a Files Node is not Stringable, so
 		// casting before this check killed every Node caller (MergeHandler).
+		$fileName = '';
 		if ($file instanceof Node === true) {
 			$fileName = $file->getName();
-		} else {
+		}
+
+		if ($file instanceof Node === false) {
 			$fileName = (string)$file;
 			$file = $this->readFileHandler->getFile(object: $object, file: $file);
 		}
