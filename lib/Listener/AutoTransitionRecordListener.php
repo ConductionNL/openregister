@@ -88,10 +88,16 @@ class AutoTransitionRecordListener implements IEventListener {
 	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		$isCreate = ($event instanceof ObjectCreatedEvent);
-		if ($isCreate === false && $event instanceof ObjectUpdatedEvent === false) {
+		// Written as one instanceof check per branch so static analysis can
+		// narrow `$event` to the two classes that carry getObject(); a boolean
+		// held in a variable first does not narrow.
+		if (($event instanceof ObjectCreatedEvent) === false
+			&& ($event instanceof ObjectUpdatedEvent) === false
+		) {
 			return;
 		}
+
+		$isCreate = ($event instanceof ObjectCreatedEvent);
 
 		$object = $event->getObject();
 		$schemaRef = (string)$object->getSchema();

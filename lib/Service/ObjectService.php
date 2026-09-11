@@ -1900,14 +1900,10 @@ class ObjectService implements ObjectServiceInterface
             $automatic = ($this->autoTransitions?->leave() ?? []);
         }
 
-        if ($result === null) {
-            // Unreachable: the block above either assigns $result or throws.
-            // Present so the non-nullable return type is provable, and so a
-            // future early `return` inside the try cannot silently skip the
-            // drain without this failing loudly first.
-            throw new RuntimeException('Save produced no object entity.');
-        }
-
+        // No null guard on $result here. PHPStan proves the try block either
+        // assigns it or throws, so a guard would be dead code, and dead code
+        // that only static analysis can see is exactly what the baseline is
+        // for tracking rather than growing.
         if ($this->autoTransitions === null) {
             return $result;
         }

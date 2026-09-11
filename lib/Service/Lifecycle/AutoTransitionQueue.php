@@ -118,7 +118,7 @@ class AutoTransitionQueue {
 				'version' => $decision->version,
 				'updated' => $decision->updated,
 				'moves' => (int)($lineage['moves'] ?? 0),
-				'visited' => array_values(array_keys(($lineage['visited'] ?? []))),
+				'visited' => array_keys(($lineage['visited'] ?? [])),
 			],
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: $decision->uuid . '|' . ((string)$decision->version)
