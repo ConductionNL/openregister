@@ -19,7 +19,6 @@ use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -33,7 +32,6 @@ use Psr\Log\LoggerInterface;
  */
 class DestructionServiceTest extends TestCase {
 	private MagicMapper&MockObject $objectMapper;
-	private LegalHoldService&MockObject $legalHoldService;
 	private IAppConfig&MockObject $appConfig;
 	private IJobList&MockObject $jobList;
 	private IUserSession&MockObject $userSession;
@@ -47,7 +45,6 @@ class DestructionServiceTest extends TestCase {
 			->disableOriginalConstructor()
 			->onlyMethods(['update', 'find'])
 			->getMock();
-		$this->legalHoldService = $this->createMock(LegalHoldService::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->jobList = $this->createMock(IJobList::class);
 		$this->userSession = $this->createMock(IUserSession::class);
@@ -55,7 +52,6 @@ class DestructionServiceTest extends TestCase {
 
 		$this->service = new DestructionService(
 			$this->objectMapper,
-			$this->legalHoldService,
 			$this->appConfig,
 			$this->jobList,
 			$this->userSession,

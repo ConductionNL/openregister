@@ -63,24 +63,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 class ArchivalDecisionResolver {
 
     /**
-     * Appraisal values, normalised to MDTO's `waardering` vocabulary.
-     *
-     * Three spellings occur in the wild for "keep forever": MDTO and the
-     * selectielijst use `blijvend_bewaren`, a ZGW resultaattype may carry the
-     * shorter `bewaren`, and TMLO's own constant is `blijvend_bewaren` again.
-     * They mean the same thing to an archivist and must not reach a reader as
-     * two different appraisals.
-     *
-     * @var array<string, string>
-     */
-    private const APPRAISAL_ALIASES = [
-        'bewaren' => 'retain_permanently',
-        'blijvend_bewaren' => 'retain_permanently',
-        'vernietigen' => 'destroy',
-        'nog_niet_bepaald' => 'not_yet_determined',
-    ];
-
-    /**
      * Record states, in the Archiefwet lifecycle TmloService models.
      *
      * @var array<string, string>
@@ -359,7 +341,11 @@ class ArchivalDecisionResolver {
         // would report "no appraisal" for an object that carries one this
         // resolver has not been taught, which is the failure mode that hides a
         // records obligation.
-        return (self::APPRAISAL_ALIASES[$value] ?? $value);
+        // {@see Appraisal} is the ONE home for this vocabulary. It used to be a
+        // private constant here, which meant the destruction and transfer
+        // sweeps — the two places that have to ACT on an appraisal — could not
+        // see it and wrote their own string literals instead.
+        return (Appraisal::CANONICAL[$value] ?? $value);
     }//end normaliseAppraisal()
 
     /**
