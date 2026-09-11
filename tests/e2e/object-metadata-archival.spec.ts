@@ -197,13 +197,11 @@ async function openArchivingGroup(
 	await tab.click()
 
 	const panel = page.getByRole('tabpanel', { name: 'Metadata', exact: true })
-	const group = panel
-		.locator('.cn-object-metadata__group')
-		.filter({
-			has: page.locator('.cn-object-metadata__group-title', {
-				hasText: whole(LABELS.group, languages),
-			}),
-		})
+	const group = panel.locator('.cn-object-metadata__group').filter({
+		has: page.locator('.cn-object-metadata__group-title', {
+			hasText: whole(LABELS.group, languages),
+		}),
+	})
 	await expect(
 		group,
 		'the Metadata tab rendered no Archiving group: the object reached the widget '
@@ -223,7 +221,9 @@ async function openArchivingGroup(
 function valueOf(group: Locator, label: RegExp): Locator {
 	return group
 		.locator('.cn-detail-grid__item')
-		.filter({ has: group.page().locator('.cn-detail-grid__label', { hasText: label }) })
+		.filter({
+			has: group.page().locator('.cn-detail-grid__label', { hasText: label }),
+		})
 		.locator('.cn-detail-grid__value')
 }
 
@@ -274,14 +274,14 @@ async function assertCoreRows(
 	const period = valueOf(group, whole(LABELS.retentionPeriod, languages))
 	await expect(
 		period,
-		'the retention period row: the annotation\'s P10Y default, rendered as a period',
+		"the retention period row: the annotation's P10Y default, rendered as a period",
 	).toHaveText(whole(VALUES.retentionPeriod, languages))
 	await expect(period).not.toHaveClass(/cn-detail-grid__value--empty/)
 
 	const disposal = valueOf(group, whole(LABELS.disposalDate, languages))
 	await expect(
 		disposal,
-		'the disposal date row: the row\'s creation plus the ten-year period',
+		"the disposal date row: the row's creation plus the ten-year period",
 	).toHaveText(await expectedDisposalText(page, created))
 	await expect(disposal).not.toHaveClass(/cn-detail-grid__value--empty/)
 
@@ -352,7 +352,10 @@ test.describe('the object detail view shows the archival decision', () => {
 		const user = await admin.post(OCS_USERS, {
 			form: { userid: DUTCH_USER, password: DUTCH_PASS, language: 'nl' },
 		})
-		expect(user.ok(), `creating the Dutch user failed: ${await user.text()}`).toBeTruthy()
+		expect(
+			user.ok(),
+			`creating the Dutch user failed: ${await user.text()}`,
+		).toBeTruthy()
 		dutchUserCreated = true
 	})
 
@@ -362,7 +365,9 @@ test.describe('the object detail view shows the archival decision', () => {
 		// object removable at all. Every step is best-effort and reports what it
 		// could not do, so one failure does not strand the rest.
 		const warn = (step: string, status: number) =>
-			console.warn(`[object-metadata-archival] teardown ${step} answered ${status}`)
+			console.warn(
+				`[object-metadata-archival] teardown ${step} answered ${status}`,
+			)
 
 		if (schemaId !== null) {
 			const strip = await admin.put(`${API}/schemas/${schemaId}`, {
@@ -445,7 +450,10 @@ test.describe('the object detail view shows the archival decision', () => {
 			// Nothing in the Metadata panel may still be in English: a
 			// half-registered catalogue would translate some labels and leave
 			// the rest.
-			const panel = page.getByRole('tabpanel', { name: 'Metadata', exact: true })
+			const panel = page.getByRole('tabpanel', {
+				name: 'Metadata',
+				exact: true,
+			})
 			for (const entry of Object.values(LABELS)) {
 				await expect(
 					panel.getByText(whole(entry, ['en'])),
