@@ -179,8 +179,12 @@ class ArchivalDecisionResolver {
         // destruction date without it means re-evaluating the whole annotation
         // by hand.
         if ($annotation !== []) {
-            $decision['annotation'] = $annotation;
+            $decision['annotation'] = $this->annotationForRender(annotation: $annotation);
         }
+
+        // Omitted, not nulled, so every verb returns the same block. The read
+        // path strips empty values and create does not; see UnestablishedValues.
+        $decision = (new UnestablishedValues())->without(values: $decision);
 
         // Nothing was established. Distinct from "kept forever": every field is
         // absent, not merely permissive, so the object genuinely has no
@@ -198,6 +202,54 @@ class ArchivalDecisionResolver {
 
         return $decision;
     }//end resolve()
+
+    /**
+     * Shape the schema annotation's evaluation for the response.
+     *
+     * RetentionEvaluator reports "no rule matched, the default applied" as
+     * `matchedRule: null`. That null is the one answer a records officer needs
+     * when a destruction date looks wrong and no rule explains it, and it did
+     * not survive a read: `ObjectsController::show()` strips null values from
+     * every response, so on GET the key vanished and "no rule fired" became
+     * indistinguishable from "this reader does not know", while the create
+     * response still carried it. Only the read path lost it.
+     *
+     * So the fact travels as a boolean, which the strip keeps: `defaulted` is
+     * true when the default applied and false when a rule fired, in which case
+     * `matchedRule` still names that rule's index. The name follows the flow
+     * decision tables, which already report a table that fell through to its
+     * default as `defaulted`. The evaluator's own contract (`int|null`) is left
+     * alone: the retention sweep reads it in PHP, where a null loses nothing.
+     *
+     * A block without a `matchedRule` key at all is passed through untouched,
+     * because inventing `defaulted` for it would claim an evaluation that the
+     * block does not record.
+     *
+     * @param array<string, mixed> $annotation The stored annotation evaluation.
+     *
+     * @return array<string, mixed> The evaluation, with `defaulted` beside `matchedRule`.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+     */
+    private function annotationForRender(array $annotation): array {
+        if (array_key_exists('matchedRule', $annotation) === false) {
+            return $annotation;
+        }
+
+        // A null `matchedRule` stays in place here and is dropped with every
+        // other null by UnestablishedValues; `defaulted` goes directly after
+        // it so the key order reads the same either way.
+        $defaulted = ($annotation['matchedRule'] === null);
+        $shaped = [];
+        foreach ($annotation as $key => $value) {
+            $shaped[$key] = $value;
+            if ($key === 'matchedRule') {
+                $shaped['defaulted'] = $defaulted;
+            }
+        }
+
+        return $shaped;
+    }//end annotationForRender()
 
     /**
      * Add the Archiefwet record state, and whether it is final.

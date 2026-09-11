@@ -20,10 +20,12 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 /**
  * Tests for ArchivalDecisionResolver.
@@ -275,7 +277,9 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 		$decision = $this->resolver->resolve(entity: $entity);
 
-		$this->assertNull($decision['legalHold']);
+		// Omitted, not nulled: a null would not survive the read path, so the
+		// create response and the GET response would disagree about it.
+		$this->assertArrayNotHasKey('legalHold', $decision);
 	}
 
 	/**
@@ -554,6 +558,158 @@ class ArchivalDecisionResolverTest extends TestCase {
 		$this->assertNotNull($decision);
 		$this->assertSame('in_de_kast', $decision['recordState']);
 		$this->assertFalse($decision['immutable']);
+	}
+
+	/**
+	 * "No rule matched" is an ANSWER, and it must reach the client as one.
+	 *
+	 * RetentionEvaluator reports the default applying as `matchedRule: null`.
+	 * The read path strips nulls from every response, so on GET that key used
+	 * to vanish while the create response still carried it: the same object
+	 * answered in two shapes, and on read "no rule fired" could not be told
+	 * from "this reader does not know". The resolver now says it with a
+	 * boolean the strip keeps, and omits every key nothing established.
+	 *
+	 * This pins the WHOLE block, key order included, because the complaint was
+	 * about the shape, not about one value in it.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#scenario-no-matching-rule-reads-the-same-on-create-and-on-read
+	 */
+	public function testNoMatchedRuleIsReportedAsDefaultedAndNothingIsNulled(): void {
+		$entity = $this->entityWith(
+			retention: [
+				'annotation' => [
+					'effectiveRetention' => 'P30D',
+					'matchedRule' => null,
+					'expiresAt' => '2026-01-31T00:00:00+00:00',
+				],
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertSame(
+			[
+				'retentionPeriod' => 'P30D',
+				'disposalDate' => '2026-01-31T00:00:00+00:00',
+				'basis' => 'schema_annotation',
+				'annotation' => [
+					'effectiveRetention' => 'P30D',
+					'defaulted' => true,
+					'expiresAt' => '2026-01-31T00:00:00+00:00',
+				],
+			],
+			$decision
+		);
+	}
+
+	/**
+	 * When a rule DID fire, its index is still the answer, and `defaulted`
+	 * says the same thing from the other side.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#scenario-archival-row-read-shows-the-resolved-decision
+	 */
+	public function testAMatchedRuleKeepsItsIndexAndIsNotDefaulted(): void {
+		$entity = $this->entityWith(
+			retention: [
+				'annotation' => [
+					'effectiveRetention' => 'PT1H',
+					'matchedRule' => 0,
+					'expiresAt' => '2026-01-01T01:00:00+00:00',
+				],
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		// Rule index 0 is falsy and must survive as a real answer.
+		$this->assertSame(
+			[
+				'effectiveRetention' => 'PT1H',
+				'matchedRule' => 0,
+				'defaulted' => false,
+				'expiresAt' => '2026-01-01T01:00:00+00:00',
+			],
+			$decision['annotation']
+		);
+	}
+
+	/**
+	 * An annotation block that records no evaluation is not given one.
+	 *
+	 * Inventing `defaulted` for a block with no `matchedRule` key would claim
+	 * that somebody checked the rules, which the block does not say.
+	 */
+	public function testAnAnnotationWithoutAMatchedRuleIsNotGivenADefaultedFlag(): void {
+		$entity = $this->entityWith(
+			retention: [
+				'annotation' => [
+					'effectiveRetention' => 'P5Y',
+					'expiresAt' => '2031-01-01T00:00:00+00:00',
+				],
+			]
+		);
+
+		$decision = $this->resolver->resolve(entity: $entity);
+
+		$this->assertArrayNotHasKey('defaulted', $decision['annotation']);
+		$this->assertArrayNotHasKey('matchedRule', $decision['annotation']);
+	}
+
+	/**
+	 * THE PROPERTY THE FIX RESTS ON: the decision is a fixed point of the read
+	 * path's strip.
+	 *
+	 * `ObjectsController::show()` runs its whole response through
+	 * `stripEmptyValues()` unless `_empty=true`; create, update and patch do
+	 * not. A block that the strip leaves unchanged therefore reads the same on
+	 * every verb. This drives the real private method rather than restating its
+	 * rule, over a decision that exercises every nullable key at once, so a
+	 * null reintroduced anywhere in the resolver (or a strip that learns a new
+	 * kind of empty) reddens here.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#scenario-no-matching-rule-reads-the-same-on-create-and-on-read
+	 */
+	public function testTheDecisionIsUnchangedByTheReadPathStrip(): void {
+		$cases = [
+			'annotation only, no rule matched' => $this->entityWith(
+				retention: [
+					'annotation' => [
+						'effectiveRetention' => 'P30D',
+						'matchedRule' => null,
+						'expiresAt' => '2026-01-31T00:00:00+00:00',
+					],
+				]
+			),
+			'active hold with no reason, blank strings, and a list' => $this->entityWith(
+				retention: [
+					'archiefnominatie' => 'vernietigen',
+					'classification' => '   ',
+					'legalHold' => ['active' => true, 'reason' => null, 'placedBy' => ''],
+					'annotation' => [
+						'effectiveRetention' => 'P1Y',
+						'matchedRule' => 1,
+						'expiresAt' => '2027-01-01T00:00:00+00:00',
+						'trace' => [['rule' => 0, 'note' => null], 'skipped'],
+						'empty' => ['nested' => null],
+					],
+				]
+			),
+		];
+
+		$controller = (new ReflectionClass(ObjectsController::class))->newInstanceWithoutConstructor();
+		$strip = new \ReflectionMethod(ObjectsController::class, 'stripEmptyValues');
+
+		foreach ($cases as $label => $entity) {
+			$decision = $this->resolver->resolve(entity: $entity);
+			$this->assertNotNull($decision, $label);
+
+			$this->assertSame(
+				$decision,
+				$strip->invoke($controller, $decision),
+				"{$label}: the read path's strip changed the decision, so create and GET would answer in different shapes"
+			);
+		}
 	}
 
 }//end class
