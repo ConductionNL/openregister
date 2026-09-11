@@ -5595,9 +5595,10 @@ class ObjectService implements ObjectServiceInterface
      * permissions, so the defect would come back for exactly the callers least
      * able to diagnose it.
      *
-     * If the schema cannot be resolved the data is returned unchanged, which
-     * leaves the pre-existing loud validation refusal in place. That is the
-     * intended failure direction: never swallow, never silently rewrite.
+     * If the schema or the converter cannot be resolved the data is returned
+     * unchanged, which leaves the pre-existing loud validation refusal in
+     * place. That is the intended failure direction: never swallow, never
+     * silently rewrite.
      *
      * @param array        $data         The merged object data about to be saved.
      * @param ObjectEntity $existing     The object as it was read.
@@ -5620,20 +5621,20 @@ class ObjectService implements ObjectServiceInterface
                 _rbac: false,
                 _multitenancy: false
             );
-        } catch (\Throwable $schemaError) {
+
+            $converter = $this->container->get(SchemaTypeConverter::class);
+        } catch (\Throwable $restoreError) {
             $this->logger->warning(
-                message: '[ObjectService] Could not resolve schema to restore string-typed values',
+                message: '[ObjectService] Could not restore string-typed values before the save',
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'schema' => $schemaId,
-                    'exception' => $schemaError->getMessage(),
+                    'exception' => $restoreError->getMessage(),
                 ]
             );
             return $data;
         }
-
-        $converter = $this->container->get(SchemaTypeConverter::class);
 
         return $converter->restoreStringTypedValues(
             data: $data,
