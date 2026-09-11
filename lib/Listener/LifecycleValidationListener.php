@@ -235,8 +235,43 @@ class LifecycleValidationListener implements IEventListener {
 		// AFTER `authorization` so an unauthorized caller is turned away
 		// before any condition is evaluated, and BEFORE `requires` so a
 		// refused condition never resolves — let alone runs — a guard.
+		// 🔴 THE RUNTIME DOES NOT TRUST SAVE-TIME VALIDATION, AND MUST NOT.
+		// SchemaMapper::validateLifecycleAnnotation() treats lifecycle errors
+		// as ADVISORY: it logs them and stores the schema with the annotation
+		// intact. So a condition LifecycleAnnotationValidator refused can still
+		// be here. A scalar is the dangerous case — FlowExpression evaluates a
+		// non-empty string as a truthy literal, which would authorise every
+		// transition the condition was written to block. A condition that is
+		// present but not a non-empty rule object therefore REFUSES.
+		$hasCondition = array_key_exists('condition', $spec) === true && $spec['condition'] !== null;
 		$condition = ($spec['condition'] ?? null);
-		if ($condition !== null && $condition !== []) {
+		if ($hasCondition === true && (is_array($condition) === false || $condition === [])) {
+			$this->logger->warning(
+				'[LifecycleValidationListener] Transition condition is not a JSONLogic rule object; refusing.',
+				[
+					'schema' => $schema->getSlug(),
+					'action' => (string)$action,
+					'field' => $field,
+				]
+			);
+
+			$this->reject(
+				event: $event,
+				error: [
+					'code' => 'lifecycle-condition-unmet',
+					'field' => $field,
+					'action' => (string)$action,
+					'message' => $this->conditionMessage(
+						declared: ($spec['message'] ?? null),
+						action: (string)$action,
+						field: $field
+					),
+				]
+			);
+			return;
+		}//end if
+
+		if ($hasCondition === true) {
 			$holds = FlowExpression::isTrue(
 				logic: $condition,
 				data: $this->conditionData(

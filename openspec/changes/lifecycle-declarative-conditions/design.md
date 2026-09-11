@@ -302,6 +302,39 @@ that skips validation, and a custom operator can behave differently against real
 data than against the empty document `isValid()` uses. Fail-closed is the only
 safe default for a gate.
 
+### A broken condition is the one lifecycle error that refuses the save
+
+Found during implementation, and it changed the design. `SchemaMapper` does not
+act on the validator's verdict the way the section above assumed.
+`validateLifecycleAnnotation()` treats every lifecycle error as ADVISORY: it
+logs a warning and stores the schema with the annotation intact. That policy
+dates from 2026-08-28 and is deliberate, because refusing a whole register
+import over a partial or different-dialect lifecycle block broke imports for
+other apps.
+
+So save-time validation alone protected nothing. A scalar condition was refused
+by the validator, stored anyway, and then evaluated by the listener as a truthy
+literal. Two changes close that, and they are independent on purpose:
+
+1. **The save refuses condition errors.** `lifecycle-condition-malformed` and
+   `lifecycle-condition-graph-unsupported` throw. Every other lifecycle error
+   keeps the advisory warning, including `lifecycle-message-malformed`, since a
+   bad message only degrades the refusal text and gates nothing. This breaks no
+   existing import: no register could carry a condition before this key
+   existed. The exception message leads with "Invalid" because
+   `SchemasController` maps a save exception to 400 by matching that word;
+   without it, an unknown-operator error would surface as a 500.
+2. **The runtime refuses a malformed stored condition.** The listener does not
+   trust save-time at all. A condition that is present but not a non-empty rule
+   object refuses with `lifecycle-condition-unmet` and logs a warning. This
+   covers schemas written before this change, and any path that skips the
+   mapper.
+
+The same investigation found the advisory warning's text was false. It said the
+annotation "was ignored (no status workflow applied)", when the listener still
+acts on whatever was stored. The text now says so, since an operator reading
+the old message would have looked in the wrong place.
+
 ### Tests are mutation-checked, and that is part of the definition of done
 
 A test that saves a valid object and asserts the transition succeeds passes

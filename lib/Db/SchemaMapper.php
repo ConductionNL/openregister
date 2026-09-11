@@ -1157,17 +1157,44 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		// Lifecycle is ADVISORY metadata (a state-machine hint), not a storage
-		// requirement: a schema with a malformed or non-canonical lifecycle block
-		// still stores objects correctly. Rejecting the whole schema import over an
-		// advisory annotation breaks register imports for every app that ships a
-		// partial / different-dialect lifecycle block. Degrade to a non-fatal
-		// warning and import the schema (the lifecycle simply won't drive a status
-		// workflow) instead of throwing.
+		// A broken transition CONDITION is the one lifecycle error that refuses
+		// the save. A condition is a gate, and a gate that is stored broken
+		// either blocks every transition it covers or — for a graph block —
+		// silently gates nothing while its author believes it holds. No register
+		// shipped a condition before this key existed, so refusing here breaks
+		// no existing import, which is what the advisory policy below protects.
+		$blocking = array_values(
+			array_filter(
+				$errors,
+				static fn (array $err): bool => in_array(
+					$err['code'],
+					['lifecycle-condition-malformed', 'lifecycle-condition-graph-unsupported'],
+					true
+				)
+			)
+		);
+		if ($blocking !== []) {
+			// Leads with "Invalid" because SchemasController maps a save
+			// exception to 400 by matching that word; the codes ride along so a
+			// client can tell which rule refused.
+			$details = array_map(
+				static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
+				$blocking
+			);
+			throw new Exception('Invalid x-openregister-lifecycle condition: ' . implode(' ', $details));
+		}
+
+		// Every other lifecycle error is ADVISORY: rejecting the whole schema
+		// import over it breaks register imports for apps that ship a partial or
+		// different-dialect lifecycle block. So the schema is saved and this is a
+		// warning. Note what that does NOT mean: the annotation is stored as
+		// written, and LifecycleValidationListener still acts on it. It is not
+		// switched off, so the warning must not claim it was.
 		$messages = array_map(static fn (array $err) => $err['message'], $errors);
 		$this->logger->warning(
 			'x-openregister-lifecycle annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (no status workflow applied): ' . implode(' ', $messages)
+			. 'invalid; it was stored as written and the lifecycle listener still acts on it: '
+			. implode(' ', $messages)
 		);
 	}//end validateLifecycleAnnotation()
 

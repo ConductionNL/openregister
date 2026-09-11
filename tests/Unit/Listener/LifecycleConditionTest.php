@@ -405,6 +405,56 @@ class LifecycleConditionTest extends TestCase {
 		$this->assertFalse($event->isPropagationStopped());
 	}//end testASessionlessCallerGetsAnEmptyUserBlock()
 
+	public function testAStoredScalarConditionRefusesRatherThanAllows(): void {
+		// 🔴 THE FAIL-OPEN CASE THAT SURVIVES SAVE-TIME VALIDATION.
+		// SchemaMapper stores a schema whose lifecycle the validator rejected,
+		// logging a warning only. So this scalar CAN reach the listener. Handed
+		// to FlowExpression it would evaluate as a truthy literal and allow the
+		// transition; the listener must refuse it instead. The payload satisfies
+		// what the author evidently meant, so only the refusal can fail this.
+		$this->schemaWithTransition(
+			self::TRANSITION + ['condition' => "@self.motivering == 'ja'"]
+		);
+
+		$event = $this->event(['motivering' => 'ja']);
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('lifecycle-condition-unmet', $event->getErrors()['code']);
+	}//end testAStoredScalarConditionRefusesRatherThanAllows()
+
+	public function testAStoredTrueLiteralConditionRefuses(): void {
+		// The purest form of the hole: `true` needs no parsing at all.
+		$this->schemaWithTransition(self::TRANSITION + ['condition' => true]);
+
+		$event = $this->event();
+		$this->listener->handle($event);
+
+		$this->assertSame('lifecycle-condition-unmet', $event->getErrors()['code']);
+	}//end testAStoredTrueLiteralConditionRefuses()
+
+	public function testAStoredEmptyConditionRefuses(): void {
+		// `{}` in JSON decodes to [] — present, but gating nothing. The validator
+		// refuses it at save time; the runtime must agree rather than skip it.
+		$this->schemaWithTransition(self::TRANSITION + ['condition' => []]);
+
+		$event = $this->event(['motivering' => 'ja']);
+		$this->listener->handle($event);
+
+		$this->assertSame('lifecycle-condition-unmet', $event->getErrors()['code']);
+	}//end testAStoredEmptyConditionRefuses()
+
+	public function testAMalformedStoredConditionIsLoggedAsAWarning(): void {
+		// A malformed stored condition is a fault in the schema, not the rule
+		// working, so it is a warning where an honest refusal is only debug.
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with($this->stringContains('not a JSONLogic rule object'));
+
+		$this->schemaWithTransition(self::TRANSITION + ['condition' => 'yes']);
+		$this->listener->handle($this->event());
+	}//end testAMalformedStoredConditionIsLoggedAsAWarning()
+
 	public function testATransitionWithoutAConditionIsUnaffected(): void {
 		$this->schemaWithTransition(self::TRANSITION);
 
