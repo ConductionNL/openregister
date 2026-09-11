@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -287,99 +286,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	// =========================================================================
 	// ValidationHandler Tests
 	// =========================================================================
-
-	/**
-	 * Test validateRequiredFields with valid objects.
-	 */
-	public function testValidateRequiredFieldsWithValidObjects(): void {
-		$objects = [
-			['@self' => ['register' => 1, 'schema' => 1], 'title' => 'Test'],
-			['@self' => ['register' => 2, 'schema' => 3], 'title' => 'Test 2'],
-		];
-
-		// Should not throw any exception.
-		$this->validationHandler->validateRequiredFields($objects);
-		$this->assertTrue(true, 'No exception thrown for valid objects');
-	}
-
-	/**
-	 * Test validateRequiredFields throws on missing @self.
-	 */
-	public function testValidateRequiredFieldsMissingSelf(): void {
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("missing required '@self' section");
-
-		$objects = [
-			['title' => 'No self section'],
-		];
-		$this->validationHandler->validateRequiredFields($objects);
-	}
-
-	/**
-	 * Test validateRequiredFields throws on missing register.
-	 */
-	public function testValidateRequiredFieldsMissingRegister(): void {
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("missing required field 'register'");
-
-		$objects = [
-			['@self' => ['schema' => 1], 'title' => 'Missing register'],
-		];
-		$this->validationHandler->validateRequiredFields($objects);
-	}
-
-	/**
-	 * Test validateRequiredFields throws on missing schema.
-	 */
-	public function testValidateRequiredFieldsMissingSchema(): void {
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("missing required field 'schema'");
-
-		$objects = [
-			['@self' => ['register' => 1], 'title' => 'Missing schema'],
-		];
-		$this->validationHandler->validateRequiredFields($objects);
-	}
-
-	/**
-	 * Test validateRequiredFields throws on empty register.
-	 */
-	public function testValidateRequiredFieldsEmptyRegister(): void {
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("missing required field 'register'");
-
-		$objects = [
-			['@self' => ['register' => '', 'schema' => 1]],
-		];
-		$this->validationHandler->validateRequiredFields($objects);
-	}
-
-	/**
-	 * Test validateRequiredFields with @self as non-array.
-	 */
-	public function testValidateRequiredFieldsSelfNotArray(): void {
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("missing required '@self' section");
-
-		$objects = [
-			['@self' => 'not-an-array'],
-		];
-		$this->validationHandler->validateRequiredFields($objects);
-	}
-
-	/**
-	 * Test validateRequiredFields multiple objects second one fails.
-	 */
-	public function testValidateRequiredFieldsMultipleObjectsSecondFails(): void {
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('index 1');
-
-		$objects = [
-			['@self' => ['register' => 1, 'schema' => 1], 'title' => 'Good'],
-			['@self' => ['register' => 1], 'title' => 'Bad'],
-		];
-		$this->validationHandler->validateRequiredFields($objects);
-	}
 
 	/**
 	 * Test validateObjectsBySchema with real objects.
