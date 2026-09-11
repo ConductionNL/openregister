@@ -3854,17 +3854,32 @@ class MagicMapper extends AbstractObjectMapper {
 					// Normalise date/date-time properties to Y-m-d H:i:s for MySQL DATETIME columns.
 					$propertyFormat = $propertyConfig['format'] ?? null;
 					if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
+						// `date` and `date-time` are NOT the same thing here.
+						// A date-time names an instant, so a non-UTC offset has
+						// to be applied before storing (WOO-567). A `date` names
+						// a calendar DAY and has no instant, so converting it
+						// through a timezone is a category error that can move
+						// it: `2026-10-20T00:00:00+02:00` becomes 2026-10-19 in
+						// UTC, and `2026-10-20T23:30:00-05:00` becomes
+						// 2026-10-21. A due date must survive being submitted
+						// from a client that sends an offset.
+						$isCalendarDate = ($propertyFormat === 'date');
 						if ($value instanceof \DateTimeInterface) {
-							// Convert to the column's timezone before formatting,
-							// for the same reason as the metadata fields above
-							// (WOO-567).
-							$value = \DateTimeImmutable::createFromInterface($value)
-								->setTimezone(new \DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
-								->format(DateTimeNormalizer::DATABASE_FORMAT);
+							$moment = \DateTimeImmutable::createFromInterface($value);
+							if ($isCalendarDate === false) {
+								$moment = $moment->setTimezone(
+									new \DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE)
+								);
+							}
+
+							$value = $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
 						} elseif (is_string($value) === true) {
-							$value = $this->container
-								->get(DateTimeNormalizer::class)
-								->formatForDatabase($value);
+							$normalizer = $this->container->get(DateTimeNormalizer::class);
+							if ($isCalendarDate === true) {
+								$value = $normalizer->formatDateForDatabase($value);
+							} else {
+								$value = $normalizer->formatForDatabase($value);
+							}
 						}
 					}
 

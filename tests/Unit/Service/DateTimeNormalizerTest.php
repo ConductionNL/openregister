@@ -298,4 +298,53 @@ class DateTimeNormalizerTest extends TestCase {
 		);
 	}//end testNormalizeAppliesAssumedTimezoneOnlyToNaiveStrings()
 
+	/**
+	 * A `format: date` value names a calendar DAY, so the UTC conversion the
+	 * date-time path needs must NOT be applied to it. Converting moves the day
+	 * in both directions — `2026-10-20T00:00:00+02:00` would store the 19th and
+	 * `2026-10-20T23:30:00-05:00` the 21st — which would silently move a due
+	 * date for any client that sends an offset.
+	 *
+	 * @dataProvider calendarDateProvider
+	 */
+	public function testACalendarDateKeepsItsDayWhateverOffsetItArrivesWith(
+		string $input,
+		string $expectedDay
+	): void {
+		$formatted = $this->normalizer->formatDateForDatabase($input);
+
+		$this->assertNotNull($formatted);
+		$this->assertSame(
+			$expectedDay,
+			substr($formatted, 0, 10),
+			sprintf('`%s` must still be stored on %s', $input, $expectedDay)
+		);
+	}//end testACalendarDateKeepsItsDayWhateverOffsetItArrivesWith()
+
+	public static function calendarDateProvider(): array {
+		return [
+			'bare date' => ['2026-10-20', '2026-10-20'],
+			'midnight with a positive offset' => ['2026-10-20T00:00:00+02:00', '2026-10-20'],
+			'late evening with a negative offset' => ['2026-10-20T23:30:00-05:00', '2026-10-20'],
+			'explicit utc' => ['2026-10-20T00:00:00Z', '2026-10-20'],
+		];
+	}//end calendarDateProvider()
+
+	/**
+	 * The contrast that makes the split meaningful: the SAME input, read as a
+	 * date-time, does move — because a date-time names an instant and the
+	 * offset has to be applied for that instant to survive the offset-less
+	 * column.
+	 */
+	public function testTheSameInputAsADateTimeIsConvertedNotPreserved(): void {
+		$this->assertSame(
+			'2026-10-19 22:00:00',
+			$this->normalizer->formatForDatabase('2026-10-20T00:00:00+02:00')
+		);
+		$this->assertSame(
+			'2026-10-20 00:00:00',
+			$this->normalizer->formatDateForDatabase('2026-10-20T00:00:00+02:00')
+		);
+	}//end testTheSameInputAsADateTimeIsConvertedNotPreserved()
+
 }//end class

@@ -189,6 +189,37 @@ class DateTimeNormalizer {
 	}//end formatForIso8601()
 
 	/**
+	 * Format a `format: date` value for its database column.
+	 *
+	 * The counterpart of `formatForDatabase()` for values that name a calendar
+	 * DAY rather than an instant. Deliberately does NOT convert to
+	 * `self::DATABASE_TIMEZONE`: a date has no instant, so converting it is a
+	 * category error that can move it to the previous or next day. A client
+	 * that sends `2026-10-20T00:00:00+02:00` for a due date means the 20th, and
+	 * UTC conversion would store the 19th; `2026-10-20T23:30:00-05:00` would
+	 * store the 21st.
+	 *
+	 * The wall-clock reading is kept as given, which is also what this method
+	 * did before WOO-567 split the two formats apart — so `date` behaviour is
+	 * unchanged by that fix, which is the point.
+	 *
+	 * @param mixed $value Value to normalise and format.
+	 *
+	 * @return string|null `Y-m-d H:i:s`-formatted string preserving the given
+	 *                     calendar day, or `null` for empty/invalid input.
+	 *
+	 * @spec openspec/specs/datetime-input-handling/spec.md
+	 */
+	public function formatDateForDatabase(mixed $value): ?string {
+		$datetime = $this->normalize(value: $value, assumeTimezone: $this->databaseTimezone());
+		if ($datetime === null) {
+			return null;
+		}
+
+		return $datetime->format(self::DATABASE_FORMAT);
+	}//end formatDateForDatabase()
+
+	/**
 	 * Format a value read back from a database datetime column as ISO 8601.
 	 *
 	 * The counterpart of `formatForDatabase()`. A DATETIME column carries no
