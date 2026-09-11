@@ -17,7 +17,11 @@ import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
  *   - GET /api/views/:id/calendar date-range query
  *   - presentation validation (reject an unrenderable groupByField)
  *
- * @e2e openspec/specs/saved-search-views/spec.md
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-save-a-kanban-view
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-reject-an-unrenderable-presentation
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-columns-from-an-enum-status
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-legal-move-persists
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-objects-appear-on-their-date
  */
 import { expect, test } from '@playwright/test'
 import {
