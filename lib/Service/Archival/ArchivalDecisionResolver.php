@@ -177,10 +177,19 @@ class ArchivalDecisionResolver {
         // away: `matchedRule` is the only thing that says WHICH rule in the
         // schema's `x-openregister-archival` block fired, and debugging a wrong
         // destruction date without it means re-evaluating the whole annotation
-        // by hand.
+        // by hand. "No rule fired" is an answer too, so it travels as
+        // `defaulted: true` rather than as a null the read path would drop.
         if ($annotation !== []) {
-            $decision['annotation'] = $annotation;
+            $decision['annotation'] = $this->annotationForRender(annotation: $annotation);
         }
+
+        // A key nothing established is OMITTED, not nulled (the spec's own rule:
+        // an absent key is silence and a null is an answer). This also makes the
+        // block survive the read path unchanged: `ObjectsController::show()`
+        // strips empty values from every response unless `_empty=true`, while
+        // create, update and patch answer unstripped, so a null here reached a
+        // client in two different shapes depending on which verb it used.
+        $decision = $this->withoutUnestablished(values: $decision);
 
         // Nothing was established. Distinct from "kept forever": every field is
         // absent, not merely permissive, so the object genuinely has no
@@ -198,6 +207,122 @@ class ArchivalDecisionResolver {
 
         return $decision;
     }//end resolve()
+
+    /**
+     * Shape the schema annotation's evaluation for the response.
+     *
+     * RetentionEvaluator reports "no rule matched, the default applied" as
+     * `matchedRule: null`. That null is the one answer a records officer needs
+     * when a destruction date looks wrong and no rule explains it, and it did
+     * not survive a read: `ObjectsController::show()` strips null values from
+     * every response, so on GET the key vanished and "no rule fired" became
+     * indistinguishable from "this reader does not know", while the create
+     * response still carried it. Only the read path lost it.
+     *
+     * So the fact travels as a boolean, which the strip keeps: `defaulted` is
+     * true when the default applied and false when a rule fired, in which case
+     * `matchedRule` still names that rule's index. The name follows the flow
+     * decision tables, which already report a table that fell through to its
+     * default as `defaulted`. The evaluator's own contract (`int|null`) is left
+     * alone: the retention sweep reads it in PHP, where a null loses nothing.
+     *
+     * A block without a `matchedRule` key at all is passed through untouched,
+     * because inventing `defaulted` for it would claim an evaluation that the
+     * block does not record.
+     *
+     * @param array<string, mixed> $annotation The stored annotation evaluation.
+     *
+     * @return array<string, mixed> The evaluation, with `defaulted` beside `matchedRule`.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+     */
+    private function annotationForRender(array $annotation): array {
+        if (array_key_exists('matchedRule', $annotation) === false) {
+            return $annotation;
+        }
+
+        $shaped = [];
+        foreach ($annotation as $key => $value) {
+            if ($key !== 'matchedRule') {
+                $shaped[$key] = $value;
+                continue;
+            }
+
+            if ($value !== null) {
+                $shaped['matchedRule'] = $value;
+            }
+
+            $shaped['defaulted'] = ($value === null);
+        }
+
+        return $shaped;
+    }//end annotationForRender()
+
+    /**
+     * Drop every value that establishes nothing, at any depth.
+     *
+     * "Nothing" is null, the empty string and an array that is empty once its
+     * own members have been dropped. The rule mirrors
+     * `ObjectsController::stripEmptyValues()` member for member, including its
+     * one asymmetry: the items of a LIST are kept (nested maps inside it are
+     * pruned, not removed), and only a list left empty is dropped. So a block
+     * that has been through this method comes out of that strip identical, and
+     * the create response and the read response carry the same `_retention`.
+     * `false` and `0` are kept: `immutable: false` and `legalHold.active:
+     * false` are answers, not silence.
+     *
+     * @param array<array-key, mixed> $values The map to prune.
+     *
+     * @return array<array-key, mixed> The members that establish something.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+     */
+    private function withoutUnestablished(array $values): array {
+        $kept = [];
+        foreach ($values as $key => $value) {
+            if (is_array($value) === true) {
+                $value = $this->prunedMember(value: $value);
+            }
+
+            if ($value === null || $value === '' || $value === []) {
+                continue;
+            }
+
+            $kept[$key] = $value;
+        }
+
+        return $kept;
+    }//end withoutUnestablished()
+
+    /**
+     * Prune one array member the way the read path's strip does.
+     *
+     * A map is pruned recursively. A list keeps every item, and only the maps
+     * inside it are pruned, because `stripEmptyValues()` never removes an item
+     * from a list.
+     *
+     * @param array<array-key, mixed> $value The member to prune.
+     *
+     * @return array<array-key, mixed> The pruned member, possibly empty.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+     */
+    private function prunedMember(array $value): array {
+        if (array_is_list($value) === false) {
+            return $this->withoutUnestablished(values: $value);
+        }
+
+        $items = [];
+        foreach ($value as $item) {
+            if (is_array($item) === true) {
+                $item = $this->withoutUnestablished(values: $item);
+            }
+
+            $items[] = $item;
+        }
+
+        return $items;
+    }//end prunedMember()
 
     /**
      * Add the Archiefwet record state, and whether it is final.
