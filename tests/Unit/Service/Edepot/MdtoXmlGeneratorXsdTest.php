@@ -39,6 +39,44 @@ use Psr\Log\LoggerInterface;
 class MdtoXmlGeneratorXsdTest extends TestCase {
 
 	/**
+	 * The external-entity loader in force before this test, restored after it.
+	 *
+	 * @var callable|null
+	 */
+	private $previousEntityLoader = null;
+
+	/**
+	 * Install the entity loader a booted Nextcloud installs.
+	 *
+	 * Nextcloud's XXE protection makes libxml's external-entity loader return
+	 * null for every resource. CI runs this suite inside a booted Nextcloud, a
+	 * local run usually does not, and a validation that reads the schema FROM
+	 * DISK passed locally and failed in CI with "Failed to load external
+	 * entity because the resolver function returned null". Carrying the
+	 * condition into the test means a local run cannot pass for that wrong
+	 * reason again.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->previousEntityLoader = libxml_get_external_entity_loader();
+		libxml_set_external_entity_loader(static fn (): mixed => null);
+	}//end setUp()
+
+	/**
+	 * Restore whatever entity loader was in force before this test.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		libxml_set_external_entity_loader($this->previousEntityLoader);
+
+		parent::tearDown();
+	}//end tearDown()
+
+	/**
 	 * The vendored schema, relative to this file.
 	 */
 	private const XSD = __DIR__ . '/../../../../lib/Resources/mdto/MDTO-XML1.0.1.xsd';
