@@ -486,6 +486,7 @@ class SipPackageBuilder {
 	 *
 	 * @param string $transferId The transfer list UUID.
 	 * @param array<int,array<string,mixed>> $objectsWithFiles Objects and their file metadata.
+	 * @param array<string,array<int,array<string,mixed>>> $metadataFiles The MDTO documents the package ships, keyed by object uuid.
 	 *
 	 * @return string The METS XML string.
 	 *

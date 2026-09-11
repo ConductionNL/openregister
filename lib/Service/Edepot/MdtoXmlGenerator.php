@@ -240,7 +240,7 @@ class MdtoXmlGenerator {
 	/**
 	 * Refuse to TRANSFER a record whose retention period is unknown.
 	 *
-	 * openregister's own policy, not MDTO's. The standard marks
+	 * This is openregister's own policy, not MDTO's. The standard marks
 	 * `bewaartermijn` "Verplicht: Ja, indien bekend", so {@see self::generate()}
 	 * omits the element when there is no period, which keeps an export honest
 	 * and is what the `/export/mdto` endpoint needs. Handing a record to an
