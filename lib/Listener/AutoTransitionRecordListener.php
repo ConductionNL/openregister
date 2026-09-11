@@ -97,8 +97,6 @@ class AutoTransitionRecordListener implements IEventListener {
 			return;
 		}
 
-		$isCreate = ($event instanceof ObjectCreatedEvent);
-
 		$object = $event->getObject();
 		$schemaRef = (string)$object->getSchema();
 		if ($this->schemaDeclaresAutoWhen(schemaRef: $schemaRef) === false) {
