@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test'
+import type { SeededRegister } from '../_fixtures.ts'
 
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
@@ -34,7 +35,6 @@ import type { APIRequestContext } from '@playwright/test'
  */
 import { expect, test } from '@playwright/test'
 import {
-	type SeededRegister,
 	createRegister,
 	deleteRegister,
 	deleteSchema,
@@ -99,11 +99,11 @@ function nullPaths(value: unknown, at: string): string[] {
 }
 
 /**
- * Create one object and return its id and the `_retention` the create answered.
+ * Create one object, then GET it, and return both `_retention` blocks.
  *
  * @param  {APIRequestContext} request    The request context.
  * @param  {number}            statusCode The value the annotation's rule tests.
- * @return {Promise<{id: string, retention: Record<string, any>}>} The created object.
+ * @return {Promise<{id: string, created: object, read: object}>} The id and both blocks.
  */
 async function createAndReadBack(
 	request: APIRequestContext,
