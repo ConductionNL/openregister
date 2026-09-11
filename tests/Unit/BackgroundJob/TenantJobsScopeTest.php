@@ -45,8 +45,8 @@ class TenantJobsScopeTest extends TestCase {
 	/**
 	 * Build an organisation.
 	 *
-	 * @param string      $uuid            Its uuid.
-	 * @param string      $status          Its lifecycle status.
+	 * @param string $uuid Its uuid.
+	 * @param string $status Its lifecycle status.
 	 * @param string|null $deprovisionedAt When it was deprovisioned.
 	 *
 	 * @return Organisation The organisation.
@@ -61,7 +61,6 @@ class TenantJobsScopeTest extends TestCase {
 		}
 
 		return $org;
-
 	}//end organisation()
 
 	/**
@@ -196,6 +195,112 @@ class TenantJobsScopeTest extends TestCase {
 		$this->assertSame([], $deleted);
 
 	}//end testPurgeSparesARowInsideRetention()
+
+	/**
+	 * Build a purge job over the given rows, recording what it deletes.
+	 *
+	 * The organisation mapper returns `$rows` whatever filter it is given, which
+	 * is the point: it models a status filter that was dropped or ignored, so
+	 * whatever the job spares, it spared by its own check.
+	 *
+	 * @param array<int, Organisation> $rows What the tenant read returns.
+	 * @param array<int, string|null> $deletedOrgs Uuids of deleted organisations, by reference.
+	 * @param array<int, string> $deletedUsage Organisation uuids whose usage was deleted, by reference.
+	 *
+	 * @return TenantPurgeJob The job.
+	 */
+	private function purgeJobOver(array $rows, array &$deletedOrgs, array &$deletedUsage): TenantPurgeJob {
+		$mapper = $this->createMock(OrganisationMapper::class);
+		$mapper->method('findLocalTenants')->willReturn($rows);
+		$mapper->method('delete')->willReturnCallback(
+			static function (Organisation $org) use (&$deletedOrgs): Organisation {
+				$deletedOrgs[] = $org->getUuid();
+
+				return $org;
+			}
+		);
+
+		$usage = $this->createMock(TenantUsageMapper::class);
+		// The installation-wide sweep must never be the purge's delete: it has
+		// no organisation in its WHERE clause. It is recorded rather than
+		// forbidden with never(), because the job catches \Exception and would
+		// swallow the mock's failure, hiding the reason a test went red.
+		$usage->method('deleteOlderThan')->willReturnCallback(
+			static function () use (&$deletedUsage): int {
+				$deletedUsage[] = '*every organisation*';
+
+				return 0;
+			}
+		);
+		$usage->method('deleteByOrganisation')->willReturnCallback(
+			static function (string $organisationUuid) use (&$deletedUsage): int {
+				$deletedUsage[] = $organisationUuid;
+
+				return 2;
+			}
+		);
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn('30');
+
+		return new TenantPurgeJob(
+			$this->createMock(ITimeFactory::class),
+			$mapper,
+			$usage,
+			$appConfig,
+			$this->createMock(LoggerInterface::class),
+		);
+
+	}//end purgeJobOver()
+
+	/**
+	 * The purge deletes the usage of the organisation it purges, and no other.
+	 *
+	 * The job once called `deleteOlderThan(2099-12-31)`, which deletes the
+	 * usage of EVERY organisation. The real-database proof is
+	 * TenantPurgeScopeIntegrationTest; this pins the call the job makes.
+	 *
+	 * @return void
+	 */
+	public function testPurgeDeletesUsageOnlyForThePurgedOrganisation(): void {
+		$deletedOrgs = [];
+		$deletedUsage = [];
+
+		$this->runJob(
+			$this->purgeJobOver(
+				[$this->organisation('org-1', 'archived', '2020-01-01')],
+				$deletedOrgs,
+				$deletedUsage
+			)
+		);
+
+		$this->assertSame(['org-1'], $deletedOrgs);
+		$this->assertSame(['org-1'], $deletedUsage, 'usage is deleted for the purged organisation, by its uuid');
+
+	}//end testPurgeDeletesUsageOnlyForThePurgedOrganisation()
+
+	/**
+	 * An archived organisation without a uuid is left alone.
+	 *
+	 * Every delete the purge makes is scoped by the uuid. Without one there is
+	 * nothing to scope by.
+	 *
+	 * @return void
+	 */
+	public function testPurgeSkipsAnArchivedOrganisationWithoutAUuid(): void {
+		$deletedOrgs = [];
+		$deletedUsage = [];
+
+		$org = new Organisation();
+		$org->setStatus(TenantLifecycleService::STATUS_ARCHIVED);
+		$org->setDeprovisionedAt(new DateTime('2020-01-01'));
+
+		$this->runJob($this->purgeJobOver([$org], $deletedOrgs, $deletedUsage));
+
+		$this->assertSame([], $deletedOrgs);
+		$this->assertSame([], $deletedUsage);
+
+	}//end testPurgeSkipsAnArchivedOrganisationWithoutAUuid()
 
 	/**
 	 * The deprovision job reads through the tenant-scoped path too.

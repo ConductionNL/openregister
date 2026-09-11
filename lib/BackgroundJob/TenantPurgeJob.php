@@ -77,7 +77,7 @@ class TenantPurgeJob extends TimedJob {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-deprovisioned-organisations-must-transition-to-archived-with-data-retention
-	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
 	 */
 	protected function run(mixed $argument): void {
 		$this->logger->info('[TenantPurgeJob] Starting purge check');
@@ -117,11 +117,17 @@ class TenantPurgeJob extends TimedJob {
 				continue;
 			}
 
-			try {
-				$orgUuid = $organisation->getUuid();
+			// Every delete below is scoped by this uuid. Without one there is
+			// nothing to scope by, so the organisation is left alone.
+			$orgUuid = $organisation->getUuid();
+			if ($orgUuid === null || $orgUuid === '') {
+				$this->logger->error('[TenantPurgeJob] Skipped an archived organisation without a uuid');
+				continue;
+			}
 
-				// Delete usage records for this organisation.
-				$this->tenantUsageMapper->deleteOlderThan(new DateTime('2099-12-31'));
+			try {
+				// Delete this organisation's usage records, and only this one's.
+				$this->tenantUsageMapper->deleteByOrganisation(organisationUuid: $orgUuid);
 
 				// Delete the organisation entity.
 				$this->organisationMapper->delete($organisation);

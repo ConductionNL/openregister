@@ -84,6 +84,20 @@ After deprovisioning completes, the Organisation MUST transition to `archived` s
 - **AND** the Organisation entity itself MUST be permanently deleted
 - **AND** an audit trail entry MUST be created recording the permanent deletion
 
+### Requirement: A purge MUST touch only the organisation it purges
+When `TenantPurgeJob` permanently deletes an archived Organisation, every delete it issues MUST be scoped to that Organisation. The usage records of every other Organisation MUST survive, whatever their period. An Organisation without a uuid MUST be skipped, because a delete that cannot name its Organisation cannot be scoped.
+
+#### Scenario: Purging one organisation leaves another's usage records intact
+- **GIVEN** usage records for an archived Organisation past its retention window and for a second, active Organisation
+- **WHEN** `TenantPurgeJob` runs
+- **THEN** the archived Organisation and its usage records MUST be deleted
+- **AND** every usage record of the second Organisation MUST still exist
+
+#### Scenario: An organisation without a uuid is not purged
+- **GIVEN** an archived Organisation past its retention window with no uuid
+- **WHEN** `TenantPurgeJob` runs
+- **THEN** no usage record MUST be deleted and the Organisation MUST NOT be deleted
+
 ### Requirement: Database migration MUST add lifecycle fields to Organisation entity
 The migration MUST add the required fields to support tenant lifecycle management.
 
