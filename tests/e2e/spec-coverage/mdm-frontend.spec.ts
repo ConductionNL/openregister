@@ -161,7 +161,7 @@ test.describe('mdm-frontend — navigation group', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // @e2e openspec/specs/mdm-frontend/spec.md#schema-select-is-disabled-until-a-register-is-chosen
 // @e2e openspec/specs/mdm-frontend/spec.md#ncselect-carries-an-accessible-label
-// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selects-expose-stable-test-handles
+// @e2e openspec/specs/mdm-views-route-scoping/spec.md#scenario-selects-expose-stable-test-handles
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — register/schema selector', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -189,8 +189,8 @@ test.describe('mdm-frontend — register/schema selector', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @e2e openspec/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
-// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
-// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
+// @e2e openspec/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
+// @e2e openspec/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — selection persistence', () => {
 	test.use({ storageState: STORAGE_STATE })

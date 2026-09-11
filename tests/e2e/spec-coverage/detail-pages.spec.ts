@@ -68,10 +68,16 @@ import type { SeededObject, SeededRegister, SeededSchema } from '../_fixtures.ts
  * the component each test drives is a fact recorded in executable code rather
  * than a claim made in a comment.
  *
- * @e2e openspec/specs/no-code-app-builder/spec.md
- * @e2e openspec/specs/frontend-app-bootstrap/spec.md
- * @e2e openspec/specs/flow-engine/spec.md
- * @e2e openspec/specs/rapportage-bi-export/spec.md
+ * Three fragmentless anchors were removed rather than given a fragment.
+ * flow-engine is the clearest case: the two palette scenarios this suite
+ * comes nearest to both carry `@e2e exclude engine-internal registry
+ * behaviour`, so the spec itself says an e2e test is the wrong instrument.
+ * rapportage-bi-export is about aggregation, templates and export formats,
+ * while this suite loads a seeded dashboard OBJECT and reads its title.
+ * frontend-app-bootstrap is about store hot-loading and the Templates
+ * view, neither of which a detail-page host exercises.
+ *
+ * @e2e openspec/specs/no-code-app-builder/spec.md#scenario-deep-link-route-returns-the-spa-index-template
  */
 import { expect, test } from '@playwright/test'
 import * as path from 'path'
