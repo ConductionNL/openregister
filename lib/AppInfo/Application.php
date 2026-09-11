@@ -166,6 +166,7 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
@@ -425,6 +426,17 @@ class Application extends App implements IBootstrap {
 			FlowRunContext::class,
 			function () {
 				return new FlowRunContext();
+			}
+		);
+
+		// The named-transition context MUST be shared for the same reason:
+		// TransitionEngine declares the action on one instance and the
+		// lifecycle listeners read it on another. Unshared, every named call
+		// would silently fall back to matching by from/to value.
+		$context->registerService(
+			LifecycleActionContext::class,
+			function () {
+				return new LifecycleActionContext();
 			}
 		);
 

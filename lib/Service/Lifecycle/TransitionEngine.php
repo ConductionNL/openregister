@@ -75,8 +75,10 @@ class TransitionEngine {
 	 * @param RegisterMapper $registerMapper Mapper used to resolve the register slug.
 	 * @param IAppConfig $appConfig App config, for the slug-contract opt-in.
 	 * @param LoggerInterface $logger Logger for post-commit listener failures.
+	 * @param LifecycleActionContext $actionContext Names the transition being performed for the listeners.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -87,6 +89,7 @@ class TransitionEngine {
 		private readonly RegisterMapper $registerMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleActionContext $actionContext,
 	) {
 	}//end __construct()
 
@@ -369,13 +372,22 @@ class TransitionEngine {
 		// the downstream check default-denies — as intended (PR #1431 4th-pass).
 		$actingUser = $this->userSession->getUser();
 
-		$saved = $this->objectService->saveObject(
-			object: $objectData,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
-			uuid: $object->getUuid(),
-			currentUser: $actingUser
-		);
+		// Name the transition for the listeners. They see only object data and
+		// would otherwise pick the first transition with this from/to pair,
+		// judging and acting on a twin rather than the action asked for.
+		$uuid = (string)$object->getUuid();
+		$this->actionContext->declare(uuid: $uuid, action: $action);
+		try {
+			$saved = $this->objectService->saveObject(
+				object: $objectData,
+				register: $object->getRegister(),
+				schema: $object->getSchema(),
+				uuid: $object->getUuid(),
+				currentUser: $actingUser
+			);
+		} finally {
+			$this->actionContext->release(uuid: $uuid);
+		}
 
 		$userId = $actingUser?->getUID();
 
