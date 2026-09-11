@@ -122,6 +122,7 @@ export async function createSchema(
 	runId: string,
 	suffix = 'sch',
 	properties: Record<string, unknown> = twoPropertySchema(),
+	overrides: Record<string, unknown> = {},
 ): Promise<SeededSchema> {
 	const slug = `${runId}-${suffix}`
 	const resp = await request.post(`${API}/schemas`, {
@@ -131,6 +132,13 @@ export async function createSchema(
 			title: `E2E ${suffix}`,
 			description: 'fixture schema',
 			properties,
+			// `overrides` mirrors createRegister's own trailing parameter and
+			// exists for the same reason: a schema-level block that is not a
+			// property — `configuration`, and inside it the
+			// `x-openregister-archival` annotation — cannot be expressed
+			// through `properties`, and a fixture that cannot declare one
+			// cannot seed an archival schema at all.
+			...overrides,
 		},
 	})
 	expect(resp.status(), `createSchema(${slug})`).toBeLessThanOrEqual(201)
