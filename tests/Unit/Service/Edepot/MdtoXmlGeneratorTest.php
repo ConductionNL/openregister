@@ -18,7 +18,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
+use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -55,7 +57,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 		// A REAL source reader, not a mock: which values are found and which
 		// are absent is precisely what these tests assert, and a stub would
 		// make every absence test pass for the wrong reason.
-		$this->sourceReader = new MdtoSourceReader();
+		$this->sourceReader = new MdtoSourceReader(new MdtoValueReader());
 
 		$this->generator = $this->makeGenerator(appConfig: $this->appConfig, eventMapper: $this->eventMapper);
 	}
@@ -70,6 +72,9 @@ class MdtoXmlGeneratorTest extends TestCase {
 	 */
 	private function makeGenerator(IAppConfig $appConfig, MdtoEventMapper $eventMapper): MdtoXmlGenerator {
 		$writer = new MdtoDocumentWriter();
+		$sourceReader = new MdtoSourceReader(new MdtoValueReader());
+		$bestandGenerator = new MdtoBestandGenerator($writer);
+		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
 
 		return new MdtoXmlGenerator(
 			$appConfig,
@@ -77,7 +82,8 @@ class MdtoXmlGeneratorTest extends TestCase {
 			$eventMapper,
 			$this->sourceReader,
 			$writer,
-			new MdtoBestandGenerator($writer)
+			new MdtoBestandGenerator($writer),
+			$preconditions
 		);
 	}
 

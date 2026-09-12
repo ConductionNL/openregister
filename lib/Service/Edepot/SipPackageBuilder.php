@@ -539,42 +539,14 @@ class SipPackageBuilder {
 			$objectDiv->setAttribute('TYPE', 'object');
 			$rootDiv->appendChild($objectDiv);
 
-			foreach ($files as $file) {
-				$fileId = 'FILE-' . $fileCounter;
-				$fileCounter++;
-
-				$isRendition = ($file['isRendition'] === true);
-				$subDir = 'original';
-				if ($isRendition === true) {
-					$subDir = 'rendition';
-				}
-
-				$filePath = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
-
-				$fileElement = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
-				$fileElement->setAttribute('ID', $fileId);
-				$fileElement->setAttribute('SIZE', (string)$file['size']);
-				$fileElement->setAttribute('MIMETYPE', $file['format']);
-				$fileElement->setAttribute('CHECKSUM', $file['checksum']);
-				$fileElement->setAttribute('CHECKSUMTYPE', 'SHA-256');
-
-				$fLocat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
-				$fLocat->setAttribute('LOCTYPE', 'URL');
-				$fLocat->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $filePath);
-				$fileElement->appendChild($fLocat);
-
-				if ($isRendition === true) {
-					$renditionGrp->appendChild($fileElement);
-				}
-
-				if ($isRendition === false) {
-					$originalGrp->appendChild($fileElement);
-				}
-
-				$fptr = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
-				$fptr->setAttribute('FILEID', $fileId);
-				$objectDiv->appendChild($fptr);
-			}//end foreach
+			$fileCounter = $this->appendContentFiles(
+				dom: $dom,
+				groups: ['original' => $originalGrp, 'rendition' => $renditionGrp],
+				objectDiv: $objectDiv,
+				uuid: (string)$uuid,
+				files: $files,
+				fileCounter: $fileCounter
+			);
 
 			$fileCounter = $this->appendMetadataFiles(
 				dom: $dom,
@@ -587,6 +559,62 @@ class SipPackageBuilder {
 
 		return $dom->saveXML();
 	}//end generateMetsXml()
+
+	/**
+	 * List an object's content files in the METS file section.
+	 *
+	 * @param DOMDocument $dom The METS document.
+	 * @param array<string,DOMElement> $groups The ORIGINAL and RENDITION file groups.
+	 * @param DOMElement $objectDiv The object's div, which points at them.
+	 * @param string $uuid The object uuid, for the file paths.
+	 * @param array $files The object's file metadata.
+	 * @param int $fileCounter The running METS file id counter.
+	 *
+	 * @return int The counter after these files.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	private function appendContentFiles(
+		DOMDocument $dom,
+		array $groups,
+		DOMElement $objectDiv,
+		string $uuid,
+		array $files,
+		int $fileCounter,
+	): int {
+		foreach ($files as $file) {
+			$fileId = 'FILE-' . $fileCounter;
+			$fileCounter++;
+
+			$subDir = 'original';
+			if ($file['isRendition'] === true) {
+				$subDir = 'rendition';
+			}
+
+			$element = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
+			$element->setAttribute('ID', $fileId);
+			$element->setAttribute('SIZE', (string)$file['size']);
+			$element->setAttribute('MIMETYPE', $file['format']);
+			$element->setAttribute('CHECKSUM', $file['checksum']);
+			$element->setAttribute('CHECKSUMTYPE', 'SHA-256');
+
+			$locat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
+			$locat->setAttribute('LOCTYPE', 'URL');
+			$locat->setAttributeNS(
+				'http://www.w3.org/1999/xlink',
+				'xlink:href',
+				"objects/{$uuid}/content/{$subDir}/{$file['name']}"
+			);
+			$element->appendChild($locat);
+			$groups[$subDir]->appendChild($element);
+
+			$pointer = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
+			$pointer->setAttribute('FILEID', $fileId);
+			$objectDiv->appendChild($pointer);
+		}
+
+		return $fileCounter;
+	}//end appendContentFiles()
 
 	/**
 	 * List an object's MDTO documents in the METS file section.

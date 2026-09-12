@@ -21,7 +21,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
+use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use OCA\OpenRegister\Service\TmloService;
 use OCP\IAppConfig;
@@ -83,6 +85,9 @@ class TmloMdtoExportXsdTest extends TestCase {
 		);
 
 		$writer = new MdtoDocumentWriter();
+		$sourceReader = new MdtoSourceReader(new MdtoValueReader());
+		$bestandGenerator = new MdtoBestandGenerator($writer);
+		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
 
 		$this->service = new TmloService(
 			$this->createMock(RegisterMapper::class),
@@ -92,9 +97,10 @@ class TmloMdtoExportXsdTest extends TestCase {
 				$appConfig,
 				$this->createMock(LoggerInterface::class),
 				$eventMapper,
-				new MdtoSourceReader(),
+				new MdtoSourceReader(new MdtoValueReader()),
 				$writer,
-				new MdtoBestandGenerator($writer)
+				new MdtoBestandGenerator($writer),
+				$preconditions
 			)
 		);
 	}//end setUp()
