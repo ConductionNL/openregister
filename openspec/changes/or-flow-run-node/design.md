@@ -26,7 +26,7 @@ on this specific object" need to be evaluated together.
 
 ## Decisions
 
-### RN-1 — Authorization for running one node against one subject (OPEN — needs Ruben's decision)
+### RN-1 — Authorization for running one node against one subject (DECIDED 2026-09-12 — Ruben chose (c))
 
 Three shapes were considered:
 
@@ -79,6 +79,30 @@ node-invocation-specific action distinct from the object's general write
 right, for cases where "may edit this case" and "may generate documents on
 this case" should be separable).
 
+**Resolution (2026-09-12).** Ruben chose (c) as recommended: opt-in node
+(`IFlowDirectlyInvokable`) AND the subject's existing object-RBAC permission,
+both required, `flow.run` consulted for neither half — it is subject-blind
+and seeded `@authenticated`, so it would add no safety and only make the
+check stricter for callers it should not be stricter for. The object-RBAC
+check uses the EXISTING `update` verb (the same one `object-op` patch/create
+evaluates via `PermissionHandler::hasPermission()`), not a new
+node-invocation-specific verb: introducing a narrower verb is real product
+surface (a new admin-configurable permission, its own seeding story, its own
+UI) that no concrete need has asked for yet — `documents-on-the-case` 3.3
+needs "may edit this case", which `update` already answers. Revisit if a
+future caller genuinely needs "may invoke node X" separable from "may edit
+the object" — this design does not foreclose that, it just does not build it
+speculatively.
+
+Implemented in `lib/Controller/FlowNodeRunController.php` (a controller
+separate from `FlowController`, since neither its authorization shape nor its
+CRUD-adjacent concerns match), `lib/Service/Flow/IFlowDirectlyInvokable.php`
+(the marker interface), and `FlowRunService::executeNode()` (the "run exactly
+one node, not to the end" mode — dispatches the named step directly through
+`RegistryStepDispatcher` rather than walking the graph with `FlowEngine`, so
+routing to whatever the node points at in its authoring graph is structurally
+impossible, not merely unauthorized).
+
 ### RN-2 — Config sourcing via `IFlowNodeConfigForm`, not a new manifest grammar
 
 `documents-on-the-case` 3.3 (dossiq) framed this as "`@pick:template` names
@@ -91,6 +115,14 @@ call (or the manifest action's dispatcher, per the nextcloud-vue proposal)
 reads that declaration generically — no new register/schema/filter fields on
 the manifest action, no per-app bespoke picker grammar. This is a strict reuse
 of an existing, already-shipped interface and needs no product decision.
+
+Implemented as `GET /api/flows/{flowId}/nodes/{nodeId}/run`
+(`FlowNodeRunController::form()`), the same URL as the POST that runs the
+node. Gated on the SAME node-eligibility half of RN-1 (opt-in required, same
+404 for a node that has not implemented `IFlowDirectlyInvokable`) but NOT on
+subject permission — there is no subject yet, only a question about which
+fields a form needs, and `configForm()` describes field shape, never subject
+data.
 
 ### RN-3 — The endpoint takes `nodeId` scoped to a flow, not a bare node type
 
