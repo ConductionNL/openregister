@@ -288,3 +288,66 @@ object SHALL carry the same block, key for key.
 - **WHEN** a widget row is read
 - **THEN** the JSON response SHALL NOT include a `_retention` key
 
+### Requirement: A schema may declare the archival facts MDTO asks for
+
+Beside `retention`, the `x-openregister-archival` annotation MAY declare
+`aggregationLevel`, `useRestriction` and `temporalCoverage`. Before this,
+nothing in openregister wrote any of the three, so an MDTO export could only
+omit them, and an omission reads exactly like a record that genuinely has none
+(archival-conformance finding A3).
+
+`temporalCoverage` SHALL name date PROPERTIES on the record
+(`startProperty`, and optionally `endProperty`), never literal dates. MDTO
+defines dekkingInTijd as the period the record's CONTENT pertains to, which
+differs per record, so a date on the schema would be the same wrong answer for
+every row. This is the mechanic `sourceDateProperty` already uses for a
+disposal date.
+
+Resolution order, nearest first: the object's own `retention` block under the
+abstract English key, then the `tmlo` block under TMLO's Dutch spelling, then
+the schema annotation resolved for that row. `ArchivalDecisionResolver` SHALL
+emit whichever source established the fact into `_retention`, and the MDTO
+export SHALL carry it.
+
+A fact no source establishes SHALL be ABSENT from `_retention` and from the
+export: no placeholder, and identical on create and on read, which is the rule
+`UnestablishedValues` applies to the rest of the block.
+
+Validation at schema save SHALL refuse an unknown key, at the top level and
+inside each block, as unknown `retention` keys already are. It SHALL also
+refuse a term outside the MDTO begrippenlijst the element cites:
+`Aggregatieniveaus` for `aggregationLevel` and `BeperkingGebruikTypeLijst` for
+`useRestriction.type`. Both lists are formally OPEN, so this is stricter than
+MDTO, and deliberately: the exported element names the list it took the term
+from, so a term absent from that list would make the document claim a
+provenance it does not have. Supporting a local term means letting a schema
+name its own begrippenlijst, which is a change to the annotation's shape.
+
+`MdtoTerms` SHALL be the one home for those lists, so the check that refuses a
+term and the document that cites it cannot disagree.
+
+#### Scenario: A schema declares the three facts
+- @e2e exclude schema-save validation and metadata resolution — covered by PHPUnit
+- **GIVEN** a schema whose `x-openregister-archival` declares `aggregationLevel: Dossier`, a `useRestriction` and a `temporalCoverage` naming `startProperty`
+- **WHEN** a row of that schema is read
+- **THEN** `_retention` SHALL carry `aggregationLevel`, `useRestriction` and `temporalCoverage`, the last resolved from the row's own properties
+
+#### Scenario: The object overrides its schema
+- @e2e exclude metadata resolution order — covered by PHPUnit
+- **GIVEN** a row whose `retention` block carries `aggregationLevel: Archiefstuk` while its schema declares `Dossier`
+- **THEN** `_retention` and the MDTO export SHALL carry `Archiefstuk`
+
+#### Scenario: An undeclared fact is absent, not defaulted
+- @e2e exclude metadata resolution — covered by PHPUnit
+- **GIVEN** a row whose schema declares none of the three and whose own blocks carry none
+- **THEN** `_retention` SHALL NOT contain those keys at all, and the MDTO document SHALL NOT contain the elements
+
+#### Scenario: A term outside the cited begrippenlijst is refused
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **WHEN** a schema declares `aggregationLevel: Map`, or a `useRestriction.type` that is not a BeperkingGebruikTypeLijst term
+- **THEN** the schema save SHALL fail, naming the allowed terms
+
+#### Scenario: An unknown annotation key is refused
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **WHEN** a schema declares `aggregatieniveau` at the top level, or a literal `start` inside `temporalCoverage`
+- **THEN** the schema save SHALL fail, naming the allowed keys, so a typo cannot declare nothing in silence
