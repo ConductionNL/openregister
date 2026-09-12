@@ -37,6 +37,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCA\OpenRegister\Tests\Support\ResolvesControllersFromContainer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -56,6 +57,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
 class ObjectsControllerIntegrationTest extends TestCase {
+
+	use ResolvesControllersFromContainer;
 
 	/**
 	 * Mock request for injecting parameters
@@ -77,6 +80,19 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	 * @var IGroupManager&MockObject
 	 */
 	private IGroupManager&MockObject $groupManager;
+
+	/**
+	 * Whether the caller these doubles describe is an administrator.
+	 *
+	 * The group-manager double has to answer `isAdmin()` as well as
+	 * `getUserGroupIds()`, and consistently: the container now hands it to
+	 * every collaborator the controller uses, and `SaveObject` calls
+	 * `isAdmin()` on a `bool` return type, so an unstubbed null was a
+	 * TypeError. One flag keeps both answers in step.
+	 *
+	 * @var boolean
+	 */
+	private bool $callerIsAdmin = false;
 
 	/**
 	 * Real object service from DI
@@ -155,32 +171,20 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
 		$this->objectMapper = \OC::$server->get(MagicMapper::class);
 
-		// Create mock for request (data carrier for HTTP params).
+		// THE THREE DOUBLES THIS FILE CONTROLS: the request carries each
+		// test's payload, and the session plus the group manager decide who is
+		// asking. Everything else the controller needs comes from the
+		// container, so a new dependency on it needs no change here.
 		$this->request = $this->createMock(IRequest::class);
-
-		// Create mock for user session and group manager (to control admin/non-admin).
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->groupManager->method('isAdmin')->willReturnCallback(fn () => $this->callerIsAdmin);
 
-		// Build controller with real services but mock request.
-		$this->controller = new ObjectsController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(IAppConfig::class),
-			\OC::$server->get(IAppManager::class),
-			\OC::$server->get(ContainerInterface::class),
-			$this->objectMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			\OC::$server->get(AuditTrailMapper::class),
-			$this->objectService,
-			$this->userSession,
-			$this->groupManager,
-			\OC::$server->get(ExportService::class),
-			\OC::$server->get(ImportService::class),
-			null,
-			\OC::$server->get(LoggerInterface::class)
-		);
+		$this->overrideContainerService(IRequest::class, $this->request);
+		$this->overrideContainerService(IUserSession::class, $this->userSession);
+		$this->overrideContainerService(IGroupManager::class, $this->groupManager);
+
+		$this->controller = $this->resolveController(ObjectsController::class);
 
 		// Create test register and schema fixtures.
 		$this->createTestFixtures();
@@ -248,6 +252,10 @@ class ObjectsControllerIntegrationTest extends TestCase {
 			}
 		}
 
+		// Put the container back: an override left behind would hand this
+		// test's doubles to every later test file.
+		$this->restoreContainerOverrides();
+
 		parent::tearDown();
 	}
 
@@ -310,6 +318,7 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		$user->method('getUID')->willReturn('admin');
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
+		$this->callerIsAdmin = true;
 	}
 
 	/**
@@ -322,6 +331,7 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		$user->method('getUID')->willReturn('testuser');
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('getUserGroupIds')->willReturn(['users']);
+		$this->callerIsAdmin = false;
 	}
 
 	/**
@@ -332,6 +342,7 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	private function setupNoUser(): void {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+		$this->callerIsAdmin = false;
 	}
 
 	/**
@@ -1272,107 +1283,9 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	// publish() and depublish() tests
 	// =========================================================================
 
-	/**
-	 * Test publish sets publication date
-	 *
-	 * @return void
-	 */
-	public function testPublishReturns200(): void {
-		$this->setupAdminUser();
-		$obj = $this->createTestObject(['name' => 'publish-test']);
-		$this->setupRequest();
 
-		$result = $this->controller->publish(
-			$obj->getUuid(),
-			$this->registerId(),
-			$this->schemaId(),
-			$this->objectService
-		);
 
-		$this->assertSame(200, $result->getStatus());
-	}
 
-	/**
-	 * Test publish with specific date
-	 *
-	 * @return void
-	 */
-	public function testPublishWithDate(): void {
-		$this->setupAdminUser();
-		$obj = $this->createTestObject(['name' => 'publish-date-test']);
-		$this->setupRequest(['date' => '2025-06-01T00:00:00+00:00']);
-
-		$result = $this->controller->publish(
-			$obj->getUuid(),
-			$this->registerId(),
-			$this->schemaId(),
-			$this->objectService
-		);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
-	/**
-	 * Test publish with nonexistent object returns error
-	 *
-	 * The controller's catch block catches OCP\DB\Exception, but DoesNotExistException
-	 * extends \Exception. Either way, we exercise the publish code path.
-	 *
-	 * @return void
-	 */
-	public function testPublishNotFoundReturnsError(): void {
-		$this->setupAdminUser();
-		$this->setupRequest();
-
-		try {
-			$result = $this->controller->publish(
-				Uuid::v4()->toRfc4122(),
-				$this->registerId(),
-				$this->schemaId(),
-				$this->objectService
-			);
-			// If we get here, it should be an error status.
-			$this->assertGreaterThanOrEqual(400, $result->getStatus());
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// DoesNotExistException leaks through — code path exercised.
-			$this->assertStringContainsString('not found', strtolower($e->getMessage()));
-		}
-	}
-
-	/**
-	 * Test depublish sets depublication date
-	 *
-	 * @return void
-	 */
-	public function testDepublishReturns200(): void {
-		$this->setupAdminUser();
-		$obj = $this->createTestObject(['name' => 'depublish-test']);
-
-		// First publish.
-		$this->setupRequest();
-		$this->controller->publish(
-			$obj->getUuid(),
-			$this->registerId(),
-			$this->schemaId(),
-			$this->objectService
-		);
-
-		// Then depublish.
-		// Need a fresh mock since method() can only be called once per method name.
-		$this->request = $this->createMock(IRequest::class);
-		$this->setupRequest();
-		// Rebuild controller with new request mock.
-		$this->rebuildController();
-
-		$result = $this->controller->depublish(
-			$obj->getUuid(),
-			$this->registerId(),
-			$this->schemaId(),
-			$this->objectService
-		);
-
-		$this->assertSame(200, $result->getStatus());
-	}
 
 	// =========================================================================
 	// logs() tests
@@ -1816,24 +1729,17 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	 *
 	 * @return void
 	 */
+
+	// FOUR TESTS WERE REMOVED HERE, NOT SKIPPED.
+	//
+	// They drove `ObjectsController::publish()` / `depublish()`, which the
+	// deprecate-published-metadata spec removed (commit 68091c399, "Removed
+	// published/depublished from 25+ files"): publication is decided by RBAC
+	// rules on `$now`, not by dedicated metadata. A test for a method that no
+	// longer exists cannot pass, and a skip would claim the removed surface
+	// is covered.
+
 	private function rebuildController(): void {
-		$this->controller = new ObjectsController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(IAppConfig::class),
-			\OC::$server->get(IAppManager::class),
-			\OC::$server->get(ContainerInterface::class),
-			$this->objectMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			\OC::$server->get(AuditTrailMapper::class),
-			$this->objectService,
-			$this->userSession,
-			$this->groupManager,
-			\OC::$server->get(ExportService::class),
-			\OC::$server->get(ImportService::class),
-			null,
-			\OC::$server->get(LoggerInterface::class)
-		);
+		$this->controller = $this->resolveController(ObjectsController::class);
 	}
 }
