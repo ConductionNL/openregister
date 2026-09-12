@@ -20,7 +20,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
+use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -377,14 +379,17 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 		$eventMapper->method('forObject')->willReturn($events);
 
 		$writer = new MdtoDocumentWriter();
+		$sourceReader = new MdtoSourceReader(new MdtoValueReader());
+		$bestandGenerator = new MdtoBestandGenerator($writer);
+		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
 
 		return new MdtoXmlGenerator(
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
 			$eventMapper,
-			new MdtoSourceReader(),
+			$sourceReader,
 			$writer,
-			new MdtoBestandGenerator($writer)
+			$bestandGenerator,
+			$preconditions
 		);
 	}//end generator()
 
