@@ -1990,6 +1990,8 @@ class AuditTrailMapper extends QBMapper {
 	 * @return int Number of audit trails updated
 	 *
 	 * @throws \Exception Database operation exceptions
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-support-minimum-10-year-retention
 	 */
 	public function setExpiryDate(int $retentionMs): int {
 		try {
@@ -1999,14 +2001,19 @@ class AuditTrailMapper extends QBMapper {
 			// Get the query builder.
 			$qb = $this->db->getQueryBuilder();
 
+			// DATE_ADD is MySQL and MariaDB only, so the interval is spelled per
+			// platform. SearchTrailMapper::setExpiryDate() already learned this
+			// the hard way when the hourly LogCleanUpTask started calling it; the
+			// audit-trail twin kept the MySQL-only expression, which would throw
+			// on every PostgreSQL install the moment anything calls it.
+			$expiresExpression = sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds);
+			if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
+				$expiresExpression = sprintf("created + INTERVAL '%d seconds'", $retentionSeconds);
+			}
+
 			// Update audit trails that don't have an expiry date set.
 			$qb->update($this->getTableName())
-				->set(
-					'expires',
-					$qb->createFunction(
-						sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
-					)
-				)
+				->set('expires', $qb->createFunction($expiresExpression))
 				->where($qb->expr()->isNull('expires'));
 
 			// Execute the update and return number of affected rows.

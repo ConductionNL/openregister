@@ -151,7 +151,10 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$entity->setSchema((string)$schema->getId());
 		$entity->setObject(['name' => 'phpunit-test-' . uniqid()]);
 
-		$result = $this->objectMapper->insertEntity($entity);
+		// insertEntity() went with the blob objects table. MagicMapper::insert()
+		// is the successor and needs the register and schema the magic table is
+		// named after.
+		$result = $this->objectMapper->insert($entity, $register, $schema);
 		$this->createdObjectIds[] = $result->getId();
 
 		return $result;
@@ -534,12 +537,12 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	// =========================================================================
 
 	public function testSetExpiryDateUpdatesNullExpires(): void {
-		// setExpiryDate uses DATE_ADD which is MySQL-only; skip on PostgreSQL
+		// This used to skip on PostgreSQL, because setExpiryDate() wrote the
+		// MySQL-only DATE_ADD. The skip hid a portability defect rather than a
+		// platform limit: its SearchTrailMapper twin had already been taught to
+		// spell the interval per platform, and this one had not. The method does
+		// it now, so the test runs on both backends.
 		$db = \OC::$server->get(\OCP\IDBConnection::class);
-		$platform = $db->getDatabasePlatform();
-		if (stripos(get_class($platform), 'PostgreSQL') !== false) {
-			$this->markTestSkipped('setExpiryDate uses DATE_ADD which is not supported on PostgreSQL');
-		}
 
 		// Create an audit trail without an expiry date
 		$qb = $db->getQueryBuilder();
