@@ -1043,6 +1043,21 @@ class FlowRunController extends Controller {
 	 * stated reason to accept a cross-site POST here, so this endpoint keeps the
 	 * ordinary protection (or#3643).
 	 *
+	 * VERIFIED, not assumed, before removing the attribute (hydra gate-48's own
+	 * question — "is any mutating caller unprotected right now"): neither this
+	 * repo's `src/` nor `nextcloud-vue`'s `useFlowStore.js` (every OpenRegister
+	 * flow API call this fleet's shared editor makes — `run()`, `create()`,
+	 * `update()`, all of it — goes through `@nextcloud/axios`, which attaches
+	 * the token itself) calls `/api/flow-runs/test` at all. The only OTHER
+	 * caller found anywhere in the org is this app's own e2e suite
+	 * (`tests/e2e/api-direct/flow-engine.spec.ts`), which authenticates over
+	 * Basic auth ("no browser session is needed", its own docblock says) — the
+	 * exact case NC's CSRF check does not apply to, for the same reason
+	 * `resume()`/`signalByKey()` never needed the attribute either. Removing it
+	 * here breaks nothing that calls this endpoint today; a future browser
+	 * caller inherits protection automatically the moment it exists, the same
+	 * way every other flow call already does.
+	 *
 	 * @return JSONResponse The finished run, or a 4xx when the flow is unknown
 	 *                       or the caller may not edit it.
 	 *
