@@ -5893,6 +5893,13 @@ class MagicMapper extends AbstractObjectMapper {
 		$this->tableExistsMemo = [];
 		$this->liveMagicTablesMemo = null;
 
+		// The statistics handler keeps a THIRD memo of the same fact, and it was
+		// not cleared here. A register whose magic table was created after the
+		// first statistics call of the request therefore counted zero objects
+		// while its table already held them, which is what the dashboard and
+		// `exploreSchemaProperties()` were reporting.
+		$this->statisticsHandler?->forgetMagicTableList();
+
 	}//end invalidateTableMemos()
 
 	/**
