@@ -688,7 +688,9 @@ class MagicStatisticsHandler {
 							$value = $normalised->format('Y-m-d');
 						}
 					} elseif ($propertyFormat === 'date-time') {
-						$value = $this->dateTimeNormalizer->formatForIso8601($value);
+						// Offset-less DATETIME column value: interpret it in the
+						// timezone the write path stored it in (WOO-567).
+						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
 					}
 				}
 
