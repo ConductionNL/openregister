@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Integration tests for OptimizedBulkOperations, MetadataHydrationHandler, and FilePropertyHandler
+ * Integration tests for MagicMapper bulk save, MetadataHydrationHandler, and FilePropertyHandler
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
@@ -17,7 +17,6 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectHandlers\OptimizedBulkOperations;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -30,14 +29,13 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Integration tests for bulk operations and save-object handlers.
  *
- * Tests OptimizedBulkOperations (batch insert/update/delete with real DB),
+ * Tests MagicMapper's bulk save into a register+schema table (real DB),
  * MetadataHydrationHandler (metadata extraction, twig templates, slugs),
  * and FilePropertyHandler (file detection, validation, parsing paths).
  *
  * @group DB
  */
 class BulkAndHandlersIntegrationTest extends TestCase {
-	private OptimizedBulkOperations $bulkOps;
 	private MetadataHydrationHandler $metadataHandler;
 	private FilePropertyHandler $fileHandler;
 	private RegisterMapper $registerMapper;
@@ -52,7 +50,6 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->bulkOps = \OC::$server->get(OptimizedBulkOperations::class);
 		$this->metadataHandler = \OC::$server->get(MetadataHydrationHandler::class);
 		$this->fileHandler = \OC::$server->get(FilePropertyHandler::class);
 		$this->registerMapper = \OC::$server->get(RegisterMapper::class);
@@ -137,401 +134,148 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// OptimizedBulkOperations tests
+	// Bulk save: MagicMapper (was ObjectHandlers\OptimizedBulkOperations)
+	//
+	// OptimizedBulkOperations was deleted in 12927d356 (2026-03-13) with the blob
+	// `openregister_objects` table it wrote to. Twenty-eight tests stood here.
+	// Twenty-three of them drove its PRIVATE helpers through reflection
+	// (unifyObjectFormats, extractColumnValue, mapObjectColumnsToDatabase,
+	// getJsonColumns, convertDateTimeToMySQLFormat, createEntityFromData) or read
+	// the blob table's columns back with raw SQL, including `published`, a column
+	// the same commit retired. That is an implementation nobody ships any more,
+	// so those tests are gone rather than translated.
+	//
+	// The five below are the ones that asserted BEHAVIOUR: save many objects in
+	// one call, get their identifiers back, read them out again, and update
+	// rather than duplicate on a second save of the same uuid. They now drive
+	// MagicMapper::saveObjectsToRegisterSchemaTable(), which is where that
+	// behaviour lives.
 	// -----------------------------------------------------------------------
 
-	public function testBulkInsertSingleObject(): void {
-		$obj = $this->buildInsertObject(['naam' => 'Bulk Test 1']);
-		$result = $this->bulkOps->ultraFastUnifiedBulkSave([$obj], []);
+	/**
+	 * Save one object in a bulk call and get its uuid back.
+	 *
+	 * @return void
+	 */
+	public function testBulkSaveSingleObject(): void {
+		$uuid = Uuid::v4()->toRfc4122();
+		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
+			[['uuid' => $uuid, 'naam' => 'Bulk Test 1']],
+			$this->testRegister,
+			$this->testSchema
+		);
 
-		$this->assertNotEmpty($result);
-	}
+		$this->assertSame([$uuid], $saved);
+	}//end testBulkSaveSingleObject()
 
-	public function testBulkInsertMultipleObjects(): void {
+	/**
+	 * Every object of a bulk call is saved, not just the first.
+	 *
+	 * @return void
+	 */
+	public function testBulkSaveMultipleObjects(): void {
 		$objects = [];
+		$uuids = [];
 		for ($i = 0; $i < 5; $i++) {
-			$objects[] = $this->buildInsertObject(['naam' => "Bulk Multi $i"]);
+			$uuid = Uuid::v4()->toRfc4122();
+			$uuids[] = $uuid;
+			$objects[] = ['uuid' => $uuid, 'naam' => "Bulk Multi $i"];
 		}
 
-		$result = $this->bulkOps->ultraFastUnifiedBulkSave($objects, []);
-		$this->assertNotEmpty($result);
-		$this->assertGreaterThanOrEqual(5, count($result));
-	}
-
-	public function testBulkInsertEmptyArrayReturnsEmpty(): void {
-		$result = $this->bulkOps->ultraFastUnifiedBulkSave([], []);
-		$this->assertEmpty($result);
-	}
-
-	public function testBulkInsertObjectHasCorrectDataInDb(): void {
-		$uuid = Uuid::v4()->toRfc4122();
-		$this->createdUuids[] = $uuid;
-
-		$obj = [
-			'uuid' => $uuid,
-			'register' => (string)$this->testRegister->getId(),
-			'schema' => (string)$this->testSchema->getId(),
-			'object' => ['naam' => 'DB Verify Test', 'title' => 'Check DB'],
-		];
-
-		$this->bulkOps->ultraFastUnifiedBulkSave([$obj], []);
-
-		// Verify via direct DB query.
-		$stmt = $this->db->prepare('SELECT * FROM oc_openregister_objects WHERE uuid = ?');
-		$stmt->execute([$uuid]);
-		$row = $stmt->fetch();
-
-		$this->assertNotFalse($row);
-		$this->assertEquals($uuid, $row['uuid']);
-		$decoded = json_decode($row['object'], true);
-		$this->assertEquals('DB Verify Test', $decoded['naam']);
-	}
-
-	public function testBulkUpdateWithObjectEntityUnifiesFormat(): void {
-		// Test that unifyObjectFormats correctly processes ObjectEntity instances.
-		// The full bulk save may fail on PostgreSQL if ObjectEntity returns columns
-		// not yet in the DB (e.g., schemaVersion), so we test the unification step.
-		$entity = new ObjectEntity();
-		$entity->setUuid('test-uuid-update');
-		$entity->setRegister((string)$this->testRegister->getId());
-		$entity->setSchema((string)$this->testSchema->getId());
-		$entity->setObject(['naam' => 'After Update']);
-
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'unifyObjectFormats');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->bulkOps, [], [$entity]);
-		$this->assertNotEmpty($result);
-		$this->assertEquals('test-uuid-update', $result[0]['uuid']);
-		$this->assertArrayHasKey('object', $result[0]);
-	}
-
-	public function testBulkMixedInsertAndUpdate(): void {
-		// Insert first.
-		$uuid1 = Uuid::v4()->toRfc4122();
-		$this->createdUuids[] = $uuid1;
-		$insert1 = [
-			'uuid' => $uuid1,
-			'register' => (string)$this->testRegister->getId(),
-			'schema' => (string)$this->testSchema->getId(),
-			'object' => ['naam' => 'First Object'],
-		];
-		$this->bulkOps->ultraFastUnifiedBulkSave([$insert1], []);
-
-		// Now do mixed: new insert + update existing.
-		$newObj = $this->buildInsertObject(['naam' => 'New Object']);
-
-		$updateEntity = new ObjectEntity();
-		$updateEntity->setUuid($uuid1);
-		$updateEntity->setRegister((string)$this->testRegister->getId());
-		$updateEntity->setSchema((string)$this->testSchema->getId());
-		$updateEntity->setObject(['naam' => 'Updated First Object']);
-
-		$result = $this->bulkOps->ultraFastUnifiedBulkSave([$newObj], [$updateEntity]);
-		$this->assertNotEmpty($result);
-	}
-
-	public function testExtractColumnValueMissingObjectPropertyThrows(): void {
-		// Test via reflection that extractColumnValue throws when 'object' key is missing.
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = [
-			'uuid' => 'test',
-			'register' => '1',
-			'schema' => '1',
-			// No 'object' key.
-		];
-
-		$this->expectException(\InvalidArgumentException::class);
-		$this->expectExceptionMessage("missing required 'object' property");
-		$method->invoke($this->bulkOps, $data, 'object');
-	}
-
-	public function testBulkInsertObjectWithStringObjectThrows(): void {
-		$uuid = Uuid::v4()->toRfc4122();
-		$this->createdUuids[] = $uuid;
-
-		$obj = [
-			'uuid' => $uuid,
-			'register' => (string)$this->testRegister->getId(),
-			'schema' => (string)$this->testSchema->getId(),
-			'object' => 'not-an-array',
-		];
-
-		$this->expectException(\InvalidArgumentException::class);
-		$this->expectExceptionMessage('must be an array');
-		$this->bulkOps->ultraFastUnifiedBulkSave([$obj], []);
-	}
-
-	public function testUnifyObjectFormatsAutoGeneratesUuid(): void {
-		// Test via reflection that unifyObjectFormats auto-generates UUIDs.
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'unifyObjectFormats');
-		$method->setAccessible(true);
-
-		$obj = [
-			'register' => (string)$this->testRegister->getId(),
-			'schema' => (string)$this->testSchema->getId(),
-			'object' => ['naam' => 'Auto UUID'],
-		];
-
-		$result = $method->invoke($this->bulkOps, [$obj], []);
-		$this->assertNotEmpty($result);
-		$this->assertNotEmpty($result[0]['uuid']);
-		// UUID should be a valid UUID format.
-		$this->assertMatchesRegularExpression(
-			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
-			$result[0]['uuid']
+		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
+			$objects,
+			$this->testRegister,
+			$this->testSchema
 		);
-	}
 
-	public function testBulkInsertObjectExtractsNameFromNaam(): void {
+		$this->assertCount(5, $saved);
+		$this->assertSame($uuids, $saved);
+	}//end testBulkSaveMultipleObjects()
+
+	/**
+	 * An empty bulk call saves nothing and says so.
+	 *
+	 * @return void
+	 */
+	public function testBulkSaveEmptyArrayReturnsEmpty(): void {
+		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
+			[],
+			$this->testRegister,
+			$this->testSchema
+		);
+
+		$this->assertSame([], $saved);
+	}//end testBulkSaveEmptyArrayReturnsEmpty()
+
+	/**
+	 * What a bulk call saved is what comes back out.
+	 *
+	 * The old version read the blob table with raw SQL. The magic table is one
+	 * table per register+schema, so this reads the object back through the
+	 * mapper instead of naming a table this test has no business knowing.
+	 *
+	 * @return void
+	 */
+	public function testBulkSavedObjectIsReadableAgain(): void {
 		$uuid = Uuid::v4()->toRfc4122();
-		$this->createdUuids[] = $uuid;
+		$this->objectMapper->saveObjectsToRegisterSchemaTable(
+			[['uuid' => $uuid, 'naam' => 'DB Verify Test', 'title' => 'Check DB']],
+			$this->testRegister,
+			$this->testSchema
+		);
 
-		$obj = [
-			'uuid' => $uuid,
-			'register' => (string)$this->testRegister->getId(),
-			'schema' => (string)$this->testSchema->getId(),
-			'object' => ['naam' => 'Extracted Name Test'],
-			'name' => null,
-		];
+		$stored = $this->objectMapper->findInRegisterSchemaTable(
+			identifier: $uuid,
+			register: $this->testRegister,
+			schema: $this->testSchema,
+			_rbac: false,
+			_multitenancy: false
+		);
 
-		$this->bulkOps->ultraFastUnifiedBulkSave([$obj], []);
+		$data = $stored->getObject();
+		$this->assertSame('DB Verify Test', $data['naam']);
+		$this->assertSame('Check DB', $data['title']);
+	}//end testBulkSavedObjectIsReadableAgain()
 
-		$stmt = $this->db->prepare('SELECT name FROM oc_openregister_objects WHERE uuid = ?');
-		$stmt->execute([$uuid]);
-		$row = $stmt->fetch();
-		// The bulk ops extractColumnValue extracts 'naam' from the object for the 'name' column.
-		$this->assertEquals('Extracted Name Test', $row['name']);
-	}
+	/**
+	 * A second save of the same uuid updates the row, it does not add one.
+	 *
+	 * @return void
+	 */
+	public function testBulkSaveMixedInsertAndUpdate(): void {
+		$existing = Uuid::v4()->toRfc4122();
+		$this->objectMapper->saveObjectsToRegisterSchemaTable(
+			[['uuid' => $existing, 'naam' => 'First Object']],
+			$this->testRegister,
+			$this->testSchema
+		);
 
-	public function testBulkInsertObjectWithDateTimeFields(): void {
-		$uuid = Uuid::v4()->toRfc4122();
-		$this->createdUuids[] = $uuid;
-
-		$obj = [
-			'uuid' => $uuid,
-			'register' => (string)$this->testRegister->getId(),
-			'schema' => (string)$this->testSchema->getId(),
-			'object' => ['naam' => 'DateTime Test'],
-			'published' => '2024-06-15T10:30:00+02:00',
-		];
-
-		$this->bulkOps->ultraFastUnifiedBulkSave([$obj], []);
-
-		$stmt = $this->db->prepare('SELECT published FROM oc_openregister_objects WHERE uuid = ?');
-		$stmt->execute([$uuid]);
-		$row = $stmt->fetch();
-		$this->assertNotNull($row['published']);
-	}
-
-	public function testExtractColumnValueWithAtSelfMetadata(): void {
-		// Test via reflection that extractColumnValue reads @self metadata.
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = [
-			'uuid' => 'test-uuid',
-			'object' => ['naam' => 'Test'],
-			'@self' => [
-				'version' => '1.2.3',
-				'published' => '2024-01-01T00:00:00Z',
-				'register' => '99',
-				'schema' => '88',
+		$fresh = Uuid::v4()->toRfc4122();
+		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
+			[
+				['uuid' => $fresh, 'naam' => 'New Object'],
+				['uuid' => $existing, 'naam' => 'Updated First Object'],
 			],
-		];
+			$this->testRegister,
+			$this->testSchema
+		);
 
-		// Version should come from @self.
-		$version = $method->invoke($this->bulkOps, $data, 'version');
-		$this->assertEquals('1.2.3', $version);
+		$this->assertSame([$fresh, $existing], $saved);
+		$this->assertCount(
+			2,
+			$this->objectMapper->findAllInRegisterSchemaTable(register: $this->testRegister, schema: $this->testSchema),
+			'the update MUST land on the existing row, not beside it'
+		);
 
-		// Register should come from @self when available.
-		$register = $method->invoke($this->bulkOps, $data, 'register');
-		$this->assertEquals('99', $register);
-
-		// Published from @self should be converted to MySQL format.
-		$published = $method->invoke($this->bulkOps, $data, 'published');
-		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $published);
-	}
-
-	// -----------------------------------------------------------------------
-	// OptimizedBulkOperations — private method tests via Reflection
-	// -----------------------------------------------------------------------
-
-	public function testConvertDateTimeToMySQLFormatIso8601(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'convertDateTimeToMySQLFormat');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->bulkOps, '2024-06-15T10:30:00+02:00');
-		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
-	}
-
-	public function testConvertDateTimeToMySQLFormatAlreadyMySQL(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'convertDateTimeToMySQLFormat');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->bulkOps, '2024-06-15 10:30:00');
-		$this->assertEquals('2024-06-15 10:30:00', $result);
-	}
-
-	public function testConvertDateTimeToMySQLFormatFallbackForNonString(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'convertDateTimeToMySQLFormat');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->bulkOps, false);
-		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
-	}
-
-	public function testGetJsonColumnsReturnsExpectedColumns(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'getJsonColumns');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->bulkOps);
-		$this->assertContains('files', $result);
-		$this->assertContains('relations', $result);
-		$this->assertContains('authorization', $result);
-		$this->assertContains('groups', $result);
-	}
-
-	public function testMapObjectColumnsToDatabaseFiltersValidColumns(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'mapObjectColumnsToDatabase');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->bulkOps, ['uuid', 'register', 'schema', 'object', 'nonexistent_column']);
-		$this->assertContains('uuid', $result);
-		$this->assertContains('register', $result);
-		$this->assertContains('schema', $result);
-		$this->assertContains('object', $result);
-		$this->assertNotContains('nonexistent_column', $result);
-	}
-
-	public function testMapObjectColumnsToDatabaseAddsRequiredColumns(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'mapObjectColumnsToDatabase');
-		$method->setAccessible(true);
-
-		// Even with empty input, required columns (uuid, register, schema) should be present.
-		$result = $method->invoke($this->bulkOps, []);
-		$this->assertContains('uuid', $result);
-		$this->assertContains('register', $result);
-		$this->assertContains('schema', $result);
-		$this->assertContains('name', $result); // Metadata column always included.
-	}
-
-	public function testExtractColumnValueForUuid(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = ['uuid' => 'test-uuid-123', 'object' => ['naam' => 'x']];
-		$result = $method->invoke($this->bulkOps, $data, 'uuid');
-		$this->assertEquals('test-uuid-123', $result);
-	}
-
-	public function testExtractColumnValueForVersion(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		// Default version.
-		$data = ['uuid' => 'x', 'object' => []];
-		$result = $method->invoke($this->bulkOps, $data, 'version');
-		$this->assertEquals('0.0.1', $result);
-
-		// With @self version.
-		$data2 = ['uuid' => 'x', 'object' => [], '@self' => ['version' => '2.0.0']];
-		$result2 = $method->invoke($this->bulkOps, $data2, 'version');
-		$this->assertEquals('2.0.0', $result2);
-	}
-
-	public function testExtractColumnValueForObjectColumn(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = ['uuid' => 'x', 'object' => ['key' => 'value', 'number' => 42]];
-		$result = $method->invoke($this->bulkOps, $data, 'object');
-		$decoded = json_decode($result, true);
-		$this->assertEquals('value', $decoded['key']);
-		$this->assertEquals(42, $decoded['number']);
-	}
-
-	public function testExtractColumnValueForJsonColumns(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = ['uuid' => 'x', 'object' => [], 'files' => [1, 2, 3]];
-		$result = $method->invoke($this->bulkOps, $data, 'files');
-		$this->assertEquals('[1,2,3]', $result);
-
-		// Default empty array for missing JSON columns.
-		$data2 = ['uuid' => 'x', 'object' => []];
-		$result2 = $method->invoke($this->bulkOps, $data2, 'relations');
-		$this->assertEquals('[]', $result2);
-	}
-
-	public function testExtractColumnValueForNameFromNaam(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = ['uuid' => 'x', 'object' => ['naam' => 'My Name']];
-		$result = $method->invoke($this->bulkOps, $data, 'name');
-		$this->assertEquals('My Name', $result);
-	}
-
-	public function testExtractColumnValueForNameFallback(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		// When no 'naam' in object, use direct 'name' field.
-		$data = ['uuid' => 'x', 'object' => [], 'name' => 'Direct Name'];
-		$result = $method->invoke($this->bulkOps, $data, 'name');
-		$this->assertEquals('Direct Name', $result);
-	}
-
-	public function testExtractColumnValueForPublishedDatetime(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = ['uuid' => 'x', 'object' => [], 'published' => '2024-06-15T10:30:00+02:00'];
-		$result = $method->invoke($this->bulkOps, $data, 'published');
-		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
-	}
-
-	public function testExtractColumnValueForNullPublished(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'extractColumnValue');
-		$method->setAccessible(true);
-
-		$data = ['uuid' => 'x', 'object' => []];
-		$result = $method->invoke($this->bulkOps, $data, 'published');
-		$this->assertNull($result);
-	}
-
-	public function testCreateEntityFromDataReturnsEntity(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'createEntityFromData');
-		$method->setAccessible(true);
-
-		$data = [
-			'uuid' => 'test-uuid',
-			'register' => '1',
-			'schema' => '2',
-			'owner' => 'admin',
-			'organisation' => 'test-org',
-			'object' => ['key' => 'val'],
-		];
-
-		$entity = $method->invoke($this->bulkOps, $data);
-		$this->assertInstanceOf(ObjectEntity::class, $entity);
-		$this->assertEquals('test-uuid', $entity->getUuid());
-		$this->assertEquals('1', $entity->getRegister());
-		$this->assertEquals('2', $entity->getSchema());
-	}
-
-	public function testCreateEntityFromDataReturnsEntityWithMinimalData(): void {
-		$method = new \ReflectionMethod(OptimizedBulkOperations::class, 'createEntityFromData');
-		$method->setAccessible(true);
-
-		$data = [];
-		$entity = $method->invoke($this->bulkOps, $data);
-		$this->assertInstanceOf(ObjectEntity::class, $entity);
-	}
+		$updated = $this->objectMapper->findInRegisterSchemaTable(
+			identifier: $existing,
+			register: $this->testRegister,
+			schema: $this->testSchema,
+			_rbac: false,
+			_multitenancy: false
+		);
+		$this->assertSame('Updated First Object', $updated->getObject()['naam']);
+	}//end testBulkSaveMixedInsertAndUpdate()
 
 	// -----------------------------------------------------------------------
 	// MetadataHydrationHandler tests
