@@ -18,7 +18,7 @@ Each object selected for e-Depot transfer MUST have its metadata exported as XML
 - **WHEN** object `zaak-123` with complete archival metadata is selected for MDTO export
 - **THEN** the system MUST produce an XML document with root element `mdto:MDTO` in namespace `https://www.nationaalarchief.nl/mdto`, holding exactly one `mdto:informatieobject`
 - **AND** the informatieobject MUST include `identificatie` (object UUID, with the organisation identifier as `identificatieBron`), `naam` (object title, else its UUID), `waardering` (from `archiefnominatie`, as a term of the closed Waarderingen list), `archiefvormer` (the organisation from app settings) and `beperkingGebruik`
-- **AND** it MUST include `bewaartermijn` as a `termijnGegevens`, which MDTO makes optional and openregister requires as local policy
+- **AND** it MUST include `bewaartermijn` as a `termijnGegevens` when the record has a retention period, which MDTO makes optional
 - **AND** the document MUST validate against the vendored MDTO XSD
 
 #### Scenario: MDTO XML includes file references
@@ -227,8 +227,11 @@ and the XML syntax `MDTO-XML1.0.1.xsd`
   `isRepresentatieVan` are all `minOccurs="1"`, and `checksumGegevens`
   requires `checksumAlgoritme`, `checksumWaarde` and `checksumDatum`.
 - `bewaartermijn` is `minOccurs="0"` and the schema states "Verplicht | Ja,
-  indien bekend". openregister's stricter refusal to export without one is a
-  LOCAL policy and MUST be documented as such rather than attributed to MDTO.
+  indien bekend", so an export without one is valid and the element is simply
+  omitted. openregister's refusal to TRANSFER a record whose retention period
+  is unknown is a LOCAL policy, stated below as its own precondition, and MUST
+  NOT be attributed to MDTO or enforced while merely serialising: the
+  `tmlo-export` endpoint serialises records that have no retention period yet.
 
 #### Scenario: A generator input is missing
 - **WHEN** an object has no `retention.archiefnominatie`, or a file entry has no `checksum`
@@ -383,14 +386,23 @@ its bytes rather than replace the stale value silently.
 - **WHEN** the generator emits a document the schema rejects
 - **THEN** `MdtoXmlGeneratorXsdTest` MUST fail, and its message MUST quote libxml's error naming the offending element
 
+#### Scenario: A record with no retention period is not transferred
+- **WHEN** a record whose retention period is unknown is packaged for an e-Depot
+- **THEN** the packaging path MUST refuse it, through a precondition separate from serialising
+- **AND** exporting that same record as MDTO MUST still succeed, without a `bewaartermijn` element
+
+#### Scenario: Every MDTO document the package ships is listed in mets.xml
+- **WHEN** a SIP is built for an object with one file
+- **THEN** `mets.xml` MUST list the object's `mdto.xml` and the file's `<bestandsnaam>.bestand.MDTO.xml` in a METADATA file group, with size and checksum
+- **AND** the object's div MUST point at them
+
 #### Scenario: A stored checksum no longer matches the file
 - **WHEN** a file reference carries a SHA-256 that differs from the SHA-256 of the file's bytes
 - **THEN** the file MUST be refused as a fixity failure, and the object excluded from that transfer with a logged reason
 
-**Known gap: a second MDTO exporter does not validate.** `TmloService::generateMdtoXml()` serves `GET /api/objects/{register}/{schema}/{id}/export/mdto`
-and is governed by `tmlo-export`, not by this capability. Measured on
-2026-09-11 against the same vendored XSD, it does not validate: its root is
-`mdto:informatieobject`, and it emits `archiefactiedatum`, `archiefstatus` and
-`vernietigingsCategorie`, which are TMLO fields and not MDTO elements. The
-`tmlo-export` spec mandates those elements, so correcting the exporter is a
-decision about that spec, recorded there.
+**RESOLVED: there is one MDTO exporter.** `TmloService::generateMdtoXml()`,
+behind `GET /api/tmlo/{register}/{schema}/{id}/export`, used to be a second
+implementation and did not validate. It now delegates to `MdtoXmlGenerator`,
+so both exports are the same format and the same test holds them. See
+`tmlo-export`, whose requirement no longer asks for TMLO field names in MDTO
+output.

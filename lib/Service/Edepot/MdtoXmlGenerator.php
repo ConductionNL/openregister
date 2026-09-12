@@ -32,7 +32,6 @@ use DOMElement;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Generator for MDTO `informatieobject` documents, and the entry point for a file's `bestand` document.
@@ -115,7 +114,16 @@ class MdtoXmlGenerator {
 	 * The begrippenlijst name used for `informatiecategorie` when the record
 	 * does not say which selectielijst its category came from.
 	 */
-	public const CATEGORY_LIST_FALLBACK = 'Selectielijst';
+	public const CATEGORY_LIST_FALLBACK = MdtoSourceReader::CATEGORY_LIST_FALLBACK;
+
+	/**
+	 * The begrippenlijst name used for `classificatie`.
+	 *
+	 * MDTO leaves this list free. openregister does not record which scheme a
+	 * TMLO classification code came from, so the element names the kind of
+	 * list it is rather than claiming a specific one.
+	 */
+	public const CLASSIFICATION_LIST = 'Classificatieschema';
 
 	/**
 	 * `archiefnominatie` to the closed Waarderingen list: code and label.
@@ -142,19 +150,19 @@ class MdtoXmlGenerator {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig The app configuration for organisation settings.
-	 * @param LoggerInterface $logger Logger for error and info messages.
 	 * @param MdtoEventMapper $eventMapper Source of the MDTO event history.
 	 * @param MdtoSourceReader $sourceReader Resolver for the declared archival values.
 	 * @param MdtoDocumentWriter $writer The XML primitives.
 	 * @param MdtoBestandGenerator $bestandGenerator Builder of a file's own document.
+	 * @param MdtoPreconditions $preconditions What must hold before a document is worth writing.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 		private readonly MdtoEventMapper $eventMapper,
 		private readonly MdtoSourceReader $sourceReader,
 		private readonly MdtoDocumentWriter $writer,
 		private readonly MdtoBestandGenerator $bestandGenerator,
+		private readonly MdtoPreconditions $preconditions,
 	) {
 	}//end __construct()
 
@@ -176,33 +184,66 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
 	public function generate(ObjectEntity $object, array $files = []): string {
-		$retention = ($object->getRetention() ?? []);
-
-		$this->assertGeneratorPreconditions(object: $object, retention: $retention, files: $files);
-		$this->reportMdtoRequiredElementGaps(object: $object);
+		$this->preconditions->assertGeneratorPreconditions(object: $object, files: $files);
+		$this->preconditions->reportMdtoRequiredElementGaps(object: $object);
 
 		[$dom, $root] = $this->writer->createDocument(kind: 'informatieobject');
 
+		$facts = $this->sourceReader->coreFacts(object: $object);
 		$self = $this->representedObject(object: $object);
 		$this->writer->identificatie(parent: $root, name: 'identificatie', kenmerk: $self['kenmerk'], bron: $self['bron']);
 		$this->writer->text(parent: $root, name: 'naam', content: $self['naam']);
 		$this->addAggregationLevel(parent: $root, object: $object);
+		$this->addClassification(parent: $root, facts: $facts);
 
-		if (is_string($retention['toelichting'] ?? null) === true && $retention['toelichting'] !== '') {
-			$this->writer->text(parent: $root, name: 'omschrijving', content: $retention['toelichting']);
-		}
+		$this->writer->textIfPresent(
+			parent: $root,
+			name: 'omschrijving',
+			content: $facts['description']
+		);
 
 		$this->addTemporalCoverage(parent: $root, object: $object);
 		$this->addEvents(parent: $root, object: $object);
-		$this->addRating(parent: $root, retention: $retention);
-		$this->addRetentionPeriod(parent: $root, retention: $retention);
-		$this->addInformatiecategorie(parent: $root, retention: $retention);
+		$this->addRating(parent: $root, facts: $facts);
+		$this->addRetentionPeriod(parent: $root, facts: $facts);
+		$this->addInformatiecategorie(parent: $root, facts: $facts);
 		$this->addRepresentations(parent: $root, files: $files);
 		$this->addArchiefvormer(parent: $root);
 		$this->addUseRestriction(parent: $root, object: $object);
 
 		return $this->writer->serialise(dom: $dom);
 	}//end generate()
+
+	/**
+	 * Refuse to TRANSFER a record whose retention period is unknown.
+	 *
+	 * Delegates to {@see MdtoPreconditions::assertTransferPreconditions()};
+	 * kept on the generator because the packaging path already holds one.
+	 *
+	 * @param ObjectEntity $object The object about to be packaged.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the object has no retention period.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-mdto-generator-must-report-the-limits-of-its-own-validation
+	 */
+	public function assertTransferPreconditions(ObjectEntity $object): void {
+		$this->preconditions->assertTransferPreconditions(object: $object);
+	}//end assertTransferPreconditions()
+
+	/**
+	 * List the MDTO-required elements a document fills with a default.
+	 *
+	 * @param ObjectEntity $object The object to inspect.
+	 *
+	 * @return list<string> One line per defaulted element; empty when there is none.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-mdto-generator-must-report-the-limits-of-its-own-validation
+	 */
+	public function collectMdtoRequiredElementGaps(ObjectEntity $object): array {
+		return $this->preconditions->collectMdtoRequiredElementGaps(object: $object);
+	}//end collectMdtoRequiredElementGaps()
 
 	/**
 	 * Generate the MDTO `bestand` document for one of the object's files.
@@ -228,119 +269,9 @@ class MdtoXmlGenerator {
 		return $this->bestandGenerator->generate(file: $file, represents: $this->representedObject(object: $object));
 	}//end generateBestand()
 
-	/**
-	 * List the MDTO-required elements this document fills with a default.
-	 *
-	 * The output validates, so no required element is ABSENT. What this
-	 * reports is the required element whose value is the standard's "not
-	 * recorded" term rather than something the object says, so a reader of
-	 * the log can tell a default from a fact.
-	 *
-	 * @param ObjectEntity $object The object to inspect.
-	 *
-	 * @return list<string> One line per defaulted element; empty when there is none.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-mdto-generator-must-report-the-limits-of-its-own-validation
-	 */
-	public function collectMdtoRequiredElementGaps(ObjectEntity $object): array {
-		$gaps = [];
 
-		if ($this->sourceReader->useRestriction(object: $object) === null) {
-			$gaps[] = 'beperkingGebruik: MDTO-XML1.0.1 declares minOccurs="1", and this object declares no '
-				. 'use restriction and carries no active legal hold, so it is emitted as "'
-				. self::USE_RESTRICTION_UNRECORDED . '"';
-		}
 
-		return $gaps;
-	}//end collectMdtoRequiredElementGaps()
 
-	/**
-	 * Check the inputs the generator needs, and refuse what the XSD would reject.
-	 *
-	 * A pass here means the generator can build a document the XSD accepts
-	 * for the elements it emits. It is not a judgement of the record, and it
-	 * does not replace the schema: `MdtoXmlGeneratorXsdTest` is what shows the
-	 * output validates.
-	 *
-	 * - `uuid` and the `organisation_identifier` setting fill `identificatie`.
-	 * - a non-empty `naam`.
-	 * - `retention.archiefnominatie`, which must map onto the CLOSED
-	 *   Waarderingen list; see {@see self::APPRAISAL_MAP}.
-	 * - `retention.bewaartermijn`, which must be an `xsd:duration`. Requiring
-	 *   it at all is a LOCAL rule, stricter than MDTO, where `bewaartermijn`
-	 *   is `minOccurs="0"`.
-	 * - every file's inputs; see {@see MdtoBestandGenerator::missingInputs()}.
-	 *
-	 * @param ObjectEntity $object The object to check.
-	 * @param array<string,mixed> $retention The retention metadata.
-	 * @param array $files Associated file metadata.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException If an input is missing or malformed.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-mdto-generator-must-report-the-limits-of-its-own-validation
-	 */
-	private function assertGeneratorPreconditions(ObjectEntity $object, array $retention, array $files): void {
-		$missing = [];
-
-		if (empty($object->getUuid()) === true) {
-			$missing[] = 'uuid';
-		}
-
-		if ($this->resolveName(object: $object) === '') {
-			$missing[] = 'naam';
-		}
-
-		$nominatie = ($retention['archiefnominatie'] ?? null);
-		if (is_string($nominatie) === false || isset(self::APPRAISAL_MAP[$nominatie]) === false) {
-			$missing[] = 'retention.archiefnominatie (one of: ' . implode(', ', array_keys(self::APPRAISAL_MAP)) . ')';
-		}
-
-		if (self::isXsdDuration(value: ($retention['bewaartermijn'] ?? null)) === false) {
-			$missing[] = 'retention.bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)';
-		}
-
-		if ($this->appConfig->getValueString('openregister', 'organisation_identifier', '') === '') {
-			$missing[] = 'app_setting:organisation_identifier';
-		}
-
-		$missing = array_merge($missing, $this->bestandGenerator->missingInputs(files: $files));
-
-		if (empty($missing) === false) {
-			$missingStr = implode(', ', $missing);
-			$this->logger->error(
-				message: '[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: ' . $missingStr,
-				context: ['objectUuid' => $object->getUuid()]
-			);
-			throw new InvalidArgumentException(
-				'Cannot generate MDTO XML for object ' . $object->getUuid()
-				. '. These generator inputs are missing: ' . $missingStr
-				. '. This check covers the generator inputs only and is not an MDTO validity check.'
-			);
-		}
-	}//end assertGeneratorPreconditions()
-
-	/**
-	 * Log the MDTO-required elements the document fills with a default.
-	 *
-	 * @param ObjectEntity $object The object being exported.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-mdto-generator-must-report-the-limits-of-its-own-validation
-	 */
-	private function reportMdtoRequiredElementGaps(ObjectEntity $object): void {
-		$gaps = $this->collectMdtoRequiredElementGaps(object: $object);
-		if (empty($gaps) === true) {
-			return;
-		}
-
-		$this->logger->warning(
-			message: '[MdtoXmlGenerator] Required MDTO elements carry the standard\'s "not recorded" term',
-			context: ['objectUuid' => $object->getUuid(), 'gaps' => $gaps]
-		);
-	}//end reportMdtoRequiredElementGaps()
 
 	/**
 	 * The object's own naam and identificatie, as a document refers to it.
@@ -356,7 +287,7 @@ class MdtoXmlGenerator {
 	 */
 	private function representedObject(ObjectEntity $object): array {
 		return [
-			'naam' => $this->resolveName(object: $object),
+			'naam' => $this->sourceReader->name(object: $object),
 			'kenmerk' => (string)$object->getUuid(),
 			'bron' => $this->organisationIdentifier(),
 		];
@@ -378,15 +309,12 @@ class MdtoXmlGenerator {
 	 */
 	private function addAggregationLevel(DOMElement $parent, ObjectEntity $object): void {
 		$level = $this->sourceReader->aggregationLevel(object: $object);
-		if ($level === null) {
-			return;
-		}
 
-		$this->writer->begrip(
+		$this->addOptionalBegrip(
 			parent: $parent,
 			name: 'aggregatieniveau',
-			label: $level['label'],
-			code: $level['code'],
+			label: ($level['label'] ?? null),
+			code: ($level['code'] ?? null),
 			list: self::AGGREGATION_LEVEL_LIST
 		);
 	}//end addAggregationLevel()
@@ -416,9 +344,7 @@ class MdtoXmlGenerator {
 			);
 			$this->writer->text(parent: $coverage, name: 'dekkingInTijdBegindatum', content: $entry['start']);
 
-			if ($entry['end'] !== null) {
-				$this->writer->text(parent: $coverage, name: 'dekkingInTijdEinddatum', content: $entry['end']);
-			}
+			$this->writer->textIfPresent(parent: $coverage, name: 'dekkingInTijdEinddatum', content: $entry['end']);
 		}
 	}//end addTemporalCoverage()
 
@@ -447,9 +373,7 @@ class MdtoXmlGenerator {
 				list: MdtoEventMapper::EVENT_TYPE_LIST
 			);
 
-			if ($event['time'] !== null) {
-				$this->writer->text(parent: $element, name: 'eventTijd', content: $event['time']);
-			}
+			$this->writer->textIfPresent(parent: $element, name: 'eventTijd', content: $event['time']);
 
 			if ($event['actorName'] !== null) {
 				$this->writer->verwijzing(
@@ -467,14 +391,14 @@ class MdtoXmlGenerator {
 	 * Add `waardering`, a `begripGegevens` from the closed Waarderingen list.
 	 *
 	 * @param DOMElement $parent The informatieobject element.
-	 * @param array<string,mixed> $retention The retention metadata.
+	 * @param array $facts The object's core archival facts.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	private function addRating(DOMElement $parent, array $retention): void {
-		[$code, $label] = self::APPRAISAL_MAP[(string)$retention['archiefnominatie']];
+	private function addRating(DOMElement $parent, array $facts): void {
+		[$code, $label] = self::APPRAISAL_MAP[(string)$facts['appraisal']];
 
 		$this->writer->begrip(parent: $parent, name: 'waardering', label: $label, code: $code, list: self::APPRAISAL_LIST);
 	}//end addRating()
@@ -482,66 +406,110 @@ class MdtoXmlGenerator {
 	/**
 	 * Add `bewaartermijn`, a `termijnGegevens`.
 	 *
-	 * `termijnLooptijd` carries the duration. `termijnEinddatum` carries
-	 * `retention.archiefactiedatum` when the record has one, which is the
-	 * date the retention period ends: RetentionService computes it from the
-	 * same duration.
+	 * `termijnLooptijd` carries the duration. `termijnEinddatum` carries the
+	 * archiefactiedatum when the record has one, which is the date the
+	 * retention period ends: RetentionService computes it from the same
+	 * duration, and the TMLO block stores it under the same name.
 	 *
 	 * @param DOMElement $parent The informatieobject element.
-	 * @param array<string,mixed> $retention The retention metadata.
+	 * @param array $facts The object's core archival facts.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	private function addRetentionPeriod(DOMElement $parent, array $retention): void {
-		$term = $this->writer->element(parent: $parent, name: 'bewaartermijn');
-		$this->writer->text(parent: $term, name: 'termijnLooptijd', content: (string)$retention['bewaartermijn']);
-
-		$end = ($retention['archiefactiedatum'] ?? null);
-		if (is_string($end) === true && preg_match('/^\d{4}-\d{2}-\d{2}$/', $end) === 1) {
-			$this->writer->text(parent: $term, name: 'termijnEinddatum', content: $end);
+	private function addRetentionPeriod(DOMElement $parent, array $facts): void {
+		$period = $facts['retentionPeriod'];
+		$end = $facts['disposalDate'];
+		if ($period === null && $end === null) {
+			return;
 		}
+
+		$term = $this->writer->element(parent: $parent, name: 'bewaartermijn');
+		$this->writer->textIfPresent(parent: $term, name: 'termijnLooptijd', content: $period);
+		$this->writer->textIfPresent(parent: $term, name: 'termijnEinddatum', content: $end);
 	}//end addRetentionPeriod()
 
 	/**
 	 * Add `informatiecategorie`, a `begripGegevens`, when the record has a category.
 	 *
-	 * Omitted, not defaulted, when there is no `retention.classification`: the
-	 * XSD makes the element `minOccurs="0"`, and the placeholder `onbekend`
-	 * this used to write was a value nobody had recorded.
-	 *
-	 * The begrippenlijst is the selectielijst named in
-	 * `retention.selectielijstBron`. When the record does not name one, the
-	 * generic term "Selectielijst" is used, because the category is only ever
-	 * written from a selectielijst lookup and the list's own name is unknown.
+	 * Omitted, not defaulted, when there is none: the XSD makes the element
+	 * `minOccurs="0"`, and the placeholder `onbekend` this used to write was a
+	 * value nobody had recorded. The source and its begrippenlijst belong to
+	 * {@see MdtoSourceReader::disposalCategory()}.
 	 *
 	 * @param DOMElement $parent The informatieobject element.
-	 * @param array<string,mixed> $retention The retention metadata.
+	 * @param array $facts The object's core archival facts.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	private function addInformatiecategorie(DOMElement $parent, array $retention): void {
-		$category = ($retention['classification'] ?? null);
-		if (is_scalar($category) === false || (string)$category === '') {
+	private function addInformatiecategorie(DOMElement $parent, array $facts): void {
+		$category = $facts['disposalCategory'];
+
+		$this->addOptionalBegrip(
+			parent: $parent,
+			name: 'informatiecategorie',
+			label: ($category['label'] ?? null),
+			code: null,
+			list: ($category['list'] ?? self::CATEGORY_LIST_FALLBACK)
+		);
+	}//end addInformatiecategorie()
+
+	/**
+	 * Add `classificatie` when the object carries a classification code.
+	 *
+	 * This is not the disposal category: MDTO keeps the classification scheme
+	 * and the selectielijst category as separate elements, and so does TMLO.
+	 *
+	 * @param DOMElement $parent The informatieobject element.
+	 * @param array $facts The object's core archival facts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/tmlo-export/spec.md#requirement-mdto-compliant-xml-export
+	 */
+	private function addClassification(DOMElement $parent, array $facts): void {
+		$this->addOptionalBegrip(
+			parent: $parent,
+			name: 'classificatie',
+			label: $facts['classification'],
+			code: null,
+			list: self::CLASSIFICATION_LIST
+		);
+	}//end addClassification()
+
+	/**
+	 * Add a `begripGegevens` element, or nothing when there is no label.
+	 *
+	 * Every optional begrip element follows the same rule: emit it when the
+	 * object supplies a term, omit it entirely otherwise, never a placeholder.
+	 * One method so that rule cannot drift between the three.
+	 *
+	 * @param DOMElement $parent The informatieobject element.
+	 * @param string $name The element name, without prefix.
+	 * @param string|null $label The term, or null to omit the element.
+	 * @param string|null $code The code, omitted when null.
+	 * @param string $list The begrippenlijst name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
+	 */
+	private function addOptionalBegrip(
+		DOMElement $parent,
+		string $name,
+		?string $label,
+		?string $code,
+		string $list,
+	): void {
+		if ($label === null) {
 			return;
 		}
 
-		$list = ($retention['selectielijstBron'] ?? null);
-		if (is_string($list) === false || $list === '') {
-			$list = self::CATEGORY_LIST_FALLBACK;
-		}
-
-		$this->writer->begrip(
-			parent: $parent,
-			name: 'informatiecategorie',
-			label: (string)$category,
-			code: null,
-			list: $list
-		);
-	}//end addInformatiecategorie()
+		$this->writer->begrip(parent: $parent, name: $name, label: $label, code: $code, list: $list);
+	}//end addOptionalBegrip()
 
 	/**
 	 * Add one `heeftRepresentatie` reference per file.
@@ -618,13 +586,11 @@ class MdtoXmlGenerator {
 			list: self::USE_RESTRICTION_LIST
 		);
 
-		if ($restriction['description'] !== null) {
-			$this->writer->text(
-				parent: $element,
-				name: 'beperkingGebruikNadereBeschrijving',
-				content: $restriction['description']
-			);
-		}
+		$this->writer->textIfPresent(
+			parent: $element,
+			name: 'beperkingGebruikNadereBeschrijving',
+			content: $restriction['description']
+		);
 
 		if ($restriction['startDate'] !== null) {
 			$term = $this->writer->element(parent: $element, name: 'beperkingGebruikTermijn');
@@ -632,21 +598,6 @@ class MdtoXmlGenerator {
 		}
 	}//end addUseRestriction()
 
-	/**
-	 * Resolve the object's naam.
-	 *
-	 * @param ObjectEntity $object The source object.
-	 *
-	 * @return string The name, empty when nothing supplies one.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
-	 */
-	private function resolveName(ObjectEntity $object): string {
-		$data = ($object->getObject() ?? []);
-		$title = ($data['title'] ?? $data['naam'] ?? $data['name'] ?? $object->getUuid() ?? '');
-
-		return (string)$title;
-	}//end resolveName()
 
 	/**
 	 * The configured organisation identifier.
@@ -659,24 +610,4 @@ class MdtoXmlGenerator {
 		return $this->appConfig->getValueString('openregister', 'organisation_identifier', 'OpenRegister');
 	}//end organisationIdentifier()
 
-	/**
-	 * Whether a value is in the lexical space of `xsd:duration`.
-	 *
-	 * Stricter than PHP's DateInterval, which also accepts weeks (`P2W`);
-	 * `xsd:duration` has no week designator.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return bool True when it is.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
-	 */
-	private static function isXsdDuration(mixed $value): bool {
-		if (is_string($value) === false) {
-			return false;
-		}
-
-		$pattern = '/^-?P(?=\d|T\d)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+(\.\d+)?S)?)?$/';
-		return preg_match($pattern, $value) === 1;
-	}//end isXsdDuration()
 }//end class

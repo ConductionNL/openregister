@@ -141,6 +141,30 @@ class MdtoDocumentWriter {
 	}//end text()
 
 	/**
+	 * Add a text element, or nothing when there is no content.
+	 *
+	 * MDTO's rule for an optional element is the same everywhere: write it
+	 * when the object supplies a value, omit it entirely otherwise, never an
+	 * empty element. Having it in one place keeps that rule from drifting
+	 * between the elements that follow it.
+	 *
+	 * @param DOMElement $parent The parent element.
+	 * @param string $name The element name, without prefix.
+	 * @param string|null $content The text content, or null to write nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function textIfPresent(DOMElement $parent, string $name, ?string $content): void {
+		if ($content === null) {
+			return;
+		}
+
+		$this->text(parent: $parent, name: $name, content: $content);
+	}//end textIfPresent()
+
+	/**
 	 * Add an empty element to be filled by the caller.
 	 *
 	 * @param DOMElement $parent The parent element.
