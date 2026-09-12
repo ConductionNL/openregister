@@ -845,19 +845,13 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$this->assertCount(3, $result['_ids']);
 	}
 
-	/**
-	 * Test buildSearchQuery with published filter.
-	 */
-	public function testBuildSearchQueryPublishedFilter(): void {
-		$result = $this->searchQueryHandler->buildSearchQuery(
-			['_published' => 'true'],
-			null,
-			null
-		);
-
-		$this->assertArrayHasKey('_published', $result);
-		$this->assertTrue($result['_published']);
-	}
+	// testBuildSearchQueryPublishedFilter is gone: it asserted that
+	// buildSearchQuery() normalised `_published=true` into a boolean. The
+	// `_published` column was dropped from every magic table by
+	// Version1Date20260313130000 (2026-03-13) with the published metadata
+	// system, and no code in lib/ reads the filter any more, so the handler
+	// carries the key through as an ordinary unknown parameter. Visibility over
+	// time is an RBAC `match` rule with `$now` now.
 
 	/**
 	 * Test buildSearchQuery strips system params.
@@ -1005,12 +999,17 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test hasGroupPermission action not in authorization.
 	 */
 	public function testHasGroupPermissionActionNotInAuth(): void {
+		// This asserted a GRANT. Once a schema opts into authorization, an action
+		// the block does not list is denied: the empty-block default is the only
+		// one that still grants, and admin and owner have already returned by
+		// then. Asserting the old default-open answer here would be asserting a
+		// hole, so the test follows the fail-closed rule.
 		$result = $this->permissionHandler->hasGroupPermission(
 			['create' => ['editors']],
 			'users',
 			'read'
 		);
-		$this->assertTrue($result);
+		$this->assertFalse($result, 'an action a non-empty authorization block does not list MUST be denied');
 	}
 
 	/**
@@ -1076,19 +1075,41 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		);
 		$this->assertFalse($result);
 
-		// With matching organisation.
-		$result2 = $this->permissionHandler->hasGroupPermission(
-			$authorization,
-			'editors',
-			'read',
-			null,
-			null,
-			null,
-			null,
-			'org-uuid-123',
-			'org-uuid-123'
-		);
-		$this->assertTrue($result2);
+		// With the object in the CALLER's organisation. The active organisation
+		// used to be the ninth argument; hasGroupPermission() takes eight now and
+		// ConditionMatcher resolves `$organisation` itself through
+		// OrganisationService, so the test logs in and reads the value the
+		// matcher will see rather than passing one it no longer accepts.
+		$userSession = \OC::$server->get(\OCP\IUserSession::class);
+		$previous = $userSession->getUser();
+		$admin = \OC::$server->get(\OCP\IUserManager::class)->get('admin');
+		if ($admin === null) {
+			$this->markTestSkipped('no admin user on this instance');
+		}
+
+		$userSession->setUser($admin);
+		try {
+			$orgService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
+			$activeOrg = $orgService->getActiveOrganisation();
+			if ($activeOrg === null) {
+				$this->markTestSkipped('no active organisation to match against');
+			}
+
+			$result2 = $this->permissionHandler->hasGroupPermission(
+				$authorization,
+				'editors',
+				'read',
+				null,
+				null,
+				null,
+				null,
+				$activeOrg->getUuid()
+			);
+		} finally {
+			$userSession->setUser($previous);
+		}
+
+		$this->assertTrue($result2, 'an object in the caller\'s own organisation MUST match $organisation');
 	}
 
 	/**
