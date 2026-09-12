@@ -180,20 +180,33 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([$row]);
 		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
 
+		// Argument correctness is checked inside these callbacks, reading
+		// PHP's own resolved positional values, rather than via with() —
+		// with() constraints declared with named-argument labels do not
+		// reliably bind to the mocked method's real parameter positions
+		// across PHPUnit versions, and a silent positional mismatch (this
+		// service calls both methods with named arguments) would make the
+		// mock fall through unmatched and this test would then be
+		// exercising nothing.
 		$saved = $this->personObject();
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->equalTo(['address' => 'Dam 1']),
-				register: 'dossiq',
-				schema: 'brpPerson',
-				uuid: 'obj-uuid-1',
-			)
-			->willReturn($saved);
+			->willReturnCallback(function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($saved) {
+				$this->assertSame(['address' => 'Dam 1'], $object);
+				$this->assertSame('dossiq', $register);
+				$this->assertSame('brpPerson', $schema);
+				$this->assertSame('obj-uuid-1', $uuid);
+				return $saved;
+			});
 
 		$this->notifier->expects($this->once())
 			->method('auditInboundUpdate')
-			->with($saved, 'brp', 'evt-1', ['address']);
+			->willReturnCallback(function ($object, $registry, $eventReference, $properties) use ($saved) {
+				$this->assertSame($saved, $object);
+				$this->assertSame('brp', $registry);
+				$this->assertSame('evt-1', $eventReference);
+				$this->assertSame(['address'], $properties);
+			});
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
 
