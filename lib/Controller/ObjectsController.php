@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Support\FilterParams;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1047,6 +1048,47 @@ class ObjectsController extends Controller {
 	}//end resolveRegisterSchemaIds()
 
 	/**
+	 * Log one warning for the filter keys that name no property of the schema.
+	 *
+	 * Such a filter answers `1 = 0`, so the caller gets an empty list that is
+	 * indistinguishable from a schema with no matching rows. That silence is
+	 * what made openregister#3611 invisible for as long as it was: humaniq's
+	 * hours widget summed the empty set and would have rendered `0` hours on
+	 * every object. The warning names the keys, the endpoint and the schema so
+	 * the mistake is visible in the log without refusing the request.
+	 *
+	 * @param array<string, mixed> $query The query from `buildSearchQuery()`.
+	 * @param Schema|null $schemaEntity The resolved schema, when there is one.
+	 * @param string $register The register reference from the URL.
+	 * @param string $schema The schema reference from the URL.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private function warnUnknownFilterKeys(
+		array $query,
+		?Schema $schemaEntity,
+		string $register,
+		string $schema,
+	): void {
+		if ($schemaEntity === null) {
+			return;
+		}
+
+		FilterParams::warnUnknownKeys(
+			logger: $this->logger,
+			keys: FilterParams::unknownObjectFilterKeys(
+				query: $query,
+				properties: ($schemaEntity->getProperties() ?? [])
+			),
+			endpoint: 'objects#index',
+			register: $register,
+			schema: $schema
+		);
+	}//end warnUnknownFilterKeys()
+
+	/**
 	 * Retrieves a list of all objects for a specific register and schema
 	 *
 	 * This method returns a paginated list of objects that match the specified register and schema.
@@ -1181,6 +1223,13 @@ class ObjectsController extends Controller {
 					requestParams: $this->request->getParams(),
 					register: $resolved['register'],
 					schema: $resolved['schema']
+				);
+
+				$this->warnUnknownFilterKeys(
+					query: $query,
+					schemaEntity: $schemaEntity,
+					register: $register,
+					schema: $schema
 				);
 
 				// Pass RBAC and multitenancy settings to the query.
@@ -1337,6 +1386,13 @@ class ObjectsController extends Controller {
 				if (empty($ignoredFilters) === false) {
 					$responseData['@self']['ignoredFilters'] = $ignoredFilters;
 
+					// `filter` is deliberately NOT in this list. It used to be,
+					// and the hint it produced sent callers the wrong way:
+					// `filter[x]` is now the bracket filter spelling, while
+					// `_filter` is the response field-exclusion parameter, so
+					// "did you mean _filter?" turned a scoped query into an
+					// unscoped one. openbuild followed exactly that advice and
+					// measured `_filter[applicationUuid]` returning every row.
 					$controlParams = [
 						'limit',
 						'offset',
@@ -1346,7 +1402,6 @@ class ObjectsController extends Controller {
 						'search',
 						'extend',
 						'fields',
-						'filter',
 						'unset',
 					];
 					$mistakenParams = array_intersect($ignoredFilters, $controlParams);
@@ -1434,6 +1489,13 @@ class ObjectsController extends Controller {
 			requestParams: $this->request->getParams(),
 			register: $resolved['register'],
 			schema: $resolved['schema']
+		);
+
+		$this->warnUnknownFilterKeys(
+			query: $query,
+			schemaEntity: ($resolved['schemaEntity'] ?? null),
+			register: $register,
+			schema: $schema
 		);
 
 		// **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
