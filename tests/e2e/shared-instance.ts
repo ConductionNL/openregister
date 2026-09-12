@@ -287,11 +287,11 @@ export function refuseOnSharedInstance(
 	if (isSharedInstance(target) === false) return
 	throw new Error(
 		`[${APP_ID} e2e] ${what} must not run on ${target}.\n`
-		+ `${reason}\n`
-		+ `${SHARED_INSTANCE_FLAG} permits the suite on a shared instance. It does `
-		+ 'not permit this.\n'
-		+ 'Start a disposable rig and point the suite at that instead:\n\n'
-		+ '    PLAYWRIGHT_BASE_URL=http://localhost:8095 npx playwright test\n',
+			+ `${reason}\n`
+			+ `${SHARED_INSTANCE_FLAG} permits the suite on a shared instance. It does `
+			+ 'not permit this.\n'
+			+ 'Start a disposable rig and point the suite at that instead:\n\n'
+			+ '    PLAYWRIGHT_BASE_URL=http://localhost:8095 npx playwright test\n',
 	)
 }
 
@@ -318,7 +318,9 @@ export function occPrefix(env: NodeJS.ProcessEnv = process.env): string[] {
 	if (explicit !== '') return explicit.split(/\s+/).filter((p) => p !== '')
 
 	const container = (
-		env.OPENREGISTER_E2E_CONTAINER ?? env.NEXTCLOUD_CONTAINER ?? ''
+		env.OPENREGISTER_E2E_CONTAINER
+		?? env.NEXTCLOUD_CONTAINER
+		?? ''
 	).trim()
 	if (container !== '') {
 		return ['docker', 'exec', '-u', 'www-data', container, 'php', 'occ']

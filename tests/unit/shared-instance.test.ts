@@ -6,10 +6,10 @@
  * at, tested without an instance.
  *
  * GENERATED FROM hydra/templates/e2e/shared-instance.test.ts.tmpl. It lives
- * under tests/unit/ rather than next to the guard because jest is this repo's
- * unit runner and its testPathIgnorePatterns skips tests/e2e/ entirely, so a
- * copy left beside the guard would never run. describe/expect/it come from
- * jest's globals, which is the only other difference from the template.
+ * under tests/unit/ because jest is this repo's unit runner and its
+ * testPathIgnorePatterns skips tests/e2e, so a copy beside the guard would
+ * never run. describe/expect/it/beforeEach/afterEach come from jest's
+ * globals, and the CI stub is written by hand because jest has no vi.stubEnv.
  *
  * Worth testing rather than reading, because every case here is one somebody
  * already got wrong: `http://127.0.0.1` parses with an EMPTY port, so a port
@@ -34,16 +34,47 @@ import {
 /** An environment with neither flag set. */
 const NONE = {} as NodeJS.ProcessEnv
 
+/*
+ * The guard exempts CI, and a unit runner runs ON CI. So without this, the
+ * three refusal cases below pass on a laptop and fail on every runner:
+ * measured before the stub, `CI=true npx jest` gave 3 failed, 7 passed.
+ * A test whose verdict depends on where it runs is worse than no test.
+ */
+
 describe(`${APP_ID} shared-instance guard`, () => {
+	// jest has no vi.stubEnv, so the two variables are saved and restored by
+	// hand. Same contract: the cases below never see a CI environment.
+	const saved: Record<string, string | undefined> = {}
+
+	beforeEach(() => {
+		for (const name of ['CI', 'GITHUB_ACTIONS']) {
+			saved[name] = process.env[name]
+			delete process.env[name]
+		}
+	})
+
+	afterEach(() => {
+		for (const name of ['CI', 'GITHUB_ACTIONS']) {
+			if (saved[name] === undefined) delete process.env[name]
+			else process.env[name] = saved[name]
+		}
+	})
+
 	it('folds every loopback spelling onto localhost', () => {
-		expect(normaliseOrigin('http://127.0.0.1:8080')).toBe('http://localhost:8080')
+		expect(normaliseOrigin('http://127.0.0.1:8080')).toBe(
+			'http://localhost:8080',
+		)
 		expect(normaliseOrigin('http://[::1]:8080')).toBe('http://localhost:8080')
-		expect(normaliseOrigin('http://localhost:8080/')).toBe('http://localhost:8080')
+		expect(normaliseOrigin('http://localhost:8080/')).toBe(
+			'http://localhost:8080',
+		)
 	})
 
 	it('makes the implicit port explicit', () => {
 		expect(normaliseOrigin('http://127.0.0.1')).toBe('http://localhost:80')
-		expect(normaliseOrigin('https://example.org')).toBe('https://example.org:443')
+		expect(normaliseOrigin('https://example.org')).toBe(
+			'https://example.org:443',
+		)
 	})
 
 	it('calls loopback 80 and 8080 shared, and nothing else', () => {
