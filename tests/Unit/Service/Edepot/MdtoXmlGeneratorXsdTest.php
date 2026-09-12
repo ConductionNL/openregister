@@ -168,6 +168,20 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 				[],
 				[],
 			],
+			'facts declared by the schema annotation' => [
+				$base + [
+					'annotation' => [
+						'effectiveRetention' => 'P20Y',
+						'matchedRule' => null,
+						'aggregationLevel' => 'Serie',
+						'useRestriction' => ['type' => 'Nader te bepalen'],
+						'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2019', 'end' => '2021-06'],
+					],
+				],
+				[],
+				[],
+				[],
+			],
 			'nog niet bepaald waardering' => [
 				['archiefnominatie' => 'nog_niet_bepaald', 'bewaartermijn' => 'P1Y'],
 				[],

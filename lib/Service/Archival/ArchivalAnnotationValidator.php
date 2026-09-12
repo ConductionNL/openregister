@@ -50,11 +50,25 @@ use Exception;
 final class ArchivalAnnotationValidator {
 
 	/**
+	 * Allowed keys directly under `x-openregister-archival`.
+	 *
+	 * `retention` is the disposal decision. The other three are the archival
+	 * facts MDTO asks for that nothing in openregister used to write, so an
+	 * export could only ever omit them; see the archival-conformance A3
+	 * finding.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ALLOWED_ANNOTATION_KEYS = ['retention', 'aggregationLevel', 'useRestriction', 'temporalCoverage'];
+
+	/**
 	 * Allowed top-level keys under `retention`.
 	 *
 	 * @var array<int, string>
 	 */
 	private const ALLOWED_RETENTION_KEYS = ['default', 'rules'];
+
+
 
 	/**
 	 * Allowed keys under each rule.
@@ -152,8 +166,36 @@ final class ArchivalAnnotationValidator {
 			}
 		}
 
-		return $errors;
+		// Reject unknown keys at the top level, for the same reason as under
+		// `retention`: a typo that is silently ignored declares nothing, and an
+		// export that omits the fact looks identical to a schema that never
+		// declared it.
+		foreach (array_keys($annotation) as $key) {
+			if (in_array((string)$key, self::ALLOWED_ANNOTATION_KEYS, true) === false) {
+				$errors[] = [
+					'code' => 'archival-unknown-key',
+					'message' => sprintf(
+						'x-openregister-archival contains unknown key "%s". Allowed: %s.',
+						(string)$key,
+						implode(', ', self::ALLOWED_ANNOTATION_KEYS)
+					),
+				];
+			}
+		}
+
+		$facts = new ArchivalFactsValidator();
+
+		return array_merge(
+			$errors,
+			$facts->validateAggregationLevel(annotation: $annotation),
+			$facts->validateUseRestriction(annotation: $annotation),
+			$facts->validateTemporalCoverage(annotation: $annotation)
+		);
 	}//end validate()
+
+
+
+
 
 	/**
 	 * Validate a single rule entry.

@@ -55,6 +55,109 @@ final class ArchivalAnnotationValidatorTest extends TestCase {
 		self::assertSame([], $errors);
 	}//end testWellFormedAnnotationPasses()
 
+	public function testDeclaredArchivalFactsPass(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P30D'],
+					'aggregationLevel' => 'Dossier',
+					'useRestriction' => ['type' => 'Geen beperking', 'description' => 'Openbaar na toetsing'],
+					'temporalCoverage' => [
+						'type' => 'Looptijd',
+						'startProperty' => 'startdatum',
+						'endProperty' => 'einddatum',
+					],
+				],
+			]
+		);
+
+		self::assertSame([], $errors);
+	}//end testDeclaredArchivalFactsPass()
+
+	public function testUnknownTopLevelKeyIsRejected(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P30D'],
+					'aggregatieniveau' => 'Dossier',
+				],
+			]
+		);
+
+		self::assertSame(['archival-unknown-key'], array_column($errors, 'code'));
+	}//end testUnknownTopLevelKeyIsRejected()
+
+	public function testAggregationLevelOutsideTheListIsRejected(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P30D'],
+					'aggregationLevel' => 'Map',
+				],
+			]
+		);
+
+		self::assertSame(['archival-aggregation-level-unknown'], array_column($errors, 'code'));
+		self::assertStringContainsString('Archief, Serie, Dossier, Archiefstuk', $errors[0]['message']);
+	}//end testAggregationLevelOutsideTheListIsRejected()
+
+	public function testUseRestrictionTypeOutsideTheListIsRejected(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P30D'],
+					'useRestriction' => ['type' => 'Openbaar'],
+				],
+			]
+		);
+
+		self::assertSame(['archival-use-restriction-type-unknown'], array_column($errors, 'code'));
+	}//end testUseRestrictionTypeOutsideTheListIsRejected()
+
+	public function testUseRestrictionUnknownKeyIsRejected(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P30D'],
+					'useRestriction' => ['type' => 'Overig', 'reden' => 'typo'],
+				],
+			]
+		);
+
+		self::assertSame(['archival-use-restriction-unknown-key'], array_column($errors, 'code'));
+	}//end testUseRestrictionUnknownKeyIsRejected()
+
+	public function testTemporalCoverageWithoutAStartPropertyIsRejected(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P30D'],
+					'temporalCoverage' => ['type' => 'Looptijd'],
+				],
+			]
+		);
+
+		self::assertSame(['archival-temporal-coverage-startproperty-missing'], array_column($errors, 'code'));
+	}//end testTemporalCoverageWithoutAStartPropertyIsRejected()
+
+	public function testTemporalCoverageWithALiteralDateIsRejected(): void {
+		// A date on the schema would be the same wrong answer for every row,
+		// so the annotation takes property NAMES and `start` is not a key.
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P30D'],
+					'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021-01-01'],
+				],
+			]
+		);
+
+		self::assertSame(
+			['archival-temporal-coverage-unknown-key', 'archival-temporal-coverage-startproperty-missing'],
+			array_column($errors, 'code')
+		);
+	}//end testTemporalCoverageWithALiteralDateIsRejected()
+
 	public function testMissingRetentionDefaultIsRejected(): void {
 		$errors = $this->validator->validate(
 			[
