@@ -68,18 +68,19 @@ class MdtoValueReader {
 	 * per-object override, the `tmlo` block carries TMLO's spelling, and the
 	 * schema's evaluated `x-openregister-archival` annotation is the default
 	 * every row of that schema inherits. The annotation layer is what makes a
-	 * fact declarable once instead of on every object; see
-	 * `RetentionEvaluator::declaredFacts()`, which resolves it for the row.
+	 * fact declarable once instead of on every object; the caller supplies it,
+	 * because deriving it needs the schema and this class reads values only.
 	 *
 	 * @param ObjectEntity $object The source object.
 	 * @param string $abstractKey The English key, used on the retention block and the annotation.
 	 * @param string $tmloKey The Dutch key on the TMLO block.
+	 * @param array $annotation The object's evaluated archival annotation, empty when it has none.
 	 *
 	 * @return mixed The declared value, or null when no layer carries one.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
-	public function declared(ObjectEntity $object, string $abstractKey, string $tmloKey): mixed {
+	public function declared(ObjectEntity $object, string $abstractKey, string $tmloKey, array $annotation = []): mixed {
 		$retention = ($object->getRetention() ?? []);
 		if (is_array($retention) === true && isset($retention[$abstractKey]) === true) {
 			return $retention[$abstractKey];
@@ -90,7 +91,7 @@ class MdtoValueReader {
 			return $fromTmlo;
 		}
 
-		return $this->valueAt(value: $this->valueAt(value: $retention, key: 'annotation'), key: $abstractKey);
+		return $this->valueAt(value: $annotation, key: $abstractKey);
 	}//end declared()
 
 	/**

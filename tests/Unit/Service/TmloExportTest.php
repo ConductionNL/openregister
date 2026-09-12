@@ -30,6 +30,9 @@ use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
 use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
+use OCA\OpenRegister\Service\Archival\ObjectArchivalAnnotation;
+use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
+use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
@@ -75,7 +78,7 @@ class TmloExportTest extends TestCase {
 		$eventMapper->method('forObject')->willReturn([]);
 
 		$writer = new MdtoDocumentWriter();
-		$sourceReader = new MdtoSourceReader(new MdtoValueReader());
+		$sourceReader = new MdtoSourceReader(new MdtoValueReader(), $this->objectAnnotations());
 		$bestandGenerator = new MdtoBestandGenerator($writer);
 		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
 		$generator = new MdtoXmlGenerator(
@@ -281,5 +284,22 @@ class TmloExportTest extends TestCase {
 		$dom = new \DOMDocument();
 		$this->assertTrue($dom->loadXML($xml));
 	}//end testGenerateMdtoXmlEscapesSpecialChars()
+
+
+	/**
+	 * A real annotation resolver over a schema source that declares nothing.
+	 *
+	 * Real, not a mock: a stored annotation block must still be honoured, and
+	 * a stub would hide that.
+	 *
+	 * @return ObjectArchivalAnnotation The resolver.
+	 */
+	private function objectAnnotations(): ObjectArchivalAnnotation {
+		return new ObjectArchivalAnnotation(
+			$this->createMock(SchemaMapper::class),
+			new RetentionEvaluator(logger: new NullLogger()),
+			new NullLogger()
+		);
+	}
 
 }//end class

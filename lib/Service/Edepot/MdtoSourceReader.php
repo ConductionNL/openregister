@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Edepot;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\ObjectArchivalAnnotation;
 
 /**
  * Resolves aggregatieniveau, dekkingInTijd and beperkingGebruik from the object.
@@ -72,9 +73,11 @@ class MdtoSourceReader {
 	 * Constructor.
 	 *
 	 * @param MdtoValueReader $values The primitives every archival read shares.
+	 * @param ObjectArchivalAnnotation $annotations The schema's archival annotation, evaluated for the object.
 	 */
 	public function __construct(
 		private readonly MdtoValueReader $values,
+		private readonly ObjectArchivalAnnotation $annotations,
 	) {
 	}//end __construct()
 
@@ -114,21 +117,23 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
 	public function coreFacts(ObjectEntity $object): array {
+		$annotation = $this->annotations->forObject(object: $object);
+
 		return [
 			'appraisal' => $this->values->text(
-				value: $this->values->declared(object: $object, abstractKey: 'archiefnominatie', tmloKey: 'archiefnominatie')
+				value: $this->values->declared(object: $object, abstractKey: 'archiefnominatie', tmloKey: 'archiefnominatie', annotation: $annotation)
 			),
 			'retentionPeriod' => $this->values->text(
-				value: $this->values->declared(object: $object, abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn')
+				value: $this->values->declared(object: $object, abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn', annotation: $annotation)
 			),
 			'disposalDate' => $this->values->matching(
-				value: $this->values->declared(object: $object, abstractKey: 'archiefactiedatum', tmloKey: 'archiefactiedatum'),
+				value: $this->values->declared(object: $object, abstractKey: 'archiefactiedatum', tmloKey: 'archiefactiedatum', annotation: $annotation),
 				pattern: MdtoValueReader::XSD_DATE
 			),
 			'disposalCategory' => $this->disposalCategory(object: $object),
 			'classification' => $this->values->textAt(value: $object->getTmlo(), key: 'classification'),
 			'description' => $this->values->text(
-				value: $this->values->declared(object: $object, abstractKey: 'toelichting', tmloKey: 'toelichting')
+				value: $this->values->declared(object: $object, abstractKey: 'toelichting', tmloKey: 'toelichting', annotation: $annotation)
 			),
 		];
 	}//end coreFacts()
@@ -147,8 +152,9 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
 	private function disposalCategory(ObjectEntity $object): ?array {
+		$annotation = $this->annotations->forObject(object: $object);
 		$label = $this->values->text(
-			value: $this->values->declared(object: $object, abstractKey: 'classification', tmloKey: 'vernietigingsCategorie')
+			value: $this->values->declared(object: $object, abstractKey: 'classification', tmloKey: 'vernietigingsCategorie', annotation: $annotation)
 		);
 		if ($label === null) {
 			return null;
@@ -204,7 +210,8 @@ class MdtoSourceReader {
 		$declared = $this->values->declared(
 			object: $object,
 			abstractKey: 'aggregationLevel',
-			tmloKey: 'aggregatieniveau'
+			tmloKey: 'aggregatieniveau',
+			annotation: $this->annotations->forObject(object: $object)
 		);
 
 		$label = $this->values->label(value: $declared);
@@ -237,7 +244,8 @@ class MdtoSourceReader {
 		$declared = $this->values->declared(
 			object: $object,
 			abstractKey: 'temporalCoverage',
-			tmloKey: 'dekkingInTijd'
+			tmloKey: 'dekkingInTijd',
+			annotation: $this->annotations->forObject(object: $object)
 		);
 
 		if (is_array($declared) === false) {
@@ -288,7 +296,8 @@ class MdtoSourceReader {
 		$declared = $this->values->declared(
 			object: $object,
 			abstractKey: 'useRestriction',
-			tmloKey: 'beperkingGebruik'
+			tmloKey: 'beperkingGebruik',
+			annotation: $this->annotations->forObject(object: $object)
 		);
 
 		$label = $this->values->label(value: $declared);
