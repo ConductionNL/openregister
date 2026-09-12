@@ -72,6 +72,20 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 	 */
 	private ?\OCP\IUser $previousSessionUser = null;
 
+	/**
+	 * App config, for the admin-bypass flag this file has to turn off.
+	 *
+	 * @var \OCP\IAppConfig
+	 */
+	private \OCP\IAppConfig $appConfig;
+
+	/**
+	 * The admin-bypass value as it was found, restored in tearDown().
+	 *
+	 * @var string
+	 */
+	private string $previousBypass = 'true';
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -87,6 +101,17 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 		if ($admin !== null) {
 			$userSession->setUser($admin);
 		}
+		// 🔴 AND THE CALLER MAY NOT BE WAVED THROUGH EITHER. Reference-existence
+		// validation has an operator escape hatch: an admin skips it entirely
+		// unless `reference_validation_admin_bypass` is off (SaveObject, default
+		// true), so with admin in the session the two rejection tests below saw
+		// their dangling references accepted. The flag goes off for this file and
+		// back to its previous value in tearDown, which is also what an operator
+		// who wants validation enforced for everybody does.
+		$this->appConfig = \OC::$server->get(\OCP\IAppConfig::class);
+		$this->previousBypass = $this->appConfig->getValueString('openregister', 'reference_validation_admin_bypass', 'true');
+		$this->appConfig->setValueString('openregister', 'reference_validation_admin_bypass', 'false');
+
 		$this->resolver = \OC::$server->get(GraphQLResolver::class);
 		$this->saveHandler = \OC::$server->get(SaveObject::class);
 		$this->objectService = \OC::$server->get(ObjectService::class);
@@ -141,8 +166,9 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 			}
 		}
 
-		// Put the session back the way it was found, so the next test file
-		// starts from the session state it expects.
+		// Put the bypass flag and the session back the way they were found, so
+		// the next test file starts from the state it expects.
+		$this->appConfig->setValueString('openregister', 'reference_validation_admin_bypass', $this->previousBypass);
 		\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
 
 		parent::tearDown();
