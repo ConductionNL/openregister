@@ -785,6 +785,57 @@ class MdtoXmlGeneratorTest extends TestCase {
 	}
 
 	/**
+	 * A3: a fact the SCHEMA declares reaches the document.
+	 *
+	 * The annotation is the third source, after the object's own retention
+	 * block and the TMLO block, and it is what makes a fact declarable once
+	 * for a schema instead of on every object.
+	 */
+	public function testSchemaDeclaredFactsReachTheDocument(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'annotated',
+			retention: [
+				'archiefnominatie' => 'bewaren',
+				'bewaartermijn' => 'P5Y',
+				'annotation' => [
+					'effectiveRetention' => 'P5Y',
+					'aggregationLevel' => 'Dossier',
+					'useRestriction' => ['type' => 'Geen beperking', 'description' => 'Openbaar'],
+					'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021-01-01', 'end' => '2021-12-31'],
+				],
+			]
+		);
+
+		$xml = $this->generator->generate($object);
+
+		$this->assertStringContainsString('<mdto:begripLabel>Dossier</mdto:begripLabel>', $xml);
+		$this->assertStringContainsString('<mdto:begripLabel>Geen beperking</mdto:begripLabel>', $xml);
+		$this->assertStringContainsString('<mdto:beperkingGebruikNadereBeschrijving>Openbaar', $xml);
+		$this->assertStringContainsString('<mdto:dekkingInTijdBegindatum>2021-01-01</mdto:dekkingInTijdBegindatum>', $xml);
+		$this->assertStringContainsString('<mdto:dekkingInTijdEinddatum>2021-12-31</mdto:dekkingInTijdEinddatum>', $xml);
+	}
+
+	/**
+	 * A3: the object's own block still wins over the schema's.
+	 */
+	public function testTheObjectOverridesTheSchemaDeclaredFact(): void {
+		$object = $this->createObjectEntity(
+			uuid: 'annotated',
+			retention: [
+				'archiefnominatie' => 'bewaren',
+				'bewaartermijn' => 'P5Y',
+				'aggregationLevel' => 'Archiefstuk',
+				'annotation' => ['aggregationLevel' => 'Dossier'],
+			]
+		);
+
+		$xml = $this->generator->generate($object);
+
+		$this->assertStringContainsString('<mdto:begripLabel>Archiefstuk</mdto:begripLabel>', $xml);
+		$this->assertStringNotContainsString('<mdto:begripLabel>Dossier</mdto:begripLabel>', $xml);
+	}
+
+	/**
 	 * A well-formed file entry, as EdepotTransferService builds one.
 	 *
 	 * @return array<string, mixed> The file.

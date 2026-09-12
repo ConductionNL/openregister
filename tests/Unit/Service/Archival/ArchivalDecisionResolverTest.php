@@ -53,6 +53,70 @@ class ArchivalDecisionResolverTest extends TestCase {
 	}
 
 	/**
+	 * GAP A3: a fact the schema declares reaches the abstract answer.
+	 */
+	public function testSchemaDeclaredFactsAreEmitted(): void {
+		$entity = $this->entityWith(
+			[
+				'archiefnominatie' => 'bewaren',
+				'annotation' => [
+					'effectiveRetention' => 'P30D',
+					'matchedRule' => null,
+					'aggregationLevel' => 'Dossier',
+					'useRestriction' => ['type' => 'Geen beperking'],
+					'temporalCoverage' => ['type' => 'Looptijd', 'start' => '2021-01-01'],
+				],
+			]
+		);
+
+		$decision = $this->resolver->resolve($entity);
+
+		self::assertSame('Dossier', $decision['aggregationLevel']);
+		self::assertSame(['type' => 'Geen beperking'], $decision['useRestriction']);
+		self::assertSame(['type' => 'Looptijd', 'start' => '2021-01-01'], $decision['temporalCoverage']);
+	}
+
+	/**
+	 * The object's own retention block overrides what the schema declares.
+	 */
+	public function testTheObjectOverridesTheSchema(): void {
+		$entity = $this->entityWith(
+			[
+				'archiefnominatie' => 'bewaren',
+				'aggregationLevel' => 'Archiefstuk',
+				'annotation' => ['aggregationLevel' => 'Dossier'],
+			]
+		);
+
+		self::assertSame('Archiefstuk', $this->resolver->resolve($entity)['aggregationLevel']);
+	}
+
+	/**
+	 * The TMLO block carries the same facts under TMLO's Dutch spelling.
+	 */
+	public function testTheTmloBlockIsASource(): void {
+		$entity = new ObjectEntity();
+		$entity->setRetention(['archiefnominatie' => 'bewaren']);
+		$entity->setTmlo(['aggregatieniveau' => 'Serie']);
+
+		self::assertSame('Serie', $this->resolver->resolve($entity)['aggregationLevel']);
+	}
+
+	/**
+	 * A fact nobody declares is ABSENT, not an empty value.
+	 *
+	 * The same rule UnestablishedValues applies to the rest of the block: a key
+	 * that establishes nothing is omitted, so create and read read alike.
+	 */
+	public function testAnUndeclaredFactIsAbsentFromTheDecision(): void {
+		$decision = $this->resolver->resolve($this->entityWith(['archiefnominatie' => 'bewaren']));
+
+		self::assertArrayNotHasKey('aggregationLevel', $decision);
+		self::assertArrayNotHasKey('useRestriction', $decision);
+		self::assertArrayNotHasKey('temporalCoverage', $decision);
+	}
+
+	/**
 	 * An object with no retention block has no decision, and the key is omitted
 	 * rather than reported as an empty object — "no obligation declared" and
 	 * "we looked and found none" must stay distinguishable.
