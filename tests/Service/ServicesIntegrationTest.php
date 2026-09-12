@@ -281,6 +281,21 @@ class ServicesIntegrationTest extends TestCase {
 	 *
 	 * @return ObjectEntity
 	 */
+	/**
+	 * The UUID of the caller's active organisation, or null when there is none.
+	 *
+	 * @return string|null The organisation UUID to stamp on fixture rows.
+	 */
+	private function activeOrganisationUuid(): ?string {
+		$orgService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
+
+		try {
+			return $orgService->getActiveOrganisation()?->getUuid();
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end activeOrganisationUuid()
+
 	private function createTestObject(array $data = []): ObjectEntity {
 		$uuid = Uuid::v4()->toRfc4122();
 		$objectData = array_merge([
@@ -295,7 +310,14 @@ class ServicesIntegrationTest extends TestCase {
 		$object->setSchema($this->testSchema->getId());
 		$object->setObject($objectData);
 		$object->setOwner('admin');
-		$object->setOrganisation('default');
+		// The tenant column holds an organisation UUID. This stamped the literal
+		// string 'default', which matches no organisation, so every read that
+		// applies the tenant filter skipped these rows: two tests counted zero
+		// objects they had just created, but only once the account had an active
+		// organisation, which OrganisationService assigns on first read. The
+		// production SaveObject path stamps the caller's organisation; the
+		// fixture does the same.
+		$object->setOrganisation($this->activeOrganisationUuid());
 
 		$inserted = $this->objectMapper->insert($object);
 		$this->createdObjectUuids[] = $uuid;

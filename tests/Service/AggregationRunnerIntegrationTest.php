@@ -45,6 +45,13 @@ class AggregationRunnerIntegrationTest extends TestCase {
 	private ?string $activeOrgUuid = null;
 
 	/**
+	 * The admin's active_organisation user value as this file found it.
+	 *
+	 * @var string
+	 */
+	private string $previousActiveOrganisation = '';
+
+	/**
 	 * @var int[]
 	 */
 	private array $createdSchemaIds = [];
@@ -96,6 +103,15 @@ class AggregationRunnerIntegrationTest extends TestCase {
 			$userSession->setUser($admin);
 		}
 
+		// 🔴 THE ACTIVE ORGANISATION IS A PERSISTENT USER SETTING, NOT SESSION
+		// STATE. setActiveOrganisation() writes it with setUserValue(), so a test
+		// that sets it changes the admin account for every later test, every
+		// later file and every later RUN. Two ServicesIntegrationTest tests read
+		// zero objects for rows they had just created because this file had
+		// pinned a tenant they were not stamped with. Capture it and put it back.
+		$config = \OC::$server->get(\OCP\IConfig::class);
+		$this->previousActiveOrganisation = $config->getUserValue('admin', 'openregister', 'active_organisation', '');
+
 		$orgService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
 		$activeOrg = $orgService->getActiveOrganisation();
 		if ($activeOrg === null) {
@@ -110,6 +126,15 @@ class AggregationRunnerIntegrationTest extends TestCase {
 	}//end setUp()
 
 	protected function tearDown(): void {
+		// Restore the admin's active organisation exactly as it was found: an
+		// empty value means "no setting", which is deleted rather than stored.
+		$config = \OC::$server->get(\OCP\IConfig::class);
+		if ($this->previousActiveOrganisation === '') {
+			$config->deleteUserValue('admin', 'openregister', 'active_organisation');
+		} else {
+			$config->setUserValue('admin', 'openregister', 'active_organisation', $this->previousActiveOrganisation);
+		}
+
 		$db = \OC::$server->get(\OCP\IDBConnection::class);
 
 		foreach ($this->createdTables as $tableName) {
