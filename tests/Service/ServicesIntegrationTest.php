@@ -1432,10 +1432,8 @@ class ServicesIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAuthorizationServiceJwtNoToken(): void {
-		$service = \OC::$server->get(AuthorizationService::class);
-
 		$this->expectException(AuthenticationException::class);
-		$service->authorizeJwt('Bearer ');
+		$this->invokeAuthorize('authorizeJwt', ['Bearer ']);
 	}
 
 	/**
@@ -1444,10 +1442,8 @@ class ServicesIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAuthorizationServiceOAuthNonBearer(): void {
-		$service = \OC::$server->get(AuthorizationService::class);
-
 		$this->expectException(AuthenticationException::class);
-		$service->authorizeOAuth('Basic dGVzdDp0ZXN0');
+		$this->invokeAuthorize('authorizeOAuth', ['Basic dGVzdDp0ZXN0']);
 	}
 
 	/**
@@ -1456,10 +1452,30 @@ class ServicesIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAuthorizationServiceApiKeyInvalid(): void {
-		$service = \OC::$server->get(AuthorizationService::class);
-
 		$this->expectException(AuthenticationException::class);
-		$service->authorizeApiKey('invalid-key', ['valid-key' => 'admin']);
+		$this->invokeAuthorize('authorizeApiKey', ['invalid-key', ['valid-key' => 'admin']]);
+	}
+
+	/**
+	 * Call one of AuthorizationService's credential checks.
+	 *
+	 * authorizeJwt(), authorizeOAuth() and authorizeApiKey() were public when
+	 * these tests were written and became protected in 3fd738a0b (2026-05-28),
+	 * the pass that answered the orphan-auth gate. Nothing in lib/ calls them
+	 * directly, so there is no public route to drive them through, and the
+	 * behaviour they hold is worth keeping pinned: a malformed or absent
+	 * credential MUST raise AuthenticationException rather than fall through.
+	 *
+	 * @param string $method The check to call.
+	 * @param array  $args   Its arguments.
+	 *
+	 * @return void
+	 */
+	private function invokeAuthorize(string $method, array $args): void {
+		$service = \OC::$server->get(AuthorizationService::class);
+		$reflected = new \ReflectionMethod($service, $method);
+		$reflected->setAccessible(true);
+		$reflected->invoke($service, ...$args);
 	}
 
 	// -------------------------------------------------------------------------
@@ -1564,12 +1580,22 @@ class ServicesIntegrationTest extends TestCase {
 		$result = $service->listTools();
 
 		$this->assertArrayHasKey('tools', $result);
-		$this->assertCount(3, $result['tools']);
 
+		// The count used to be pinned at three. Tools are contributed by
+		// providers and the fleet keeps adding them (seven on this instance), so
+		// a hard count is a number someone has to bump rather than a fact worth
+		// protecting. What matters is that the three canonical tools are still
+		// advertised, and that every entry is shaped the way a client expects.
 		$toolNames = array_column($result['tools'], 'name');
 		$this->assertContains('registers', $toolNames);
 		$this->assertContains('schemas', $toolNames);
 		$this->assertContains('objects', $toolNames);
+
+		foreach ($result['tools'] as $tool) {
+			$this->assertArrayHasKey('name', $tool);
+			$this->assertArrayHasKey('description', $tool);
+			$this->assertArrayHasKey('inputSchema', $tool);
+		}
 	}
 
 	/**
@@ -1635,10 +1661,14 @@ class ServicesIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testMcpToolsServiceUnknownTool(): void {
+		// The service throws for a tool nobody owns; McpServerController catches
+		// InvalidArgumentException and answers a JSON-RPC error. The old
+		// expectation of an isError envelope predates that mapping.
 		$service = \OC::$server->get(McpToolsService::class);
-		$result = $service->callTool('nonexistent', ['action' => 'list']);
 
-		$this->assertTrue($result['isError']);
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('Unknown tool: nonexistent');
+		$service->callTool('nonexistent', ['action' => 'list']);
 	}
 
 	/**
