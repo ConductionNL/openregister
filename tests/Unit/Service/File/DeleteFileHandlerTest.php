@@ -118,4 +118,34 @@ class DeleteFileHandlerTest extends TestCase {
 
 		$this->handler->deleteFile(file: 42, object: $this->createMock(ObjectEntity::class));
 	}//end testDeleteRefusedWithoutDeletePermission()
+
+	// =========================================================================
+	// deleteFile - a Node is deleted as a Node
+	// =========================================================================
+
+	/**
+	 * A Node argument MUST be deleted directly, never cast to string.
+	 *
+	 * The docblock has always promised Node|string|int. The handler cast the
+	 * argument to string for its log line BEFORE asking whether it was a Node,
+	 * and a Files Node is not Stringable, so every Node caller died with
+	 * "Object of class OC\Files\Node\File could not be converted to string".
+	 * MergeHandler passes Nodes, so merging objects that carry files broke.
+	 *
+	 * @return void
+	 */
+	public function testDeleteAcceptsANodeWithoutResolvingIt(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('getName')->willReturn('test.pdf');
+		$file->method('isDeletable')->willReturn(true);
+		$file->expects($this->once())->method('delete');
+
+		// A Node needs no lookup; resolving it again would be wasted work.
+		$this->readFileHandler->expects($this->never())->method('getFile');
+
+		$result = $this->handler->deleteFile(file: $file, object: $this->createMock(ObjectEntity::class));
+
+		$this->assertTrue($result);
+	}//end testDeleteAcceptsANodeWithoutResolvingIt()
 }//end class

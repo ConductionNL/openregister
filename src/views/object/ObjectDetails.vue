@@ -148,6 +148,22 @@
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
 						</AppTab>
+						<!--
+							The object's own facts, from its `@self` block, grouped by
+							the shared widget into Identity, Location, Ownership,
+							Lifecycle and Archiving. This is the only place OR's own UI
+							draws the resolved archival decision (`@self._retention`):
+							appraisal, retention period, disposal date and record
+							state. It is the same widget dossiq and the other leaf
+							apps mount, deliberately: a second, OR-local rendering of
+							those facts would drift from theirs the first time the
+							resolver's vocabulary moves, which it already has once
+							(openregister#3584).
+						-->
+						<AppTab :title="t('openregister', 'Metadata')">
+							<CnObjectMetadataWidget
+								:objectData="objectStore.objectItem" />
+						</AppTab>
 						<AppTab :title="t('openregister', 'Uses')">
 							<div
 								v-if="
@@ -480,6 +496,7 @@
 import {
 	CnIntegrationWidget,
 	CnObjectAccessTab,
+	CnObjectMetadataWidget,
 	CnPagination,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
@@ -547,6 +564,7 @@ export default {
 		RelationsTab,
 		CnIntegrationWidget,
 		CnObjectAccessTab,
+		CnObjectMetadataWidget,
 	},
 
 	/**

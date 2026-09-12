@@ -97,6 +97,13 @@ class SchemaDeletionService {
 	public const TRIGGER_BULK_DELETE = 'bulk_schema_delete';
 
 	/**
+	 * Trigger context for objects removed via the bulk delete-register endpoint.
+	 *
+	 * @var string
+	 */
+	public const TRIGGER_BULK_REGISTER_DELETE = 'bulk_register_delete';
+
+	/**
 	 * Objects snapshotted + audited per batch.
 	 *
 	 * ADR-009 (bounded per-object work): the object set is read and audited in
@@ -182,6 +189,128 @@ class SchemaDeletionService {
 		];
 
 	}//end deleteObjectsBySchema()
+
+	/**
+	 * Resolve the schemas a register lists, the way the retention sweep does.
+	 *
+	 * Mirrors `RetentionRowScanner::magicTableSources()`: the register's own
+	 * `schemas` list is the authority for which (register, schema) pairs exist.
+	 * A listed id that no schema answers to is skipped with a warning rather than
+	 * thrown on, because it cannot have a magic table this service could reach.
+	 *
+	 * Public so the controller can gate every schema on its manage permission
+	 * against exactly the set this service is about to empty.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, Schema> The resolvable schemas, in the register's order.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
+	 */
+	public function resolveSchemasOfRegister(Register $register): array {
+		$schemas = [];
+		foreach ($register->getSchemas() as $schemaId) {
+			try {
+				$schemas[] = $this->schemaMapper->find(id: (int)$schemaId);
+			} catch (Throwable $e) {
+				$this->logger->warning(
+					message: '[SchemaDeletionService] Register lists a schema that does not resolve; skipped',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'registerId' => (int)$register->getId(),
+						'schemaId' => (string)$schemaId,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		return $schemas;
+	}//end resolveSchemasOfRegister()
+
+	/**
+	 * Delete every object of every schema a register lists, without deleting either.
+	 *
+	 * Backs `POST /api/bulk/{register}/delete-register`, which until now called a
+	 * stub that threw on every request. It runs the same audited per-pair delete
+	 * as {@see self::deleteObjectsBySchema()}, over the pairs
+	 * {@see self::resolveSchemasOfRegister()} names.
+	 *
+	 * ARCHIVAL SCHEMAS REFUSE THE WHOLE REQUEST, AND THEY DO IT FIRST. Every schema
+	 * is checked before any row is touched: checked inside the loop instead, a
+	 * register listing a plain schema ahead of an archival one would be half emptied
+	 * by the time the refusal came. There is no override, for the reason
+	 * {@see self::deleteObjectsBySchema()} gives: this is an HTTP door.
+	 *
+	 * ONE TRANSACTION. The pairs are emptied together or not at all, like phase 1
+	 * of {@see self::cascadeDeleteSchema()}.
+	 *
+	 * @param Register $register The register whose objects are deleted.
+	 * @param bool $hardDelete True to remove the rows, false to soft-delete them.
+	 * @param string $triggeredBy Audit trigger context.
+	 *
+	 * @throws ArchivalImmutableException If any schema of the register is archival (nothing is deleted).
+	 * @throws \Exception If a delete fails (everything is rolled back).
+	 *
+	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int} The deletion result.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
+	 */
+	public function deleteObjectsByRegister(
+		Register $register,
+		bool $hardDelete = false,
+		string $triggeredBy = self::TRIGGER_BULK_REGISTER_DELETE,
+	): array {
+		$schemas = $this->resolveSchemasOfRegister(register: $register);
+
+		foreach ($schemas as $schema) {
+			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
+		}
+
+		$deletedCount = 0;
+		$deletedUuids = [];
+
+		$this->db->beginTransaction();
+		try {
+			foreach ($schemas as $schema) {
+				$result = $this->deleteObjectsOfPair(
+					register: $register,
+					schema: $schema,
+					hardDelete: $hardDelete,
+					triggeredBy: $triggeredBy
+				);
+
+				$deletedCount += $result['deleted_count'];
+				$deletedUuids = array_merge($deletedUuids, $result['deleted_uuids']);
+			}
+
+			$this->db->commit();
+		} catch (Throwable $e) {
+			$this->db->rollBack();
+
+			$this->logger->error(
+				message: '[SchemaDeletionService] Register-wide delete rolled back',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => (int)$register->getId(),
+					'error' => $e->getMessage(),
+				]
+			);
+
+			throw $e;
+		}//end try
+
+		return [
+			'deleted_count' => $deletedCount,
+			'deleted_uuids' => $deletedUuids,
+			'register_id' => (int)$register->getId(),
+		];
+
+	}//end deleteObjectsByRegister()
 
 	/**
 	 * Cascade-delete a schema: its objects, its magic tables, and the schema itself.

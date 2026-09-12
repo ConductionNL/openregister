@@ -46,11 +46,25 @@
          Unlike FleetAppId this one is not temporary — the `_limit` grammar is
          permanent — so it earns its place on the merit of the first paragraph
          alone rather than on being short-lived. -->
+    <!-- StaticAccess: a third exception, on the terms QueryLimit set.
+
+         `\OCA\OpenRegister\Support\FilterParams` answers one question about
+         request parameters: which of them are property filters, and under
+         which of the two spellings. It holds no state, has no collaborators,
+         and takes everything it needs as arguments.
+
+         It exists because two sibling endpoints answered that question
+         differently and each returned a confident wrong number for the
+         other's spelling (openregister#3611). The property being bought is
+         that object search, the four aggregation actions and the magic search
+         handler cannot disagree again: a service would let one of them be
+         constructed with a different implementation, which is the drift the
+         class was written to end. -->
     <rule ref="rulesets/cleancode.xml/StaticAccess">
         <properties>
             <property
                 name="exceptions"
-                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit"/>
+                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams"/>
         </properties>
     </rule>
 </ruleset>

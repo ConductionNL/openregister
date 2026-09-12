@@ -36,6 +36,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -53,8 +54,10 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Support\FilterParams;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1045,6 +1048,47 @@ class ObjectsController extends Controller {
 	}//end resolveRegisterSchemaIds()
 
 	/**
+	 * Log one warning for the filter keys that name no property of the schema.
+	 *
+	 * Such a filter answers `1 = 0`, so the caller gets an empty list that is
+	 * indistinguishable from a schema with no matching rows. That silence is
+	 * what made openregister#3611 invisible for as long as it was: humaniq's
+	 * hours widget summed the empty set and would have rendered `0` hours on
+	 * every object. The warning names the keys, the endpoint and the schema so
+	 * the mistake is visible in the log without refusing the request.
+	 *
+	 * @param array<string, mixed> $query The query from `buildSearchQuery()`.
+	 * @param Schema|null $schemaEntity The resolved schema, when there is one.
+	 * @param string $register The register reference from the URL.
+	 * @param string $schema The schema reference from the URL.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private function warnUnknownFilterKeys(
+		array $query,
+		?Schema $schemaEntity,
+		string $register,
+		string $schema,
+	): void {
+		if ($schemaEntity === null) {
+			return;
+		}
+
+		FilterParams::warnUnknownKeys(
+			logger: $this->logger,
+			keys: FilterParams::unknownObjectFilterKeys(
+				query: $query,
+				properties: ($schemaEntity->getProperties() ?? [])
+			),
+			endpoint: 'objects#index',
+			register: $register,
+			schema: $schema
+		);
+	}//end warnUnknownFilterKeys()
+
+	/**
 	 * Retrieves a list of all objects for a specific register and schema
 	 *
 	 * This method returns a paginated list of objects that match the specified register and schema.
@@ -1179,6 +1223,13 @@ class ObjectsController extends Controller {
 					requestParams: $this->request->getParams(),
 					register: $resolved['register'],
 					schema: $resolved['schema']
+				);
+
+				$this->warnUnknownFilterKeys(
+					query: $query,
+					schemaEntity: $schemaEntity,
+					register: $register,
+					schema: $schema
 				);
 
 				// Pass RBAC and multitenancy settings to the query.
@@ -1335,6 +1386,13 @@ class ObjectsController extends Controller {
 				if (empty($ignoredFilters) === false) {
 					$responseData['@self']['ignoredFilters'] = $ignoredFilters;
 
+					// `filter` is deliberately NOT in this list. It used to be,
+					// and the hint it produced sent callers the wrong way:
+					// `filter[x]` is now the bracket filter spelling, while
+					// `_filter` is the response field-exclusion parameter, so
+					// "did you mean _filter?" turned a scoped query into an
+					// unscoped one. openbuild followed exactly that advice and
+					// measured `_filter[applicationUuid]` returning every row.
 					$controlParams = [
 						'limit',
 						'offset',
@@ -1344,7 +1402,6 @@ class ObjectsController extends Controller {
 						'search',
 						'extend',
 						'fields',
-						'filter',
 						'unset',
 					];
 					$mistakenParams = array_intersect($ignoredFilters, $controlParams);
@@ -1432,6 +1489,13 @@ class ObjectsController extends Controller {
 			requestParams: $this->request->getParams(),
 			register: $resolved['register'],
 			schema: $resolved['schema']
+		);
+
+		$this->warnUnknownFilterKeys(
+			query: $query,
+			schemaEntity: ($resolved['schemaEntity'] ?? null),
+			register: $register,
+			schema: $schema
 		);
 
 		// **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
@@ -3145,6 +3209,15 @@ class ObjectsController extends Controller {
 			// Get the existing object data and merge with patch data.
 			$existingData = $existingObject->getObject();
 			$mergedData = array_merge($existingData ?? [], $patchData);
+
+			// The read decoded, so the write re-encodes. Only keys the caller
+			// did NOT send are restored — see restoreStringTypedValues().
+			$mergedData = $this->restoreStringTypedValues(
+				mergedData: $mergedData,
+				schemaEntity: $resolved['schemaEntity'],
+				suppliedKeys: array_keys($patchData)
+			);
+
 			// Use the object service to validate and update the object.
 			$objectEntity = $objectService->saveObject(
 				register: $resolved['register'],
@@ -3357,6 +3430,14 @@ class ObjectsController extends Controller {
 			// Merge existing data with patch data (patch semantics).
 			$existingData = $existingObject->getObject();
 			$mergedData = array_merge($existingData ?? [], $patchData);
+
+			// The read decoded, so the write re-encodes. Only keys the caller
+			// did NOT send are restored — see restoreStringTypedValues().
+			$mergedData = $this->restoreStringTypedValues(
+				mergedData: $mergedData,
+				schemaEntity: $resolved['schemaEntity'],
+				suppliedKeys: array_keys($patchData)
+			);
 
 			$objectService->clearCreatedSubObjects();
 
@@ -4956,6 +5037,57 @@ class ObjectsController extends Controller {
 
 		return $flowContext->currentRunUuid();
 	}//end callerRunUuid()
+
+	/**
+	 * Restore the stored form of string-typed properties the read path decoded.
+	 *
+	 * ONE helper for both patch doors, and it holds no rule of its own: the
+	 * rule lives in `SchemaTypeConverter::restoreStringTypedValues()`, beside
+	 * the decode it undoes. All this does is find the schema's property
+	 * declarations and say which keys the caller sent.
+	 *
+	 * Why it is needed at all: the magic-table read decodes a `type: string`
+	 * value that looks like JSON, so `$existingObject->getObject()` hands back
+	 * an ARRAY where the schema declares a string. Merging that array into the
+	 * payload and saving it makes validation refuse a PATCH that never
+	 * mentioned the property — the "only the provided fields change" promise in
+	 * this method's own docblock, broken by a property nobody named.
+	 *
+	 * If the schema entity is not resolvable the data is returned unchanged,
+	 * leaving today's loud validation refusal in place rather than guessing.
+	 *
+	 * @param array $mergedData   The merged object data about to be saved.
+	 * @param mixed $schemaEntity The resolved schema entity, or whatever resolution produced.
+	 * @param array $suppliedKeys Keys the caller actually sent in the patch payload.
+	 *
+	 * @return array The data with untouched string-typed JSON values restored.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function restoreStringTypedValues(array $mergedData, mixed $schemaEntity, array $suppliedKeys): array {
+		if (($schemaEntity instanceof Schema) === false) {
+			return $mergedData;
+		}
+
+		try {
+			$converter = $this->container->get(SchemaTypeConverter::class);
+		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $unavailable) {
+			return $mergedData;
+		}
+
+		// A container may answer with something other than a converter, or with
+		// nothing at all. Returning the data unchanged keeps the pre-existing
+		// refusal; calling a method on null would turn a patch into a fatal.
+		if (($converter instanceof SchemaTypeConverter) === false) {
+			return $mergedData;
+		}
+
+		return $converter->restoreStringTypedValues(
+			data: $mergedData,
+			properties: ($schemaEntity->getProperties() ?? []),
+			suppliedKeys: $suppliedKeys
+		);
+	}//end restoreStringTypedValues()
 
 	/**
 	 * Refuse a write to a locked object, or return null when it may proceed.

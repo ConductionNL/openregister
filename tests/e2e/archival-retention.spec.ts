@@ -19,29 +19,35 @@ import type { APIRequestContext } from '@playwright/test'
  *
  * WHY TWO OF THE THREE GROUPS ASSERT OVER THE API
  * ----------------------------------------------
- * There is no UI that renders an archival decision. `git grep` over `src/`
- * finds no reference to `_retention`, `recordState`, `disposalDate` or
- * `appraisal` in any `.vue` or `.js` file, so a records officer cannot see a
- * disposal date, an appraisal or a transferred record's immutability anywhere
- * in the app. The decision is currently an API-only contract, and an e2e test
- * cannot assert on screen what the app never draws. The settings group below
- * IS driven through the browser, because that surface does exist.
+ * When this file was written no UI rendered an archival decision: `git grep`
+ * over `src/` found no `_retention`, `recordState`, `disposalDate` or
+ * `appraisal`. The object detail view now has a Metadata tab that mounts
+ * `CnObjectMetadataWidget`, whose Archiving group draws the decision, and
+ * `object-metadata-archival.spec.ts` reads it off the page. The two groups
+ * below stay on the API because what they assert (which rule fired, every
+ * record-state spelling, the refused delete) is the resolver's contract, not
+ * its rendering. The settings group IS driven through the browser.
  *
  * The alternative — filing these under `tests/e2e/api-direct/` per the gate-19
  * convention — would mean they never execute: `playwright.config.ts` excludes
  * that directory from the `chromium` project. A test that does not run is the
  * coverage we already had.
  *
- * FIXTURE CLEANUP IS DELIBERATELY PARTIAL
- * --------------------------------------
+ * FIXTURE CLEANUP IS COMPLETE, AND THE REFUSAL STILL HOLDS
+ * --------------------------------------------------------
  * `DELETE /api/objects/...` on a schema that declares `x-openregister-archival`
- * is refused with HTTP 403, which is the whole point of the annotation, so the
- * seeded archival rows CANNOT be removed over HTTP by any caller — the only
- * sanctioned path is `occ openregister:objects:purge --apply --force`, which a
- * remote spec run has no access to. The refusal is asserted as a test below
- * rather than swallowed in teardown, so the rows that stay behind are evidence
- * rather than litter, and every entity this file creates carries the suite's
- * run-unique `e2e-<timestamp>` prefix so a leaked fixture is identifiable.
+ * is refused with HTTP 403, which is the whole point of the annotation, and a
+ * test below asserts that refusal with the annotation in place. This file's
+ * header used to say the seeded rows could therefore not be removed over HTTP
+ * at all, and that the only way out was `occ openregister:objects:purge`. It is
+ * not so: the refusal asks the SCHEMA whether it declares the annotation, so
+ * `afterAll` takes the annotation off first and then removes the rows, the
+ * schemas and the register through the ordinary API.
+ *
+ * That matters beyond tidiness. The rows left here are what pushed
+ * `crud/register-crud.spec.ts`'s brand-new register onto page two of the
+ * registers list. Every entity still carries the run-unique `e2e-<timestamp>`
+ * prefix, so anything a failed run does leave is identifiable.
  */
 import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
@@ -234,24 +240,24 @@ async function createdAtOf(
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Seeded fixtures: ONE register, ONE archival schema, ONE plain schema, for the
-// whole file.
+// whole file, and all of it given back in `afterAll`.
 //
-// 🔴 ONE REGISTER IS A BUDGET, NOT TIDINESS. An archival row refuses every HTTP
-// delete, so the register holding it refuses too (409 `register-has-objects`)
-// and this file's fixtures are PERMANENT for the rest of the run. The registers
-// list is sliced client-side at 20 rows per page (`RegistersIndex`
-// `paginatedRegisters`), and a fresh instance already ships 16 registers, so
-// what this file leaves behind is subtracted from a budget of four that later
-// specs share. It used to seed two registers and two archival schemas, one per
-// describe; that took half the budget and, with the two registers
-// `tests/e2e/ci/object-sharing.spec.ts` and `ci/object-shares-tab.spec.ts` also
-// leak, pushed the count to 21 so `crud/register-crud.spec.ts` could not find
-// its own brand-new register on page one. Measured, reproduced, and the reason
-// both describes below now share one register and one archival schema.
+// 🔴 WHAT THIS FILE LEAVES BEHIND IS ANOTHER SPEC'S BUG. An archival row refuses
+// every HTTP delete, so the register holding it refuses too (409
+// `register-has-objects`). This file's fixtures used to be PERMANENT for the
+// rest of the run, and the registers list is sliced client-side at 20 rows per
+// page (`RegistersIndex` `paginatedRegisters`) over an instance that already
+// ships 16 registers. Two registers left here, plus the two
+// `ci/object-sharing.spec.ts` and `ci/object-shares-tab.spec.ts` leak, took the
+// count to 21 and `crud/register-crud.spec.ts` could no longer find its own
+// brand-new register on page one. Sharing one register halved the cost; the
+// teardown below removes it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 let registerId = 0
 let archivalSchemaId = 0
+let archivalSchemaSlug = ''
+let archivalSchemaTitle = ''
 let plainSchemaId = 0
 let plainObjectId = ''
 
@@ -273,18 +279,96 @@ test.beforeAll(async ({ request }) => {
 
 	registerId = register.id
 	archivalSchemaId = archival.id
+	archivalSchemaSlug = archival.slug
+	archivalSchemaTitle = archival.title
 	plainSchemaId = plain.id
 })
 
+/**
+ * Report a teardown step that did not do what it was asked.
+ *
+ * Warn rather than throw: one failed step must not strand the steps after it,
+ * and a teardown that fails a green run reports the wrong thing.
+ *
+ * @param step The step name.
+ * @param status The status it answered with.
+ */
+function warnTeardown(step: string, status: number): void {
+	console.warn(`[archival-retention] teardown ${step} answered ${status}`)
+}
+
 test.afterAll(async ({ request }) => {
-	// Best-effort, and deliberately incomplete. The archival rows refuse to be
-	// deleted (asserted below), so the archival schema and the register refuse to
-	// go with them; the plain schema and its object do come out, which is the
-	// half that CAN be given back.
+	// 🔑 THE REFUSAL READS THE SCHEMA'S CURRENT ANNOTATION, NOT THE ROW.
+	// `ObjectService::rejectIfArchivalImmutable()` asks
+	// `Schema::hasArchivalAnnotation()`, so a schema that no longer declares
+	// `x-openregister-archival` no longer holds its rows back. Taking the
+	// annotation off first is therefore the sanctioned HTTP path out, and this
+	// file's rows stop being permanent. Nothing about the refusal is weakened:
+	// it is asserted, with the annotation in place, by a test above, and the
+	// strip happens only after every test in the file has run.
+	//
+	// `rejectIfTransferred()` does not block these either. It reads
+	// `@self.retention.archiefstatus`, and the record-state cases write
+	// `archiefstatus` as an ordinary schema property, which is where
+	// `declaredArchivalFields()` reads it from.
+	if (archivalSchemaId !== 0) {
+		const strip = await request.put(`${API}/schemas/${archivalSchemaId}`, {
+			headers: { 'Content-Type': 'application/json' },
+			data: {
+				slug: archivalSchemaSlug,
+				title: archivalSchemaTitle,
+				properties: archivalProperties(),
+				configuration: {},
+			},
+		})
+		if (!strip.ok()) {
+			warnTeardown('strip the archival annotation', strip.status())
+		}
+	}
+
+	// Every row this file seeded, listed from the server rather than tracked in
+	// a variable: the record-state test creates one per accepted spelling, and a
+	// list that drifted from the loop would leave the difference behind.
+	for (const schemaId of [archivalSchemaId, plainSchemaId]) {
+		if (schemaId === 0) {
+			continue
+		}
+		const listed = await request.get(
+			`${API}/objects/${registerId}/${schemaId}?_limit=1000`,
+			{ headers: { Accept: 'application/json' } },
+		)
+		if (!listed.ok()) {
+			warnTeardown(`list objects on schema ${schemaId}`, listed.status())
+			continue
+		}
+		const body = await listed.json()
+		for (const row of body?.results ?? []) {
+			const uuid = row?.['@self']?.id ?? row?.id
+			if (!uuid) {
+				continue
+			}
+			// Soft delete, then hard: a soft-deleted row still occupies the
+			// schema, which then refuses to be dropped.
+			const soft = await request.delete(
+				`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+			)
+			if (!soft.ok()) {
+				warnTeardown(`delete object ${uuid}`, soft.status())
+			}
+			const hard = await request.delete(`${API}/deleted/${uuid}`)
+			if (!hard.ok()) {
+				warnTeardown(`purge object ${uuid}`, hard.status())
+			}
+		}
+	}
+
+	// `plainObjectId` is covered by the listing above; the call stays so a
+	// future test that deletes it itself cannot make the teardown throw.
 	if (plainObjectId !== '') {
 		await deleteObject(request, registerId, plainSchemaId, plainObjectId)
 	}
 	await deleteSchema(request, plainSchemaId)
+	await deleteSchema(request, archivalSchemaId)
 	await deleteRegister(request, registerId)
 })
 
