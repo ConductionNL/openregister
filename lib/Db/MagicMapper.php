@@ -10714,30 +10714,4 @@ class MagicMapper extends AbstractObjectMapper {
 			'series' => [],
 		];
 	}//end getSizeDistributionChartData()
-
-	/**
-	 * Count objects across multiple schemas.
-	 *
-	 * @param array $schemaIds Array of schema IDs.
-	 *
-	 * @return int Total count of objects across the given schemas.
-	 */
-	public function countBySchemas(array $schemaIds): int {
-		return 0;
-	}//end countBySchemas()
-
-	/**
-	 * Find objects across multiple schemas.
-	 *
-	 * @param array $schemaIds Array of schema IDs.
-	 * @param int $limit Maximum number of objects to return.
-	 * @param int $offset Offset for pagination.
-	 *
-	 * @return ObjectEntity[] Array of object entities.
-	 *
-	 * @psalm-return list<ObjectEntity>
-	 */
-	public function findBySchemas(array $schemaIds, int $limit = 100, int $offset = 0): array {
-		return [];
-	}//end findBySchemas()
 }//end class
