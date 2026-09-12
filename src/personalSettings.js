@@ -1,6 +1,11 @@
 import { translate, translatePlural } from '@nextcloud/l10n'
 import { createApp } from 'vue'
 import PersonalRoot from './components/userSettings/PersonalRoot.vue'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
+
+// Register nextcloud-vue's own catalogue before anything renders, so the
+// library's labels follow the reader's language on this page too.
+registerLibraryTranslations()
 
 // Personal-settings bundle. Mounts the per-user browser Web Push opt-in toggle
 // (openregister-web-push-engine; it drives window.OCA.OpenRegister.WebPush, which
