@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
@@ -38,6 +39,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Applies an inbound registry update to every object subscribed to it.
@@ -51,12 +54,14 @@ class RegistryUpdatesController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param RegistrySubscriptionService $registrySubscriptionService Applies the update.
+	 * @param RegistrySubscriptionService $subscriptions Applies the update.
+	 * @param LoggerInterface|null $logger Consumed by HandlesExceptionsTrait for server-side 500 logging.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegistrySubscriptionService $registrySubscriptionService,
+		private readonly RegistrySubscriptionService $subscriptions,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -85,13 +90,13 @@ class RegistryUpdatesController extends Controller {
 			$eventReference = (string)($data['eventReference'] ?? '');
 
 			if ($identity === '') {
-				throw new \InvalidArgumentException('identity is required.');
+				throw new InvalidArgumentException(message: 'identity is required.');
 			}
 			if (is_array($properties) === false) {
-				throw new \InvalidArgumentException('properties must be an object.');
+				throw new InvalidArgumentException(message: 'properties must be an object.');
 			}
 
-			$result = $this->registrySubscriptionService->applyInboundUpdate(
+			$result = $this->subscriptions->applyInboundUpdate(
 				registry: $registry,
 				identityValue: $identity,
 				properties: $properties,
@@ -110,14 +115,23 @@ class RegistryUpdatesController extends Controller {
 			}
 
 			if ($result['matched'] === 0) {
+				$this->logger?->warning(
+					'[OpenRegister.RegistryUpdatesController] No subscription found for registry ' . $registry
+				);
+
 				return new JSONResponse(
 					data: ['message' => 'No object is subscribed to this registry/identity.'],
 					statusCode: Http::STATUS_NOT_FOUND
 				);
 			}
 
+			$this->logger?->info(
+				'[OpenRegister.RegistryUpdatesController] Applied inbound update for registry ' . $registry
+				. ' to ' . count($result['applied']) . ' object(s).'
+			);
+
 			return new JSONResponse(data: $result);
-		} catch (\Throwable $e) {
+		} catch (Throwable $e) {
 			return $this->handleApiException(e: $e, context: 'registry-inbound-update');
 		}
 	}//end update()

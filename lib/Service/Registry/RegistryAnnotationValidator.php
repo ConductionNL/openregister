@@ -74,41 +74,89 @@ final class RegistryAnnotationValidator {
 			$properties = [];
 		}
 
-		$errors = [];
+		return array_merge(
+			$this->validateRegistryId(annotation: $annotation),
+			$this->validateIdentity(annotation: $annotation, properties: $properties),
+			$this->validateOwned(annotation: $annotation, properties: $properties)
+		);
+	}//end validate()
 
-		$registry = (string)($annotation['registry'] ?? '');
-		if ($registry === '') {
-			$errors[] = [
+	/**
+	 * Validate `x-openregister-registry.registry`.
+	 *
+	 * @param array<string, mixed> $annotation The annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateRegistryId(array $annotation): array {
+		if ((string)($annotation['registry'] ?? '') !== '') {
+			return [];
+		}
+
+		return [
+			[
 				'code' => 'registry-id-missing',
 				'message' => 'x-openregister-registry.registry must be a non-empty string.',
+			],
+		];
+	}//end validateRegistryId()
+
+	/**
+	 * Validate `x-openregister-registry.identity` is non-empty and declared
+	 * in the schema's own properties.
+	 *
+	 * @param array<string, mixed> $annotation The annotation block.
+	 * @param array<string, mixed> $properties The schema's own properties.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateIdentity(array $annotation, array $properties): array {
+		$identity = (string)($annotation['identity'] ?? '');
+		if ($identity === '') {
+			return [
+				[
+					'code' => 'registry-identity-missing',
+					'message' => 'x-openregister-registry.identity must be a non-empty string.',
+				],
 			];
 		}
 
-		$identity = (string)($annotation['identity'] ?? '');
-		if ($identity === '') {
-			$errors[] = [
-				'code' => 'registry-identity-missing',
-				'message' => 'x-openregister-registry.identity must be a non-empty string.',
-			];
-		} elseif (array_key_exists($identity, $properties) === false) {
-			$errors[] = [
+		if (array_key_exists($identity, $properties) === true) {
+			return [];
+		}
+
+		return [
+			[
 				'code' => 'registry-identity-undeclared',
 				'message' => sprintf(
 					'x-openregister-registry.identity "%s" is not declared in this schema\'s properties.',
 					$identity
 				),
-			];
-		}
+			],
+		];
+	}//end validateIdentity()
 
+	/**
+	 * Validate `x-openregister-registry.owned`: a non-empty array of
+	 * non-empty strings, each declared in the schema's own properties.
+	 *
+	 * @param array<string, mixed> $annotation The annotation block.
+	 * @param array<string, mixed> $properties The schema's own properties.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateOwned(array $annotation, array $properties): array {
 		$owned = $annotation['owned'] ?? null;
 		if (is_array($owned) === false || count($owned) === 0) {
-			$errors[] = [
-				'code' => 'registry-owned-missing',
-				'message' => 'x-openregister-registry.owned must be a non-empty array of property names.',
+			return [
+				[
+					'code' => 'registry-owned-missing',
+					'message' => 'x-openregister-registry.owned must be a non-empty array of property names.',
+				],
 			];
-			return $errors;
 		}
 
+		$errors = [];
 		foreach ($owned as $index => $property) {
 			if (is_string($property) === false || $property === '') {
 				$errors[] = [
@@ -130,5 +178,5 @@ final class RegistryAnnotationValidator {
 		}
 
 		return $errors;
-	}//end validate()
+	}//end validateOwned()
 }//end class

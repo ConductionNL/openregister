@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -39,6 +41,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * Request / end a registry subscription on one object.
@@ -56,7 +59,8 @@ class RegistrySubscriptionController extends Controller {
 	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
 	 * @param PermissionHandler $permissionHandler The per-object `update` guard.
 	 * @param IUserSession $userSession The session user.
-	 * @param RegistrySubscriptionService $registrySubscriptionService Owns the subscription lifecycle.
+	 * @param RegistrySubscriptionService $subscriptions Owns the subscription lifecycle.
+	 * @param LoggerInterface|null $logger Consumed by HandlesExceptionsTrait for server-side 500 logging.
 	 */
 	public function __construct(
 		string $appName,
@@ -65,7 +69,8 @@ class RegistrySubscriptionController extends Controller {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
-		private readonly RegistrySubscriptionService $registrySubscriptionService,
+		private readonly RegistrySubscriptionService $subscriptions,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -84,24 +89,14 @@ class RegistrySubscriptionController extends Controller {
 	#[NoAdminRequired]
 	public function subscribe(string $register, string $schema, string $id): JSONResponse {
 		try {
-			$object = $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false);
-			$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
+			[$object, $resolvedSchema] = $this->resolveObjectAndGuardUpdate(register: $register, schema: $schema, id: $id);
 
-			// IDOR guard: `update` on THIS object, not merely "authenticated".
-			$user = $this->userSession->getUser();
-			$userId = $user?->getUID();
-			$allowed = $this->permissionHandler->hasPermission(
-				schema: $resolvedSchema,
-				action: 'update',
-				userId: $userId,
-				objectOwner: $object->getOwner(),
-				object: $object,
+			$row = $this->subscriptions->requestSubscription(object: $object, schema: $resolvedSchema);
+
+			$this->logger?->info(
+				'[OpenRegister.RegistrySubscriptionController] Subscription requested for object '
+				. (string)$object->getUuid() . ' on registry ' . (string)$row->getRegistry()
 			);
-			if ($allowed === false) {
-				throw new NotAuthorizedException(message: 'You do not have permission to update this object.');
-			}
-
-			$row = $this->registrySubscriptionService->requestSubscription(object: $object, schema: $resolvedSchema);
 
 			return new JSONResponse(data: $row->toSelfMirror());
 		} catch (\Throwable $e) {
@@ -123,27 +118,52 @@ class RegistrySubscriptionController extends Controller {
 	#[NoAdminRequired]
 	public function unsubscribe(string $register, string $schema, string $id): JSONResponse {
 		try {
-			$object = $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false);
-			$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
+			[$object] = $this->resolveObjectAndGuardUpdate(register: $register, schema: $schema, id: $id);
 
-			$user = $this->userSession->getUser();
-			$userId = $user?->getUID();
-			$allowed = $this->permissionHandler->hasPermission(
-				schema: $resolvedSchema,
-				action: 'update',
-				userId: $userId,
-				objectOwner: $object->getOwner(),
-				object: $object,
+			$row = $this->subscriptions->endSubscription(object: $object);
+
+			$this->logger?->info(
+				'[OpenRegister.RegistrySubscriptionController] Subscription ended for object '
+				. (string)$object->getUuid() . ' on registry ' . (string)$row->getRegistry()
 			);
-			if ($allowed === false) {
-				throw new NotAuthorizedException(message: 'You do not have permission to update this object.');
-			}
-
-			$row = $this->registrySubscriptionService->endSubscription(object: $object);
 
 			return new JSONResponse(data: $row->toSelfMirror());
 		} catch (\Throwable $e) {
 			return $this->handleApiException(e: $e, context: 'registry-subscription-end');
 		}
 	}//end unsubscribe()
+
+	/**
+	 * Resolve the target object and its schema, then refuse (throw) unless
+	 * the calling user has `update` on THIS specific object — the per-object
+	 * IDOR guard both endpoints in this controller need.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object id or uuid.
+	 *
+	 * @return array{0: ObjectEntity, 1: Schema} The resolved object and schema.
+	 *
+	 * @throws NotAuthorizedException When the caller lacks `update` on the object.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function resolveObjectAndGuardUpdate(string $register, string $schema, string $id): array {
+		$object = $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false);
+		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
+
+		$user = $this->userSession->getUser();
+		$allowed = $this->permissionHandler->hasPermission(
+			schema: $resolvedSchema,
+			action: 'update',
+			userId: $user?->getUID(),
+			objectOwner: $object->getOwner(),
+			object: $object,
+		);
+		if ($allowed === false) {
+			throw new NotAuthorizedException(message: 'You do not have permission to update this object.');
+		}
+
+		return [$object, $resolvedSchema];
+	}//end resolveObjectAndGuardUpdate()
 }//end class

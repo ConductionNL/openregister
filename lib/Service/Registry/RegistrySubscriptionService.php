@@ -35,14 +35,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Event\RegistrySubscriptionEndedEvent;
-use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Coordinates the registry subscription lifecycle and the inbound update.
@@ -55,20 +51,16 @@ class RegistrySubscriptionService {
 	 * Constructor.
 	 *
 	 * @param RegistrySubscriptionMapper $subscriptionMapper Reads/writes the state table.
-	 * @param SchemaMapper $schemaMapper Resolves a schema's `x-openregister-registry` annotation.
 	 * @param ObjectService $objectService Applies inbound updates through the ordinary save path.
-	 * @param AuditTrailMapper $auditTrailMapper Writes the audit rows, including the connector-actor one.
-	 * @param IEventDispatcher $eventDispatcher Dispatches the request/end events for the connector.
-	 * @param RegistryOwnedPropertyGuard $ownedPropertyGuard The pure owned-vs-supplied decision.
+	 * @param RegistrySubscriptionNotifier $notifier Dispatches events and writes audit rows.
+	 * @param RegistryUpdateTargetGuard $updateTargetGuard Resolves a row's schema and checks owned properties.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
 		private readonly RegistrySubscriptionMapper $subscriptionMapper,
-		private readonly SchemaMapper $schemaMapper,
 		private readonly ObjectService $objectService,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly RegistryOwnedPropertyGuard $ownedPropertyGuard,
+		private readonly RegistrySubscriptionNotifier $notifier,
+		private readonly RegistryUpdateTargetGuard $updateTargetGuard,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -149,18 +141,12 @@ class RegistrySubscriptionService {
 		$row->setUpdatedAt($now);
 		$row = $this->subscriptionMapper->save(subscription: $row);
 
-		$this->eventDispatcher->dispatchTyped(new RegistrySubscriptionRequestedEvent(
-			objectUuid: $uuid,
+		$this->notifier->requested(
+			object: $object,
 			register: (string)$object->getRegister(),
 			schema: (string)$object->getSchema(),
 			registry: $annotation['registry'],
 			identityValue: $identityValue,
-		));
-
-		$this->auditTrailMapper->createAuditTrailEntry(
-			object: $object,
-			action: 'registry.subscription.requested',
-			context: ['registry' => $annotation['registry']],
 		);
 
 		return $row;
@@ -189,16 +175,10 @@ class RegistrySubscriptionService {
 		$row->setUpdatedAt(new DateTime());
 		$row = $this->subscriptionMapper->save(subscription: $row);
 
-		$this->eventDispatcher->dispatchTyped(new RegistrySubscriptionEndedEvent(
-			objectUuid: $uuid,
+		$this->notifier->ended(
+			object: $object,
 			registry: (string)$row->getRegistry(),
 			identityValue: (string)$row->getIdentityValue(),
-		));
-
-		$this->auditTrailMapper->createAuditTrailEntry(
-			object: $object,
-			action: 'registry.subscription.ended',
-			context: ['registry' => $row->getRegistry()],
 		);
 
 		return $row;
@@ -241,18 +221,7 @@ class RegistrySubscriptionService {
 		$rejected = [];
 
 		foreach ($rows as $row) {
-			$schema = $this->schemaMapper->find(id: (string)$row->getSchema());
-			$annotation = $this->annotationFor(schema: $schema);
-			if ($annotation === null) {
-				// The schema's annotation was removed after the subscription
-				// was requested. Treat exactly like an owned-property
-				// violation: refuse rather than silently apply an
-				// unauthorised write.
-				$rejected[] = ['objectUuid' => (string)$row->getObjectUuid(), 'properties' => array_keys($properties)];
-				continue;
-			}
-
-			$guardResult = $this->ownedPropertyGuard->check(owned: $annotation['owned'], supplied: $properties);
+			$guardResult = $this->updateTargetGuard->evaluate(row: $row, properties: $properties);
 			if ($guardResult['allowed'] === false) {
 				$rejected[] = ['objectUuid' => (string)$row->getObjectUuid(), 'properties' => $guardResult['rejected']];
 				continue;
@@ -271,7 +240,7 @@ class RegistrySubscriptionService {
 					schema: $row->getSchema(),
 					uuid: $row->getObjectUuid(),
 				);
-			} catch (\Throwable $e) {
+			} catch (Throwable $e) {
 				$this->logger->error(
 					'[OpenRegister.RegistrySubscriptionService] Inbound update failed to save for object '
 					. $row->getObjectUuid() . ': ' . $e->getMessage()
@@ -291,15 +260,14 @@ class RegistrySubscriptionService {
 			// saveObject()'s own audit trail already recorded this write
 			// with whichever Nextcloud account the connector's app password
 			// belongs to (the ordinary save path's session-derived actor);
-			// this row is the one `registry-subscriptions` REQ 3 asks for —
-			// "the audit entry names registry `brp` as actor" — independent
+			// this row is the one `registry-subscriptions` REQ 3 asks for:
+			// "the audit entry names registry `brp` as actor", independent
 			// of which account backs the connector's credential.
-			$this->auditTrailMapper->createAuditTrailEntry(
+			$this->notifier->auditInboundUpdate(
 				object: $updated,
-				action: 'registry.update',
-				context: ['registry' => $registry, 'eventReference' => $eventReference, 'properties' => array_keys($properties)],
-				actorId: 'registry:' . $registry,
-				actorName: 'Registry (' . $registry . ')',
+				registry: $registry,
+				eventReference: $eventReference,
+				properties: array_keys($properties),
 			);
 
 			$applied[] = (string)$row->getObjectUuid();

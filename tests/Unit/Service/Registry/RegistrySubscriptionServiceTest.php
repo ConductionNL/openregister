@@ -5,47 +5,47 @@ declare(strict_types=1);
 namespace Unit\Service\Registry;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Registry\RegistryOwnedPropertyGuard;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Registry\RegistryUpdateTargetGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
+ * Orchestration tests for RegistrySubscriptionService. The event/audit
+ * dispatch behavior lives in RegistrySubscriptionNotifierTest, and the
+ * owned-property decision behavior lives in RegistryUpdateTargetGuardTest —
+ * both are mocked here as opaque collaborators so this file only asserts
+ * what THIS class is responsible for: reading the annotation, building and
+ * persisting the state row, and deciding matched/applied/rejected.
+ *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
  */
 class RegistrySubscriptionServiceTest extends TestCase {
 	private RegistrySubscriptionService $service;
 	private RegistrySubscriptionMapper&MockObject $subscriptionMapper;
-	private SchemaMapper&MockObject $schemaMapper;
 	private ObjectService&MockObject $objectService;
-	private AuditTrailMapper&MockObject $auditTrailMapper;
-	private IEventDispatcher&MockObject $eventDispatcher;
+	private RegistrySubscriptionNotifier&MockObject $notifier;
+	private RegistryUpdateTargetGuard&MockObject $updateTargetGuard;
 
 	protected function setUp(): void {
 		$this->subscriptionMapper = $this->createMock(RegistrySubscriptionMapper::class);
-		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->objectService = $this->createMock(ObjectService::class);
-		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
+		$this->notifier = $this->createMock(RegistrySubscriptionNotifier::class);
+		$this->updateTargetGuard = $this->createMock(RegistryUpdateTargetGuard::class);
 
 		$this->service = new RegistrySubscriptionService(
 			$this->subscriptionMapper,
-			$this->schemaMapper,
 			$this->objectService,
-			$this->auditTrailMapper,
-			$this->eventDispatcher,
-			new RegistryOwnedPropertyGuard(),
+			$this->notifier,
+			$this->updateTargetGuard,
 			$this->createMock(LoggerInterface::class),
 		);
 	}
@@ -73,6 +73,20 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		return $object;
 	}
 
+	// ── annotationFor ──
+
+	public function testAnnotationForReturnsNullWhenSchemaHasNoAnnotation(): void {
+		$this->assertNull($this->service->annotationFor(new Schema()));
+	}
+
+	public function testAnnotationForReadsTheDeclaredFields(): void {
+		$annotation = $this->service->annotationFor($this->brpSchema());
+
+		$this->assertSame('brp', $annotation['registry']);
+		$this->assertSame('bsn', $annotation['identity']);
+		$this->assertSame(['address', 'givenNames'], $annotation['owned']);
+	}
+
 	// ── requestSubscription ──
 
 	public function testRequestSubscriptionWithoutAnnotationIsRejected(): void {
@@ -86,40 +100,37 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->service->requestSubscription($object, $this->brpSchema());
 	}
 
-	public function testRequestSubscriptionDispatchesEventWithIdentityValue(): void {
+	public function testRequestSubscriptionPersistsARequestedRowAndNotifies(): void {
 		$this->subscriptionMapper->method('findForObject')->willReturn(null);
 		$this->subscriptionMapper->method('save')->willReturnArgument(0);
 
-		$dispatched = null;
-		$this->eventDispatcher->expects($this->once())
-			->method('dispatchTyped')
-			->with($this->callback(function ($event) use (&$dispatched) {
-				$dispatched = $event;
-				return $event instanceof RegistrySubscriptionRequestedEvent;
-			}));
+		$this->notifier->expects($this->once())
+			->method('requested')
+			->with(
+				$this->anything(),
+				'dossiq',
+				'brpPerson',
+				'brp',
+				'999990019',
+			);
 
 		$row = $this->service->requestSubscription($this->personObject(), $this->brpSchema());
 
 		$this->assertSame(RegistrySubscription::STATE_REQUESTED, $row->getState());
 		$this->assertSame('999990019', $row->getIdentityValue());
 		$this->assertSame('brp', $row->getRegistry());
-		$this->assertInstanceOf(RegistrySubscriptionRequestedEvent::class, $dispatched);
-		$this->assertSame('999990019', $dispatched->getIdentityValue());
 	}
 
-	public function testRequestSubscriptionWritesAnAuditEntry(): void {
-		$this->subscriptionMapper->method('findForObject')->willReturn(null);
-		$this->subscriptionMapper->method('save')->willReturnArgument(0);
+	public function testRequestSubscriptionReusesAnExistingRowRatherThanDuplicating(): void {
+		$existing = new RegistrySubscription();
+		$existing->setId(42);
+		$existing->setObjectUuid('obj-uuid-1');
+		$this->subscriptionMapper->method('findForObject')->willReturn($existing);
+		$this->subscriptionMapper->expects($this->once())->method('save')->willReturnArgument(0);
 
-		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
-				$this->anything(),
-				'registry.subscription.requested',
-				$this->anything(),
-			);
+		$row = $this->service->requestSubscription($this->personObject(), $this->brpSchema());
 
-		$this->service->requestSubscription($this->personObject(), $this->brpSchema());
+		$this->assertSame(42, $row->getId());
 	}
 
 	// ── endSubscription ──
@@ -130,12 +141,14 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->service->endSubscription($this->personObject());
 	}
 
-	public function testEndSubscriptionSetsStateEnded(): void {
+	public function testEndSubscriptionSetsStateEndedAndNotifies(): void {
 		$row = new RegistrySubscription();
 		$row->setRegistry('brp');
 		$row->setIdentityValue('999990019');
 		$this->subscriptionMapper->method('findForObject')->willReturn($row);
 		$this->subscriptionMapper->method('save')->willReturnArgument(0);
+
+		$this->notifier->expects($this->once())->method('ended')->with($this->anything(), 'brp', '999990019');
 
 		$result = $this->service->endSubscription($this->personObject());
 
@@ -146,6 +159,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 
 	public function testApplyInboundUpdateWithNoMatchesAppliesNothing(): void {
 		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([]);
+		$this->updateTargetGuard->expects($this->never())->method('evaluate');
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
 
@@ -164,7 +178,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$row->setState(RegistrySubscription::STATE_ACTIVE);
 
 		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([$row]);
-		$this->schemaMapper->method('find')->willReturn($this->brpSchema());
+		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
 
 		$saved = $this->personObject();
 		$this->objectService->expects($this->once())
@@ -177,15 +191,9 @@ class RegistrySubscriptionServiceTest extends TestCase {
 			)
 			->willReturn($saved);
 
-		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
-				$saved,
-				'registry.update',
-				$this->anything(),
-				'registry:brp',
-				$this->anything(),
-			);
+		$this->notifier->expects($this->once())
+			->method('auditInboundUpdate')
+			->with($saved, 'brp', 'evt-1', ['address']);
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
 
@@ -203,7 +211,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$row->setState(RegistrySubscription::STATE_ACTIVE);
 
 		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([$row]);
-		$this->schemaMapper->method('find')->willReturn($this->brpSchema());
+		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => false, 'rejected' => ['notes']]);
 
 		$this->objectService->expects($this->never())->method('saveObject');
 
@@ -225,10 +233,10 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$row->setState(RegistrySubscription::STATE_ACTIVE);
 
 		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([$row]);
-		$this->schemaMapper->method('find')->willReturn($this->brpSchema());
+		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
 
 		$this->objectService->expects($this->never())->method('saveObject');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->notifier->expects($this->never())->method('auditInboundUpdate');
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', [], 'evt-1');
 
