@@ -1546,12 +1546,31 @@ class SchemaMapper extends QBMapper {
 
 		$shape = ['x-openregister-archival' => $annotation];
 
-		$errors = (new ArchivalAnnotationValidator())->validate(schema: $shape);
-		if (count($errors) === 0) {
+		$findings = (new ArchivalAnnotationValidator())->validate(schema: $shape);
+		$split = ArchivalAnnotationValidator::partition(findings: $findings);
+
+		// An UNKNOWN key is surfaced and ignored, never fatal — the same rule
+		// R07 applies to an unknown `x-openregister-*` key one level up
+		// (logDroppedAnnotationKeys). It declares nothing, so dropping it loses
+		// nothing, whereas refusing it refuses the whole schema: at import time
+		// that costs the register every object of that schema, and the operator
+		// sees it as a seeding failure several layers away from the annotation.
+		if (count($split['warnings']) > 0) {
+			$this->logger->warning(
+				sprintf(
+					'[OpenRegister.SchemaMapper] Ignored %d unknown x-openregister-archival key(s) on schema "%s": %s',
+					count($split['warnings']),
+					(string)($schema->getSlug() ?? ''),
+					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
+				)
+			);
+		}
+
+		if (count($split['errors']) === 0) {
 			return;
 		}
 
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
 
