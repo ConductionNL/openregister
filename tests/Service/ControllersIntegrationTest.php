@@ -58,6 +58,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCA\OpenRegister\Tests\Support\ResolvesControllersFromContainer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -79,6 +80,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class ControllersIntegrationTest extends TestCase {
+
+	use ResolvesControllersFromContainer;
 
 	/**
 	 * Mock request for injecting parameters
@@ -212,91 +215,22 @@ class ControllersIntegrationTest extends TestCase {
 		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
 		$this->objectMapper = \OC::$server->get(MagicMapper::class);
 
-		// Create mock for request (data carrier for HTTP params).
+		// THE DOUBLES THIS FILE ACTUALLY CONTROLS, AND NOTHING ELSE.
+		// The request carries each test's payload; the session decides who is
+		// asking. Every other collaborator comes from the container, so a
+		// controller that gains a dependency needs no change here.
 		$this->request = $this->createMock(IRequest::class);
-
-		// Create mock for user session.
 		$this->userSession = $this->createMock(IUserSession::class);
 
-		// Build RegistersController.
-		$this->registersController = new RegistersController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(RegisterService::class),
-			$this->objectMapper,
-			\OC::$server->get(UploadService::class),
-			\OC::$server->get(LoggerInterface::class),
-			$this->userSession,
-			\OC::$server->get(ConfigurationService::class),
-			\OC::$server->get(AuditTrailMapper::class),
-			\OC::$server->get(ExportService::class),
-			\OC::$server->get(ImportService::class),
-			$this->schemaMapper,
-			$this->registerMapper,
-			\OC::$server->get(GitHubHandler::class),
-			\OC::$server->get(IAppManager::class),
-			\OC::$server->get(OasService::class)
-		);
+		$this->overrideContainerService(IRequest::class, $this->request);
+		$this->overrideContainerService(IUserSession::class, $this->userSession);
 
-		// Build SchemasController.
-		$this->schemasController = new SchemasController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(IAppConfig::class),
-			$this->schemaMapper,
-			$this->objectMapper,
-			\OC::$server->get(UploadService::class),
-			\OC::$server->get(AuditTrailMapper::class),
-			\OC::$server->get(OrganisationService::class),
-			\OC::$server->get(SchemaCacheHandler::class),
-			\OC::$server->get(FacetCacheHandler::class),
-			\OC::$server->get(SchemaService::class),
-			\OC::$server->get(LoggerInterface::class)
-		);
-
-		// Build ViewsController.
-		$this->viewsController = new ViewsController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(ViewService::class),
-			\OC::$server->get(\OCA\OpenRegister\Service\ViewPresentationService::class),
-			$this->userSession,
-			\OC::$server->get(LoggerInterface::class)
-		);
-
-		// Build SettingsController.
-		$this->settingsController = new SettingsController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(IAppConfig::class),
-			\OC::$server->get(IDBConnection::class),
-			\OC::$server->get(ContainerInterface::class),
-			\OC::$server->get(IAppManager::class),
-			\OC::$server->get(SettingsService::class),
-			\OC::$server->get(VectorizationService::class),
-			\OC::$server->get(LoggerInterface::class)
-		);
-
-		// Build SearchTrailController. Reuse the shared userSession mock and
-		// wire a real IGroupManager so the search-trail admin-only gate
-		// (wave-3 C7) reflects production behaviour in integration runs.
-		$this->searchTrailController = new SearchTrailController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(SearchTrailService::class),
-			$this->userSession,
-			\OC::$server->get(IGroupManager::class)
-		);
-
-		// Build EndpointsController.
-		$this->endpointsController = new EndpointsController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(EndpointMapper::class),
-			\OC::$server->get(EndpointLogMapper::class),
-			\OC::$server->get(EndpointService::class),
-			\OC::$server->get(LoggerInterface::class)
-		);
+		$this->registersController = $this->resolveController(RegistersController::class);
+		$this->schemasController = $this->resolveController(SchemasController::class);
+		$this->viewsController = $this->resolveController(ViewsController::class);
+		$this->settingsController = $this->resolveController(SettingsController::class);
+		$this->searchTrailController = $this->resolveController(SearchTrailController::class);
+		$this->endpointsController = $this->resolveController(EndpointsController::class);
 
 		// Create test fixtures.
 		$this->createTestFixtures();
@@ -366,6 +300,10 @@ class ControllersIntegrationTest extends TestCase {
 				// Ignore.
 			}
 		}
+
+		// Put the container back: an override left behind would hand this
+		// test's doubles to every later test file.
+		$this->restoreContainerOverrides();
 
 		parent::tearDown();
 	}
@@ -547,6 +485,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegistersShow(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				if ($key === '_extend') {
@@ -568,6 +507,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegistersShowWithStats(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				if ($key === '_extend') {
@@ -589,6 +529,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegistersShowWithExtendString(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				if ($key === '_extend') {
@@ -610,6 +551,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegistersCreate(): void {
+		$this->setupAdminUser();
 		$title = 'ctrlint-create-' . uniqid();
 		$this->request->method('getParams')->willReturn([
 			'title' => $title,
@@ -634,6 +576,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegistersUpdate(): void {
+		$this->setupAdminUser();
 		$newTitle = 'ctrlint-updated-' . uniqid();
 		$this->request->method('getParams')->willReturn([
 			'title' => $newTitle,
@@ -652,6 +595,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegistersPatch(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([
 			'description' => 'Patched via integration test',
 		]);
@@ -708,6 +652,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegistersDestroy(): void {
+		$this->setupAdminUser();
 		// Create a register specifically for deletion.
 		$register = new Register();
 		$register->setTitle('ctrlint-delete-' . uniqid());
@@ -831,6 +776,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemasShow(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				if ($key === '_extend') {
@@ -851,6 +797,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemasShowWithStats(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				if ($key === '_extend') {
@@ -893,6 +840,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemasCreate(): void {
+		$this->setupAdminUser();
 		$title = 'ctrlint-schema-' . uniqid();
 		$this->request->method('getParams')->willReturn([
 			'title' => $title,
@@ -920,6 +868,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemasUpdate(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([
 			'title' => 'ctrlint-updated-' . uniqid(),
 			'description' => 'Updated via controller test',
@@ -937,6 +886,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemasPatch(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([
 			'description' => 'Patched schema',
 		]);
@@ -953,6 +903,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemasDestroy(): void {
+		$this->setupAdminUser();
 		// Create a schema specifically for deletion.
 		$schema = new Schema();
 		$schema->setTitle('ctrlint-delete-' . uniqid());
@@ -1626,64 +1577,14 @@ class ControllersIntegrationTest extends TestCase {
 		$this->assertEquals(400, $response->getStatus());
 	}
 
-	/**
-	 * Test SettingsController::testSetupHandler when SOLR is disabled
-	 *
-	 * @return void
-	 */
-	public function testSettingsTestSetupHandlerSolrDisabled(): void {
-		$response = $this->settingsController->testSetupHandler();
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		// SOLR is likely disabled in test env, so expect 400 or 422.
-		$this->assertTrue(in_array($response->getStatus(), [200, 400, 422]));
-	}
-
-	/**
-	 * Test SettingsController::reindexSpecificCollection with invalid batch size
-	 *
-	 * @return void
-	 */
-	public function testSettingsReindexInvalidBatchSize(): void {
-		$this->request->method('getParam')
-			->willReturnCallback(function ($key, $default = null) {
-				if ($key === 'batchSize') {
-					return 10000;
-				}
-				if ($key === 'maxObjects') {
-					return 0;
-				}
-				return $default;
-			});
-
-		$response = $this->settingsController->reindexSpecificCollection('test-collection');
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
-	}
-
-	/**
-	 * Test SettingsController::reindexSpecificCollection with negative maxObjects
-	 *
-	 * @return void
-	 */
-	public function testSettingsReindexNegativeMaxObjects(): void {
-		$this->request->method('getParam')
-			->willReturnCallback(function ($key, $default = null) {
-				if ($key === 'batchSize') {
-					return 1000;
-				}
-				if ($key === 'maxObjects') {
-					return -1;
-				}
-				return $default;
-			});
-
-		$response = $this->settingsController->reindexSpecificCollection('test-collection');
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
-	}
+	// THREE TESTS WERE REMOVED HERE, NOT SKIPPED.
+	//
+	// They drove `SettingsController::testSetupHandler()` and
+	// `reindexSpecificCollection()`, which commit ea99a5004
+	// ("refactor!: remove deprecated SOLR search index and Register/Schema
+	// publishing") deleted. A test for a method that no longer exists cannot
+	// pass, and a skip would report the deleted SOLR reindex as covered.
+	// If that surface ever returns, its tests come back with it.
 
 	// =====================================================================
 	// SearchTrailController tests
@@ -1767,6 +1668,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailStatistics(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
@@ -1785,6 +1687,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailPopularTerms(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
@@ -1807,6 +1710,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailActivity(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
@@ -1828,6 +1732,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailRegisterSchemaStats(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
@@ -1850,6 +1755,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailUserAgentStats(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
@@ -1872,6 +1778,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailCleanupInvalidDate(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				if ($key === 'before') {
@@ -1892,6 +1799,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailCleanupWithoutDate(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				return $default;
@@ -1909,6 +1817,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailCleanupWithValidDate(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
 				if ($key === 'before') {
@@ -1929,6 +1838,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailDestroyNotFound(): void {
+		$this->setupAdminUser();
 		$response = $this->searchTrailController->destroy(999999);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
@@ -1941,6 +1851,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailDestroyMultiple(): void {
+		$this->setupAdminUser();
 		$response = $this->searchTrailController->destroyMultiple();
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
@@ -1958,6 +1869,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailClearAll(): void {
+		$this->setupAdminUser();
 		try {
 			$response = $this->searchTrailController->clearAll();
 			$this->assertInstanceOf(JSONResponse::class, $response);
@@ -1974,6 +1886,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailExportJson(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
@@ -1998,6 +1911,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchTrailExportCsv(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')
 			->willReturnCallback(function ($key, $default = null) {
@@ -2091,6 +2005,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testEndpointsCreateMissingFields(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([
 			'name' => 'test-endpoint',
 			// Missing 'endpoint' field.
@@ -2111,6 +2026,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testEndpointsCreate(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([
 			'name' => 'ctrlint-endpoint-' . uniqid(),
 			'endpoint' => 'https://example.com/api/test',
@@ -2126,7 +2042,9 @@ class ControllersIntegrationTest extends TestCase {
 		$data = $response->getData();
 		if ($data !== null && $response->getStatus() === 201) {
 			$id = null;
-			if (is_object($data) && method_exists($data, 'getId')) {
+			// An OCP Entity answers getId() through __call, so method_exists()
+			// says false for it and the id was silently never read.
+			if ($data instanceof \OCP\AppFramework\Db\Entity) {
 				$id = $data->getId();
 			} elseif (is_array($data) && isset($data['id'])) {
 				$id = $data['id'];
@@ -2143,6 +2061,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testEndpointsUpdateNotFound(): void {
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([
 			'name' => 'updated-endpoint',
 			'endpoint' => 'https://example.com/api/updated',
@@ -2161,6 +2080,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testEndpointsDestroyNotFound(): void {
+		$this->setupAdminUser();
 		$response = $this->endpointsController->destroy(999999);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
@@ -2176,6 +2096,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testEndpointsCrudCycle(): void {
+		$this->setupAdminUser();
 		// Create.
 		$this->request->method('getParams')->willReturn([
 			'name' => 'ctrlint-crud-endpoint-' . uniqid(),
@@ -2191,7 +2112,9 @@ class ControllersIntegrationTest extends TestCase {
 		if ($createResponse->getStatus() === 201) {
 			$createData = $createResponse->getData();
 			$endpointId = null;
-			if (is_object($createData) && method_exists($createData, 'getId')) {
+			// See above: an Entity's getters are magic, so method_exists() is
+			// the wrong question and this branch never fired.
+			if ($createData instanceof \OCP\AppFramework\Db\Entity) {
 				$endpointId = $createData->getId();
 			} elseif (is_array($createData) && isset($createData['id'])) {
 				$endpointId = $createData['id'];
