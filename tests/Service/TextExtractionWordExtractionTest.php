@@ -38,6 +38,13 @@ class TextExtractionWordExtractionTest extends TestCase {
 	private TextExtractionService $service;
 
 	/**
+	 * The handler that owns the Word reader selection and the element walk.
+	 *
+	 * @var \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+	 */
+	private \OCA\OpenRegister\Service\TextExtraction\WordExtractor $wordExtractor;
+
+	/**
 	 * Temp fixture paths to clean up.
 	 *
 	 * @var string[]
@@ -50,6 +57,10 @@ class TextExtractionWordExtractionTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service = \OC::$server->get(TextExtractionService::class);
+		// resolveWordReader() and walkWordElements() moved to WordExtractor with
+		// the extract-god-class-services split, behaviour unchanged.
+		// TextExtractionService::extractWord() is now a one-line delegation to it.
+		$this->wordExtractor = \OC::$server->get(\OCA\OpenRegister\Service\TextExtraction\WordExtractor::class);
 	}
 
 	/**
@@ -159,14 +170,14 @@ class TextExtractionWordExtractionTest extends TestCase {
 		$docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 		$odt = 'application/vnd.oasis.opendocument.text';
 
-		$this->assertSame('Word2007', $this->invokePrivate($this->service, 'resolveWordReader', [$docx, 'a.docx']));
-		$this->assertSame('MsDoc', $this->invokePrivate($this->service, 'resolveWordReader', ['application/msword', 'a.doc']));
-		$this->assertSame('ODText', $this->invokePrivate($this->service, 'resolveWordReader', [$odt, 'a.odt']));
+		$this->assertSame('Word2007', $this->invokePrivate($this->wordExtractor, 'resolveWordReader', [$docx, 'a.docx']));
+		$this->assertSame('MsDoc', $this->invokePrivate($this->wordExtractor, 'resolveWordReader', ['application/msword', 'a.doc']));
+		$this->assertSame('ODText', $this->invokePrivate($this->wordExtractor, 'resolveWordReader', [$odt, 'a.odt']));
 		// Generic MIME → fall back to extension.
-		$this->assertSame('MsDoc', $this->invokePrivate($this->service, 'resolveWordReader', ['application/octet-stream', 'legacy.doc']));
-		$this->assertSame('ODText', $this->invokePrivate($this->service, 'resolveWordReader', ['application/octet-stream', 'open.odt']));
+		$this->assertSame('MsDoc', $this->invokePrivate($this->wordExtractor, 'resolveWordReader', ['application/octet-stream', 'legacy.doc']));
+		$this->assertSame('ODText', $this->invokePrivate($this->wordExtractor, 'resolveWordReader', ['application/octet-stream', 'open.odt']));
 		// Unknown MIME and extension → safe default.
-		$this->assertSame('Word2007', $this->invokePrivate($this->service, 'resolveWordReader', ['application/octet-stream', 'mystery.bin']));
+		$this->assertSame('Word2007', $this->invokePrivate($this->wordExtractor, 'resolveWordReader', ['application/octet-stream', 'mystery.bin']));
 	}
 
 	/**
@@ -287,7 +298,7 @@ class TextExtractionWordExtractionTest extends TestCase {
 			};
 		}
 
-		$text = $this->invokePrivate($this->service, 'walkWordElements', [[$node], 0]);
+		$text = $this->invokePrivate($this->wordExtractor, 'walkWordElements', [[$node], 0]);
 
 		$this->assertIsString($text);
 		$this->assertStringNotContainsString('DEEP_LEAF_TEXT', $text, 'leaf beyond MAX_WORD_DEPTH must not be reached');
@@ -328,7 +339,7 @@ class TextExtractionWordExtractionTest extends TestCase {
 			}
 		};
 
-		$text = $this->invokePrivate($this->service, 'walkWordElements', [[$container], 0]);
+		$text = $this->invokePrivate($this->wordExtractor, 'walkWordElements', [[$container], 0]);
 		$this->assertStringContainsString('SHALLOW_LEAF_TEXT', $text);
 	}
 
@@ -340,7 +351,9 @@ class TextExtractionWordExtractionTest extends TestCase {
 	 * @return void
 	 */
 	public function testParseFailureLogsNoDocumentContent(): void {
-		$src = (string)file_get_contents(__DIR__ . '/../../lib/Service/TextExtractionService.php');
+		// The failure-path log moved with the code: extractWord() delegates to
+		// WordExtractor::extract(), which is where the catch block lives now.
+		$src = (string)file_get_contents(__DIR__ . '/../../lib/Service/TextExtraction/WordExtractor.php');
 
 		// Isolate the failure-path log call inside extractWord().
 		$start = strpos($src, 'Word extraction failed; returning null');

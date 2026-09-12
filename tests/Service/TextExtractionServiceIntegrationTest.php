@@ -1178,10 +1178,27 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testDetectEntitiesUnknownMethod(): void {
-		$this->expectException(\Exception::class);
-		$this->expectExceptionMessage('Unknown detection method');
-		$this->invokePrivate($this->entityHandler, 'detectEntities', ['text', 'nonexistent_method', null, 0.5]);
+	/**
+	 * An unrecognised detection method resolves, it does not throw.
+	 *
+	 * This asserted an "Unknown detection method" exception. 35d3d46de
+	 * (2026-06-18, "make OpenAnonymiser anonymisation work end-to-end") put
+	 * resolveMethod() in front of the match: a name that is not one of
+	 * BackendState::METHODS becomes the effective backend method, and falls back
+	 * to regex with a warning when the backend cannot be read. The `default =>
+	 * throw` arm is unreachable for a caller-supplied name now, which is the
+	 * point: a typo in a request parameter must not 500.
+	 *
+	 * @return void
+	 */
+	public function testDetectEntitiesResolvesAnUnknownMethodInsteadOfThrowing(): void {
+		$entities = $this->invokePrivate(
+			$this->entityHandler,
+			'detectEntities',
+			['Contact ruben@example.com about this.', 'nonexistent_method', null, 0.5]
+		);
+
+		$this->assertIsArray($entities);
 	}
 
 	// =======================================================================
