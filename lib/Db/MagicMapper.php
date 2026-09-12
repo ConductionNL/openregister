@@ -40,6 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
@@ -59,6 +61,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -3728,13 +3731,22 @@ class MagicMapper extends AbstractObjectMapper {
 				}
 
 				if ($value instanceof \DateTimeInterface) {
-					$value = $value->format('Y-m-d H:i:s');
+					// Convert to the column's timezone BEFORE formatting: format()
+					// renders in whatever timezone the instance carries, so a
+					// non-UTC one was written as its own clock time and read back
+					// as UTC (WOO-567). Done inline rather than through
+					// DateTimeNormalizer so this path keeps working without a
+					// resolvable container.
+					$value = DateTimeImmutable::createFromInterface($value)
+						->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
+						->format(DateTimeNormalizer::DATABASE_FORMAT);
 				} elseif (is_string($value) === true) {
 					// Delegate string parsing to DateTimeNormalizer so that empty/whitespace
-					// input becomes null rather than silently becoming "now". The outer
+					// input becomes null rather than silently becoming "now", and a
+					// non-UTC offset is converted rather than dropped. The outer
 					// default-to-now logic for absent created/updated is preserved above.
 					$value = $this->container
-						->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+						->get(DateTimeNormalizer::class)
 						->formatForDatabase($value);
 				}
 			}
@@ -3844,12 +3856,32 @@ class MagicMapper extends AbstractObjectMapper {
 					// Normalise date/date-time properties to Y-m-d H:i:s for MySQL DATETIME columns.
 					$propertyFormat = $propertyConfig['format'] ?? null;
 					if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
+						// `date` and `date-time` are NOT the same thing here.
+						// A date-time names an instant, so a non-UTC offset has
+						// to be applied before storing (WOO-567). A `date` names
+						// a calendar DAY and has no instant, so converting it
+						// through a timezone is a category error that can move
+						// it: `2026-10-20T00:00:00+02:00` becomes 2026-10-19 in
+						// UTC, and `2026-10-20T23:30:00-05:00` becomes
+						// 2026-10-21. A due date must survive being submitted
+						// from a client that sends an offset.
+						$isCalendarDate = ($propertyFormat === 'date');
 						if ($value instanceof \DateTimeInterface) {
-							$value = $value->format('Y-m-d H:i:s');
+							$moment = DateTimeImmutable::createFromInterface($value);
+							if ($isCalendarDate === false) {
+								$moment = $moment->setTimezone(
+									new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE)
+								);
+							}
+
+							$value = $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
 						} elseif (is_string($value) === true) {
-							$value = $this->container
-								->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
-								->formatForDatabase($value);
+							$normalizer = $this->container->get(DateTimeNormalizer::class);
+							if ($isCalendarDate === true) {
+								$value = $normalizer->formatDateForDatabase($value);
+							} else {
+								$value = $normalizer->formatForDatabase($value);
+							}
 						}
 					}
 
