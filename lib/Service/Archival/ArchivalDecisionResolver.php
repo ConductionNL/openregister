@@ -165,12 +165,7 @@ class ArchivalDecisionResolver {
         );
 
         $decision = $this->withRecordState(decision: $decision, retention: $retention, tmlo: $tmlo, declared: $declared);
-        $decision = $this->withDeclaredFacts(
-            decision: $decision,
-            retention: $retention,
-            tmlo: $tmlo,
-            annotation: $annotation
-        );
+        $decision = $this->withDeclaredFacts(decision: $decision, retention: $retention, tmlo: $tmlo, annotation: $annotation);
 
         // WHERE the answer came from, so a reader can tell a selectielijst
         // obligation from a schema default from a hand-set date. Without this a
