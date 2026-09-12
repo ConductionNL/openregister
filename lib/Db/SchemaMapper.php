@@ -1180,6 +1180,14 @@ class SchemaMapper extends QBMapper {
 		// An unknown `executionMode`, a required input beside `autoWhen` and an
 		// `autoWhen` on a graph block each describe a move that can never
 		// happen as written. And no register carries either key yet.
+		//
+		// The two `provider` codes join them on the same test. A mistyped
+		// provider tag, or a `provider` declared beside `transitions`, does not
+		// fail at save time: it fails on a GET, when the client asks what the
+		// object can do and OpenRegister cannot resolve the app service that
+		// knows. Stored advisory, that is a lifecycle an author believes is
+		// wired and a user sees as a dead timeline. And `provider` is new, so
+		// no register carries the key yet.
 		$blocking = array_values(
 			array_filter(
 				$errors,
@@ -1192,6 +1200,8 @@ class SchemaMapper extends QBMapper {
 						'lifecycle-execution-mode-malformed',
 						'lifecycle-autowhen-requires-input',
 						'lifecycle-autowhen-graph-unsupported',
+						'lifecycle-provider-invalid',
+						'lifecycle-provider-mode-conflict',
 					],
 					true
 				)
