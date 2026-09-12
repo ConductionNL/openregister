@@ -18,10 +18,16 @@ import type { Page } from '@playwright/test'
  * filtered. Known OR backend gaps (reports register not imported on a bare
  * dev env) are asserted-around, not asserted-on.
  *
- * @e2e openspec/specs/files-render-extension/spec.md
- * @e2e openspec/specs/avg-verwerkingsregister/spec.md
- * @e2e openspec/specs/built-in-dashboards/spec.md
- * @e2e openspec/specs/account-self-service/spec.md
+ * Only the account anchor survives with a fragment. The My account test
+ * lands on a stock instance that has no API tokens, asserts the Tokens
+ * section renders with a working "Create new token" entry point, and fails
+ * on any console error, which is that scenario's whole claim. The other
+ * three named capabilities are REST contracts: files-render-extension is
+ * the `extend` parameter and its file-ID query budget, built-in-dashboards
+ * is the rollup and statistics envelope, and avg-verwerkingsregister is
+ * the Art 30 activity API. Rendering a page proves none of them.
+ *
+ * @e2e openspec/specs/account-self-service/spec.md#scenario-tokenssection-silently-tolerates-no-tokens-yet-on-initial-load
  */
 import { expect, test } from '@playwright/test'
 import * as path from 'path'

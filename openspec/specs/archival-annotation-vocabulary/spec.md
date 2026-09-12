@@ -258,12 +258,30 @@ expiresAt }` — is one of the five inputs, not the block itself. It SHALL be
 passed through under `_retention.annotation` so a wrong disposal date can be
 traced back to the rule that produced it.
 
+The passed-through evaluation SHALL carry `defaulted`. It is `false` when a rule
+fired, and `matchedRule` then names that rule's index. It is `true` when no rule
+matched and `retention.default` applied, and `matchedRule` is then omitted.
+"No rule matched" is an answer, so it SHALL NOT travel as a null: a GET omits
+null values from every response unless `_empty=true` is passed.
+
+The `_retention` block SHALL be identical on every verb that returns the
+object. The create, update and patch responses and a later GET of the same
+object SHALL carry the same block, key for key.
+
 #### Scenario: Archival row read shows the resolved decision
 - **GIVEN** a `call_log` row with `statusCode: 200` and `_created` 30 minutes ago
 - **AND** the schema declares `retention.rules = [{ condition: "statusCode < 400", retention: "PT1H" }]` and `retention.default = "P30D"`
 - **WHEN** `GET /api/objects/openconnector/call_log/<uuid>` returns the row
 - **THEN** the JSON SHALL include `"_retention"` carrying `"retentionPeriod": "PT1H"`, `"disposalDate": "<created+1h>"` and `"basis": "schema_annotation"`
-- **AND** `_retention.annotation` SHALL carry `{ "effectiveRetention": "PT1H", "matchedRule": 0, "expiresAt": "<created+1h, ATOM>" }`
+- **AND** `_retention.annotation` SHALL carry `{ "effectiveRetention": "PT1H", "matchedRule": 0, "defaulted": false, "expiresAt": "<created+1h, ATOM>" }`
+
+#### Scenario: No matching rule reads the same on create and on read
+- **GIVEN** the same schema annotation
+- **WHEN** a `call_log` row with `statusCode: 500` is created, so no rule matches
+- **THEN** the create response's `_retention.annotation` SHALL carry `{ "effectiveRetention": "P30D", "defaulted": true, "expiresAt": "<created+30d, ATOM>" }`
+- **AND** it SHALL NOT carry `matchedRule`
+- **AND** no key anywhere in `_retention` SHALL hold `null`
+- **AND** `GET /api/objects/openconnector/call_log/<uuid>` SHALL return a `_retention` block identical to the create response's
 
 #### Scenario: Non-archival schema read does not show _retention
 - **GIVEN** a `register/widget` schema with no `x-openregister-archival`

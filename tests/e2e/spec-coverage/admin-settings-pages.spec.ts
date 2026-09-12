@@ -13,10 +13,15 @@ import type { Page } from '@playwright/test'
  * Only OR-origin console errors / >=500 responses fail; core-NC noise is
  * filtered. Known OR backend gaps are documented inline.
  *
- * @e2e openspec/specs/no-code-app-builder/spec.md
- * @e2e openspec/specs/webhook-payload-mapping/spec.md
- * @e2e openspec/specs/tenant-isolation-audit/spec.md
- * @e2e openspec/specs/data-import-export/spec.md
+ * What this suite actually proves is one thing per page: the history-mode
+ * deep link resolves and the SPA mounts that surface. It never creates a
+ * webhook, never imports a configuration and never crosses a tenant
+ * boundary, so the webhook-payload-mapping, data-import-export and
+ * tenant-isolation-audit anchors that used to sit here were fragmentless
+ * citations of specs whose scenarios are entirely backend. They resolved
+ * because a bare file path always resolves, and they asserted nothing.
+ *
+ * @e2e openspec/specs/no-code-app-builder/spec.md#scenario-deep-link-route-returns-the-spa-index-template
  */
 import { expect, test } from '@playwright/test'
 import * as path from 'path'

@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 use DateTime;
 use DOMDocument;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
 use OCP\ITempManager;
 use Psr\Log\LoggerInterface;
@@ -175,6 +176,50 @@ class SipPackageBuilder {
 	}//end splitIntoBatches()
 
 	/**
+	 * The SIP entries for an object's content files, each with its own MDTO document.
+	 *
+	 * MDTO gives every file its own document, placed next to the file and
+	 * named `<bestandsnaam>.bestand.MDTO.xml` (MDTO SIP specification,
+	 * "Naamgeving"). A file missing from disk is skipped, and so is its
+	 * document, because a document describing a file the package lacks would
+	 * be false.
+	 *
+	 * @param string $objectDir The object's directory in the SIP.
+	 * @param ObjectEntity $object The object the files belong to.
+	 * @param array $files The object's file metadata.
+	 *
+	 * @return array{entries: list<array<string, mixed>>, manifest: list<array<string, mixed>>} The rows to add.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	private function contentFileEntries(string $objectDir, ObjectEntity $object, array $files): array {
+		$entries = [];
+		$manifest = [];
+
+		foreach ($files as $file) {
+			if (file_exists($file['path']) === false) {
+				continue;
+			}
+
+			$subDir = 'original';
+			if ($file['isRendition'] === true) {
+				$subDir = 'rendition';
+			}
+
+			$filePath = "{$objectDir}/content/{$subDir}/{$file['name']}";
+			$entries[] = ['path' => $filePath, 'kind' => 'file', 'filePath' => $file['path']];
+			$manifest[] = ['path' => $filePath, 'size' => $file['size'], 'checksum' => $file['checksum']];
+
+			$bestandXml = $this->mdtoGenerator->generateBestand($object, $file);
+			$bestandPath = $filePath . MdtoBestandGenerator::SIDECAR_SUFFIX;
+			$entries[] = ['path' => $bestandPath, 'kind' => 'string', 'content' => $bestandXml];
+			$manifest[] = $this->createManifestEntry(path: $bestandPath, content: $bestandXml);
+		}
+
+		return ['entries' => $entries, 'manifest' => $manifest];
+	}//end contentFileEntries()
+
+	/**
 	 * Build a single SIP package ZIP archive.
 	 *
 	 * @param string $transferId The transfer list UUID.
@@ -214,24 +259,9 @@ class SipPackageBuilder {
 			$entries[] = ['path' => "{$objectDir}/metadata.json", 'kind' => 'string', 'content' => $metadataJson];
 			$manifest[] = $this->createManifestEntry(path: "{$objectDir}/metadata.json", content: $metadataJson);
 
-			if (empty($files) === false) {
-				foreach ($files as $file) {
-					$subDir = 'original';
-					if ($file['isRendition'] === true) {
-						$subDir = 'rendition';
-					}
-
-					$filePath = "{$objectDir}/content/{$subDir}/{$file['name']}";
-					if (file_exists($file['path']) === true) {
-						$entries[] = ['path' => $filePath, 'kind' => 'file', 'filePath' => $file['path']];
-						$manifest[] = [
-							'path' => $filePath,
-							'size' => $file['size'],
-							'checksum' => $file['checksum'],
-						];
-					}
-				}
-			}
+			$fileEntries = $this->contentFileEntries(objectDir: $objectDir, object: $object, files: $files);
+			$entries = array_merge($entries, $fileEntries['entries']);
+			$manifest = array_merge($manifest, $fileEntries['manifest']);
 		}//end foreach
 
 		$metsXml = $this->generateMetsXml(transferId: $transferId, objectsWithFiles: $objectsWithFiles);

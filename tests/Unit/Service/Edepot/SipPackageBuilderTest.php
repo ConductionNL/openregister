@@ -43,6 +43,8 @@ class SipPackageBuilderTest extends TestCase {
 
 		$this->mdtoGenerator->method('generate')
 			->willReturn('<?xml version="1.0"?><mdto:informatieobject/>');
+		$this->mdtoGenerator->method('generateBestand')
+			->willReturn('<?xml version="1.0"?><mdto:MDTO><mdto:bestand/></mdto:MDTO>');
 
 		$this->appConfig->method('getValueString')
 			->willReturn((string)SipPackageBuilder::DEFAULT_MAX_PACKAGE_SIZE);
@@ -191,6 +193,11 @@ class SipPackageBuilderTest extends TestCase {
 		// Payload relocated under data/.
 		$this->assertContains('data/objects/obj-uuid-1/mdto.xml', $entries);
 		$this->assertContains('data/objects/obj-uuid-1/content/original/doc.txt', $entries);
+		// The file's own MDTO bestand document sits next to it, named as the
+		// MDTO SIP specification prescribes.
+		$sidecar = 'data/objects/obj-uuid-1/content/original/doc.txt.bestand.MDTO.xml';
+		$this->assertContains($sidecar, $entries);
+		$this->assertStringContainsString('<mdto:bestand/>', (string)$zip->getFromName($sidecar));
 
 		// bagit.txt declares version 1.0.
 		$this->assertStringContainsString('BagIt-Version: 1.0', $zip->getFromName('bagit.txt'));
@@ -202,6 +209,7 @@ class SipPackageBuilderTest extends TestCase {
 		$manifest = $zip->getFromName('manifest-sha256.txt');
 		$this->assertStringContainsString('data/objects/obj-uuid-1/content/original/doc.txt', $manifest);
 		$this->assertStringContainsString(hash('sha256', 'hello archive'), $manifest);
+		$this->assertStringContainsString($sidecar, $manifest);
 
 		$zip->close();
 		unlink($result[0]);

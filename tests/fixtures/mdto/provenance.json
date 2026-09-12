@@ -1,0 +1,31 @@
+{
+    "what": "The Nationaal Archief's own MDTO-XML 1.0.1 example documents, used as a positive control in MdtoXmlGeneratorXsdTest: the harness must accept what the publisher calls valid.",
+    "source": "https://github.com/NationaalArchief/MDTO-XSD/tree/afae5f300c8a92bbe3564d642017213bc7f4156f/voorbeelden",
+    "retrieved": "2026-09-11",
+    "modified": false,
+    "renamed": "Only the file names, to drop spaces; the bytes are unchanged, see sha256.",
+    "licence": "CC BY-SA, per Forum Standaardisatie FS-20241002.3C: \"Het Nationaal Archief hanteert de licentie CC BY SA voor al diens kennisproducten en dus ook voor MDTO.\" See lib/Resources/mdto/version.json.",
+    "attribution": "MDTO-XML 1.0.1 voorbeelden, Nationaal Archief, CC BY-SA. Redistributed unmodified.",
+    "files": [
+        {
+            "file": "voorbeeld-archiefstuk-informatieobject.xml",
+            "upstreamName": "MDTO-XML 1.0.1 Voorbeeld Archiefstuk Informatieobject.xml",
+            "sha256": "be391dc95c06796ea7254f3c425ce4b35972e16d4111b19359fe708ce9ee3386"
+        },
+        {
+            "file": "voorbeeld-bestand.xml",
+            "upstreamName": "MDTO-XML 1.0.1 Voorbeeld Bestand.xml",
+            "sha256": "779b1721466ce5c31c2babf23228e7c2bb8e30bc267fa0b6b3b0eea8a6badaf0"
+        },
+        {
+            "file": "voorbeeld-dossier-informatieobject.xml",
+            "upstreamName": "MDTO-XML 1.0.1 Voorbeeld Dossier Informatieobject.xml",
+            "sha256": "f445822a524d87f2e728aa8e7fb474d8f0f57f61a7b8a10b2808505d7fda507c"
+        },
+        {
+            "file": "voorbeeld-serie-informatieobject.xml",
+            "upstreamName": "MDTO-XML 1.0.1 Voorbeeld Serie Informatieobject.xml",
+            "sha256": "918da3a93260d2e3cc793eda1eaf413b129f5b48ec1d36fbee3b67d5696b698d"
+        }
+    ]
+}

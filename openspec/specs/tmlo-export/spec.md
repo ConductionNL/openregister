@@ -24,6 +24,22 @@ The XML output SHALL include:
 - `bewaarTermijn` with the retention period
 - `vernietigingsCategorie` with the destruction category
 
+**Known gap: this export does not validate against MDTO, and the list above is why.**
+Measured on 2026-09-11 against the Nationaal Archief's MDTO-XML 1.0.1 schema,
+vendored at `lib/Resources/mdto/MDTO-XML1.0.1.xsd`, the output of
+`TmloService::generateMdtoXml()` is rejected at its root: "Element
+'{https://www.nationaalarchief.nl/mdto}informatieobject': No matching global
+declaration available for the validation root." The schema's only global
+element is `MDTO`. Past the root, the export emits three elements that do not
+exist in MDTO at all: `archiefactiedatum`, `archiefstatus` and
+`vernietigingsCategorie`, which are TMLO fields. (Two further items in the
+list above, `archiefnominatie` and `bewaarTermijn`, are also TMLO spellings,
+but the code already emits them as MDTO's `waardering` and `bewaartermijn`.)
+A document carrying those three cannot validate however it is wrapped, so the
+sentence above claiming MDTO conformance and the element list beneath it
+cannot both hold. Choosing which gives way is a decision for
+this spec; the e-Depot export in `edepot-transfer` already validates.
+
 #### Scenario: Export single object as MDTO XML
 
 - **WHEN** a GET request is made to `/api/objects/{register}/{schema}/{id}/export/mdto`
