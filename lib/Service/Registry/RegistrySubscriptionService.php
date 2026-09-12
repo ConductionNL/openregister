@@ -72,6 +72,8 @@ class RegistrySubscriptionService {
 	 * @param Schema $schema The schema to read.
 	 *
 	 * @return array{registry: string, identity: string, owned: array<int, string>}|null
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-a-schema-declares-which-registry-owns-which-properties
 	 */
 	public function annotationFor(Schema $schema): ?array {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -283,6 +285,8 @@ class RegistrySubscriptionService {
 	 * @param string $objectUuid The object's uuid.
 	 *
 	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
 	public function stateFor(string $objectUuid): ?array {
 		$row = $this->subscriptionMapper->findForObject(objectUuid: $objectUuid);
@@ -300,6 +304,8 @@ class RegistrySubscriptionService {
 	 * @param array<int, string> $objectUuids The object uuids to look up.
 	 *
 	 * @return array<string, array<string, mixed>> Mirrors, keyed by object uuid.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
 	public function statesFor(array $objectUuids): array {
 		$rows = $this->subscriptionMapper->findForObjects(objectUuids: $objectUuids);

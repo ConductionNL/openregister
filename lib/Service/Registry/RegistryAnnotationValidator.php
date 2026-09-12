@@ -53,6 +53,8 @@ final class RegistryAnnotationValidator {
 	 *                                     `x-openregister-registry`.
 	 *
 	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-a-schema-declares-which-registry-owns-which-properties
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-registry']) === false) {

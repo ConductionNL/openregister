@@ -61,6 +61,8 @@ class RegistryUpdateTargetGuard {
 	 * @param array<string, mixed> $properties The inbound update's supplied properties.
 	 *
 	 * @return array{allowed: bool, rejected: array<int, string>}
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
 	public function evaluate(RegistrySubscription $row, array $properties): array {
 		try {

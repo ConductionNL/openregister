@@ -45,6 +45,8 @@ final class RegistryOwnedPropertyGuard {
 	 *         is true only when every key of `$supplied` is in `$owned`.
 	 *         `rejected` names every offending key, so the 422 response can
 	 *         name all of them at once rather than only the first.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
 	public function check(array $owned, array $supplied): array {
 		$ownedSet = array_flip($owned);

@@ -68,6 +68,8 @@ class RegistrySubscriptionNotifier {
 	 * @param string $identityValue The object's identity value at that registry.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
 	public function requested(ObjectEntity $object, string $register, string $schema, string $registry, string $identityValue): void {
 		$this->eventDispatcher->dispatchTyped(new RegistrySubscriptionRequestedEvent(
@@ -94,6 +96,8 @@ class RegistrySubscriptionNotifier {
 	 * @param string $identityValue The object's identity value at that registry.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
 	public function ended(ObjectEntity $object, string $registry, string $identityValue): void {
 		$this->eventDispatcher->dispatchTyped(new RegistrySubscriptionEndedEvent(
@@ -121,6 +125,8 @@ class RegistrySubscriptionNotifier {
 	 * @param array<int, string> $properties The property names that were changed.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
 	public function auditInboundUpdate(ObjectEntity $object, string $registry, string $eventReference, array $properties): void {
 		$this->auditTrailMapper->createAuditTrailEntry(
