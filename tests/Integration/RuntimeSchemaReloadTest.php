@@ -151,6 +151,13 @@ class RuntimeSchemaReloadTest extends TestCase {
 	private array $createdObjectUuids = [];
 
 	/**
+	 * The session user this test found, restored in tearDown().
+	 *
+	 * @var \OCP\IUser|null
+	 */
+	private ?\OCP\IUser $previousSessionUser = null;
+
+	/**
 	 * Wire up real services or skip the suite if Nextcloud is not loaded.
 	 *
 	 * @return void
@@ -173,22 +180,66 @@ class RuntimeSchemaReloadTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 
-		$this->schemasController = new SchemasController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(IAppConfig::class),
-			$this->schemaMapper,
-			$this->objectMapper,
-			\OC::$server->get(UploadService::class),
-			\OC::$server->get(AuditTrailMapper::class),
-			\OC::$server->get(OrganisationService::class),
-			$this->schemaCacheHandler,
-			\OC::$server->get(FacetCacheHandler::class),
-			\OC::$server->get(SchemaService::class),
-			\OC::$server->get(LoggerInterface::class)
-		);
+		// POST and PUT on /api/schemas are gated on manage permission, which is
+		// admin-only unless the schema declares a manage rule. With no session
+		// the controller answers 403 and the cache-invalidation contract under
+		// test is never reached, so the fixture logs in and tearDown puts the
+		// session back.
+		$userSession = \OC::$server->get(\OCP\IUserSession::class);
+		$this->previousSessionUser = $userSession->getUser();
+		$admin = \OC::$server->get(\OCP\IUserManager::class)->get('admin');
+		if ($admin !== null) {
+			$userSession->setUser($admin);
+		}
+
+		// Built from the container BY SIGNATURE, with the mock request spliced
+		// in. The old code listed twelve collaborators by hand; the controller
+		// takes seventeen now (registerMapper, the container itself,
+		// SchemaVersioningService and three optional services joined it), so a
+		// hand-written list goes red every time one is added, which is exactly
+		// what happened. Resolving it straight from the container is not an
+		// option either: that injects the real IRequest and these tests drive
+		// the controller through a stubbed one.
+		$this->schemasController = $this->buildSchemasController();
 
 	}//end setUp()
+
+	/**
+	 * Build SchemasController with every dependency the container knows.
+	 *
+	 * Each constructor parameter is resolved by its declared type, except the
+	 * app name and the request: those are the two the test owns. A dependency
+	 * added to the controller tomorrow is picked up here without editing.
+	 *
+	 * @return SchemasController The controller, wired to the stubbed request.
+	 */
+	private function buildSchemasController(): SchemasController {
+		$arguments = [];
+		foreach ((new \ReflectionClass(SchemasController::class))->getConstructor()->getParameters() as $parameter) {
+			$type = $parameter->getType();
+			$name = $type instanceof \ReflectionNamedType ? $type->getName() : '';
+
+			if ($parameter->getName() === 'appName') {
+				$arguments[] = 'openregister';
+				continue;
+			}
+
+			if ($name === IRequest::class) {
+				$arguments[] = $this->request;
+				continue;
+			}
+
+			try {
+				$arguments[] = \OC::$server->get($name);
+			} catch (\Throwable $e) {
+				// Optional collaborators are nullable with a default; an
+				// unresolvable one is left at its default rather than guessed at.
+				$arguments[] = $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null;
+			}
+		}
+
+		return new SchemasController(...$arguments);
+	}//end buildSchemasController()
 
 	/**
 	 * Best-effort cleanup of every fixture created by a test method.
@@ -196,6 +247,10 @@ class RuntimeSchemaReloadTest extends TestCase {
 	 * @return void
 	 */
 	protected function tearDown(): void {
+		if (class_exists('\\OC') === true && isset(\OC::$server) === true) {
+			\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
+		}
+
 		$db = null;
 		if (class_exists('\\OC') === true && isset(\OC::$server) === true) {
 			try {
@@ -285,7 +340,13 @@ class RuntimeSchemaReloadTest extends TestCase {
 
 		// Same-worker GET MUST observe the new schema (cache invalidation proof).
 		$this->request = $this->createMock(IRequest::class);
-		$this->request->method('getParam')->willReturn(null);
+		// A real IRequest answers getParam() with the DEFAULT the caller passed,
+		// never null. show() asks for `_extend` with a default of [] and then
+		// in_array()s it, so a stub that returns null for everything makes the
+		// controller fail on a contract the framework does not break.
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => $default
+		);
 		$reflection = new \ReflectionClass($this->schemasController);
 		$prop = $reflection->getProperty('request');
 		$prop->setAccessible(true);
@@ -374,10 +435,16 @@ class RuntimeSchemaReloadTest extends TestCase {
 
 		// 3. Persist an object so the DELETE-safety guard has something to trip on.
 		try {
+			// Named arguments: saveObject() takes ?array $extend second, so the
+			// positional form here handed the Register to $extend and the call
+			// died on a TypeError that the catch below reported as "object
+			// persistence not available", skipping a test that could run.
 			$created = $this->objectService->saveObject(
-				['name' => 'guard-fixture'],
-				$register,
-				$schema
+				object: ['name' => 'guard-fixture'],
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false
 			);
 			if (is_array($created) === true) {
 				$uuid = $created['uuid'] ?? null;
