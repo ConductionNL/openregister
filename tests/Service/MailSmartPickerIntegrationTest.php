@@ -227,22 +227,14 @@ class MailSmartPickerIntegrationTest extends TestCase {
 		$providerForAdmin = new ObjectReferenceProvider(
 			\OC::$server->get(\OCP\IURLGenerator::class),
 			\OC::$server->get(\OCP\L10N\IFactory::class)->get('openregister'),
-			\OC::$server->get(\OCA\OpenRegister\Service\ObjectService::class),
-			\OC::$server->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class),
-			\OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-			\OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-			\OC::$server->get(\Psr\Log\LoggerInterface::class),
+			\OC::$server->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class),
 			'admin'
 		);
 
 		$providerForAnon = new ObjectReferenceProvider(
 			\OC::$server->get(\OCP\IURLGenerator::class),
 			\OC::$server->get(\OCP\L10N\IFactory::class)->get('openregister'),
-			\OC::$server->get(\OCA\OpenRegister\Service\ObjectService::class),
-			\OC::$server->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class),
-			\OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-			\OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-			\OC::$server->get(\Psr\Log\LoggerInterface::class),
+			\OC::$server->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class),
 			null
 		);
 

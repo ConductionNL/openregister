@@ -469,6 +469,15 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		);
 		$this->createdSchemaIds[] = $schema->getId();
 
+		// The register has to CARRY the schema. Naming a register is a boundary
+		// now: RegisterScopedSchemaResolver refuses to resolve a slug against a
+		// register that lists no schemas rather than guessing at a same-slug
+		// schema somewhere else, and its error says so ("carries no schemas at
+		// all"). This fixture predates that rule and seeded the two rows without
+		// ever linking them.
+		$register->setSchemas([$schema->getId()]);
+		$register = $this->registerMapper->update($register);
+
 		$this->mapper->ensureTableForRegisterSchema($register, $schema);
 		$this->createdTables[] = 'oc_' . $this->mapper->getTableNameForRegisterSchema($register, $schema);
 
