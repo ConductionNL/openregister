@@ -1090,40 +1090,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'deck' => $this->getDeck(),
 		];
 
-		// Add relevance score if set (from fuzzy search).
-		// Only included when a search was performed with _fuzzy=true.
-		if ($this->relevance !== null) {
-			$objectArray['relevance'] = $this->relevance;
-		}
-
-		// Add the RFC 8141 URN identifier if computed by the renderer.
-		// The renderer populates $this->urn via UrnService::buildForObject;
-		// when absent (e.g. raw entity not run through RenderObject) the
-		// field is simply omitted from @self.
-		if ($this->urn !== null) {
-			$objectArray['urn'] = $this->urn;
-		}
-
-		// Add per-language translation completeness when computed by the
-		// renderer. Skipped (omitted from @self) when the schema has no
-		// translatable properties or the object hasn't been rendered yet.
-		if ($this->translationCompleteness !== null) {
-			$objectArray['translationCompleteness'] = $this->translationCompleteness;
-		}
-
-		// Add the effective archival retention decision when set by the render
-		// layer (add-archival-annotation-support). Exposed as `_retention` and
-		// omitted entirely when the object carries no retention metadata.
-		if ($this->archivalRetention !== null) {
-			$objectArray['_retention'] = $this->archivalRetention;
-		}
-
-		// Add the registry subscription state when set by the render layer
-		// (`registry-subscriptions`, finding B22). Exposed as `registry` and
-		// omitted entirely for an object that never requested one.
-		if ($this->registryState !== null) {
-			$objectArray['registry'] = $this->registryState;
-		}
+		$objectArray = $this->mergeTransientRenderFields(objectArray: $objectArray);
 
 		// Check for '@self' in the provided object array (this is the case if the object metadata is extended).
 		if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
@@ -1153,6 +1120,58 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return $objectArray;
 	}//end getObjectArray()
+
+	/**
+	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
+	 * search relevance, the RFC 8141 URN, per-language translation
+	 * completeness, the effective archival retention decision, and the
+	 * registry subscription state (`registry-subscriptions`, finding B22).
+	 * Each is optional and omitted entirely when unset — none of these are
+	 * persisted on this entity; they are populated by RenderObject at read
+	 * time.
+	 *
+	 * Extracted out of {@see getObjectArray()} to keep that method under
+	 * this repo's PHPMD line-count threshold.
+	 *
+	 * @param array<string, mixed> $objectArray The array built so far.
+	 *
+	 * @return array<string, mixed> The array with any set transient fields merged in.
+	 */
+	private function mergeTransientRenderFields(array $objectArray): array {
+		// Only included when a search was performed with _fuzzy=true.
+		if ($this->relevance !== null) {
+			$objectArray['relevance'] = $this->relevance;
+		}
+
+		// The renderer populates $this->urn via UrnService::buildForObject;
+		// when absent (e.g. raw entity not run through RenderObject) the
+		// field is simply omitted from @self.
+		if ($this->urn !== null) {
+			$objectArray['urn'] = $this->urn;
+		}
+
+		// Skipped (omitted from @self) when the schema has no translatable
+		// properties or the object hasn't been rendered yet.
+		if ($this->translationCompleteness !== null) {
+			$objectArray['translationCompleteness'] = $this->translationCompleteness;
+		}
+
+		// Add the effective archival retention decision when set by the render
+		// layer (add-archival-annotation-support). Exposed as `_retention` and
+		// omitted entirely when the object carries no retention metadata.
+		if ($this->archivalRetention !== null) {
+			$objectArray['_retention'] = $this->archivalRetention;
+		}
+
+		// Add the registry subscription state when set by the render layer.
+		// Exposed as `registry` and omitted entirely for an object that
+		// never requested one.
+		if ($this->registryState !== null) {
+			$objectArray['registry'] = $this->registryState;
+		}
+
+		return $objectArray;
+	}//end mergeTransientRenderFields()
 
 	/**
 	 * Format DateTime object to ISO 8601 string or return null
