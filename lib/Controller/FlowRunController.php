@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
+use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
@@ -60,16 +61,25 @@ use Throwable;
  * the request boundary — the resolver deliberately loads with RBAC off for the
  * engine, and inheriting that bypass here is what left retry() open to an IDOR.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Over budget for the same
- * reason: the two authorization concerns this controller now carries — the run
- * guard (retry/test may not run somebody else's flow) and history scoping (a run
- * log is subject data, so it is visible per caller) — are both request-boundary
- * checks. They belong at the boundary rather than in the engine, which is
- * deliberately unauthenticated because it runs flows as their owner with no
- * session. Moving them out would either re-open the bypass or add a second
- * indirection over four small private helpers.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Eleven constructor parameters, the
- * last four nullable-with-default precisely so adding them broke no existing
+ * reason: the three authorization concerns this controller now carries — the run
+ * guard (retry/resume/signalByKey may not act on somebody else's flow), history
+ * scoping (a run log is subject data, so it is visible per caller), and the
+ * editor-rights guard on `test()` (see its docblock: `flow.update`, not mere
+ * org membership) — are all request-boundary checks. They belong at the
+ * boundary rather than in the engine, which is deliberately unauthenticated
+ * because it runs flows as their owner with no session. Moving them out would
+ * either re-open a bypass or add a second indirection over a handful of small
+ * private helpers.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Twelve constructor parameters, the
+ * last five nullable-with-default precisely so adding them broke no existing
  * construction site. They are collaborators of those same guards, not options.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) or#3643's fix is what pushed this
+ * over: a new authorization guard plus the paragraph explaining WHY it exists
+ * and why it picks `flow.update` over `flow.run` — the reasoning a caller
+ * relying on this endpoint's security posture needs in front of them, not
+ * filed away in a PR description nobody reads at the call site. Trimming that
+ * explanation to duck the line counter is the same corrosive trade the other
+ * three suppressions on this class already decline to make.
  */
 class FlowRunController extends Controller {
 	/**
@@ -106,6 +116,11 @@ class FlowRunController extends Controller {
 	 *                                                 demand from this
 	 *                                                 controller's own
 	 *                                                 collaborators.
+	 * @param FlowAccess|null $access The flow action-rights matrix `test()` checks
+	 *                                before running anything (or#3643). Nullable and
+	 *                                appended last for the same reason as the other
+	 *                                four: absent must SCOPE (fail closed to a
+	 *                                refusal), never widen to "allowed".
 	 */
 	public function __construct(
 		string $appName,
@@ -122,6 +137,7 @@ class FlowRunController extends Controller {
 		// resulting TypeError names the argument AFTER the one that moved.
 		private readonly ?AuditFlowAttribution $auditTrails = null,
 		private readonly ?FlowRunSignalService $signalService = null,
+		private readonly ?FlowAccess $access = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -951,6 +967,61 @@ class FlowRunController extends Controller {
 	}//end flowIdsOwnedByCaller()
 
 	/**
+	 * Refuse the test run unless the caller may EDIT the flow being tested.
+	 *
+	 * `test()` is not a trigger a caller reaches because a flow happens to be
+	 * running — it is the authoring loop. `startAt` restarts execution from any
+	 * chosen node, skipping whatever an earlier node would otherwise have
+	 * enforced, and `pins` substitutes stored output for a real step's result.
+	 * Both are debug affordances for whoever is building the flow, and prior to
+	 * this check the ONLY gate on reaching them was
+	 * {@see refuseUnlessRunnable()} — organisation membership, which answers
+	 * "is this flow yours to see at all", not "may you run it". On a
+	 * single-organisation instance (the common case; see
+	 * {@see \OCA\OpenRegister\Service\OrganisationService}) that check passes
+	 * for every signed-in account, so any authenticated user could execute any
+	 * flow, including ones they neither own nor may edit (or#3643).
+	 *
+	 * `flow.update` — not `flow.run` — is the right bar. `flow.run` (used by
+	 * `FlowController::run()`, the editor's plain "Run Now") is seeded
+	 * `@authenticated` by design, for the same reason RN-1 kept it out of the
+	 * run-node endpoint: it says nothing about a caller's relationship to a
+	 * SPECIFIC flow's authoring surface, only that they may trigger flows at
+	 * all. `flow.update` is the right already required for every other editing
+	 * verb on this flow (publish/draft/deprecate/adopt) — testing a flow's tail
+	 * with pinned output is exactly as much "editing" as changing its JSON, and
+	 * an admin who has restricted `flow.update` to an authors group is
+	 * restricting exactly this.
+	 *
+	 * Fails CLOSED without the collaborator or the session, same posture as
+	 * {@see refuseUnlessRunnable()}: no way to decide is a refusal, not an
+	 * allow.
+	 *
+	 * @return JSONResponse|null A 401/403 refusal, or null when the caller may proceed.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+	 */
+	private function refuseUnlessMayEditFlow(): ?JSONResponse {
+		if ($this->access === null) {
+			return new JSONResponse(['error' => 'Flow authorization is unavailable.'], Http::STATUS_FORBIDDEN);
+		}
+
+		$user = $this->access->currentUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->access->may(user: $user, action: 'flow.update') === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			['error' => 'You do not have the "flow.update" right.'],
+			Http::STATUS_FORBIDDEN
+		);
+	}//end refuseUnlessMayEditFlow()
+
+	/**
 	 * Run a flow now and return its result — the interactive test run.
 	 *
 	 * Unlike a trigger, which queues a run for the worker, this runs the flow
@@ -963,10 +1034,19 @@ class FlowRunController extends Controller {
 	 * The run is persisted like any other (trigger `test`), so it also shows up
 	 * in the history — a test run is not a throwaway.
 	 *
-	 * @return JSONResponse The finished run, or a 4xx when the flow is unknown.
+	 * CSRF IS enforced here (no `#[NoCSRFRequired]`), deliberately unlike its
+	 * siblings on this controller. `resume()` and `signalByKey()` drop it because
+	 * they are addressed by leaf apps and agents over Basic auth or app
+	 * passwords, which carry no CSRF token — `TaskController`'s docblock states
+	 * that reasoning. Nothing calls `test()` that way: it is a person's browser
+	 * pressing "Test" in the flow editor, which has a token to send. There is no
+	 * stated reason to accept a cross-site POST here, so this endpoint keeps the
+	 * ordinary protection (or#3643).
+	 *
+	 * @return JSONResponse The finished run, or a 4xx when the flow is unknown
+	 *                       or the caller may not edit it.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
 	 *
@@ -975,8 +1055,12 @@ class FlowRunController extends Controller {
 	 * would add a constructor dependency to say the same thing.
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function test(): JSONResponse {
+		$editRefusal = $this->refuseUnlessMayEditFlow();
+		if ($editRefusal !== null) {
+			return $editRefusal;
+		}
+
 		$flowId = trim((string)$this->request->getParam('flowId', ''));
 		if ($flowId === '') {
 			return new JSONResponse(['error' => 'A test run needs a flowId.'], Http::STATUS_BAD_REQUEST);
