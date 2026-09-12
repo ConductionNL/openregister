@@ -76,9 +76,20 @@ class UserServiceIntegrationTest extends TestCase {
 		$this->userManager = \OC::$server->get(IUserManager::class);
 		$this->config = \OC::$server->get(IConfig::class);
 
-		// Create a test user for reliable testing
+		// Create a test user for reliable testing.
+		//
+		// 🔴 THE PASSWORD IS RANDOM PER RUN, AND IT HAS TO BE. This used to be
+		// the literal `TestPass1234!`, which is in the breach list the
+		// password_policy app checks, so `createUser()` threw
+		// "Password is present in compromised password list" in setUp and all
+		// 39 tests in this file errored before their first assertion. Any
+		// literal can end up on that list later; 32 random hex characters
+		// cannot.
 		$this->testUserId = 'phpunit-test-' . uniqid();
-		$this->testUser = $this->userManager->createUser($this->testUserId, 'TestPass1234!');
+		$this->testUser = $this->userManager->createUser(
+			$this->testUserId,
+			'Or-' . bin2hex(random_bytes(16)) . '-Aa1!'
+		);
 	}
 
 	/**
