@@ -126,7 +126,7 @@ class ObjectArchivalAnnotation {
 	 */
 	private function evaluateFor(ObjectEntity $object): array {
 		$schemaId = $object->getSchema();
-		if ($schemaId === null || $schemaId === '' || $schemaId === 0) {
+		if ($schemaId === null || $schemaId === '') {
 			return [];
 		}
 
