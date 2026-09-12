@@ -50,11 +50,37 @@ use Exception;
 final class ArchivalAnnotationValidator {
 
 	/**
+	 * Allowed keys directly under `x-openregister-archival`.
+	 *
+	 * `retention` is the disposal decision. The other three are the archival
+	 * facts MDTO asks for that nothing in openregister used to write, so an
+	 * export could only ever omit them; see the archival-conformance A3
+	 * finding.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ALLOWED_ANNOTATION_KEYS = ['retention', 'aggregationLevel', 'useRestriction', 'temporalCoverage'];
+
+	/**
 	 * Allowed top-level keys under `retention`.
 	 *
 	 * @var array<int, string>
 	 */
 	private const ALLOWED_RETENTION_KEYS = ['default', 'rules'];
+
+	/**
+	 * Allowed keys under `useRestriction`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ALLOWED_USE_RESTRICTION_KEYS = ['type', 'description'];
+
+	/**
+	 * Allowed keys under `temporalCoverage`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ALLOWED_TEMPORAL_COVERAGE_KEYS = ['type', 'startProperty', 'endProperty'];
 
 	/**
 	 * Allowed keys under each rule.
@@ -152,8 +178,206 @@ final class ArchivalAnnotationValidator {
 			}
 		}
 
-		return $errors;
+		// Reject unknown keys at the top level, for the same reason as under
+		// `retention`: a typo that is silently ignored declares nothing, and an
+		// export that omits the fact looks identical to a schema that never
+		// declared it.
+		foreach (array_keys($annotation) as $key) {
+			if (in_array((string)$key, self::ALLOWED_ANNOTATION_KEYS, true) === false) {
+				$errors[] = [
+					'code' => 'archival-unknown-key',
+					'message' => sprintf(
+						'x-openregister-archival contains unknown key "%s". Allowed: %s.',
+						(string)$key,
+						implode(', ', self::ALLOWED_ANNOTATION_KEYS)
+					),
+				];
+			}
+		}
+
+		return array_merge(
+			$errors,
+			$this->validateAggregationLevel(annotation: $annotation),
+			$this->validateUseRestriction(annotation: $annotation),
+			$this->validateTemporalCoverage(annotation: $annotation)
+		);
 	}//end validate()
+
+	/**
+	 * Validate `aggregationLevel`, a term of MDTO's Aggregatieniveaus list.
+	 *
+	 * @param array<string, mixed> $annotation The annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 */
+	private function validateAggregationLevel(array $annotation): array {
+		if (isset($annotation['aggregationLevel']) === false) {
+			return [];
+		}
+
+		$value = $annotation['aggregationLevel'];
+		if (in_array($value, MdtoTerms::AGGREGATION_LEVELS, true) === true) {
+			return [];
+		}
+
+		return [
+			[
+				'code' => 'archival-aggregation-level-unknown',
+				'message' => sprintf(
+					'x-openregister-archival.aggregationLevel "%s" is not a term of MDTO\'s %s. Allowed: %s.',
+					is_scalar($value) === true ? (string)$value : gettype($value),
+					MdtoTerms::AGGREGATION_LEVEL_LIST,
+					implode(', ', MdtoTerms::AGGREGATION_LEVELS)
+				),
+			],
+		];
+	}//end validateAggregationLevel()
+
+	/**
+	 * Validate `useRestriction`, whose type is a term of BeperkingGebruikTypeLijst.
+	 *
+	 * @param array<string, mixed> $annotation The annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 */
+	private function validateUseRestriction(array $annotation): array {
+		if (isset($annotation['useRestriction']) === false) {
+			return [];
+		}
+
+		$block = $annotation['useRestriction'];
+		if (is_array($block) === false) {
+			return [
+				[
+					'code' => 'archival-use-restriction-not-object',
+					'message' => 'x-openregister-archival.useRestriction must be an object with a "type".',
+				],
+			];
+		}
+
+		$errors = $this->unknownKeys(
+			block: $block,
+			allowed: self::ALLOWED_USE_RESTRICTION_KEYS,
+			path: 'x-openregister-archival.useRestriction',
+			code: 'archival-use-restriction-unknown-key'
+		);
+
+		if (in_array(($block['type'] ?? null), MdtoTerms::USE_RESTRICTION_TYPES, true) === false) {
+			$errors[] = [
+				'code' => 'archival-use-restriction-type-unknown',
+				'message' => sprintf(
+					'x-openregister-archival.useRestriction.type is required and must be a term of MDTO\'s %s. Allowed: %s.',
+					MdtoTerms::USE_RESTRICTION_LIST,
+					implode(', ', MdtoTerms::USE_RESTRICTION_TYPES)
+				),
+			];
+		}
+
+		if (isset($block['description']) === true && is_string($block['description']) === false) {
+			$errors[] = [
+				'code' => 'archival-use-restriction-description-not-string',
+				'message' => 'x-openregister-archival.useRestriction.description must be a string when present.',
+			];
+		}
+
+		return $errors;
+	}//end validateUseRestriction()
+
+	/**
+	 * Validate `temporalCoverage`, which names date PROPERTIES on the record.
+	 *
+	 * The dates themselves are never declared here. MDTO defines dekkingInTijd
+	 * as the period the record's CONTENT pertains to, which differs per record,
+	 * so a literal date on a schema would be the same wrong answer for every
+	 * row. The annotation names the properties to read instead, the way
+	 * `sourceDateProperty` does for a disposal date.
+	 *
+	 * @param array<string, mixed> $annotation The annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 */
+	private function validateTemporalCoverage(array $annotation): array {
+		if (isset($annotation['temporalCoverage']) === false) {
+			return [];
+		}
+
+		$block = $annotation['temporalCoverage'];
+		if (is_array($block) === false) {
+			return [
+				[
+					'code' => 'archival-temporal-coverage-not-object',
+					'message' => 'x-openregister-archival.temporalCoverage must be an object with a "type" and a "startProperty".',
+				],
+			];
+		}
+
+		$errors = $this->unknownKeys(
+			block: $block,
+			allowed: self::ALLOWED_TEMPORAL_COVERAGE_KEYS,
+			path: 'x-openregister-archival.temporalCoverage',
+			code: 'archival-temporal-coverage-unknown-key'
+		);
+
+		foreach (['type', 'startProperty'] as $required) {
+			if (is_string(($block[$required] ?? null)) === false || trim((string)$block[$required]) === '') {
+				$errors[] = [
+					'code' => 'archival-temporal-coverage-' . strtolower($required) . '-missing',
+					'message' => sprintf(
+						'x-openregister-archival.temporalCoverage.%s is required and must be a non-empty string.',
+						$required
+					),
+				];
+			}
+		}
+
+		if (isset($block['endProperty']) === true
+			&& (is_string($block['endProperty']) === false || trim($block['endProperty']) === '')
+		) {
+			$errors[] = [
+				'code' => 'archival-temporal-coverage-endproperty-not-string',
+				'message' => 'x-openregister-archival.temporalCoverage.endProperty must be a non-empty string when present.',
+			];
+		}
+
+		return $errors;
+	}//end validateTemporalCoverage()
+
+	/**
+	 * Report every key of a block that is not on its allow-list.
+	 *
+	 * @param array<string, mixed> $block The block to inspect.
+	 * @param array<int, string> $allowed The allowed keys.
+	 * @param string $path The block's path, for the message.
+	 * @param string $code The error code to report.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 */
+	private function unknownKeys(array $block, array $allowed, string $path, string $code): array {
+		$errors = [];
+		foreach (array_keys($block) as $key) {
+			if (in_array((string)$key, $allowed, true) === false) {
+				$errors[] = [
+					'code' => $code,
+					'message' => sprintf(
+						'%s contains unknown key "%s". Allowed: %s.',
+						$path,
+						(string)$key,
+						implode(', ', $allowed)
+					),
+				];
+			}
+		}
+
+		return $errors;
+	}//end unknownKeys()
 
 	/**
 	 * Validate a single rule entry.

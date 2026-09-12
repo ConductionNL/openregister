@@ -93,9 +93,14 @@ final class RetentionEvaluator {
 	 * @return array{
 	 *     effectiveRetention: string,
 	 *     matchedRule: int|null,
-	 *     expiresAt: string
+	 *     expiresAt: string,
+	 *     aggregationLevel?: string,
+	 *     useRestriction?: array{type: string, description?: string},
+	 *     temporalCoverage?: array{type: string, start: string, end?: string}
 	 * } Effective retention duration (ISO-8601), matched rule index (or null
-	 *   when fallback to default), and absolute expiry as ATOM-formatted string.
+	 *   when fallback to default), absolute expiry as ATOM-formatted string,
+	 *   and the archival facts the schema declares, each present only when it
+	 *   is established for THIS row.
 	 *
 	 * @throws InvalidArgumentException When the annotation has no usable retention.
 	 *
@@ -157,13 +162,123 @@ final class RetentionEvaluator {
 
 		$expiresAt = $this->addDuration(createdAt: $createdAt, duration: $effectiveDur)->format(DateTimeInterface::ATOM);
 
-		return [
+		$evaluation = [
 			'effectiveRetention' => $effectiveDur,
 			'matchedRule' => $matchedRule,
 			'expiresAt' => $expiresAt,
 		];
 
+		return array_merge($evaluation, $this->declaredFacts(annotation: $annotation, row: $row));
+
 	}//end evaluate()
+
+	/**
+	 * The archival facts the schema declares, resolved for this row.
+	 *
+	 * `aggregationLevel` and `useRestriction` are literals: the same for every
+	 * row of the schema, which is what they are. `temporalCoverage` is not: it
+	 * names date PROPERTIES, and the dates come off the row, so a schema says
+	 * WHERE its records carry their period rather than asserting one period for
+	 * all of them.
+	 *
+	 * A fact is returned only when it is established for this row. A declared
+	 * temporalCoverage whose start property is missing or empty on this record
+	 * yields nothing, so the export omits the element rather than emitting a
+	 * half one. That matches how UnestablishedValues treats the rest of the
+	 * block: present when established, absent otherwise.
+	 *
+	 * @param array<string, mixed> $annotation Full `x-openregister-archival` block.
+	 * @param array<string, mixed> $row Row data keyed by field name.
+	 *
+	 * @return array<string, mixed> The established facts, keyed in the abstract English vocabulary.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 */
+	private function declaredFacts(array $annotation, array $row): array {
+		$facts = [];
+
+		$level = ($annotation['aggregationLevel'] ?? null);
+		if (is_string($level) === true && $level !== '') {
+			$facts['aggregationLevel'] = $level;
+		}
+
+		$restriction = ($annotation['useRestriction'] ?? null);
+		if (is_array($restriction) === true && is_string(($restriction['type'] ?? null)) === true) {
+			$facts['useRestriction'] = ['type' => $restriction['type']];
+			if (is_string(($restriction['description'] ?? null)) === true && $restriction['description'] !== '') {
+				$facts['useRestriction']['description'] = $restriction['description'];
+			}
+		}
+
+		$coverage = $this->coverageForRow(coverage: ($annotation['temporalCoverage'] ?? null), row: $row);
+		if ($coverage !== null) {
+			$facts['temporalCoverage'] = $coverage;
+		}
+
+		return $facts;
+	}//end declaredFacts()
+
+	/**
+	 * Read the declared temporal coverage off this row.
+	 *
+	 * @param mixed $coverage The annotation's `temporalCoverage` block.
+	 * @param array<string, mixed> $row Row data keyed by field name.
+	 *
+	 * @return array{type: string, start: string, end?: string}|null The coverage, or null when this row does not carry it.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 */
+	private function coverageForRow(mixed $coverage, array $row): ?array {
+		if (is_array($coverage) === false) {
+			return null;
+		}
+
+		$type = ($coverage['type'] ?? null);
+		$start = $this->rowDate(row: $row, property: ($coverage['startProperty'] ?? null));
+		if (is_string($type) === false || $type === '' || $start === null) {
+			return null;
+		}
+
+		$resolved = ['type' => $type, 'start' => $start];
+
+		$end = $this->rowDate(row: $row, property: ($coverage['endProperty'] ?? null));
+		if ($end !== null) {
+			$resolved['end'] = $end;
+		}
+
+		return $resolved;
+	}//end coverageForRow()
+
+	/**
+	 * Read a named property off the row as a date MDTO accepts.
+	 *
+	 * MDTO types both dekkingInTijd dates as a union of `gYear`, `gYearMonth`
+	 * and `date`, so a timestamp is truncated to its date and anything else is
+	 * refused rather than passed on to fail schema validation later.
+	 *
+	 * @param array<string, mixed> $row Row data keyed by field name.
+	 * @param mixed $property The configured property name, if any.
+	 *
+	 * @return string|null The date, or null when the row does not carry a usable one.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 */
+	private function rowDate(array $row, mixed $property): ?string {
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		$value = ($row[$property] ?? null);
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		if (preg_match('/^(\d{4}(?:-\d{2}(?:-\d{2})?)?)/', $value, $matches) !== 1) {
+			return null;
+		}
+
+		return $matches[1];
+	}//end rowDate()
 
 	/**
 	 * Add an ISO-8601 duration to a datetime, returning a new immutable instance.

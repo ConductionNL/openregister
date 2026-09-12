@@ -165,6 +165,12 @@ class ArchivalDecisionResolver {
         );
 
         $decision = $this->withRecordState(decision: $decision, retention: $retention, tmlo: $tmlo, declared: $declared);
+        $decision = $this->withDeclaredFacts(
+            decision: $decision,
+            retention: $retention,
+            tmlo: $tmlo,
+            annotation: $annotation
+        );
 
         // WHERE the answer came from, so a reader can tell a selectielijst
         // obligation from a schema default from a hand-set date. Without this a
@@ -250,6 +256,66 @@ class ArchivalDecisionResolver {
 
         return $shaped;
     }//end annotationForRender()
+
+    /**
+     * Add the three archival facts MDTO asks for and nothing used to write.
+     *
+     * GAP A3. `aggregatieniveau`, `beperkingGebruik` and `dekkingInTijd`
+     * appeared in zero PHP files: the export could only ever omit them, and an
+     * omission reads the same as a record that genuinely has none. They now
+     * have a source, in the order a reader would expect:
+     *
+     * 1. the object's own `retention` block, which is the per-object override;
+     * 2. the `tmlo` block, under TMLO's Dutch spelling, for objects written
+     *    that way;
+     * 3. the schema's `x-openregister-archival` annotation, resolved for this
+     *    row by {@see RetentionEvaluator}.
+     *
+     * Each key is emitted only when one of those establishes it. A fact nobody
+     * declared stays absent rather than becoming a placeholder, which is what
+     * UnestablishedValues enforces for the rest of the block.
+     *
+     * @param array<string, mixed> $decision The decision so far.
+     * @param array<string, mixed> $retention The stored retention block.
+     * @param array<string, mixed> $tmlo The stored TMLO block.
+     * @param array<string, mixed> $annotation The evaluated annotation block.
+     *
+     * @return array<string, mixed> The decision, with whichever facts are established.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+     */
+    private function withDeclaredFacts(array $decision, array $retention, array $tmlo, array $annotation): array {
+        $sources = [
+            'aggregationLevel' => [
+                ($retention['aggregationLevel'] ?? null),
+                ($tmlo['aggregatieniveau'] ?? null),
+                ($annotation['aggregationLevel'] ?? null),
+            ],
+            'useRestriction' => [
+                ($retention['useRestriction'] ?? null),
+                ($tmlo['beperkingGebruik'] ?? null),
+                ($annotation['useRestriction'] ?? null),
+            ],
+            'temporalCoverage' => [
+                ($retention['temporalCoverage'] ?? null),
+                ($tmlo['dekkingInTijd'] ?? null),
+                ($annotation['temporalCoverage'] ?? null),
+            ],
+        ];
+
+        foreach ($sources as $key => $candidates) {
+            foreach ($candidates as $candidate) {
+                if ($candidate === null || $candidate === '' || $candidate === []) {
+                    continue;
+                }
+
+                $decision[$key] = $candidate;
+                break;
+            }
+        }
+
+        return $decision;
+    }//end withDeclaredFacts()
 
     /**
      * Add the Archiefwet record state, and whether it is final.
