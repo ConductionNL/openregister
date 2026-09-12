@@ -81,17 +81,17 @@ class SchemaMapperIntegrationTest extends TestCase {
 	}
 
 	public function testFindAllRespectsLimit(): void {
-		$results = $this->mapper->findAll(2, 0, [], [], [], [], null, false, false);
+		$results = $this->mapper->findAll(2, 0, [], [], [], [], _rbac: false, _multitenancy: false);
 		$this->assertLessThanOrEqual(2, count($results));
 	}
 
 	public function testFindAllRespectsOffset(): void {
-		$all = $this->mapper->findAll(null, null, [], [], [], [], null, false, false);
+		$all = $this->mapper->findAll(null, null, [], [], [], [], _rbac: false, _multitenancy: false);
 		if (count($all) < 2) {
 			$this->markTestSkipped('Need at least 2 schemas for offset test');
 		}
 
-		$offset = $this->mapper->findAll(null, 1, [], [], [], [], null, false, false);
+		$offset = $this->mapper->findAll(null, 1, [], [], [], [], _rbac: false, _multitenancy: false);
 		$this->assertCount(count($all) - 1, $offset);
 	}
 
@@ -105,7 +105,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 			[],
 			[],
 			[],
-			null,
 			false,
 			false
 		);
@@ -121,7 +120,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 			[],
 			[],
 			[],
-			null,
 			false,
 			false
 		);
@@ -138,7 +136,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 			[],
 			[],
 			[],
-			null,
 			false,
 			false
 		);
@@ -152,7 +149,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 	public function testFindById(): void {
 		$schema = $this->createTestSchema();
-		$found = $this->mapper->find($schema->getId(), [], null, false, false);
+		$found = $this->mapper->find($schema->getId(), _extend: [], _rbac: false, _multitenancy: false);
 
 		$this->assertInstanceOf(Schema::class, $found);
 		$this->assertSame($schema->getId(), $found->getId());
@@ -160,7 +157,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 	public function testFindByUuid(): void {
 		$schema = $this->createTestSchema();
-		$found = $this->mapper->find($schema->getUuid(), [], null, false, false);
+		$found = $this->mapper->find($schema->getUuid(), _extend: [], _rbac: false, _multitenancy: false);
 
 		$this->assertSame($schema->getId(), $found->getId());
 	}
@@ -170,22 +167,22 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$slug = $schema->getSlug();
 		$this->assertNotNull($slug);
 
-		$found = $this->mapper->find($slug, [], null, false, false);
+		$found = $this->mapper->find($slug, _extend: [], _rbac: false, _multitenancy: false);
 		$this->assertSame($schema->getId(), $found->getId());
 	}
 
 	public function testFindNonExistentThrowsException(): void {
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-		$this->mapper->find(999999999, [], null, false, false);
+		$this->mapper->find(999999999, _extend: [], _rbac: false, _multitenancy: false);
 	}
 
 	public function testFindCacheHit(): void {
 		$schema = $this->createTestSchema();
 
 		// First call populates cache
-		$found1 = $this->mapper->find($schema->getId(), [], null, false, false);
+		$found1 = $this->mapper->find($schema->getId(), _extend: [], _rbac: false, _multitenancy: false);
 		// Second call should hit cache
-		$found2 = $this->mapper->find($schema->getId(), [], null, false, false);
+		$found2 = $this->mapper->find($schema->getId(), _extend: [], _rbac: false, _multitenancy: false);
 
 		$this->assertSame($found1->getId(), $found2->getId());
 	}
@@ -194,9 +191,9 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 
 		// First call by ID populates cache (also caches by uuid and slug)
-		$found1 = $this->mapper->find($schema->getId(), [], null, false, false);
+		$found1 = $this->mapper->find($schema->getId(), _extend: [], _rbac: false, _multitenancy: false);
 		// This should hit cache via UUID
-		$found2 = $this->mapper->find($schema->getUuid(), [], null, false, false);
+		$found2 = $this->mapper->find($schema->getUuid(), _extend: [], _rbac: false, _multitenancy: false);
 
 		$this->assertSame($found1->getId(), $found2->getId());
 	}
@@ -204,7 +201,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 	public function testFindWithNonNumericId(): void {
 		$schema = $this->createTestSchema();
 		// Find by UUID (non-numeric) to exercise the else branch
-		$found = $this->mapper->find($schema->getUuid(), [], null, false, false);
+		$found = $this->mapper->find($schema->getUuid(), _extend: [], _rbac: false, _multitenancy: false);
 		$this->assertSame($schema->getId(), $found->getId());
 	}
 
@@ -216,24 +213,16 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$slug = $schema->getSlug();
 
-		$results = $this->mapper->findBySlug($slug, 10, 0, null, false, false);
+		$results = $this->mapper->findBySlug($slug, 10, 0, _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertNotEmpty($results);
 		$this->assertSame($slug, $results[0]->getSlug());
 	}
 
 	public function testFindBySlugNoResults(): void {
-		$results = $this->mapper->findBySlug('nonexistent-slug-' . uniqid(), 10, 0, null, false, false);
+		$results = $this->mapper->findBySlug('nonexistent-slug-' . uniqid(), 10, 0, _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertEmpty($results);
-	}
-
-	public function testFindBySlugWithPublishedParam(): void {
-		$schema = $this->createTestSchema();
-		$slug = $schema->getSlug();
-
-		$results = $this->mapper->findBySlug($slug, 10, 0, true, false, false);
-		$this->assertIsArray($results);
 	}
 
 	// =========================================================================
@@ -246,7 +235,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$results = $this->mapper->findMultiple(
 			[$s1->getId(), $s2->getId()],
-			null,
 			false,
 			false
 		);
@@ -258,7 +246,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$s1 = $this->createTestSchema();
 		$results = $this->mapper->findMultiple(
 			[$s1->getId(), 999999999],
-			null,
 			false,
 			false
 		);
@@ -267,7 +254,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 	}
 
 	public function testFindMultipleEmptyArray(): void {
-		$results = $this->mapper->findMultiple([], null, false, false);
+		$results = $this->mapper->findMultiple([], _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertEmpty($results);
 	}
@@ -631,8 +618,12 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$facets = $schema->getFacets();
 		$this->assertArrayHasKey('when', $facets['object_fields']);
-		// date-time format maps to terms facet type (the type is 'string')
-		$this->assertSame('terms', $facets['object_fields']['when']['type']);
+		// A date or date-time FORMAT is a date_histogram, whatever the JSON type
+		// says: Schema::determineFacetType() has read `format` before `type`
+		// since 1367ae337 (2025-09-02), and the date-named-property test two
+		// above asserts the same thing. The old expectation of 'terms' was the
+		// test disagreeing with its own neighbour.
+		$this->assertSame('date_histogram', $facets['object_fields']['when']['type']);
 	}
 
 	public function testCreateFromArrayGeneratesFacetForExplicitFacetableProperty(): void {
@@ -1087,7 +1078,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		]);
 
 		// Re-fetch to get the resolved schema with merged properties
-		$resolvedChild = $this->mapper->find($child->getId(), [], null, false, false);
+		$resolvedChild = $this->mapper->find($child->getId(), _extend: [], _rbac: false, _multitenancy: false);
 
 		$result = $this->mapper->getPropertySourceMetadata($resolvedChild);
 		$this->assertIsArray($result);
@@ -1121,7 +1112,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		]);
 
 		// When we find the child, the resolved schema should have both properties
-		$resolved = $this->mapper->find($child->getId(), [], null, false, false);
+		$resolved = $this->mapper->find($child->getId(), _extend: [], _rbac: false, _multitenancy: false);
 		$props = $resolved->getProperties();
 
 		$this->assertArrayHasKey('parentField', $props);
@@ -1144,7 +1135,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 			],
 		]);
 
-		$resolved = $this->mapper->find($child->getId(), [], null, false, false);
+		$resolved = $this->mapper->find($child->getId(), _extend: [], _rbac: false, _multitenancy: false);
 		$required = $resolved->getRequired();
 
 		$this->assertContains('parentField', $required);
@@ -1192,7 +1183,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 			[],
 			[],
 			[],
-			null,
 			false,
 			false
 		);
@@ -1269,13 +1259,30 @@ class SchemaMapperIntegrationTest extends TestCase {
 	// Slug uniqueness tests
 	// =========================================================================
 
-	public function testCreateSchemasWithSameTitleThrowsUniqueConstraint(): void {
+	/**
+	 * Two schemas may carry the same slug, and both stay retrievable.
+	 *
+	 * This asserted a unique-constraint violation. Version1Date20260726000000
+	 * (2026-07-26) dropped `schemas_org_app_slug_unique` on purpose: schemas are
+	 * many-to-many with registers, so "unique within a register's set" cannot be
+	 * a single-table index, and the invariant moved to the service layer
+	 * (ImportHandler::importSchema). A second schema with the same title is now
+	 * an ordinary row, so that is what this pins.
+	 *
+	 * @return void
+	 */
+	public function testTwoSchemasMayShareASlug(): void {
 		$title = 'Duplicate Title Schema';
-		$s1 = $this->createTestSchema(['title' => $title]);
-		$this->assertNotNull($s1->getSlug());
+		$first = $this->createTestSchema(['title' => $title]);
+		$second = $this->createTestSchema(['title' => $title]);
 
-		$this->expectException(\Exception::class);
-		$this->createTestSchema(['title' => $title]);
+		$this->assertSame($first->getSlug(), $second->getSlug());
+		$this->assertNotSame($first->getId(), $second->getId());
+
+		$bySlug = $this->mapper->findBySlug($first->getSlug(), 10, 0, _rbac: false, _multitenancy: false);
+		$ids = array_map(static fn ($schema): int => (int)$schema->getId(), $bySlug);
+		$this->assertContains((int)$first->getId(), $ids);
+		$this->assertContains((int)$second->getId(), $ids);
 	}
 
 	// =========================================================================
@@ -1286,8 +1293,8 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$this->createTestSchema();
 		$this->createTestSchema();
 
-		$all = $this->mapper->findAll(null, null, [], [], [], [], null, false, false);
-		$limited = $this->mapper->findAll(1, 0, [], [], [], [], null, false, false);
+		$all = $this->mapper->findAll(null, null, [], [], [], [], _rbac: false, _multitenancy: false);
+		$limited = $this->mapper->findAll(1, 0, [], [], [], [], _rbac: false, _multitenancy: false);
 
 		$this->assertCount(1, $limited);
 		$this->assertGreaterThanOrEqual(2, count($all));
@@ -1301,7 +1308,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$slug = $schema->getSlug();
 
-		$results = $this->mapper->findBySlug($slug, 1, 0, null, false, false);
+		$results = $this->mapper->findBySlug($slug, 1, 0, _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertLessThanOrEqual(1, count($results));
 	}
@@ -1310,7 +1317,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$slug = $schema->getSlug();
 
-		$results = $this->mapper->findBySlug($slug, 10, 1, null, false, false);
+		$results = $this->mapper->findBySlug($slug, 10, 1, _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertEmpty($results);
 	}
@@ -1454,7 +1461,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 			[],
 			[],
 			[],
-			null,
 			false,
 			false
 		);
@@ -1471,7 +1477,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$slug = $schema->getSlug();
 		$this->assertNotNull($slug);
 
-		$found = $this->mapper->find(strtoupper($slug), [], null, false, false);
+		$found = $this->mapper->find(strtoupper($slug), _extend: [], _rbac: false, _multitenancy: false);
 		$this->assertSame($schema->getId(), $found->getId());
 	}
 
@@ -1517,16 +1523,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
-	// find with published parameter
-	// =========================================================================
-
-	public function testFindWithPublishedBypass(): void {
-		$schema = $this->createTestSchema();
-		$found = $this->mapper->find($schema->getId(), [], true, false, false);
-		$this->assertSame($schema->getId(), $found->getId());
-	}
-
-	// =========================================================================
 	// find with different RBAC/multitenancy flags to exercise cache keys
 	// =========================================================================
 
@@ -1534,9 +1530,9 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 
 		// Call with RBAC=false, multitenancy=false
-		$found1 = $this->mapper->find($schema->getId(), [], null, false, false);
+		$found1 = $this->mapper->find($schema->getId(), _extend: [], _rbac: false, _multitenancy: false);
 		// Call with RBAC=true, multitenancy=false (different cache key)
-		$found2 = $this->mapper->find($schema->getId(), [], null, true, false);
+		$found2 = $this->mapper->find($schema->getId(), _extend: [], _rbac: true, _multitenancy: false);
 
 		$this->assertSame($found1->getId(), $found2->getId());
 	}
@@ -1547,7 +1543,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 	public function testFindWithMultitenancyDisabled(): void {
 		$schema = $this->createTestSchema();
-		$found = $this->mapper->find($schema->getId(), [], null, false, false);
+		$found = $this->mapper->find($schema->getId(), _extend: [], _rbac: false, _multitenancy: false);
 		$this->assertSame($schema->getId(), $found->getId());
 	}
 
@@ -1566,7 +1562,6 @@ class SchemaMapperIntegrationTest extends TestCase {
 			['LOWER(title) LIKE :searchTitle'],
 			['searchTitle' => '%' . strtolower($uniqueTitle) . '%'],
 			[],
-			null,
 			false,
 			false
 		);
