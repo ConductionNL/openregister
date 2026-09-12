@@ -1229,4 +1229,36 @@ class MappingServiceTest extends TestCase {
 		$this->assertSame(['5.0', '6.0'], $result[2]);
 	}
 
+
+	/**
+	 * The sandbox allows json_decode and must allow json_encode with it.
+	 *
+	 * These two are counterparts, and only one of them was on the allowlist.
+	 * A stored mapping that encodes a value to JSON then failed at render with
+	 * a Twig SecurityError naming a filter, which reads as a broken mapping
+	 * rather than a policy gap. See #3663.
+	 */
+	public function testSandboxAllowsJsonEncode(): void {
+		$entity = $this->createMapping(['out' => '{{ items | json_encode }}']);
+
+		$result = $this->service->executeMapping($entity, ['items' => ['a', 'b']]);
+
+		$this->assertSame('["a","b"]', $result['out']);
+	}
+
+	/**
+	 * A filter nobody allowlisted is still refused.
+	 *
+	 * Without this, the test above would also pass on a sandbox that had been
+	 * switched off entirely.
+	 */
+	public function testSandboxStillRefusesAFilterItDoesNotAllow(): void {
+		$entity = $this->createMapping(['out' => '{{ value | striptags }}']);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Filter "striptags" is not allowed');
+
+		$this->service->executeMapping($entity, ['value' => '<b>x</b>']);
+	}
+
 }
