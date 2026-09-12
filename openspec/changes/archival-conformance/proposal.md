@@ -79,12 +79,51 @@ to an e-Depot or destroyed.
 `_retention` exposes `status` from `retention.archiefstatus` only. A record whose
 state lives in `tmlo.archiefstatus` reports no state.
 
-**A3 · No `useRestriction`, `temporalCoverage` or `aggregationLevel` anywhere.**
+**A3 · No `useRestriction`, `temporalCoverage` or `aggregationLevel` anywhere.
+RESOLVED.**
 
-Measured: `beperkingGebruik`, `dekkingInTijd`, `aggregatieniveau` and
-`openbaarheid` appear in **zero** PHP files. `beperkingGebruik` in particular is
-how MDTO carries a WOO/AVG access restriction; without it the export cannot say
-that a record is restricted, and a receiving e-Depot cannot enforce it.
+As measured: `beperkingGebruik`, `dekkingInTijd`, `aggregatieniveau` and
+`openbaarheid` appeared in **zero** PHP files. `beperkingGebruik` in particular
+is how MDTO carries a WOO/AVG access restriction; without it the export cannot
+say that a record is restricted, and a receiving e-Depot cannot enforce it.
+
+All three now have a writer, and the export reads them. A schema declares them
+in `x-openregister-archival`, beside the retention block it already carried:
+
+```yaml
+x-openregister-archival:
+  retention: { default: P10Y }
+  aggregationLevel: Dossier
+  useRestriction: { type: "Geen beperking", description: "Openbaar na toetsing" }
+  temporalCoverage: { type: Looptijd, startProperty: startdatum, endProperty: einddatum }
+```
+
+`temporalCoverage` names date PROPERTIES, not dates. MDTO defines dekkingInTijd
+as the period the record's CONTENT pertains to, which differs per record, so a
+literal date on a schema would be the same wrong answer for every row. This is
+the `sourceDateProperty` mechanic the disposal-date derivation already uses.
+
+An object overrides its schema through its own `retention` block, under the
+abstract English key, and the TMLO block is read under TMLO's Dutch spelling.
+`ArchivalDecisionResolver` emits whichever source established the fact into
+`_retention`, and `MdtoXmlGenerator` exports it. A fact nobody declared stays
+ABSENT: no placeholder, nothing to mistake for a recorded answer, the same rule
+`UnestablishedValues` applies to the rest of the block.
+
+Two checks refuse a mistake rather than exporting it. An unknown key is
+rejected at schema save, as unknown retention keys already were, so a typo
+cannot declare nothing in silence. A term outside MDTO's own begrippenlijst is
+rejected too. That second one is stricter than the standard, which declares
+both lists OPEN, and deliberately: the exported element cites the list it took
+the term from, so a term absent from the named list would make the document
+claim a provenance it does not have. Supporting a local term means letting a
+schema name its own begrippenlijst, which is a change to the annotation's shape
+and is not made here.
+
+`openbaarheid` remains unwritten as a field of its own. MDTO has no such
+element: publicity is carried BY `beperkingGebruik`, whose "Geen beperking"
+term is how a record says it is open. So the remaining gap is a vocabulary
+question for WOO, not a missing writer.
 
 **A4 · `archiefstatus` carries two different vocabularies under one name.**
 
@@ -208,9 +247,22 @@ two identical records processed a year apart get disposal dates a year apart.
 Credit where due: it uses MDTO's own `waardering`, not TMLO's
 `archiefnominatie`, and the checksum block is right.
 
-Absent: `aggregatieniveau`, `beperkingGebruik`, `dekkingInTijd`, `event`,
-`betrokkene`, `classificatie`, and the `isOnderdeelVan` / `bevatOnderdeel`
-relation elements that carry aggregation structure.
+Absent at the time of the audit: `aggregatieniveau`, `beperkingGebruik`,
+`dekkingInTijd`, `event`, `betrokkene`, `classificatie`, and the
+`isOnderdeelVan` / `bevatOnderdeel` relation elements that carry aggregation
+structure.
+
+**Since then:** `aggregatieniveau`, `beperkingGebruik`, `dekkingInTijd` and
+`event` are emitted, and `classificatie` came with the TMLO export moving onto
+the same generator. The generator's whole output is now held to the vendored
+MDTO-XML 1.0.1 XSD by a test, which also found that the document root, the
+nesting of `bestand`, three `begripGegevens` values, `bewaartermijn` and
+`checksumDatum` had all been wrong in ways no reader had noticed.
+
+Still absent: `betrokkene`, and the `isOnderdeelVan` / `bevatOnderdeel`
+relation elements. Those carry aggregation STRUCTURE between records, which
+openregister has no source for until a schema can say which relation expresses
+containment.
 
 **D2 · Required-field validation is narrower than MDTO.**
 

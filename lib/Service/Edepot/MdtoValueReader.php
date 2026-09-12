@@ -62,13 +62,20 @@ class MdtoValueReader {
 	public const XSD_DATE_PREFIX = '/^(\d{4}-\d{2}-\d{2})/';
 
 	/**
-	 * Read a declared value from the retention block, else the TMLO block.
+	 * Read a declared value from the retention block, the TMLO block, or the schema.
+	 *
+	 * Three layers, nearest first: the object's own `retention` block is the
+	 * per-object override, the `tmlo` block carries TMLO's spelling, and the
+	 * schema's evaluated `x-openregister-archival` annotation is the default
+	 * every row of that schema inherits. The annotation layer is what makes a
+	 * fact declarable once instead of on every object; see
+	 * `RetentionEvaluator::declaredFacts()`, which resolves it for the row.
 	 *
 	 * @param ObjectEntity $object The source object.
-	 * @param string $abstractKey The English key on the retention block.
+	 * @param string $abstractKey The English key, used on the retention block and the annotation.
 	 * @param string $tmloKey The Dutch key on the TMLO block.
 	 *
-	 * @return mixed The declared value, or null when neither block carries one.
+	 * @return mixed The declared value, or null when no layer carries one.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
@@ -78,7 +85,12 @@ class MdtoValueReader {
 			return $retention[$abstractKey];
 		}
 
-		return $this->valueAt(value: $object->getTmlo(), key: $tmloKey);
+		$fromTmlo = $this->valueAt(value: $object->getTmlo(), key: $tmloKey);
+		if ($fromTmlo !== null) {
+			return $fromTmlo;
+		}
+
+		return $this->valueAt(value: $this->valueAt(value: $retention, key: 'annotation'), key: $abstractKey);
 	}//end declared()
 
 	/**

@@ -2102,11 +2102,22 @@ class AuditTrailMapper extends QBMapper {
 	}//end getStatisticsGroupedBySchema()
 
 	/**
-	 * Create a custom audit trail entry for archival operations.
+	 * Create a custom audit trail entry for archival operations, or for any
+	 * other caller that needs a non-CRUD action recorded with an explicit
+	 * actor.
+	 *
+	 * `$actorId`/`$actorName` exist for callers acting on behalf of a
+	 * non-human principal — e.g. `registry-subscriptions`' inbound update
+	 * endpoint, which authenticates as a connector's app-password account
+	 * but must audit the REGISTRY (`registry:brp`) as the actor, not
+	 * whichever Nextcloud account the app password happens to belong to.
+	 * Omit both to keep the previous session-derived behavior unchanged.
 	 *
 	 * @param ObjectEntity $object The object the entry relates to
 	 * @param string $action The archival action (e.g., archival.destroyed)
 	 * @param array $context Additional context data
+	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
+	 * @param string|null $actorName Explicit actor display name, paired with $actorId.
 	 *
 	 * @return AuditTrail The created audit trail entry
 	 *
@@ -2116,11 +2127,29 @@ class AuditTrailMapper extends QBMapper {
 		ObjectEntity $object,
 		string $action,
 		array $context = [],
+		?string $actorId = null,
+		?string $actorName = null,
 	): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
+		$userId = $actorId;
+		$userName = $actorName;
+		if ($userId === null) {
+			$user = $this->userSession->getUser();
+			$userId = 'system';
+			$userName = 'System';
+			if ($user !== null) {
+				$userId = $user->getUID();
+				// SECURITY / AVG: keep `user_name` populated even though the
+				// migration (Version1Date20260423100000) relaxed NOT NULL on
+				// the column to support referential-integrity rows that have
+				// no displayable actor. Without this default, every audit row
+				// produced through this entry point would persist with a NULL
+				// `user_name` — undermining GDPR Art 30 §4 supervisor review.
+				$userName = $user->getDisplayName();
+			}
+		}
+
+		if ($userName === null) {
+			$userName = $userId;
 		}
 
 		$auditTrail = new AuditTrail();
@@ -2132,20 +2161,7 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($context);
 		$auditTrail->setUser($userId);
-
-		// SECURITY / AVG: keep `user_name` populated even though the
-		// migration (Version1Date20260423100000) relaxed NOT NULL on
-		// the column to support referential-integrity rows that have
-		// no displayable actor. Without this default, every audit row
-		// produced through this entry point would persist with a NULL
-		// `user_name` — undermining GDPR Art 30 §4 supervisor review.
-		$userName = 'System';
-		if ($user !== null) {
-			$userName = $user->getDisplayName();
-		}
-
 		$auditTrail->setUserName($userName);
-
 		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);

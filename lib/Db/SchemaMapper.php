@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
@@ -1096,6 +1097,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateHandoffAnnotation(schema: $schema);
 		$this->validateHandoffContractBinding(schema: $schema);
 		$this->validateMcpAnnotation(schema: $schema);
+		$this->validateRegistryAnnotation(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
 
@@ -1663,6 +1665,45 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
 		throw new Exception('x-openregister-mcp: ' . implode(' ', $messages));
 	}//end validateMcpAnnotation()
+
+	/**
+	 * Validate the optional `x-openregister-registry` annotation.
+	 *
+	 * The annotation is stored under `configuration['x-openregister-registry']`.
+	 * Per `registry-subscriptions` REQ 1, an annotation naming an `identity`
+	 * or `owned` property the schema does not declare MUST refuse the save
+	 * — unlike most other `x-openregister-*` dialects, this one is
+	 * BLOCKING, not advisory, because a stored-but-wrong annotation would
+	 * let the inbound registry endpoint write a property nobody reviewed.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws Exception When the annotation is malformed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
+	 */
+	private function validateRegistryAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration['x-openregister-registry'] ?? null);
+		if (is_array($annotation) === false) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			'x-openregister-registry' => $annotation,
+		];
+
+		$errors = (new RegistryAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
+		throw new Exception('x-openregister-registry: ' . implode(' ', $messages));
+	}//end validateRegistryAnnotation()
 
 	/**
 	 * Clean $ref properties to ensure they are strings

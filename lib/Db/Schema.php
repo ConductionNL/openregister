@@ -2474,6 +2474,13 @@ class Schema extends Entity implements JsonSerializable {
 		// or#460/#462-class trap as `x-openregister-processing` and
 		// `x-openregister-contextchat` above. See or#2164.
 		'x-openregister-agent-context',
+		// Registry-subscriptions: names the external registry (brp/kvk/...)
+		// that owns a subset of this schema's properties, the identity
+		// property, and the owned property list. Absent from this list,
+		// setConfiguration() would silently DROP it and a schema author
+		// could never opt an object into a subscription — same
+		// or#460/#462-class trap as every entry above.
+		'x-openregister-registry',
 	];
 
 	/**
