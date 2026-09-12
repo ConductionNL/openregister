@@ -544,11 +544,11 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * Transient property populated by the render layer
 	 * (`add-archival-annotation-support`) so the @self envelope can carry the
-	 * resolved retention decision — shape:
-	 *   `['effectiveRetention' => 'P30D', 'matchedRule' => 0|null, 'expiresAt' => '...']`.
-	 * Not persisted to the DB; derived from the schema's archival annotation
-	 * rules at render time. Exposed in @self as `_retention`, and omitted
-	 * entirely when not set.
+	 * resolved retention decision. The shape is ArchivalDecisionResolver's:
+	 * MDTO keys such as `retentionPeriod` and `disposalDate`, with the schema
+	 * annotation's evaluation under `annotation`, and no key holding null.
+	 * Not persisted to the DB; derived at render time. Exposed in @self as
+	 * `_retention`, and omitted entirely when not set.
 	 *
 	 * @var array<string, mixed>|null
 	 */

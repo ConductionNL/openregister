@@ -800,6 +800,32 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 	// =========================================================================
 	// Fail-closed SQL match evaluation on null-resolved dynamic variables (#1953).
 	//
+	// 🔴 THESE THREE CANNOT PASS UNDER PHPUNIT, AND THAT IS THE FINDING, NOT A
+	// FLAKE. They were written on 2026-05-27 (#1959). On 2026-06-10 commit
+	// 4496c7f5 added a bypass to MagicRbacHandler::applyRbacFilters():
+	//
+	//     if ($user === null && PHP_SAPI === 'cli') { return; }
+	//
+	// so in ANY cli process an anonymous caller skips RBAC filtering entirely
+	// and every row comes back. PHPUnit is a cli process, so the branch these
+	// tests exercise is unreachable here and they have failed silently ever
+	// since, in a suite CI never ran.
+	//
+	// The rule they assert still holds where it matters. Measured over HTTP on
+	// 2026-09-12 against this exact schema shape (public match rule with
+	// `_organisation` => '$organisation' and one published row): an anonymous
+	// GET returned `total: 0`, the same read as admin returned 1. The web path
+	// fails closed; the cli path does not ask.
+	//
+	// Left failing on purpose rather than skipped: a reason-bearing skip here
+	// would read as "covered" in a suite that is about to become a gate. The
+	// fix belongs in production code, where "no session" alone should stop
+	// meaning "trusted" inside a cli process. OpenRegister already has the
+	// explicit mechanism for that in
+	// {@see \OCA\OpenRegister\Service\SystemOperationContext}, whose own
+	// docblock says the `PHP_SAPI === 'cli'` trust "covers occ and CLI cron
+	// only" and which exists to scope that trust to named code blocks.
+	//
 	// When a `match` rule's dynamic variable ($organisation/$userId/$now)
 	// resolves to null, the SQL/list path MUST emit an impossible predicate
 	// (1 = 0) for that property rather than dropping it from the AND. This makes

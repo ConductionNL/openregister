@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
 use DOMDocument;
+use DOMElement;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
@@ -188,13 +189,14 @@ class SipPackageBuilder {
 	 * @param ObjectEntity $object The object the files belong to.
 	 * @param array $files The object's file metadata.
 	 *
-	 * @return array{entries: list<array<string, mixed>>, manifest: list<array<string, mixed>>} The rows to add.
+	 * @return array{entries: list<array<string, mixed>>, manifest: list<array<string, mixed>>, metadata: list<array<string, mixed>>} The rows to add.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
 	 */
 	private function contentFileEntries(string $objectDir, ObjectEntity $object, array $files): array {
 		$entries = [];
 		$manifest = [];
+		$metadata = [];
 
 		foreach ($files as $file) {
 			if (file_exists($file['path']) === false) {
@@ -214,9 +216,10 @@ class SipPackageBuilder {
 			$bestandPath = $filePath . MdtoBestandGenerator::SIDECAR_SUFFIX;
 			$entries[] = ['path' => $bestandPath, 'kind' => 'string', 'content' => $bestandXml];
 			$manifest[] = $this->createManifestEntry(path: $bestandPath, content: $bestandXml);
+			$metadata[] = $this->createManifestEntry(path: $bestandPath, content: $bestandXml);
 		}
 
-		return ['entries' => $entries, 'manifest' => $manifest];
+		return ['entries' => $entries, 'manifest' => $manifest, 'metadata' => $metadata];
 	}//end contentFileEntries()
 
 	/**
@@ -244,6 +247,9 @@ class SipPackageBuilder {
 		// an in-memory string or an on-disk file, with its logical SIP path.
 		$entries = [];
 		$manifest = [];
+		// The MDTO documents the package ships, per object, so mets.xml can
+		// list them. A manifest that omits files it ships is not a manifest.
+		$metadataFiles = [];
 
 		foreach ($objectsWithFiles as $item) {
 			$object = $item['object'];
@@ -251,9 +257,15 @@ class SipPackageBuilder {
 			$uuid = $object->getUuid();
 			$objectDir = "objects/{$uuid}";
 
+			// The retention period is required to TRANSFER, though MDTO allows
+			// the element to be absent. Asking here keeps the export endpoint
+			// able to serialise a record whose period is unknown.
+			$this->mdtoGenerator->assertTransferPreconditions($object);
+
 			$mdtoXml = $this->mdtoGenerator->generate($object, $files);
 			$entries[] = ['path' => "{$objectDir}/mdto.xml", 'kind' => 'string', 'content' => $mdtoXml];
 			$manifest[] = $this->createManifestEntry(path: "{$objectDir}/mdto.xml", content: $mdtoXml);
+			$metadataFiles[$uuid][] = $this->createManifestEntry(path: "{$objectDir}/mdto.xml", content: $mdtoXml);
 
 			$metadataJson = json_encode($object->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 			$entries[] = ['path' => "{$objectDir}/metadata.json", 'kind' => 'string', 'content' => $metadataJson];
@@ -262,9 +274,14 @@ class SipPackageBuilder {
 			$fileEntries = $this->contentFileEntries(objectDir: $objectDir, object: $object, files: $files);
 			$entries = array_merge($entries, $fileEntries['entries']);
 			$manifest = array_merge($manifest, $fileEntries['manifest']);
+			$metadataFiles[$uuid] = array_merge($metadataFiles[$uuid], $fileEntries['metadata']);
 		}//end foreach
 
-		$metsXml = $this->generateMetsXml(transferId: $transferId, objectsWithFiles: $objectsWithFiles);
+		$metsXml = $this->generateMetsXml(
+			transferId: $transferId,
+			objectsWithFiles: $objectsWithFiles,
+			metadataFiles: $metadataFiles
+		);
 		$entries[] = ['path' => 'mets.xml', 'kind' => 'string', 'content' => $metsXml];
 		$manifest[] = $this->createManifestEntry(path: 'mets.xml', content: $metsXml);
 
@@ -470,12 +487,13 @@ class SipPackageBuilder {
 	 *
 	 * @param string $transferId The transfer list UUID.
 	 * @param array<int,array<string,mixed>> $objectsWithFiles Objects and their file metadata.
+	 * @param array<string,array<int,array<string,mixed>>> $metadataFiles The MDTO documents the package ships, keyed by object uuid.
 	 *
 	 * @return string The METS XML string.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
-	private function generateMetsXml(string $transferId, array $objectsWithFiles): string {
+	private function generateMetsXml(string $transferId, array $objectsWithFiles, array $metadataFiles = []): string {
 		$dom = new DOMDocument('1.0', 'UTF-8');
 		$dom->formatOutput = true;
 
@@ -494,6 +512,13 @@ class SipPackageBuilder {
 		$renditionGrp = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fileGrp');
 		$renditionGrp->setAttribute('USE', 'RENDITION');
 		$fileSec->appendChild($renditionGrp);
+
+		// The MDTO documents travel in the package too: the object's own and
+		// one per file. Leaving them out of fileSec made mets.xml describe
+		// less than the package contains.
+		$metadataGrp = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fileGrp');
+		$metadataGrp->setAttribute('USE', 'METADATA');
+		$fileSec->appendChild($metadataGrp);
 
 		$structMap = $dom->createElementNS(self::METS_NAMESPACE, 'mets:structMap');
 		$structMap->setAttribute('TYPE', 'physical');
@@ -514,46 +539,127 @@ class SipPackageBuilder {
 			$objectDiv->setAttribute('TYPE', 'object');
 			$rootDiv->appendChild($objectDiv);
 
-			foreach ($files as $file) {
-				$fileId = 'FILE-' . $fileCounter;
-				$fileCounter++;
+			$fileCounter = $this->appendContentFiles(
+				dom: $dom,
+				groups: ['original' => $originalGrp, 'rendition' => $renditionGrp],
+				objectDiv: $objectDiv,
+				uuid: (string)$uuid,
+				files: $files,
+				fileCounter: $fileCounter
+			);
 
-				$isRendition = ($file['isRendition'] === true);
-				$subDir = 'original';
-				if ($isRendition === true) {
-					$subDir = 'rendition';
-				}
-
-				$filePath = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
-
-				$fileElement = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
-				$fileElement->setAttribute('ID', $fileId);
-				$fileElement->setAttribute('SIZE', (string)$file['size']);
-				$fileElement->setAttribute('MIMETYPE', $file['format']);
-				$fileElement->setAttribute('CHECKSUM', $file['checksum']);
-				$fileElement->setAttribute('CHECKSUMTYPE', 'SHA-256');
-
-				$fLocat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
-				$fLocat->setAttribute('LOCTYPE', 'URL');
-				$fLocat->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $filePath);
-				$fileElement->appendChild($fLocat);
-
-				if ($isRendition === true) {
-					$renditionGrp->appendChild($fileElement);
-				}
-
-				if ($isRendition === false) {
-					$originalGrp->appendChild($fileElement);
-				}
-
-				$fptr = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
-				$fptr->setAttribute('FILEID', $fileId);
-				$objectDiv->appendChild($fptr);
-			}//end foreach
+			$fileCounter = $this->appendMetadataFiles(
+				dom: $dom,
+				group: $metadataGrp,
+				objectDiv: $objectDiv,
+				rows: ($metadataFiles[$uuid] ?? []),
+				fileCounter: $fileCounter
+			);
 		}//end foreach
 
 		return $dom->saveXML();
 	}//end generateMetsXml()
+
+	/**
+	 * List an object's content files in the METS file section.
+	 *
+	 * @param DOMDocument $dom The METS document.
+	 * @param array<string,DOMElement> $groups The ORIGINAL and RENDITION file groups.
+	 * @param DOMElement $objectDiv The object's div, which points at them.
+	 * @param string $uuid The object uuid, for the file paths.
+	 * @param array $files The object's file metadata.
+	 * @param int $fileCounter The running METS file id counter.
+	 *
+	 * @return int The counter after these files.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	private function appendContentFiles(
+		DOMDocument $dom,
+		array $groups,
+		DOMElement $objectDiv,
+		string $uuid,
+		array $files,
+		int $fileCounter,
+	): int {
+		foreach ($files as $file) {
+			$fileId = 'FILE-' . $fileCounter;
+			$fileCounter++;
+
+			$subDir = 'original';
+			if ($file['isRendition'] === true) {
+				$subDir = 'rendition';
+			}
+
+			$element = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
+			$element->setAttribute('ID', $fileId);
+			$element->setAttribute('SIZE', (string)$file['size']);
+			$element->setAttribute('MIMETYPE', $file['format']);
+			$element->setAttribute('CHECKSUM', $file['checksum']);
+			$element->setAttribute('CHECKSUMTYPE', 'SHA-256');
+
+			$locat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
+			$locat->setAttribute('LOCTYPE', 'URL');
+			$locat->setAttributeNS(
+				'http://www.w3.org/1999/xlink',
+				'xlink:href',
+				"objects/{$uuid}/content/{$subDir}/{$file['name']}"
+			);
+			$element->appendChild($locat);
+			$groups[$subDir]->appendChild($element);
+
+			$pointer = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
+			$pointer->setAttribute('FILEID', $fileId);
+			$objectDiv->appendChild($pointer);
+		}
+
+		return $fileCounter;
+	}//end appendContentFiles()
+
+	/**
+	 * List an object's MDTO documents in the METS file section.
+	 *
+	 * @param DOMDocument $dom The METS document.
+	 * @param DOMElement $group The METADATA file group.
+	 * @param DOMElement $objectDiv The object's div, which points at them.
+	 * @param array $rows The manifest rows for this object's MDTO documents.
+	 * @param int $fileCounter The running METS file id counter.
+	 *
+	 * @return int The counter after these files.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	private function appendMetadataFiles(
+		DOMDocument $dom,
+		DOMElement $group,
+		DOMElement $objectDiv,
+		array $rows,
+		int $fileCounter,
+	): int {
+		foreach ($rows as $row) {
+			$metadataId = 'MD-' . $fileCounter;
+			$fileCounter++;
+
+			$element = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
+			$element->setAttribute('ID', $metadataId);
+			$element->setAttribute('SIZE', (string)$row['size']);
+			$element->setAttribute('MIMETYPE', 'application/xml');
+			$element->setAttribute('CHECKSUM', $row['checksum']);
+			$element->setAttribute('CHECKSUMTYPE', 'SHA-256');
+
+			$locat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
+			$locat->setAttribute('LOCTYPE', 'URL');
+			$locat->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $row['path']);
+			$element->appendChild($locat);
+			$group->appendChild($element);
+
+			$pointer = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
+			$pointer->setAttribute('FILEID', $metadataId);
+			$objectDiv->appendChild($pointer);
+		}
+
+		return $fileCounter;
+	}//end appendMetadataFiles()
 
 	/**
 	 * Generate PREMIS XML preservation metadata.

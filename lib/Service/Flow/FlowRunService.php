@@ -60,6 +60,14 @@ use Throwable;
  * one branch is the version-pin refusal in advanceStream(): the same rule
  * execute() enforces, applied to the completion path so a week-old task
  * continues the graph its run was pinned to.
+ * @SuppressWarnings(PHPMD.TooManyMethods) 28 against 25, from or-flow-run-node's
+ * executeNode() and its four small private helpers (stepById, failMissingNode,
+ * completeNodeRun, failSuspendedNode, failThrownNode). Each was split OUT of
+ * executeNode() specifically to bring ITS OWN complexity and length back under
+ * threshold — collapsing them again would trade one flagged metric for
+ * another on the very method this split was made to fix, and folding them
+ * into unrelated existing methods would hide one code path inside another
+ * that has nothing to do with it.
  */
 class FlowRunService {
 	/**
@@ -98,6 +106,20 @@ class FlowRunService {
 	 * @var string
 	 */
 	public const RUN_AS_CONTEXT_KEY = 'runAs';
+
+	/**
+	 * The trigger a direct node invocation carries (or-flow-run-node).
+	 *
+	 * Unlike {@see FlowRunVersionPin::TRIGGER_TEST}, this trigger is NOT
+	 * exempt from the published-version requirement: a direct-invoked node
+	 * still runs against a real, published graph (RN-3) — it is the AUTHORING
+	 * trust that is absent here (this is an app button, not the editor), not
+	 * the soundness/publication requirement every live dispatch already
+	 * carries.
+	 *
+	 * @var string
+	 */
+	public const TRIGGER_DIRECT_NODE = 'direct-node';
 
 	/**
 	 * The acting-identity scope handed to every dispatcher this service builds.
@@ -598,6 +620,15 @@ class FlowRunService {
 	 *
 	 * @return FlowRun The queued run.
 	 *
+	 * @throws FlowLifecycleRefused When the trigger is not `test` and the flow
+	 *                     has no published version (or its published version
+	 *                     is unsound) — `requirePublishedAndSound()`'s
+	 *                     refusal. Pre-existing but previously undeclared
+	 *                     here: `FlowController::run()` already catches it
+	 *                     around this same call chain, so the contract was
+	 *                     always real, just missing from this signature —
+	 *                     surfaced by phpstan flagging a new caller's catch
+	 *                     of it as dead, which it was not.
 	 * @throws FlowDeadEnd When a node has no outgoing edge and does not end the
 	 *                     flow, so the run is refused rather than started. Declared
 	 *                     because it is part of this method's contract: every
@@ -982,6 +1013,261 @@ class FlowRunService {
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end execute()
+
+	/**
+	 * Run exactly ONE named node of a queued run's published graph, and stop.
+	 *
+	 * The mode or-flow-run-node's tasks.md asked for, distinct from
+	 * {@see execute()}'s `startAt`: `startAt` still walks the WHOLE graph
+	 * onward from a chosen node, following every real edge, join and loop it
+	 * meets. This does not walk at all — it dispatches the one named step
+	 * directly through {@see RegistryStepDispatcher}, exactly the way
+	 * {@see FlowEngine} would for that one hop, and records the result. There
+	 * is deliberately no engine-level graph traversal here: a node invoked
+	 * this way is being asked to do its own work in isolation, not to hand
+	 * off to whatever it happens to point at in its authoring graph — routing
+	 * output onward would silently run MORE of the flow than the caller was
+	 * authorized (RN-1) to run.
+	 *
+	 * The queued run this expects came from {@see queue()} with
+	 * `trigger: self::TRIGGER_DIRECT_NODE`, so it already carries a resolved
+	 * attribution and a version pin exactly like any other dispatch — a
+	 * direct-invoked node still needs to know WHOSE rights it writes with and
+	 * WHICH published graph it belongs to.
+	 *
+	 * @param FlowRun $run The queued run.
+	 * @param array $flow The flow document (used only to resolve the published pin).
+	 * @param object $subject The subject object the node acts on.
+	 * @param string $nodeId The node to run.
+	 *
+	 * @return FlowRun The updated run: COMPLETED with the node's output items,
+	 *                 or FAILED with the node's exception recorded. Never
+	 *                 SUSPENDED — see {@see failSuspendedNode()}.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-a-node-type-opts-in-to-direct-invocation
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::fromSubject/normalise are
+	 * stateless value normalisers, the same ones execute() calls under the same
+	 * suppression reasoning already given there: injecting a factory to call
+	 * them would add a dependency without removing any coupling.
+	 */
+	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId): FlowRun {
+		if ($run->getStatus() !== FlowRun::STATUS_QUEUED) {
+			// Parked awaiting delegated-identity consent, or otherwise not
+			// ready to proceed — the same "do not double-act" rule execute()
+			// applies via isTerminal(), generalised: a run that queue() did not
+			// hand back QUEUED is not this method's to advance.
+			return $run;
+		}
+
+		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
+		if ($pinned === null) {
+			return $this->failUnresolvableVersion(run: $run);
+		}
+
+		$step = $this->stepById(pinned: $pinned, nodeId: $nodeId);
+		if ($step === null) {
+			return $this->failMissingNode(run: $run, nodeId: $nodeId);
+		}
+
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$run->setUpdated(new DateTime());
+		$this->mapper->update($run);
+
+		$items = FlowItems::fromSubject(subject: $subject);
+		$guard = $this->guardFor(run: $run, flow: $pinned);
+		$context = $this->nodeContextFor(run: $run, resuming: false, guard: $guard);
+		$dispatcher = new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope());
+		$stepType = (string)($step['type'] ?? '');
+		$startedAt = microtime(true);
+
+		try {
+			$output = FlowItems::normalise(value: $dispatcher->dispatch(step: $step, items: $items, context: $context));
+			$this->completeNodeRun(run: $run, nodeId: $nodeId, stepType: $stepType, items: $items, output: $output, context: $context, startedAt: $startedAt);
+		} catch (FlowSuspension $suspension) {
+			$this->failSuspendedNode(run: $run, nodeId: $nodeId, stepType: $stepType, suspension: $suspension, startedAt: $startedAt);
+		} catch (Throwable $e) {
+			$this->failThrownNode(run: $run, nodeId: $nodeId, stepType: $stepType, error: $e, startedAt: $startedAt);
+		}
+
+		$run->setUpdated(new DateTime());
+
+		return $this->mapper->update($run);
+	}//end executeNode()
+
+	/**
+	 * Find one step by id in a resolved graph's `nodes` list.
+	 *
+	 * @param array<string, mixed> $pinned The resolved (published) graph.
+	 * @param string $nodeId The step id to find.
+	 *
+	 * @return array<string, mixed>|null The step, or null when no node carries that id.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function stepById(array $pinned, string $nodeId): ?array {
+		foreach ((array)($pinned['nodes'] ?? []) as $candidate) {
+			if ((string)($candidate['id'] ?? '') === $nodeId) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end stepById()
+
+	/**
+	 * Fail a run whose named node is not part of the graph it is pinned to.
+	 *
+	 * The node existed when the caller resolved it (moments ago, in the
+	 * controller) but not in the PUBLISHED graph this run is pinned to — a
+	 * race with a republish, or a caller naming a node id that lives only on
+	 * the draft. Either way this is the run's problem to report, not a 500:
+	 * the request was well-formed, the graph just moved.
+	 *
+	 * @param FlowRun $run The run to fail.
+	 * @param string $nodeId The node id that could not be found.
+	 *
+	 * @return FlowRun The failed run.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function failMissingNode(FlowRun $run, string $nodeId): FlowRun {
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError(sprintf(
+			'Node "%s" is not part of the published graph this run is pinned to.',
+			$nodeId
+		));
+		$run->setUpdated(new DateTime());
+
+		return $this->mapper->update($run);
+	}//end failMissingNode()
+
+	/**
+	 * Write a completed direct-invoke hop back onto the run.
+	 *
+	 * @param FlowRun $run The run.
+	 * @param string $nodeId The node that ran.
+	 * @param string $stepType The step's type.
+	 * @param array $items The items the node received.
+	 * @param array $output The items the node returned.
+	 * @param array $context The node context (for its {@see FlowStepReport}).
+	 * @param float $startedAt `microtime(true)` when the node was called.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function completeNodeRun(
+		FlowRun $run,
+		string $nodeId,
+		string $stepType,
+		array $items,
+		array $output,
+		array $context,
+		float $startedAt
+	): void {
+		$entry = [
+			'transition' => $nodeId,
+			'type' => $stepType,
+			'status' => 'completed',
+			'itemsIn' => count($items),
+			'itemsOut' => count($output),
+			'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
+		];
+
+		$report = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if ($report instanceof FlowStepReport === true) {
+			$detail = $report->take();
+			if ($detail !== []) {
+				$entry['report'] = $detail;
+			}
+		}
+
+		$run->setItems($output);
+		$run->setStatus(FlowRun::STATUS_COMPLETED);
+		$run->setLog(array_merge(($run->getLog() ?? []), [$entry]));
+		$this->stepHistory()->record(run: $run, entries: [$entry]);
+	}//end completeNodeRun()
+
+	/**
+	 * Fail a run whose one node suspended — NOT SUPPORTED, deliberately, for
+	 * now: this endpoint is a synchronous "run this and hand back the
+	 * result" call — the contract the config-form-driven callers (a
+	 * case-detail button) are built around. A node that suspends here has
+	 * nothing to resume it: there is no graph position to wake into, only
+	 * the one isolated hop this method ran. Reported as a clear failure
+	 * rather than silently parking a run nothing will ever signal.
+	 *
+	 * @param FlowRun $run The run.
+	 * @param string $nodeId The node that suspended.
+	 * @param string $stepType The step's type.
+	 * @param FlowSuspension $suspension What the node asked to wait for.
+	 * @param float $startedAt `microtime(true)` when the node was called.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function failSuspendedNode(FlowRun $run, string $nodeId, string $stepType, FlowSuspension $suspension, float $startedAt): void {
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError(
+			'This node suspended, which the direct-invoke endpoint does not '
+			. 'support — it must complete synchronously: ' . $suspension->getMessage()
+		);
+		$run->setLog(array_merge(
+			($run->getLog() ?? []),
+			[
+				[
+					'transition' => $nodeId,
+					'type' => $stepType,
+					'status' => 'failed',
+					'reason' => 'suspended-unsupported',
+					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
+				],
+			]
+		));
+	}//end failSuspendedNode()
+
+	/**
+	 * Fail a run whose one node threw.
+	 *
+	 * @param FlowRun $run The run.
+	 * @param string $nodeId The node that threw.
+	 * @param string $stepType The step's type.
+	 * @param Throwable $error What the node threw.
+	 * @param float $startedAt `microtime(true)` when the node was called.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function failThrownNode(FlowRun $run, string $nodeId, string $stepType, Throwable $error, float $startedAt): void {
+		$this->logger->warning(
+			message: '[FlowRunService] Direct-invoked node failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'run' => $run->getUuid(),
+				'node' => $nodeId,
+				'error' => $error->getMessage(),
+			]
+		);
+
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError($error->getMessage());
+		$run->setLog(array_merge(
+			($run->getLog() ?? []),
+			[
+				[
+					'transition' => $nodeId,
+					'type' => $stepType,
+					'status' => 'failed',
+					'error' => $error->getMessage(),
+					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
+				],
+			]
+		));
+	}//end failThrownNode()
 
 	/**
 	 * Refresh the subject's fields on a resumed run's stored items, in place.

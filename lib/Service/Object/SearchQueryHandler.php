@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Support\FilterParams;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
@@ -151,6 +152,49 @@ class SearchQueryHandler {
 	}//end schemaHasObjectSource()
 
 	/**
+	 * Whether the target schema declares a property literally named `filter`.
+	 *
+	 * Only such a schema can mean `filter[x]=v` as a filter on its own `filter`
+	 * property, so only there is the bracket spelling left alone. A list of
+	 * schemas (cross-table search) counts when any one of them declares it. A
+	 * schema that cannot be resolved does not, so the lift applies.
+	 *
+	 * A SYSTEM-level structural lookup, like {@see schemaHasObjectSource()}: it
+	 * decides how the parameters are parsed and returns no schema data, so it
+	 * bypasses RBAC and multitenancy. The data read stays checked downstream.
+	 *
+	 * @param int|string|array|null $schema The schema id/slug, or a list of them.
+	 *
+	 * @return bool True when a target schema declares a `filter` property.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private function schemaDeclaresFilterProperty(int|string|array|null $schema): bool {
+		if ($schema === null) {
+			return false;
+		}
+
+		$schemaRefs = [$schema];
+		if (is_array($schema) === true) {
+			$schemaRefs = $schema;
+		}
+
+		foreach ($schemaRefs as $schemaRef) {
+			try {
+				$entity = $this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+			} catch (\Throwable $e) {
+				continue;
+			}
+
+			if (array_key_exists(FilterParams::FILTER_KEY, ($entity->getProperties() ?? [])) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end schemaDeclaresFilterProperty()
+
+	/**
 	 * Build search query from request parameters
 	 *
 	 * Converts HTTP request parameters into a structured query array for searchObjectsPaginated.
@@ -249,15 +293,24 @@ class SearchQueryHandler {
 			$fixedParams[$key] = $value;
 		}//end foreach
 
+		// STEP 1b: the bracket spelling. `filter[x]=v` means `x=v` here, as it
+		// does on the aggregation endpoints (openregister#3611). Before this,
+		// `filter` was read as a property filter on a property literally named
+		// `filter`, which no schema has, so every such query returned the empty
+		// set. The one schema this must not touch is one that really declares a
+		// `filter` property: there the old meaning is the right one.
+		if (is_array($fixedParams[FilterParams::FILTER_KEY] ?? null) === true
+			&& $this->schemaDeclaresFilterProperty(schema: $schema) === false
+		) {
+			$fixedParams = FilterParams::liftBracketFilter(params: $fixedParams);
+		}
+
 		// STEP 2: Remove system parameters that shouldn't be used as filters.
 		$params = $fixedParams;
-		unset(
-			$params['id'],
-			$params['_route'],
-			$params['rbac'],
-			$params['multi'],
-			$params['deleted']
-		);
+		unset($params['_route']);
+		foreach (FilterParams::OBJECT_SYSTEM_PARAMS as $systemParam) {
+			unset($params[$systemParam]);
+		}
 
 		// Build the query structure for searchObjectsPaginated.
 		$query = [];

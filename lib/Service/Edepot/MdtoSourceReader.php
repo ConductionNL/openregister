@@ -50,6 +50,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
  * 2. The `tmlo` block under the Dutch key (`aggregatieniveau`,
  *    `dekkingInTijd`, `beperkingGebruik`).
  *
+ * The same two layers carry the CORE archival facts, which is what lets one
+ * generator serve both exports. An object written through the retention
+ * pipeline keeps them in `retention`; an object written through TMLO keeps
+ * them in `tmlo`, under TMLO's own spellings (`bewaarTermijn` with its
+ * capital T, `vernietigingsCategorie` for the disposal category). Reading
+ * both here is why `MdtoXmlGenerator` is the only implementation of the
+ * format and `TmloService` no longer has a second one.
+ *
  * Measured on 2026-09-11: NOTHING in this repository writes either key for any
  * of the three, so on current data all three elements are absent. They are
  * read rather than derived because no other stored field answers the
@@ -59,6 +67,16 @@ use OCA\OpenRegister\Db\ObjectEntity;
  * @psalm-suppress UnusedClass
  */
 class MdtoSourceReader {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param MdtoValueReader $values The primitives every archival read shares.
+	 */
+	public function __construct(
+		private readonly MdtoValueReader $values,
+	) {
+	}//end __construct()
 
 	/**
 	 * The `beperkingGebruikType` label used for an active legal hold.
@@ -71,6 +89,109 @@ class MdtoSourceReader {
 	public const USE_RESTRICTION_OTHER = 'Overig';
 
 	/**
+	 * The begrippenlijst name used for `informatiecategorie` when the record
+	 * does not say which selectielijst its category came from.
+	 */
+	public const CATEGORY_LIST_FALLBACK = 'Selectielijst';
+
+
+	/**
+	 * The core archival facts, from whichever block carries them.
+	 *
+	 * One read rather than six, because they are one question: what does this
+	 * object say about its own archiving. An object written through the
+	 * retention pipeline keeps them in `retention`; one written through TMLO
+	 * keeps them in `tmlo` under TMLO's spellings, and `vernietigingsCategorie`
+	 * and `classification` are the disposal category and the classification
+	 * scheme, which MDTO keeps as separate elements.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return array{appraisal: string|null, retentionPeriod: string|null,
+	 *     disposalDate: string|null, disposalCategory: array{label: string, list: string}|null,
+	 *     classification: string|null, description: string|null} The facts.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function coreFacts(ObjectEntity $object): array {
+		return [
+			'appraisal' => $this->values->text(
+				value: $this->values->declared(object: $object, abstractKey: 'archiefnominatie', tmloKey: 'archiefnominatie')
+			),
+			'retentionPeriod' => $this->values->text(
+				value: $this->values->declared(object: $object, abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn')
+			),
+			'disposalDate' => $this->values->matching(
+				value: $this->values->declared(object: $object, abstractKey: 'archiefactiedatum', tmloKey: 'archiefactiedatum'),
+				pattern: MdtoValueReader::XSD_DATE
+			),
+			'disposalCategory' => $this->disposalCategory(object: $object),
+			'classification' => $this->values->textAt(value: $object->getTmlo(), key: 'classification'),
+			'description' => $this->values->text(
+				value: $this->values->declared(object: $object, abstractKey: 'toelichting', tmloKey: 'toelichting')
+			),
+		];
+	}//end coreFacts()
+
+	/**
+	 * The disposal category and the list it came from, MDTO's `informatiecategorie`.
+	 *
+	 * TMLO calls this `vernietigingsCategorie`; the retention block calls it
+	 * `classification`. They are the same fact, the selectielijst category
+	 * that decides disposal, which is why MDTO has one element for it.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return array{label: string, list: string}|null The category, or null when there is none.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	private function disposalCategory(ObjectEntity $object): ?array {
+		$label = $this->values->text(
+			value: $this->values->declared(object: $object, abstractKey: 'classification', tmloKey: 'vernietigingsCategorie')
+		);
+		if ($label === null) {
+			return null;
+		}
+
+		$list = $this->values->textAt(value: $object->getRetention(), key: 'selectielijstBron');
+
+		return ['label' => $label, 'list' => ($list ?? self::CATEGORY_LIST_FALLBACK)];
+	}//end disposalCategory()
+
+	/**
+	 * The object's naam.
+	 *
+	 * The object's own data first, then the entity's `name` column, then the
+	 * uuid. The column matters: an object exported through the TMLO endpoint
+	 * carries its name there rather than in its data, and reading only the
+	 * data would have labelled every such record with its uuid.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return string The name, empty when nothing supplies one.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
+	 */
+	public function name(ObjectEntity $object): string {
+		$data = ($object->getObject() ?? []);
+		$name = ($this->values->textAt(value: $data, key: 'title')
+			?? $this->values->textAt(value: $data, key: 'naam')
+			?? $this->values->textAt(value: $data, key: 'name')
+			?? $this->values->text(value: $object->getName())
+			?? $this->values->text(value: $object->getUuid()));
+
+		return ($name ?? '');
+	}//end name()
+
+
+
+
+
+
+
+
+	/**
 	 * Resolve the object's aggregatieniveau.
 	 *
 	 * @param ObjectEntity $object The object to read.
@@ -80,18 +201,18 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	public function aggregationLevel(ObjectEntity $object): ?array {
-		$declared = $this->declaredValue(
+		$declared = $this->values->declared(
 			object: $object,
 			abstractKey: 'aggregationLevel',
 			tmloKey: 'aggregatieniveau'
 		);
 
-		$label = $this->labelOf(value: $declared);
+		$label = $this->values->label(value: $declared);
 		if ($label === null) {
 			return null;
 		}
 
-		return ['label' => $label, 'code' => $this->codeOf(value: $declared)];
+		return ['label' => $label, 'code' => $this->values->textAt(value: $declared, key: 'code')];
 	}//end aggregationLevel()
 
 	/**
@@ -113,7 +234,7 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	public function temporalCoverage(ObjectEntity $object): array {
-		$declared = $this->declaredValue(
+		$declared = $this->values->declared(
 			object: $object,
 			abstractKey: 'temporalCoverage',
 			tmloKey: 'dekkingInTijd'
@@ -164,18 +285,21 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	public function useRestriction(ObjectEntity $object): ?array {
-		$declared = $this->declaredValue(
+		$declared = $this->values->declared(
 			object: $object,
 			abstractKey: 'useRestriction',
 			tmloKey: 'beperkingGebruik'
 		);
 
-		$label = $this->labelOf(value: $declared);
+		$label = $this->values->label(value: $declared);
 		if ($label !== null) {
 			return [
 				'type' => $label,
-				'description' => $this->stringAt(value: $declared, key: 'description'),
-				'startDate' => $this->dateOnly(value: $this->stringAt(value: $declared, key: 'startDate')),
+				'description' => $this->values->textAt(value: $declared, key: 'description'),
+				'startDate' => $this->values->matching(
+					value: $this->values->textAt(value: $declared, key: 'startDate'),
+					pattern: MdtoValueReader::XSD_DATE_PREFIX
+				),
 			];
 		}
 
@@ -199,7 +323,7 @@ class MdtoSourceReader {
 		}
 
 		$description = 'Legal hold';
-		$reason = $this->stringAt(value: $hold, key: 'reason');
+		$reason = $this->values->textAt(value: $hold, key: 'reason');
 		if ($reason !== null) {
 			$description = 'Legal hold: ' . $reason;
 		}
@@ -207,7 +331,10 @@ class MdtoSourceReader {
 		return [
 			'type' => self::USE_RESTRICTION_OTHER,
 			'description' => $description,
-			'startDate' => $this->dateOnly(value: ($hold['placedDate'] ?? null)),
+			'startDate' => $this->values->matching(
+				value: ($hold['placedDate'] ?? null),
+				pattern: MdtoValueReader::XSD_DATE_PREFIX
+			),
 		];
 	}//end legalHoldRestriction()
 
@@ -229,132 +356,27 @@ class MdtoSourceReader {
 			return null;
 		}
 
-		$type = $this->stringAt(value: $entry, key: 'type');
-		$start = $this->coverageDate(value: $this->stringAt(value: $entry, key: 'start'));
+		$type = $this->values->textAt(value: $entry, key: 'type');
+		$start = $this->values->matching(
+			value: $this->values->textAt(value: $entry, key: 'start'),
+			pattern: MdtoValueReader::XSD_DATE_UNION
+		);
 		if ($type === null || $start === null) {
 			return null;
 		}
 
-		return ['type' => $type, 'start' => $start, 'end' => $this->coverageDate(value: $this->stringAt(value: $entry, key: 'end'))];
+		$end = $this->values->matching(
+			value: $this->values->textAt(value: $entry, key: 'end'),
+			pattern: MdtoValueReader::XSD_DATE_UNION
+		);
+
+		return ['type' => $type, 'start' => $start, 'end' => $end];
 	}//end completeCoverageEntry()
 
-	/**
-	 * Read a declared archival value from the abstract or the TMLO block.
-	 *
-	 * @param ObjectEntity $object The source object.
-	 * @param string $abstractKey The English key on the retention block.
-	 * @param string $tmloKey The Dutch key on the TMLO block.
-	 *
-	 * @return mixed The declared value, or null when neither block carries one.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
-	 */
-	private function declaredValue(ObjectEntity $object, string $abstractKey, string $tmloKey): mixed {
-		$retention = ($object->getRetention() ?? []);
-		if (isset($retention[$abstractKey]) === true) {
-			return $retention[$abstractKey];
-		}
 
-		$tmlo = ($object->getTmlo() ?? []);
-		if (is_array($tmlo) === true && isset($tmlo[$tmloKey]) === true) {
-			return $tmlo[$tmloKey];
-		}
 
-		return null;
-	}//end declaredValue()
 
-	/**
-	 * Read the begripLabel out of a declared value.
-	 *
-	 * A declared value may be a bare label string or an array carrying a
-	 * `label` or `type` key. Anything else yields null and the caller omits
-	 * the element.
-	 *
-	 * @param mixed $value The declared value.
-	 *
-	 * @return string|null The label, or null when there is none.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
-	 */
-	private function labelOf(mixed $value): ?string {
-		if (is_string($value) === true && $value !== '') {
-			return $value;
-		}
 
-		return ($this->stringAt(value: $value, key: 'label') ?? $this->stringAt(value: $value, key: 'type'));
-	}//end labelOf()
 
-	/**
-	 * Read the begripCode out of a declared value.
-	 *
-	 * @param mixed $value The declared value.
-	 *
-	 * @return string|null The code, or null when there is none.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
-	 */
-	private function codeOf(mixed $value): ?string {
-		return $this->stringAt(value: $value, key: 'code');
-	}//end codeOf()
 
-	/**
-	 * Read a non-empty string at a key of an array value.
-	 *
-	 * @param mixed $value The value, which need not be an array.
-	 * @param string $key The key to read.
-	 *
-	 * @return string|null The string, or null when it is absent or empty.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
-	 */
-	private function stringAt(mixed $value, string $key): ?string {
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		$candidate = ($value[$key] ?? null);
-		if (is_string($candidate) === true && $candidate !== '') {
-			return $candidate;
-		}
-
-		return null;
-	}//end stringAt()
-
-	/**
-	 * Accept a date only in a form the XSD's dekkingInTijd union allows.
-	 *
-	 * @param string|null $value The declared date.
-	 *
-	 * @return string|null The value when it is a gYear, gYearMonth or date; null otherwise.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
-	 */
-	private function coverageDate(?string $value): ?string {
-		if ($value === null || preg_match('/^\d{4}(-\d{2}(-\d{2})?)?$/', $value) !== 1) {
-			return null;
-		}
-
-		return $value;
-	}//end coverageDate()
-
-	/**
-	 * Reduce an ISO-8601 timestamp to the xsd:date the termijn element needs.
-	 *
-	 * @param mixed $value The stored timestamp.
-	 *
-	 * @return string|null The date part, or null when the value is unusable.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
-	 */
-	private function dateOnly(mixed $value): ?string {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $value, $matches) !== 1) {
-			return null;
-		}
-
-		return $matches[1];
-	}//end dateOnly()
 }//end class

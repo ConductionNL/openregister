@@ -551,6 +551,18 @@ return [
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
 
+        // Direct node invocation (or-flow-run-node): run ONE named node of a
+        // published flow against ONE subject, authorized against that
+        // subject via OpenRegister's object-RBAC — deliberately NOT the same
+        // `flow.run` right `flow#run` above checks (RN-1, design.md: `flow.run`
+        // is subject-blind and adds no safety here). A SEPARATE controller,
+        // not `FlowController`, because its authorization shape has nothing
+        // in common with the flow CRUD/catalogue endpoints below. `{id}` here
+        // is `[^/]+` like every other flow route, so `nodeId` — also
+        // `[^/]+` — can never be swallowed by it.
+        ['name' => 'flowNodeRun#form', 'url' => '/api/flows/{id}/nodes/{nodeId}/run', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'nodeId' => '[^/]+']],
+        ['name' => 'flowNodeRun#run',  'url' => '/api/flows/{id}/nodes/{nodeId}/run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'nodeId' => '[^/]+']],
+
         // Lifecycle. Declared BEFORE the bare `{id}` routes for the same reason
         // `{id}/run` is: `id` matches `[^/]+`, so a uuid can never swallow a
         // trailing literal segment, but keeping the specific paths first means
