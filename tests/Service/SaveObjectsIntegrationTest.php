@@ -103,7 +103,7 @@ class SaveObjectsIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, false, false);
+				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors
 			}

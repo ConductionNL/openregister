@@ -77,7 +77,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, false, false);
+				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
 			} catch (\Throwable $e) {
 				// best effort
 			}
@@ -297,7 +297,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase {
 
 		// Delete the target out from under the reference.
 		try {
-			$this->objectService->deleteObject($target->getUuid(), false, false);
+			$this->objectService->deleteObject($target->getUuid(), _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			// best effort
 		}

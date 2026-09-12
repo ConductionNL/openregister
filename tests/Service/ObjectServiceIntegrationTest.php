@@ -93,12 +93,32 @@ class ObjectServiceIntegrationTest extends TestCase {
 	private array $createdObjectUuids = [];
 
 	/**
+	 * The session user as it was before this file touched it.
+	 *
+	 * @var \OCP\IUser|null
+	 */
+	private ?\OCP\IUser $previousSessionUser = null;
+
+	/**
 	 * Set up test fixtures
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+
+		// 🔴 THIS FILE WRITES OBJECTS, SO IT NEEDS A CALLER WHO MAY WRITE.
+		// It never logged anybody in, and passed anyway: ten other Service
+		// files left `admin` in the process-global session, and these tests
+		// were riding on it. With that leak closed they ran as Anonymous, the
+		// writes were refused, and an import reported `created: []`. A test
+		// that needs an authenticated caller establishes one itself.
+		$userSession = \OC::$server->get(\OCP\IUserSession::class);
+		$this->previousSessionUser = $userSession->getUser();
+		$admin = \OC::$server->get(\OCP\IUserManager::class)->get('admin');
+		if ($admin !== null) {
+			$userSession->setUser($admin);
+		}
 		$this->service = \OC::$server->get(ObjectService::class);
 		$this->registerMapper = \OC::$server->get(RegisterMapper::class);
 		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
@@ -159,6 +179,10 @@ class ObjectServiceIntegrationTest extends TestCase {
 				// Ignore
 			}
 		}
+
+		// Put the session back the way it was found, so the next test file
+		// starts from the session state it expects.
+		\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
 
 		parent::tearDown();
 	}
@@ -771,7 +795,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$this->service->setRegister($this->testRegister);
 		$this->service->setSchema($this->testSchema);
 
-		$result = $this->service->deleteObject($uuid, false, false);
+		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
@@ -792,7 +816,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$uuid = $saved->getUuid();
 
 		// Don't set schema context - let delete derive it
-		$result = $this->service->deleteObject($uuid, false, false);
+		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
