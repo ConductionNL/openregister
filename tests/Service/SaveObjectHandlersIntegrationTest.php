@@ -25,7 +25,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\BulkOperationsHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -51,7 +50,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	private TransformationHandler $transformationHandler;
 	private DeleteObject $deleteObject;
 	private CascadingHandler $cascadingHandler;
-	private BulkOperationsHandler $bulkOperationsHandler;
 	private PerformanceHandler $performanceHandler;
 	private SaveObjects $saveObjects;
 	private SaveObject $saveHandler;
@@ -76,7 +74,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$this->transformationHandler = \OC::$server->get(TransformationHandler::class);
 		$this->deleteObject = \OC::$server->get(DeleteObject::class);
 		$this->cascadingHandler = \OC::$server->get(CascadingHandler::class);
-		$this->bulkOperationsHandler = \OC::$server->get(BulkOperationsHandler::class);
 		$this->performanceHandler = \OC::$server->get(PerformanceHandler::class);
 		$this->saveObjects = \OC::$server->get(SaveObjects::class);
 		$this->saveHandler = \OC::$server->get(SaveObject::class);
@@ -1731,74 +1728,103 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	}
 
 	// ========================================================================
-	// BulkOperationsHandler tests
+	// Bulk operations: ObjectService (was Object\BulkOperationsHandler)
+	//
+	// BulkOperationsHandler was deleted in ef8ed0dcb (2026-03-16); its seven
+	// methods were folded into ObjectService. Four tests stood here. saveObjects()
+	// and deleteObjects() are ObjectService's now and keep their coverage below.
+	// publishObjects() and depublishObjects() have no successor: object-level
+	// published metadata was retired in 12927d356 (2026-03-13) in favour of RBAC
+	// `$now` rules, the routes went with it, and the two tests that called them
+	// are deleted rather than pointed at something that does not exist.
 	// ========================================================================
 
 	/**
-	 * Test BulkOperationsHandler saveObjects delegates to SaveObjects.
+	 * A bulk save through ObjectService creates the objects it was given.
+	 *
+	 * Runs as admin, and puts the session back afterwards. The bulk path
+	 * honours `_rbac: false` only for an admin caller (SaveObjects, step 3), so
+	 * a test with no session is refused rather than served, and asserting the
+	 * happy path means logging in for it.
+	 *
+	 * @return void
 	 */
-	public function testBulkOperationsSaveObjects(): void {
-		$objects = [
-			['title' => 'Bulk op test ' . uniqid()],
-		];
+	public function testBulkSaveObjectsCreatesTheObjects(): void {
+		$userSession = \OC::$server->get(\OCP\IUserSession::class);
+		$previous = $userSession->getUser();
+		$admin = \OC::$server->get(\OCP\IUserManager::class)->get('admin');
+		if ($admin === null) {
+			$this->markTestSkipped('no admin user on this instance');
+		}
 
-		$result = $this->bulkOperationsHandler->saveObjects(
-			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
-		);
+		$userSession->setUser($admin);
+		try {
+			$result = $this->objectService->saveObjects(
+				objects: [['title' => 'Bulk op test ' . uniqid()]],
+				register: $this->testRegister,
+				schema: $this->testSchema,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} finally {
+			$userSession->setUser($previous);
+		}
 
-		$this->assertIsArray($result);
-		$this->assertArrayHasKey('statistics', $result);
+		$this->assertSame([], $result['errors'], 'a bulk save as admin MUST NOT be refused');
+		$this->assertSame(1, (int)($result['statistics']['saved'] ?? 0), 'the one object given MUST be saved');
 		$this->trackBulkResultUuids($result);
-	}
+	}//end testBulkSaveObjectsCreatesTheObjects()
 
 	/**
-	 * Test BulkOperationsHandler deleteObjects with empty array.
+	 * A bulk save with no session is refused, and writes nothing.
+	 *
+	 * `_rbac: false` is an admin-only escape hatch on this path. An anonymous
+	 * caller passing it gets RBAC anyway, which is the half of the contract
+	 * worth pinning: the flag must not be a way around the permission check.
+	 *
+	 * @return void
 	 */
-	public function testBulkOperationsDeleteObjectsEmpty(): void {
-		$result = $this->bulkOperationsHandler->deleteObjects(
-			[],
-			false,
-			false
-		);
-		$this->assertIsArray($result);
-		$this->assertEmpty($result);
-	}
+	public function testBulkSaveWithoutASessionIsRefusedDespiteRbacFalse(): void {
+		$userSession = \OC::$server->get(\OCP\IUserSession::class);
+		$previous = $userSession->getUser();
+		$userSession->setUser(null);
+
+		try {
+			$result = $this->objectService->saveObjects(
+				objects: [['title' => 'Anonymous bulk ' . uniqid()]],
+				register: $this->testRegister,
+				schema: $this->testSchema,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} finally {
+			$userSession->setUser($previous);
+		}
+
+		$this->assertSame([], $result['saved']);
+		$this->assertSame(1, (int)($result['statistics']['invalid'] ?? 0));
+		$this->assertStringContainsString('Permission denied', $result['errors'][0]['error'] ?? '');
+	}//end testBulkSaveWithoutASessionIsRefusedDespiteRbacFalse()
 
 	/**
-	 * Test BulkOperationsHandler publishObjects with empty array.
+	 * A bulk delete of nothing deletes nothing, and says so in every bucket.
+	 *
+	 * The old assertion was an empty array. ObjectService::deleteObjects()
+	 * answers the documented envelope instead, so the test asserts that.
+	 *
+	 * @return void
 	 */
-	public function testBulkOperationsPublishObjectsEmpty(): void {
-		$result = $this->bulkOperationsHandler->publishObjects(
-			[],
-			true,
-			false,
-			false
+	public function testBulkDeleteObjectsWithNoUuidsDeletesNothing(): void {
+		$result = $this->objectService->deleteObjects(
+			uuids: [],
+			_rbac: false,
+			_multitenancy: false
 		);
-		$this->assertIsArray($result);
-		$this->assertEmpty($result);
-	}
 
-	/**
-	 * Test BulkOperationsHandler depublishObjects with empty array.
-	 */
-	public function testBulkOperationsDepublishObjectsEmpty(): void {
-		$result = $this->bulkOperationsHandler->depublishObjects(
-			[],
-			true,
-			false,
-			false
-		);
-		$this->assertIsArray($result);
-		$this->assertEmpty($result);
-	}
+		$this->assertSame([], $result['deleted_uuids']);
+		$this->assertSame([], $result['skipped_uuids']);
+		$this->assertSame(0, $result['cascade_count']);
+	}//end testBulkDeleteObjectsWithNoUuidsDeletesNothing()
 
 	// ========================================================================
 	// Helper methods
