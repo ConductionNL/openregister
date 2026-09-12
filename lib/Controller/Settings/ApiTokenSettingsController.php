@@ -23,6 +23,7 @@ use Exception;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -46,6 +47,7 @@ class ApiTokenSettingsController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IAppConfig $config App configuration.
 	 * @param SettingsService $settingsService Settings service.
+	 * @param IClientService $clientService HTTP client factory for the token probes.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -53,6 +55,7 @@ class ApiTokenSettingsController extends Controller {
 		IRequest $request,
 		private readonly IAppConfig $config,
 		private readonly SettingsService $settingsService,
+		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -177,7 +180,7 @@ class ApiTokenSettingsController extends Controller {
 			}
 
 			// Test the token by making a simple API call.
-			$client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+			$client = $this->clientService->newClient();
 			$response = $client->get(
 				'https://api.github.com/user',
 				[
@@ -196,7 +199,7 @@ class ApiTokenSettingsController extends Controller {
 					'success' => true,
 					'message' => 'GitHub token is valid',
 					'username' => $data['login'] ?? 'Unknown',
-					'scopes' => $response->getHeader('X-OAuth-Scopes') ?? [],
+					'scopes' => $response->getHeader('X-OAuth-Scopes'),
 				]
 			);
 		} catch (\Throwable $e) {
@@ -245,7 +248,7 @@ class ApiTokenSettingsController extends Controller {
 			}
 
 			// Test the token by making a simple API call.
-			$client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+			$client = $this->clientService->newClient();
 			$response = $client->get(
 				$apiUrl . '/user',
 				[

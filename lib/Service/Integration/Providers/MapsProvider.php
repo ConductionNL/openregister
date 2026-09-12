@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 class MapsProvider extends AbstractIntegrationProvider {
@@ -53,6 +54,7 @@ class MapsProvider extends AbstractIntegrationProvider {
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private MapLinkMapper $mapLinkMapper,
+		private LoggerInterface $logger,
 	) {
 	}//end __construct()
 

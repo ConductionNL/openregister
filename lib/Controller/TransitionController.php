@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
+use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Controller;
@@ -152,6 +153,22 @@ class TransitionController extends Controller {
 			return new JSONResponse(
 				['error' => $e->getMessage()],
 				Http::STATUS_FORBIDDEN
+			);
+		} catch (LifecycleProviderException $e) {
+			// A provider-mode lifecycle could not be read: the declared tag
+			// resolves to nothing, or the app service threw while answering.
+			// Caught BEFORE the RuntimeException branch it extends, and
+			// deliberately NOT collapsed into an empty action list.
+			//
+			// A client reading this endpoint treats 404 as "this object has
+			// no lifecycle" and any other failure as "could not read", but
+			// `{"actions": []}` is a successful answer meaning "no moves from
+			// here" — so a swallowed provider failure would render as a dead
+			// timeline nobody knows is broken. 502 says the truthful thing:
+			// OpenRegister asked an upstream and did not get an answer.
+			return new JSONResponse(
+				['error' => $e->getMessage()],
+				Http::STATUS_BAD_GATEWAY
 			);
 		} catch (RuntimeException $e) {
 			return new JSONResponse(

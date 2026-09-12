@@ -57,6 +57,74 @@ final class RetentionEvaluatorTest extends TestCase {
 		return new DateTimeImmutable('2026-01-01T00:00:00+00:00');
 	}//end created()
 
+	public function testDeclaredFactsAreResolvedForTheRow(): void {
+		$result = $this->makeEvaluator()->evaluate(
+			annotation: [
+				'retention' => ['default' => 'P30D'],
+				'aggregationLevel' => 'Dossier',
+				'useRestriction' => ['type' => 'Overig', 'description' => 'Lopend bezwaar'],
+				'temporalCoverage' => [
+					'type' => 'Looptijd',
+					'startProperty' => 'startdatum',
+					'endProperty' => 'einddatum',
+				],
+			],
+			row: ['startdatum' => '2021-01-01', 'einddatum' => '2021-12-31T23:59:59+00:00'],
+			createdAt: $this->created()
+		);
+
+		self::assertSame('Dossier', $result['aggregationLevel']);
+		self::assertSame(['type' => 'Overig', 'description' => 'Lopend bezwaar'], $result['useRestriction']);
+		// The dates come off the ROW, and a timestamp is truncated to the date
+		// union MDTO allows.
+		self::assertSame(
+			['type' => 'Looptijd', 'start' => '2021-01-01', 'end' => '2021-12-31'],
+			$result['temporalCoverage']
+		);
+	}//end testDeclaredFactsAreResolvedForTheRow()
+
+	public function testAnUndeclaredFactIsAbsent(): void {
+		$result = $this->makeEvaluator()->evaluate(
+			annotation: ['retention' => ['default' => 'P30D']],
+			row: [],
+			createdAt: $this->created()
+		);
+
+		self::assertArrayNotHasKey('aggregationLevel', $result);
+		self::assertArrayNotHasKey('useRestriction', $result);
+		self::assertArrayNotHasKey('temporalCoverage', $result);
+	}//end testAnUndeclaredFactIsAbsent()
+
+	public function testTemporalCoverageIsAbsentWhenTheRowDoesNotCarryTheProperty(): void {
+		$result = $this->makeEvaluator()->evaluate(
+			annotation: [
+				'retention' => ['default' => 'P30D'],
+				'temporalCoverage' => ['type' => 'Looptijd', 'startProperty' => 'startdatum'],
+			],
+			row: ['iets anders' => 'x'],
+			createdAt: $this->created()
+		);
+
+		self::assertArrayNotHasKey('temporalCoverage', $result);
+	}//end testTemporalCoverageIsAbsentWhenTheRowDoesNotCarryTheProperty()
+
+	public function testTemporalCoverageDropsAnEndDateTheSchemaCannotUse(): void {
+		$result = $this->makeEvaluator()->evaluate(
+			annotation: [
+				'retention' => ['default' => 'P30D'],
+				'temporalCoverage' => [
+					'type' => 'Looptijd',
+					'startProperty' => 'startdatum',
+					'endProperty' => 'einddatum',
+				],
+			],
+			row: ['startdatum' => '2021', 'einddatum' => 'onbekend'],
+			createdAt: $this->created()
+		);
+
+		self::assertSame(['type' => 'Looptijd', 'start' => '2021'], $result['temporalCoverage']);
+	}//end testTemporalCoverageDropsAnEndDateTheSchemaCannotUse()
+
 	public function testFirstMatchingRuleWins(): void {
 		$evaluator = $this->makeEvaluator();
 		$result = $evaluator->evaluate(

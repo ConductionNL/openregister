@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
@@ -1096,6 +1097,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateHandoffAnnotation(schema: $schema);
 		$this->validateHandoffContractBinding(schema: $schema);
 		$this->validateMcpAnnotation(schema: $schema);
+		$this->validateRegistryAnnotation(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
 
@@ -1130,14 +1132,19 @@ class SchemaMapper extends QBMapper {
 	 * Validate the optional `x-openregister-lifecycle` annotation.
 	 *
 	 * The annotation is stored under `configuration['x-openregister-lifecycle']`.
-	 * Errors are aggregated by LifecycleAnnotationValidator and thrown here as
-	 * a single message so callers see a clear schema-save failure.
+	 * A broken transition `condition`, `autoWhen` or `executionMode` refuses the
+	 * save; every other lifecycle error is advisory and only logged, and the
+	 * schema is stored as written.
 	 *
 	 * @param Schema $schema Schema to validate.
 	 *
-	 * @throws Exception When the annotation is malformed.
+	 * @throws Exception When a transition `condition` or automatic-transition
+	 *                   declaration is malformed or unsupported.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function validateLifecycleAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -1157,17 +1164,71 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		// Lifecycle is ADVISORY metadata (a state-machine hint), not a storage
-		// requirement: a schema with a malformed or non-canonical lifecycle block
-		// still stores objects correctly. Rejecting the whole schema import over an
-		// advisory annotation breaks register imports for every app that ships a
-		// partial / different-dialect lifecycle block. Degrade to a non-fatal
-		// warning and import the schema (the lifecycle simply won't drive a status
-		// workflow) instead of throwing.
+		// A broken transition CONDITION is the one lifecycle error that refuses
+		// the save. A condition is a gate, and a gate that is stored broken
+		// either blocks every transition it covers or — for a graph block —
+		// silently gates nothing while its author believes it holds. No register
+		// shipped a condition before this key existed, so refusing here breaks
+		// no existing import, which is what the advisory policy below protects.
+		//
+		// The four `autoWhen` / `executionMode` codes join it for the same two
+		// reasons. A stored scalar `autoWhen` is WORSE than a stored broken
+		// condition: it evaluates as a truthy literal, so the transition fires
+		// on every write from its `from` state, each move writing an audit row
+		// and feeding the next decision. The loop cap bounds that, but "bounded
+		// damage on every save" is not an acceptable failure mode for a typo.
+		// An unknown `executionMode`, a required input beside `autoWhen` and an
+		// `autoWhen` on a graph block each describe a move that can never
+		// happen as written. And no register carries either key yet.
+		//
+		// The two `provider` codes join them on the same test. A mistyped
+		// provider tag, or a `provider` declared beside `transitions`, does not
+		// fail at save time: it fails on a GET, when the client asks what the
+		// object can do and OpenRegister cannot resolve the app service that
+		// knows. Stored advisory, that is a lifecycle an author believes is
+		// wired and a user sees as a dead timeline. And `provider` is new, so
+		// no register carries the key yet.
+		$blocking = array_values(
+			array_filter(
+				$errors,
+				static fn (array $err): bool => in_array(
+					$err['code'],
+					[
+						'lifecycle-condition-malformed',
+						'lifecycle-condition-graph-unsupported',
+						'lifecycle-autowhen-malformed',
+						'lifecycle-execution-mode-malformed',
+						'lifecycle-autowhen-requires-input',
+						'lifecycle-autowhen-graph-unsupported',
+						'lifecycle-provider-invalid',
+						'lifecycle-provider-mode-conflict',
+					],
+					true
+				)
+			)
+		);
+		if ($blocking !== []) {
+			// Leads with "Invalid" because SchemasController maps a save
+			// exception to 400 by matching that word; the codes ride along so a
+			// client can tell which rule refused.
+			$details = array_map(
+				static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
+				$blocking
+			);
+			throw new Exception('Invalid x-openregister-lifecycle declaration: ' . implode(' ', $details));
+		}
+
+		// Every other lifecycle error is ADVISORY: rejecting the whole schema
+		// import over it breaks register imports for apps that ship a partial or
+		// different-dialect lifecycle block. So the schema is saved and this is a
+		// warning. Note what that does NOT mean: the annotation is stored as
+		// written, and LifecycleValidationListener still acts on it. It is not
+		// switched off, so the warning must not claim it was.
 		$messages = array_map(static fn (array $err) => $err['message'], $errors);
 		$this->logger->warning(
 			'x-openregister-lifecycle annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (no status workflow applied): ' . implode(' ', $messages)
+			. 'invalid; it was stored as written and the lifecycle listener still acts on it: '
+			. implode(' ', $messages)
 		);
 	}//end validateLifecycleAnnotation()
 
@@ -1485,12 +1546,31 @@ class SchemaMapper extends QBMapper {
 
 		$shape = ['x-openregister-archival' => $annotation];
 
-		$errors = (new ArchivalAnnotationValidator())->validate(schema: $shape);
-		if (count($errors) === 0) {
+		$findings = (new ArchivalAnnotationValidator())->validate(schema: $shape);
+		$split = ArchivalAnnotationValidator::partition(findings: $findings);
+
+		// An UNKNOWN key is surfaced and ignored, never fatal — the same rule
+		// R07 applies to an unknown `x-openregister-*` key one level up
+		// (logDroppedAnnotationKeys). It declares nothing, so dropping it loses
+		// nothing, whereas refusing it refuses the whole schema: at import time
+		// that costs the register every object of that schema, and the operator
+		// sees it as a seeding failure several layers away from the annotation.
+		if (count($split['warnings']) > 0) {
+			$this->logger->warning(
+				sprintf(
+					'[OpenRegister.SchemaMapper] Ignored %d unknown x-openregister-archival key(s) on schema "%s": %s',
+					count($split['warnings']),
+					(string)($schema->getSlug() ?? ''),
+					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
+				)
+			);
+		}
+
+		if (count($split['errors']) === 0) {
 			return;
 		}
 
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
 
@@ -1614,6 +1694,45 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
 		throw new Exception('x-openregister-mcp: ' . implode(' ', $messages));
 	}//end validateMcpAnnotation()
+
+	/**
+	 * Validate the optional `x-openregister-registry` annotation.
+	 *
+	 * The annotation is stored under `configuration['x-openregister-registry']`.
+	 * Per `registry-subscriptions` REQ 1, an annotation naming an `identity`
+	 * or `owned` property the schema does not declare MUST refuse the save
+	 * — unlike most other `x-openregister-*` dialects, this one is
+	 * BLOCKING, not advisory, because a stored-but-wrong annotation would
+	 * let the inbound registry endpoint write a property nobody reviewed.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws Exception When the annotation is malformed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
+	 */
+	private function validateRegistryAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration['x-openregister-registry'] ?? null);
+		if (is_array($annotation) === false) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			'x-openregister-registry' => $annotation,
+		];
+
+		$errors = (new RegistryAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
+		throw new Exception('x-openregister-registry: ' . implode(' ', $messages));
+	}//end validateRegistryAnnotation()
 
 	/**
 	 * Clean $ref properties to ensure they are strings

@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -294,6 +295,7 @@ class ImportHandler {
 	 * @param UploadHandler $uploadHandler The upload handler.
 	 * @param ObjectService $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
+	 * @param ?IAppManager $appManager App manager for the seed-data app dependency check; null skips that check.
 	 */
 	public function __construct(
 		SchemaMapper $schemaMapper,
@@ -308,6 +310,7 @@ class ImportHandler {
 		UploadHandler $uploadHandler,
 		ObjectService $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
+		private readonly ?IAppManager $appManager = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -839,6 +842,39 @@ class ImportHandler {
 			}//end try
 
 			if ($existingRegister !== null) {
+				// A SKIPPED REGISTER UPDATE MUST STILL ADOPT THE SCHEMAS THIS
+				// RUN CREATED.
+				//
+				// The version gate below is about the register's OWN fields
+				// (title, description, …): nothing to write when the incoming
+				// definition is not newer. It is NOT about the schema links.
+				// `$data['schemas']` arriving here is the id list the schema
+				// pass just resolved, and that pass creates rows whatever the
+				// register version says — a register.d fragment adds a schema
+				// without ever touching the register's version. Returning on
+				// the version gate without that list therefore leaves those
+				// brand-new schema rows attached to nothing.
+				//
+				// That orphaning is what makes the NEXT import fork a twin.
+				// `computeRegisterScopedSchemaIds()` builds each slug's
+				// candidate set from the register's stored `schemas` list, so
+				// the missing ids are missing from the set too;
+				// `findBySlugInIds()` cannot see the app's own row, and the
+				// register-scoped branch of resolveExistingSchemaForImport()
+				// concludes — correctly, from what it was given — that the
+				// target register does not own this slug yet and creates a new
+				// schema. Every re-import repeats it. That is how one
+				// opencatalogi install reached 92 schemas with 25 slugs
+				// duplicated and page/menu/glossary present three times over
+				// (28 Aug / 3 Sep / 4 Sep), each copy identical but for its
+				// uuid: the slugs that STAYED in the register's list
+				// (publication, document) upserted correctly, and only the
+				// unlinked ones forked. See WOO-563 and
+				// ImportHandlerRegisterSchemaLinkOnVersionSkipTest.
+				//
+				// Union, never replace, for the same reason the update path
+				// below unions (#2935): a link this run can prove gets added,
+				// a link it merely cannot see is left alone.
 				// Compare versions using version_compare for proper semver comparison.
 				$existingVersion = $existingRegister->getVersion() ?? '0.0.0';
 				if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
@@ -846,8 +882,16 @@ class ImportHandler {
 						message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
 						context: ['file' => __FILE__, 'line' => __LINE__]
 					);
+
+					// Skip the register's own fields, NOT its schema links.
+					// The full-update path below already unions them (#2935);
+					// this path is the one that used to drop them, so it needs
+					// the same union before it returns.
 					// Even though we're skipping the update, we still need to add it to the map.
-					return $existingRegister;
+					return $this->linkImportedSchemas(
+						register: $existingRegister,
+						importedSchemaIds: ($data['schemas'] ?? null)
+					);
 				}
 
 				// NEVER DROP A SCHEMA LINK THIS IMPORT COULD NOT RE-ESTABLISH.
@@ -877,8 +921,9 @@ class ImportHandler {
 				if (isset($data['schemas']) === true && is_array($data['schemas']) === true) {
 					$existingSchemaIds = $existingRegister->getSchemas();
 					if (is_array($existingSchemaIds) === true && $existingSchemaIds !== []) {
-						$data['schemas'] = array_values(
-							array_unique(array_merge($existingSchemaIds, $data['schemas']))
+						$data['schemas'] = $this->unionSchemaIds(
+							currentIds: $existingSchemaIds,
+							incomingIds: $data['schemas']
 						);
 					}
 				}
@@ -929,6 +974,108 @@ class ImportHandler {
 			throw new Exception('Failed to import register: ' . $e->getMessage());
 		}//end try
 	}//end importRegister()
+
+	/**
+	 * Merge two schema-id lists, keeping every id either side can prove.
+	 *
+	 * ONE implementation of the union rule, called from both places that need
+	 * it: the full register update and the version-gated skip path. They used
+	 * to carry a copy each, with different `array_unique` flags — harmless for
+	 * the ids actually stored (ints, or numeric strings after a JSON round
+	 * trip) but exactly the shape that rots, since the rule is stated at length
+	 * beside each copy. #2935 was this rule holding in one place and not
+	 * another.
+	 *
+	 * The rule: union, never replace. A link this run can prove gets added, a
+	 * link it merely cannot see is left alone. The failure direction is then a
+	 * STALE link, which `occ openregister:registers:relink-schemas` reports and
+	 * repairs; replacing instead loses reachable data with no error anywhere.
+	 *
+	 * @param array $currentIds  The ids the register already lists.
+	 * @param array $incomingIds The ids this import resolved.
+	 *
+	 * @return array The merged list, de-duplicated and re-indexed.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function unionSchemaIds(array $currentIds, array $incomingIds): array {
+		return array_values(array_unique(array_merge($currentIds, $incomingIds)));
+	}//end unionSchemaIds()
+
+	/**
+	 * Attach the schema ids this import resolved to an existing register,
+	 * without ever removing a link the register already holds.
+	 *
+	 * Called from the version-gated skip path, which is the one that used to
+	 * drop them (the full-update path has unioned since #2935). The schema
+	 * pass creates rows independently of the register's version — an app that
+	 * adds a schema through a `register.d` fragment routinely leaves the
+	 * register's own `version` untouched — so a register that returns early
+	 * from the version gate without adopting those ids leaves them orphaned,
+	 * and the next import cannot resolve them (see the comment at the call
+	 * site, and WOO-563).
+	 *
+	 * Union semantics, matching the update path: an id this run proved is
+	 * added, and an id the register already lists is kept even when this run
+	 * could not see it. Persists only when the merge actually adds something,
+	 * so a no-op import stays a no-op write.
+	 *
+	 * @param Register   $register          The register already stored.
+	 * @param mixed      $importedSchemaIds The `schemas` value this import resolved (an id list, or null).
+	 *
+	 * @return Register The register, updated in the database when links were added.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+
+	private function linkImportedSchemas(Register $register, mixed $importedSchemaIds): Register {
+		if (is_array($importedSchemaIds) === false || $importedSchemaIds === []) {
+			return $register;
+		}
+
+		$currentIds = $register->getSchemas();
+		if (is_array($currentIds) === false) {
+			$currentIds = [];
+		}
+
+		$merged = $this->unionSchemaIds(currentIds: $currentIds, incomingIds: $importedSchemaIds);
+
+		// Compare against the DEDUPED current list, not the raw one. Comparing
+		// against the raw list would report "something changed" for a register
+		// whose stored list already held a duplicate, and write a silently
+		// de-duplicated row from a path whose whole premise is that it writes
+		// nothing. Repairing that duplicate is not this path's job.
+		if ($merged === array_values(array_unique($currentIds))) {
+			// Nothing new to link — leave the row untouched.
+			return $register;
+		}
+
+		$this->logger->info(
+			message: '[ImportHandler] Linking schemas created by this import to the existing register.',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'registerSlug' => $register->getSlug(),
+				'schemasBefore' => count($currentIds),
+				'schemasAfter' => count($merged),
+			]
+		);
+
+		$register->setSchemas($merged);
+
+		// Persist, but hand back the entity we mutated rather than update()'s
+		// return value. QBMapper::update() returns that same instance, so the
+		// two are identical at runtime; the difference is the declared type.
+		// update() is typed as the generic Entity, and a test double that never
+		// configured it returns a bare Entity stub, which the Register return
+		// type here then rejects with a TypeError — on a path that, before
+		// WOO-563, never wrote at all and so never met that stub
+		// (ImportServiceRegisterAutoCreateTest, CI run of #3638).
+		$this->registerMapper->update($register);
+
+		return $register;
+	}//end linkImportedSchemas()
 
 	/**
 	 * Import a single mapping from configuration data.
@@ -5131,6 +5278,8 @@ class ImportHandler {
 	 * @param array $configData The configuration data.
 	 *
 	 * @return void
+	 *
+	 * @psalm-suppress UndefinedClass OC_App is a Nextcloud server internal with no OCP equivalent for loadApp()
 	 */
 	private function ensureDependenciesForSeedData(array $configData): void {
 		// GUARD: Prevent recursive dependency checking.
@@ -5192,8 +5341,16 @@ class ImportHandler {
 					]
 				);
 
+				if ($this->appManager === null) {
+					$this->logger->debug(
+						message: "[ImportHandler] No app manager injected; skipping the dependency check for '{$appId}'",
+						context: ['file' => __FILE__, 'line' => __LINE__]
+					);
+					continue;
+				}
+
 				try {
-					$appManager = \OC::$server->get(\OCP\App\IAppManager::class);
+					$appManager = $this->appManager;
 
 					// First check if app is installed.
 					if ($appManager->isInstalled($appId) === false) {
@@ -5231,6 +5388,13 @@ class ImportHandler {
 						);
 
 						// Load the app to ensure its services are available.
+						//
+						// OC_App is a Nextcloud server internal with no OCP
+						// equivalent for this call, so psalm cannot see the class
+						// (suppressed on this method's docblock). It exists
+						// whenever this branch can run: the branch is only
+						// reachable through an injected IAppManager, which only a
+						// booted server supplies.
 						\OC_App::loadApp($appId);
 						$this->logger->debug(
 							message: "[ImportHandler] Successfully loaded Nextcloud app '{$appId}'",

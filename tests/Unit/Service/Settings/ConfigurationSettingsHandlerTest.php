@@ -18,6 +18,7 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -57,6 +58,9 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	/** @var LoggerInterface&MockObject */
 	private LoggerInterface $logger;
 
+	/** @var IAppManager&MockObject */
+	private IAppManager $appManager;
+
 	/**
 	 * Set up test fixtures
 	 *
@@ -70,6 +74,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->appManager = $this->createMock(IAppManager::class);
 
 		// Default: no groups, no users, no organisations.
 		$this->groupManager->method('search')->willReturn([]);
@@ -81,7 +86,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			$this->groupManager,
 			$this->userManager,
 			$this->organisationMapper,
-			$this->logger
+			$this->logger,
+			$this->appManager
 		);
 	}
 
@@ -141,7 +147,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			$groupManager,
 			$userManager,
 			$orgMapper,
-			$this->logger
+			$this->logger,
+			$this->appManager
 		);
 	}
 
@@ -515,7 +522,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			$this->groupManager,
 			$userManager,
 			$this->organisationMapper,
-			$this->logger
+			$this->logger,
+			$this->appManager
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -544,7 +552,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			$this->groupManager,
 			$userManager,
 			$this->organisationMapper,
-			$this->logger
+			$this->logger,
+			$this->appManager
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -570,7 +579,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			$this->groupManager,
 			$this->userManager,
 			$orgMapper,
-			$this->logger
+			$this->logger,
+			$this->appManager
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -1928,21 +1938,38 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	// =========================================================================
 
 	/**
-	 * Test getVersionInfoOnly skips when OC class unavailable
+	 * Test getVersionInfoOnly reads the app info from the injected app manager
 	 *
 	 * @return void
 	 */
-	public function testGetVersionInfoOnly(): void {
-		// getVersionInfoOnly() uses \OCP\Server::get() which requires full Nextcloud bootstrap.
-		// In unit test context (no OC class), this throws Error (not Exception), so the
-		// catch block doesn't catch it. Skip in lightweight bootstrap.
-		if (class_exists('OC') === false) {
-			$this->markTestSkipped('Requires full Nextcloud bootstrap (OC class)');
-		}
+	public function testGetVersionInfoOnlyReadsTheInjectedAppManager(): void {
+		$this->appManager->expects($this->once())
+			->method('getAppInfo')
+			->with('openregister')
+			->willReturn(['version' => '1.2.3', 'name' => 'Open Register', 'licence' => 'EUPL-1.2']);
 
 		$result = $this->handler->getVersionInfoOnly();
 
-		$this->assertArrayHasKey('version', $result);
+		$this->assertSame('1.2.3', $result['version']);
+		$this->assertSame('Open Register', $result['name']);
+		$this->assertSame('EUPL-1.2', $result['licence']);
+		$this->assertSame('Conduction', $result['author']);
+		$this->assertArrayNotHasKey('error', $result);
+	}
+
+	/**
+	 * Test getVersionInfoOnly degrades to 'unknown' when the app manager throws
+	 *
+	 * @return void
+	 */
+	public function testGetVersionInfoOnlyReportsUnknownWhenTheAppManagerThrows(): void {
+		$this->appManager->method('getAppInfo')
+			->willThrowException(new RuntimeException('no app info'));
+
+		$result = $this->handler->getVersionInfoOnly();
+
+		$this->assertSame('unknown', $result['version']);
+		$this->assertStringContainsString('no app info', $result['error']);
 	}
 
 	// =========================================================================
@@ -1980,6 +2007,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			$this->userManager,
 			$this->organisationMapper,
 			$this->logger,
+			$this->appManager,
 			'custom-app'
 		);
 

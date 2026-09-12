@@ -637,7 +637,7 @@
     }
   ],
   "observability": {
-    "_note": "OpenRegister dogfoods its own AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index in appinfo/routes.php, so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract; documented intentional improvements are the added health `app` field, the implicit `nextcloud_version` info label, and the objects_total register/schema labels now carrying numeric ids (engine tableCount groupBy) rather than titles.",
+    "_note": "OpenRegister dogfoods its own AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index in appinfo/routes.php, so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract; documented intentional improvements are the added health `app` field, the implicit `nextcloud_version` info label, and the objects_total register/schema labels now carrying numeric ids (engine tableCount groupBy) rather than titles. The two task gauges are published here, once for the instance, because tasks are OpenRegister records (oc_openregister_tasks) and no leaf app should re-count them. tasks_total is a plain tableCount grouped by state. tasks_overdue_total is the one metric the declarative kinds cannot express: overdue is COALESCE(due_at, expires_at) < now, and a tableCount filter compares one column to a literal, so it takes the provider escape hatch and reuses TaskMapper::countOverdueOpen() and TaskTemporalProjection::now(). Its name is produced by Service\\Task\\TaskMetricsProvider; this entry documents it.",
     "health": {
       "statusCodePolicy": "adr006",
       "checks": [
@@ -771,6 +771,26 @@
           "labelDefaults": {
             "success": "failure"
           }
+        }
+      },
+      {
+        "name": "tasks_total",
+        "type": "gauge",
+        "help": "Total tasks by state",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_tasks",
+          "groupBy": [
+            "state"
+          ]
+        }
+      },
+      {
+        "name": "tasks_overdue_total",
+        "type": "gauge",
+        "help": "Open tasks whose effective deadline has passed",
+        "source": {
+          "kind": "provider"
         }
       }
     ]

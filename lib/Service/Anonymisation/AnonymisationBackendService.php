@@ -311,6 +311,7 @@ class AnonymisationBackendService {
 		}
 
 		try {
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Optional AppAPI PublicFunctions: guarded by class_exists and try/catch, absent unless the ExApp stack is installed.
 			$publicFunctions = Server::get($publicFunctionsClass);
 			$response = $publicFunctions->exAppRequest($appId, $route, null, $method, $params);
 

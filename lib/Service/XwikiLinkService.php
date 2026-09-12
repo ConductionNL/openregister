@@ -53,6 +53,7 @@ use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -76,7 +77,11 @@ use Throwable;
  * toServiceException/isStale/refreshLink; each is a required face of the xWiki integration surface.
  */
 class XwikiLinkService {
-	private const REQUIRED_APP = 'openconnector';
+	// The connector answers to `integriq` on development and `openconnector`
+	// on beta/main; FleetAppId holds both spellings, so this names the app
+	// rather than one spelling of it. Never compare it to an id directly —
+	// go through FleetAppId, or the comparison is false on half the fleet.
+	private const REQUIRED_APP = 'integriq';
 
 	private const STALE_AFTER = 86400;
 	// 24 hours in seconds.
@@ -107,7 +112,7 @@ class XwikiLinkService {
 	 * @return bool
 	 */
 	public function isOpenConnectorAvailable(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
+		return FleetAppId::isInstalled($this->appManager, self::REQUIRED_APP);
 	}//end isOpenConnectorAvailable()
 
 	/**

@@ -52,6 +52,14 @@ The platform SHALL ship an `OCA\OpenRegister\Service\Archival\ArchivalAnnotation
 - **WHEN** the schema is saved
 - **THEN** `SchemaMapper::insert()` SHALL throw an `\Exception` whose message contains `archival-retention-unknown-key` and mentions `strategy`
 
+#### Scenario: Unknown key at the top level is reported, not rejected
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "Archiefwet 1995 selectielijst", action: "destroy" }`
+- **WHEN** the schema is saved
+- **THEN** the save SHALL succeed
+- **AND** `SchemaMapper` SHALL log one warning naming the schema and every ignored key
+- **AND** the import of a register declaring that schema SHALL link it, not drop it
+
 #### Scenario: Well-formed annotation passes
 - **GIVEN** a schema declares `x-openregister-archival.retention = { default: "P30D", rules: [{ condition: "statusCode < 400", retention: "PT1H", reason: "successful integrations" }] }`
 - **WHEN** the schema is saved
@@ -240,16 +248,126 @@ The platform SHALL register `OCA\OpenRegister\Cron\ArchivalRetentionTask` in `ap
 
 ### Requirement: GET on an archival schema row surfaces _retention block
 
-When a schema declares `x-openregister-archival`, `ObjectEntity::jsonSerialize()` (or the renderer above it) SHALL attach a `_retention` block to the JSON response with `{ effectiveRetention, matchedRule, expiresAt }` computed by `RetentionEvaluator` from the row's columns + the schema annotation + the row's `_created` timestamp. The block SHALL be absent when the schema does NOT declare archival.
+When an object carries any archival obligation, the renderer SHALL attach a
+`_retention` block to the JSON response holding the RESOLVED archival decision
+that `ArchivalDecisionResolver` merges from the stored retention block, the
+record's own ZGW archival properties, the schema's `x-openregister-archival`
+evaluation, the TMLO block and any legal hold. The block SHALL be absent when
+nothing established a decision.
 
-#### Scenario: Archival row read shows _retention
+The decision's keys are MDTO concepts under English names: `appraisal`,
+`retentionPeriod`, `disposalDate`, `recordState`, `immutable`,
+`disposalCategory`, `basis`, `source`, `sourceVersion`, `sourceConsultedAt` and
+`legalHold`. A key SHALL be omitted rather than nulled when nothing established
+it, because an absent key is silence and a null is an answer.
+
+The schema annotation's own evaluation — `{ effectiveRetention, matchedRule,
+expiresAt }` — is one of the five inputs, not the block itself. It SHALL be
+passed through under `_retention.annotation` so a wrong disposal date can be
+traced back to the rule that produced it.
+
+The passed-through evaluation SHALL carry `defaulted`. It is `false` when a rule
+fired, and `matchedRule` then names that rule's index. It is `true` when no rule
+matched and `retention.default` applied, and `matchedRule` is then omitted.
+"No rule matched" is an answer, so it SHALL NOT travel as a null: a GET omits
+null values from every response unless `_empty=true` is passed.
+
+The `_retention` block SHALL be identical on every verb that returns the
+object. The create, update and patch responses and a later GET of the same
+object SHALL carry the same block, key for key.
+
+#### Scenario: Archival row read shows the resolved decision
 - **GIVEN** a `call_log` row with `statusCode: 200` and `_created` 30 minutes ago
 - **AND** the schema declares `retention.rules = [{ condition: "statusCode < 400", retention: "PT1H" }]` and `retention.default = "P30D"`
 - **WHEN** `GET /api/objects/openconnector/call_log/<uuid>` returns the row
-- **THEN** the JSON SHALL include `"_retention": { "effectiveRetention": "PT1H", "matchedRule": 0, "expiresAt": "<created+1h, ATOM>" }`
+- **THEN** the JSON SHALL include `"_retention"` carrying `"retentionPeriod": "PT1H"`, `"disposalDate": "<created+1h>"` and `"basis": "schema_annotation"`
+- **AND** `_retention.annotation` SHALL carry `{ "effectiveRetention": "PT1H", "matchedRule": 0, "defaulted": false, "expiresAt": "<created+1h, ATOM>" }`
+
+#### Scenario: No matching rule reads the same on create and on read
+- **GIVEN** the same schema annotation
+- **WHEN** a `call_log` row with `statusCode: 500` is created, so no rule matches
+- **THEN** the create response's `_retention.annotation` SHALL carry `{ "effectiveRetention": "P30D", "defaulted": true, "expiresAt": "<created+30d, ATOM>" }`
+- **AND** it SHALL NOT carry `matchedRule`
+- **AND** no key anywhere in `_retention` SHALL hold `null`
+- **AND** `GET /api/objects/openconnector/call_log/<uuid>` SHALL return a `_retention` block identical to the create response's
 
 #### Scenario: Non-archival schema read does not show _retention
 - **GIVEN** a `register/widget` schema with no `x-openregister-archival`
 - **WHEN** a widget row is read
 - **THEN** the JSON response SHALL NOT include a `_retention` key
 
+### Requirement: A schema may declare the archival facts MDTO asks for
+
+Beside `retention`, the `x-openregister-archival` annotation MAY declare
+`aggregationLevel`, `useRestriction` and `temporalCoverage`. Before this,
+nothing in openregister wrote any of the three, so an MDTO export could only
+omit them, and an omission reads exactly like a record that genuinely has none
+(archival-conformance finding A3).
+
+`temporalCoverage` SHALL name date PROPERTIES on the record
+(`startProperty`, and optionally `endProperty`), never literal dates. MDTO
+defines dekkingInTijd as the period the record's CONTENT pertains to, which
+differs per record, so a date on the schema would be the same wrong answer for
+every row. This is the mechanic `sourceDateProperty` already uses for a
+disposal date.
+
+Resolution order, nearest first: the object's own `retention` block under the
+abstract English key, then the `tmlo` block under TMLO's Dutch spelling, then
+the schema annotation resolved for that row. `ArchivalDecisionResolver` SHALL
+emit whichever source established the fact into `_retention`, and the MDTO
+export SHALL carry it.
+
+A fact no source establishes SHALL be ABSENT from `_retention` and from the
+export: no placeholder, and identical on create and on read, which is the rule
+`UnestablishedValues` applies to the rest of the block.
+
+Validation at schema save SHALL REPORT an unknown key at the top level of
+`x-openregister-archival` and SHALL NOT refuse the schema for one: the key
+declares nothing, so ignoring it loses nothing, while refusing it costs the
+whole schema and, at import, every object that needed it. This is the rule R07
+already applies to an unknown `x-openregister-*` key one level up, which is
+dropped with a warning rather than refused; a key inside the annotation SHALL
+NOT be stricter than the key that contains it.
+
+Unknown keys inside each BLOCK (`retention`, `useRestriction`,
+`temporalCoverage`) SHALL still refuse the schema, as they already did: those
+sit beside a fact the schema is actually declaring, where a typo changes the
+meaning of a declaration rather than adding an inert one.
+
+Validation SHALL also refuse a term outside the MDTO begrippenlijst the element
+cites:
+`Aggregatieniveaus` for `aggregationLevel` and `BeperkingGebruikTypeLijst` for
+`useRestriction.type`. Both lists are formally OPEN, so this is stricter than
+MDTO, and deliberately: the exported element names the list it took the term
+from, so a term absent from that list would make the document claim a
+provenance it does not have. Supporting a local term means letting a schema
+name its own begrippenlijst, which is a change to the annotation's shape.
+
+`MdtoTerms` SHALL be the one home for those lists, so the check that refuses a
+term and the document that cites it cannot disagree.
+
+#### Scenario: A schema declares the three facts
+- @e2e exclude schema-save validation and metadata resolution — covered by PHPUnit
+- **GIVEN** a schema whose `x-openregister-archival` declares `aggregationLevel: Dossier`, a `useRestriction` and a `temporalCoverage` naming `startProperty`
+- **WHEN** a row of that schema is read
+- **THEN** `_retention` SHALL carry `aggregationLevel`, `useRestriction` and `temporalCoverage`, the last resolved from the row's own properties
+
+#### Scenario: The object overrides its schema
+- @e2e exclude metadata resolution order — covered by PHPUnit
+- **GIVEN** a row whose `retention` block carries `aggregationLevel: Archiefstuk` while its schema declares `Dossier`
+- **THEN** `_retention` and the MDTO export SHALL carry `Archiefstuk`
+
+#### Scenario: An undeclared fact is absent, not defaulted
+- @e2e exclude metadata resolution — covered by PHPUnit
+- **GIVEN** a row whose schema declares none of the three and whose own blocks carry none
+- **THEN** `_retention` SHALL NOT contain those keys at all, and the MDTO document SHALL NOT contain the elements
+
+#### Scenario: A term outside the cited begrippenlijst is refused
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **WHEN** a schema declares `aggregationLevel: Map`, or a `useRestriction.type` that is not a BeperkingGebruikTypeLijst term
+- **THEN** the schema save SHALL fail, naming the allowed terms
+
+#### Scenario: An unknown annotation key is refused
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **WHEN** a schema declares `aggregatieniveau` at the top level, or a literal `start` inside `temporalCoverage`
+- **THEN** the schema save SHALL fail, naming the allowed keys, so a typo cannot declare nothing in silence

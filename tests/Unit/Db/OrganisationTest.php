@@ -57,6 +57,7 @@ class OrganisationTest extends TestCase {
 		$this->assertSame('datetime', $fieldTypes['provisionedAt']);
 		$this->assertSame('datetime', $fieldTypes['suspendedAt']);
 		$this->assertSame('datetime', $fieldTypes['deprovisionedAt']);
+		$this->assertSame('datetime', $fieldTypes['retainedAt']);
 	}
 
 	/**
@@ -77,6 +78,7 @@ class OrganisationTest extends TestCase {
 				'provisioned_at' => '2026-01-02 10:00:00',
 				'suspended_at' => '2026-01-03 11:00:00',
 				'deprovisioned_at' => '2026-01-04 12:00:00',
+				'retained_at' => '2026-01-06 14:00:00',
 				'merged_at' => '2026-01-05 13:00:00',
 			]
 		);
@@ -84,10 +86,23 @@ class OrganisationTest extends TestCase {
 		$this->assertInstanceOf(DateTime::class, $organisation->getProvisionedAt());
 		$this->assertInstanceOf(DateTime::class, $organisation->getSuspendedAt());
 		$this->assertInstanceOf(DateTime::class, $organisation->getDeprovisionedAt());
+		$this->assertInstanceOf(DateTime::class, $organisation->getRetainedAt());
+		$this->assertSame('2026-01-06 14:00:00', $organisation->getRetainedAt()->format('Y-m-d H:i:s'));
 		$this->assertInstanceOf(DateTime::class, $organisation->getMergedAt());
 
 		$this->assertSame('2026-01-02 10:00:00', $organisation->getProvisionedAt()->format('Y-m-d H:i:s'));
 		$this->assertSame('2026-01-05 13:00:00', $organisation->getMergedAt()->format('Y-m-d H:i:s'));
+	}
+
+	/**
+	 * The retention start is serialised as ISO 8601, and as null when unset.
+	 */
+	public function testRetainedAtIsSerialised(): void {
+		$this->assertNull($this->organisation->jsonSerialize()['retainedAt']);
+
+		$this->organisation->setRetainedAt(new DateTime('2026-02-03T04:05:06+00:00'));
+
+		$this->assertSame('2026-02-03T04:05:06+00:00', $this->organisation->jsonSerialize()['retainedAt']);
 	}
 
 	public function testConstructorDefaultValues(): void {
@@ -673,5 +688,56 @@ class OrganisationTest extends TestCase {
 		$this->assertSame('read', $serialised['defaultPermissionLevel']);
 		$this->assertSame(72, $serialised['qualityScore']);
 		$this->assertSame('adequate', $serialised['qualityStatus']);
+	}
+
+	/**
+	 * The legal name registers its type under the PROPERTY name.
+	 *
+	 * The same trap as the chain-partner fields: Entity::__call() resolves a
+	 * setter to lcfirst(substr($method, 3)), so a registration under the
+	 * column name `legal_name` would match nothing and the field would never
+	 * be treated as a mapped column.
+	 *
+	 * @return void
+	 */
+	public function testLegalNameFieldTypeIsRegistered(): void {
+		$fieldTypes = $this->organisation->getFieldTypes();
+
+		$this->assertSame('string', $fieldTypes['legalName']);
+	}
+
+	/**
+	 * An organisation with a name and no legal name serialises the legal name as null.
+	 *
+	 * Never a copy of `name`. A copied value would read as a legal name someone
+	 * had verified, and nothing downstream could tell the two apart; a consumer
+	 * that needs something to print falls back to `name` at the point of use.
+	 *
+	 * @return void
+	 */
+	public function testALegalNameIsNeverDerivedFromTheName(): void {
+		$this->organisation->setName('Gemeente Voorbeeld');
+
+		$serialised = $this->organisation->jsonSerialize();
+
+		$this->assertSame('Gemeente Voorbeeld', $serialised['name']);
+		$this->assertArrayHasKey('legalName', $serialised);
+		$this->assertNull($serialised['legalName']);
+	}
+
+	/**
+	 * The legal name round-trips through jsonSerialize, beside the name.
+	 *
+	 * @return void
+	 */
+	public function testLegalNameRoundTrips(): void {
+		$this->organisation->setName('Gemeente Voorbeeld');
+		$this->organisation->setLegalName('Gemeente Voorbeeld (publiekrechtelijk lichaam)');
+
+		$serialised = $this->organisation->jsonSerialize();
+
+		$this->assertSame('Gemeente Voorbeeld', $serialised['name']);
+		$this->assertSame('Gemeente Voorbeeld (publiekrechtelijk lichaam)', $serialised['legalName']);
+		$this->assertTrue(in_array('legalName', array_keys($this->organisation->getUpdatedFields()), true));
 	}
 }

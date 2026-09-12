@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -60,8 +61,9 @@ class NameCacheWarmupJob extends TimedJob {
 	 * Initializes the timed job with the time factory and sets the interval.
 	 *
 	 * @param ITimeFactory $time Time factory for parent class
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 */
-	public function __construct(ITimeFactory $time) {
+	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 		// Warmup is not time-critical: let NC defer it to a low-load window (OPS-13).
@@ -83,7 +85,7 @@ class NameCacheWarmupJob extends TimedJob {
 		$startTime = microtime(true);
 
 		// @var LoggerInterface $logger.
-		$logger = \OC::$server->get(LoggerInterface::class);
+		$logger = $this->container->get(LoggerInterface::class);
 
 		$logger->info(
 			message: '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started',
@@ -98,7 +100,7 @@ class NameCacheWarmupJob extends TimedJob {
 
 		try {
 			// @var CacheHandler $cacheHandler.
-			$cacheHandler = \OC::$server->get(CacheHandler::class);
+			$cacheHandler = $this->container->get(CacheHandler::class);
 
 			// Perform cache warmup.
 			$namesLoaded = $cacheHandler->warmupNameCache();

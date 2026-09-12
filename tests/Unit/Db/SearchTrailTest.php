@@ -340,4 +340,38 @@ class SearchTrailTest extends TestCase {
 		$this->assertSame(2, $json['schema']);
 		$this->assertSame('GET', $json['httpMethod']);
 	}
+
+	/**
+	 * Every column of `openregister_search_trails` MUST hydrate.
+	 *
+	 * `Entity::fromRow()` calls a setter for each column in the row and throws
+	 * `BadFunctionCallException` for a column the entity does not declare. The
+	 * mapper selects `*`, so one undeclared column makes every read of every
+	 * stored trail throw: `published_only` did exactly that, and
+	 * `GET /api/search-trails` answered 500 as soon as one trail row existed.
+	 *
+	 * The list is the live table as a fully migrated install creates it
+	 * (read from information_schema on Nextcloud 34 + postgres 16). Adding a
+	 * column in a migration without declaring it on the entity reddens this.
+	 *
+	 * @return void
+	 */
+	public function testFromRowHydratesEveryColumnOfTheTable(): void {
+		$columns = [
+			'id', 'uuid', 'search_term', 'query_parameters', 'filters', 'sort_parameters',
+			'result_count', 'total_results', 'register', 'schema', 'register_uuid',
+			'schema_uuid', 'user', 'user_name', 'session', 'ip_address', 'user_agent',
+			'request_uri', 'http_method', 'response_time', 'page', 'limit', 'offset',
+			'facets_requested', 'facetable_requested', 'published_only', 'execution_type',
+			'organisation_id', 'organisation_id_type', 'created', 'expires', 'size',
+		];
+		$row = array_fill_keys($columns, null);
+		$row['id'] = 7;
+		$row['published_only'] = true;
+
+		$trail = SearchTrail::fromRow($row);
+
+		$this->assertSame(7, $trail->getId());
+		$this->assertTrue($trail->getPublishedOnly(), 'historical published_only value MUST survive hydration');
+	}
 }

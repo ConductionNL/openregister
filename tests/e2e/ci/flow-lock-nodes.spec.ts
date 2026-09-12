@@ -182,30 +182,72 @@ test('both lock steps are offered in the editor palette and reach the canvas', a
 	// `/flows/new` does not reliably hydrate the canvas.
 	await clickThemed(page.getByRole('button', { name: 'New flow' }))
 
-	const palette = page.locator('.cn-flow-sidebar__palette')
-	await expect(
-		palette,
-		'the step palette did not render, so nothing can be said about what it offers',
-	).toBeVisible()
+	// 🔴 THE PALETTE IS NOT IN THE SIDEBAR ANY MORE, since nextcloud-vue
+	// 2.40.0. A live instance serves sixty-five step types, and a one-per-row
+	// list that long in a 300px column is a scroll rather than a chooser, so it
+	// became `CnFlowStepPickerModal`, opened from the toolbar, where the same
+	// entries render as a grid. With it went the Steps tab and the tab strip.
+	//
+	// `.cn-flow-sidebar__palette` survives ONLY as dead CSS, so the old
+	// assertion could never pass again — it read as "the palette did not
+	// render" on a page that had simply moved it.
+	//
+	// PICKING A STEP CLOSES THE DIALOG (`add()` emits `close`), so the picker
+	// is opened once per node rather than once for the loop.
+	const openPicker = async () => {
+		const addStep = page.locator('[data-testid="flow-add-step"]')
+		await expect(
+			addStep,
+			'the toolbar offers no way to add a step, so nothing can be said about what is on offer',
+		).toBeVisible()
+		await clickThemed(addStep)
 
-	// An empty palette renders the same container as a full one, so the
-	// per-node assertions below would each fail with "not found" and none of
-	// them would say that NOTHING loaded. Establish that first.
-	await expect
-		.poll(async () => await palette.locator('> *').count(), {
-			message:
-				'the palette rendered but is empty — the node catalogue never reached the editor, '
-				+ 'so a missing lock step below would be reported as a lock bug rather than a load failure',
-			timeout: 15_000,
-		})
-		.toBeGreaterThan(0)
+		const picker = page.locator('[data-testid="flow-step-picker"]')
+		await expect(
+			picker,
+			'the step picker did not open, so nothing can be said about what it offers',
+		).toBeVisible()
+
+		// An empty picker renders the same dialog as a full one, so the
+		// per-node assertions below would each fail with "not found" and none
+		// of them would say that NOTHING loaded. Establish that first.
+		await expect
+			.poll(
+				async () =>
+					await picker
+						.locator('[data-testid="flow-step-picker-item"]')
+						.count(),
+				{
+					message:
+						'the picker opened but offers nothing — the node catalogue never reached the editor, '
+						+ 'so a missing lock step below would be reported as a lock bug rather than a load failure',
+					timeout: 15_000,
+				},
+			)
+			.toBeGreaterThan(0)
+
+		return picker
+	}
 
 	// ── 3. PRESENT, AND ADDABLE ─────────────────────────────────────────────
 	for (const node of LOCK_NODES) {
-		const offered = palette.getByText(node.label, { exact: true }).first()
+		const picker = await openPicker()
+		// MATCH THE NAME EXACTLY. `hasText` is a case-insensitive SUBSTRING
+		// match over the whole card — name, role word, description and
+		// catalogue id — and "Lock an object" is a substring of "Unlock an
+		// object", so the loose filter matched BOTH of the two steps this file
+		// exists to tell apart.
+		const offered = picker
+			.locator('[data-testid="flow-step-picker-item"]')
+			.filter({
+				has: page.locator('.cn-step-picker__name', {
+					hasText: new RegExp(`^${node.label}$`),
+				}),
+			})
+			.first()
 		await expect(
 			offered,
-			`the palette offers no "${node.label}" step, so a flow author cannot lock anything`,
+			`the picker offers no "${node.label}" step, so a flow author cannot lock anything`,
 		).toBeVisible()
 
 		// "Listed" is not "usable". The failure mode being guarded against
@@ -213,9 +255,10 @@ test('both lock steps are offered in the editor palette and reach the canvas', a
 		// renders and does nothing when picked is the same thing to the person
 		// authoring the flow.
 		await clickThemed(offered)
+		await expect(picker).toBeHidden()
 		await expect(
 			page.locator('.cn-flow-detail__node', { hasText: node.label }),
-			`"${node.label}" is in the palette but never reached the canvas when it was picked`,
+			`"${node.label}" is in the picker but never reached the canvas when it was picked`,
 		).toBeVisible()
 	}
 

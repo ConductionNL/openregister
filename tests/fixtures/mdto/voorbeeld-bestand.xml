@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MDTO xmlns="https://www.nationaalarchief.nl/mdto" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://www.nationaalarchief.nl/mdto https://www.nationaalarchief.nl/mdto/MDTO-XML1.0.1.xsd">
+	<bestand>
+		<identificatie>
+			<identificatieKenmerk>50295847</identificatieKenmerk>
+			<identificatieBron>Proza</identificatieBron>
+		</identificatie>
+		<naam>DC-2015_1753-1.PDF</naam>
+		<omvang>57727859</omvang>
+		<bestandsformaat>
+			<begripLabel>Acrobat PDF 1.3 - Portable Document Format</begripLabel>
+			<begripCode>fmt/17</begripCode>
+			<begripBegrippenlijst>
+				<verwijzingNaam>PRONOM-register</verwijzingNaam>
+			</begripBegrippenlijst>
+		</bestandsformaat>
+		<checksum>
+			<checksumAlgoritme>
+				<begripLabel>SHA256</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Begrippenlijst ChecksumAlgoritme MDTO</verwijzingNaam>
+				</begripBegrippenlijst>
+			</checksumAlgoritme>
+			<checksumWaarde>86f16c3359c2e59538a3df178a9530dd6278faec82e66d605b3bc2a64ac390fc</checksumWaarde>
+			<checksumDatum>2025-02-18T15:24:18</checksumDatum>
+		</checksum>
+		<URLBestand>https://www.nationaalarchief.nl/onderzoeken/archief/2.16.133/invnr/DC-2015%7C%7C1753/file/DC-2015_1753-1.PDF</URLBestand>
+		<isRepresentatieVan>
+			<verwijzingNaam>Atelier Kustkwaliteit, 2011. Ontwerpstudie Dwarsdoorsneden kust, vier Kustdoorsneden in beeld, Werkboek 2, Delft.</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>DC-2015/1753</identificatieKenmerk>
+				<identificatieBron>Archief Deltacommissaris</identificatieBron>
+			</verwijzingIdentificatie>
+		</isRepresentatieVan>
+	</bestand>
+</MDTO>

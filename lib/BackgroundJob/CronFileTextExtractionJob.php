@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -63,10 +64,11 @@ class CronFileTextExtractionJob extends TimedJob {
 	 * Initializes the timed job with the time factory and sets the interval.
 	 *
 	 * @param ITimeFactory $time Time factory for parent class
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function __construct(ITimeFactory $time) {
+	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 	}//end __construct()
@@ -90,7 +92,7 @@ class CronFileTextExtractionJob extends TimedJob {
 		 * @var LoggerInterface $logger
 		 */
 
-		$logger = \OC::$server->get(LoggerInterface::class);
+		$logger = $this->container->get(LoggerInterface::class);
 
 		$logger->info(
 			message: '[CronFileTextExtractionJob] 🔄 Cron File Text Extraction Job Started',
@@ -109,19 +111,19 @@ class CronFileTextExtractionJob extends TimedJob {
 			 * @var SettingsService $settingsService
 			 */
 
-			$settingsService = \OC::$server->get(SettingsService::class);
+			$settingsService = $this->container->get(SettingsService::class);
 
 			/*
 			 * @var TextExtractionService $textExtractor
 			 */
 
-			$textExtractor = \OC::$server->get(TextExtractionService::class);
+			$textExtractor = $this->container->get(TextExtractionService::class);
 
 			/*
 			 * @var FileMapper $fileMapper
 			 */
 
-			$fileMapper = \OC::$server->get(FileMapper::class);
+			$fileMapper = $this->container->get(FileMapper::class);
 
 			// Check if extraction mode is set to 'cron'.
 			$fileSettings = $settingsService->getFileSettingsOnly();

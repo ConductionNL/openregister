@@ -52,6 +52,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\Security\ICredentialsManager;
@@ -97,25 +98,36 @@ class DoriathCredentialStore implements CredentialStore {
 	public const PRIVATE_KEY_ID = 'openregister/doriath/private-key';
 
 	/**
-	 * FQCN of Doriath's stateless encrypt service (scheme `rsa-oaep-sha256-chunked-v1`).
+	 * Stateless encrypt service (scheme `rsa-oaep-sha256-chunked-v1`), RELATIVE.
+	 *
+	 * Relative rather than fully qualified: the credential app is `OCA\Keepiq`
+	 * on development and `OCA\Doriath` on beta/main, with no compatibility
+	 * alias, so {@see FleetAppId} prepends whichever one actually loads.
 	 *
 	 * @var string
 	 */
-	private const ENCRYPT_SERVICE = 'OCA\\Doriath\\Service\\EncryptService';
+	private const ENCRYPT_SERVICE = 'Service\\EncryptService';
 
 	/**
-	 * FQCN of Doriath's stateless decrypt service.
+	 * Stateless decrypt service, RELATIVE to the credential app's namespace.
 	 *
 	 * @var string
 	 */
-	private const DECRYPT_SERVICE = 'OCA\\Doriath\\Service\\DecryptService';
+	private const DECRYPT_SERVICE = 'Service\\DecryptService';
 
 	/**
-	 * FQCN of Doriath's secret service (application-scoped seam).
+	 * Secret service (application-scoped seam), RELATIVE to the app namespace.
 	 *
 	 * @var string
 	 */
-	private const SECRET_SERVICE = 'OCA\\Doriath\\Service\\SecretService';
+	private const SECRET_SERVICE = 'Service\\SecretService';
+
+	/**
+	 * Canonical (new) id of the credential app, for {@see FleetAppId}.
+	 *
+	 * @var string
+	 */
+	private const CREDENTIAL_APP = 'keepiq';
 
 	/**
 	 * Constructor.
@@ -172,12 +184,12 @@ class DoriathCredentialStore implements CredentialStore {
 			throw new RuntimeException('Credential store is not provisioned');
 		}
 
-		$encryptService = $this->requireDoriathService(className: self::ENCRYPT_SERVICE);
+		$encryptService = $this->requireDoriathService(relativeClass: self::ENCRYPT_SERVICE);
 		$ciphertext = (string)$encryptService->rsaEncrypt($secret, $publicPem);
 
 		$row = $this->lookupRow(uuid: $uuid, applicationId: $applicationId);
 
-		$secretService = $this->requireDoriathService(className: self::SECRET_SERVICE);
+		$secretService = $this->requireDoriathService(relativeClass: self::SECRET_SERVICE);
 		if ($row === null) {
 			$secretService->createByApplication(['name' => $uuid, 'key' => $ciphertext], $applicationId);
 			return;
@@ -263,7 +275,7 @@ class DoriathCredentialStore implements CredentialStore {
 			return;
 		}
 
-		$secretService = $this->requireDoriathService(className: self::SECRET_SERVICE);
+		$secretService = $this->requireDoriathService(relativeClass: self::SECRET_SERVICE);
 
 		$row = $this->lookupRow(uuid: $uuid, applicationId: $applicationId);
 		if ($row === null) {
@@ -294,7 +306,7 @@ class DoriathCredentialStore implements CredentialStore {
 		}
 
 		try {
-			$decryptService = $this->requireDoriathService(className: self::DECRYPT_SERVICE);
+			$decryptService = $this->requireDoriathService(relativeClass: self::DECRYPT_SERVICE);
 			return (string)$decryptService->rsaDecrypt((string)$row->getKey(), $privatePem);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -370,7 +382,7 @@ class DoriathCredentialStore implements CredentialStore {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function lookupRow(string $uuid, string $applicationId): ?object {
-		$secretService = $this->requireDoriathService(className: self::SECRET_SERVICE);
+		$secretService = $this->requireDoriathService(relativeClass: self::SECRET_SERVICE);
 
 		$row = $secretService->getByNameForApplication($uuid, $applicationId);
 		if (is_object($row) === false) {
@@ -410,24 +422,31 @@ class DoriathCredentialStore implements CredentialStore {
 	}//end requireApplicationId()
 
 	/**
-	 * Resolve a Doriath service by FQCN, or null when unavailable.
+	 * Resolve a credential-app service by RELATIVE class name, or null.
 	 *
 	 * `class_exists` + `OCP\Server::get` (Deck-leaf / AnonymisationBackendService
-	 * idiom) so OR carries no compile-time dependency on Doriath. Protected so
-	 * unit tests can substitute contract fakes without the Doriath app present.
+	 * idiom) so OR carries no compile-time dependency on the credential app.
+	 * Protected so unit tests can substitute contract fakes without it present.
 	 *
-	 * @param string $className The Doriath service FQCN.
+	 * Takes the RELATIVE name and lets {@see FleetAppId} pick the namespace:
+	 * the app is `OCA\Keepiq` on development and `OCA\Doriath` on beta/main,
+	 * and `class_exists` on the spelling the instance does not have is FALSE —
+	 * which this method cannot tell apart from "the optional app is absent".
+	 *
+	 * @param string $relativeClass The service class below the app namespace.
 	 *
 	 * @return object|null The resolved service, or null when unavailable.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	protected function resolveDoriathService(string $className): ?object {
-		if (class_exists($className) === false) {
+	protected function resolveDoriathService(string $relativeClass): ?object {
+		$className = FleetAppId::resolveClass(self::CREDENTIAL_APP, $relativeClass);
+		if ($className === null) {
 			return null;
 		}
 
 		try {
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Optional sibling app (keepiq): guarded by class_exists and try/catch, absent on most instances, so it cannot be a constructor dependency.
 			return Server::get($className);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -439,9 +458,9 @@ class DoriathCredentialStore implements CredentialStore {
 	}//end resolveDoriathService()
 
 	/**
-	 * Resolve a Doriath service by FQCN, throwing when unavailable.
+	 * Resolve a credential-app service by RELATIVE name, throwing when absent.
 	 *
-	 * @param string $className The Doriath service FQCN.
+	 * @param string $relativeClass The service class below the app namespace.
 	 *
 	 * @return object The resolved service.
 	 *
@@ -449,8 +468,8 @@ class DoriathCredentialStore implements CredentialStore {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	private function requireDoriathService(string $className): object {
-		$service = $this->resolveDoriathService(className: $className);
+	private function requireDoriathService(string $relativeClass): object {
+		$service = $this->resolveDoriathService(relativeClass: $relativeClass);
 		if ($service === null) {
 			throw new RuntimeException('Credential store backend unavailable');
 		}

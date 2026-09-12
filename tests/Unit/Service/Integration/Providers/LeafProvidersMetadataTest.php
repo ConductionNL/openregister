@@ -229,6 +229,7 @@ class LeafProvidersMetadataTest extends TestCase {
 				l10n: $l10n,
 				linkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
 				config: $config,
+				logger: $this->createMock(LoggerInterface::class),
 			);
 		}
 
@@ -246,14 +247,16 @@ class LeafProvidersMetadataTest extends TestCase {
 				$appManager,
 				$l10n,
 				$this->buildLinkMapper($trailingMapper[$class]),
+				$this->createMock(LoggerInterface::class),
 			);
 		}
 
-		// Default: plain (db, appManager, l10n) providers (Activity, ...).
+		// Default: plain (db, appManager, l10n, logger) providers (Activity, ...).
 		return new $class(
 			db: $db,
 			appManager: $appManager,
 			l10n: $l10n,
+			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end instantiateGreenfieldProvider()
 
@@ -474,6 +477,11 @@ class LeafProvidersMetadataTest extends TestCase {
 		$this->assertSame('Projects', $provider->getLabel());
 		$this->assertSame('Briefcase', $provider->getIcon());
 		$this->assertSame('external', $provider->getGroup());
+		// The id this instance ACTUALLY registered, not the canonical name:
+		// `requiredApp` is published verbatim in the `integrations` capability
+		// and read client-side as `isAppInstalled(requiredApp)`, so a value the
+		// instance does not answer to renders "not installed" over a connector
+		// that is installed and working.
 		$this->assertSame('openconnector', $provider->getRequiredApp());
 		$this->assertSame('external', $provider->getStorageStrategy());
 		$this->assertSame('openproject', $provider->getOpenConnectorSource());
@@ -483,6 +491,42 @@ class LeafProvidersMetadataTest extends TestCase {
 		$this->assertSame('external', $auth['type']);
 		$this->assertSame('openproject', $auth['source']);
 	}//end testOpenProjectProviderMetadata()
+
+	/**
+	 * The same provider on a MIGRATED instance reports `integriq`.
+	 *
+	 * The mirror of the assertion above, and the one that fails if the fix is a
+	 * hard swap in either direction. Both must hold at once: the fleet is
+	 * mid-rename, so `development` and `beta`/`main` instances coexist and each
+	 * has to see its own connector as present.
+	 *
+	 * @return void
+	 */
+	public function testOpenProjectProviderMetadataOnARenamedInstance(): void {
+		$provider = new OpenProjectProvider(
+			router: $this->createMock(ExternalIntegrationRouter::class),
+			appManager: $this->buildAppManager(['integriq']),
+			l10n: $this->buildL10n(),
+		);
+
+		$this->assertSame('integriq', $provider->getRequiredApp());
+		$this->assertTrue($provider->isEnabled());
+	}//end testOpenProjectProviderMetadataOnARenamedInstance()
+
+	/**
+	 * With NEITHER connector id present the provider reports itself disabled.
+	 *
+	 * @return void
+	 */
+	public function testOpenProjectProviderIsDisabledWithoutAnyConnector(): void {
+		$provider = new OpenProjectProvider(
+			router: $this->createMock(ExternalIntegrationRouter::class),
+			appManager: $this->buildAppManager(['openregister']),
+			l10n: $this->buildL10n(),
+		);
+
+		$this->assertFalse($provider->isEnabled());
+	}//end testOpenProjectProviderIsDisabledWithoutAnyConnector()
 
 	public function testOpenProjectProviderListRoutesThroughExternalRouter(): void {
 		$router = $this->createMock(ExternalIntegrationRouter::class);

@@ -61,5 +61,16 @@
 
     <php>
         <env name="PHPUNIT_RUN" value="1"/>
+        <!--
+            Hard memory cap for every PHPUnit run. The CLI php.ini on developer
+            machines sets memory_limit=-1, so a runaway test has nothing to stop
+            it: on 2026-09-08 one test recursed inside the DI container and took
+            19 GB of RAM plus 6 GB of swap before the machine ground to a halt.
+            The whole Unit suite (19,409 tests) peaks at 454 MB without
+            coverage; 2G leaves room for coverage runs and still fails a leak
+            within seconds. Raise it here, with the new measurement, never with
+            -d memory_limit on the command line.
+        -->
+        <ini name="memory_limit" value="2G"/>
     </php>
 </phpunit>

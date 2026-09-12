@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 class AnalyticsProvider extends AbstractIntegrationProvider {
@@ -56,12 +57,14 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
 	 * @param AnalyticsLinkMapper $analyticsLinkMapper Analytics-link mapper (Tier-2 link table).
+	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
 	 */
 	public function __construct(
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private AnalyticsLinkMapper $analyticsLinkMapper,
+		private LoggerInterface $logger,
 	) {
 	}//end __construct()
 

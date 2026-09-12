@@ -402,9 +402,6 @@
   "src/main.js": {
     "n/no-unpublished-import": {
       "count": 1
-    },
-    "no-console": {
-      "count": 2
     }
   },
   "src/modals/Modals.vue": {

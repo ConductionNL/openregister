@@ -113,7 +113,11 @@ class TransitionEngineSlugContractTest extends TestCase {
 			$this->permission,
 			$this->registerMapper,
 			$this->appConfig,
-			$this->createMock(\Psr\Log\LoggerInterface::class)
+			$this->createMock(\Psr\Log\LoggerInterface::class),
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(
+				new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry::class)
 		);
 
 	}//end engine()

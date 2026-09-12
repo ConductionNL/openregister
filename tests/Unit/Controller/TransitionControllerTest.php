@@ -26,6 +26,7 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\TransitionController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
+use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Http;
@@ -238,4 +239,29 @@ class TransitionControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 	}//end testAvailableActionsReturns404OnMissingObject()
+
+	/**
+	 * A provider-mode lifecycle that cannot be read answers 502, and the
+	 * status is what carries the meaning: a client reads 404 as "no
+	 * lifecycle" and an empty action list as "no moves from here", so
+	 * neither of those may stand in for "could not read". Distinct from the
+	 * 403 and 404 cases above, which are unchanged.
+	 *
+	 * @return void
+	 */
+	public function testAvailableActionsReturns502WhenTheProviderCannotAnswer(): void {
+		$this->engine->method('availableActions')->willThrowException(
+			new LifecycleProviderException(
+				'Lifecycle provider "OCA\\Dossiq\\Lifecycle\\CaseActionProvider" is not registered.'
+			)
+		);
+
+		$response = $this->controller->availableActions('obj-1');
+
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$body = $response->getData();
+		$this->assertIsArray($body);
+		$this->assertArrayNotHasKey('actions', $body);
+		$this->assertStringContainsString('is not registered', (string)($body['error'] ?? ''));
+	}//end testAvailableActionsReturns502WhenTheProviderCannotAnswer()
 }//end class

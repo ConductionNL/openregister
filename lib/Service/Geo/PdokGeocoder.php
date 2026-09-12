@@ -271,7 +271,18 @@ class PdokGeocoder {
 		}
 
 		try {
-			$callService = $this->container->get('OCA\\OpenConnector\\Service\\CallService');
+			// The class is OCA\Integriq\Service\CallService on development and
+			// OCA\OpenConnector\Service\CallService on beta/main. `get()` on
+			// the wrong one throws straight into the catch below, which logs a
+			// warning and returns null — the same shape as "upstream had no
+			// match", so the stale name read as an empty geocoding result.
+			$serviceName = FleetAppId::resolveClass('integriq', 'Service\\CallService');
+			if ($serviceName === null) {
+				$this->logger->info('PDOK geocoding skipped: OpenConnector CallService not loadable');
+				return null;
+			}
+
+			$callService = $this->container->get($serviceName);
 			$response = $callService->call(null, $url, 'GET', ['query' => $params]);
 			return $this->decode(response: $response);
 		} catch (Throwable $e) {

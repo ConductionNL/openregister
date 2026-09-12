@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
@@ -50,6 +51,8 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\IRequest;
 use OCP\SystemTag\ISystemTagManager;
@@ -189,6 +192,11 @@ class RenderObject {
 	 * @param IRequest|null $request Current request, used to read `?recurrenceOccurrences=N`.
 	 * @param ObjectSourceRegistry|null $objectSourceRegistry Resolves object-source providers for `$ref` extends into virtual schemas.
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler (x-openregister-encrypted).
+	 * @param ContainerInterface|null $container Lazily resolves RegistrySubscriptionService
+	 *        (registry-subscriptions) — NOT constructor-injected directly: that dependency
+	 *        chains ObjectService -> RenderObject -> RegistrySubscriptionService -> ObjectService,
+	 *        a cycle Nextcloud's container refuses to construct eagerly. Same lazy-resolution
+	 *        pattern PermissionHandler already uses for the same reason.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 *
@@ -218,6 +226,7 @@ class RenderObject {
 		private readonly ?IRequest $request = null,
 		private readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
+		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
 
@@ -2096,6 +2105,31 @@ class RenderObject {
 			);
 		}
 
+		// Registry subscription state (`registry-subscriptions`, finding
+		// B22). Only looked up when the schema actually declares
+		// `x-openregister-registry` — a cheap in-memory check on the
+		// already-loaded schema — so the common case (no annotation) costs
+		// no extra query per rendered row.
+		try {
+			if ($this->container !== null && $renderSchema !== null && $entity->getUuid() !== null) {
+				$registrySubscriptions = $this->container->get(RegistrySubscriptionService::class);
+				if ($registrySubscriptions->annotationFor(schema: $renderSchema) !== null) {
+					$registryState = $registrySubscriptions->stateFor((string)$entity->getUuid());
+					if ($registryState !== null) {
+						$entity->setRegistryState($registryState);
+					}
+				}
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] registry subscription state lookup failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}
+
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
 		// effective retention for this row from the annotation's default +
@@ -2104,8 +2138,52 @@ class RenderObject {
 		// never collide. See add-archival-annotation-support design R3 + D7.
 		$this->applyArchivalRetentionBlock(entity: $entity, schema: $renderSchema);
 
+		// Merge everything the object now knows about its own archiving into the
+		// ONE abstract answer consumers read: `@self._retention`. Runs after the
+		// annotation block above on purpose, because it reads that block's
+		// output. See ArchivalDecisionResolver for why this merge exists at all.
+		$this->applyArchivalDecision(entity: $entity);
+
 		return $entity;
 	}//end renderEntity()
+
+	/**
+	 * Attach the resolved `@self._retention` decision.
+	 *
+	 * The slot has been declared on the entity since add-archival-annotation-support
+	 * and, until this method existed, was filled by nothing outside a unit test —
+	 * so every client asking an object for its archival constraints got silence
+	 * while the facts sat unmerged in three sub-blocks of `retention`.
+	 *
+	 * Failures are logged and swallowed for the same reason the annotation block
+	 * above swallows them: a records-management edge case must never take out
+	 * object rendering.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function applyArchivalDecision(ObjectEntity $entity): void {
+		try {
+			$resolver = new ArchivalDecisionResolver();
+			$decision = $resolver->resolve(entity: $entity);
+			if ($decision === null) {
+				return;
+			}
+
+			$entity->setArchivalRetention($decision);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] archival decision resolve failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}//end try
+	}//end applyArchivalDecision()
 
 	/**
 	 * Compute + attach the annotation-driven `_retention.annotation` block.

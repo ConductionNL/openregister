@@ -33,6 +33,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportResult;
 use OCP\IAppConfig;
@@ -78,6 +79,7 @@ class EdepotTransferService {
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param INotificationManager $notificationManager The notification manager.
 	 * @param LoggerInterface $logger Logger.
+	 * @param PackagedFileChecksum $packagedFileChecksum Computes, dates and fixity-checks each file's checksum.
 	 */
 	public function __construct(
 		private readonly SipPackageBuilder $sipBuilder,
@@ -88,6 +90,7 @@ class EdepotTransferService {
 		private readonly IAppConfig $appConfig,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
+		private readonly PackagedFileChecksum $packagedFileChecksum,
 	) {
 	}//end __construct()
 
@@ -116,7 +119,7 @@ class EdepotTransferService {
 	 *
 	 * No in-process `sleep()`: exactly one transport send per outstanding
 	 * package. Objects already confirmed on a prior attempt
-	 * (`retention.archiefstatus === 'overgebracht'`) are excluded from the
+	 * (a transferred record state) are excluded from the
 	 * rebuild/resend so a retry never re-ingests them (partial-success
 	 * awareness). The attempt (number, timestamp, transport, per-package
 	 * outcome, error) is appended to the list's append-only `attempts[]`; the
@@ -262,7 +265,9 @@ class EdepotTransferService {
 			try {
 				$object = $this->objectMapper->find($ref['uuid']);
 				$retention = ($object->getRetention() ?? []);
-				if (($retention['archiefstatus'] ?? '') === 'overgebracht') {
+				// Both vocabularies: stored data is not migrated, so a record
+				// transferred before GAP A4 still holds `overgebracht`.
+				if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true) {
 					// Already ingested on a prior attempt — never resend.
 					continue;
 				}
@@ -303,7 +308,7 @@ class EdepotTransferService {
 			try {
 				$object = $this->objectMapper->find($ref['uuid']);
 				$retention = ($object->getRetention() ?? []);
-				if (($retention['archiefstatus'] ?? '') !== 'overgebracht') {
+				if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === false) {
 					return TransferListService::STATUS_FAILED;
 				}
 			} catch (\Throwable $e) {
@@ -428,6 +433,12 @@ class EdepotTransferService {
 	/**
 	 * Get file metadata for an object.
 	 *
+	 * Each checksum is computed and dated at packaging by
+	 * {@see PackagedFileChecksum}, which also refuses a file whose stored
+	 * SHA-256 no longer matches its bytes. That refusal reaches the per-object
+	 * catch in {@see self::gatherObjectsWithFiles()}, which excludes the object
+	 * from this transfer and logs it by uuid.
+	 *
 	 * @param ObjectEntity $object The object.
 	 *
 	 * @return array<int, array{
@@ -435,9 +446,12 @@ class EdepotTransferService {
 	 *     size: int,
 	 *     format: string,
 	 *     checksum: string,
+	 *     checksumDate: string,
 	 *     path: string,
 	 *     isRendition: bool
 	 * }> File metadata array.
+	 *
+	 * @throws \RuntimeException When a file cannot be read or its stored SHA-256 no longer matches.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
@@ -461,11 +475,14 @@ class EdepotTransferService {
 				continue;
 			}
 
+			$checksum = $this->packagedFileChecksum->compute(path: $path, stored: ($fileRef['checksum'] ?? null));
+
 			$files[] = [
 				'name' => ($fileRef['name'] ?? basename($path)),
 				'size' => (int)($fileRef['size'] ?? filesize($path)),
 				'format' => ($fileRef['mimeType'] ?? ($fileRef['format'] ?? 'application/octet-stream')),
-				'checksum' => ($fileRef['checksum'] ?? hash_file('sha256', $path)),
+				'checksum' => $checksum['checksum'],
+				'checksumDate' => $checksum['checksumDate'],
 				'path' => $path,
 				'isRendition' => (bool)($fileRef['isRendition'] ?? false),
 			];
@@ -615,7 +632,7 @@ class EdepotTransferService {
 	 */
 	private function markObjectTransferred(ObjectEntity $object, string $reference, string $timestamp): void {
 		$retention = ($object->getRetention() ?? []);
-		$retention['archiefstatus'] = 'overgebracht';
+		$retention['archiefstatus'] = RecordState::TRANSFERRED;
 		$retention['eDepotReferentie'] = $reference;
 		$retention['transferDate'] = $timestamp;
 		$object->setRetention($retention);

@@ -9,9 +9,11 @@ use OCA\OpenRegister\Service\DeckCardService;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 class DeckCardServiceTest extends TestCase {
@@ -43,7 +45,9 @@ class DeckCardServiceTest extends TestCase {
 			$this->appManager,
 			$this->userSession,
 			$this->logger,
-			$this->urlGenerator
+			$this->urlGenerator,
+			$this->createMock(IUserManager::class),
+			$this->createMock(ContainerInterface::class)
 		);
 	}
 
@@ -128,9 +132,9 @@ class DeckCardServiceTest extends TestCase {
 	 * labels, assignees) — when Deck isn't resolvable they fall back
 	 * to sensible defaults (null / empty arrays) without throwing.
 	 *
-	 * The DeckCardService resolves OCA\Deck\Service\CardService through
-	 * \OC::$server (not injectable), so the unit test exercises the
-	 * "Deck unavailable" path — the live Deck-installed path is
+	 * The DeckCardService resolves OCA\Deck\Service\CardService through the
+	 * injected container behind a class_exists() guard, and Deck is not loaded
+	 * here, so the unit test exercises the "Deck unavailable" path — the live Deck-installed path is
 	 * exercised in the live verification (see commit message).
 	 *
 	 * @group requires-app-internal-api
@@ -229,6 +233,8 @@ class DeckCardServiceTest extends TestCase {
 				$this->userSession,
 				$this->logger,
 				$this->urlGenerator,
+				$this->createMock(IUserManager::class),
+				$this->createMock(ContainerInterface::class),
 			])
 			->onlyMethods(['userCanAccessBoard'])
 			->getMock();

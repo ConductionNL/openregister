@@ -40,6 +40,7 @@ use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Test double that injects pre-baked rows in place of the trait's
@@ -78,7 +79,7 @@ class ActivityProviderTest extends TestCase {
 		$apps->method('isInstalled')->willReturn($installed);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		return new TestableActivityProvider(db: $db, appManager: $apps, l10n: $l10n);
+		return new TestableActivityProvider(db: $db, appManager: $apps, l10n: $l10n, logger: $this->createMock(LoggerInterface::class));
 	}//end buildProvider()
 
 	public function testListEmptyWhenAppMissing(): void {

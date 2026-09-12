@@ -174,13 +174,24 @@ class FlowTriggerListener implements IEventListener {
 	 * @param Event $event The dispatched event.
 	 *
 	 * @return array<string, string> The extra context, empty for most events.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function contextFor(Event $event): array {
 		if ($event instanceof ObjectTransitionedEvent) {
+			$automatic = 'false';
+			if ($event->isAutomatic() === true) {
+				$automatic = 'true';
+			}
+
 			return [
 				'action' => $event->getAction(),
 				'from' => $event->getFrom(),
 				'to' => $event->getTo(),
+				// A flow branching on a state change needs to know whether a
+				// person asked for the move or a rule made it: "notify the
+				// applicant" is right for one and wrong for the other.
+				'automatic' => $automatic,
 			];
 		}
 

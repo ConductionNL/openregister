@@ -75,6 +75,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setSuspendedAt(?DateTime $suspendedAt)
  * @method DateTime|null getDeprovisionedAt()
  * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
+ * @method DateTime|null getRetainedAt()
+ * @method void setRetainedAt(?DateTime $retainedAt)
  * @method string|null getType()
  * @method void setType(?string $type)
  * @method bool|null getIsLocalTenant()
@@ -99,6 +101,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setRsin(?string $rsin)
  * @method string|null getKvk()
  * @method void setKvk(?string $kvk)
+ * @method string|null getLegalName()
+ * @method void setLegalName(?string $legalName)
  * @method string|null getPki()
  * @method void setPki(?string $pki)
  * @method string|null getImage()
@@ -128,6 +132,9 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) One mapped column costs a
+ * property, an accessor pair, a type registration and a serialised key, so the
+ * entity grows with the table. Splitting it would split one row's mapping.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -253,7 +260,8 @@ class Organisation extends Entity implements JsonSerializable {
 	/**
 	 * Tenant lifecycle status
 	 *
-	 * Valid values: provisioning, active, suspended, deprovisioning, archived
+	 * Valid values: provisioning, active, suspended, deprovisioning, archived,
+	 * retained
 	 *
 	 * @var string|null Lifecycle status
 	 */
@@ -288,6 +296,16 @@ class Organisation extends Entity implements JsonSerializable {
 	 * @var DateTime|null Deprovisioning timestamp
 	 */
 	protected ?DateTime $deprovisionedAt = null;
+
+	/**
+	 * Timestamp when the organisation entered the retained state
+	 *
+	 * The start of its retention period. Never read by the purge job, which
+	 * measures from `deprovisionedAt` only.
+	 *
+	 * @var DateTime|null Retention start timestamp
+	 */
+	protected ?DateTime $retainedAt = null;
 
 	/**
 	 * UUID of parent organisation for hierarchical organisation structures
@@ -428,6 +446,17 @@ class Organisation extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $kvk = null;
+
+	/**
+	 * The name the organisation is registered under (statutaire naam).
+	 *
+	 * Distinct from `name`, what every list shows. Never a copy of it: a reader
+	 * needing something to print falls back to `name` at the point of use.
+	 * Identity only, never a key; `kvk`, `rsin` and `oin` are the identifiers.
+	 *
+	 * @var string|null The registered legal name.
+	 */
+	protected ?string $legalName = null;
 
 	/**
 	 * PKIoverheid certificate reference.
@@ -591,6 +620,7 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'provisionedAt', type: 'datetime');
 		$this->addType(fieldName: 'suspendedAt', type: 'datetime');
 		$this->addType(fieldName: 'deprovisionedAt', type: 'datetime');
+		$this->addType(fieldName: 'retainedAt', type: 'datetime');
 		// Identity facet (ADR-022 §3): the statutory identifiers a leaf app
 		// used to keep in its own publisher/vendor record.
 		$this->addType(fieldName: 'type', type: 'string');
@@ -605,6 +635,7 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'tooi', type: 'string');
 		$this->addType(fieldName: 'rsin', type: 'string');
 		$this->addType(fieldName: 'kvk', type: 'string');
+		$this->addType(fieldName: 'legalName', type: 'string');
 		$this->addType(fieldName: 'pki', type: 'string');
 		$this->addType(fieldName: 'image', type: 'string');
 		// Relationship facet.
@@ -1062,6 +1093,7 @@ class Organisation extends Entity implements JsonSerializable {
 			'tooi' => $this->tooi,
 			'rsin' => $this->rsin,
 			'kvk' => $this->kvk,
+			'legalName' => $this->legalName,
 			'pki' => $this->pki,
 			'image' => $this->image,
 			'registrationStatus' => $this->registrationStatus,
@@ -1070,6 +1102,7 @@ class Organisation extends Entity implements JsonSerializable {
 			'provisionedAt' => $provisionedAt,
 			'suspendedAt' => $suspendedAt,
 			'deprovisionedAt' => $deprovisionedAt,
+			'retainedAt' => $this->retainedAt?->format('c'),
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
 			'_mail' => $this->mail,

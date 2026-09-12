@@ -133,10 +133,6 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturnCallback(
 			fn (): IQueryBuilder => $this->makeQueryBuilder()
 		);
-
-		// findAcrossAllMagicTables resolves the mappers through the service container.
-		\OC::$server->registerService(RegisterMapper::class, fn () => $this->registerMapper);
-		\OC::$server->registerService(SchemaMapper::class, fn () => $this->schemaMapper);
 	}//end setUp()
 
 	/*

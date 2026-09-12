@@ -283,4 +283,167 @@ class FleetAppIdTest extends TestCase
     }//end testAppPathWithoutSuffix()
 
 
+    /**
+     * namespaceForId returns the namespace that app really ships.
+     *
+     * The pairs are asserted as literals on purpose: `ucfirst($appId)` is NOT
+     * the rule (openbuild shipped `OCA\OpenBuilt`), so a derivation here would
+     * be the same guess this map exists to replace.
+     *
+     * @return void
+     */
+    public function testNamespaceForIdReturnsTheReadNamespace(): void
+    {
+        $this->assertSame('OCA\\Integriq\\', FleetAppId::namespaceForId('integriq', 'integriq'));
+        $this->assertSame('OCA\\OpenConnector\\', FleetAppId::namespaceForId('integriq', 'openconnector'));
+        $this->assertSame('OCA\\Keepiq\\', FleetAppId::namespaceForId('keepiq', 'keepiq'));
+        $this->assertSame('OCA\\Doriath\\', FleetAppId::namespaceForId('keepiq', 'doriath'));
+
+    }//end testNamespaceForIdReturnsTheReadNamespace()
+
+
+    /**
+     * An app whose old namespace has NOT been read resolves to null, not a guess.
+     *
+     * This is the property that keeps a wrong repoint out of the codebase: a
+     * guessed FQCN fails exactly as silently as the stale one it replaced, and
+     * looks fixed. Callers get null and handle it as "optional app absent".
+     *
+     * @return void
+     */
+    public function testAnUnreadNamespaceResolvesToNullRatherThanAGuess(): void
+    {
+        $this->assertNull(FleetAppId::namespaceForId('filinq', 'filinq'));
+        $this->assertNull(FleetAppId::className($this->appManager(['filinq']), 'filinq', 'Service\\DocumentService'));
+        $this->assertNull(FleetAppId::resolveClass('filinq', 'Service\\DocumentService'));
+
+    }//end testAnUnreadNamespaceResolvesToNullRatherThanAGuess()
+
+
+    /**
+     * className follows the INSTALLED id in both directions.
+     *
+     * @return void
+     */
+    public function testClassNameFollowsTheInstalledId(): void
+    {
+        $this->assertSame(
+            'OCA\\Integriq\\Action\\SynchronizationAction',
+            FleetAppId::className($this->appManager(['integriq']), 'integriq', 'Action\\SynchronizationAction')
+        );
+
+        $this->assertSame(
+            'OCA\\OpenConnector\\Action\\SynchronizationAction',
+            FleetAppId::className($this->appManager(['openconnector']), 'integriq', 'Action\\SynchronizationAction')
+        );
+
+    }//end testClassNameFollowsTheInstalledId()
+
+
+    /**
+     * className does not autoload: it answers for a class that does not exist.
+     *
+     * The allow-list caller depends on this — it hands the name to another
+     * app's job runner as inert data and must not pull the class in.
+     *
+     * @return void
+     */
+    public function testClassNameDoesNotRequireTheClassToExist(): void
+    {
+        $name = FleetAppId::className($this->appManager(['integriq']), 'integriq', 'Action\\NoSuchActionAnywhere');
+
+        $this->assertSame('OCA\\Integriq\\Action\\NoSuchActionAnywhere', $name);
+        $this->assertFalse(class_exists($name, false));
+
+    }//end testClassNameDoesNotRequireTheClassToExist()
+
+
+    /**
+     * className falls back to the canonical spelling when nothing is installed.
+     *
+     * @return void
+     */
+    public function testClassNameFallsBackToTheCanonicalSpelling(): void
+    {
+        $this->assertSame(
+            'OCA\\Integriq\\Action\\SynchronizationAction',
+            FleetAppId::className($this->appManager([]), 'integriq', 'Action\\SynchronizationAction')
+        );
+
+    }//end testClassNameFallsBackToTheCanonicalSpelling()
+
+
+    /**
+     * resolveClass picks the spelling that is actually loadable.
+     *
+     * Both directions matter. The fixtures below are declared at the bottom of
+     * this file under both namespaces: `OldOnlyProbe` exists only under the
+     * retired spelling, which is the case a hard swap to the new literal would
+     * break, and `BothProbe` exists under both, which pins the newest-first
+     * ordering that makes a migrated instance resolve to its own classes.
+     *
+     * @return void
+     */
+    public function testResolveClassPrefersTheNewestLoadableSpelling(): void
+    {
+        $this->assertSame(
+            'OCA\\Keepiq\\Service\\FleetAppIdBothProbe',
+            FleetAppId::resolveClass('keepiq', 'Service\\FleetAppIdBothProbe')
+        );
+
+        $this->assertSame(
+            'OCA\\Doriath\\Service\\FleetAppIdOldOnlyProbe',
+            FleetAppId::resolveClass('keepiq', 'Service\\FleetAppIdOldOnlyProbe')
+        );
+
+    }//end testResolveClassPrefersTheNewestLoadableSpelling()
+
+
+    /**
+     * resolveClass returns null when no spelling loads.
+     *
+     * @return void
+     */
+    public function testResolveClassReturnsNullWhenNoSpellingLoads(): void
+    {
+        $this->assertNull(FleetAppId::resolveClass('keepiq', 'Service\\FleetAppIdAbsentProbe'));
+
+    }//end testResolveClassReturnsNullWhenNoSpellingLoads()
+
+
+
+}//end class
+
+
+namespace OCA\Keepiq\Service;
+
+/**
+ * Probe fixture present under BOTH spellings (pins newest-first ordering).
+ */
+class FleetAppIdBothProbe
+{
+
+}//end class
+
+
+namespace OCA\Doriath\Service;
+
+/**
+ * Probe fixture present under BOTH spellings (pins newest-first ordering).
+ */
+class FleetAppIdBothProbe
+{
+
+}//end class
+
+
+/**
+ * Probe fixture present ONLY under the retired spelling.
+ *
+ * This is the beta/main instance: a hard swap to `OCA\Keepiq` would miss it
+ * silently, which is the same defect as the stale name it replaced.
+ */
+class FleetAppIdOldOnlyProbe
+{
+
 }//end class

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use OCA\OpenRegister\Service\TmloService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -79,7 +80,8 @@ class TmloServiceTest extends TestCase {
 		$this->service = new TmloService(
 			$this->registerMapper,
 			$this->schemaMapper,
-			$this->logger
+			$this->logger,
+			$this->createMock(MdtoXmlGenerator::class)
 		);
 	}//end setUp()
 

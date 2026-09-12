@@ -10,7 +10,9 @@ use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\TalkLinkService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -19,6 +21,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 class RelationsControllerTest extends TestCase {
+	use RegistersContainerServices;
+
 	private IRequest&MockObject $request;
 	private ObjectService&MockObject $objectService;
 	private NoteService&MockObject $noteService;
@@ -51,7 +55,8 @@ class RelationsControllerTest extends TestCase {
 			$this->calendarEventService,
 			$this->contactService,
 			$this->deckCardService,
-			$this->logger
+			$this->logger,
+			$this->containerMock()
 		);
 	}
 
@@ -183,19 +188,13 @@ class RelationsControllerTest extends TestCase {
 	public function testSuccessfulAggregationOmitsErrorsKey(): void {
 		$this->setupObject();
 
-		// Scope the request to the types this test actually stubs.
-		//
-		// Unfiltered, `gatherRelations()` also walks LEAF_INTEGRATIONS, whose
-		// services it resolves through the STATIC `\OCP\Server::get()` — which no
-		// fixture can intercept. Those are OpenRegister's own services, so they
-		// resolve fine and then call `isXAvailable()`, which needs AppConfig and
-		// throws "Nextcloud is not installed yet" on a host run. Eleven leaves
-		// then landed in `_errors` and failed this test for a reason that cannot
-		// occur in production, where AppConfig is always available.
-		//
-		// Filtering keeps the assertion honest and hermetic: it still proves that
-		// a fully successful aggregation carries no `_errors` key, over exactly
-		// the providers this test controls. The leaf path has its own coverage.
+		// Scope the request to the types this test actually stubs. Unfiltered,
+		// `gatherRelations()` also walks LEAF_INTEGRATIONS, resolved through the
+		// injected container; the container mock answers null for anything not
+		// registered, and a null service is skipped. Filtering keeps the
+		// assertion honest: it proves that a fully successful aggregation
+		// carries no `_errors` key over exactly the providers this test
+		// controls. The leaf path is covered by testLeafIntegrationIsResolvedThroughTheContainer.
 		$this->request->method('getParams')->willReturn([
 			'types' => 'notes,tasks,emails,events,contacts,deck',
 		]);
@@ -224,6 +223,48 @@ class RelationsControllerTest extends TestCase {
 			$data,
 			'unexpected partial failures: ' . json_encode(($data['_errors'] ?? []))
 		);
+	}
+
+	/**
+	 * A pluggable leaf link service is resolved through the injected container,
+	 * probed for availability and aggregated under its response key.
+	 */
+	public function testLeafIntegrationIsResolvedThroughTheContainer(): void {
+		$this->setupObject();
+		$this->request->method('getParams')->willReturn(['types' => 'talk']);
+
+		$talk = $this->createMock(TalkLinkService::class);
+		$talk->method('isTalkAvailable')->willReturn(true);
+		$talk->expects($this->once())
+			->method('getLinkedRooms')
+			->with('abc-123')
+			->willReturn([['token' => 'room-1', 'name' => 'Case room']]);
+		$this->registerService(TalkLinkService::class, fn () => $talk);
+
+		$response = $this->controller->index('1', '2', 'abc-123');
+		$data = $response->getData();
+
+		$this->assertSame(1, $data['talk']['total']);
+		$this->assertSame('room-1', $data['talk']['results'][0]['token']);
+		$this->assertArrayNotHasKey('_errors', $data);
+	}
+
+	/**
+	 * A leaf whose app reports itself unavailable is skipped silently.
+	 */
+	public function testUnavailableLeafIntegrationIsSkipped(): void {
+		$this->setupObject();
+		$this->request->method('getParams')->willReturn(['types' => 'talk']);
+
+		$talk = $this->createMock(TalkLinkService::class);
+		$talk->method('isTalkAvailable')->willReturn(false);
+		$talk->expects($this->never())->method('getLinkedRooms');
+		$this->registerService(TalkLinkService::class, fn () => $talk);
+
+		$data = $this->controller->index('1', '2', 'abc-123')->getData();
+
+		$this->assertArrayNotHasKey('talk', $data);
+		$this->assertArrayNotHasKey('_errors', $data);
 	}
 
 	/**

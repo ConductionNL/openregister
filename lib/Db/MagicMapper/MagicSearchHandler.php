@@ -49,6 +49,7 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -1285,11 +1286,12 @@ class MagicSearchHandler {
 			'_multitenancy_explicit',
 			'_fuzzy',
 			'_empty',
-			'register',
-			'schema',
-			'registers',
-			'schemas',
-			'extend',
+			// The non-underscore tail lives in FilterParams, because the
+			// filter-spelling normalisation has to exclude exactly the same
+			// names (openregister#3611). Two hand-kept copies of this list
+			// would drift, and the way they drift is a context parameter read
+			// as a property filter, which answers `1 = 0` and says nothing.
+			...FilterParams::OBJECT_CONTEXT_PARAMS,
 		];
 	}//end getReservedParams()
 
@@ -2424,7 +2426,11 @@ class MagicSearchHandler {
 							$value = $normalised->format('Y-m-d');
 						}
 					} elseif ($propertyFormat === 'date-time') {
-						$value = $this->dateTimeNormalizer->formatForIso8601($value);
+						// The column is a DATETIME and carries no offset, so the value
+						// must be read back in the timezone the write path stored it
+						// in (UTC) rather than in the server's `date.timezone`
+						// (WOO-567).
+						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
 					}
 				}
 

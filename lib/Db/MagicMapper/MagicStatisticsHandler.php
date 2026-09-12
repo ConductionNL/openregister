@@ -136,6 +136,23 @@ class MagicStatisticsHandler {
 	}//end setCountCallback()
 
 	/**
+	 * Forget the memoised magic-table list.
+	 *
+	 * The magicTablesCache memo answers "which magic tables exist" and nothing used to
+	 * clear it. MagicMapper invalidates its own two table memos the moment it
+	 * creates a table; this third memo of the same fact was left behind, so a
+	 * register whose table was created after the first statistics call in the
+	 * same request counted zero objects while its table sat there holding them.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function forgetMagicTableList(): void {
+		$this->magicTablesCache = null;
+	}//end forgetMagicTableList()
+
+	/**
 	 * Find a Register, reusing the entity within this request.
 	 *
 	 * Statistics walk every register/schema pair, and a caller that wants stats for N
@@ -671,7 +688,9 @@ class MagicStatisticsHandler {
 							$value = $normalised->format('Y-m-d');
 						}
 					} elseif ($propertyFormat === 'date-time') {
-						$value = $this->dateTimeNormalizer->formatForIso8601($value);
+						// Offset-less DATETIME column value: interpret it in the
+						// timezone the write path stored it in (WOO-567).
+						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
 					}
 				}
 

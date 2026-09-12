@@ -379,12 +379,19 @@ class AuditTrailMapper extends QBMapper {
 				continue;
 			}
 
-			$direction = 'ASC';
-			if (strtoupper($direction) === 'DESC') {
-				$direction = 'DESC';
+			// The default is assigned to a SEPARATE name. Writing it back over
+			// `$direction` first, then testing `$direction`, compares the
+			// default with itself, so the branch can never be taken and every
+			// sort this mapper is given comes back ASCENDING. `findAll()`
+			// defaults to `['created' => 'DESC']` and returned oldest-first
+			// regardless, which is how a case history read bottom-up on the
+			// page while both the caller and this signature said newest-first.
+			$order = 'ASC';
+			if (strtoupper((string)$direction) === 'DESC') {
+				$order = 'DESC';
 			}
 
-			$qb->addOrderBy($field, $direction);
+			$qb->addOrderBy($field, $order);
 		}//end foreach
 
 		// Apply pagination.
@@ -458,6 +465,8 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function buildAuditTrail(
 		?ObjectEntity $old = null,
@@ -557,6 +566,31 @@ class AuditTrailMapper extends QBMapper {
 			];
 		}
 
+		// Mark a row an automatic lifecycle transition produced, so an auditor
+		// can tell a move a user asked for from a move a rule made on that
+		// user's save. Applied HERE, before the row is built and sealed, for
+		// the reason AuditFlowAttribution is applied at the same point: the
+		// hash chain covers whatever is in the row, so a field added after the
+		// insert would sit outside the hash it is later given. The row is still
+		// attributed to the acting user, because that is who the move acted as.
+		// Read off the request-scoped pass through the container rather than an
+		// injected dependency: this mapper is constructed in contexts where the
+		// lifecycle services are not wired, and an audit row must never fail to
+		// be built because of that. A resolution failure means "no automatic move
+		// in flight", which is the pre-existing behaviour.
+		$automaticAction = null;
+		try {
+			$automaticAction = $this->container
+				->get(\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class)
+				->applyingAction();
+		} catch (\Throwable $passUnavailable) {
+			$automaticAction = null;
+		}
+
+		if ($automaticAction !== null) {
+			$changed['automaticTransition'] = $automaticAction;
+		}
+
 		// Get the current user.
 		$user = $this->userSession->getUser();
 
@@ -582,6 +616,15 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setCreated(new DateTime());
 		$auditTrail->setRegister($objectEntity->getRegister());
 		$auditTrail->setSchema($objectEntity->getSchema());
+
+		// The object version this change produced. `oc_openregister_audit_trails`
+		// has carried a `version` column and AuditTrail a `version` property
+		// since the table was created, and nothing ever wrote either — because
+		// nothing wrote the object's version either. Now that ObjectVersionHandler
+		// maintains it, the audit row can say which version each entry left
+		// behind, which is what makes "revert to version X" answerable from the
+		// trail rather than by counting rows.
+		$auditTrail->setVersion($objectEntity->getVersion());
 
 		// AVG / GDPR Art 30 trigger contract — resolve the
 		// processing-activity reference and tag the audit row. Resolution
@@ -2052,11 +2095,22 @@ class AuditTrailMapper extends QBMapper {
 	}//end getStatisticsGroupedBySchema()
 
 	/**
-	 * Create a custom audit trail entry for archival operations.
+	 * Create a custom audit trail entry for archival operations, or for any
+	 * other caller that needs a non-CRUD action recorded with an explicit
+	 * actor.
+	 *
+	 * `$actorId`/`$actorName` exist for callers acting on behalf of a
+	 * non-human principal — e.g. `registry-subscriptions`' inbound update
+	 * endpoint, which authenticates as a connector's app-password account
+	 * but must audit the REGISTRY (`registry:brp`) as the actor, not
+	 * whichever Nextcloud account the app password happens to belong to.
+	 * Omit both to keep the previous session-derived behavior unchanged.
 	 *
 	 * @param ObjectEntity $object The object the entry relates to
 	 * @param string $action The archival action (e.g., archival.destroyed)
 	 * @param array $context Additional context data
+	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
+	 * @param string|null $actorName Explicit actor display name, paired with $actorId.
 	 *
 	 * @return AuditTrail The created audit trail entry
 	 *
@@ -2066,11 +2120,29 @@ class AuditTrailMapper extends QBMapper {
 		ObjectEntity $object,
 		string $action,
 		array $context = [],
+		?string $actorId = null,
+		?string $actorName = null,
 	): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
+		$userId = $actorId;
+		$userName = $actorName;
+		if ($userId === null) {
+			$user = $this->userSession->getUser();
+			$userId = 'system';
+			$userName = 'System';
+			if ($user !== null) {
+				$userId = $user->getUID();
+				// SECURITY / AVG: keep `user_name` populated even though the
+				// migration (Version1Date20260423100000) relaxed NOT NULL on
+				// the column to support referential-integrity rows that have
+				// no displayable actor. Without this default, every audit row
+				// produced through this entry point would persist with a NULL
+				// `user_name` — undermining GDPR Art 30 §4 supervisor review.
+				$userName = $user->getDisplayName();
+			}
+		}
+
+		if ($userName === null) {
+			$userName = $userId;
 		}
 
 		$auditTrail = new AuditTrail();
@@ -2082,20 +2154,7 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($context);
 		$auditTrail->setUser($userId);
-
-		// SECURITY / AVG: keep `user_name` populated even though the
-		// migration (Version1Date20260423100000) relaxed NOT NULL on
-		// the column to support referential-integrity rows that have
-		// no displayable actor. Without this default, every audit row
-		// produced through this entry point would persist with a NULL
-		// `user_name` — undermining GDPR Art 30 §4 supervisor review.
-		$userName = 'System';
-		if ($user !== null) {
-			$userName = $user->getDisplayName();
-		}
-
 		$auditTrail->setUserName($userName);
-
 		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);

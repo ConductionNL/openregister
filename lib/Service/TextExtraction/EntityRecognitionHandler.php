@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -55,6 +56,8 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Entity recognition integrates multiple extraction strategies
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Multiple detection strategies require per-strategy methods
+ *
+ * @spec openspec/specs/text-extraction/spec.md#requirement-file-and-object-chunk-extraction-lifecycle
  */
 class EntityRecognitionHandler {
 	/**
@@ -100,6 +103,7 @@ class EntityRecognitionHandler {
 	 * @param LoggerInterface $logger Logger.
 	 * @param SettingsService $settingsService Settings service.
 	 * @param AnonymisationBackendService $anonymisationBackendService Backend state + ExApp client.
+	 * @param ContainerInterface|null $container App container, consulted lazily for the object mapper.
 	 */
 	public function __construct(
 		private readonly ChunkMapper $chunkMapper,
@@ -109,6 +113,7 @@ class EntityRecognitionHandler {
 		private readonly LoggerInterface $logger,
 		private readonly SettingsService $settingsService,
 		private readonly AnonymisationBackendService $anonymisationBackendService,
+		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
 
@@ -1094,8 +1099,16 @@ class EntityRecognitionHandler {
 	 * @return void
 	 */
 	private function populateObjectContextOnRelation(EntityRelation $relation, int $objectId): void {
+		// Resolved lazily through the injected app container (the mapper's own
+		// graph reaches back into this service's collaborators), never through
+		// `\OC::$server`: outside a booted Nextcloud that autowires an unbounded
+		// cycle and eats all memory (19 GB on 2026-09-08).
+		if ($this->container === null) {
+			return;
+		}
+
 		try {
-			$objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+			$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 			$object = $objectMapper->find(
 				$objectId,
 				_rbac: false,

@@ -522,6 +522,73 @@ class TaskControllerTest extends TestCase {
 	}//end testIndexPassesEveryFilterIntoTheCriteria()
 
 	/**
+	 * A due WINDOW reaches the criteria as two instants.
+	 *
+	 * `overdue` cannot express one: it is open-ended in the past by design,
+	 * and "due this week" needs both ends. Dossiq's task lenses need exactly
+	 * this, and without it that lens has no server-side answer.
+	 *
+	 * @return void
+	 */
+	public function testIndexPassesADueWindowIntoTheCriteria(): void {
+		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria): array {
+				$this->assertNotNull($criteria->dueAfter);
+				$this->assertNotNull($criteria->dueBefore);
+				$this->assertSame('2026-09-01', $criteria->dueAfter->format('Y-m-d'));
+				$this->assertSame('2026-09-08', $criteria->dueBefore->format('Y-m-d'));
+				// A window is not the overdue filter, and asking for one must
+				// not quietly switch on the other.
+				$this->assertNull($criteria->overdueAt);
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+
+		$response = $this->controller->index(
+			dueAfter: '2026-09-01T00:00:00+00:00',
+			dueBefore: '2026-09-08T00:00:00+00:00'
+		);
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testIndexPassesADueWindowIntoTheCriteria()
+
+	/**
+	 * 🔴 An UNPARSEABLE instant is refused, not dropped.
+	 *
+	 * A dropped date filter WIDENS the result set, and a task list quietly
+	 * showing more than was asked for is the failure this endpoint's scope
+	 * rules exist to prevent. Refusing is the only safe direction.
+	 *
+	 * @return void
+	 */
+	public function testIndexRefusesAnUnparseableDueInstant(): void {
+		$this->inbox->expects($this->never())->method('inbox');
+
+		$response = $this->controller->index(dueBefore: 'next tuesday-ish');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testIndexRefusesAnUnparseableDueInstant()
+
+	/**
+	 * With no window asked for, the criteria carry none.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithoutADueWindowCarriesNone(): void {
+		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria): array {
+				$this->assertNull($criteria->dueAfter);
+				$this->assertNull($criteria->dueBefore);
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+
+		$this->controller->index();
+	}//end testIndexWithoutADueWindowCarriesNone()
+
+	/**
 	 * With overdue unset the criteria carry no clock instant.
 	 *
 	 * @return void

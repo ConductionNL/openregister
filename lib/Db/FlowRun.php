@@ -64,6 +64,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLog(?array $log)
  * @method string|null getSubjectUuid()
  * @method void setSubjectUuid(?string $subjectUuid)
+ * @method array|null getSubjects()
+ * @method void setSubjects(?array $subjects)
  * @method string|null getSubjectRegister()
  * @method void setSubjectRegister(?string $subjectRegister)
  * @method string|null getSubjectSchema()
@@ -265,6 +267,25 @@ class FlowRun extends Entity implements JsonSerializable {
 	protected ?string $subjectUuid = null;
 
 	/**
+	 * The objects this run DECLARES it is working with, by role.
+	 *
+	 * 🔴 DECLARED, NOT DERIVED. The audit already answers "what did this run
+	 * write", and that cannot serve this purpose: a case flow READS a case it
+	 * never writes, WRITES a task and a document it does not consider subjects,
+	 * and may write one object at three steps for three reasons. The derived
+	 * list is too much and too little at once — and decisively it carries no
+	 * ROLE, so `attachTo: case` has no name to address.
+	 *
+	 * 🔑 ON THE RUN ROW, NOT IN A RESUME SLOT. Slots are per node, and a
+	 * three-week approval must wake up still knowing what its case is.
+	 *
+	 * Shape: `{"case": {"uuid": …, "register": …, "schema": …, "recordedAt": …}}`.
+	 *
+	 * @var array<string, array<string, mixed>>|null
+	 */
+	protected ?array $subjects = null;
+
+	/**
 	 * Register slug of the subject object.
 	 *
 	 * @var string|null
@@ -384,6 +405,7 @@ class FlowRun extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'context', type: 'json');
 		$this->addType(fieldName: 'log', type: 'json');
 		$this->addType(fieldName: 'subjectUuid', type: 'string');
+		$this->addType(fieldName: 'subjects', type: 'json');
 		$this->addType(fieldName: 'subjectRegister', type: 'string');
 		$this->addType(fieldName: 'subjectSchema', type: 'string');
 		$this->addType(fieldName: 'triggeredBy', type: 'string');
@@ -446,6 +468,14 @@ class FlowRun extends Entity implements JsonSerializable {
 			'context' => ($this->context ?? []),
 			'log' => ($this->log ?? []),
 			'subjectUuid' => $this->subjectUuid,
+			// 🔴 AN OBJECT, NEVER AN EMPTY ARRAY. `json_encode` turns an empty
+			// PHP array into `[]`, so a run that declared nothing served a JSON
+			// ARRAY where every populated run serves a MAP — and a typed client
+			// cannot read both. Casting keeps the shape one thing: `{}` when
+			// nothing is declared, `{"case": …}` when something is. Measured in
+			// CI, where the Newman collection read `[]` and could not tell an
+			// empty set from a wrong type.
+			'subjects' => (object)($this->subjects ?? []),
 			'subjectRegister' => $this->subjectRegister,
 			'subjectSchema' => $this->subjectSchema,
 			'triggeredBy' => $this->triggeredBy,

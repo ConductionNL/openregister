@@ -85,8 +85,8 @@ export default {
 	 * no clicks; otherwise the shared store selection is restored (and mirrored
 	 * back into the URL so a reload from that point is itself a deep-link).
 	 *
-	 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
-	 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-route-query-takes-precedence-over-stored-selection
+	 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
+	 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-route-query-takes-precedence-over-stored-selection
 	 * @spec openspec/specs/mdm-frontend/spec.md
 	 */
 	async mounted() {
@@ -138,7 +138,7 @@ export default {
 		 * the URL.
 		 *
 		 * @param {object|null} option Selected NcSelect option.
-		 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-changing-the-register-resets-the-schema-in-the-url
+		 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-changing-the-register-resets-the-schema-in-the-url
 		 */
 		async handleRegisterChange(option) {
 			this.schemaModel = null
@@ -156,7 +156,7 @@ export default {
 		 * schema) pair to the shared store and mirrors it into the URL.
 		 *
 		 * @param {object|null} option Selected NcSelect option.
-		 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
+		 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
 		 */
 		handleSchemaChange(option) {
 			qualityStore.setSelection(
@@ -173,7 +173,7 @@ export default {
 		 *
 		 * @param {string|number|null} register Selected register id.
 		 * @param {string|number|null} schema   Selected schema id.
-		 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
+		 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
 		 */
 		syncRoute(register, schema) {
 			const query = {}

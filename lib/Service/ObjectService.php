@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -50,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -65,6 +67,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -166,6 +169,9 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
+ *
+ * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  */
 class ObjectService implements ObjectServiceInterface
 {
@@ -279,6 +285,7 @@ class ObjectService implements ObjectServiceInterface
      * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container            Application container.
      * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
+     * @param AutoTransitionPass|null        $autoTransitions      Request-scoped pass applying automatic lifecycle moves.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -331,7 +338,12 @@ class ObjectService implements ObjectServiceInterface
         private readonly SettingsService $settingsService,
         private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container,
-        private readonly ObjectSourceRegistry $objectSourceRegistry
+        private readonly ObjectSourceRegistry $objectSourceRegistry,
+        // The request-scoped automatic-transition pass. Nullable with a null
+        // default so the many unit tests that build this service positionally
+        // keep working; the container resolves the real, SHARED instance by
+        // type in production, as it does for FlowRunController's attribution.
+        private readonly ?AutoTransitionPass $autoTransitions = null
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
         // - ExportService → uses SaveObjects → potentially loops back
@@ -1551,6 +1563,7 @@ class ObjectService implements ObjectServiceInterface
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1575,6 +1588,15 @@ class ObjectService implements ObjectServiceInterface
         // unaffected: the snapshot and the restore are the same context.
         $previousRegister = $this->currentRegister;
         $previousSchema   = $this->currentSchema;
+
+        // OPEN THE AUTOMATIC-TRANSITION BOUNDARY. Leaving the OUTERMOST one is
+        // the first moment at which this write is finished in every sense that
+        // matters: the object row, its audit row, and the second update a
+        // file-bearing save makes from an in-memory entity. A move applied any
+        // earlier is lost to that second write. See AutoTransitionPass.
+        $this->autoTransitions?->enter();
+        $automatic = [];
+        $result    = null;
 
         try {
             $this->discardPendingSchemaRef();
@@ -1740,13 +1762,15 @@ class ObjectService implements ObjectServiceInterface
             // applied defaults), not the pre-save input array, so an email value
             // injected by a default/computed property is also invalidated.
             try {
-                $container = \OC::$server;
-                if ($container !== null) {
-                    $contactMatchingService = $container->get(
-                        \OCA\OpenRegister\Service\ContactMatchingService::class
-                    );
-                    $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
-                }
+                // Through the injected app container, never `\OC::$server`: outside a
+                // booted Nextcloud the global container autowires this app's
+                // services from scratch and recurses through a MagicMapper ->
+                // SettingsService -> ValidationOperationsHandler -> ValidateObject
+                // cycle until memory runs out (19 GB on 2026-09-08).
+                $contactMatchingService = $this->container->get(
+                    \OCA\OpenRegister\Service\ContactMatchingService::class
+                );
+                $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
             } catch (\Throwable $e) {
                 // BUG-OBJ-9 / BUG-OBJ-14: contact-match cache invalidation is a
                 // non-essential post-save side-effect and must NEVER fail the save.
@@ -1777,53 +1801,53 @@ class ObjectService implements ObjectServiceInterface
             // the providers actually match against (design.md D4). Best-effort:
             // never fails the save.
             try {
-                $container = \OC::$server;
-                if ($container !== null) {
-                    $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
-                    $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
-                    $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+                // Same rule as the contact-match block above: the injected app
+                // container, never `\OC::$server`.
+                $container = $this->container;
+                $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
+                $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
+                $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
 
-                    $invalidationRegisterId = (int)$this->currentRegister?->getId();
-                    $invalidationSchemaId = (int)$this->currentSchema?->getId();
-                    $invalidationUuid = (string)$savedObject->getUuid();
+                $invalidationRegisterId = (int)$this->currentRegister?->getId();
+                $invalidationSchemaId = (int)$this->currentSchema?->getId();
+                $invalidationUuid = (string)$savedObject->getUuid();
 
-                    $invalidatedPrefixes = [];
-                    foreach (
-                        $formatter->buildCanonicalUrls(
-                            registerId: $invalidationRegisterId,
-                            schemaId: $invalidationSchemaId,
-                            uuid: $invalidationUuid
-                        ) as $canonicalUrl
-                    ) {
-                        $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
-                        if (isset($invalidatedPrefixes[$prefix]) === false) {
-                            $referenceManager->invalidateCache(cachePrefix: $prefix);
-                            $invalidatedPrefixes[$prefix] = true;
-                        }
-                    }
-
-                    // Flat data shape deep link URL templates resolve placeholders
-                    // against — same shape ObjectPreviewFormatter::buildReference()
-                    // and ObjectSearchResultFormatter::format() build for the same
-                    // purpose: the object's own fields plus the identity triple.
-                    $deepLinkObjectData = array_merge(
-                        $savedObject->getObject(),
-                        [
-                            'uuid' => $invalidationUuid,
-                            'register' => $invalidationRegisterId,
-                            'schema' => $invalidationSchemaId,
-                        ]
-                    );
-
-                    $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                $invalidatedPrefixes = [];
+                foreach (
+                    $formatter->buildCanonicalUrls(
                         registerId: $invalidationRegisterId,
                         schemaId: $invalidationSchemaId,
-                        objectData: $deepLinkObjectData
-                    );
-                    if ($deepLinkUrl !== null) {
-                        $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+                        uuid: $invalidationUuid
+                    ) as $canonicalUrl
+                ) {
+                    $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
+                    if (isset($invalidatedPrefixes[$prefix]) === false) {
+                        $referenceManager->invalidateCache(cachePrefix: $prefix);
+                        $invalidatedPrefixes[$prefix] = true;
                     }
-                }//end if
+                }
+
+                // Flat data shape deep link URL templates resolve placeholders
+                // against — same shape ObjectPreviewFormatter::buildReference()
+                // and ObjectSearchResultFormatter::format() build for the same
+                // purpose: the object's own fields plus the identity triple.
+                $deepLinkObjectData = array_merge(
+                    $savedObject->getObject(),
+                    [
+                        'uuid' => $invalidationUuid,
+                        'register' => $invalidationRegisterId,
+                        'schema' => $invalidationSchemaId,
+                    ]
+                );
+
+                $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                    registerId: $invalidationRegisterId,
+                    schemaId: $invalidationSchemaId,
+                    objectData: $deepLinkObjectData
+                );
+                if ($deepLinkUrl !== null) {
+                    $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+                }
             } catch (\Throwable $e) {
                 // Smart Picker cache invalidation is a non-essential post-save
                 // side-effect and must NEVER fail the save. Catch \Throwable (the
@@ -1865,10 +1889,27 @@ class ObjectService implements ObjectServiceInterface
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
             \OCA\OpenRegister\Service\WritePhaseProbe::flush();
 
-            return $renderedObject;
+            // Assigned rather than returned: the boundary below may apply an
+            // automatic transition whose entity is the one the caller must see.
+            $result = $renderedObject;
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
+
+            // Always in a `finally`, never conditionally: an unbalanced enter
+            // would leave the pass believing a boundary is still open, and
+            // nothing in this request would ever drain again.
+            $automatic = ($this->autoTransitions?->leave() ?? []);
         }
+
+        // No null guard on $result here. PHPStan proves the try block either
+        // assigns it or throws, so a guard would be dead code, and dead code
+        // that only static analysis can see is exactly what the baseline is
+        // for tracking rather than growing.
+        if ($this->autoTransitions === null) {
+            return $result;
+        }
+
+        return $this->autoTransitions->preferAutomatic(saved: $result, applied: $automatic);
     }//end saveObject()
 
     /**
@@ -2674,7 +2715,9 @@ class ObjectService implements ObjectServiceInterface
             );
 
             $retention = ($object->getRetention() ?? []);
-            if (isset($retention['archiefstatus']) === true && $retention['archiefstatus'] === 'overgebracht') {
+            // Both vocabularies: stored data is not migrated, so an install
+            // that transferred a record before GAP A4 holds `overgebracht`.
+            if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true) {
                 throw new OcpDoesNotExistException(
                     'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
                 );
@@ -5118,26 +5161,36 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Delete all objects belonging to a specific register
      *
-     * This method efficiently deletes all objects that belong to the specified register.
-     * It uses bulk operations for optimal performance and maintains data integrity.
+     * Empties every magic table of every schema the register lists, in one
+     * transaction, snapshotting each object to the audit trail first. Refuses the
+     * whole request with ArchivalImmutableException, before touching any row, when
+     * any of those schemas is archival. The work lives in SchemaDeletionService,
+     * resolved lazily for the reason deleteObjectsBySchema() gives.
      *
-     * @param int $registerId The ID of the register whose objects should be deleted
+     * @param int  $registerId The ID of the register whose objects should be deleted
+     * @param bool $hardDelete Whether to force hard delete (default: false)
      *
      * @return (int|string[])[]
      *
-     * @throws \Exception If the deletion operation fails
+     * @throws \OCA\OpenRegister\Exception\ArchivalImmutableException If any schema of the register is archival
+     * @throws \Exception If the deletion operation fails (nothing is deleted)
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
      *
      * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, register_id: int}
      *
-     * @spec exclude Deprecated throwing stub; register-wide delete awaits MagicMapper reimplementation (blob table retired).
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
      */
-    public function deleteObjectsByRegister(int $registerId): array
+    public function deleteObjectsByRegister(int $registerId, bool $hardDelete=false): array
     {
-        // TODO: Reimplement using MagicMapper for register-wide delete on magic tables.
-        throw new RuntimeException(
-            'deleteObjectsByRegister needs reimplementation using MagicMapper (blob objects table retired)'
+        $register = $this->registerMapper->find(id: $registerId);
+        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+
+        return $schemaDeletionService->deleteObjectsByRegister(
+            register: $register,
+            hardDelete: $hardDelete
         );
     }//end deleteObjectsByRegister()
 
@@ -5467,6 +5520,18 @@ class ObjectService implements ObjectServiceInterface
                 patch: $data
             );
 
+            // The read decoded, so the write has to re-encode. A `type: string`
+            // property whose stored value looks like JSON comes back from
+            // getObject() as an ARRAY (SchemaTypeConverter::convertString), and
+            // feeding that array back in makes validation refuse a patch that
+            // never mentioned the property. Only keys the caller did NOT supply
+            // are restored — see restoreStringTypedValues() for why.
+            $merged = $this->restoreStringTypedValues(
+                data: $merged,
+                existing: $existing,
+                suppliedKeys: array_keys($data)
+            );
+
             // Address the save at the object we actually resolved, not at whatever
             // form of the identifier the caller happened to hold.
             $merged['id'] = ($existing->getUuid() ?? $objectId);
@@ -5525,6 +5590,75 @@ class ObjectService implements ObjectServiceInterface
 
         return $stored;
     }//end mergePatchData()
+
+    /**
+     * Restore the stored form of string-typed properties the read path decoded.
+     *
+     * Thin resolver around `SchemaTypeConverter::restoreStringTypedValues()`,
+     * which owns the rule. All this does is find the schema whose property
+     * declarations say which keys are string-typed.
+     *
+     * The schema lookup runs with RBAC and multitenancy off: it reads type
+     * declarations to persist an object correctly, not data on the caller's
+     * behalf, and `saveObject()` still applies every check to the write itself.
+     * Leaving them on would make the repair depend on the caller's schema
+     * permissions, so the defect would come back for exactly the callers least
+     * able to diagnose it.
+     *
+     * If the schema or the converter cannot be resolved the data is returned
+     * unchanged, which leaves the pre-existing loud validation refusal in
+     * place. That is the intended failure direction: never swallow, never
+     * silently rewrite.
+     *
+     * @param array        $data         The merged object data about to be saved.
+     * @param ObjectEntity $existing     The object as it was read.
+     * @param array        $suppliedKeys Keys the caller actually sent.
+     *
+     * @return array The data with untouched string-typed JSON values restored.
+     *
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
+     */
+    private function restoreStringTypedValues(array $data, ObjectEntity $existing, array $suppliedKeys): array
+    {
+        $schemaId = $existing->getSchema();
+        if ($schemaId === null) {
+            return $data;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find(
+                $schemaId,
+                _rbac: false,
+                _multitenancy: false
+            );
+
+            $converter = $this->container->get(SchemaTypeConverter::class);
+        } catch (\Throwable $restoreError) {
+            $this->logger->warning(
+                message: '[ObjectService] Could not restore string-typed values before the save',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'schema' => $schemaId,
+                    'exception' => $restoreError->getMessage(),
+                ]
+            );
+            return $data;
+        }
+
+        // A container may answer with something other than a converter, or with
+        // nothing at all. Returning the data unchanged keeps the pre-existing
+        // refusal; calling a method on null would turn a patch into a fatal.
+        if (($converter instanceof SchemaTypeConverter) === false) {
+            return $data;
+        }
+
+        return $converter->restoreStringTypedValues(
+            data: $data,
+            properties: ($schema->getProperties() ?? []),
+            suppliedKeys: $suppliedKeys
+        );
+    }//end restoreStringTypedValues()
 
     /**
      * Build search query from request parameters

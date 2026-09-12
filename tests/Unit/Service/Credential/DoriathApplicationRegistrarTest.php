@@ -186,14 +186,35 @@ class DoriathApplicationRegistrarTest extends TestCase {
 	}
 
 	/**
+	 * An app manager reporting the credential app under ONE concrete id.
+	 *
+	 * Parameterised by id rather than pinned to `doriath`, because the whole
+	 * defect these tests now guard is directional: a resolver that only handled
+	 * the spelling the fixture happens to use looks correct against that
+	 * fixture and silently reports "no credential app" against the other.
+	 *
+	 * @param bool   $enabled Whether the app is present and enabled at all.
+	 * @param string $appId   The single id this fake instance registered.
+	 *
+	 * @return IAppManager The configured mock.
+	 */
+	private function credentialAppManager(bool $enabled, string $appId = 'keepiq'): IAppManager {
+		$mock = $this->createMock(IAppManager::class);
+		$match = static fn (string $id): bool => ($enabled === true && $id === $appId);
+		$mock->method('isInstalled')->willReturnCallback($match);
+		$mock->method('isEnabledForUser')->willReturnCallback($match);
+
+		return $mock;
+	}
+
+	/**
 	 * Build the registrar with the fixture ApplicationService injected.
 	 *
 	 * @param bool $doriathEnabled Whether IAppManager reports doriath enabled.
 	 * @param IAppConfig $appConfig IAppConfig mock.
 	 */
-	private function makeRegistrar(bool $doriathEnabled, IAppConfig $appConfig): DoriathApplicationRegistrar {
-		$appManager = $this->createMock(IAppManager::class);
-		$appManager->method('isEnabledForUser')->with('doriath')->willReturn($doriathEnabled);
+	private function makeRegistrar(bool $doriathEnabled, IAppConfig $appConfig, string $appId = 'keepiq'): DoriathApplicationRegistrar {
+		$appManager = $this->credentialAppManager(enabled: $doriathEnabled, appId: $appId);
 
 		$applicationService = $this->applicationService;
 

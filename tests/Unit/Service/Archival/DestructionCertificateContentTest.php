@@ -36,13 +36,13 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Archival\LegalHoldService;
+use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -84,7 +84,6 @@ class DestructionCertificateContentTest extends TestCase {
 
 		$this->destructionService = new DestructionService(
 			$objectMapper,
-			$this->createMock(LegalHoldService::class),
 			$appConfig,
 			$this->jobList,
 			$userSession,
@@ -100,7 +99,8 @@ class DestructionCertificateContentTest extends TestCase {
 			$appConfig,
 			$userSession,
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IDBConnection::class)
+			$this->createMock(RetentionRowScanner::class),
+			$this->createMock(ArchiveActionDateCalculator::class)
 		);
 	}
 

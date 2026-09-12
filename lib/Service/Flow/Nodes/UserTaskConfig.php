@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
@@ -185,7 +186,7 @@ final class UserTaskConfig {
 			'title' => $this->renderedTitle(config: $config, items: $items),
 			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
 			'state' => $state,
-			'performerType' => trim((string)($config['performerType'] ?? Task::PERFORMER_USER)),
+			'performerType' => UserTaskPerformers::kindFor(config: $config, performers: $this->performers(config: $config)),
 			'priority' => trim((string)($config['priority'] ?? 'normal')),
 			'assignee' => $this->nullIfEmpty(value: $assignee),
 			'candidateUsers' => $this->nullIfEmptyList(value: $this->listOf(value: ($config['candidateUsers'] ?? null))),
@@ -230,23 +231,45 @@ final class UserTaskConfig {
 			FlowTaskBridge::SLOT_TASK_UUID => $taskUuid,
 			FlowTaskBridge::SLOT_ASKED_AT => (new DateTime())->format('c'),
 			FlowTaskBridge::SLOT_ADVANCE => FlowAdvanceBudget::fromConfig(config: $config)->toStored(),
-			'assignee' => $this->assignee(config: $config),
+			'assignee' => $this->assigneeValue(config: $config),
 			'title' => $this->renderedTitle(config: $config, items: $items),
 		];
 	}//end slotValues()
 
 	/**
-	 * The directly configured assignee, trimmed; '' when the task is pooled.
+	 * The assignee as the task row stores it.
+	 *
+	 * Delegated to {@see UserTaskAssignee}, which owns both shapes: the two are
+	 * read by different consumers for different purposes, and keeping them here
+	 * put this class over its complexity budget.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
 	 *
-	 * @return string The assignee uid, or ''.
+	 * @return string The stored assignee, or ''.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function assignee(array $config): string {
-		return trim((string)($config['assignee'] ?? ''));
+		return PrincipalReference::storedString(value: ($config['assignee'] ?? ''));
 	}//end assignee()
+
+	/**
+	 * The assignee as configured, keeping a typed reference's shape.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return string|array<mixed> The configured assignee.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public function assigneeValue(array $config): string|array {
+		$value = ($config['assignee'] ?? '');
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return trim((string)$value);
+	}//end assigneeValue()
 
 	/**
 	 * The item key the outcome is written under.
@@ -309,20 +332,46 @@ final class UserTaskConfig {
 	 * @return boolean True when at least one performer source is set.
 	 */
 	private function namesAPerformer(array $config): bool {
-		foreach (['assignee', 'candidateRole', 'routingFallback'] as $key) {
-			if (trim((string)($config[$key] ?? '')) !== '') {
-				return true;
-			}
-		}
-
-		foreach (['candidateUsers', 'candidateGroups'] as $key) {
-			if ($this->listOf(value: ($config[$key] ?? null)) !== []) {
-				return true;
-			}
-		}
-
-		return false;
+		// Read as REFERENCES, not as strings. A `{type, id}` map casts to the
+		// string "Array", which is non-empty — so a string test would call a
+		// typed assignee "named" for the wrong reason today and would keep
+		// doing so if the shape ever changed.
+		return $this->performers(config: $config) !== [];
 	}//end namesAPerformer()
+
+	/**
+	 * Everybody this step could ask, as typed references.
+	 *
+	 * 🔑 THE THREE LEGACY FIELDS ARE READ BY THEIR NAMES. `candidateUsers`,
+	 * `candidateGroups` and `candidateRole` differ only in the kind of thing
+	 * you type into them — a type system implemented as field names, which
+	 * existed because the field was a text box. Each is read as candidates of
+	 * its own type, so no stored flow changes meaning and none needs migrating.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return array<int, PrincipalReference> Every performer the step names.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `PrincipalReference::listFrom()` and
+	 * `listOfType()` are named constructors on a value object, which is the
+	 * canonical PHP idiom and indistinguishable to this rule from a static call
+	 * into a service.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	public function performers(array $config): array {
+		return array_merge(
+			PrincipalReference::listFrom(value: ($config['assignee'] ?? null)),
+			PrincipalReference::listFrom(value: ($config['candidates'] ?? null)),
+			PrincipalReference::listFrom(value: ($config['routingFallback'] ?? null)),
+			PrincipalReference::listOfType(value: ($config['candidateUsers'] ?? null), type: 'user'),
+			PrincipalReference::listOfType(value: ($config['candidateGroups'] ?? null), type: 'group'),
+			// `candidateRole` names a GROUP: the pre-typed guard resolved it
+			// through `isInGroup()`, so reading it as anything else would move
+			// who may answer on every stored flow that uses it.
+			PrincipalReference::listOfType(value: ($config['candidateRole'] ?? null), type: 'group')
+		);
+	}//end performers()
 
 	/**
 	 * Refuse a set value outside a published vocabulary, naming both.

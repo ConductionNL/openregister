@@ -5,7 +5,7 @@
  * Spec-coverage e2e tests for: mdm-survivorship-override (ADR-045 follow-on #E).
  *
  * TAG CONVENTION: each test carries
- *   @e2e openspec/changes/mdm-survivorship-override/specs/<capability>/spec.md#<scenario-slug>
+ *   @e2e `openspec/changes/mdm-survivorship-override/specs/<capability>/spec.md#<scenario-slug>`
  *
  * Methodology: drive the real UI. When the self-seeding MDM fixture
  * (tests/e2e/mdm-seed.ts, run in globalSetup) has planted a multi-source
@@ -152,9 +152,9 @@ async function openResolveConflicts(page: Page): Promise<boolean> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-only-disagreeing-attributes-are-listed
-// @e2e openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-no-conflicts-renders-an-empty-state
-// @e2e openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-selecting-a-winning-source-enables-save
+// @e2e openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-only-disagreeing-attributes-are-listed
+// @e2e openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-no-conflicts-renders-an-empty-state
+// @e2e openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-selecting-a-winning-source-enables-save
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-survivorship-override — conflict-resolution modal opens from a golden record', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -204,7 +204,7 @@ test.describe('mdm-survivorship-override — conflict-resolution modal opens fro
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-persistent-choice-writes-a-trust-configuration-row
+// @e2e openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-persistent-choice-writes-a-trust-configuration-row
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-survivorship-override — persistent outcome', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -255,8 +255,8 @@ test.describe('mdm-survivorship-override — persistent outcome', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-one-off-choice-sets-a-per-object-override
-// @e2e openspec/changes/mdm-survivorship-override/specs/mdm-survivorship/spec.md#scenario-per-object-override-wins-over-the-tier-selected-value
+// @e2e openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-one-off-choice-sets-a-per-object-override
+// @e2e openspec/specs/mdm-survivorship/spec.md#scenario-per-object-override-wins-over-the-tier-selected-value
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-survivorship-override — one-off outcome', () => {
 	test.use({ storageState: STORAGE_STATE })

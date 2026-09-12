@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -76,6 +77,13 @@ class FlowRunSignalService {
 	 * @param FlowRunAssignee|null $assignees The access rule. Injectable so a
 	 *                                        consumer's test can drive the real
 	 *                                        contract; defaults to the real one.
+	 * @param PrincipalResolverRegistry|null $principals Resolves a TYPED performer
+	 *                             reference to whoever it means right now. Passed
+	 *                             through to the access rule so the guard the
+	 *                             engine builds is the same one the container
+	 *                             would have built.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly FlowRunMapper $mapper,
@@ -83,6 +91,7 @@ class FlowRunSignalService {
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?FlowRunAssignee $assignees = null,
+		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
 
 	}//end __construct()
@@ -144,7 +153,14 @@ class FlowRunSignalService {
 	 */
 	public function signalRunAs(FlowRun $run, array $payload, ?string $actorUid, ?string $nodeId = null): FlowRun {
 		$actor = $this->normalize(actorUid: $actorUid);
-		$rule = ($this->assignees ?? new FlowRunAssignee(groupManager: $this->groupManager));
+		// 🔑 THE REGISTRY GOES IN HERE TOO. A rule built without it refuses
+		// every TYPED assignment — the fail-closed direction, which is right
+		// when nothing can resolve, and wrong the moment something can. The
+		// fallback must build the same guard the container would.
+		$rule = ($this->assignees ?? new FlowRunAssignee(
+			groupManager: $this->groupManager,
+			principals: $this->principals
+		));
 
 		if ($rule->mayAnswer(run: $run, uid: $actor, nodeId: $nodeId) === false) {
 			$this->auditRefusal(run: $run, actor: $actor, assignee: $rule->recordedFor(run: $run, nodeId: $nodeId), nodeId: $nodeId);

@@ -519,6 +519,10 @@ return [
         // Visual flow builder — trigger event catalog (read-only, all users).
         ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
         ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+        // Which kinds of principal this instance understands. The SERVER
+        // decides what is valid; an editor that offered only what it can
+        // search would silently refuse a type an app contributes.
+        ['name' => 'flowPrincipal#types', 'url' => '/api/flow/principal-types', 'verb' => 'GET'],
         // The links one run-log entry earns, asked of the node that wrote it.
         // POST because the entry is the input and a log entry carries payloads
         // — a GET would put a run's data in a URL, and in every access log that
@@ -547,6 +551,18 @@ return [
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
 
+        // Direct node invocation (or-flow-run-node): run ONE named node of a
+        // published flow against ONE subject, authorized against that
+        // subject via OpenRegister's object-RBAC — deliberately NOT the same
+        // `flow.run` right `flow#run` above checks (RN-1, design.md: `flow.run`
+        // is subject-blind and adds no safety here). A SEPARATE controller,
+        // not `FlowController`, because its authorization shape has nothing
+        // in common with the flow CRUD/catalogue endpoints below. `{id}` here
+        // is `[^/]+` like every other flow route, so `nodeId` — also
+        // `[^/]+` — can never be swallowed by it.
+        ['name' => 'flowNodeRun#form', 'url' => '/api/flows/{id}/nodes/{nodeId}/run', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'nodeId' => '[^/]+']],
+        ['name' => 'flowNodeRun#run',  'url' => '/api/flows/{id}/nodes/{nodeId}/run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'nodeId' => '[^/]+']],
+
         // Lifecycle. Declared BEFORE the bare `{id}` routes for the same reason
         // `{id}/run` is: `id` matches `[^/]+`, so a uuid can never swallow a
         // trailing literal segment, but keeping the specific paths first means
@@ -562,6 +578,9 @@ return [
         ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
         ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Asked BEFORE publishing: what would the next version be called, and
+        // what does this publish take away. A GET, and it changes nothing.
+        ['name' => 'flow#versionPreview', 'url' => '/api/flows/{id}/version-preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
@@ -614,9 +633,10 @@ return [
         // — read-only, object-independent company-lookup leaves. No NC app
         // gate; the OpenConnector `kvk` / `opencorporates` sources carry the
         // base URL + API key. Unconfigured/down → 503 with details.cause.
-        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md.
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-kvk-company-lookup
         ['name' => 'companyLookup#kvkCompany',           'url' => '/api/integrations/kvk/company',            'verb' => 'GET'],
         ['name' => 'companyLookup#kvkSearch',            'url' => '/api/integrations/kvk/search',             'verb' => 'GET'],
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-opencorporates-company-search
         ['name' => 'companyLookup#openCorporatesSearch', 'url' => '/api/integrations/opencorporates/search',  'verb' => 'GET'],
         // BRP HaalCentraal person lookup (external, OpenConnector-routed) —
         // read-only, object-independent person-lookup leaf. No NC app gate; the
@@ -624,7 +644,7 @@ return [
         // client_credentials secret + PKIoverheid mutual-TLS client certificate
         // (both applied natively by CallService). Unconfigured/down → 503 with
         // details.cause. The BSN travels in the request body only, never logged.
-        // @spec openspec/changes/integration-brp-haalcentraal/specs/integration-person-lookup/spec.md.
+        // @spec openspec/specs/integration-person-lookup/spec.md#requirement-brp-person-lookup-relays-wet-brp-audit-metadata
         ['name' => 'personLookup#brpPerson',             'url' => '/api/integrations/brp/person',             'verb' => 'GET'],
         // Outbound-messaging dispatch (external, OpenConnector-routed) —
         // side-effecting send leaf. No NC app gate; the OpenConnector
@@ -635,7 +655,7 @@ return [
         // selection, STOP opt-out, template-approval, 24h session, dedupe,
         // delivery-status); this leaf only POSTs the message. Unconfigured/down
         // → 503 with details.cause.
-        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md.
+        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md#requirement-outbound-messaging-send-endpoints
         ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
         ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
@@ -689,7 +709,7 @@ return [
         // route MUST precede the wildcard `/analytics/{reportId}` unlink
         // route, and the app-global `available` picker route MUST precede
         // the per-object wildcard routes.
-        // @spec openspec/changes/integration-analytics/tasks.md.
+        // @spec openspec/specs/generic-integrations/spec.md#requirement-object-scoped-integration-link-rest-contract
         ['name' => 'analyticsLinks#available',    'url' => '/api/integrations/analytics/available',                  'verb' => 'GET'],
         ['name' => 'analyticsLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'analyticsLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/analytics/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -700,8 +720,9 @@ return [
         // A leaf (procest SLA dashboard) registers a pre-computed series
         // (labels + datasets); the render layer fetches it as a chart
         // widget. RBAC-scoped inside AnalyticsSeriesService.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-register-a-page-level-analytics-series
         ['name' => 'analyticsSeries#register', 'url' => '/api/integrations/analytics/series',              'verb' => 'POST'],
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-fetch-a-page-level-analytics-series-rbac-scoped
         ['name' => 'analyticsSeries#fetch',    'url' => '/api/integrations/analytics/series/{seriesKey}',  'verb' => 'GET',  'requirements' => ['seriesKey' => '[^/]+']],
 
         // Maps page-level overview — multi-object "cases on map" render
@@ -709,21 +730,22 @@ return [
         // widget; points queries the RBAC-scoped marker set for a
         // register/schema. RBAC enforced inside MapsOverviewService via the
         // canonical OR read path (_rbac:true for non-admins, fail-closed).
-        // @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md.
+        // @spec openspec/specs/integration-maps-overview/spec.md#requirement-register-a-page-level-map-overview-widget
         ['name' => 'mapsOverview#register', 'url' => '/api/integrations/maps/overviews',                            'verb' => 'POST'],
+        // @spec openspec/specs/integration-maps-overview/spec.md#requirement-query-the-map-marker-point-set-rbac-scoped
         ['name' => 'mapsOverview#points',   'url' => '/api/integrations/maps/overviews/{register}/{schema}/points', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 
         // Public "track your case" token resolve — anonymous, RBAC-scoped
         // public-safe object view minted via the Shares integration
         // provider. Fails closed (404) on unknown/revoked/expired tokens.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-resolve-a-public-case-token-rbac-respecting
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
         // (uri/scheme values are full URIs, unsafe as path segments). 404
         // standard error shape on unknown uri/scheme/notation (SKOS-004).
-        // @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+        // @spec openspec/specs/skos-concept-registers/spec.md#skos-004
         ['name' => 'vocabulary#resolveByUri', 'url' => '/api/vocabulary/concept', 'verb' => 'GET'],
         ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
         ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
@@ -736,7 +758,7 @@ return [
         // app-global `types`/`actors` dropdown routes MUST precede the
         // per-object wildcard route so they aren't grabbed as register
         // slugs.
-        // @spec openspec/changes/integration-activity/tasks.md.
+        // @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
         ['name' => 'activityLinks#types',  'url' => '/api/integrations/activity/types',                  'verb' => 'GET'],
         ['name' => 'activityLinks#actors', 'url' => '/api/integrations/activity/actors',                 'verb' => 'GET'],
         ['name' => 'activityLinks#index',  'url' => '/api/objects/{register}/{schema}/{id}/activity',    'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -830,6 +852,11 @@ return [
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Registry subscriptions (registry-subscriptions, finding B22).
+        ['name' => 'registrySubscription#subscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registrySubscription#unsubscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // The connector's inbound update, one route per registry id.
+        ['name' => 'registryUpdates#update', 'url' => '/api/registry/{registry}/updates', 'verb' => 'POST'],
         // Bulk Operations.
         ['name' => 'bulk#save', 'url' => '/api/bulk/{register}/{schema}/save', 'verb' => 'POST'],
         ['name' => 'bulk#delete', 'url' => '/api/bulk/{register}/{schema}/delete', 'verb' => 'POST'],
@@ -1048,6 +1075,7 @@ return [
         ['name' => 'organisation#suspend', 'url' => '/api/organisations/{uuid}/suspend', 'verb' => 'PUT'],
         ['name' => 'organisation#activate', 'url' => '/api/organisations/{uuid}/activate', 'verb' => 'PUT'],
         ['name' => 'organisation#deprovision', 'url' => '/api/organisations/{uuid}/deprovision', 'verb' => 'PUT'],
+        ['name' => 'organisation#retain', 'url' => '/api/organisations/{uuid}/retain', 'verb' => 'PUT'],
         ['name' => 'organisation#usage', 'url' => '/api/organisations/{uuid}/usage', 'verb' => 'GET'],
 
         // Admin - Tenant isolation verification and metrics.
@@ -1357,6 +1385,29 @@ return [
 		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+
+		// The notes and calendar leaves, anchored on the TASK. Both leaves
+		// were reachable only under /api/objects/{register}/{schema}/{id},
+		// and a task is not an object: it has no register and no schema, so
+		// a task page had nowhere to hang either one. The STORAGE never
+		// needed them — NoteService and CalendarLinkService are both
+		// addressed by a bare uuid — so these routes carry the same services
+		// behind a different GUARD: the task's own visibility, answering 404
+		// for the unreadable exactly as task#show above does, so the leaf
+		// cannot become the existence oracle the task surface refused to be.
+		// The calendar block mirrors calendarEvents#* verb for verb, `link`
+		// and `unlink` included and with no `update`, because no event
+		// update exists behind the object leaf either.
+		['name' => 'taskNotes#index', 'url' => '/api/flow-tasks/{uuid}/notes', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskNotes#create', 'url' => '/api/flow-tasks/{uuid}/notes', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskNotes#update', 'url' => '/api/flow-tasks/{uuid}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+', 'noteId' => '[^/]+']],
+		['name' => 'taskNotes#destroy', 'url' => '/api/flow-tasks/{uuid}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'noteId' => '[^/]+']],
+		// `link` is registered before `{eventId}` so the literal segment wins.
+		['name' => 'taskEvents#index', 'url' => '/api/flow-tasks/{uuid}/events', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#create', 'url' => '/api/flow-tasks/{uuid}/events', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#link', 'url' => '/api/flow-tasks/{uuid}/events/link', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#unlink', 'url' => '/api/flow-tasks/{uuid}/events/{eventUid}/link', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'eventUid' => '[^/]+']],
+		['name' => 'taskEvents#destroy', 'url' => '/api/flow-tasks/{uuid}/events/{eventId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'eventId' => '[^/]+']],
 
 		// The portal seam (flow-portal-task): a party OUTSIDE the instance,
 		// authenticated at portaliq's edge, acts here under a signed

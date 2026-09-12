@@ -7,27 +7,6 @@
       <code><![CDATA[$container]]></code>
     </UnusedClosureParam>
   </file>
-  <file src="lib/BackgroundJob/DestructionCheckJob.php">
-    <UnusedParam>
-      <code><![CDATA[$actionDate]]></code>
-      <code><![CDATA[$classification]]></code>
-      <code><![CDATA[$listUuid]]></code>
-      <code><![CDATA[$logger]]></code>
-      <code><![CDATA[$logger]]></code>
-      <code><![CDATA[$logger]]></code>
-      <code><![CDATA[$objectCount]]></code>
-      <code><![CDATA[$subject]]></code>
-      <code><![CDATA[$title]]></code>
-      <code><![CDATA[$uuid]]></code>
-    </UnusedParam>
-  </file>
-  <file src="lib/BackgroundJob/DestructionExecutionJob.php">
-    <UnusedParam>
-      <code><![CDATA[$listUuid]]></code>
-      <code><![CDATA[$logger]]></code>
-      <code><![CDATA[$skippedCount]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Calendar/RegisterCalendarProvider.php">
     <LessSpecificImplementedReturnType>
       <code><![CDATA[array]]></code>
@@ -162,19 +141,6 @@
     <UndefinedMethod>
       <code><![CDATA[find]]></code>
     </UndefinedMethod>
-    <UnusedParam>
-      <code><![CDATA[$boardId]]></code>
-      <code><![CDATA[$cardId]]></code>
-      <code><![CDATA[$description]]></code>
-      <code><![CDATA[$objectUuid]]></code>
-      <code><![CDATA[$stackId]]></code>
-      <code><![CDATA[$title]]></code>
-    </UnusedParam>
-  </file>
-  <file src="lib/Service/DeckLinkService.php">
-    <UnusedParam>
-      <code><![CDATA[$cardId]]></code>
-    </UnusedParam>
   </file>
   <file src="lib/Service/Edepot/Transport/SftpTransport.php">
     <UndefinedClass>
@@ -279,12 +245,6 @@
       <code><![CDATA[$vtodo->DUE]]></code>
       <code><![CDATA[$vtodo->{'X-OPENREGISTER-DATA'}]]></code>
     </UndefinedPropertyFetch>
-  </file>
-  <file src="lib/Service/TextExtraction/EntityRecognitionHandler.php">
-    <UnusedParam>
-      <code><![CDATA[$objectId]]></code>
-      <code><![CDATA[$relation]]></code>
-    </UnusedParam>
   </file>
   <file src="lib/Service/TextExtraction/SpreadsheetExtractor.php">
     <StringIncrement>

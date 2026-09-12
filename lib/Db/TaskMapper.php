@@ -698,7 +698,7 @@ class TaskMapper extends QBMapper {
 
 		switch ($criteria->scope) {
 			case TaskInboxCriteria::SCOPE_ASSIGNED:
-				$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($criteria->uid)));
+				$qb->andWhere($this->assigneeMatchesCaller(qb: $qb, criteria: $criteria));
 				break;
 			case TaskInboxCriteria::SCOPE_POOLED:
 				$qb->andWhere(
@@ -719,6 +719,35 @@ class TaskMapper extends QBMapper {
 	}//end applyScope()
 
 	/**
+	 * The task's assignee names the caller, by uid or by a reference they hold.
+	 *
+	 * 🔑 THE RESOLVER DECIDES AUTHORISATION, NOT LISTING. A typed assignee is
+	 * stored as `type:id`, so the caller's own identity expands to a small,
+	 * fixed set of strings the datastore can match with an IN — the caller's
+	 * bare uid (every flow ever authored names people that way), `user:<uid>`,
+	 * and `group:<id>` for each group they are in. Resolving a reference per
+	 * ROW instead would resolve it a hundred times on one page, which is
+	 * exactly what the design forbids.
+	 *
+	 * 🔴 AN AGENT'S TASK STAYS OUT OF A PERSON'S INBOX. Only `user:` and
+	 * `group:` are expanded, so `agent:scribe` matches nothing here — an agent
+	 * step must not be answerable by the humans, nor appear to be theirs.
+	 *
+	 * @param IQueryBuilder     $qb       The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the identity facts.
+	 *
+	 * @return string The predicate.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 */
+	private function assigneeMatchesCaller(IQueryBuilder $qb, TaskInboxCriteria $criteria): string {
+		return $qb->expr()->in(
+			'assignee',
+			$qb->createNamedParameter($criteria->assigneeNames(), IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end assigneeMatchesCaller()
+
+	/**
 	 * The visibility half: an administrator sees everything; anyone else
 	 * sees a task only through one of the five sanctioned relationships.
 	 *
@@ -733,7 +762,7 @@ class TaskMapper extends QBMapper {
 		if ($criteria->isAdmin === false) {
 			$qb->andWhere(
 				$qb->expr()->orX(
-					$qb->expr()->eq('assignee', $qb->createNamedParameter($criteria->uid)),
+					$this->assigneeMatchesCaller(qb: $qb, criteria: $criteria),
 					$qb->expr()->eq('requester', $qb->createNamedParameter($criteria->uid)),
 					$this->watcherPredicate(qb: $qb, uid: $criteria->uid),
 					$this->candidateMembershipPredicate(qb: $qb, criteria: $criteria)
@@ -774,25 +803,122 @@ class TaskMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('run_uuid', $qb->createNamedParameter($criteria->runUuid)));
 		}
 
-		// Derived overdue as a filter: the SAME comparison
-		// TaskTemporalProjection makes — effective deadline
-		// (due_at, else expires_at) strictly before now — expressed as a
-		// predicate, with the clock instant handed in from that one class.
-		// COALESCE(NULL, NULL) < x is NULL, so deadline-less tasks fall out
-		// without a separate null check.
 		if ($criteria->overdueAt !== null) {
+			$this->applyOverdue(qb: $qb, now: $criteria->overdueAt);
+		}
+
+		$this->applyDueWindow(qb: $qb, criteria: $criteria);
+	}//end applyFilters()
+
+	/**
+	 * Derived overdue as a predicate: the SAME comparison
+	 * TaskTemporalProjection makes — effective deadline (due_at, else
+	 * expires_at) strictly before the given instant — with the clock handed
+	 * in from that one class. COALESCE(NULL, NULL) < x is NULL, so
+	 * deadline-less tasks fall out without a separate null check.
+	 *
+	 * Its own method because two readers need it: the inbox filter and the
+	 * instance-wide overdue count behind the `openregister_tasks_overdue_total`
+	 * gauge. Written twice it would be two definitions of overdue, which is
+	 * exactly what this class's one derivation exists to prevent.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param DateTime      $now The clock instant to compare against.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 */
+	private function applyOverdue(IQueryBuilder $qb, DateTime $now): void {
+		$qb->andWhere(
+			$qb->createFunction(
+				sprintf(
+					'COALESCE(%s, %s) < %s',
+					$this->quote(identifier: 'due_at'),
+					$this->quote(identifier: 'expires_at'),
+					$qb->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+				)
+			)
+		);
+	}//end applyOverdue()
+
+	/**
+	 * How many OPEN tasks are overdue, instance-wide.
+	 *
+	 * No visibility predicate on purpose: this is the operator's gauge, not
+	 * an inbox, and a scrape has no user. Openness is `is_terminal = false`,
+	 * the materialised column Task::TERMINAL_STATES is written into, so a
+	 * completed, terminated or disabled task is never counted however long
+	 * its deadline has been past.
+	 *
+	 * @param DateTime $now The clock instant, from TaskTemporalProjection::now().
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 */
+	public function countOverdueOpen(DateTime $now): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->func()->count('id'), 'total')->from($this->getTableName());
+		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+		$this->applyOverdue(qb: $qb, now: $now);
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false) {
+			return 0;
+		}
+
+		return (int)$row['total'];
+	}//end countOverdueOpen()
+
+	/**
+	 * A due WINDOW, over the same effective deadline the overdue filter and
+	 * the projection use.
+	 *
+	 * `overdueAt` cannot express one: it is open-ended in the past by
+	 * design, and "due this week" needs both ends. The COALESCE is shared on
+	 * purpose, so a deadline-less task falls out of a window exactly as it
+	 * falls out of overdue, with no separate null check to keep in step.
+	 *
+	 * Its own method rather than two more branches in `applyFilters()`,
+	 * which phpmd measured at NPath 256 against a threshold of 200 once they
+	 * were inlined. The rule is right: that method is a filter funnel and
+	 * every added branch doubles its paths.
+	 *
+	 * @param IQueryBuilder     $qb       The query being built.
+	 * @param TaskInboxCriteria $criteria The inbox criteria.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function applyDueWindow(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
+		foreach (
+			[
+				['value' => $criteria->dueAfter, 'operator' => '>='],
+				['value' => $criteria->dueBefore, 'operator' => '<'],
+			] as $bound
+		) {
+			if ($bound['value'] === null) {
+				continue;
+			}
+
 			$qb->andWhere(
 				$qb->createFunction(
 					sprintf(
-						'COALESCE(%s, %s) < %s',
+						'COALESCE(%s, %s) %s %s',
 						$this->quote(identifier: 'due_at'),
 						$this->quote(identifier: 'expires_at'),
-						$qb->createNamedParameter($criteria->overdueAt, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+						$bound['operator'],
+						$qb->createNamedParameter($bound['value'], IQueryBuilder::PARAM_DATETIME_MUTABLE)
 					)
 				)
 			);
 		}
-	}//end applyFilters()
+	}//end applyDueWindow()
 
 	/**
 	 * The caller is in the task's candidate pool (by uid or by group).

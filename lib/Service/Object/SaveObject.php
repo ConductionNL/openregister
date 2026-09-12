@@ -65,6 +65,7 @@ use OCP\IGroupManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
@@ -133,6 +134,9 @@ use Twig\Loader\ArrayLoader;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
+ * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
  */
 class SaveObject {
 	private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
@@ -161,6 +165,18 @@ class SaveObject {
 	 * @var Environment
 	 */
 	private Environment $twig;
+
+	/**
+	 * Stamps `@self.version` on create and bumps it on update.
+	 *
+	 * Constructed here rather than injected: it is stateless, dependency-free
+	 * arithmetic over one string, and adding a required constructor parameter
+	 * to a signature this wide costs every manual construction in the test
+	 * suite for no isolation gained.
+	 *
+	 * @var ObjectVersionHandler
+	 */
+	private ObjectVersionHandler $versionHandler;
 
 	/**
 	 * Cache for sub-objects created during cascade operations.
@@ -309,6 +325,7 @@ class SaveObject {
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler
 	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
+	 * @param ContainerInterface|null $container App container, consulted lazily for the retention service (see resolveRetentionService)
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -344,9 +361,46 @@ class SaveObject {
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
 		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
+		private readonly ?ContainerInterface $container = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
+		$this->versionHandler = new ObjectVersionHandler();
 	}//end __construct()
+
+	/**
+	 * Resolve the retention service from the app container, or null when there is none.
+	 *
+	 * The retention service is resolved lazily instead of being constructor-injected
+	 * because its dependency graph reaches back into the object mappers this handler
+	 * already owns. It goes through the injected app container, never the global
+	 * server: the global container knows nothing about this app's registrations
+	 * outside a booted Nextcloud, so a lookup there autowires an unbounded
+	 * MagicMapper -> SettingsService -> ValidationOperationsHandler -> ValidateObject
+	 * cycle. That cycle ate 19 GB in a unit-test run on 2026-09-08.
+	 *
+	 * @return \OCA\OpenRegister\Service\RetentionService|null The service, or null when unavailable
+	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-objects-must-carry-mdto-compliant-archival-metadata-in-the-retention-field
+	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
+	 */
+	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionService {
+		if ($this->container === null) {
+			return null;
+		}
+
+		try {
+			$service = $this->container->get(\OCA\OpenRegister\Service\RetentionService::class);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] RetentionService not available: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($service instanceof \OCA\OpenRegister\Service\RetentionService) {
+			return $service;
+		}
+
+		return null;
+	}//end resolveRetentionService()
 
 	/**
 	 * Get sub-objects created during cascade operations.
@@ -3257,9 +3311,15 @@ class SaveObject {
 		// Check archival immutability: destroyed and transferred objects cannot be modified.
 		$retention = $existingObject->getRetention() ?? [];
 		$archStatus = $retention['archiefstatus'] ?? null;
+		// Both vocabularies. GAP A4 moved the stored spelling to English, and
+		// stored data is not migrated, so a guard that only knew `destroyed`
+		// would let every already-destroyed record in an existing install be
+		// modified again.
 		$immutableMap = [
 			'vernietigd' => 'OBJECT_DESTROYED',
+			'destroyed' => 'OBJECT_DESTROYED',
 			'overgebracht' => 'OBJECT_TRANSFERRED',
+			'transferred' => 'OBJECT_TRANSFERRED',
 		];
 
 		if ($archStatus !== null && isset($immutableMap[$archStatus]) === true) {
@@ -3394,13 +3454,13 @@ class SaveObject {
 		);
 
 		// Apply archival metadata from schema archive configuration.
-		try {
-			$retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
-			$preparedObject = $retentionService->applyArchivalMetadata($preparedObject, $schema);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				'[SaveObject] RetentionService not available, skipping archival metadata: ' . $e->getMessage()
-			);
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService !== null) {
+			try {
+				$preparedObject = $retentionService->applyArchivalMetadata($preparedObject, $schema);
+			} catch (\Throwable $e) {
+				$this->logger->debug('[SaveObject] Skipping archival metadata: ' . $e->getMessage());
+			}
 		}
 
 		// If not persisting, return the prepared object.
@@ -3703,6 +3763,12 @@ class SaveObject {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
 
+		// Start the object's version sequence. Nothing wrote this before, so on
+		// the magic tables (which carry no column default) every object read
+		// back a NULL version, and on the legacy table every object read back
+		// the same `0.0.1` forever. See ObjectVersionHandler.
+		$this->versionHandler->stampInitialVersion(entity: $objectEntity);
+
 		// Set UUID if provided, otherwise generate a new one.
 		if ($objectEntity->getUuid() === null) {
 			$objectEntity->setUuid(Uuid::v4()->toRfc4122());
@@ -3863,6 +3929,11 @@ class SaveObject {
 	): ObjectEntity {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
+
+		// A save is a patch. Bumped here rather than after the write so the
+		// value the audit trail copies onto its own `version` column is the
+		// version this save produced, not the one it replaced.
+		$this->versionHandler->bumpVersion(entity: $existingObject);
 
 		// Set folder ID if provided.
 		if ($folderId !== null) {
@@ -5408,18 +5479,18 @@ class SaveObject {
 			folderId: $folderId
 		);
 
-		// Recalculate archiefactiedatum if source property changed.
-		try {
-			$retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
-			$preparedObject = $retentionService->recalculateArchiveActionDate(
-				$preparedObject,
-				$schema,
-				$oldObject->getObject()
-			);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				'[SaveObject] RetentionService not available for recalculation: ' . $e->getMessage()
-			);
+		// Recalculate the archive action date if a source property changed.
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService !== null) {
+			try {
+				$preparedObject = $retentionService->recalculateArchiveActionDate(
+					$preparedObject,
+					$schema,
+					$oldObject->getObject()
+				);
+			} catch (\Throwable $e) {
+				$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());
+			}
 		}
 
 		// Update the object properties.

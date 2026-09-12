@@ -28,7 +28,9 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
+use OCP\IUserManager;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -84,6 +86,20 @@ class DeckCardService {
 	private readonly IURLGenerator $urlGenerator;
 
 	/**
+	 * User manager (assignee display names).
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * App container Deck's services are resolved from.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param DeckLinkMapper $deckLinkMapper Deck link mapper
@@ -91,6 +107,8 @@ class DeckCardService {
 	 * @param IUserSession $userSession User session
 	 * @param LoggerInterface $logger Logger
 	 * @param IURLGenerator $urlGenerator URL generator
+	 * @param IUserManager $userManager User manager for assignee display names
+	 * @param ContainerInterface $container App container Deck's services are resolved from
 	 *
 	 * @return void
 	 */
@@ -100,12 +118,16 @@ class DeckCardService {
 		IUserSession $userSession,
 		LoggerInterface $logger,
 		IURLGenerator $urlGenerator,
+		IUserManager $userManager,
+		ContainerInterface $container,
 	) {
 		$this->deckLinkMapper = $deckLinkMapper;
 		$this->appManager = $appManager;
 		$this->userSession = $userSession;
 		$this->urlGenerator = $urlGenerator;
 		$this->logger = $logger;
+		$this->userManager = $userManager;
+		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -216,7 +238,7 @@ class DeckCardService {
 		}
 
 		try {
-			return \OC::$server->get('OCA\\Deck\\Service\\CardService');
+			return $this->container->get('OCA\\Deck\\Service\\CardService');
 		} catch (\Throwable $e) {
 			$this->logger->debug('Deck CardService not resolvable: ' . $e->getMessage());
 			return null;
@@ -419,8 +441,7 @@ class DeckCardService {
 		$displayName = $uid;
 		if ($type === 'user' && $uid !== '') {
 			try {
-				$userMgr = \OC::$server->get('OCP\\IUserManager');
-				$userObj = $userMgr->get($uid);
+				$userObj = $this->userManager->get($uid);
 				if ($userObj !== null) {
 					$displayName = (string)$userObj->getDisplayName();
 				}
@@ -587,7 +608,7 @@ class DeckCardService {
 		}
 
 		try {
-			$boardService = \OC::$server->get('OCA\\Deck\\Service\\BoardService');
+			$boardService = $this->container->get('OCA\\Deck\\Service\\BoardService');
 			// Find() throws (NoPermissionException) when the session user
 			// lacks read access to the board.
 			$boardService->find($boardId);
@@ -627,14 +648,14 @@ class DeckCardService {
 		try {
 			// Try using Deck's CardService if available.
 			if (class_exists('OCA\Deck\Service\CardService') === true) {
-				$cardService = \OC::$server->get('OCA\Deck\Service\CardService');
+				$cardService = $this->container->get('OCA\Deck\Service\CardService');
 				$card = $cardService->find($cardId);
 
 				// Board ID is not a Card property — look it up via CardMapper,
 				// which is how Deck itself derives it (see CardService::update).
 				$boardId = 0;
 				if (class_exists('OCA\Deck\Db\CardMapper') === true) {
-					$cardMapper = \OC::$server->get('OCA\Deck\Db\CardMapper');
+					$cardMapper = $this->container->get('OCA\Deck\Db\CardMapper');
 					$boardId = ($cardMapper->findBoardId($cardId) ?? 0);
 				}
 
@@ -673,7 +694,7 @@ class DeckCardService {
 	): ?int {
 		try {
 			if (class_exists('OCA\Deck\Service\CardService') === true) {
-				$cardService = \OC::$server->get('OCA\Deck\Service\CardService');
+				$cardService = $this->container->get('OCA\Deck\Service\CardService');
 
 				$fullDescription = $description;
 				if (empty($fullDescription) === false) {

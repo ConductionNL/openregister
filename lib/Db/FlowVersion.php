@@ -43,6 +43,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void          setFlowUuid(?string $flowUuid)
  * @method integer|null  getVersion()
  * @method void          setVersion(?int $version)
+ * @method string|null   getSemver()
+ * @method void          setSemver(?string $semver)
+ * @method string|null   getSemverSource()
+ * @method void          setSemverSource(?string $semverSource)
  * @method string|null   getStatus()
  * @method void          setStatus(?string $status)
  * @method string|null   getDefinitionHash()
@@ -168,6 +172,35 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 * @var DateTime|null
 	 */
 	protected ?DateTime $created = null;
+	/**
+	 * The semantic version this published version carries, like `2.1.0`.
+	 *
+	 * Derived at PUBLISH from the graph diff — a removed step, edge or config
+	 * key is MAJOR, everything else MINOR. Null on a draft, which has not been
+	 * compared with anything yet.
+	 *
+	 * 🔴 THIS IS NOT THE IDENTITY. `version` remains the ordinal, remains
+	 * unique with the flow uuid, and remains what a RUN PINS for its whole
+	 * life. A run that resolved its graph through a derived label would be at
+	 * the mercy of the derivation: a bug would not mislabel a version, it
+	 * would repoint a run.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $semver = null;
+
+	/**
+	 * Where the semantic version came from: `derived` or `backfill`.
+	 *
+	 * The back-fill cannot know whether the third publish of a flow was
+	 * breaking — the graphs it would compare are the ones it is being run to
+	 * describe. So it says so, and a version that says where it came from can
+	 * be distrusted correctly. One that silently claims to be derived cannot.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $semverSource = null;
+
 
 	/**
 	 * Constructor.
@@ -182,6 +215,8 @@ class FlowVersion extends Entity implements \JsonSerializable {
 		$this->addType(fieldName: 'publishedAt', type: 'datetime');
 		$this->addType(fieldName: 'publishedBy', type: 'string');
 		$this->addType(fieldName: 'deprecatedAt', type: 'datetime');
+		$this->addType(fieldName: 'semver', type: 'string');
+		$this->addType(fieldName: 'semverSource', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 	}//end __construct()
@@ -227,6 +262,10 @@ class FlowVersion extends Entity implements \JsonSerializable {
 			'id' => $this->getId(),
 			'flowUuid' => $this->flowUuid,
 			'version' => $this->version,
+			'semver' => $this->semver,
+			// Where it came from, beside the value: a back-filled version can
+			// then be distrusted correctly.
+			'semverSource' => $this->semverSource,
 			'status' => $this->status,
 			'definitionHash' => $this->definitionHash,
 			'owner' => $this->owner,

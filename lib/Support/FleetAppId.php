@@ -71,6 +71,35 @@ final class FleetAppId
 
 
     /**
+     * PHP namespace per candidate id, for the apps OpenRegister names by FQCN.
+     *
+     * A cross-app FQCN is the second half of the rename, and it is the half
+     * that cannot be guessed: `openbuild` shipped `OCA\OpenBuilt` and
+     * `larpingapp` shipped `OCA\DsoNextcloud` before `OCA\LarpingApp`, so
+     * `ucfirst($appId)` is not the rule and never was. Each entry below was
+     * READ from that app's own `appinfo/info.xml` (new) or from a literal this
+     * repo already resolved successfully against a running instance (old).
+     *
+     * Deliberately narrower than {@see self::CANDIDATES}: a canonical name is
+     * listed here only when BOTH its namespaces have been read. An app absent
+     * from this map resolves to null rather than to a guess, because a wrong
+     * FQCN fails exactly as silently as a stale one and looks fixed.
+     *
+     * @var array<string, array<string, string>>
+     */
+    private const NAMESPACES = [
+        'integriq' => [
+            'integriq'      => 'Integriq',
+            'openconnector' => 'OpenConnector',
+        ],
+        'keepiq'   => [
+            'keepiq'  => 'Keepiq',
+            'doriath' => 'Doriath',
+        ],
+    ];
+
+
+    /**
      * The id this instance actually has installed, or null if none is.
      *
      * @param IAppManager $appManager The Nextcloud app manager.
@@ -168,6 +197,99 @@ final class FleetAppId
         return $path;
 
     }//end appPath()
+
+
+    /**
+     * The PHP namespace prefix for one concrete installed id.
+     *
+     * Does NOT touch the autoloader, so a caller that must keep a cross-app
+     * class name as inert data (an allow-list value handed to another app's
+     * job runner, say) can build the name without loading the class.
+     *
+     * @param string $canonical Canonical (new) app name, e.g. 'integriq'.
+     * @param string $id        A concrete id from {@see self::CANDIDATES}.
+     *
+     * @return string|null The namespace prefix ending in a backslash, or null
+     *                     when this repo has not read that app's namespace.
+     */
+    public static function namespaceForId(string $canonical, string $id): ?string
+    {
+        $namespace = (self::NAMESPACES[$canonical][$id] ?? null);
+        if ($namespace === null) {
+            return null;
+        }
+
+        return 'OCA\\'.$namespace.'\\';
+
+    }//end namespaceForId()
+
+
+    /**
+     * Build a cross-app FQCN against the id the instance actually has.
+     *
+     * Resolution is by INSTALLED ID, not by class existence, so the returned
+     * name is inert: nothing is autoloaded and nothing is instantiated. When
+     * the app is absent the canonical (newest) spelling is returned, because a
+     * name handed to an app that is not there is never dereferenced anyway and
+     * the newest spelling is the one the fleet is moving to.
+     *
+     * @param IAppManager $appManager    The Nextcloud app manager.
+     * @param string      $canonical     Canonical (new) app name, e.g. 'integriq'.
+     * @param string      $relativeClass Class path below the namespace, e.g. 'Service\CallService'.
+     *
+     * @return string|null The FQCN, or null when this repo has not read that
+     *                     app's namespace.
+     */
+    public static function className(IAppManager $appManager, string $canonical, string $relativeClass): ?string
+    {
+        if (isset(self::NAMESPACES[$canonical]) === false) {
+            return null;
+        }
+
+        $id = self::resolve(appManager: $appManager, canonical: $canonical);
+        if ($id === null || isset(self::NAMESPACES[$canonical][$id]) === false) {
+            $id = array_key_first(self::NAMESPACES[$canonical]);
+        }
+
+        return self::namespaceForId(canonical: $canonical, id: $id).$relativeClass;
+
+    }//end className()
+
+
+    /**
+     * The first spelling of a cross-app class that is actually loadable.
+     *
+     * Probes by `class_exists` rather than by installed id, which is the right
+     * test for the `class_exists` + `Server::get` seam: what those callers need
+     * to know is not which id is registered but which class the autoloader can
+     * hand back. Returns null when no candidate resolves — the same answer the
+     * caller already handles for "the optional app is not installed".
+     *
+     * @param string $canonical     Canonical (new) app name, e.g. 'keepiq'.
+     * @param string $relativeClass Class path below the namespace, e.g. 'Service\SecretService'.
+     *
+     * @return string|null The loadable FQCN, or null when none is.
+     */
+    public static function resolveClass(string $canonical, string $relativeClass): ?string
+    {
+        foreach (array_keys((self::NAMESPACES[$canonical] ?? [])) as $id) {
+            $className = self::namespaceForId(canonical: $canonical, id: $id).$relativeClass;
+            try {
+                if (class_exists($className) === true) {
+                    return $className;
+                }
+            } catch (Throwable $e) {
+                // A candidate whose autoloader entry throws must not abort the
+                // search — the next spelling may still load.
+                continue;
+            }
+        }
+
+        return null;
+
+    }//end resolveClass()
+
+
 
 
 }//end class

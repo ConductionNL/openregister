@@ -62,8 +62,28 @@ class ImportRollbackIntegrationTest extends TestCase {
 	 */
 	private array $createdTables = [];
 
+	/**
+	 * The session user as it was before this file touched it.
+	 *
+	 * @var \OCP\IUser|null
+	 */
+	private ?\OCP\IUser $previousSessionUser = null;
+
 	protected function setUp(): void {
 		parent::setUp();
+
+		// 🔴 THIS FILE WRITES OBJECTS, SO IT NEEDS A CALLER WHO MAY WRITE.
+		// It never logged anybody in, and passed anyway: ten other Service
+		// files left `admin` in the process-global session, and these tests
+		// were riding on it. With that leak closed they ran as Anonymous, the
+		// writes were refused, and an import reported `created: []`. A test
+		// that needs an authenticated caller establishes one itself.
+		$userSession = \OC::$server->get(\OCP\IUserSession::class);
+		$this->previousSessionUser = $userSession->getUser();
+		$admin = \OC::$server->get(\OCP\IUserManager::class)->get('admin');
+		if ($admin !== null) {
+			$userSession->setUser($admin);
+		}
 		$this->importService = \OC::$server->get(ImportService::class);
 		$this->auditMapper = \OC::$server->get(AuditTrailMapper::class);
 		$this->saveHandler = \OC::$server->get(SaveObject::class);
@@ -118,6 +138,10 @@ class ImportRollbackIntegrationTest extends TestCase {
 
 		// Defensive: clear any lingering request-scoped tag.
 		$this->auditMapper->setRequestImportJobId(importJobId: null);
+
+		// Put the session back the way it was found, so the next test file
+		// starts from the session state it expects.
+		\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
 
 		parent::tearDown();
 	}//end tearDown()

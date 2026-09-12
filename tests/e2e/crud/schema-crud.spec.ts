@@ -25,6 +25,7 @@
 import { expect, test } from '@playwright/test'
 import * as path from 'path'
 import { makeRunId, twoPropertySchema } from '../_fixtures.ts'
+import { countListRowsByText, listRowByText } from '../_list-assertions.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 // HASH form — the router runs in hash mode (src/main.js); the path-form URL
@@ -83,12 +84,14 @@ test.describe('schema-crud — create→read→update→delete with property per
 
 		// UI: the schema title renders as a row in the schemas table.
 		await page.goto(SCHEMAS_ROUTE, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('[data-testid="cn-index-page"]')).toBeVisible({
-			timeout: 30_000,
+		// Scoped to the list and paged, via the shared helper: an unscoped
+		// locator also matches this app's own hidden "Schema \"…\" was updated"
+		// notification in the header, which is what made the UPDATE step below
+		// fail with "Received: hidden" on a row that rendered fine.
+		// See tests/e2e/_list-assertions.ts.
+		await expect(await listRowByText(page, SCHEMA_TITLE)).toBeVisible({
+			timeout: 20_000,
 		})
-		await expect(
-			page.getByText(SCHEMA_TITLE, { exact: false }).first(),
-		).toBeVisible({ timeout: 20_000 })
 	})
 
 	test('UPDATE — add a third property and assert it persisted + re-renders', async ({
@@ -126,12 +129,14 @@ test.describe('schema-crud — create→read→update→delete with property per
 
 		// UI still renders the schema row.
 		await page.goto(SCHEMAS_ROUTE, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('[data-testid="cn-index-page"]')).toBeVisible({
-			timeout: 30_000,
+		// Scoped to the list and paged, via the shared helper: an unscoped
+		// locator also matches this app's own hidden "Schema \"…\" was updated"
+		// notification in the header, which is what made the UPDATE step below
+		// fail with "Received: hidden" on a row that rendered fine.
+		// See tests/e2e/_list-assertions.ts.
+		await expect(await listRowByText(page, SCHEMA_TITLE)).toBeVisible({
+			timeout: 20_000,
 		})
-		await expect(
-			page.getByText(SCHEMA_TITLE, { exact: false }).first(),
-		).toBeVisible({ timeout: 20_000 })
 	})
 
 	test('DELETE — remove the schema and assert it is gone', async ({
@@ -154,12 +159,12 @@ test.describe('schema-crud — create→read→update→delete with property per
 		).toBeGreaterThanOrEqual(400)
 
 		await page.goto(SCHEMAS_ROUTE, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('[data-testid="cn-index-page"]')).toBeVisible({
-			timeout: 30_000,
-		})
-		await expect(page.getByText(SCHEMA_TITLE, { exact: false })).toHaveCount(0, {
-			timeout: 20_000,
-		})
+		await expect
+			.poll(async () => countListRowsByText(page, SCHEMA_TITLE), {
+				timeout: 20_000,
+				message: 'the deleted schema must be gone from every page',
+			})
+			.toBe(0)
 
 		schemaId = null
 	})

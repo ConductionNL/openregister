@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -57,11 +58,15 @@ class LifecycleActionListener implements IEventListener {
 	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
 	 * @param LifecycleActionExecutor $executor Runs the transition's declared actions.
 	 * @param LoggerInterface $logger Logger for diagnostics.
+	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is, so the named action's own actions run.
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LifecycleActionExecutor $executor,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleTransitionResolver $transitionResolver,
 	) {
 	}//end __construct()
 
@@ -122,8 +127,9 @@ class LifecycleActionListener implements IEventListener {
 			return;
 		}
 
-		$matched = $this->matchTransition(
+		$matched = $this->transitionResolver->resolve(
 			transitions: $transitions,
+			uuid: (string)$newObject->getUuid(),
 			oldValue: (string)$oldValue,
 			newValue: $newValue
 		);
@@ -159,36 +165,6 @@ class LifecycleActionListener implements IEventListener {
 			sprintf('[LifecycleActionListener] executed %d action(s) for transition "%s".', count($actions), $action)
 		);
 	}//end handle()
-
-	/**
-	 * Find the transition (action, spec) whose `to` matches the new value AND
-	 * whose `from` list contains the old value. Mirrors
-	 * `LifecycleValidationListener::findTransitionByTarget()`.
-	 *
-	 * @param array<string, mixed> $transitions Transition map from the annotation.
-	 * @param string $oldValue Current lifecycle field value.
-	 * @param string $newValue Attempted lifecycle field value.
-	 *
-	 * @return array{0: string, 1: array<string, mixed>}|null
-	 */
-	private function matchTransition(array $transitions, string $oldValue, string $newValue): ?array {
-		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === false || ($spec['to'] ?? null) !== $newValue) {
-				continue;
-			}
-
-			$from = ($spec['from'] ?? []);
-			if (is_string($from) === true) {
-				$from = [$from];
-			}
-
-			if (is_array($from) === true && in_array($oldValue, $from, true) === true) {
-				return [(string)$action, $spec];
-			}
-		}
-
-		return null;
-	}//end matchTransition()
 
 	/**
 	 * Load the schema referenced by an object, returning null on failure.
