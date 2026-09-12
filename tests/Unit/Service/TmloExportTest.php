@@ -80,7 +80,6 @@ class TmloExportTest extends TestCase {
 		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
 		$generator = new MdtoXmlGenerator(
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
 			$eventMapper,
 			$sourceReader,
 			$writer,

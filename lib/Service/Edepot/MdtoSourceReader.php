@@ -107,7 +107,9 @@ class MdtoSourceReader {
 	 *
 	 * @param ObjectEntity $object The object to read.
 	 *
-	 * @return array{appraisal: string|null, retentionPeriod: string|null, disposalDate: string|null, disposalCategory: array{label: string, list: string}|null, classification: string|null, description: string|null} The facts.
+	 * @return array{appraisal: string|null, retentionPeriod: string|null,
+	 *     disposalDate: string|null, disposalCategory: array{label: string, list: string}|null,
+	 *     classification: string|null, description: string|null} The facts.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */

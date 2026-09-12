@@ -95,7 +95,6 @@ class TmloMdtoExportXsdTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			new MdtoXmlGenerator(
 				$appConfig,
-				$this->createMock(LoggerInterface::class),
 				$eventMapper,
 				new MdtoSourceReader(new MdtoValueReader()),
 				$writer,

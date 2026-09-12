@@ -78,7 +78,6 @@ class MdtoXmlGeneratorTest extends TestCase {
 
 		return new MdtoXmlGenerator(
 			$appConfig,
-			$this->logger,
 			$eventMapper,
 			$this->sourceReader,
 			$writer,

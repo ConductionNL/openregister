@@ -32,7 +32,6 @@ use DOMElement;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Generator for MDTO `informatieobject` documents, and the entry point for a file's `bestand` document.
@@ -151,7 +150,6 @@ class MdtoXmlGenerator {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig The app configuration for organisation settings.
-	 * @param LoggerInterface $logger Logger for error and info messages.
 	 * @param MdtoEventMapper $eventMapper Source of the MDTO event history.
 	 * @param MdtoSourceReader $sourceReader Resolver for the declared archival values.
 	 * @param MdtoDocumentWriter $writer The XML primitives.
@@ -160,7 +158,6 @@ class MdtoXmlGenerator {
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 		private readonly MdtoEventMapper $eventMapper,
 		private readonly MdtoSourceReader $sourceReader,
 		private readonly MdtoDocumentWriter $writer,

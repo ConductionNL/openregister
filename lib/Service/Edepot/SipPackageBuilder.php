@@ -274,7 +274,7 @@ class SipPackageBuilder {
 			$fileEntries = $this->contentFileEntries(objectDir: $objectDir, object: $object, files: $files);
 			$entries = array_merge($entries, $fileEntries['entries']);
 			$manifest = array_merge($manifest, $fileEntries['manifest']);
-			$metadataFiles[$uuid] = array_merge(($metadataFiles[$uuid] ?? []), $fileEntries['metadata']);
+			$metadataFiles[$uuid] = array_merge($metadataFiles[$uuid], $fileEntries['metadata']);
 		}//end foreach
 
 		$metsXml = $this->generateMetsXml(

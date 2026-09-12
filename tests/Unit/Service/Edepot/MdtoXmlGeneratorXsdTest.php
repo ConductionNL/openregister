@@ -385,7 +385,6 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 
 		return new MdtoXmlGenerator(
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
 			$eventMapper,
 			$sourceReader,
 			$writer,
