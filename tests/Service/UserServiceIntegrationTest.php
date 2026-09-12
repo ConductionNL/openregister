@@ -543,9 +543,18 @@ class UserServiceIntegrationTest extends TestCase {
 			$this->assertIsArray($result);
 			$this->assertArrayHasKey('organisation_updated', $result);
 		} catch (\Exception $e) {
-			// Organisation switch requires a logged-in user session, which
-			// is not available in PHPUnit context. This is expected.
-			$this->assertStringContainsString('user', strtolower($e->getMessage()));
+			// TWO REFUSALS ARE LEGITIMATE HERE, AND WHICH ONE ARRIVES DEPENDS
+			// ON WHAT RAN BEFORE. With no logged-in user the switch is refused
+			// for the session ("no user"); with one, the uuid is refused
+			// because no such organisation exists. This file run on its own
+			// used to see the first and the assertion named only that, so the
+			// test failed inside the suite for a reason that is not a defect.
+			// Both messages mean the same thing: the switch did not happen.
+			$this->assertMatchesRegularExpression(
+				'/user|organisation/i',
+				$e->getMessage(),
+				'a refused organisation switch must say whether the user or the organisation was the problem'
+			);
 		}
 	}
 
