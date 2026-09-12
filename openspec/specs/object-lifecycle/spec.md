@@ -943,6 +943,102 @@ static-mode semantics unchanged (no auto-seed behaviour change for static schema
 - **WHEN** the object is created
 - **THEN** the seed step MUST be a no-op and the `status` field MUST remain unset
 
+### Requirement: Lifecycle provider mode delegates available actions to an app service
+
+The engine MUST support a third lifecycle mode for schemas whose state machine
+is data rather than annotation: a per-object workflow template, a per-case-type
+status list, or a policy table an administrator edits. When
+`x-openregister-lifecycle` declares a non-empty `provider` string and no
+non-empty static `transitions` map, `TransitionEngine::availableActions()` SHALL
+resolve that value through `LifecycleActionProviderRegistry` and SHALL publish
+what the resolved `LifecycleActionProviderInterface` answers. A provider is
+read-only: it MUST NOT mutate the object, because it is called on a GET the
+caller may repeat at will.
+
+Mode precedence SHALL be static, then provider, then graph. A schema declaring a
+non-empty `transitions` map SHALL keep it whatever else it declares, so an
+annotation that grows a second mode never silently loses the transitions it had.
+
+Each published entry SHALL carry `action`, `to`, `requires`, `description` and
+`inputs`, and MAY carry `label` and `blocked`. The `inputs` list SHALL be
+normalised through the same code that normalises a static transition's declared
+`inputs`, so what a client is told a transition accepts is exactly what the write
+path will accept.
+
+#### Scenario: Provider answer is published
+- **GIVEN** a schema whose `x-openregister-lifecycle` declares a `provider` tag and no static `transitions`
+- **WHEN** `availableActions()` is called for an object of that schema
+- **THEN** the response MUST contain the actions the registered provider answered, in the order it answered them
+
+#### Scenario: Static transitions take precedence over a provider
+- **GIVEN** a schema declaring both a non-empty `transitions` map and a `provider` tag
+- **WHEN** `availableActions()` is called for an object of that schema
+- **THEN** the actions MUST be derived from the static `transitions` map only
+- **AND** the provider MUST NOT be resolved
+
+#### Scenario: Provider inputs are normalised onto the published contract
+- **GIVEN** a provider that answers an action whose `inputs` list contains an entry naming no field
+- **WHEN** `availableActions()` is called
+- **THEN** that entry MUST be dropped and the remaining entries MUST be published as `{field, required}` pairs
+
+### Requirement: A provider that cannot answer MUST fail closed rather than return an empty list
+
+An empty action list is a successful answer meaning the object offers no moves
+from its current state, so a provider failure MUST NOT be reported as one. When
+the declared `provider` resolves to no service, resolves to a service that does
+not implement `LifecycleActionProviderInterface`, or throws while answering, the
+engine SHALL raise `LifecycleProviderException` and
+`TransitionController::availableActions()` SHALL answer HTTP 502. The existing
+403 for a caller without `read` permission and 404 for a missing object SHALL be
+unchanged.
+
+Because a broken provider declaration fails at read time rather than at save
+time, `lifecycle-provider-invalid` and `lifecycle-provider-mode-conflict` SHALL
+refuse the schema save, unlike the advisory lifecycle findings that are stored as
+written.
+
+#### Scenario: Unresolvable provider answers 502
+- **GIVEN** a schema declaring a `provider` tag that no app has registered
+- **WHEN** a client calls the available-actions endpoint for an object of that schema
+- **THEN** the response status MUST be 502
+- **AND** the response MUST NOT contain an empty `actions` list
+
+#### Scenario: Provider with no moves answers an empty list
+- **GIVEN** a registered provider that answers an empty list for the object's current state
+- **WHEN** a client calls the available-actions endpoint
+- **THEN** the response status MUST be 200 and `actions` MUST be an empty list
+
+### Requirement: Schema validation accepts the provider block and refuses two modes on one field
+
+`LifecycleAnnotationValidator` SHALL accept a `provider` key on
+`x-openregister-lifecycle` and SHALL shape-check it: `provider` MUST be a
+non-empty string, `field` MUST be a non-empty string declared in `properties`,
+and the `enum`/`type:string` constraint on that field SHALL be relaxed as it is
+for graph mode, because the app owns the state vocabulary. `initial` MAY be
+either the literal-string form or the object form `{ "from": ..., "field": ... }`.
+
+Declaring a non-empty `transitions` map or a non-empty `graph` block beside
+`provider` SHALL be refused with `lifecycle-provider-mode-conflict`. The engine
+does resolve the ambiguity by precedence, but the mode it drops would read as
+declared and never run, which is the failure the graph `condition` refusal
+already guards against. An empty `transitions` or `graph` value declares no
+second mode and SHALL NOT be refused.
+
+#### Scenario: Valid provider annotation passes validation
+- **GIVEN** a schema whose `x-openregister-lifecycle` declares a `provider` tag, a `field` present in `properties` with no enum, and an object-form `initial`
+- **WHEN** the schema is validated
+- **THEN** `LifecycleAnnotationValidator` MUST return no errors
+
+#### Scenario: Empty provider is rejected
+- **GIVEN** an annotation whose `provider` is an empty string
+- **WHEN** the schema is validated
+- **THEN** the validator MUST return `lifecycle-provider-invalid`
+
+#### Scenario: Two modes on one field are rejected
+- **GIVEN** an annotation declaring both `provider` and a non-empty `transitions` map
+- **WHEN** the schema is validated
+- **THEN** the validator MUST return `lifecycle-provider-mode-conflict`
+
 ### Requirement: A transition MAY declare `actions[]` that OpenRegister MUST execute on any transition form
 
 OpenRegister MUST execute the `actions[]` a schema declares on a lifecycle
