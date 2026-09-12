@@ -183,6 +183,7 @@ class OasService {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
+	 * @spec openspec/specs/oas-validation/spec.md#requirement-server-url-is-absolute
 	 */
 	public function createOas(?string $registerId = null, bool $strict = false): array {
 		// Reset the validation report at the start of every generation pass.
@@ -224,6 +225,26 @@ class OasService {
 				'description' => 'OpenRegister API Server',
 			],
 		];
+
+		// The OAuth flow URLs ship relative in BaseOas.json. The OAS 3.1
+		// meta-schema types them `format: uri` (absolute), so every generated
+		// document failed its own meta-schema check on them, and a client
+		// that resolves them against the page rather than the server lands
+		// on the wrong host. Anchor them to this instance, as the server is.
+		// Read, rewrite, write back, rather than taking a reference into the
+		// array: psalm refuses to analyse a reference into a property
+		// (UnsupportedPropertyReferenceUsage), and a guard it cannot analyse
+		// is a guard nobody checks.
+		$flow = ($this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] ?? null);
+		if (is_array($flow) === true) {
+			foreach (['authorizationUrl', 'tokenUrl', 'refreshUrl'] as $urlKey) {
+				if (isset($flow[$urlKey]) === true && str_starts_with((string)$flow[$urlKey], '/') === true) {
+					$flow[$urlKey] = $this->urlGenerator->getAbsoluteURL((string)$flow[$urlKey]);
+				}
+			}
+
+			$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] = $flow;
+		}
 
 		// Step 6: If specific register requested, update info section with register details.
 		if ($registerId !== null) {

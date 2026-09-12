@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
+use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Validator;
 
 /**
@@ -46,18 +48,24 @@ class OasRequestValidator {
 	 *
 	 * @return array<int, array{path: string, message: string}>
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-8
+	 * @spec openspec/specs/oas-validation/spec.md#requirement-request-validation-against-oas-schema
 	 */
 	public function validate(mixed $body, array $schema): array {
 		// The opis/json-schema library operates on object-shaped values; convert
 		// the schema + body via JSON round-trip so we get the right
 		// PHP shape (stdClass for objects, array for lists).
-		$schemaJson = (string)json_encode($schema);
+		$schemaJson = (string)json_encode($this->bindLocalDynamicRefs(schema: $schema));
 		$schemaObj = json_decode($schemaJson);
 		$bodyJson = (string)json_encode($body);
 		$bodyObj = json_decode($bodyJson);
 
+		// Validation MUST NOT write into the data it judges. opis applies
+		// `default` values by default, and a default injected inside an
+		// `if`/`then` branch is then refused by `unevaluatedProperties` as a
+		// property the caller never sent. The OAS 3.1 meta-schema does exactly
+		// that with a query parameter's `allowEmptyValue`.
 		$validator = new Validator();
+		$validator->parser()->setOption('allowDefaults', false);
 		$result = $validator->validate(data: $bodyObj, schema: $schemaObj);
 		if ($result->isValid() === true) {
 			return [];
@@ -118,11 +126,12 @@ class OasRequestValidator {
 			$message = (string)$error->keyword();
 		}
 
-		if (method_exists($error, 'message') === true) {
-			$msg = $error->message();
-			if (is_string($msg) === true && $msg !== '') {
-				$message = $msg;
-			}
+		// `message()` is a TEMPLATE ("The required properties ({missing}) are
+		// missing"); the formatter fills its placeholders from the error's args.
+		// Reporting the raw template told a reader which rule failed but never
+		// which property, type or keyword it failed on.
+		if ($error instanceof ValidationError === true) {
+			$message = (new ErrorFormatter())->formatErrorMessage(error: $error);
 		}
 
 		$errorPath = '/';
@@ -147,4 +156,101 @@ class OasRequestValidator {
 		}
 
 	}//end collectErrors()
+
+	/**
+	 * Bind each `$dynamicRef: "#name"` to the `$dynamicAnchor` it names.
+	 *
+	 * The opis/json-schema 2.x library resolves `$dynamicRef` through its
+	 * `$recursiveRef` machinery, which only looks for the anchor on schema
+	 * RESOURCE roots. The OpenAPI 3.1 meta-schema declares
+	 * `$dynamicAnchor: meta` inside `$defs/schema`, not on a root, so opis
+	 * bound every `{$dynamicRef: "#meta"}` to the document root and demanded
+	 * `openapi` and `info` inside each parameter's schema.
+	 *
+	 * For a schema that is ONE resource (no nested `$id`), the dynamic scope
+	 * holds nothing but that resource, so a JSON Schema 2020-12 validator
+	 * resolves `#name` to the single place that resource declares
+	 * `$dynamicAnchor: name`. Rewriting the reference to a plain `$ref` at
+	 * that JSON pointer gives the same answer without depending on opis's
+	 * dynamic scope. Anything that is not that unambiguous case (nested
+	 * resources, an anchor declared twice or not at all) is left untouched.
+	 *
+	 * @param array $schema The decoded schema.
+	 *
+	 * @return array The schema with local dynamic references bound.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#requirement-request-validation-against-oas-schema
+	 */
+	private function bindLocalDynamicRefs(array $schema): array {
+		$anchors = [];
+		$nestedIds = 0;
+		$this->collectDynamicAnchors(node: $schema, pointer: '', anchors: $anchors, nestedIds: $nestedIds);
+		if ($nestedIds > 0 || $anchors === []) {
+			return $schema;
+		}
+
+		$targets = [];
+		foreach ($anchors as $name => $pointers) {
+			if (count($pointers) === 1) {
+				$targets['#' . $name] = '#' . $pointers[0];
+			}
+		}
+
+		return $this->rewriteDynamicRefs(node: $schema, targets: $targets);
+	}//end bindLocalDynamicRefs()
+
+	/**
+	 * Record where each `$dynamicAnchor` is declared, and count nested `$id`s.
+	 *
+	 * @param mixed  $node      The schema node being walked.
+	 * @param string $pointer   The JSON pointer of that node ('' is the root).
+	 * @param array  $anchors   Anchor name => list of JSON pointers (by reference).
+	 * @param int    $nestedIds Number of `$id`s below the root (by reference).
+	 *
+	 * @return void
+	 */
+	private function collectDynamicAnchors(mixed $node, string $pointer, array &$anchors, int &$nestedIds): void {
+		if (is_array($node) === false) {
+			return;
+		}
+
+		if ($pointer !== '' && isset($node['$id']) === true) {
+			$nestedIds++;
+		}
+
+		if (isset($node['$dynamicAnchor']) === true && is_string($node['$dynamicAnchor']) === true) {
+			$anchors[$node['$dynamicAnchor']][] = $pointer;
+		}
+
+		foreach ($node as $key => $child) {
+			$segment = str_replace(['~', '/'], ['~0', '~1'], (string)$key);
+			$this->collectDynamicAnchors(node: $child, pointer: $pointer . '/' . $segment, anchors: $anchors, nestedIds: $nestedIds);
+		}
+	}//end collectDynamicAnchors()
+
+	/**
+	 * Replace `$dynamicRef` values that have a bound target with a plain `$ref`.
+	 *
+	 * @param mixed $node    The schema node being rewritten.
+	 * @param array $targets `#name` => `#/json/pointer`.
+	 *
+	 * @return mixed The rewritten node.
+	 */
+	private function rewriteDynamicRefs(mixed $node, array $targets): mixed {
+		if (is_array($node) === false) {
+			return $node;
+		}
+
+		$ref = $node['$dynamicRef'] ?? null;
+		if (is_string($ref) === true && isset($targets[$ref]) === true) {
+			unset($node['$dynamicRef']);
+			$node['$ref'] = $targets[$ref];
+		}
+
+		foreach ($node as $key => $child) {
+			$node[$key] = $this->rewriteDynamicRefs(node: $child, targets: $targets);
+		}
+
+		return $node;
+	}//end rewriteDynamicRefs()
 }//end class

@@ -81,6 +81,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method bool|null getPublishedOnly()
+ * @method void setPublishedOnly(?bool $publishedOnly)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -269,6 +271,20 @@ class SearchTrail extends Entity implements JsonSerializable {
 	protected ?array $sortParameters = null;
 
 	/**
+	 * Whether the search was limited to published objects (historical)
+	 *
+	 * Read-only history. Object-level `published` metadata was retired
+	 * (openspec deprecate-published-metadata), so nothing writes this any
+	 * more and new rows take the column default. The `published_only` column
+	 * itself was deliberately kept as historical tracking data, and the
+	 * mapper selects `*`, so the entity MUST still declare it: without it
+	 * `fromRow()` throws on every stored trail and the list endpoint 500s.
+	 *
+	 * @var boolean|null Whether the search was limited to published objects
+	 */
+	protected ?bool $publishedOnly = null;
+
+	/**
 	 * Search execution type (sync or async)
 	 *
 	 * @var string|null Search execution type (sync or async)
@@ -314,6 +330,8 @@ class SearchTrail extends Entity implements JsonSerializable {
 	 * Constructor for the SearchTrail class
 	 *
 	 * Sets up field types for all properties
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 	 */
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
@@ -342,7 +360,7 @@ class SearchTrail extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'facetableRequested', type: 'boolean');
 		$this->addType(fieldName: 'filters', type: 'json');
 		$this->addType(fieldName: 'sortParameters', type: 'json');
-
+		$this->addType(fieldName: 'publishedOnly', type: 'boolean');
 		$this->addType(fieldName: 'executionType', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'organisationId', type: 'string');
