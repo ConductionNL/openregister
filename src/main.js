@@ -17,9 +17,21 @@ import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
 import pinia from './pinia.js'
 import registry from './registry.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import 'gridstack/dist/gridstack.min.css'
+
+// Register nextcloud-vue's own catalogue for the reader's language. The library
+// translates every label it draws under its own `nextcloud-vue` app id, and
+// nothing registers that catalogue unless the host app asks: every leaf app's
+// bootstrap calls this, and openregister's never did. So on this page a Dutch
+// reader got OpenRegister's strings in Dutch and every library string in
+// English, the object metadata's Archiving group included ("Archiving" instead
+// of "Archivering"). First, so no library label resolves before it lands.
+// Every other entry makes the same call; src/tests/entry-translations.spec.js
+// holds them to it.
+registerLibraryTranslations()
 
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.
@@ -133,6 +145,7 @@ try {
 				})
 			})
 			.catch((e) =>
+				// eslint-disable-next-line no-console
 				console.error(
 					'[main] failed to register generic integration descriptors',
 					e,
@@ -140,6 +153,7 @@ try {
 			)
 	}
 } catch (e) {
+	// eslint-disable-next-line no-console
 	console.error('[main] integration registry guard failed', e)
 }
 

@@ -81,16 +81,19 @@ class DeleteFileHandler {
 	 *
 	 * @psalm-param Node|string|int $file
 	 *
-	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/specs/file-actions/spec.md#requirement-file-update-and-delete-enforce-per-action-node-permissions
 	 */
 	public function deleteFile(Node|string|int $file, ?ObjectEntity $object = null): bool {
-		// Determine file name for error logging.
-		$fileName = (string)$file;
+		// A Node is used as it is. Only a path or an id is resolved, and only
+		// those are cast for the log line: a Files Node is not Stringable, so
+		// casting before this check killed every Node caller (MergeHandler).
+		$fileName = '';
 		if ($file instanceof Node === true) {
 			$fileName = $file->getName();
 		}
 
 		if ($file instanceof Node === false) {
+			$fileName = (string)$file;
 			$file = $this->readFileHandler->getFile(object: $object, file: $file);
 		}
 
