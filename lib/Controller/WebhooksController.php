@@ -1342,8 +1342,10 @@ class WebhooksController extends Controller {
 				);
 			}
 
-			// Get the webhook.
-			$webhook = $this->webhookMapper->find($log->getWebhookId());
+			// getWebhook(), not getWebhookId(): the log entity's property is
+			// named `webhook`, so the `Id` spelling threw out of Entity::__call
+			// and answered this endpoint with a 500.
+			$webhook = $this->webhookMapper->find($log->getWebhook());
 
 			// Extract payload from request body if available, otherwise use stored payload.
 			$payload = [];

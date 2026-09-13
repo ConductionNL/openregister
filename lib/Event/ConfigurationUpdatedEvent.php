@@ -66,6 +66,24 @@ class ConfigurationUpdatedEvent extends Event {
 	/**
 	 * Get the updated configuration.
 	 *
+	 * The listener that turns this event into a webhook payload calls
+	 * getConfiguration(), the same name its created and deleted siblings
+	 * carry. This class had only getNewConfiguration()/getOldConfiguration(),
+	 * so that call was a fatal error on every dispatch; the only test
+	 * covering it doubled the event with addMethods(['getConfiguration']),
+	 * which invents the method on the mock and never consults the real class.
+	 *
+	 * @return Configuration The configuration after update.
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+	 */
+	public function getConfiguration(): Configuration {
+		return $this->newConfiguration;
+	}//end getConfiguration()
+
+	/**
+	 * Get the updated configuration.
+	 *
 	 * @return Configuration The configuration after update.
 	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3

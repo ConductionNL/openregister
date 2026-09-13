@@ -239,11 +239,14 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 	 * @return string The id field (defaults to 'id')
 	 */
 	private function identifierField(Source $source): string {
-		$config = $source->getConfiguration();
-		if (is_array($config) === true && isset($config['identifierField']) === true) {
-			return (string)$config['identifierField'];
-		}
-
+		// Always 'id'. This used to read $source->getConfiguration(), and
+		// Source has no `configuration` property, column or serialized field,
+		// so the call threw "configuration is not a valid attribute" out of
+		// Entity::__call on every gather. Nothing anywhere in the app, the UI
+		// or the specs ever set an identifierField, so the lookup had no store
+		// to read: making the default explicit loses nothing and is honest
+		// about it. Give sources a real configuration column first if the
+		// field ever needs to be settable.
 		return 'id';
 	}//end identifierField()
 
