@@ -106,11 +106,39 @@ return [
         // its own entry point. Anyone who may READ the object may follow it; the
         // list needs `update` and changing somebody else's subscription needs
         // `manage`, both decided in WatcherService.
-        ['name' => 'objectWatchers#watch',    'url' => '/api/objects/{register}/{schema}/{id}/watch',             'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
-        ['name' => 'objectWatchers#unwatch',  'url' => '/api/objects/{register}/{schema}/{id}/watch',             'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
-        ['name' => 'objectWatchers#index',    'url' => '/api/objects/{register}/{schema}/{id}/watchers',          'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
-        ['name' => 'objectWatchers#add',      'url' => '/api/objects/{register}/{schema}/{id}/watchers/{userId}', 'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+']],
-        ['name' => 'objectWatchers#remove',   'url' => '/api/objects/{register}/{schema}/{id}/watchers/{userId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+']],
+        // Written over several lines, unlike their neighbours, because a
+        // one-line route entry here is 215 characters and the line-length rule
+        // is 150. The rest of this file predates the rule.
+        [
+            'name' => 'objectWatchers#watch',
+            'url' => '/api/objects/{register}/{schema}/{id}/watch',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#unwatch',
+            'url' => '/api/objects/{register}/{schema}/{id}/watch',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#index',
+            'url' => '/api/objects/{register}/{schema}/{id}/watchers',
+            'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#add',
+            'url' => '/api/objects/{register}/{schema}/{id}/watchers/{userId}',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#remove',
+            'url' => '/api/objects/{register}/{schema}/{id}/watchers/{userId}',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
+        ],
 
         // PUBLIC. A share token is a bearer capability: nobody is logged in, so
         // there is no principal for RBAC to resolve and core's validation of the
