@@ -383,33 +383,18 @@ class TransitionEngine {
 		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
 		$transitions = (array)($annotation['transitions'] ?? []);
 
-		// Static transitions take precedence, then the two delegating modes in
-		// the SAME order the read path resolves them: `provider` before
-		// `graph` (design: mode selection & precedence — zero regression for
-		// static schemas). The two paths must agree here or a schema can be
-		// offered moves by one mode and judged by another, which is the
-		// disagreement a user meets as a stage that highlights and then fails.
+		// Static transitions take precedence; a delegating mode answers only
+		// when no non-empty static map is declared.
 		if ($transitions === []) {
-			$provider = trim((string)($annotation['provider'] ?? ''));
-			if ($provider !== '') {
-				return $this->applyProviderTransition(
-					object: $object,
-					tag: $provider,
-					field: $field,
-					action: $action,
-					data: $data
-				);
-			}
-
-			$graph = (array)($annotation['graph'] ?? []);
-			if ($graph !== []) {
-				return $this->applyGraphTransition(
-					object: $object,
-					graph: $graph,
-					field: $field,
-					action: $action,
-					data: $data
-				);
+			$delegated = $this->applyDelegatedTransition(
+				object: $object,
+				annotation: $annotation,
+				field: $field,
+				action: $action,
+				data: $data
+			);
+			if ($delegated !== null) {
+				return $delegated;
 			}
 		}
 
@@ -485,6 +470,63 @@ class TransitionEngine {
 
 		return $saved;
 	}//end applyTransition()
+
+	/**
+	 * Apply the transition through a delegating mode, when the annotation declares one.
+	 *
+	 * Resolves in the SAME order the read path resolves it: `provider` (the
+	 * app owns the state machine) before `graph` (FK-scoped siblings at
+	 * runtime). The two paths must agree here or a schema can be offered moves
+	 * by one mode and judged by another, which is the disagreement a user
+	 * meets as a stage that highlights and then fails.
+	 *
+	 * Answers null when neither mode is declared, which is the caller's signal
+	 * to fall through to the static map. Null rather than a boolean flag
+	 * because both modes answer with the saved entity, so there is nothing to
+	 * return separately.
+	 *
+	 * @param ObjectEntity $object The transitioning object.
+	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
+	 * @param string $field The lifecycle field name on the object.
+	 * @param string $action The action name the caller posted.
+	 * @param array<string, mixed> $data The caller-supplied input values.
+	 *
+	 * @return ObjectEntity|null The saved object, or null when no delegating mode is declared.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function applyDelegatedTransition(
+		ObjectEntity $object,
+		array $annotation,
+		string $field,
+		string $action,
+		array $data,
+	): ?ObjectEntity {
+		$provider = trim((string)($annotation['provider'] ?? ''));
+		if ($provider !== '') {
+			return $this->applyProviderTransition(
+				object: $object,
+				tag: $provider,
+				field: $field,
+				action: $action,
+				data: $data
+			);
+		}
+
+		$graph = (array)($annotation['graph'] ?? []);
+		if ($graph !== []) {
+			return $this->applyGraphTransition(
+				object: $object,
+				graph: $graph,
+				field: $field,
+				action: $action,
+				data: $data
+			);
+		}
+
+		return null;
+	}//end applyDelegatedTransition()
 
 	/**
 	 * Hand a provider-mode transition to the app that owns the state machine.
