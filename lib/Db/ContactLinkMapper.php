@@ -135,4 +135,59 @@ class ContactLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndContact()
+
+	/**
+	 * The link of one person on one object in one role, or null.
+	 *
+	 * The upsert key since people-on-objects: a person may hold several
+	 * roles on an object, one row each.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $contactUid The contact uid, `user:<uid>` for a user.
+	 * @param string|null $role The role, null for a link without one.
+	 *
+	 * @return ContactLink|null The link.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
+			->setMaxResults(1);
+		if ($role === null || $role === '') {
+			$qb->andWhere($qb->expr()->isNull('role'));
+		}
+
+		if ($role !== null && $role !== '') {
+			$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));
+		}
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByObjectContactAndRole()
+
+	/**
+	 * Every link that names a Nextcloud user, newest first.
+	 *
+	 * @param string $userId The user id.
+	 *
+	 * @return ContactLink[] The links.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function findByUserId(string $userId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
+			->orderBy('linked_at', 'DESC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByUserId()
 }//end class
