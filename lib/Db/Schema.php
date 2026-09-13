@@ -2225,6 +2225,11 @@ class Schema extends Entity implements JsonSerializable {
 			return;
 		}
 
+		if ($key === 'linkRoles') {
+			$validatedConfig[$key] = $this->validateLinkRolesValue(value: $value);
+			return;
+		}
+
 		if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
 			$validatedConfig[$key] = $this->validateWriteOnlyPathsValue(value: $value);
 			return;
@@ -2482,6 +2487,105 @@ class Schema extends Entity implements JsonSerializable {
 		// or#460/#462-class trap as every entry above.
 		'x-openregister-registry',
 	];
+
+	/**
+	 * Validate and normalise `linkRoles`: the roles a person can hold on an
+	 * object of this schema (people-on-objects).
+	 *
+	 * Each entry is `{key, label, description?}`; a bare string reads as
+	 * `{key: s, label: s}`. Keys are unique, non-empty and at most 64
+	 * characters, the width of the link table's role column.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string}> The normalised entries.
+	 *
+	 * @throws InvalidArgumentException When the value is not a list of valid entries.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	private function validateLinkRolesValue(mixed $value): array {
+		if (is_array($value) === false || array_is_list($value) === false) {
+			throw new InvalidArgumentException("Configuration 'linkRoles' must be a list of roles");
+		}
+
+		$entries = [];
+		$seen = [];
+		foreach ($value as $entry) {
+			$normalised = self::normaliseLinkRole(entry: $entry);
+			if ($normalised === null) {
+				throw new InvalidArgumentException("Each 'linkRoles' entry needs a non-empty key of at most 64 characters");
+			}
+
+			if (isset($seen[$normalised['key']]) === true) {
+				throw new InvalidArgumentException("'linkRoles' names the key '" . $normalised['key'] . "' twice");
+			}
+
+			$seen[$normalised['key']] = true;
+			$entries[] = $normalised;
+		}
+
+		return $entries;
+	}//end validateLinkRolesValue()
+
+	/**
+	 * One `linkRoles` entry as `{key, label, description?}`, or null when it has no usable key.
+	 *
+	 * @param mixed $entry A string or an array.
+	 *
+	 * @return array{key: string, label: string, description?: string}|null The entry.
+	 */
+	private static function normaliseLinkRole(mixed $entry): ?array {
+		if (is_string($entry) === true) {
+			$entry = ['key' => $entry, 'label' => $entry];
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$key = trim((string)($entry['key'] ?? ''));
+		if ($key === '' || strlen($key) > 64) {
+			return null;
+		}
+
+		$label = trim((string)($entry['label'] ?? ''));
+		if ($label === '') {
+			$label = $key;
+		}
+
+		$normalised = ['key' => $key, 'label' => $label];
+		$description = trim((string)($entry['description'] ?? ''));
+		if ($description !== '') {
+			$normalised['description'] = $description;
+		}
+
+		return $normalised;
+	}//end normaliseLinkRole()
+
+	/**
+	 * The roles a person can hold on an object of this schema, [] when the schema declares none.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	public function getLinkRoles(): array {
+		$configured = $this->configuration['linkRoles'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($configured as $entry) {
+			$normalised = self::normaliseLinkRole(entry: $entry);
+			if ($normalised !== null) {
+				$entries[] = $normalised;
+			}
+		}
+
+		return $entries;
+	}//end getLinkRoles()
 
 	/**
 	 * Validate the linkedTypes configuration value.
