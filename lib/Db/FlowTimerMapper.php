@@ -44,9 +44,10 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<FlowTimer>
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods) Eleven: each is a distinct
- * question the sweep, the lifecycle or the invariant check asks of the table,
- * with its own predicate set, exactly as {@see FlowRunMapper} argues.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Thirteen: each is a distinct
+ * question the sweep, the lifecycle, the invariant check or the calendar
+ * delete guard asks of the table, with its own predicate set, exactly as
+ * {@see FlowRunMapper} argues.
  */
 class FlowTimerMapper extends QBMapper {
 
@@ -298,4 +299,68 @@ class FlowTimerMapper extends QBMapper {
 
 		return $qb->executeStatement() === 1;
 	}//end claimFired()
+
+	/**
+	 * The OPEN timers that name a working calendar, oldest first.
+	 *
+	 * Only `armed` and `suspended` block a calendar's deletion: a fired,
+	 * cancelled or superseded timer will never consult the calendar again, so
+	 * refusing on its account would make a calendar undeletable forever.
+	 *
+	 * @param string $calendarSlug The calendar's slug.
+	 * @param int $limit How many rows to return at most.
+	 *
+	 * @return array<int, FlowTimer> The open timers naming that calendar.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-only-an-administrator-writes-a-calendar-and-a-referenced-one-cannot-be-deleted
+	 */
+	public function findOpenByCalendarSlug(string $calendarSlug, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
+			->andWhere(
+				$qb->expr()->in(
+					'state',
+					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			)
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findOpenByCalendarSlug()
+
+	/**
+	 * How many OPEN timers name a working calendar.
+	 *
+	 * Counted in the database rather than by measuring
+	 * {@see findOpenByCalendarSlug()}, whose result is capped at the ten uuids
+	 * the refusal quotes: a count read off a capped page would report ten for
+	 * a calendar a thousand timers depend on.
+	 *
+	 * @param string $calendarSlug The calendar's slug.
+	 *
+	 * @return integer The number of armed or suspended timers.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-only-an-administrator-writes-a-calendar-and-a-referenced-one-cannot-be-deleted
+	 */
+	public function countOpenByCalendarSlug(string $calendarSlug): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'open_timers'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
+			->andWhere(
+				$qb->expr()->in(
+					'state',
+					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			);
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countOpenByCalendarSlug()
 }//end class
