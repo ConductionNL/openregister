@@ -405,15 +405,29 @@ class TaskEventsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testDestroyStripsTheVeventAndRemovesTheLink(): void {
+	/**
+	 * DELETE means delete, on the task side as much as on the object side.
+	 *
+	 * The old name of this test said exactly what the endpoint did wrong: it
+	 * STRIPPED the VEVENT rather than deleting it. `unlinkEvent()` removes the
+	 * X-OPENREGISTER-* properties and ends in `updateCalendarObject`, so the
+	 * meeting stayed on the user's calendar while the response said success.
+	 * Asserting that call kept the defect in place.
+	 *
+	 * The link row is still removed; that half was always right.
+	 *
+	 * @return void
+	 */
+	public function testDestroyDeletesTheVeventAndRemovesTheLink(): void {
 		$this->givenReadable();
 		$this->links->method('getLinkedEvents')->willReturn([['id' => 'mine.ics', 'calendarId' => 2, 'uid' => 'u-1']]);
-		$this->events->expects($this->once())->method('unlinkEvent')->with('2', 'mine.ics');
+		$this->events->expects($this->once())->method('deleteEvent')->with('2', 'mine.ics');
+		$this->events->expects($this->never())->method('unlinkEvent');
 		$this->links->expects($this->once())->method('unlinkEvent')->with('t-1', 'u-1');
 
 		$response = $this->controller()->destroy(uuid: 't-1', eventId: 'mine.ics');
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(['success' => true], $response->getData());
-	}//end testDestroyStripsTheVeventAndRemovesTheLink()
+	}//end testDestroyDeletesTheVeventAndRemovesTheLink()
 }//end class
