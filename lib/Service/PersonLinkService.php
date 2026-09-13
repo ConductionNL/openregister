@@ -91,6 +91,8 @@ class PersonLinkService {
 	 * @param int|null $schemaId The schema id.
 	 *
 	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
 	 */
 	public function roleVocabulary(?int $schemaId): array {
 		if ($schemaId === null) {
