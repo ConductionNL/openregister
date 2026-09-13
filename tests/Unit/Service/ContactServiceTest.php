@@ -26,8 +26,7 @@ class ContactServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->contactLinkMapper = $this->getMockBuilder(ContactLinkMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findByObjectUuid', 'findByContactUid', 'findByObjectAndContact', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'update', 'delete'])
-			->addMethods(['find'])
+			->onlyMethods(['find', 'findByObjectUuid', 'findByContactUid', 'findByObjectAndContact', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'update', 'delete'])
 			->getMock();
 		$this->cardDavBackend = $this->createMock(CardDavBackend::class);
 		$this->userSession = $this->createMock(IUserSession::class);
