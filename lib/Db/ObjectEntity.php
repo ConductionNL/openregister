@@ -572,6 +572,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $registryState = null;
 
 	/**
+	 * Whether the current user follows this object (`object-watchers`).
+	 *
+	 * Transient property populated by the render layer from
+	 * `WatcherService::isWatchedByCaller()`. Not persisted on this entity: a
+	 * watcher is per-user, per-object state living in `openregister_watchers`,
+	 * which is exactly what keeps following an object out of the object's own
+	 * audit trail and versions. Exposed in @self as `watching`, and omitted for
+	 * an anonymous read.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $watching = null;
+
+	/**
+	 * How many users follow this object (`object-watchers`).
+	 *
+	 * Transient, and set only for a caller with `update` on the object —
+	 * watching is a fact about the object's audience, so an editor may see the
+	 * size of it and an ordinary reader may not. Exposed in @self as
+	 * `watcherCount`, and omitted entirely otherwise.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $watcherCount = null;
+
+	/**
 	 * AVG / GDPR Art 30 processing-activity override.
 	 *
 	 * Transient field — set by callers that want to tag an upcoming
@@ -739,6 +765,58 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setRegistryState(?array $state): void {
 		$this->registryState = $state;
 	}//end setRegistryState()
+
+	/**
+	 * Whether the current user follows this object, when the render layer said.
+	 *
+	 * @return boolean|null True or false for a signed-in reader, null when unset.
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	public function getWatching(): ?bool {
+		return $this->watching;
+	}//end getWatching()
+
+	/**
+	 * Write the current user's follow marker.
+	 *
+	 * Surfaced in the @self envelope as `watching` by getObjectArray().
+	 *
+	 * @param boolean|null $watching Whether the current user follows this object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	public function setWatching(?bool $watching): void {
+		$this->watching = $watching;
+	}//end setWatching()
+
+	/**
+	 * How many users follow this object, when the render layer said.
+	 *
+	 * @return integer|null The count, or null when the caller may not see it.
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 */
+	public function getWatcherCount(): ?int {
+		return $this->watcherCount;
+	}//end getWatcherCount()
+
+	/**
+	 * Write the follower count.
+	 *
+	 * Surfaced in the @self envelope as `watcherCount` by getObjectArray().
+	 *
+	 * @param integer|null $count The number of followers, or null to omit it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 */
+	public function setWatcherCount(?int $count): void {
+		$this->watcherCount = $count;
+	}//end setWatcherCount()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1124,8 +1202,10 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	/**
 	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
 	 * search relevance, the RFC 8141 URN, per-language translation
-	 * completeness, the effective archival retention decision, and the
-	 * registry subscription state (`registry-subscriptions`, finding B22).
+	 * completeness, the effective archival retention decision, the
+	 * registry subscription state (`registry-subscriptions`, finding B22), and
+	 * the reader's own follow marker plus the follower count
+	 * (`object-watchers`).
 	 * Each is optional and omitted entirely when unset — none of these are
 	 * persisted on this entity; they are populated by RenderObject at read
 	 * time.
@@ -1168,6 +1248,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// never requested one.
 		if ($this->registryState !== null) {
 			$objectArray['registry'] = $this->registryState;
+		}
+
+		// Whether the reader follows this object (`object-watchers`). Omitted
+		// entirely for an anonymous read, where there is no "you" to answer for.
+		if ($this->watching !== null) {
+			$objectArray['watching'] = $this->watching;
+		}
+
+		// The size of the object's audience, for a reader who may edit it.
+		if ($this->watcherCount !== null) {
+			$objectArray['watcherCount'] = $this->watcherCount;
 		}
 
 		return $objectArray;

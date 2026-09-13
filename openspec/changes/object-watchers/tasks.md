@@ -7,8 +7,8 @@
 
 ## 2. API and markers
 
-- [ ] 2.1 Routes: `PUT`/`DELETE .../watch`, `GET .../watchers`, `PUT`/`DELETE .../watchers/{userId}`.
-- [ ] 2.2 `@self.watching` and `@self.watcherCount` in `RenderObject`; `_watching=true` lens in the query parser.
+- [x] 2.1 Routes: `PUT`/`DELETE .../watch`, `GET .../watchers`, `PUT`/`DELETE .../watchers/{userId}`.
+- [x] 2.2 `@self.watching` and `@self.watcherCount` in `RenderObject`; `_watching=true` lens in the query parser.
 
 ## 3. Notifications
 
