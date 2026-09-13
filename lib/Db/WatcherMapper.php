@@ -252,7 +252,7 @@ class WatcherMapper extends QBMapper {
 		$watcher->setCreated(new DateTime());
 
 		try {
-			return $this->insert($watcher);
+			return $this->insert(entity: $watcher);
 		} catch (\Throwable $e) {
 			// A concurrent subscribe lost the race on the unique index. The
 			// caller asked for "this user watches this object", which is now

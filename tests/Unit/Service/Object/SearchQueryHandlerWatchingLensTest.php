@@ -53,32 +53,32 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 	 * @return SearchQueryHandler
 	 */
 	private function makeHandler(array $watched, ?string $uid = 'alice'): SearchQueryHandler {
-		$schema = $this->createMock(Schema::class);
+		$schema = $this->createMock(originalClassName: Schema::class);
 		$schema->method('getProperties')->willReturn([]);
 		$schema->method('getObjectSource')->willReturn(null);
 
-		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
-		$watcherMapper = $this->createMock(WatcherMapper::class);
+		$watcherMapper = $this->createMock(originalClassName: WatcherMapper::class);
 		$watcherMapper->method('uuidsForUser')->willReturn($watched);
 
-		$session = $this->createMock(IUserSession::class);
+		$session = $this->createMock(originalClassName: IUserSession::class);
 		if ($uid === null) {
 			$session->method('getUser')->willReturn(null);
 		} else {
-			$user = $this->createMock(IUser::class);
+			$user = $this->createMock(originalClassName: IUser::class);
 			$user->method('getUID')->willReturn($uid);
 			$session->method('getUser')->willReturn($user);
 		}
 
 		return new SearchQueryHandler(
-			$this->createMock(ViewMapper::class),
+			$this->createMock(originalClassName: ViewMapper::class),
 			$schemaMapper,
-			$this->createMock(SettingsService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
-			$this->createMock(SearchTrailService::class),
+			$this->createMock(originalClassName: SettingsService::class),
+			$this->createMock(originalClassName: LoggerInterface::class),
+			$this->createMock(originalClassName: IRequest::class),
+			$this->createMock(originalClassName: SearchTrailService::class),
 			$watcherMapper,
 			$session
 		);
@@ -90,14 +90,14 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheLensNarrowsToTheWatchedUuids(): void {
-		$query = $this->makeHandler(['uuid-a', 'uuid-b'])->buildSearchQuery(
+		$query = $this->makeHandler(watched: ['uuid-a', 'uuid-b'])->buildSearchQuery(
 			['_watching' => 'true'],
 			1,
 			777
 		);
 
-		$this->assertSame(['uuid-a', 'uuid-b'], ($query['_ids'] ?? null));
-		$this->assertArrayNotHasKey('_watching', $query);
+		$this->assertSame(expected: ['uuid-a', 'uuid-b'], actual: ($query['_ids'] ?? null));
+		$this->assertArrayNotHasKey(key: '_watching', array: $query);
 	}//end testTheLensNarrowsToTheWatchedUuids()
 
 	/**
@@ -106,12 +106,12 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testFollowingNothingReturnsAnImpossibleIdSet(): void {
-		$query = $this->makeHandler([])->buildSearchQuery(['_watching' => 'true'], 1, 777);
+		$query = $this->makeHandler(watched: [])->buildSearchQuery(['_watching' => 'true'], 1, 777);
 
 		$ids = ($query['_ids'] ?? null);
-		$this->assertIsArray($ids);
-		$this->assertCount(1, $ids);
-		$this->assertStringContainsString('no-watched-objects', $ids[0]);
+		$this->assertIsArray(actual: $ids);
+		$this->assertCount(expectedCount: 1, haystack: $ids);
+		$this->assertStringContainsString(needle: 'no-watched-objects', haystack: $ids[0]);
 	}//end testFollowingNothingReturnsAnImpossibleIdSet()
 
 	/**
@@ -120,16 +120,16 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnonymousCallerGetsAnImpossibleIdSet(): void {
-		$query = $this->makeHandler(['uuid-a'], null)->buildSearchQuery(
+		$query = $this->makeHandler(watched: ['uuid-a'], uid: null)->buildSearchQuery(
 			['_watching' => 'true'],
 			1,
 			777
 		);
 
 		$ids = ($query['_ids'] ?? null);
-		$this->assertIsArray($ids);
-		$this->assertCount(1, $ids);
-		$this->assertStringContainsString('no-watched-objects', $ids[0]);
+		$this->assertIsArray(actual: $ids);
+		$this->assertCount(expectedCount: 1, haystack: $ids);
+		$this->assertStringContainsString(needle: 'no-watched-objects', haystack: $ids[0]);
 	}//end testAnonymousCallerGetsAnImpossibleIdSet()
 
 	/**
@@ -138,13 +138,13 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheLensIntersectsWithAnExplicitIdSet(): void {
-		$query = $this->makeHandler(['uuid-a', 'uuid-b'])->buildSearchQuery(
+		$query = $this->makeHandler(watched: ['uuid-a', 'uuid-b'])->buildSearchQuery(
 			['_watching' => 'true', '_ids' => 'uuid-b,uuid-c'],
 			1,
 			777
 		);
 
-		$this->assertSame(['uuid-b'], ($query['_ids'] ?? null));
+		$this->assertSame(expected: ['uuid-b'], actual: ($query['_ids'] ?? null));
 	}//end testTheLensIntersectsWithAnExplicitIdSet()
 
 	/**
@@ -153,14 +153,14 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheLensIsOffWhenNotAskedFor(): void {
-		$query = $this->makeHandler(['uuid-a'])->buildSearchQuery(
+		$query = $this->makeHandler(watched: ['uuid-a'])->buildSearchQuery(
 			['_watching' => 'false'],
 			1,
 			777
 		);
 
-		$this->assertArrayNotHasKey('_ids', $query);
-		$this->assertArrayNotHasKey('_watching', $query);
+		$this->assertArrayNotHasKey(key: '_ids', array: $query);
+		$this->assertArrayNotHasKey(key: '_watching', array: $query);
 	}//end testTheLensIsOffWhenNotAskedFor()
 
 	/**
@@ -169,8 +169,8 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testAQueryWithoutTheLensIsUnchanged(): void {
-		$query = $this->makeHandler(['uuid-a'])->buildSearchQuery(['_limit' => '10'], 1, 777);
+		$query = $this->makeHandler(watched: ['uuid-a'])->buildSearchQuery(['_limit' => '10'], 1, 777);
 
-		$this->assertArrayNotHasKey('_ids', $query);
+		$this->assertArrayNotHasKey(key: '_ids', array: $query);
 	}//end testAQueryWithoutTheLensIsUnchanged()
 }//end class

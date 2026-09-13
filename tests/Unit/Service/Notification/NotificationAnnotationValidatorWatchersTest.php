@@ -76,9 +76,9 @@ class NotificationAnnotationValidatorWatchersTest extends TestCase {
 	 * @return void
 	 */
 	public function testWatchersTrueIsAccepted(): void {
-		$errors = $this->validator->validate($this->schemaWith([['watchers' => true]]));
+		$errors = $this->validator->validate($this->schemaWith(recipients: [['watchers' => true]]));
 
-		$this->assertSame([], $errors);
+		$this->assertSame(expected: [], actual: $errors);
 	}//end testWatchersTrueIsAccepted()
 
 	/**
@@ -87,11 +87,11 @@ class NotificationAnnotationValidatorWatchersTest extends TestCase {
 	 * @return void
 	 */
 	public function testWatchersYesIsRejected(): void {
-		$errors = $this->validator->validate($this->schemaWith([['watchers' => 'yes']]));
+		$errors = $this->validator->validate($this->schemaWith(recipients: [['watchers' => 'yes']]));
 
 		$this->assertContains(
-			'notification-recipient-watchers-not-true',
-			array_column($errors, 'code')
+			needle: 'notification-recipient-watchers-not-true',
+			haystack: array_column($errors, 'code')
 		);
 	}//end testWatchersYesIsRejected()
 
@@ -102,11 +102,11 @@ class NotificationAnnotationValidatorWatchersTest extends TestCase {
 	 * @return void
 	 */
 	public function testWatchersFalseIsRejected(): void {
-		$errors = $this->validator->validate($this->schemaWith([['watchers' => false]]));
+		$errors = $this->validator->validate($this->schemaWith(recipients: [['watchers' => false]]));
 
 		$this->assertContains(
-			'notification-recipient-watchers-not-true',
-			array_column($errors, 'code')
+			needle: 'notification-recipient-watchers-not-true',
+			haystack: array_column($errors, 'code')
 		);
 	}//end testWatchersFalseIsRejected()
 
@@ -117,13 +117,13 @@ class NotificationAnnotationValidatorWatchersTest extends TestCase {
 	 */
 	public function testWatchersCombinesWithOtherRecipientKinds(): void {
 		$errors = $this->validator->validate(
-			$this->schemaWith([
+			$this->schemaWith(recipients: [
 				['kind' => 'users', 'users' => ['admin']],
 				['watchers' => true],
 			])
 		);
 
-		$this->assertSame([], $errors);
+		$this->assertSame(expected: [], actual: $errors);
 	}//end testWatchersCombinesWithOtherRecipientKinds()
 
 	/**
@@ -133,11 +133,11 @@ class NotificationAnnotationValidatorWatchersTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnknownKindIsStillRejected(): void {
-		$errors = $this->validator->validate($this->schemaWith([['kind' => 'followers']]));
+		$errors = $this->validator->validate($this->schemaWith(recipients: [['kind' => 'followers']]));
 
 		$this->assertContains(
-			'notification-bad-recipient-kind',
-			array_column($errors, 'code')
+			needle: 'notification-bad-recipient-kind',
+			haystack: array_column($errors, 'code')
 		);
 	}//end testAnUnknownKindIsStillRejected()
 }//end class

@@ -68,11 +68,11 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->object = $this->createMock(ObjectEntity::class);
+		$this->object = $this->createMock(originalClassName: ObjectEntity::class);
 		$this->object->method('getUuid')->willReturn('uuid-case-1');
 
-		$this->watchers = $this->createMock(WatcherService::class);
-		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->watchers = $this->createMock(originalClassName: WatcherService::class);
+		$this->permissions = $this->createMock(originalClassName: PermissionHandler::class);
 	}//end setUp()
 
 	/**
@@ -81,7 +81,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 	 * @return NotificationRecipientResolver
 	 */
 	private function makeResolver(): NotificationRecipientResolver {
-		$container = $this->createMock(IServerContainer::class);
+		$container = $this->createMock(originalClassName: IServerContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
 				if ($id === WatcherService::class) {
@@ -96,13 +96,13 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 			}
 		);
 
-		$userManager = $this->createMock(IUserManager::class);
+		$userManager = $this->createMock(originalClassName: IUserManager::class);
 		$userManager->method('userExists')->willReturn(true);
 
 		return new NotificationRecipientResolver(
 			$userManager,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(LoggerInterface::class),
+			$this->createMock(originalClassName: IGroupManager::class),
+			$this->createMock(originalClassName: LoggerInterface::class),
 			$container
 		);
 	}//end makeResolver()
@@ -118,7 +118,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 
 		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
 
-		$this->assertEqualsCanonicalizing(['teamlead', 'clerk'], $uids);
+		$this->assertEqualsCanonicalizing(expected: ['teamlead', 'clerk'], actual: $uids);
 	}//end testWatchersAreResolvedToUids()
 
 	/**
@@ -139,7 +139,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 			$this->object
 		);
 
-		$this->assertSame(['teamlead'], $uids);
+		$this->assertSame(expected: ['teamlead'], actual: $uids);
 	}//end testAWatcherWhoIsAlsoTheAssigneeIsToldOnce()
 
 	/**
@@ -157,7 +157,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 
 		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
 
-		$this->assertSame(['teamlead'], $uids);
+		$this->assertSame(expected: ['teamlead'], actual: $uids);
 	}//end testAWatcherWhoLostReadIsSkippedAndDropped()
 
 	/**
@@ -174,7 +174,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 
 		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
 
-		$this->assertEqualsCanonicalizing(['teamlead', 'clerk'], $uids);
+		$this->assertEqualsCanonicalizing(expected: ['teamlead', 'clerk'], actual: $uids);
 	}//end testAnOpenReadRuleDropsNobody()
 
 	/**
@@ -187,7 +187,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 
 		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
 
-		$this->assertSame([], $uids);
+		$this->assertSame(expected: [], actual: $uids);
 	}//end testAnUnwatchedObjectAddressesNobody()
 
 	/**
@@ -201,7 +201,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 
 		$uids = $this->makeResolver()->resolve([['watchers' => true]], []);
 
-		$this->assertSame([], $uids);
+		$this->assertSame(expected: [], actual: $uids);
 	}//end testNoObjectMeansNoRecipients()
 
 	/**
@@ -214,6 +214,6 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 
 		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
 
-		$this->assertSame([], $uids);
+		$this->assertSame(expected: [], actual: $uids);
 	}//end testAFailingLookupFailsClosed()
 }//end class

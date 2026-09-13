@@ -66,8 +66,8 @@ class WatcherServiceTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->mapper = $this->createMock(WatcherMapper::class);
-		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->mapper = $this->createMock(originalClassName: WatcherMapper::class);
+		$this->permissions = $this->createMock(originalClassName: PermissionHandler::class);
 	}//end setUp()
 
 	/**
@@ -78,7 +78,7 @@ class WatcherServiceTest extends TestCase {
 	 * @return ObjectEntity
 	 */
 	private function makeObject(?string $owner = 'owner'): ObjectEntity {
-		$object = $this->createMock(ObjectEntity::class);
+		$object = $this->createMock(originalClassName: ObjectEntity::class);
 		$object->method('getUuid')->willReturn('uuid-case-1');
 		$object->method('getSchema')->willReturn('777');
 		$object->method('getOwner')->willReturn($owner);
@@ -95,20 +95,20 @@ class WatcherServiceTest extends TestCase {
 	 * @return WatcherService
 	 */
 	private function makeService(?string $uid = 'alice', array $groups = []): WatcherService {
-		$session = $this->createMock(IUserSession::class);
+		$session = $this->createMock(originalClassName: IUserSession::class);
 		if ($uid === null) {
 			$session->method('getUser')->willReturn(null);
 		} else {
-			$user = $this->createMock(IUser::class);
+			$user = $this->createMock(originalClassName: IUser::class);
 			$user->method('getUID')->willReturn($uid);
 			$session->method('getUser')->willReturn($user);
 		}
 
-		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager = $this->createMock(originalClassName: IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
-		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->method('find')->willReturn($this->createMock(Schema::class));
+		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
+		$schemaMapper->method('find')->willReturn($this->createMock(originalClassName: Schema::class));
 
 		return new WatcherService(
 			$this->mapper,
@@ -117,7 +117,7 @@ class WatcherServiceTest extends TestCase {
 			$schemaMapper,
 			$this->permissions,
 			new ObjectScopeResolver(),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(originalClassName: LoggerInterface::class)
 		);
 	}//end makeService()
 
@@ -143,8 +143,8 @@ class WatcherServiceTest extends TestCase {
 	public function testAnonymousCallerCannotWatch(): void {
 		$this->mapper->expects($this->never())->method('subscribe');
 
-		$this->expectException(NotAuthorizedException::class);
-		$this->makeService(null)->watch($this->makeObject());
+		$this->expectException(exception: NotAuthorizedException::class);
+		$this->makeService(uid: null)->watch($this->makeObject());
 	}//end testAnonymousCallerCannotWatch()
 
 	/**
@@ -158,7 +158,7 @@ class WatcherServiceTest extends TestCase {
 			->with('alice', 'uuid-case-1')
 			->willReturn(true);
 
-		$this->assertTrue($this->makeService()->unwatch($this->makeObject()));
+		$this->assertTrue(condition: $this->makeService()->unwatch($this->makeObject()));
 	}//end testUnwatchingRemovesTheCallersOwnRow()
 
 	/**
@@ -170,7 +170,7 @@ class WatcherServiceTest extends TestCase {
 		$this->permissions->method('hasPermission')->willReturn(false);
 		$this->mapper->expects($this->never())->method('findByObject');
 
-		$this->expectException(NotAuthorizedException::class);
+		$this->expectException(exception: NotAuthorizedException::class);
 		$this->makeService()->listWatchers($this->makeObject());
 	}//end testListingRequiresUpdate()
 
@@ -183,7 +183,7 @@ class WatcherServiceTest extends TestCase {
 		$this->permissions->method('hasPermission')->willReturn(true);
 		$this->mapper->method('findByObject')->willReturn([new Watcher(), new Watcher()]);
 
-		$this->assertCount(2, $this->makeService()->listWatchers($this->makeObject()));
+		$this->assertCount(expectedCount: 2, haystack: $this->makeService()->listWatchers($this->makeObject()));
 	}//end testAnEditorCanListTheWatchers()
 
 	/**
@@ -195,8 +195,8 @@ class WatcherServiceTest extends TestCase {
 		$this->permissions->method('hasPermission')->willReturn(true);
 		$this->mapper->expects($this->never())->method('subscribe');
 
-		$this->expectException(NotAuthorizedException::class);
-		$this->makeService('editor')->addWatcher($this->makeObject(), 'clerk');
+		$this->expectException(exception: NotAuthorizedException::class);
+		$this->makeService(uid: 'editor')->addWatcher($this->makeObject(), 'clerk');
 	}//end testAddingAnotherUserRequiresManage()
 
 	/**
@@ -210,7 +210,7 @@ class WatcherServiceTest extends TestCase {
 			->with('clerk', 'uuid-case-1')
 			->willReturn(new Watcher());
 
-		$this->makeService('owner')->addWatcher($this->makeObject(), 'clerk');
+		$this->makeService(uid: 'owner')->addWatcher($this->makeObject(), 'clerk');
 	}//end testTheOwnerCanAddAnotherUser()
 
 	/**
@@ -221,7 +221,7 @@ class WatcherServiceTest extends TestCase {
 	public function testAnAdministratorCanAddAnotherUser(): void {
 		$this->mapper->expects($this->once())->method('subscribe')->willReturn(new Watcher());
 
-		$this->makeService('root', ['admin'])->addWatcher($this->makeObject(), 'clerk');
+		$this->makeService(uid: 'root', groups: ['admin'])->addWatcher($this->makeObject(), 'clerk');
 	}//end testAnAdministratorCanAddAnotherUser()
 
 	/**
@@ -235,7 +235,7 @@ class WatcherServiceTest extends TestCase {
 			->with('clerk', 'uuid-case-1')
 			->willReturn(true);
 
-		$this->assertTrue($this->makeService('clerk')->removeWatcher($this->makeObject(), 'clerk'));
+		$this->assertTrue(condition: $this->makeService(uid: 'clerk')->removeWatcher($this->makeObject(), 'clerk'));
 	}//end testAWatcherCanAlwaysRemoveThemselves()
 
 	/**
@@ -247,8 +247,8 @@ class WatcherServiceTest extends TestCase {
 		$this->permissions->method('hasPermission')->willReturn(true);
 		$this->mapper->expects($this->never())->method('unsubscribe');
 
-		$this->expectException(NotAuthorizedException::class);
-		$this->makeService('editor')->removeWatcher($this->makeObject(), 'clerk');
+		$this->expectException(exception: NotAuthorizedException::class);
+		$this->makeService(uid: 'editor')->removeWatcher($this->makeObject(), 'clerk');
 	}//end testRemovingAnotherUserRequiresManage()
 
 	/**
@@ -267,9 +267,9 @@ class WatcherServiceTest extends TestCase {
 
 		$service = $this->makeService();
 
-		$this->assertTrue($service->isWatchedByCaller('uuid-case-1'));
-		$this->assertTrue($service->isWatchedByCaller('uuid-case-2'));
-		$this->assertFalse($service->isWatchedByCaller('uuid-case-3'));
+		$this->assertTrue(condition: $service->isWatchedByCaller('uuid-case-1'));
+		$this->assertTrue(condition: $service->isWatchedByCaller('uuid-case-2'));
+		$this->assertFalse(condition: $service->isWatchedByCaller('uuid-case-3'));
 	}//end testTheFollowMarkerIsLoadedOncePerRequest()
 
 	/**
@@ -280,7 +280,7 @@ class WatcherServiceTest extends TestCase {
 	public function testAnAnonymousReaderFollowsNothing(): void {
 		$this->mapper->expects($this->never())->method('uuidsForUser');
 
-		$this->assertFalse($this->makeService(null)->isWatchedByCaller('uuid-case-1'));
+		$this->assertFalse(condition: $this->makeService(uid: null)->isWatchedByCaller('uuid-case-1'));
 	}//end testAnAnonymousReaderFollowsNothing()
 
 	/**
@@ -294,7 +294,7 @@ class WatcherServiceTest extends TestCase {
 			->with('uuid-case-1')
 			->willReturn(4);
 
-		$this->assertSame(4, $this->makeService()->cleanupForObject('uuid-case-1'));
+		$this->assertSame(expected: 4, actual: $this->makeService()->cleanupForObject('uuid-case-1'));
 	}//end testDeletingAnObjectRemovesItsWatchers()
 
 	/**
@@ -310,7 +310,7 @@ class WatcherServiceTest extends TestCase {
 
 		$service = $this->makeService();
 
-		$this->assertSame(3, $service->watcherCount('uuid-case-1'));
-		$this->assertSame(0, $service->watcherCount('uuid-case-2'));
+		$this->assertSame(expected: 3, actual: $service->watcherCount('uuid-case-1'));
+		$this->assertSame(expected: 0, actual: $service->watcherCount('uuid-case-2'));
 	}//end testTheFollowerCountIsLoadedOncePerRequest()
 }//end class
