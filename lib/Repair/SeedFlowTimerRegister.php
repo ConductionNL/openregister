@@ -53,9 +53,16 @@ class SeedFlowTimerRegister implements IRepairStep {
 	/**
 	 * Descriptor version passed to the importer's version_compare gate.
 	 *
+	 * 🔴 BUMP THIS WHENEVER THE DESCRIPTOR CHANGES. The importer compares this
+	 * against what the instance already has and does nothing when they match,
+	 * so a descriptor edited without a bump lands on fresh installs only and
+	 * is invisible on every instance that already ran the step. 1.1.0 carries
+	 * the authorization block (read authenticated, write administrator) onto
+	 * the register and both schemas.
+	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.0.0';
+	private const REGISTER_VERSION = '1.1.0';
 
 	/**
 	 * Constructor.

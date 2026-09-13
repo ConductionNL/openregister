@@ -2,9 +2,9 @@
 
 ## 1. Validation and authorization
 
-- [ ] 1.1 Schema hook on `working-calendar` create and update calling `WorkingCalendar::fromArray()`, 422 on throw.
-- [ ] 1.2 Delete hook refusing a calendar named by an armed or suspended timer (409, count, ten uuids).
-- [ ] 1.3 Authorization block on the `flow-timers` register: read authenticated, write admin. Seed repair step re-run stays idempotent.
+- [x] 1.1 Schema hook on `working-calendar` create and update calling `WorkingCalendar::fromArray()`, 422 on throw.
+- [x] 1.2 Delete hook refusing a calendar named by an armed or suspended timer (409, count, ten uuids).
+- [x] 1.3 Authorization block on the `flow-timers` register: read authenticated, write admin. Seed repair step re-run stays idempotent.
 
 ## 2. Admin surface
 
