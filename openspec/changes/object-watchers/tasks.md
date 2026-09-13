@@ -2,8 +2,8 @@
 
 ## 1. Storage and service
 
-- [ ] 1.1 Migration: `openregister_watchers` (user, object uuid, register, schema, created) with a unique index on (user, object).
-- [ ] 1.2 `WatcherService`: watch, unwatch, list, add and remove another user (`manage`), cleanup on delete.
+- [x] 1.1 Migration: `openregister_watchers` (user, object uuid, register, schema, created) with a unique index on (user, object).
+- [x] 1.2 `WatcherService`: watch, unwatch, list, add and remove another user (`manage`), cleanup on delete.
 
 ## 2. API and markers
 
