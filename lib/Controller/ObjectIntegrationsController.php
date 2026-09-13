@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PaginatedResult;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -71,6 +72,7 @@ class ObjectIntegrationsController extends Controller {
 	 * @param LoggerInterface $logger Logger.
 	 * @param ObjectService $objectService OpenRegister object service (RBAC boundary).
 	 * @param SchemaMapper $schemaMapper Schema loader (external-source detection).
+	 * @param TimelineVisibilityService $visibility Internal/public filter for the timeline leaves.
 	 *
 	 * @return void
 	 */
@@ -81,9 +83,17 @@ class ObjectIntegrationsController extends Controller {
 		private LoggerInterface $logger,
 		private ObjectService $objectService,
 		private SchemaMapper $schemaMapper,
+		private TimelineVisibilityService $visibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
+
+	/**
+	 * The object the access guard last resolved, for the caller that needs it.
+	 *
+	 * @var \OCA\OpenRegister\Db\ObjectEntity|null
+	 */
+	private ?\OCA\OpenRegister\Db\ObjectEntity $guardedObject = null;
 
 	/**
 	 * Whether the currently-resolved schema is backed by an external object
@@ -156,6 +166,8 @@ class ObjectIntegrationsController extends Controller {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
+		$this->guardedObject = $object;
+
 		return null;
 	}//end guardObjectAccess()
 
@@ -203,10 +215,44 @@ class ObjectIntegrationsController extends Controller {
 		return $this->dispatch(
 			integrationId: $integrationId,
 			callback: fn ($provider) => PaginatedResult::fromMixed(
-				$provider->list($register, $schema, $id, $this->collectFilters())
+				$this->applyTimelineVisibility(
+					integrationId: $integrationId,
+					rows: $provider->list($register, $schema, $id, $this->collectFilters())
+				)
 			)->toArray()
 		);
 	}//end index()
+
+	/**
+	 * Keep a timeline leaf's rows on the side of the counter the caller belongs on.
+	 *
+	 * Only the leaves that render timeline entries are filtered, named on
+	 * TimelineVisibilityService: every other leaf answers exactly as before. A
+	 * caller without `update` on the object gets the public rows whatever it
+	 * asked for, so dropping the query parameter is not a way around the flag.
+	 *
+	 * @param string $integrationId The leaf being listed.
+	 * @param array<int,mixed> $rows The rows the provider returned.
+	 *
+	 * @return array<int,mixed> The rows the caller may see.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 */
+	private function applyTimelineVisibility(string $integrationId, array $rows): array {
+		if ($this->visibility->isTimelineIntegration(integrationId: $integrationId) === false) {
+			return $rows;
+		}
+
+		$requested = $this->request->getParam('visibility');
+		if (is_string($requested) === false) {
+			$requested = null;
+		}
+
+		return $this->visibility->filterRows(
+			rows: $rows,
+			filter: $this->visibility->effectiveFilter(object: $this->guardedObject, requested: $requested)
+		);
+	}//end applyTimelineVisibility()
 
 	/**
 	 * GET /api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}

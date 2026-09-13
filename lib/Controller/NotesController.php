@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -64,6 +65,7 @@ class NotesController extends Controller {
 	 * @param IRequest $request HTTP request object
 	 * @param NoteService $noteService Note service for comment operations
 	 * @param ObjectService $objectService Object service for object validation
+	 * @param TimelineVisibilityService $visibility Visibility guard, filter and audit
 	 *
 	 * @return void
 	 */
@@ -72,6 +74,7 @@ class NotesController extends Controller {
 		IRequest $request,
 		NoteService $noteService,
 		ObjectService $objectService,
+		private readonly TimelineVisibilityService $visibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -88,10 +91,14 @@ class NotesController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with notes list
 	 *
+	 * A caller without `update` on the object is served the public view even
+	 * when it asks for none: the flag is what makes a single timeline safe to
+	 * show a citizen, and a filter a caller can drop is no filter at all.
+	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
 	public function index(
 		string $register,
@@ -111,9 +118,29 @@ class NotesController extends Controller {
 			$limit = (int)($params['limit'] ?? 50);
 			$offset = (int)($params['offset'] ?? 0);
 
-			$notes = $this->noteService->getNotesForObject($object->getUuid(), $limit, $offset);
+			$requested = null;
+			if (isset($params['visibility']) === true && is_string($params['visibility']) === true) {
+				$requested = $params['visibility'];
+			}
 
-			return new JSONResponse(data: ['results' => $notes, 'total' => count($notes)]);
+			$mayManage = $this->visibility->mayManage(object: $object);
+			$filter = $this->visibility->effectiveFilter(object: $object, requested: $requested);
+
+			$notes = $this->noteService->getNotesForObject(
+				objectUuid: $object->getUuid(),
+				limit: $limit,
+				offset: $offset,
+				visibility: $filter
+			);
+
+			return new JSONResponse(
+				data: [
+					'results' => $notes,
+					'total' => count($notes),
+					'visibility' => $filter,
+					'canSetVisibility' => $mayManage,
+				]
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (Exception $e) {
@@ -133,7 +160,7 @@ class NotesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
 	public function create(
 		string $register,
@@ -159,7 +186,21 @@ class NotesController extends Controller {
 				);
 			}
 
-			$note = $this->noteService->createNote($object->getUuid(), $data['message']);
+			$visibility = null;
+			if (array_key_exists('visibility', $data) === true) {
+				$refusal = $this->refuseVisibility(object: $object, requested: $data['visibility']);
+				if ($refusal !== null) {
+					return $refusal;
+				}
+
+				$visibility = (string)$data['visibility'];
+			}
+
+			$note = $this->noteService->createNote(
+				objectUuid: $object->getUuid(),
+				message: $data['message'],
+				visibility: $visibility
+			);
 
 			return new JSONResponse(data: $note, statusCode: 201);
 		} catch (DoesNotExistException $e) {
@@ -201,14 +242,45 @@ class NotesController extends Controller {
 
 			$data = $this->request->getParams();
 
-			if (empty($data['message']) === true) {
+			$wantsVisibility = array_key_exists('visibility', $data);
+			if (empty($data['message']) === true && $wantsVisibility === false) {
 				return new JSONResponse(
 					data: ['error' => 'Note message is required'],
 					statusCode: 400
 				);
 			}
 
-			$note = $this->noteService->updateNote((int)$noteId, $data['message']);
+			$visibility = null;
+			$previous = null;
+			if ($wantsVisibility === true) {
+				$refusal = $this->refuseVisibility(object: $object, requested: $data['visibility']);
+				if ($refusal !== null) {
+					return $refusal;
+				}
+
+				$visibility = (string)$data['visibility'];
+				$previous = (string)($this->noteService->getNote(noteId: (int)$noteId)['visibility'] ?? '');
+			}
+
+			$message = null;
+			if (empty($data['message']) === false) {
+				$message = (string)$data['message'];
+			}
+
+			$note = $this->noteService->updateNote(
+				noteId: (int)$noteId,
+				message: $message,
+				visibility: $visibility
+			);
+
+			if ($previous !== null) {
+				$this->visibility->auditVisibilityChange(
+					object: $object,
+					noteId: (int)$noteId,
+					from: $previous,
+					to: (string)($note['visibility'] ?? '')
+				);
+			}
 
 			return new JSONResponse(data: $note);
 		} catch (DoesNotExistException $e) {
@@ -257,6 +329,44 @@ class NotesController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
 	}//end destroy()
+
+	/**
+	 * Refuse a visibility write the caller may not make, or one it spelled wrong.
+	 *
+	 * Returns null when the write may proceed, so a call site reads as one
+	 * guard clause. The permission asked for is `update` on the object: moving
+	 * a note across the counter is a write on the object's audience, not on
+	 * the note's text, so the author's own right is not enough.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $object The object the note hangs on
+	 * @param mixed $requested The raw `visibility` value from the payload
+	 *
+	 * @return JSONResponse|null A 400 or 403 response, or null when the write is allowed
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
+	 */
+	private function refuseVisibility(\OCA\OpenRegister\Db\ObjectEntity $object, mixed $requested): ?JSONResponse {
+		$value = null;
+		if (is_string($requested) === true) {
+			$value = $requested;
+		}
+
+		if ($this->visibility->isKnownValue(value: $value) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Visibility must be either internal or public'],
+				statusCode: 400
+			);
+		}
+
+		if ($this->visibility->mayManage(object: $object) === false) {
+			return new JSONResponse(
+				data: ['error' => 'You do not have permission to set the visibility of this note'],
+				statusCode: 403
+			);
+		}
+
+		return null;
+	}//end refuseVisibility()
 
 	/**
 	 * Validate that the object exists and return it.

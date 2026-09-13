@@ -107,10 +107,12 @@ class ActivityFilterService {
 	 * @param int $limit Page size (1..MAX_LIMIT, default DEFAULT_LIMIT).
 	 * @param int|null $cursor Optional cursor — only rows with `timestamp` strictly
 	 *                         less than this value are returned (DESC paging).
+	 * @param string|null $visibility Optional `internal` / `public` filter. Every row of this
+	 *                                source is internal, so a public-only read returns nothing.
 	 *
 	 * @return array{results: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-1
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function getActivityEntries(
 		string $objectUuid,
@@ -119,8 +121,19 @@ class ActivityFilterService {
 		?int $after = null,
 		int $limit = self::DEFAULT_LIMIT,
 		?int $cursor = null,
+		?string $visibility = null,
 	): array {
 		if ($this->isActivityAvailable() === false) {
+			return [
+				'results' => [],
+				'total' => 0,
+				'nextCursor' => null,
+			];
+		}
+
+		if (is_string($visibility) === true
+			&& strtolower(trim($visibility)) === TimelineVisibilityService::PUBLIC_ENTRY
+		) {
 			return [
 				'results' => [],
 				'total' => 0,
@@ -382,6 +395,9 @@ class ActivityFilterService {
 			'actor_id' => (string)($row['affecteduser'] ?? ''),
 			'object_id' => (string)($row['object_id'] ?? ''),
 			'url' => '/index.php/apps/activity/' . $activityId,
+			// An NC Activity row records what a handler did, so it is always
+			// internal; only a note ever carries the public flag.
+			'visibility' => TimelineVisibilityService::INTERNAL,
 			'data' => $row,
 		];
 	}//end normaliseRow()
