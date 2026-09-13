@@ -20,7 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -37,6 +39,33 @@ class ContactLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_contact_links', entityClass: ContactLink::class);
 	}//end __construct()
+
+	/**
+	 * One link by its row id.
+	 *
+	 * QBMapper has no `find()`, and ContactService::unlinkContact(),
+	 * updateRole() and the controller's legacy id path all call one: every
+	 * unlink of a contact answered 500 with "Call to undefined method
+	 * ContactLinkMapper::find()". The service's own tests did not catch it
+	 * because the mapper double declared the method with `addMethods(['find'])`
+	 * — a double that adds a method the real class lacks can only pass.
+	 *
+	 * @param int $id The row id.
+	 *
+	 * @return ContactLink The link.
+	 *
+	 * @throws DoesNotExistException When no link has that id.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
+	 */
+	public function find(int $id): ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+		return $this->findEntity(query: $qb);
+	}//end find()
 
 	/**
 	 * Find contact links by object UUID.
