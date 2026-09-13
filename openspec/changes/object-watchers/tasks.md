@@ -16,5 +16,5 @@
 
 ## 4. Tests
 
-- [ ] 4.1 `tests/e2e/ci/object-watchers.spec.ts`: watch an object, change it, see the notification, unwatch.
-- [ ] 4.2 Unit tests for the service, the lens, the resolver and the validator; Newman for the routes.
+- [x] 4.1 `tests/e2e/ci/object-watchers.spec.ts`: watch an object, change it, see the notification, unwatch.
+- [x] 4.2 Unit tests for the service, the lens, the resolver and the validator; Newman for the routes.
