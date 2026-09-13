@@ -123,6 +123,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		IntegrationRegistry $registry,
 		?IRequest $request = null,
 		?\OCA\OpenRegister\Service\ObjectService $objectService = null,
+		?\OCA\OpenRegister\Service\TimelineVisibilityService $visibility = null,
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
@@ -131,9 +132,20 @@ class ObjectIntegrationsControllerTest extends TestCase {
 			registry: $registry,
 			logger: new NullLogger(),
 			objectService: $objectService ?? $this->accessibleObjectService(),
-			schemaMapper: $this->createMock(SchemaMapper::class)
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			visibility: $visibility ?? $this->passThroughVisibility()
 		);
 	}//end buildController()
+
+	/**
+	 * A visibility service that lets every row through, for the dispatch tests
+	 * that are not about the timeline leaves.
+	 */
+	private function passThroughVisibility(): \OCA\OpenRegister\Service\TimelineVisibilityService {
+		$visibility = $this->createMock(\OCA\OpenRegister\Service\TimelineVisibilityService::class);
+		$visibility->method('isTimelineIntegration')->willReturn(false);
+		return $visibility;
+	}//end passThroughVisibility()
 
 	/**
 	 * An ObjectService mock whose getObject() resolves a non-null object, so
@@ -395,4 +407,83 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $body['details']['cause']);
 	}//end testProviderUnavailableReturns503WithCause()
 
+
+	/**
+	 * The notes leaf, read by someone who cannot update the object, answers
+	 * with the public rows only — and the caller never asked for that filter.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 */
+	public function testATimelineLeafIsFilteredForACallerWithoutUpdate(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(
+			new _ControllerStubProvider(
+				id: 'notes',
+				listEnvelope: [
+					['id' => '1', 'visibility' => 'internal'],
+					['id' => '2', 'visibility' => 'public'],
+					['id' => '3'],
+				]
+			)
+		);
+
+		$visibility = new \OCA\OpenRegister\Service\TimelineVisibilityService(
+			$this->createMock(SchemaMapper::class),
+			$this->permissionHandlerAnswering(false),
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+			$this->createMock(\OCP\IUserSession::class),
+			new NullLogger()
+		);
+
+		$controller = $this->buildController(
+			$registry,
+			$this->buildRequest(['register' => 'r', 'schema' => 's', 'id' => 'o', 'integrationId' => 'notes']),
+			null,
+			$visibility
+		);
+
+		$body = $controller->index('r', 's', 'o', 'notes')->getData();
+
+		$this->assertSame([['id' => '2', 'visibility' => 'public']], $body['results']);
+	}//end testATimelineLeafIsFilteredForACallerWithoutUpdate()
+
+	/**
+	 * A leaf that is not a timeline answers exactly as before: a file list is
+	 * not a timeline entry, and treating one as internal would empty a
+	 * reader's screen for no gain.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 */
+	public function testANonTimelineLeafIsUntouched(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('files'));
+
+		$visibility = new \OCA\OpenRegister\Service\TimelineVisibilityService(
+			$this->createMock(SchemaMapper::class),
+			$this->permissionHandlerAnswering(false),
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+			$this->createMock(\OCP\IUserSession::class),
+			new NullLogger()
+		);
+
+		$controller = $this->buildController(
+			$registry,
+			$this->buildRequest(['register' => 'r', 'schema' => 's', 'id' => 'o', 'integrationId' => 'files']),
+			null,
+			$visibility
+		);
+
+		$body = $controller->index('r', 's', 'o', 'files')->getData();
+
+		$this->assertSame([['id' => 'a'], ['id' => 'b']], $body['results']);
+	}//end testANonTimelineLeafIsUntouched()
+
+	/**
+	 * A PermissionHandler that answers one verdict for every question.
+	 */
+	private function permissionHandlerAnswering(bool $verdict): \OCA\OpenRegister\Service\Object\PermissionHandler {
+		$handler = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$handler->method('hasPermission')->willReturn($verdict);
+		return $handler;
+	}//end permissionHandlerAnswering()
 }//end class

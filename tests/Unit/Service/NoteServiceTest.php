@@ -3,7 +3,11 @@
 namespace Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentsNotFoundException;
@@ -19,6 +23,7 @@ class NoteServiceTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 	private IUserManager&MockObject $userManager;
 	private LoggerInterface&MockObject $logger;
+	private TimelineVisibilityService $visibility;
 	private NoteService $service;
 
 	protected function setUp(): void {
@@ -27,11 +32,20 @@ class NoteServiceTest extends TestCase {
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
+		$this->visibility = new TimelineVisibilityService(
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(PermissionHandler::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->userSession,
+			$this->logger
+		);
+
 		$this->service = new NoteService(
 			$this->commentsManager,
 			$this->userSession,
 			$this->userManager,
-			$this->logger
+			$this->logger,
+			$this->visibility
 		);
 	}
 
@@ -205,5 +219,146 @@ class NoteServiceTest extends TestCase {
 		$this->commentsManager->expects($this->once())->method('save');
 
 		$this->service->createNote('my-uuid', 'msg');
+	}
+
+	/**
+	 * A comment mock whose metadata array is actually stored, so a write can be
+	 * read back rather than merely observed being attempted.
+	 *
+	 * @param string $id The comment id.
+	 * @param string $message The comment message.
+	 * @param string $actorId The author.
+	 * @param array|null $metaData The metadata the comment starts with.
+	 *
+	 * @return IComment&MockObject
+	 */
+	private function createStatefulComment(string $id, string $message, string $actorId, ?array $metaData = null): IComment&MockObject {
+		$comment = $this->createComment($id, $message, $actorId);
+		$state = new \ArrayObject(['meta' => $metaData]);
+		$comment->method('getMetaData')->willReturnCallback(static fn () => $state['meta']);
+		$comment->method('setMetaData')->willReturnCallback(
+			static function (?array $written) use ($state, $comment) {
+				$state['meta'] = $written;
+				return $comment;
+			}
+		);
+		return $comment;
+	}
+
+	public function testNoteWithoutTheFlagReadsInternal(): void {
+		$comment = $this->createStatefulComment('1', 'Hello', 'admin', null);
+		$this->commentsManager->method('getForObject')->willReturn([$comment]);
+		$this->userManager->method('get')->willReturn($this->createUser('admin'));
+
+		$result = $this->service->getNotesForObject('obj-uuid');
+
+		$this->assertSame(TimelineVisibilityService::INTERNAL, $result[0]['visibility']);
+	}
+
+	public function testStoredFlagIsReadBack(): void {
+		$comment = $this->createStatefulComment('1', 'Hello', 'admin', ['visibility' => 'public']);
+		$this->commentsManager->method('getForObject')->willReturn([$comment]);
+		$this->userManager->method('get')->willReturn($this->createUser('admin'));
+
+		$result = $this->service->getNotesForObject('obj-uuid');
+
+		$this->assertSame(TimelineVisibilityService::PUBLIC_ENTRY, $result[0]['visibility']);
+	}
+
+	public function testAValueOutsideTheVocabularyReadsInternal(): void {
+		$comment = $this->createStatefulComment('1', 'Hello', 'admin', ['visibility' => 'everyone']);
+		$this->commentsManager->method('getForObject')->willReturn([$comment]);
+		$this->userManager->method('get')->willReturn($this->createUser('admin'));
+
+		$result = $this->service->getNotesForObject('obj-uuid');
+
+		$this->assertSame(TimelineVisibilityService::INTERNAL, $result[0]['visibility']);
+	}
+
+	public function testCreateNoteDefaultsToInternal(): void {
+		$user = $this->createUser('admin');
+		$comment = $this->createStatefulComment('1', 'msg', 'admin');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->userManager->method('get')->willReturn($user);
+		$this->commentsManager->method('create')->willReturn($comment);
+
+		$note = $this->service->createNote('my-uuid', 'msg');
+
+		$this->assertSame(TimelineVisibilityService::INTERNAL, $note['visibility']);
+		$this->assertSame(['visibility' => 'internal'], $comment->getMetaData());
+	}
+
+	public function testCreateNoteStoresThePublicFlag(): void {
+		$user = $this->createUser('admin');
+		$comment = $this->createStatefulComment('1', 'msg', 'admin');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->userManager->method('get')->willReturn($user);
+		$this->commentsManager->method('create')->willReturn($comment);
+
+		$note = $this->service->createNote('my-uuid', 'msg', 'public');
+
+		$this->assertSame(TimelineVisibilityService::PUBLIC_ENTRY, $note['visibility']);
+	}
+
+	public function testWritingTheFlagKeepsOtherMetadata(): void {
+		$user = $this->createUser('admin');
+		$comment = $this->createStatefulComment('1', 'msg', 'admin', ['source' => 'berichtenbox']);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->userManager->method('get')->willReturn($user);
+		$this->commentsManager->method('get')->willReturn($comment);
+
+		$this->service->updateNote(1, null, 'public');
+
+		$this->assertSame(
+			['source' => 'berichtenbox', 'visibility' => 'public'],
+			$comment->getMetaData()
+		);
+	}
+
+	public function testGetNotesForObjectKeepsOnlyThePublicOnes(): void {
+		$internal = $this->createStatefulComment('1', 'Internal', 'admin');
+		$public = $this->createStatefulComment('2', 'Public', 'admin', ['visibility' => 'public']);
+		$this->commentsManager->method('getForObject')->willReturn([$internal, $public]);
+		$this->userManager->method('get')->willReturn($this->createUser('admin'));
+
+		$result = $this->service->getNotesForObject('obj-uuid', 50, 0, 'public');
+
+		$this->assertCount(1, $result);
+		$this->assertSame('Public', $result[0]['message']);
+	}
+
+	public function testMovingTheFlagDoesNotAskWhoWroteTheNote(): void {
+		$user = $this->createUser('supervisor');
+		$comment = $this->createStatefulComment('1', 'msg', 'handler');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->userManager->method('get')->willReturn($user);
+		$this->commentsManager->method('get')->willReturn($comment);
+
+		$note = $this->service->updateNote(1, null, 'public');
+
+		$this->assertSame(TimelineVisibilityService::PUBLIC_ENTRY, $note['visibility']);
+	}
+
+	public function testEditingSomeoneElsesMessageIsStillRefused(): void {
+		$user = $this->createUser('supervisor');
+		$comment = $this->createStatefulComment('1', 'msg', 'handler');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->commentsManager->method('get')->willReturn($comment);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('You can only edit your own notes');
+
+		$this->service->updateNote(1, 'rewritten', 'public');
+	}
+
+	public function testGetNoteReturnsTheFlagItCarries(): void {
+		$comment = $this->createStatefulComment('7', 'msg', 'admin', ['visibility' => 'public']);
+		$this->commentsManager->method('get')->willReturn($comment);
+		$this->userManager->method('get')->willReturn($this->createUser('admin'));
+
+		$note = $this->service->getNote(7);
+
+		$this->assertSame(7, $note['id']);
+		$this->assertSame(TimelineVisibilityService::PUBLIC_ENTRY, $note['visibility']);
 	}
 }
