@@ -6,6 +6,13 @@ The token does not carry rights of its own. It carries a filter over the
 user's rights. So a token can only narrow, an issuer cannot mint what they
 lack, and a revoked user takes every token with them without a sweep.
 
+## D-1b: the OAuth2 scope rule is a special case
+
+The existing OAuth2 requirement evaluates a token as a subset of the user's
+groups. Under this change that is a grant whose `groups` list is the
+scope set; the evaluator treats it as one more layer, so the two rules
+cannot disagree.
+
 ## D-2: the same evaluator, one more input
 
 `PermissionHandler` already layers schema RBAC, row-level and field-level

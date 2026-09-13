@@ -31,6 +31,14 @@ whatever that token carries." The best competitor, verbatim from the
 The register's `why`: "an API principal narrower than the person is the
 API authorization layer; a Nextcloud app password is full rights".
 
+There is prior art in `auth-system` itself: the requirement "OAuth2 token
+scopes MUST translate to RBAC verdicts" narrows an OAuth2 token to a subset
+of the user's groups, so a token with `scope: "leesrechten"` is evaluated as
+if the user were only in that group. It covers one authentication type and
+one axis (groups). This change keeps that intersection rule and generalises
+it: any token or Consumer, and a grant by register, schema, verb and row
+condition rather than by group.
+
 ADR-091 draws the boundary this change respects: the protocol that
 validates a credential is OpenConnector's. What this change adds is not a
 credential scheme but a grant that any resolved principal carries, the way
