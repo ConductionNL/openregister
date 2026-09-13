@@ -123,7 +123,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 		try {
 			if ($object->getSchema() !== null) {
 				$schema = $this->schemaMapper->find($object->getSchema());
-				// getTitle() only. Schema has no `name` property, so the
+				// Use getTitle() only. Schema has no `name` property, so the
 				// getName() fallback that used to sit here threw "name is not
 				// a valid attribute" out of Entity::__call for any schema
 				// without a title. The test doubles declared getName() with
@@ -149,7 +149,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 		try {
 			if ($object->getRegister() !== null) {
 				$register = $this->registerMapper->find($object->getRegister());
-				// getTitle() only, for the same reason as the schema above:
+				// Use getTitle() only, for the same reason as the schema above:
 				// Register declares no `name` property either.
 				$textParts[] = 'Register: ' . ($register->getTitle() ?? 'Unknown');
 				if ($register->getDescription() !== null && $register->getDescription() !== '') {

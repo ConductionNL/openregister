@@ -53,7 +53,7 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function oauthToken(Source $source): string {
-		// getAuthConfig(), not getConfiguration(): Source has no
+		// Read getAuthConfig(), not getConfiguration(): Source has no
 		// `configuration` property, column or serialized field — only a
 		// leftover @method docblock — so the old call threw "configuration is
 		// not a valid attribute" out of Entity::__call and every templated
@@ -77,7 +77,7 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function decosToken(Source $source): string {
-		// getAuthConfig(), not getConfiguration(): Source has no
+		// Read getAuthConfig(), not getConfiguration(): Source has no
 		// `configuration` property, column or serialized field — only a
 		// leftover @method docblock — so the old call threw "configuration is
 		// not a valid attribute" out of Entity::__call and every templated
@@ -99,7 +99,7 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function jwtToken(Source $source): string {
-		// getAuthConfig(), not getConfiguration(): Source has no
+		// Read getAuthConfig(), not getConfiguration(): Source has no
 		// `configuration` property, column or serialized field — only a
 		// leftover @method docblock — so the old call threw "configuration is
 		// not a valid attribute" out of Entity::__call and every templated

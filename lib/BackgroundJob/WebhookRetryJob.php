@@ -159,7 +159,7 @@ class WebhookRetryJob extends TimedJob {
 
 		foreach ($failedLogs as $log) {
 			try {
-				// getWebhook(), not getWebhookId(): the log entity's column and
+				// Call getWebhook(), not getWebhookId(): the log entity's column and
 				// property are both named `webhook`, so the `Id` spelling reached
 				// Entity::__call and threw "webhookId is not a valid attribute"
 				// on every retry. The test doubled it with addMethods().

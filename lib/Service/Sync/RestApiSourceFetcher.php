@@ -92,7 +92,16 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 		}
 
 		$headers = $this->buildHeaders(source: $source, since: $since);
-		$idField = $this->identifierField(source: $source);
+
+		// The identifier field is always 'id'. It used to be looked up on
+		// $source->getConfiguration(), and Source has no `configuration`
+		// property, column or serialized field, so that call threw
+		// "configuration is not a valid attribute" out of Entity::__call on
+		// every gather. Nothing in the app, the UI or the specs ever set an
+		// identifierField, so the lookup had no store to read. Give sources a
+		// real configuration column first if the field ever needs to be
+		// settable.
+		$idField = 'id';
 
 		$ids = [];
 		$url = $baseUrl;
@@ -230,25 +239,6 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 
 		return $decrypted;
 	}//end decryptAuthConfig()
-
-	/**
-	 * Determine the identifier field name for gathered records.
-	 *
-	 * @param Source $source The source
-	 *
-	 * @return string The id field (defaults to 'id')
-	 */
-	private function identifierField(Source $source): string {
-		// Always 'id'. This used to read $source->getConfiguration(), and
-		// Source has no `configuration` property, column or serialized field,
-		// so the call threw "configuration is not a valid attribute" out of
-		// Entity::__call on every gather. Nothing anywhere in the app, the UI
-		// or the specs ever set an identifierField, so the lookup had no store
-		// to read: making the default explicit loses nothing and is honest
-		// about it. Give sources a real configuration column first if the
-		// field ever needs to be settable.
-		return 'id';
-	}//end identifierField()
 
 	/**
 	 * Extract the list of items from a collection response body.
