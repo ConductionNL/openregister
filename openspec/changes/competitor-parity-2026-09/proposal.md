@@ -115,6 +115,8 @@ Disagreements).
 | macro-flows-with-next-item | 3.20 | M | none | dossiq, nextcloud-vue, pipelinq, decidiq, humaniq |
 | migrate-run-between-versions | 3.16 | M | flow-definition-versioning | dossiq, decidiq, humaniq, shillinq |
 | external-register-view-leaf | 5.13 | M | object-source-providers | dossiq, integriq, pipelinq, humaniq, zaakafhandelapp |
+| object-archive-state | Q2.33 | M | none | dossiq, decidiq, pipelinq, keepiq, stackiq, opencatalogi |
+| rbac-inherits-to-children | Q13.23 | M | object-level-sharing-and-private-scope | dossiq, opencatalogi, stackiq, decidiq, buildiq |
 
 Sizes: 17 S, 8 M. Rows closed on openregister: 26 register rows (22 slugs
 plus 5.6, 11.10, 2.24 and 9.4's openregister halves; 8.12 and Q8.20 share
@@ -126,6 +128,12 @@ register already names a dossiq slug (`sensitive-fields-declared`,
 `code-lists-from-concepts`, `duplicate-warning-at-intake`,
 `edit-lock-on-the-case-page`, `case-merge`, `field-rules-declared`,
 `admin-inspect-entry`) the proposal uses it.
+
+The last two rows arrived with the regenerated register (2026-09-13,
+market-intelligence #123), which lists eight gaps with no change. Two of
+the eight are openregister's: Q2.33 `object-archive-state` and Q13.23
+`rbac-inherits-to-children`. Both are opened by the last sweep of the
+phase, with dossiq consumer changes named in each proposal.
 
 ## Build order
 
