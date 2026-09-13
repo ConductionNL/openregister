@@ -321,7 +321,9 @@ class TransitionEngine {
 			// to tell "this object is gone" (404) apart from "this move was
 			// refused" (422) and "the provider broke" (502), and those first two
 			// shared a status code until this type existed.
-			throw new LifecycleSubjectNotFoundException(sprintf('Object "%s" not found.', $objectId));
+			throw new LifecycleSubjectNotFoundException(
+				message: sprintf('Object "%s" not found.', $objectId)
+			);
 		}
 
 		$schema = $this->loadSchema(object: $object);
