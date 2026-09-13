@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
+use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Controller;
@@ -122,9 +123,33 @@ class TransitionController extends Controller {
 				['error' => $e->getMessage()],
 				Http::STATUS_UNPROCESSABLE_ENTITY
 			);
+		} catch (LifecycleSubjectNotFoundException $e) {
+			// The object itself is gone. Caught BEFORE the RuntimeException
+			// branch it extends: "someone deleted this case" and "this case
+			// cannot take that move" are different things to tell a handler,
+			// and they answered the same 422 until this type existed. 404 is
+			// what the read half of the same pair already answers.
+			return new JSONResponse(
+				['error' => $e->getMessage()],
+				Http::STATUS_NOT_FOUND
+			);
+		} catch (LifecycleProviderException $e) {
+			// A provider-mode lifecycle could not be RUN: the declared tag
+			// resolves to nothing, the provider failed in a way it never
+			// planned for, or the object could not be read back afterwards.
+			// Caught BEFORE the RuntimeException branch it extends, because a
+			// broken provider is not a refused move. 422 would tell a handler
+			// the move was considered and declined; 502 says the truthful
+			// thing, that OpenRegister asked an upstream and did not get an
+			// answer. The provider's own refusals stay 422 below — they are
+			// ordinary RuntimeExceptions by contract.
+			return new JSONResponse(
+				['error' => $e->getMessage()],
+				Http::STATUS_BAD_GATEWAY
+			);
 		} catch (RuntimeException $e) {
-			// Engine throws on missing object/schema/transition or
-			// disallowed-from-current-state.
+			// Engine throws on missing schema/transition,
+			// disallowed-from-current-state, or a provider refusing the move.
 			return new JSONResponse(
 				['error' => $e->getMessage()],
 				Http::STATUS_UNPROCESSABLE_ENTITY
