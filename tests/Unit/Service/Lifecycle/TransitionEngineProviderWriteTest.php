@@ -440,21 +440,18 @@ class TransitionEngineProviderWriteTest extends TestCase {
 	}//end testStaticTransitionsTakePrecedenceOverTheProvider()
 
 	/**
-	 * A SCHEMA WITH NO PROVIDER IS UNAFFECTED: the branch is entered only on a
-	 * non-empty `provider` string, so a static schema still refuses an
-	 * undeclared action with the message it always did, and no provider is
-	 * resolved on the way there.
+	 * A SCHEMA WITH NO PROVIDER IS UNAFFECTED, and this is the case that
+	 * actually reaches the new branch's guard: an annotation declaring no mode
+	 * at all falls straight past it, refuses the undeclared action with the
+	 * message it always did, and resolves no provider on the way there. A
+	 * schema declaring a static map never gets this far, so it cannot pin the
+	 * guard — {@see testStaticTransitionsTakePrecedenceOverTheProvider} pins
+	 * that half.
 	 */
 	public function testASchemaWithoutAProviderIsUnaffected(): void {
 		$this->registry->expects($this->never())->method('resolve');
 
-		$this->wire(
-			$this->caseObject(),
-			[
-				'field' => 'status',
-				'transitions' => ['goedkeuren' => ['from' => ['ontvangen'], 'to' => 'afgehandeld']],
-			]
-		);
+		$this->wire($this->caseObject(), ['field' => 'status']);
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('is not declared on this schema');
