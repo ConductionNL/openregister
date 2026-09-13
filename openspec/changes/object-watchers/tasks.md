@@ -12,7 +12,7 @@
 
 ## 3. Notifications
 
-- [ ] 3.1 `{"watchers": true}` accepted by `NotificationAnnotationValidator`; resolved by the recipient resolver with the read check and list healing.
+- [x] 3.1 `{"watchers": true}` accepted by `NotificationAnnotationValidator`; resolved by the recipient resolver with the read check and list healing.
 
 ## 4. Tests
 
