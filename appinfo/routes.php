@@ -787,6 +787,19 @@ return [
         // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-resolve-a-public-case-token-rbac-respecting
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
+        // Object dates as a calendar feed. The public endpoint carries no
+        // session, so it is reachable without one, but the calendar it answers
+        // is generated as the principal the token names and holds exactly what
+        // that principal may list. An unknown, revoked or expired token gets
+        // the same 404 as any other.
+        // @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+        ['name' => 'calendarFeed#feed', 'url' => '/api/public/calendar-feeds/{token}.ics', 'verb' => 'GET', 'requirements' => ['token' => '[^/.]+']],
+        ['name' => 'calendarFeed#index', 'url' => '/api/calendar-feeds', 'verb' => 'GET'],
+        ['name' => 'calendarFeed#mint', 'url' => '/api/calendar-feeds', 'verb' => 'POST'],
+        ['name' => 'calendarFeed#revoke', 'url' => '/api/calendar-feeds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'calendarFeed#attendeeResponses', 'url' => '/api/objects/{id}/attendee-responses', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarFeed#recordAttendeeResponse', 'url' => '/api/objects/{id}/attendee-responses', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
         // (uri/scheme values are full URIs, unsafe as path segments). 404
