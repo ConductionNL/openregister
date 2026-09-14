@@ -28,6 +28,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable Squiz.Commenting.VariableComment.Missing -- PHPUnit fixture properties are named by their type.
+// phpcs:disable Squiz.PHP.DisallowInlineIf.Found -- PHPUnit fixture defaults.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
@@ -140,6 +145,8 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	/**
 	 * A visibility service that lets every row through, for the dispatch tests
 	 * that are not about the timeline leaves.
+	 *
+	 * @return \OCA\OpenRegister\Service\TimelineVisibilityService
 	 */
 	private function passThroughVisibility(): \OCA\OpenRegister\Service\TimelineVisibilityService {
 		$visibility = $this->createMock(\OCA\OpenRegister\Service\TimelineVisibilityService::class);
@@ -412,6 +419,8 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 * The notes leaf, read by someone who cannot update the object, answers
 	 * with the public rows only — and the caller never asked for that filter.
 	 *
+	 * @return void
+	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function testATimelineLeafIsFilteredForACallerWithoutUpdate(): void {
@@ -452,6 +461,8 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 * not a timeline entry, and treating one as internal would empty a
 	 * reader's screen for no gain.
 	 *
+	 * @return void
+	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function testANonTimelineLeafIsUntouched(): void {
@@ -480,6 +491,10 @@ class ObjectIntegrationsControllerTest extends TestCase {
 
 	/**
 	 * A PermissionHandler that answers one verdict for every question.
+	 *
+	 * @param bool $verdict The answer every permission question gets.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\PermissionHandler
 	 */
 	private function permissionHandlerAnswering(bool $verdict): \OCA\OpenRegister\Service\Object\PermissionHandler {
 		$handler = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);

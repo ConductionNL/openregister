@@ -174,6 +174,8 @@ class ActivityProviderTest extends TestCase {
 	 * An NC Activity row records what a handler did, so it is always internal.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
 	 */
 	public function testEveryRowCarriesInternalVisibility(): void {
 		$provider = $this->buildProvider();
@@ -189,6 +191,8 @@ class ActivityProviderTest extends TestCase {
 	 * A public-only read finds nothing in this source rather than everything.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
 	 */
 	public function testPublicOnlyReadReturnsNothing(): void {
 		$provider = $this->buildProvider();
@@ -204,6 +208,8 @@ class ActivityProviderTest extends TestCase {
 	 * An internal read, and a misspelled one, leave the rows alone.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
 	 */
 	public function testInternalReadKeepsEveryRow(): void {
 		$provider = $this->buildProvider();

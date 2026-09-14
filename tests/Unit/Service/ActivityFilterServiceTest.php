@@ -165,6 +165,8 @@ class ActivityFilterServiceTest extends TestCase {
 	 * Every row of this source is internal, and says so.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
 	 */
 	public function testEveryRowCarriesInternalVisibility(): void {
 		$rows = [
@@ -180,6 +182,8 @@ class ActivityFilterServiceTest extends TestCase {
 	 * A citizen's view of this source is empty, not the whole feed.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
 	 */
 	public function testPublicOnlyReadReturnsNothing(): void {
 		$rows = [
@@ -197,6 +201,8 @@ class ActivityFilterServiceTest extends TestCase {
 	 * An internal read is the read this source already served.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
 	 */
 	public function testInternalReadKeepsTheRows(): void {
 		$rows = [

@@ -45,11 +45,46 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class TimelineVisibilityServiceTest extends TestCase {
+	/**
+	 * Schema loader mock.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
 	private SchemaMapper&MockObject $schemaMapper;
+
+	/**
+	 * RBAC verdict mock.
+	 *
+	 * @var PermissionHandler&MockObject
+	 */
 	private PermissionHandler&MockObject $permissionHandler;
+
+	/**
+	 * Audit trail mapper mock.
+	 *
+	 * @var AuditTrailMapper&MockObject
+	 */
 	private AuditTrailMapper&MockObject $auditTrailMapper;
+
+	/**
+	 * User session mock.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
+
+	/**
+	 * Logger mock.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
+
+	/**
+	 * Service under test.
+	 *
+	 * @var TimelineVisibilityService
+	 */
 	private TimelineVisibilityService $service;
 
 	protected function setUp(): void {
