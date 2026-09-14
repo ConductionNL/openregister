@@ -980,6 +980,11 @@ class RetentionService {
 				'classification' => $retention['classification'] ?? null,
 				'softDeleted' => $object->isSoftDeleted(),
 				'wooGepubliceerd' => $isWooPublished,
+				// Unassigned, said out loud. An absent key and a null one mean
+				// the same thing to the reviewer service, but a consumer
+				// reading a fresh list has to be able to see that nobody is
+				// accountable for this entry yet.
+				'reviewer' => null,
 			];
 		}
 
@@ -990,6 +995,10 @@ class RetentionService {
 			'objects' => $objectEntries,
 			'excluded' => [],
 			'approvals' => [],
+			// The one decision history. Destroy, retain and transfer all land
+			// here, so an auditor asking who decided one dossier's fate reads
+			// one artefact rather than two.
+			'decisions' => [],
 		];
 	}//end createDestructionList()
 
