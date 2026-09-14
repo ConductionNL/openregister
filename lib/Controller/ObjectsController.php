@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
@@ -139,6 +140,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder Optional PDOK geocoder (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry Relation resourceUrl resolver (null-safe)
 	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService Optional recovery-window service (null-safe)
 	 *
 	 * @return void
 	 *
@@ -168,11 +170,54 @@ class ObjectsController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder = null,
 		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
 		private readonly ?\OCP\IURLGenerator $relationUrlGenerator = null,
+		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->exportService = $exportService;
 		$this->importService = $importService;
 	}//end __construct()
+
+	/**
+	 * The refusal body for an object that is in the trash rather than absent.
+	 *
+	 * Returns null when the identifier resolves to nothing at all, so a
+	 * genuine miss keeps the answer it always had. The lookup is deliberately
+	 * separate from the read above: the read excludes deleted rows by design,
+	 * and widening it would leak soft-deleted content into every list.
+	 *
+	 * @param string $id The identifier the caller asked for.
+	 *
+	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	private function deletedRefusal(string $id): ?array {
+		if ($this->deletionWindowService === null) {
+			return null;
+		}
+
+		try {
+			$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+			$context = $magicMapper->findAcrossAllSources(
+				identifier: $id,
+				includeDeleted: true,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$deleted = ($context['object'] ?? null);
+		if (($deleted instanceof ObjectEntity) === false || $deleted->isSoftDeleted() === false) {
+			return null;
+		}
+
+		return $this->deletionWindowService->refusalBody(
+			object: $deleted,
+			schema: ($context['schema'] ?? null)
+		);
+	}//end deletedRefusal()
 
 	/**
 	 * Check if the current user is in the admin group.
@@ -2498,6 +2543,15 @@ class ObjectsController extends Controller {
 				_render: false
 			);
 			if ($objectEntity === null) {
+				// THE REFUSAL SAYS WHERE THE OBJECT WENT. A flat "not found" on
+				// a soft-deleted object is the answer that makes a caseworker
+				// think their work is gone, when it is in the trash with a
+				// stated window still open.
+				$deletedRefusal = $this->deletedRefusal(id: $id);
+				if ($deletedRefusal !== null) {
+					return new JSONResponse(data: $deletedRefusal, statusCode: Http::STATUS_NOT_FOUND);
+				}
+
 				$errorMsg = "Object with id {$id} not found";
 				return new JSONResponse(data: ['error' => $errorMsg], statusCode: Http::STATUS_NOT_FOUND);
 			}
@@ -2523,6 +2577,16 @@ class ObjectsController extends Controller {
 			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
 			$renderedData = $renderedObject;
 			if (isset($renderedData['@self']) === true) {
+				// The tab badges (`object-read-state`). Attached HERE and
+				// nowhere else, because this is the only read path that knows it
+				// is rendering exactly one object: counting a sub-resource looks
+				// at the object's files and its dated arrays, so doing it in
+				// RenderObject would pay that cost per row on every list.
+				$renderedData['@self'] = $this->withUnreadCounts(
+					self: $renderedData['@self'],
+					object: $objectEntity
+				);
+
 				$extendArray = [];
 				if (is_array($extend) === true) {
 					$extendArray = $extend;
@@ -5172,4 +5236,43 @@ class ObjectsController extends Controller {
 			statusCode: LockedException::HTTP_STATUS
 		);
 	}//end lockedResponse()
+	/**
+	 * Add the per-sub-resource unread counts to a single object's `@self`.
+	 *
+	 * One map, from one read, so the detail page renders every tab badge
+	 * without a call per tab. Absent entirely for an anonymous read and when
+	 * there is nothing to badge, because an empty map and "no badges here" are
+	 * the same claim and neither should be rendered as a nought.
+	 *
+	 * Resolved through the container rather than the constructor, the same lazy
+	 * posture the render layer uses for the same primitive: a read-state lookup
+	 * must never be able to take out an object read.
+	 *
+	 * @param array<string, mixed> $self The `@self` envelope as rendered.
+	 * @param ObjectEntity $object The object being read.
+	 *
+	 * @return array<string, mixed> The envelope, with the counts when there are any.
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function withUnreadCounts(array $self, ObjectEntity $object): array {
+		try {
+			$readState = $this->container->get(ReadStateService::class);
+			if ($readState->callerUid() === null) {
+				return $self;
+			}
+
+			$counts = $readState->unreadCounts(object: $object);
+			if ($counts !== []) {
+				$self['unreadCounts'] = $counts;
+			}
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				sprintf('[ObjectsController] unread counts skipped: %s', $e->getMessage())
+			);
+		}//end try
+
+		return $self;
+
+	}//end withUnreadCounts()
 }//end class

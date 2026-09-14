@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Ħanut",
         "Install registers, schemas and flows that other organisations have published.": "Installa reġistri, skemi u flussi ppubblikati minn organizzazzjonijiet oħra.",
         "No such run": "M'hemm l-ebda eżekuzzjoni bħal din",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L-eżekuzzjoni ma teżistix, jew m'għandekx permess taraha. Meta tħassar fluss, jitħassru wkoll l-eżekuzzjonijiet tiegħu."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L-eżekuzzjoni ma teżistix, jew m'għandekx permess taraha. Meta tħassar fluss, jitħassru wkoll l-eżekuzzjonijiet tiegħu.",
+        "Configured": "Ikkonfigurat",
+        "Limited": "Limitat",
+        "Simulated": "Simulat",
+        "Not available": "Mhux disponibbli",
+        "Open settings": "Iftaħ is-settings",
+        "Add integration": "Żid integrazzjoni",
+        "Last checked": "L-aħħar verifika"
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

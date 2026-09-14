@@ -2914,7 +2914,14 @@
         "Store": "Tienda",
         "Install registers, schemas and flows that other organisations have published.": "Instale registros, esquemas y flujos publicados por otras organizaciones.",
         "No such run": "No existe esa ejecución",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "La ejecución no existe o no puede verla. Al eliminar un flujo se eliminan sus ejecuciones."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "La ejecución no existe o no puede verla. Al eliminar un flujo se eliminan sus ejecuciones.",
+        "Configured": "Configurado",
+        "Limited": "Limitado",
+        "Simulated": "Simulado",
+        "Not available": "No disponible",
+        "Open settings": "Abrir ajustes",
+        "Add integration": "Añadir integración",
+        "Last checked": "Última comprobación"
     },
     "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

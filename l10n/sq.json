@@ -2898,7 +2898,14 @@
         "Store": "Dyqani",
         "Install registers, schemas and flows that other organisations have published.": "Instaloni regjistra, skema dhe rrjedha të publikuara nga organizata të tjera.",
         "No such run": "Nuk ka ekzekutim të tillë",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Ekzekutimi nuk ekziston, ose nuk keni të drejtë ta shihni. Fshirja e një rrjedhe fshin edhe ekzekutimet e saj."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Ekzekutimi nuk ekziston, ose nuk keni të drejtë ta shihni. Fshirja e një rrjedhe fshin edhe ekzekutimet e saj.",
+        "Configured": "I konfiguruar",
+        "Limited": "I kufizuar",
+        "Simulated": "I simuluar",
+        "Not available": "Nuk është i disponueshëm",
+        "Open settings": "Hap cilësimet",
+        "Add integration": "Shto integrim",
+        "Last checked": "Kontrolluar së fundi"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

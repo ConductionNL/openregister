@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Trgovina",
         "Install registers, schemas and flows that other organisations have published.": "Instalirajte registre, šeme i tokove koje su objavile druge organizacije.",
         "No such run": "Nema takvog izvršavanja",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izvršavanje ne postoji ili ga ne smijete vidjeti. Brisanjem toka brišu se i njegova izvršavanja."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izvršavanje ne postoji ili ga ne smijete vidjeti. Brisanjem toka brišu se i njegova izvršavanja.",
+        "Configured": "Konfigurisano",
+        "Limited": "Ograničeno",
+        "Simulated": "Simulirano",
+        "Not available": "Nije dostupno",
+        "Open settings": "Otvori postavke",
+        "Add integration": "Dodaj integraciju",
+        "Last checked": "Posljednja provjera"
     },
     "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;"
 )

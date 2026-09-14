@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
@@ -468,6 +469,10 @@ class MagicSearchHandler {
 		if ($ids !== null && empty($ids) === false) {
 			$this->applyIdFilters(qb: $queryBuilder, ids: $ids);
 		}
+
+		// The unread lens, resolved IN the query so the page, the total and the
+		// facets cannot disagree about what was excluded.
+		$this->applyUnreadFilter(qb: $queryBuilder, userId: ($query['_unreadFor'] ?? null));
 
 		// Apply full-text search if provided.
 		// Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
@@ -1280,6 +1285,8 @@ class MagicSearchHandler {
 			'_schema',
 			'_schemas',
 			'_ids',
+			'_unread',
+			'_unreadFor',
 			'_count',
 			'_includeDeleted',
 			'_relations_contains',
@@ -1927,6 +1934,49 @@ class MagicSearchHandler {
 
 		$qb->andWhere($orConditions);
 	}//end applyJsonObjectFilter()
+
+	/**
+	 * Narrow a query to the objects one user has NOT seen since they last changed.
+	 *
+	 * Unread is the ABSENCE of a read-state row: a substantive write deletes
+	 * every row for the object except its author's, so "no row" and "something
+	 * has changed since you looked" are the same fact. That is what lets this be
+	 * one correlated `NOT EXISTS` rather than a timestamp comparison against a
+	 * column the per-schema object table does not carry.
+	 *
+	 * The subquery is built on a SECOND query builder but its parameter is
+	 * created on the OUTER one, because only the outer builder's parameters are
+	 * bound at execution. Creating it on the inner builder produces SQL with a
+	 * placeholder nothing fills, which is a silent empty page, not an error.
+	 *
+	 * The lens is off unless `_unreadFor` named a reader, so the guard lives
+	 * here rather than at the call site: `buildFilteredQuery()` already carries
+	 * every other filter's branch, and one more is what pushed it over its
+	 * complexity budget.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param mixed $userId The reader whose read state is checked, or null when
+	 *                      no unread lens was asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function applyUnreadFilter(IQueryBuilder $qb, mixed $userId): void {
+		if (is_string($userId) === false || $userId === '') {
+			return;
+		}
+
+		$reader = $qb->createNamedParameter($userId);
+
+		$sub = $this->db->getQueryBuilder();
+		$sub->select('rs.object_uuid')
+			->from(ObjectReadStateMapper::TABLE, 'rs')
+			->where($sub->expr()->eq('rs.user_id', $reader))
+			->andWhere($sub->expr()->eq('rs.object_uuid', 't._uuid'));
+
+		$qb->andWhere($qb->createFunction('NOT EXISTS (' . $sub->getSQL() . ')'));
+	}//end applyUnreadFilter()
 
 	/**
 	 * Apply ID-based filtering (UUID, slug, etc.)

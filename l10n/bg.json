@@ -2898,7 +2898,14 @@
         "Store": "Магазин",
         "Install registers, schemas and flows that other organisations have published.": "Инсталирайте регистри, схеми и потоци, публикувани от други организации.",
         "No such run": "Няма такова изпълнение",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Изпълнението не съществува или нямате право да го видите. Изтриването на поток изтрива и изпълненията му."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Изпълнението не съществува или нямате право да го видите. Изтриването на поток изтрива и изпълненията му.",
+        "Configured": "Конфигурирано",
+        "Limited": "Ограничено",
+        "Simulated": "Симулирано",
+        "Not available": "Не е налично",
+        "Open settings": "Отваряне на настройките",
+        "Add integration": "Добавяне на интеграция",
+        "Last checked": "Последна проверка"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -53,3 +53,20 @@ detection SHALL run on the derived list.
 - **WHEN** the schema is saved
 - **THEN** the save fails naming both properties as a cycle
 - @e2e exclude {validator, covered by unit tests}
+
+### Requirement: The two derivation engines are documented as what they are (REQ-CVJ-003)
+
+The system's documentation SHALL state which of the two derivation engines an
+authoring surface offers and which is for code-authored schemas, rather than
+presenting them as alternatives a reader has to choose between. A property
+authored through an administration surface SHALL carry a JSON-AST
+`calculation`; Twig `computed` SHALL remain supported for schemas authored in
+code.
+
+#### Scenario: a reader learns which engine is theirs
+
+- **GIVEN** the computed-fields documentation
+- **WHEN** a functional administrator reads it
+- **THEN** it says the JSON AST is the engine an authoring surface offers
+- **AND** it says Twig stays for schemas authored in code
+- @e2e exclude {a documentation statement, verified by reading docs/features/computed-fields.md}

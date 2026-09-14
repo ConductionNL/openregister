@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Buttek",
         "Install registers, schemas and flows that other organisations have published.": "Installéiert Registeren, Schemaen a Flows déi aner Organisatiounen publizéiert hunn.",
         "No such run": "Keng esou Ausféierung",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "D'Ausféierung existéiert net, oder Dir däerft se net gesinn. Wann e Flux geläscht gëtt, ginn och seng Ausféierunge geläscht."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "D'Ausféierung existéiert net, oder Dir däerft se net gesinn. Wann e Flux geläscht gëtt, ginn och seng Ausféierunge geläscht.",
+        "Configured": "Konfiguréiert",
+        "Limited": "Limitéiert",
+        "Simulated": "Simuléiert",
+        "Not available": "Net disponibel",
+        "Open settings": "Astellungen opmaachen",
+        "Add integration": "Integratioun derbäisetzen",
+        "Last checked": "Fir d'lescht gepréift"
     },
     "nplurals=2; plural=(n != 1);"
 )

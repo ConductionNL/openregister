@@ -1773,8 +1773,12 @@ class Schema extends Entity implements JsonSerializable {
 				}
 			}
 
-			// Mark computed properties as readOnly in JSON Schema / OpenAPI output.
-			if (isset($property['computed']) === true && is_array($property['computed']) === true) {
+			// Mark computed properties as readOnly in JSON Schema / OpenAPI
+			// output. Both engines count: the Twig `computed` marker and the
+			// JSON-AST `calculation` key a property form forwards.
+			$isComputed = (isset($property['computed']) === true && is_array($property['computed']) === true);
+			$isCalculated = (isset($property['calculation']) === true && is_array($property['calculation']) === true);
+			if ($isComputed === true || $isCalculated === true) {
 				$prop->readOnly = true;
 			}
 
@@ -2478,6 +2482,14 @@ class Schema extends Entity implements JsonSerializable {
 		// key earlier. The two comments above record the same bug twice.
 		'x-openregister-action',
 		'x-openregister-approval-chains',
+		// What makes an object unread again, and which sub-resources badge a
+		// tab (`object-read-state`). Read by SubstantiveChangeEvaluator. Absent
+		// from this list the key would be silently dropped, every schema would
+		// fall back to "any non-computed property is news", and the annotation
+		// that exists to stop a nightly recalculation marking four hundred
+		// cases unread would never fire. The same or#460/#462-class trap the
+		// four comments above record.
+		'x-openregister-read-state',
 		// Per-schema opt-in for OCP\ContextChat content submission (default
 		// OFF — see ContentProvider / ContextChatSubmissionListener). Absent
 		// from the vocabulary means the key round-trips through

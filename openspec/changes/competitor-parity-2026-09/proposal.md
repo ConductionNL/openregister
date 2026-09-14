@@ -280,3 +280,285 @@ annotation sits in OpenRegister's `x-` namespace, and a code search of
 `extends-form`. A leaf app is carrying an annotation that reads as a
 platform contract and is not one. `property-vocabulary-published` makes it
 one.
+
+## Discovery wave 2 and 3 (2026-09-14)
+
+Wave 1 took the platform under everything else. These are the remaining
+openregister clusters of `procest/_round4/discovery/build-plan.md`: what a
+municipality sees, and the long ones behind it.
+
+**The arithmetic closes.** The ownership rule puts 263 of the 631
+candidates on openregister, spread over 29 clusters. Wave 1's openregister
+clusters carry 82 of them (6, 9, 11, 19, 39, 52, 54 and 62), plus cluster
+43 which D7 moved here from filinq and the case-type study rows. The
+twenty-one changes below carry the other 181. Every openregister candidate
+in the sweep now has a change, and no candidate is in two.
+
+Sixteen changes are created:
+
+| change | cluster | candidates | size | decisions | dossiq consumer |
+|---|---|---|---|---|---|
+| `admin-operations-console` | 1, the administrator's own screens | 19 | M | D6, D21 | a job monitor page over its fifteen background jobs |
+| `instance-hardening-controls` | 4, security hardening of the instance | 18 | M | D6, D21 | publishes the statement, declares the second-factor scope |
+| `api-as-a-versioned-surface` | 5, the API as a described, versioned surface | 14 | M | D6, D21 | declares the links out of a case per case type |
+| `import-preview-and-conflict-policy` | 8, migration in and migration out | 5 | L | D6, D10 | migrates running dossiers; integriq holds the adapters |
+| `notification-routing-per-group-and-scope` | 10, notification preferences | 9 | L | D6, D1 | ships the templates, declares the team defaults |
+| `timeline-entries-are-records` | 13, the timeline and the note | 15 | M | D6, D21, D1 | declares the contactmoment kind and renders the timeline |
+| `party-roles-beyond-the-requester` | 14, the party model beyond the requester | 16 | L | D6, D21, D1 | declares which party kinds a case type accepts |
+| `export-as-its-own-right` | 16, export as its own right | 10 | M | D6, D21 | `case-list-export-via-or-export-leaf` |
+| `configuration-as-a-deployment` | 20, configuration as code | 11 | L | D15, D6, D21 | `CaseTypePublishService` becomes the leaf half |
+| `audit-trail-shipped-and-purpose-bound` | 34, the audit trail and where it is shipped | 5 | M | D6, D21, D22 | declares the purposes its BRP and KvK lookups run under |
+| `data-subject-rights-across-the-instance` | 38, erasure and the data subject's rights | 6 | L | D10, D22, D6, D21, D1 | the erasure preview over a zaak's parties |
+| `objects-as-the-hinge-between-cases` | 47, the object register as the hinge | 7 | L | D6, D21 | declares the object types a case type may reference |
+| `repeating-groups-and-recorded-corrections` | 49, corrections and repeating groups | 4 | M | D6 | the case-type editor and the Beheeracties block |
+| `access-by-link-not-by-account` | 64, access by link rather than by account | 4 | M | D8, D6, D1 | `CaseSharingService` mints links with capabilities |
+| `search-quality-operators-and-facets` | 65, search quality | 7 | M | D21, D6 | declares which fields are facetable and their match type |
+| `several-legal-entities-in-one-instance` | 66, more than one legal entity | 4 | L | D21, D6 | `TenantAuthenticationService` reads shared master data |
+
+Five changes are extended rather than created, because the build plan
+names each of them as its cluster's vehicle:
+
+| change extended | cluster | candidates | what the extension adds |
+|---|---|---|---|
+| `object-archive-state` | 29, read-only, frozen and locked | 6 | a frozen state beside the archived one, a lifecycle-declared freeze, an immutable property, a closed record, a withdrawn entry and a locked note |
+| `scoped-api-tokens` | 40, tokens, service accounts and their expiry | 5 | a required end date, a team-owned service account, a per-token rate limit and an outbound allowlist |
+| `generated-identifier` | 41, case numbering and second identifiers | 5 | a random sequence kind, foreign identifiers naming their issuer, a second human identifier, reserved values and a scheme change as a migration |
+| `relation-types-with-inverses` | 61, relations, split, merge and the graph | 7 | a split that keeps its provenance, declared inheritance along a relation, an external address as a relation, prose references and a bounded graph |
+| `working-calendar-admin` | 67, working calendars per unit and person | 4 | calendars per record type and unit, a person's pattern read from humaniq under D19, blackout periods and the first week of the year |
+
+**Three clusters the build plan sizes differently from this umbrella.**
+Cluster 66 sits in the plan's "already specified" table with "re-rate" as
+what is left. Reading the tenancy specs confirms the isolation half and
+finds no sharing half at all: nothing lets two organisations read one code
+list, nothing moves a live object between them, nothing keeps a token out
+of a log line. The change is opened, and the re-rate is one of its tasks.
+Cluster 13 names two vehicles rather than one, so it is a change that
+depends on both rather than an extension that buries what each already
+says. Cluster 20 names `app-delta-override` as its vehicle, and a search
+of this repository's openspec tree on 2026-09-14 returns zero hits for it
+in `specs/` and in `changes/`: a capability is created here and the
+buildiq lane should say which artefact the plan meant.
+
+**Two inherited findings, reported and not fixed.**
+`specs/geo-metadata-kaart/spec.md` carries a `## ADDED Requirements`
+delta header in a main spec at line 14, which hides eight requirements
+from validate, list and archive and makes archive refuse any delta against
+it. `specs/auth-system/spec.md` carries a requirement header outside its
+`## Requirements` section at line 888, with the same effect, which the
+`scoped-api-tokens` proposal already noted from the other side. Both are
+on lines these changes do not touch, so both belong to the debt sweep.
+`objects-as-the-hinge-between-cases` targets `linked-entity-types` for its
+geographic requirement rather than waiting on the first of the two.
+
+**Build order.** Wave 2 first, in the order a municipality meets it:
+`party-roles-beyond-the-requester` and
+`repeating-groups-and-recorded-corrections`, which the case-type work
+reads; then `search-quality-operators-and-facets` and
+`timeline-entries-are-records`; then `admin-operations-console` and
+`instance-hardening-controls`, which every tender asks about; then
+`export-as-its-own-right` before `import-preview-and-conflict-policy`,
+which depends on it; then `notification-routing-per-group-and-scope`,
+`audit-trail-shipped-and-purpose-bound` and `access-by-link-not-by-account`;
+then the five extensions, each beside the change it extends. Wave 3 last
+and in any order: `api-as-a-versioned-surface`,
+`configuration-as-a-deployment`, `data-subject-rights-across-the-instance`,
+`objects-as-the-hinge-between-cases` and
+`several-legal-entities-in-one-instance`. Every one of those is L or
+depends on something that is, and none of them blocks a tender answer.
+
+## Discovery wave 4 (2026-09-14)
+
+One cluster of the sweep stayed open after wave 3: cluster 67, "The
+satisfaction survey as its own object". The gap register's cluster table
+recorded it as "no change opened; pipelinq `customer-satisfaction-closed-loop`
+carries ledger row 6.16, not the cluster". Row 6.16 is the campaign.
+The cluster is the object the campaign runs on, and it is openregister's.
+
+| change | cluster | candidates | size | decision | consumer |
+|---|---|---|---|---|---|
+| `survey-object` | 67, the satisfaction survey as its own object | C-reporting-8, C-reporting-31 | M | D5, D21 | pipelinq `customer-satisfaction-closed-loop` runs its campaign on it; dossiq fires an invitation per case type on closure and declares nothing else; portaliq renders it for a requester with no account |
+
+The cluster's mechanism line names all three: "new openregister change
+`survey-object` carrying the questions, the answers and the export; dossiq
+fires it per case type on closure and portaliq renders it for a requester
+with no account (D5)". Its stated dependency is cluster 51, the intake form
+as its own object, which is portaliq's.
+
+### A numbering correction to the wave 3 table above
+
+The extension table in wave 2 and 3 numbers two clusters wrong, and both
+numbers belong to other owners. `relation-types-with-inverses` is cluster
+**62**, "Relations, split, merge and the relation graph", not 61, which is
+integriq's outbound sender identity. `working-calendar-admin` is cluster
+**69**, "Working calendars, per instance, per unit and per person", not 67,
+which is this section's survey cluster. Both sources agree on 62 and 69:
+`build-plan.md` headings and the gap register's cluster table. The
+candidate lists in that table are correct, only the cluster numbers beside
+them were wrong, and they are left in place so the correction is visible.
+
+### What other apps owe wave 4
+
+- **pipelinq**: the campaign, the reminder schedule and the reporting over
+  time, under ledger row 6.16.
+- **dossiq**: one declaration, which case types fire a survey on closure.
+  Row 6.16 records the rest as a deliberate no.
+- **portaliq**: the rendering for a requester with no account, under D5,
+  and its cluster 51 dependency.
+
+## Platform integration programme (D9)
+
+Ten changes, one per Nextcloud interface, one programme. The input is not
+a cluster and not a matrix row: it is non-row finding 1 of
+`procest/_round4/discovery/candidates.json`, said by `nextcloud-deck.md`.
+Deck registers fifteen platform integration points in its Application
+class; dossiq registers dashboard widgets, a notifier and event listeners
+through the shared OpenRegister bootstrap. Ten are missing, and the lane
+states the consequence: "a zaak is invisible everywhere in Nextcloud
+except inside dossiq, so it does not appear in the search bar, a link to
+it does not render in Talk, it cannot be shared with a colleague at the
+omgevingsdienst, it is in nobody's calendar and it does not leave with the
+person who owned it".
+
+**D9, option 1, taken by Ruben on 2026-09-14**: one programme, ten
+interfaces, one change per interface, one PR series. The decision's own
+reasoning is why these ten read differently from every other change in
+this umbrella: "None of the ten is a feature to design: each is an
+interface the platform publishes and a class that implements it." It is
+the highest ratio of capability to design work in the file, and nothing
+blocks it.
+
+The lane is also explicit that this is not a matrix row and is not
+proposed as one, because both products are Nextcloud apps, so the
+comparison is available to no other system in the corpus.
+
+| change | interface | what openregister implements for any object | what dossiq declares |
+|---|---|---|---|
+| `platform-search-provider` | `OCP\Search\IProvider` | a provider identity per claiming app over the one query implementation | the claim, and the result title, subline and ordering date per schema |
+| `platform-reference-provider` | `OCP\Collaboration\Reference\IReferenceProvider` | one resolver for any object URL, access-aware, plus the smart picker | the card shape per schema |
+| `platform-comments-entity` | `OCP\Comments\ICommentsManager` entity | one entity collection per claiming app from the one listener | its claimed pairs, and nothing else |
+| `platform-collaboration-resources` | `OCP\Collaboration\Resources\IProvider` | any object as a resource, access answered through the object read path | which schemas may join a collection |
+| `platform-team-resource-provider` | `OCP\Teams\ITeamResourceProvider` | a paged listing of the objects a team owns, read from the owning-team property | which schemas appear, and the owning-team property |
+| `platform-share-provider` | `OCP\Share\IShareProvider` | a face on the existing object share model, with explicit permission mapping | which schemas are shareable |
+| `platform-user-migrator` | `OCP\User\Migration\IMigrator` | export and import of a user's own state, and never of objects | nothing |
+| `platform-cloud-federation-provider` | `OCP\Federation\ICloudFederationProvider` | the outbound half and the two-sided lifecycle around the existing inbound provider | which schemas may be federated and what crosses |
+| `platform-capability` | `OCP\Capabilities\ICapability` | one capability block with a nested block per claiming app, from the same source as the API answer | its claim |
+| `platform-caldav-backend` | `OCA\DAV\CalDAV\Integration\ICalendarProvider` | the declared date kinds as platform calendars, from the feed's own generator | which dates count, already declared for the feed |
+
+**`platform-caldav-backend` extends wave 1's
+`object-dates-as-a-calendar-feed`**, and depends on it. D11 took option 1
+delivering option 3 first: the subscribable feed ships before anything
+writes. This change is option 1 arriving behind it, rendering the same
+events through the platform's calendar plane from the same generator, so
+the two surfaces cannot disagree. It stays read-only for the reason the
+feed does: writing back waits on `calendar-change-recomputes-timers`.
+
+**Three of the ten are close to done and say so.**
+`unified-search-provider` already implements the search provider for every
+object, so that change adds an identity per app and a declared result
+shape rather than a provider. `object-interactions` already registers
+`openregister` as a comments entity, so that change adds a collection per
+app. `deep-link-registry` already *requires* `ICapability` exposure and
+its own status section lists it as not implemented, which is the same gap
+the Deck lane found from the other end. Four of the ten have no artefact
+at all in this repository: collaboration resources, the team resource
+provider, the share provider and the user migrator each return zero hits
+across `specs/` and `changes/`.
+
+**Build order.** `platform-capability` and `platform-search-provider`
+first: both are S, both are mostly declaration, and both are what a client
+reads before anything else. Then `platform-reference-provider` and
+`platform-comments-entity`, which make a link and a comment name the right
+app. Then `platform-collaboration-resources` and
+`platform-team-resource-provider`, the two new surfaces. Then
+`platform-share-provider`, and `platform-cloud-federation-provider` behind
+it, which depends on it. Then `platform-user-migrator`. Then
+`platform-caldav-backend`, after wave 1's feed has landed.
+
+## The pending proposals (wave 4, 2026-09-14)
+
+A third input: the 39 rows of the pending-proposals half of the parity
+programme that the ownership rules put on openregister, the largest share
+of the wave. Each row carries its ledger id, its capability text, its
+rating for dossiq, the `source` field, the ledger note and, for the 98 rows
+promoted under decision D1, the table row from the corpus batch file
+`procest/_round4/compare/proposed-rows-dossiq-2026-09-10.md` in
+ConductionNL/market-intelligence.
+
+**What the competitor evidence is, for all 39.** Every one of these rows is
+a D1 promotion, and the corpus says in as many words what its competitor
+columns hold: "Every competitor column is `unread`, and none of them is
+`no`. ... `no` is a reading of a product somebody opened, and filling these
+cells with it would fabricate thirty readings per row." No competitor claim
+is made in any of the thirteen proposals below. Q13.25 is the exception in
+this section: it is not a D1 row and it does carry a driven reading.
+
+**Ten rows are already carried, in substance, by artefacts in this
+repository.** Each was claimed only after its proposal and every file under
+its `specs/` was opened, and each claim names the requirement that carries
+the row.
+
+| row | artefact | the requirement that carries it |
+|---|---|---|
+| 1.18 | changes/dedup-check-before-create | "A schema declares what a strong match does at create": the matches are returned, `overrideGroups` may override, and the override is audited with the matched objects |
+| 6.26 | specs/notificatie-engine | "Trigger types `created` and `updated` MUST be supported", whose scenario declares `trigger: {type: "updated", only_if_changed: ["assignee"]}`, with recipients resolved from the object by the `recipients` block |
+| 11.37 | changes/field-rules-by-state | "A field rule may be conditional on the object's own data", scenario "a field becomes required because of a value", enforced on save and so on the API |
+| 11.38 | changes/rules-engine-operability | REQ-REO-004 "Every write path evaluates the declared rules", with `@self.fieldRules` from `field-rules-by-state` as the form's half |
+| 11.48 | changes/code-list-lifecycle-and-hierarchy | REQ-CLH-001, scenario "a retired value keeps working on old records": outside its window a concept is not offered and still resolves on read |
+| 11.49 | changes/rules-engine-operability | REQ-REO-002 "A rule evaluation records the operand that decided it", readable per rule with filters on verdict and period |
+| 11.52 | changes/code-list-lifecycle-and-hierarchy | REQ-CLH-001 scenario "a list item carries its own fields" (`bewaartermijn`, `grondslag`) with REQ-CLH-002's branch source and tree options |
+| 13.29 | changes/data-subject-rights-across-the-instance | REQ-DSR-001 and REQ-DSR-002: the preview reports erasable, pseudonymised and protected counts, and the run goes through the recorded destruction |
+| 13.31 | changes/archiving-as-a-process-with-sign-off | REQ-APS-002 "Every item on a destruction list has an accountable reviewer" and REQ-APS-003, beside specs/archival-destruction-workflow's "Two-step approval for sensitive schemas" |
+| 13.35 | specs/audit-hash-chain | "Every audit trail entry MUST include a SHA-256 hash chained to the previous entry" with the verification endpoint and tamper reporting |
+| Q13.25 | changes/permission-provenance-and-deny | REQ-PPD-001 "The set of grantable permissions is published", which refuses an undeclared verb at save, and REQ-PPD-002 "A rule may deny a verb, and a deny is not overridden" |
+
+**Twenty-nine rows have no artefact and get thirteen changes.**
+
+| change | rows | size | consumes from, or is consumed by |
+|---|---|---|---|
+| `duplicate-merge-and-dismissed-pairs` | 5.14, 5.15, 11.42 | M | extends mdm-merge and dedup-check-before-create; dossiq renders the merge screen |
+| `undo-a-bulk-action` | 2.41 | M | extends bulk-action-jobs; dossiq declares which of its bulk actions are reversible |
+| `relations-that-travel-and-what-they-expose` | 2.48, 5.16, 13.36 | L | extends relation-types-with-inverses and party-roles-beyond-the-requester; dossiq declares its relation types |
+| `a-conflicting-save-shows-the-other-value` | 2.50 | S | extends specs/objects-crud; dossiq renders the side-by-side choice |
+| `notification-kinds-an-administrator-forces` | 6.28 | S | extends notification-routing-per-group-and-scope; dossiq declares its internal and forced kinds |
+| `service-hours-and-repeating-reminders` | 8.26, 8.28 | M | extends working-calendar-admin and the scheduled trigger; dossiq declares its hours and its reminders |
+| `search-over-history-and-an-administered-dictionary` | 9.17, 9.18 | M | extends search-quality-operators-and-facets, which named both as out of scope; dossiq and portaliq consume |
+| `runs-recorded-and-causes-named` | 10.16, 10.19, 11.39 | L | extends enhanced-audit-trail, data-quality-scoring and import-preview-and-conflict-policy; integriq holds the adapters |
+| `local-changes-to-app-shipped-configuration` | 11.36 | M | extends specs/schema-import; dossiq's CaseTypePublishService is the leaf half |
+| `rules-compose-read-transitions-and-time` | 11.40, 11.44, 11.50, 11.53 | L | extends rules-engine-operability and field-rules-by-state; dossiq's `field-rules-declared` |
+| `fields-a-user-adds-and-choices-a-record-narrows` | 11.45, 11.47 | M | extends property-vocabulary-published; dossiq's `property-definition-management` |
+| `grants-that-follow-a-slot-a-relation-or-a-reason` | 13.27, 13.30, 13.34, 13.40, 13.41 | L | extends permission-provenance-and-deny and rbac-inherits-to-children; dossiq declares its role slots |
+| `anonymising-as-an-archival-outcome` | 13.32 | M | extends archiving-as-a-process-with-sign-off and gdpr-data-subject-rights; dossiq declares the profile per case type |
+
+**Build order.** `a-conflicting-save-shows-the-other-value` and
+`notification-kinds-an-administrator-forces` first, both S and both a
+declaration over something that already works. Then
+`duplicate-merge-and-dismissed-pairs`,
+`fields-a-user-adds-and-choices-a-record-narrows` and
+`local-changes-to-app-shipped-configuration`. Then
+`service-hours-and-repeating-reminders` behind `working-calendar-admin`,
+and `undo-a-bulk-action` behind `bulk-action-jobs`. Then
+`rules-compose-read-transitions-and-time` beside
+`rules-engine-operability`, which is one engine in two parts. Then
+`search-over-history-and-an-administered-dictionary` and
+`runs-recorded-and-causes-named`. Then
+`relations-that-travel-and-what-they-expose`, and
+`grants-that-follow-a-slot-a-relation-or-a-reason` behind it, which needs
+the party relationship it adds. `anonymising-as-an-archival-outcome` last,
+after the archiving process it extends.
+
+**Two departures from the grouping the lane was handed.** 11.53, an
+administrator's own validation with its own message, was grouped with the
+rules that run on every write; it sits better with rule composition,
+because a validation is a named condition with a message and the two share
+one evaluator. And 10.16, an audit entry naming its cause, was grouped with
+the tamper-evident log; it sits with the records of what ran, because a
+cause that is a run has to name one.
+
+**One finding to raise rather than build.** ADR-005 in this repository says
+repair steps "MUST be safe to run on every upgrade: match existing
+registers/schemas by slug, create-or-update, never duplicate", and
+`specs/schema-import` already specifies the guarded update, the preserved
+local additions and the reported conflicts for standards-imported schemas
+only. Read together, an app-shipped descriptor overwrites a municipality's
+local edit on the next `occ upgrade` and nothing records that the edit
+existed. That asymmetry, not a missing feature, is what row 11.36 found.

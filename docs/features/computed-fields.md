@@ -1,5 +1,76 @@
 # Computed Fields
 
+## Two engines, and which one to use
+
+OpenRegister derives a field value with two engines, and they are not
+alternatives a reader has to choose between. They differ in who writes the
+expression and who reads it back.
+
+| | JSON AST (`calculation`) | Twig (`computed`) |
+|---|---|---|
+| Written by | a functional administrator, in a form | a developer, in a register file |
+| Reviewed by | an auditor, a colleague, a court, a year later | a pull request |
+| Shape | a tree of named operators | template source |
+| Safety | safe by construction: the evaluator reaches nothing but its own operators | safe by sandbox |
+| Offered by an authoring surface | yes | no |
+
+**A property authored through an administration surface carries an AST
+calculation.** It diffs cleanly in a schema history, it cannot reach a
+function nobody reviewed, and every operator it can use is published, so a
+form can offer exactly what the engine has and nothing else.
+
+**Twig stays supported for schemas authored in code**, where the author is a
+developer and the review is a pull request. Nothing about existing `computed`
+properties changes.
+
+### Authoring a calculation
+
+A property carries its declaration under `calculation`:
+
+```json
+{
+  "properties": {
+    "ontvangstdatum": { "type": "string", "format": "date" },
+    "uiterlijkeDatum": {
+      "type": "string",
+      "format": "date",
+      "calculation": {
+        "type": "date",
+        "expression": {
+          "dateAdd": {
+            "date": { "prop": "ontvangstdatum" },
+            "amount": 6,
+            "unit": "weeks"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Three things follow from that declaration, and none of them needs a second
+edit:
+
+- **The operators are published.** `GET /api/schemas/calculation-operators`
+  returns every operator the evaluator accepts, with its arity, its operand
+  types, its result type and a sentence. An expression builder is generated
+  from it and stays correct when the engine gains an operator.
+- **The expression can be tried before it is saved.** `POST
+  /api/schemas/calculation-evaluate` evaluates a declaration against a sample
+  payload or a named object and returns the value or the error. No schema is
+  written and no object is written.
+- **The dependencies are derived.** The properties an expression reads come
+  out of the expression itself, so there is no second list to keep in step,
+  and the cycle check runs on the derived one.
+
+A declaration a property form forwarded **refuses the save** when it names an
+operator the catalogue does not hold, reads a property nothing declares, or
+closes a cycle with another computed property. The response is 422 and it
+names the node that refused it. A hand-written
+`x-openregister-calculations` block stays advisory, so an app's register
+file cannot break its own import.
+
 ## Overview
 
 Computed fields are schema properties whose values are derived automatically from Twig expressions evaluated against object data, cross-referenced objects, and aggregation functions. This eliminates redundant data entry, ensures consistency of derived values (full names, totals, expiry dates), and brings spreadsheet-like formula power to OpenRegister without requiring external workflow engines for simple calculations.

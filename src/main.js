@@ -11,12 +11,14 @@ import { createApp, h } from 'vue'
 // eslint-disable-next-line n/no-unpublished-import
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+import customComponents from './customComponents.js'
 import appIcons from './icons.js'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
 import pinia from './pinia.js'
 import registry from './registry.js'
+import connectionFormatters from './services/connectionFormatters.js'
 import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -301,12 +303,18 @@ const router = createRouter({
 // changing the values the lib resolves at render time.
 const registryProp = { ...registry }
 const pageTypesProp = { ...defaultPageTypes }
+// The Connections page's Add integration handler and its two formatters
+// (adopt-connection-registry). Same shallow-copy reason as above.
+const customComponentsProp = { ...customComponents }
+const formattersProp = { ...connectionFormatters }
 
 const app = createApp({
 	render: () =>
 		h(App, {
 			manifest: mergedManifest,
 			registry: registryProp,
+			customComponents: customComponentsProp,
+			formatters: formattersProp,
 			pageTypes: pageTypesProp,
 		}),
 })

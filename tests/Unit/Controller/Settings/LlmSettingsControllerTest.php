@@ -40,7 +40,8 @@ class LlmSettingsControllerTest extends TestCase {
 			$this->container,
 			$this->settingsService,
 			$this->vectorizationService,
-			$this->logger
+			$this->logger,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 	}
 

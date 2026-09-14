@@ -104,3 +104,85 @@ derived grant is different: when the rule that derives it changes, the
 derivation is re-run and the number of changed grants is reported, because
 an access change nobody is told about is the one that surprises an
 auditor.
+
+## D-12. Staging first: a deny is recorded before it refuses anything
+
+Decision D15, 2026-09-14. The deny does not ship enforcing.
+
+Everything above this section describes what a deny does once it bites. This
+section says when it starts biting, and the answer is: not on the day it is
+installed. A deny is the first rule in this layer that takes a right away.
+Every other rule adds, so the worst a mistake could do was hand somebody a
+right they should not have had, which an audit finds. A deny inverts that.
+A mistake now locks a case worker out of the dossier they are paid to handle,
+at nine in the morning, with no clue why, because the only visible evidence is
+an absence.
+
+So enforcement is a second switch, and an administrator reaches it on purpose.
+
+### The three states
+
+`openregister.deny_enforcement` takes one of three values.
+
+| value | the deny pass | what a caller sees |
+|---|---|---|
+| `off` | skipped | nothing changes, at any cost |
+| `staging` | evaluated, recorded, not applied | the grant stands, the provenance names the deny that would have removed it |
+| `enforcing` | evaluated and applied | the verb is gone, and the provenance says which rule took it |
+
+The default is `staging`. That is deliberate and it is free: an instance that
+writes no deny has nothing to evaluate, so the pass costs one array lookup and
+records nothing. An instance that does write one gets a week of reading what
+its rules would do before a single user is refused.
+
+`off` exists for the incident, not for the rollout. When a deny is refusing
+people it should not refuse, an administrator needs one value to set that stops
+it, without editing rules under pressure and without a deploy.
+
+### What "recorded" means, and what it deliberately is not
+
+A staged deny is recorded in three places, and none of them is a new table.
+
+1. **The log.** One structured warning per staged denial, carrying the rule,
+   the principal it names, the verb, the schema and the caller. It is greppable
+   and it survives the request.
+2. **The provenance.** The action stays in `actions`, and its provenance entry
+   carries `stagedDeny` with the rule. So the same field that answers "why can
+   this person do this" answers "and what is about to stop them".
+3. **The preview.** `GET /api/permissions/deny-preview` reads the rules as
+   written and reports what enforcement would refuse, for a named principal or
+   for every principal a rule mentions. It is computed from the rules on the
+   spot, not accumulated.
+
+A table was the obvious alternative and it is the wrong one. Accumulated
+observations answer "what did fire" and stop there: the denies nobody exercised
+yet are missing, which is precisely the set that will surprise an administrator
+on the day they flip the switch. The preview reads the rules instead, so a
+deny that has never been hit is in the report on the day it is written.
+
+### Where the modes are read, and why only there
+
+The mode is read at the two enforcement points and nowhere else, so staging
+and enforcing cannot drift apart:
+
+- `PermissionHandler`, which decides one object.
+- `MagicRbacHandler`, which compiles the list query.
+
+Both call `DenyEnforcementMode`. In `staging`, the resolver still runs and
+still names the denial, because the record is the whole point. What changes is
+that the verdict is not used: the object read returns the row and the list query
+gets no deny predicate. A staging mode that skipped the resolution would record
+nothing, which is a dry run in name only.
+
+The save-time refusals are not staged. A block that grants and denies one verb
+at one level, and a deny that would orphan `manage`, are refused at save in
+every mode, because they are contradictions in the rules rather than effects on
+a user. Writing a broken rule and discovering it a month later at the switch is
+the outcome staging exists to prevent.
+
+### What to do next
+
+Write your denies. Leave the instance on `staging`, read
+`GET /api/permissions/deny-preview` and the provenance on the surfaces you care
+about, and set `openregister.deny_enforcement` to `enforcing` when the report
+holds no surprise.

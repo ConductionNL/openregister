@@ -140,6 +140,34 @@ return [
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
         ],
 
+        // Per-object read state. Reading an object is per-user state that must
+        // not be written through the object itself, which would put "alice
+        // looked at this" in the object's audit trail and cut a version on every
+        // open, so it gets its own entry point. Anyone who may READ the object
+        // may write their OWN read state, and nobody may write anybody else's:
+        // there is no `manage` escape here, because a read state is a fact about
+        // a person rather than about the object.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectReadState#show',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markRead',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markUnread',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
         // PUBLIC. A share token is a bearer capability: nobody is logged in, so
         // there is no principal for RBAC to resolve and core's validation of the
         // token IS the authorization. Read-only, addresses exactly one object,
@@ -341,6 +369,14 @@ return [
         // schema, action) scopes for the authenticated user without probing
         // every endpoint individually.
         ['name' => 'scopes#index', 'url' => '/api/scopes', 'verb' => 'GET'],
+        // The grantable permission set, and what the staged deny would refuse.
+        // A role editor cannot offer a set nobody publishes, which is why every
+        // consumer in the fleet invented its own vocabulary. The preview reads
+        // the rules as written rather than a log of what has fired, so a deny
+        // nobody has hit yet is still in the report (D15).
+        ['name' => 'permissions#index',       'url' => '/api/permissions',              'verb' => 'GET'],
+        ['name' => 'permissions#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
+        ['name' => 'permissions#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -819,6 +855,14 @@ return [
         ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
         ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
 
+        // Code-list options for one schema property, as a flat list or as a
+        // tree, narrowed by the context in play and by each value's validity
+        // window. A retired value is absent here and still resolves through
+        // the three routes above, which is the whole point of retiring
+        // rather than deleting (REQ-CLH-001, REQ-CLH-002).
+        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+        ['name' => 'vocabulary#propertyOptions', 'url' => '/api/vocabulary/options', 'verb' => 'GET'],
+
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
         // only filters + cursor-paginates the entries linked to an OR
@@ -958,6 +1002,23 @@ return [
         ['name' => 'auditQuery#query', 'url' => '/api/v2/audit', 'verb' => 'GET'],
         // Notification History — read-only audit trail of every dispatch.
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
+        // The bell's own verbs (`object-read-state`). A snooze postpones a
+        // notice, an archive takes it out without claiming it was read, and a
+        // thread is marked read as a whole. Each is scoped to the caller's own
+        // notices inside NotificationClearingService, never by the route.
+        [
+            'name' => 'notificationHistory#snooze',
+            'url' => '/api/notification-history/{id}/snooze',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        [
+            'name' => 'notificationHistory#archive',
+            'url' => '/api/notification-history/{id}/archive',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        ['name' => 'notificationHistory#markThreadRead', 'url' => '/api/notification-history/thread/read', 'verb' => 'PUT'],
         // Notification Subscriptions — DEPRECATED per-user (register, schema) opt-in surface.
         // Superseded by override-only Notification Preferences below; kept during the deprecation window.
         ['name' => 'notificationSubscriptions#index',   'url' => '/api/notification-subscriptions', 'verb' => 'GET'],
@@ -988,6 +1049,13 @@ return [
         ['name' => 'deleted#topDeleters', 'url' => '/api/deleted/top-deleters', 'verb' => 'GET'],
         ['name' => 'deleted#restore', 'url' => '/api/deleted/{id}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#restoreMultiple', 'url' => '/api/deleted/restore', 'verb' => 'POST'],
+        [
+            'name' => 'deleted#destructionPreview',
+            'url' => '/api/deleted/{id}/destruction-preview',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        ['name' => 'deleted#destructionRecord', 'url' => '/api/deleted/{id}/destruction', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroy', 'url' => '/api/deleted/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroyMultiple', 'url' => '/api/deleted', 'verb' => 'DELETE'],
         // Revert.
@@ -1046,6 +1114,14 @@ return [
         // semantic-type URI to the installed provider schema. Static path,
         // registered before the `{id}` schema routes so it is not shadowed.
         ['name' => 'schemas#resolveByImplements', 'url' => '/api/schemas/resolve-by-implements', 'verb' => 'GET'],
+        // JSON-AST calculations (computed-values-by-json-ast): the operator
+        // catalogue an expression builder is generated from, and the dry run
+        // that evaluates a declaration before the schema is saved. Static
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the dry run's object lookup is
+        // RBAC- and tenancy-scoped, which is its per-object guard (ADR-005/016).
+        ['name' => 'calculations#operators', 'url' => '/api/schemas/calculation-operators', 'verb' => 'GET'],
+        ['name' => 'calculations#evaluate', 'url' => '/api/schemas/calculation-evaluate', 'verb' => 'POST'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -1061,6 +1137,14 @@ return [
         ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+
+        // Property type conversion — the supported conversions are published,
+        // and a conversion over populated objects is previewed before it is
+        // taken. An unsupported one is refused with its reason and never
+        // attempted (REQ-CLH-005).
+        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+        ['name' => 'schemaMigration#conversions', 'url' => '/api/schemas/property-conversions', 'verb' => 'GET'],
+        ['name' => 'schemaMigration#previewConversion', 'url' => '/api/schemas/{id}/conversions/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // Schema import from external standards (schema-import-standards). Admin-gated by NC framework default.
         ['name' => 'schemaImport#types', 'url' => '/api/schema-import/{dialect}/types', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],
         ['name' => 'schemaImport#snapshot', 'url' => '/api/schema-import/{dialect}/snapshot', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],

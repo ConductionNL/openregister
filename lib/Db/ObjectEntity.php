@@ -29,6 +29,7 @@ use Exception;
 use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -140,6 +141,10 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are the
+ * column surface plus the transient render fields, not an API design choice.
+ * The class already sat at the threshold, so any accessor trips it; splitting
+ * ObjectEntity is owned by the debt sweep, not by a feature that adds one field.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -555,6 +560,21 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $archivalRetention = null;
 
 	/**
+	 * The AVG clock and the Archiefwet clock, each with the rule that produced
+	 * it.
+	 *
+	 * Transient property populated by the render layer
+	 * (`delete-window-and-recorded-destruction`). Two dates rather than one,
+	 * deliberately: the AVG says delete when the lawful purpose ends and the
+	 * Archiefwet says keep for N years, and a product that merges them into a
+	 * single date is wrong in one direction for every object. Exposed in @self
+	 * as `_clocks`, omitted entirely when not set.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $retentionClocks = null;
+
+	/**
 	 * Registry subscription state for this object (`registry-subscriptions`,
 	 * finding B22).
 	 *
@@ -596,6 +616,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var integer|null
 	 */
 	protected ?int $watcherCount = null;
+
+	/**
+	 * Whether this object is unread for the current user (`object-read-state`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `ReadStateService::isUnreadForCaller()`. Not persisted: a read state is
+	 * per-user, per-object state living in
+	 * `openregister_object_read_state`, which is what keeps reading an object
+	 * out of its own audit trail and versions. Exposed in @self as `unread`, and
+	 * omitted for an anonymous read, where there is no "you" to answer for.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $unread = null;
+
+	/**
+	 * How many entries of each sub-resource are unread (`object-read-state`).
+	 *
+	 * Transient, and one map rather than a field per tab, so a page renders
+	 * every tab badge from one read instead of a call per tab. Exposed in @self
+	 * as `unreadCounts`.
+	 *
+	 * @var array<string, int>|null
+	 */
+	protected ?array $unreadCounts = null;
 
 	/**
 	 * AVG / GDPR Art 30 processing-activity override.
@@ -745,6 +790,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setArchivalRetention()
 
 	/**
+	 * Read the two retention clocks.
+	 *
+	 * @return array<string, mixed>|null The clocks, or null when not resolved.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function getRetentionClocks(): ?array {
+		return $this->retentionClocks;
+	}//end getRetentionClocks()
+
+	/**
+	 * Write the two retention clocks.
+	 *
+	 * Surfaced in the @self envelope as `_clocks` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $clocks The AVG and Archiefwet clocks with their rules.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function setRetentionClocks(?array $clocks): void {
+		$this->retentionClocks = $clocks;
+	}//end setRetentionClocks()
+
+	/**
 	 * Get the registry subscription state, when set by the render layer.
 	 *
 	 * @return array<string, mixed>|null
@@ -802,6 +873,43 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setWatcherCount(?int $count): void {
 		$this->watcherCount = $count;
 	}//end setWatcherCount()
+
+	/**
+	 * Write the current user's unread marker.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `unread` by getObjectArray().
+	 *
+	 * @param boolean|null $unread Whether the object is unread for the current user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	public function setUnread(?bool $unread): void {
+		$this->unread = $unread;
+	}//end setUnread()
+
+	/**
+	 * Write the per-sub-resource unread counts.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above.
+	 *
+	 * Surfaced in the @self envelope as `unreadCounts` by getObjectArray().
+	 *
+	 * @param array<string, int>|null $counts Sub-resource name to unread count, or null to omit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	public function setUnreadCounts(?array $counts): void {
+		$this->unreadCounts = $counts;
+	}//end setUnreadCounts()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1188,9 +1296,10 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
 	 * search relevance, the RFC 8141 URN, per-language translation
 	 * completeness, the effective archival retention decision, the
-	 * registry subscription state (`registry-subscriptions`, finding B22), and
-	 * the reader's own follow marker plus the follower count
-	 * (`object-watchers`).
+	 * registry subscription state (`registry-subscriptions`, finding B22), the
+	 * reader's own follow marker plus the follower count (`object-watchers`),
+	 * and the reader's unread marker plus the tab badge counts
+	 * (`object-read-state`).
 	 * Each is optional and omitted entirely when unset — none of these are
 	 * persisted on this entity; they are populated by RenderObject at read
 	 * time.
@@ -1203,47 +1312,51 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @return array<string, mixed> The array with any set transient fields merged in.
 	 */
 	private function mergeTransientRenderFields(array $objectArray): array {
-		// Only included when a search was performed with _fuzzy=true.
-		if ($this->relevance !== null) {
-			$objectArray['relevance'] = $this->relevance;
+		// Every transient render field, keyed by the name it takes in @self.
+		// Each is set by the render layer and left null otherwise, and a null
+		// one is omitted rather than written as null, because "not rendered"
+		// and "rendered as nothing" are different claims to a client.
+		//
+		// - relevance: only when a search ran with _fuzzy=true.
+		// - urn: RenderObject populates it via UrnService::buildForObject, so a
+		//   raw entity that never went through the renderer has none.
+		// - translationCompleteness: absent when the schema has no translatable
+		//   properties, or the object has not been rendered.
+		// - _retention: the effective archival retention decision.
+		// - _clocks: both retention clocks, each naming its rule, never flattened
+		//   into one date.
+		// - registry: the registry subscription state, absent for an object
+		//   that never requested one.
+		// - watching, watcherCount: the reader's own follow state and the size
+		//   of the audience (`object-watchers`).
+		// - unread: whether the reader has seen this object since it last
+		//   changed (`object-read-state`). Absent for an anonymous read, where
+		//   there is no "you" to answer for.
+		//
+		// This is a map rather than a chain of ifs because the chain grew one
+		// branch per feature and ran past the complexity budget.
+		$transient = [
+			'relevance'               => $this->relevance,
+			'urn'                     => $this->urn,
+			'translationCompleteness' => $this->translationCompleteness,
+			'_retention'              => $this->archivalRetention,
+			'_clocks'                 => $this->retentionClocks,
+			'registry'                => $this->registryState,
+			'watching'                => $this->watching,
+			'watcherCount'            => $this->watcherCount,
+			'unread'                  => $this->unread,
+		];
+
+		foreach ($transient as $key => $value) {
+			if ($value !== null) {
+				$objectArray[$key] = $value;
+			}
 		}
 
-		// The renderer populates $this->urn via UrnService::buildForObject;
-		// when absent (e.g. raw entity not run through RenderObject) the
-		// field is simply omitted from @self.
-		if ($this->urn !== null) {
-			$objectArray['urn'] = $this->urn;
-		}
-
-		// Skipped (omitted from @self) when the schema has no translatable
-		// properties or the object hasn't been rendered yet.
-		if ($this->translationCompleteness !== null) {
-			$objectArray['translationCompleteness'] = $this->translationCompleteness;
-		}
-
-		// Add the effective archival retention decision when set by the render
-		// layer (add-archival-annotation-support). Exposed as `_retention` and
-		// omitted entirely when the object carries no retention metadata.
-		if ($this->archivalRetention !== null) {
-			$objectArray['_retention'] = $this->archivalRetention;
-		}
-
-		// Add the registry subscription state when set by the render layer.
-		// Exposed as `registry` and omitted entirely for an object that
-		// never requested one.
-		if ($this->registryState !== null) {
-			$objectArray['registry'] = $this->registryState;
-		}
-
-		// Whether the reader follows this object (`object-watchers`). Omitted
-		// entirely for an anonymous read, where there is no "you" to answer for.
-		if ($this->watching !== null) {
-			$objectArray['watching'] = $this->watching;
-		}
-
-		// The size of the object's audience, for a reader who may edit it.
-		if ($this->watcherCount !== null) {
-			$objectArray['watcherCount'] = $this->watcherCount;
+		// The tab badges, as one map. Omitted when there is nothing to badge,
+		// because an empty map and "no badges here" are the same claim.
+		if ($this->unreadCounts !== null && $this->unreadCounts !== []) {
+			$objectArray['unreadCounts'] = $this->unreadCounts;
 		}
 
 		return $objectArray;
@@ -1627,6 +1740,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @throws Exception If no user is logged in
 	 *
 	 * @return static Returns the entity
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
 		$currentUser = $userSession->getUser();
@@ -1636,17 +1751,28 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		$userId = $currentUser->getUID();
 		$now = new DateTime();
+
+		// The retention handed in is the window. It used to be ignored: every
+		// object got a hard-coded 31 days whatever the schema or the instance
+		// said, so a schema declaring a year of recovery quietly had a month.
+		// A non-positive retention is not a window, so the default applies.
+		$days = $retentionPeriod;
+		if ($days === null || $days < 1) {
+			$days = DeletionWindowService::DEFAULT_RETENTION_DAYS;
+		}
+
 		$purgeDate = clone $now;
-		// $purgeDate->add(new DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
-		$purgeDate->add(new DateInterval('P31D'));
+		$purgeDate->add(new DateInterval('P' . (string)$days . 'D'));
 
 		$this->setDeleted(
 			[
 				'deleted' => $now->format('c'),
+				'deletedAt' => $now->format('c'),
 				'deletedBy' => $userId,
 				'deletedReason' => $deletedReason,
-				'retentionPeriod' => $retentionPeriod,
+				'retentionPeriod' => $days,
 				'purgeDate' => $purgeDate->format('c'),
+				'destroyableFrom' => $purgeDate->format('c'),
 			]
 		);
 
