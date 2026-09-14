@@ -162,3 +162,142 @@ consumer can name one.
 - Importing Huly's 52 verbs. The catalogue is what this instance
   declares; the competitor's number is evidence that a published set is
   possible, not a list to copy.
+
+## Extension, discovery wave 1 (2026-09-14)
+
+This change is the openregister half of two clusters of
+`procest/_round4/discovery/build-plan.md`
+(ConductionNL/market-intelligence, 2026-09-14), and it is extended rather
+than duplicated because the build plan names it as the vehicle for both.
+
+**Cluster 11, "Who may do what: roles, grants and their provenance".**
+Owner openregister, size L, 23 candidates, fourteen of them `must`, five
+matrix holes, ledger row 11.46: C-access-and-privacy-1,
+C-access-and-privacy-10, C-access-and-privacy-26, C-access-and-privacy-27,
+C-access-and-privacy-28, C-access-and-privacy-33, C-access-and-privacy-36,
+C-access-and-privacy-39, C-access-and-privacy-45, C-access-and-privacy-46,
+C-access-and-privacy-47, C-access-and-privacy-49, C-access-and-privacy-52,
+C-access-and-privacy-59, C-access-and-privacy-64, C-access-and-privacy-69,
+C-access-and-privacy-73, C-access-and-privacy-79, C-access-and-privacy-80,
+C-access-and-privacy-81, C-access-and-privacy-86, C-configuration-45,
+C-decisions-9.
+
+**Cluster 54, "Access compiled into the query".** Owner openregister, size
+L, one candidate, C-access-and-privacy-62, a `must` and a matrix hole.
+
+**The decisions.** **D22, option 1, openregister, "and it is not close":**
+access is a property of the object, the object lives here, and a filter
+that runs after the query has already leaked the count. The decision names
+this change by name and says why: "compiled into the query" and "checked
+on the result" are the same sentence in English and different products in
+practice. **D10** contributes the half that touches this change: the
+destruction verb is a named right rather than an administrator check,
+which `delete-window-and-recorded-destruction` consumes from the
+catalogue.
+
+### The proving passers
+
+- **dimpact-zac, opencase and valtimo**, all driven,
+  `access-and-privacy.tsv:15`: "dimpact-zac: Search authorisation
+  (search-and-indexing/spec.md)". Permission conditions are compiled into
+  the query or the search index, so the engine does the filtering. Three
+  independent passers for one idea.
+- **dimpact-zac and nextcloud-deck**, driven, with jira-data-center
+  documented, `access-and-privacy.tsv:18`: "nextcloud-deck:
+  board#getUserPermissions /boards/{id}/permissions". The record is
+  returned with the actions the current user may take on it. The
+  candidate's clause calls it the single most reusable idea in ZAC, and
+  names the alternative: a UI that guesses and a 403 the user discovers by
+  clicking.
+- **forgejo, gitea, opencase and request-tracker**, driven,
+  `access-and-privacy.tsv:17`: "forgejo:
+  /repos/{owner}/{repo}/collaborators/{c}/permission,
+  /orgs/{org}/permissions, /user/permission (api.go)". Ask the product who
+  holds which right on a named object, and where each grant came from.
+  dossiq: "zero hits for an effective-permission endpoint".
+- **glpi and opencase**, driven, `access-and-privacy.tsv:19`: "glpi: Rules
+  over rights (front/ruleright.php)". A user's roles and scope are derived
+  at login from what the identity provider asserts. The clause: it is how
+  a municipality of two thousand people is authorised without anyone
+  maintaining a matrix.
+- **opencase**, driven, `access-and-privacy.tsv:63`: "Document detail
+  Workflow (DocumentDetail-Workflow.md)". The workflow shares the file
+  read only with each step's user, expiring on its deadline. The clause is
+  the argument: an access grant created and revoked as a side effect of
+  the work is the safest kind there is.
+- **opencase**, driven, `access-and-privacy.tsv:79`: "Permission model
+  (code-census.md)". Derived access is recalculated for everyone after the
+  rule that derives it changes.
+- **atabix**, documented, `access-and-privacy.tsv:91`:
+  "/gestandaardiseerde-modules (Autorisatiebeheer)". The access situation
+  as it stands, and every change to it, can be shown and accounted for.
+
+### What this change gains
+
+- **The filter is compiled into the query.** A grant, an inheritance and a
+  deny become predicates in the SQL and in the search index, so a page, a
+  total and a facet count are all computed over what the caller may see.
+- **The record says what you may do with it.** An object read carries the
+  actions the current user may take on it, resolved from the same
+  evaluation, so a client stops guessing.
+- **Provenance runs in the other direction too.** Ask an object who holds
+  which right on it, with the rule behind each grant, and read the history
+  of that set: who could see what, when.
+- **Authorisation is derived from what the identity provider asserts.** A
+  rule maps claims to roles and scopes at login, and the mapping is the
+  same declared shape as any other rule.
+- **A grant may expire, and a derived grant is recalculated.** A grant may
+  carry an end, including one bound to a workflow step's deadline, and a
+  change to a rule that derives access recalculates the derived grants and
+  reports how many changed.
+- **`manage` is scopeable to an area.** Delegated administration of a
+  named part of the instance is a scoped `manage`, not a second
+  administrator.
+
+### What other changes already cover, so this one does not
+
+- **Deny by default** (C-access-and-privacy-27):
+  `rbac-default-deny-on-configured-authorization`.
+- **Case type rights per department and role**
+  (C-access-and-privacy-46, C-access-and-privacy-59, in part):
+  `rbac-department-role-matrix`.
+- **Rights inherited to children** (C-access-and-privacy-47, in part):
+  `rbac-inherits-to-children`, which this change already depends on.
+- **A masked identifier revealed by an audited click**
+  (C-access-and-privacy-1): `sensitive-field-reveal-audit`, opened in this
+  programme for ledger row 5.6.
+- **Action-level permissions** (C-access-and-privacy-64): the catalogue of
+  REQ-PPD-001, which is what makes a verb beyond read and write nameable.
+
+### One earlier line revised
+
+The original "Out of scope" says a time-boxed grant is dossiq's rule over
+this primitive, not a second kind of rule here. The discovery sweep
+measured a driven passer for a grant that expires with the workflow step
+that created it (opencase, `access-and-privacy.tsv:63`), and a mandate
+with an end date is the same shape. An end on a grant is now in scope, as
+a property of the grant. What stays out is any rule about when a mandate
+should end, which remains the consumer's.
+
+### Still out of scope
+
+- **An external policy engine** (C-access-and-privacy-52). D22 rejected
+  it: a network call inside a query is the reason nobody in the corpus
+  does it that way.
+- **Competence declared, evidenced and approved before a right is
+  granted** (C-access-and-privacy-26, documented only). That is a
+  mandate-matrix rule in dossiq over this layer's grants.
+- **Acting as another user** (C-access-and-privacy-39). Impersonation
+  needs an audit trail more than it needs the feature, and it is a change
+  of its own.
+- **The handling officer's name hidden from the requester**
+  (C-access-and-privacy-73). That is field-level security plus a portal
+  projection, not a grant.
+- **An access request as its own object** (C-decisions-9), which is
+  dossiq's `woo-case-type` question.
+- **One authorisation surface across every application in the
+  organisation** (C-access-and-privacy-86, documented only). A fleet
+  surface, not a change to this layer.
+- **The from, to and right of a transition on one screen**
+  (C-configuration-45). `object-lifecycle` already carries the declarative
+  per-transition authorization gate; the screen is dossiq's.
