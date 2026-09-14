@@ -50,6 +50,14 @@ use InvalidArgumentException;
  * Assignment, sign-off and the decision history of a destruction list.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Every branch in here is one
+ *              rule of the sign-off, and each rule refuses with its own message:
+ *              no such entry, nobody accountable, somebody else accountable,
+ *              already answered, a fourth answer, no reason, a retention with no
+ *              date. Collapsing them into fewer branches would lower the number
+ *              and take away the one thing a refused reviewer needs, which is
+ *              WHICH rule refused them.
  */
 class DestructionReviewService {
 

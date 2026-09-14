@@ -62,6 +62,10 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Controller requires many service dependencies
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)   REST endpoints for full destruction workflow
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is one refusal per rule,
+ *              spread over the endpoints rather than piled into one: 401, 403, 404, 409 and
+ *              400 each say a different thing to a reviewer who was turned away. Each endpoint
+ *              on its own is well under the threshold.
  */
 class ArchivalController extends Controller {
 
