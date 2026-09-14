@@ -325,7 +325,12 @@ class PartyRoleService {
 	 */
 	private function markPrimary(string $objectUuid, ContactLink $link): ContactLink {
 		foreach ($this->links->findPartiesForObject(objectUuid: $objectUuid) as $other) {
-			if ((int)$other->getId() === (int)$link->getId() || $other->getPrimaryParty() !== true) {
+			// The natural key, not the row id: the link that just came back
+			// from the writer may not carry an id the caller can compare, and
+			// an id comparison that matches everything would leave the old
+			// primary party standing beside the new one.
+			$isSameRow = ($other->getContactUid() === $link->getContactUid() && $other->getRole() === $link->getRole());
+			if ($isSameRow === true || $other->getPrimaryParty() !== true) {
 				continue;
 			}
 
