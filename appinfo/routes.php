@@ -389,7 +389,7 @@ return [
         ['name' => 'permissions#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
         // Administrator only: the route carries no NoAdminRequired, so the
         // framework refuses everybody else before the method runs.
-        ['name' => 'permissions#reapplyDerivedGrants', 'url' => '/api/permissions/derived-grants/reapply', 'verb' => 'POST'],
+        ['name' => 'derivedGrants#reapply', 'url' => '/api/permissions/derived-grants/reapply', 'verb' => 'POST'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],

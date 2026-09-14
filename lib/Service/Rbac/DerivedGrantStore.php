@@ -233,13 +233,13 @@ class DerivedGrantStore {
 		$after = 0;
 
 		foreach ($accounts as $userId) {
-			$was = $this->grantsFor(userId: $userId);
-			$is = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
+			$held = $this->grantsFor(userId: $userId);
+			$holds = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
 
-			$before += count($was);
-			$after += count($is);
+			$before += count($held);
+			$after += count($holds);
 
-			if (json_encode($was) !== json_encode($is)) {
+			if (json_encode($held) !== json_encode($holds)) {
 				$changed[] = $userId;
 			}
 		}
@@ -268,10 +268,15 @@ class DerivedGrantStore {
 
 		try {
 			$this->userManager->callForSeenUsers(
-				function (IUser $user) use (&$accounts): void {
+				function (IUser $user) use (&$accounts): ?bool {
 					if ($this->claimsFor(userId: $user->getUID()) !== []) {
 						$accounts[] = $user->getUID();
 					}
+
+					// Null rather than false: the callback's return value is
+					// what stops the walk, and stopping it here would silently
+					// leave the rest of the accounts unre-derived.
+					return null;
 				}
 			);
 		} catch (\Throwable $e) {

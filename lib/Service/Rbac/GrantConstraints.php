@@ -69,6 +69,13 @@ class GrantConstraints {
 	public const SCOPED_TO_KEY = 'scopedTo';
 
 	/**
+	 * The block key holding role assignments rather than a verb.
+	 *
+	 * @var string
+	 */
+	private const ROLES_KEY = 'roles';
+
+	/**
 	 * Block keys that are settings rather than lists of entries.
 	 *
 	 * @var array<int, string>
@@ -129,36 +136,50 @@ class GrantConstraints {
 
 		$filtered = [];
 		foreach ($authorization as $key => $value) {
-			if (is_string($key) === false || in_array($key, self::SKIPPED_KEYS, true) === true) {
-				$filtered[$key] = $value;
-				continue;
-			}
-
-			if ($key === DenyResolver::DENY_KEY && is_array($value) === true) {
-				$filtered[$key] = $this->apply(authorization: $value, area: $area, now: $now);
-				continue;
-			}
-
-			if ($key === 'roles' && is_array($value) === true) {
-				$filtered[$key] = $this->applyToRoleAssignments(assignments: $value, area: $area, now: $now);
-				continue;
-			}
-
-			if (is_array($value) === false) {
-				$filtered[$key] = $value;
-				continue;
-			}
-
-			$filtered[$key] = array_values(
-				array_filter(
-					$value,
-					fn (mixed $entry): bool => $this->reaches(entry: $entry, area: $area, now: $now)
-				)
-			);
-		}//end foreach
+			$filtered[$key] = $this->applyToKey(key: $key, value: $value, area: $area, now: $now);
+		}
 
 		return $filtered;
 	}//end apply()
+
+	/**
+	 * One key of a block, with the entries that cannot answer here removed.
+	 *
+	 * A key that is a setting rather than a list of entries comes back
+	 * untouched, and so does a value that is not a list at all: this reader
+	 * narrows rules, and anything it does not recognise is not a rule.
+	 *
+	 * @param mixed                 $key   The block key.
+	 * @param mixed                 $value What is written under it.
+	 * @param array<string, mixed>  $area  Where the question is asked.
+	 * @param DateTimeInterface     $now   The moment.
+	 *
+	 * @return mixed The value, filtered where it is a rule list.
+	 */
+	private function applyToKey(mixed $key, mixed $value, array $area, DateTimeInterface $now): mixed {
+		if (is_string($key) === false || in_array($key, self::SKIPPED_KEYS, true) === true) {
+			return $value;
+		}
+
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		if ($key === DenyResolver::DENY_KEY) {
+			return $this->apply(authorization: $value, area: $area, now: $now);
+		}
+
+		if ($key === self::ROLES_KEY) {
+			return $this->applyToRoleAssignments(assignments: $value, area: $area, now: $now);
+		}
+
+		return array_values(
+			array_filter(
+				$value,
+				fn (mixed $entry): bool => $this->reaches(entry: $entry, area: $area, now: $now)
+			)
+		);
+	}//end applyToKey()
 
 	/**
 	 * Whether one entry still reaches this area at this moment.
@@ -276,34 +297,42 @@ class GrantConstraints {
 			return false;
 		}
 
-		$names = [$value];
-		if (is_array($value) === true) {
-			$names = $value;
-		}
-
-		$mine = [];
-		foreach ($names as $name) {
-			if (is_scalar($name) === true && (string)$name !== '') {
-				$mine[] = (string)$name;
-			}
-		}
-
+		$mine = $this->spellingsOf(value: $value);
 		if ($mine === []) {
 			return false;
 		}
 
-		foreach ($list as $named) {
-			if (is_scalar($named) === false) {
-				continue;
-			}
-
-			if (in_array((string)$named, $mine, true) === true) {
+		foreach ($this->spellingsOf(value: $list) as $named) {
+			if (in_array($named, $mine, true) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end names()
+
+	/**
+	 * Every usable spelling in a value that may be one name or several.
+	 *
+	 * @param mixed $value One name, a list of them, or something that is neither.
+	 *
+	 * @return array<int, string> The names, as strings.
+	 */
+	private function spellingsOf(mixed $value): array {
+		$candidates = [$value];
+		if (is_array($value) === true) {
+			$candidates = $value;
+		}
+
+		$names = [];
+		foreach ($candidates as $candidate) {
+			if (is_scalar($candidate) === true && (string)$candidate !== '') {
+				$names[] = (string)$candidate;
+			}
+		}
+
+		return $names;
+	}//end spellingsOf()
 
 	/**
 	 * The role assignments with their expired and out-of-area holders removed.

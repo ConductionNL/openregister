@@ -42,6 +42,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use DateTimeImmutable;
+
 /**
  * Turns the claims of one sign-in into the grants an administrator declared.
  *
@@ -90,24 +92,13 @@ class DerivedGrantResolver {
 		$skipped = [];
 
 		foreach ($rules as $index => $rule) {
-			if (is_array($rule) === false) {
-				$skipped[] = sprintf('Rule %s is not an object and was skipped.', (string)$index);
+			$unreadable = $this->reasonToSkip(rule: $rule, index: (string)$index);
+			if ($unreadable !== null) {
+				$skipped[] = $unreadable;
 				continue;
 			}
 
-			$claim = ($rule[self::CLAIM_KEY] ?? null);
-			if (is_string($claim) === false || $claim === '') {
-				$skipped[] = sprintf('Rule %s names no claim and was skipped.', (string)$index);
-				continue;
-			}
-
-			$groups = $this->stringsIn(value: ($rule['groups'] ?? []));
-			$role = ($rule['role'] ?? null);
-			if ($groups === [] && is_string($role) === false) {
-				$skipped[] = sprintf('Rule %s grants neither a group nor a role and was skipped.', (string)$index);
-				continue;
-			}
-
+			$claim = (string)$rule[self::CLAIM_KEY];
 			if ($this->matches(rule: $rule, asserted: ($claims[$claim] ?? null)) === false) {
 				continue;
 			}
@@ -115,7 +106,7 @@ class DerivedGrantResolver {
 			$grants[] = [
 				'rule' => (string)$index,
 				'claim' => $claim,
-				'groups' => $groups,
+				'groups' => $this->stringsIn(value: ($rule['groups'] ?? [])),
 				'role' => $this->roleNameIn(rule: $rule),
 				GrantConstraints::SCOPED_TO_KEY => ($rule[GrantConstraints::SCOPED_TO_KEY] ?? null),
 				GrantConstraints::UNTIL_KEY => ($rule[GrantConstraints::UNTIL_KEY] ?? null),
@@ -124,6 +115,34 @@ class DerivedGrantResolver {
 
 		return ['grants' => $grants, 'skipped' => $skipped];
 	}//end derive()
+
+	/**
+	 * Why one rule cannot be read, or null when it can.
+	 *
+	 * Reported rather than dropped. A rule an administrator wrote and nothing
+	 * ever fires is worse than one that fails: it looks configured.
+	 *
+	 * @param mixed  $rule  The rule as written.
+	 * @param string $index Where it sits in the list, for the message.
+	 *
+	 * @return string|null The reason, or null when the rule is readable.
+	 */
+	private function reasonToSkip(mixed $rule, string $index): ?string {
+		if (is_array($rule) === false) {
+			return sprintf('Rule %s is not an object and was skipped.', $index);
+		}
+
+		$claim = ($rule[self::CLAIM_KEY] ?? null);
+		if (is_string($claim) === false || $claim === '') {
+			return sprintf('Rule %s names no claim and was skipped.', $index);
+		}
+
+		if ($this->stringsIn(value: ($rule['groups'] ?? [])) === [] && $this->roleNameIn(rule: $rule) === null) {
+			return sprintf('Rule %s grants neither a group nor a role and was skipped.', $index);
+		}
+
+		return null;
+	}//end reasonToSkip()
 
 	/**
 	 * The groups a set of derived grants hands this caller, in one area.
@@ -141,7 +160,7 @@ class DerivedGrantResolver {
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	public function groupsFor(array $grants, array $area, GrantConstraints $constraints): array {
-		$now = new \DateTimeImmutable();
+		$now = new DateTimeImmutable();
 
 		$groups = [];
 		foreach ($grants as $grant) {
