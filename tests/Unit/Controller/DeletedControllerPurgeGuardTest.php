@@ -28,6 +28,12 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DeletedController;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
+use OCA\OpenRegister\Service\Deletion\DestroyRightService;
+use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
+use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
+use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -110,7 +116,13 @@ class DeletedControllerPurgeGuardTest extends TestCase {
 			$this->schemaMapper,
 			$this->userSession,
 			$this->groupManager,
-			$this->createMock(PermissionHandler::class)
+			$this->createMock(PermissionHandler::class),
+			$this->createMock(DeletionWindowService::class),
+			$this->createMock(DestroyRightService::class),
+			$this->createMock(DestructionScopeService::class),
+			$this->createMock(DestructionRecorder::class),
+			$this->createMock(RetentionClockService::class),
+			$this->createMock(AuditTrailMapper::class)
 		);
 
 		$user = $this->createMock(IUser::class);

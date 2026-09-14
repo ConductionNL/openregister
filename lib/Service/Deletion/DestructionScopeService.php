@@ -318,7 +318,7 @@ class DestructionScopeService {
 		$tasks = ($this->taskService?->getTasksForObject($uuid) ?? []);
 		$went = 0;
 		foreach ($tasks as $task) {
-			$this->taskService?->deleteTask($task['calendarId'], $task['id']);
+			$this->taskService?->deleteTask((string)$task['calendarId'], (string)$task['id']);
 			$went++;
 		}
 
