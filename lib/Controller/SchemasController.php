@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
@@ -160,6 +161,7 @@ class SchemasController extends Controller {
 		private readonly ?JsonLdContextService $jsonLdContextService = null,
 		private readonly ?SchemaImportService $schemaImportService = null,
 		private readonly ?SemanticTypeResolver $semanticTypeResolver = null,
+		private readonly ?SemanticRoleHandler $semanticRoles = null,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
@@ -499,6 +501,20 @@ class SchemasController extends Controller {
 				$schemaArr['@self']['propertyMetadata'] = $this->schemaMapper->getPropertySourceMetadata($schema);
 			}
 
+			// The semantic roles and the administered help text, resolved in
+			// the caller's language. A list component reads the roles and can
+			// then render a schema it has never seen (REQ-CLH-003).
+			if ($this->semanticRoles !== null) {
+				$properties = ($schema->getProperties() ?? []);
+				$language = $this->negotiatedLanguage();
+				$schemaArr['@self']['roles'] = $this->semanticRoles->roles(properties: $properties);
+				$schemaArr['@self']['help'] = $this->semanticRoles->helpTexts(
+					properties: $properties,
+					language: $language
+				);
+				$schemaArr['@self']['language'] = $language;
+			}
+
 			// If '@self.stats' is requested, attach statistics to the schema.
 			if (in_array('@self.stats', $extend, true) === true) {
 				// Get register counts for all schemas in one call.
@@ -551,6 +567,68 @@ class SchemasController extends Controller {
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
+	/**
+	 * Refuse a schema whose semantic roles or help text cannot be honoured.
+	 *
+	 * Two properties claiming one role is the refusal the spec names, and the
+	 * message names both: a list component that asks "which property is the
+	 * title" cannot be answered with two, and answering with the first would
+	 * make the choice depend on property order.
+	 *
+	 * @param array $data The incoming schema request data.
+	 *
+	 * @return JSONResponse|null A 422 response when invalid, else null.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	private function validateSemanticRoles(array $data): ?JSONResponse {
+		if ($this->semanticRoles === null) {
+			return null;
+		}
+
+		$properties = ($data['properties'] ?? null);
+		if (is_array($properties) === false) {
+			return null;
+		}
+
+		$errors = $this->semanticRoles->violations(properties: $properties);
+		if ($errors === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'Invalid semantic role declaration in schema properties',
+				'errors' => $errors,
+			],
+			statusCode: 422
+		);
+	}//end validateSemanticRoles()
+
+	/**
+	 * The language the caller asked for, defaulting to Dutch.
+	 *
+	 * @return string The BCP-47 tag.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	private function negotiatedLanguage(): string {
+		$explicit = trim((string)$this->request->getParam('language', ''));
+		if ($explicit !== '') {
+			return $explicit;
+		}
+
+		$header = trim((string)$this->request->getHeader('Accept-Language'));
+		if ($header === '') {
+			return 'nl';
+		}
+
+		$first = trim((string)(explode(',', $header)[0] ?? ''));
+		$first = trim((string)(explode(';', $first)[0] ?? ''));
+
+		return ($first === '' ? 'nl' : $first);
+	}//end negotiatedLanguage()
+
 	private function validateJsonLdMapping(array $data): ?JSONResponse {
 		if ($this->jsonLdContextService === null) {
 			return null;
@@ -653,6 +731,13 @@ class SchemasController extends Controller {
 		$jsonLdError = $this->validateJsonLdMapping(data: $data);
 		if ($jsonLdError !== null) {
 			return $jsonLdError;
+		}
+
+		// Refuse a duplicated semantic role before the write, naming both
+		// properties (REQ-CLH-003).
+		$roleError = $this->validateSemanticRoles(data: $data);
+		if ($roleError !== null) {
+			return $roleError;
 		}
 
 		// Refuse a register context that does not resolve BEFORE writing the schema.
@@ -859,6 +944,13 @@ class SchemasController extends Controller {
 		$jsonLdError = $this->validateJsonLdMapping(data: $data);
 		if ($jsonLdError !== null) {
 			return $jsonLdError;
+		}
+
+		// Refuse a duplicated semantic role before the write, naming both
+		// properties (REQ-CLH-003).
+		$roleError = $this->validateSemanticRoles(data: $data);
+		if ($roleError !== null) {
+			return $roleError;
 		}
 
 		// Capture prior authorization so a change can be audit-logged below.
