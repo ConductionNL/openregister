@@ -412,9 +412,9 @@ class DashboardService {
 	 *
 	 * @return int[] Array containing counts of processed and failed objects
 	 *
-	 * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+	 * @psalm-return array{processed: int, failed: int}
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
 	 */
 	public function recalculateSizes(?int $registerId = null, ?int $schemaId = null): array {
 		$result = [
@@ -423,31 +423,27 @@ class DashboardService {
 		];
 
 		try {
-			// Build filters array based on provided IDs.
-			$filters = [];
-			if ($registerId !== null) {
-				$filters['register'] = $registerId;
-			}
-
-			if ($schemaId !== null) {
-				$filters['schema'] = $schemaId;
-			}
-
-			// Get all relevant objects.
-			$objects = $this->objectMapper->findAll(filters: $filters);
-
-			// Update each object to trigger size recalculation.
-			foreach ($objects as $object) {
-				try {
-					$this->objectMapper->update($object);
-					$result['processed']++;
-				} catch (Exception $e) {
-					$this->logger->error(
-						message: '[DashboardService] Failed to update object ' . $object->getId() . ': ' . $e->getMessage(),
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					$result['failed']++;
+			// A magic table is one table per register+schema pair, so there is no
+			// single object table to filter. MagicMapper::findAll() says so by
+			// requiring the register and schema ENTITIES and answering [] (with a
+			// warning) when it does not get them: this method passed
+			// ['register' => id, 'schema' => id] as FILTERS and nothing else, so
+			// it processed zero objects on every install while reporting success.
+			// Walk the pairs instead, narrowed by whichever id the caller named.
+			foreach ($this->objectMapper->getAllRegisterSchemaPairs() as $pair) {
+				if ($registerId !== null && (int)$pair['registerId'] !== $registerId) {
+					continue;
 				}
+
+				if ($schemaId !== null && (int)$pair['schemaId'] !== $schemaId) {
+					continue;
+				}
+
+				$this->recalculateSizesForPair(
+					registerId: (int)$pair['registerId'],
+					schemaId: (int)$pair['schemaId'],
+					result: $result
+				);
 			}
 
 			return $result;
@@ -459,6 +455,54 @@ class DashboardService {
 			throw new Exception('Failed to recalculate sizes: ' . $e->getMessage());
 		}//end try
 	}//end recalculateSizes()
+
+	/**
+	 * Re-save every object of one register+schema pair, counting the outcome.
+	 *
+	 * Split out of {@see self::recalculateSizes()} so the pair walk stays
+	 * readable. An unresolvable pair is counted as one failure and logged rather
+	 * than taking the whole run down: a stale magic table whose register or
+	 * schema row is gone must not stop the rest from being recalculated.
+	 *
+	 * @param int   $registerId The register of the pair.
+	 * @param int   $schemaId   The schema of the pair.
+	 * @param array $result     The running processed/failed tally, by reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	private function recalculateSizesForPair(int $registerId, int $schemaId, array &$result): void {
+		try {
+			$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+			$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[DashboardService] Skipping pair ' . $registerId . '/' . $schemaId . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			$result['failed']++;
+			return;
+		}
+
+		$objects = $this->objectMapper->findAllInRegisterSchemaTable(
+			register: $register,
+			schema: $schema
+		);
+
+		foreach ($objects as $object) {
+			try {
+				$this->objectMapper->update($object, $register, $schema);
+				$result['processed']++;
+			} catch (Exception $e) {
+				$this->logger->error(
+					message: '[DashboardService] Failed to update object ' . $object->getId() . ': ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+				$result['failed']++;
+			}
+		}
+	}//end recalculateSizesForPair()
 
 	/**
 	 * Recalculate sizes for audit trail logs in specified registers and/or schemas
