@@ -29,3 +29,24 @@
 ## 5. Hand over
 
 - [ ] 5.1 Hand the catalogue to the dossiq lane as soon as 1.1 answers, with the register row id: the mandate matrix names its grantable set and the role editor gains its permission half (D-7).
+
+## 6. Discovery wave 1: access inside the query
+
+- [ ] 6.1 Grants, inheritance and denies are compiled into the object query as predicates; page, total and facet counts are computed over the permitted set (D-8).
+- [ ] 6.2 The same predicates are applied in the search index path, so search and list agree.
+- [ ] 6.3 A performance test on a tree of depth 5 and 100,000 objects, proving the filter is in the query plan.
+
+## 7. Discovery wave 1: what you may do, and who may do it
+
+- [ ] 7.1 An object read carries the actions the current user may take on it, from the same resolution (D-9).
+- [ ] 7.2 `GET /api/objects/{register}/{schema}/{id}/permissions`: the principals holding rights on the object, each with the rule behind the grant (D-10).
+- [ ] 7.3 The history of that set is readable: who held which right, when it changed and which rule changed it.
+- [ ] 7.4 Two roles are readable side by side against the catalogue, showing which permissions differ.
+
+## 8. Discovery wave 1: derived, scoped and expiring grants
+
+- [ ] 8.1 A rule maps identity provider claims to roles and scopes at login, in the declared rule shape.
+- [ ] 8.2 A grant may carry an end, including one bound to a workflow step's deadline; an expired grant is not resolved and needs no sweep (D-11).
+- [ ] 8.3 A change to a rule that derives access re-runs the derivation and reports how many grants changed (D-11).
+- [ ] 8.4 `manage` may be scoped to a named area, so delegated administration is not a second administrator.
+- [ ] 8.5 Hand the catalogue's destroy verb to `delete-window-and-recorded-destruction`, which consumes it under D10.

@@ -38,3 +38,24 @@ SHALL group by concept and show labels.
 - **WHEN** the schema is read with `Accept-Language: nl`
 - **THEN** the property carries twelve options with Dutch labels
 - @e2e exclude {proposal only; task 3.1 adds tests/e2e/ci/concept-code-list.spec.ts when the form consumes options}
+
+### Requirement: A choice property must have a source of values
+
+A property that offers a choice SHALL have a source for its values: a
+non-empty `enum`, or an `x-openregister-concepts` declaration. A schema
+save declaring a choice property with an empty `enum` and no scheme SHALL
+fail with HTTP 422, naming the property, rather than creating a field that
+can never be filled correctly.
+
+#### Scenario: an empty choice is refused at schema save
+
+- **GIVEN** a property declared as a choice with an empty `enum` and no concept scheme
+- **WHEN** the schema is saved
+- **THEN** the save fails with 422 naming the property
+
+#### Scenario: a scheme is a valid source
+
+- **GIVEN** the same property with `x-openregister-concepts` naming a scheme and no `enum`
+- **WHEN** the schema is saved
+- **THEN** the save succeeds
+- @e2e exclude {validator, covered by unit tests}

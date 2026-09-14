@@ -6,3 +6,6 @@
 - [ ] 1.4 Build in the order above; archive each change on merge and tick it here.
 - [ ] 1.5 The regenerated register's two openregister gaps (2026-09-13): build `object-archive-state` and `rbac-inherits-to-children`, and hand their dossiq halves (`archived-cases-leave-the-lenses`, `deelzaken-inherit-the-parent-grants`) to the dossiq lane.
 - [ ] 1.6 Gap register v3's openregister gap (2026-09-14, market-intelligence #128): build `permission-provenance-and-deny` after `rbac-inherits-to-children`, and hand the catalogue to the dossiq lane as soon as it answers, so the mandate matrix can name its grantable set.
+- [ ] 1.7 Discovery wave 1 (2026-09-14, round 4 discovery sweep, 263 of 631 candidates on openregister): build the nine new changes and the three extensions in the order above, and hand each dossiq half to the dossiq lane with its candidate ids.
+- [ ] 1.8 Raise the `x-openregister-extends-form` finding with the dossiq lane: the annotation uses the platform namespace and the platform defines nothing of the kind.
+- [ ] 1.9 Tell the filinq lane that decision D7 moved the archiving process with sign-off to openregister, and that the preservation format half (C-documents-9, C-documents-21, C-documents-33) stays with filinq.
