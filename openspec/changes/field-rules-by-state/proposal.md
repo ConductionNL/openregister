@@ -80,3 +80,59 @@ field mandatory per state".
   readOnly by state), `RenderObject` (`@self.fieldRules`).
 - Backwards compatible: a lifecycle without `fields` is unchanged.
 - Size: M.
+
+## Extension, discovery wave 1 (2026-09-14)
+
+Cluster CT-2 of `procest/_round4/discovery/build-plan.md`, from the depth
+study `procest/_round4/discovery/casetype-configurability.md`
+(ConductionNL/market-intelligence, 2026-09-14): "The rules engine behind
+the smart field". Study rows B3, B4, B5, B6, B9 and the second half of C1.
+Owner openregister, size L. The build plan names this change as one of the
+three vehicles, so it is extended rather than duplicated.
+
+**The decision.** D3, option 2: the engine is OpenRegister's flow guards
+extended, which is this change plus `lifecycle-declarative-conditions`
+plus the JSON-AST evaluator. The decision also says, in the same
+paragraph, what is still missing when all three land:
+
+> a rule whose condition reads a case-type property rather than a built-in
+> field, and a rule action that makes a field required. xxllnc cannot do
+> the second either, and that is worth writing in a tender.
+
+That sentence is this extension's scope.
+
+**The proving passers.** The study's table B rates B4, shown or hidden by
+rule, as `yes` for xxllnc-zaken, glpi, frappe, itop and youtrack; B5,
+required by rule, as `yes` for glpi, frappe, itop and youtrack and `no`
+for xxllnc; and B6, read only by fase or by role, as `yes` for tuleap and
+itop. The competitor that buyers mean when they say smart fields is
+xxllnc, which answers with a per-fase rule carrying 19 conditions and 23
+actions, two branches and grouping. dossiq answers with six guards and
+eight action handlers hanging off a transition, "so a rule can block a
+move but cannot shape a form".
+
+For C1's second half the study's reading of dossiq is: "conditions hang on
+the transition, not the status; six guards, no expression, no and/or
+grouping, no else branch".
+
+**What this change gains.**
+
+- **A field rule's condition reads the object.** The condition operand may
+  be any property of the object, including one an extending form
+  declared, and not only the lifecycle field and the built-in scalars.
+- **A rule may make a field required.** `required`, `hidden` and
+  `readOnly` become conditional: they apply when the declared condition
+  holds, so "verplicht als bedrag boven 50.000" is expressible without a
+  state per branch.
+- **A state carries entry and exit conditions.** A condition on the state
+  itself, grouped with and or or, evaluated on the way in and on the way
+  out, with the refusal naming the clause that failed. Today a condition
+  can only hang on a transition, which means declaring the same rule on
+  every edge that reaches the state.
+
+**What stays out.** Read and write permission per field (study row B9)
+belongs to `row-field-level-security`, which already carries the role axis
+for ledger row 13.8. The option-narrowing half of B3 is
+`code-list-lifecycle-and-hierarchy` REQ-CLH-002. The operator surface for
+all of this, the inventory, the run log, the ceiling and the dry run, is
+`rules-engine-operability`.

@@ -125,3 +125,113 @@ rule and not only the decision.
 - **WHEN** any authorization decision is made
 - **THEN** the answer is the same as before this change
 - @e2e exclude {regression assertion, covered by unit tests}
+
+### Requirement: Access is compiled into the query, not applied to the result (REQ-PPD-005)
+
+Grants, inherited grants and denies SHALL be compiled into the object
+query and into the search index query as predicates, so that the returned
+page, the total and every facet count are computed over the set the caller
+may see. The system SHALL NOT filter a fetched page after the fact. The
+list path and the per-object check SHALL agree for every object.
+
+#### Scenario: the total counts only what the caller may see
+
+- **GIVEN** a schema holding 100 objects of which the caller may read 12
+- **WHEN** the caller lists the schema with a page size of 10
+- **THEN** the total is 12, the first page holds 10 and the second holds 2
+
+#### Scenario: facets count the permitted set
+
+- **GIVEN** the same caller and a facet over a property
+- **WHEN** the facet is requested
+- **THEN** the counts sum to 12
+
+#### Scenario: search and list agree
+
+- **GIVEN** the same caller and an object they may not read
+- **WHEN** they search for a term that object contains
+- **THEN** the object is absent from the results and from the result count
+- @e2e exclude {index path, covered by unit tests and the search suite}
+
+### Requirement: A record is returned with the actions its reader may take (REQ-PPD-006)
+
+An object read SHALL carry the actions the current user may take on that
+object, resolved in the same pass that decided the read. The list SHALL
+contain the verbs the caller actually holds, deny included, so a client
+does not have to guess and does not discover a refusal by attempting it.
+
+#### Scenario: the page renders only what is allowed
+
+- **GIVEN** a user who may read and update an object but may not delete it
+- **WHEN** the object is read
+- **THEN** the response lists `read` and `update` and does not list `delete`
+
+#### Scenario: a deny removes the action from the record
+
+- **GIVEN** the same user with `update` denied on that one object
+- **WHEN** the object is read
+- **THEN** `update` is absent from the actions
+
+### Requirement: An object answers who holds which right on it, and how that changed (REQ-PPD-007)
+
+The system SHALL answer, for a named object, which principals hold which
+verbs on it and the rule behind each grant. The system SHALL keep the
+history of that set, so it can report who held which right at a past
+moment and which rule changed it. Two roles SHALL be readable side by side
+against the catalogue, showing which permissions differ.
+
+#### Scenario: an auditor asks who could open a dossier
+
+- **GIVEN** an object reachable by one role grant, one per-object grant and one inherited grant
+- **WHEN** the object's effective permissions are read
+- **THEN** the three principals are listed, each with its verbs and the rule behind it
+
+#### Scenario: the access history answers a question about last year
+
+- **GIVEN** a grant that was removed three months ago
+- **WHEN** the object's access history is read for a date before the removal
+- **THEN** the grant is reported as held at that date, with the rule that removed it afterwards
+- @e2e exclude {history path, covered by unit tests}
+
+#### Scenario: two roles are compared
+
+- **GIVEN** the roles `behandelaar` and `senior behandelaar`
+- **WHEN** the two are compared
+- **THEN** the verbs only the senior role holds are listed
+- @e2e exclude {catalogue read, covered by unit tests}
+
+### Requirement: Grants may be derived at login, scoped, and given an end (REQ-PPD-008)
+
+A rule SHALL be able to map the claims an identity provider asserts to
+roles and scopes when a user signs in, in the same declared shape as any
+other authorization rule. A grant MAY carry an end, including an end bound
+to the deadline of the workflow step that created it, and an expired grant
+SHALL NOT be resolved. When a rule that derives access changes, the system
+SHALL re-run the derivation and report how many grants changed. The
+`manage` verb SHALL be grantable scoped to a named area, so a person may
+administer part of the instance without administering all of it.
+
+#### Scenario: a new employee is authorised without a matrix
+
+- **GIVEN** a rule mapping the claim `department: vergunningen` to the role `behandelaar` in that department
+- **WHEN** a user with that claim signs in
+- **THEN** they hold the role in that department and no other
+
+#### Scenario: a step's grant dies with the step
+
+- **GIVEN** a workflow step granting `read` on a file to its assignee until its deadline
+- **WHEN** the deadline passes and the assignee reads the file
+- **THEN** the read is refused
+- @e2e exclude {time-dependent, covered by unit tests with a clock fixture}
+
+#### Scenario: changing the rule reports what moved
+
+- **GIVEN** a derivation rule granting access to 240 objects
+- **WHEN** the rule is narrowed and saved
+- **THEN** the derivation re-runs and the response names how many grants changed
+
+#### Scenario: a delegated administrator cannot administer everything
+
+- **GIVEN** a user holding `manage` scoped to one register
+- **WHEN** they try to change the configuration of another register
+- **THEN** the write is refused naming the scope of their grant
