@@ -37,6 +37,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
+use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\Event;
@@ -292,22 +293,36 @@ class CalculationOnSaveListener implements IEventListener {
 	}//end loadSchema()
 
 	/**
-	 * Read the `x-openregister-calculations` configuration block.
+	 * Read every declared calculation: the `x-openregister-calculations`
+	 * configuration block, plus the `calculation` key on each property.
 	 *
 	 * @param Schema $schema Schema to inspect.
 	 *
-	 * @return array<string, mixed>|null Calculations map, or null when absent.
+	 * @return array<string, mixed>|null Calculations map, or null when nothing is declared.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
+	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
 	 */
 	private function getCalculations(Schema $schema): ?array {
 		$config = ($schema->getConfiguration() ?? []);
-		$value = ($config['x-openregister-calculations'] ?? null);
-		$result = null;
-		if (is_array($value) === true) {
-			$result = $value;
+		$annotation = ($config['x-openregister-calculations'] ?? []);
+		if (is_array($annotation) === false) {
+			$annotation = [];
 		}
 
-		return $result;
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false) {
+			$properties = [];
+		}
+
+		// A `calculation` key a property form forwarded materialises through
+		// exactly this path, so an authored expression and a hand-written
+		// annotation produce the same stored value.
+		$merged = (new PropertyCalculations())->merge(annotation: $annotation, properties: $properties);
+		if ($merged === []) {
+			return null;
+		}
+
+		return $merged;
 	}//end getCalculations()
 }//end class

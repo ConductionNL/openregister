@@ -66,6 +66,248 @@ use Throwable;
  */
 class CalculationEvaluator {
 	/**
+	 * The operator vocabulary, described.
+	 *
+	 * This table is the published catalogue. It sits directly beside the
+	 * `match` in {@see self::evaluateNode()} that dispatches on the same keys,
+	 * so an operator is added to both in one edit; `OperatorCatalogueTest`
+	 * reads the match arms out of this file and fails when the two drift.
+	 * `CalculationAnnotationValidator` reads its vocabulary from here, so a
+	 * schema can never be refused for an operator the catalogue advertises.
+	 *
+	 * `arity` is a human-readable shape: a count, a range, `N+` for variadic,
+	 * `0` for none, and `dict` for the operators that take a named-key object.
+	 *
+	 * @var array<string, array{category: string, arity: string, operands: array<int, string>, result: string, description: string}>
+	 */
+	public const OPERATORS = [
+		'prop' => [
+			'category' => 'reference',
+			'arity' => '1',
+			'operands' => ['string'],
+			'result' => 'any',
+			'description' => 'Reads a property of the object. Accepts a dotted path and the @self, @ref and @aggregate prefixes.',
+		],
+		'lit' => [
+			'category' => 'reference',
+			'arity' => '1',
+			'operands' => ['any'],
+			'result' => 'any',
+			'description' => 'A literal value. Placeholders such as $now and $currentUser are resolved.',
+		],
+		'concat' => [
+			'category' => 'string',
+			'arity' => '1+',
+			'operands' => ['any'],
+			'result' => 'string',
+			'description' => 'Joins its operands into one string.',
+		],
+		'if' => [
+			'category' => 'logic',
+			'arity' => '3',
+			'operands' => ['boolean', 'any', 'any'],
+			'result' => 'any',
+			'description' => 'Returns the second operand when the first is true, otherwise the third.',
+		],
+		'not' => [
+			'category' => 'logic',
+			'arity' => '1',
+			'operands' => ['boolean'],
+			'result' => 'boolean',
+			'description' => 'Negates its operand.',
+		],
+		'and' => [
+			'category' => 'logic',
+			'arity' => '1+',
+			'operands' => ['boolean'],
+			'result' => 'boolean',
+			'description' => 'True when every operand is true.',
+		],
+		'or' => [
+			'category' => 'logic',
+			'arity' => '1+',
+			'operands' => ['boolean'],
+			'result' => 'boolean',
+			'description' => 'True when at least one operand is true.',
+		],
+		'+' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'Adds its operands.',
+		],
+		'-' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'Subtracts the later operands from the first, or negates a single operand.',
+		],
+		'*' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'Multiplies its operands.',
+		],
+		'/' => [
+			'category' => 'arithmetic',
+			'arity' => '2',
+			'operands' => ['number', 'number'],
+			'result' => 'number',
+			'description' => 'Divides the first operand by the second. A zero divisor is refused.',
+		],
+		'%' => [
+			'category' => 'arithmetic',
+			'arity' => '2',
+			'operands' => ['number', 'number'],
+			'result' => 'number',
+			'description' => 'The remainder after dividing the first operand by the second.',
+		],
+		'eq' => [
+			'category' => 'comparison',
+			'arity' => '2',
+			'operands' => ['any', 'any'],
+			'result' => 'boolean',
+			'description' => 'True when both operands are equal.',
+		],
+		'ne' => [
+			'category' => 'comparison',
+			'arity' => '2',
+			'operands' => ['any', 'any'],
+			'result' => 'boolean',
+			'description' => 'True when the operands differ.',
+		],
+		'lt' => [
+			'category' => 'comparison',
+			'arity' => '2',
+			'operands' => ['number|date', 'number|date'],
+			'result' => 'boolean',
+			'description' => 'True when the first operand sorts before the second.',
+		],
+		'lte' => [
+			'category' => 'comparison',
+			'arity' => '2',
+			'operands' => ['number|date', 'number|date'],
+			'result' => 'boolean',
+			'description' => 'True when the first operand sorts before the second or equals it.',
+		],
+		'gt' => [
+			'category' => 'comparison',
+			'arity' => '2',
+			'operands' => ['number|date', 'number|date'],
+			'result' => 'boolean',
+			'description' => 'True when the first operand sorts after the second.',
+		],
+		'gte' => [
+			'category' => 'comparison',
+			'arity' => '2',
+			'operands' => ['number|date', 'number|date'],
+			'result' => 'boolean',
+			'description' => 'True when the first operand sorts after the second or equals it.',
+		],
+		'now' => [
+			'category' => 'date',
+			'arity' => '0',
+			'operands' => [],
+			'result' => 'date',
+			'description' => 'The current moment.',
+		],
+		'diffDays' => [
+			'category' => 'date',
+			'arity' => '2',
+			'operands' => ['date', 'date'],
+			'result' => 'integer',
+			'description' => 'Whole days between the later and the earlier date.',
+		],
+		'formatDate' => [
+			'category' => 'date',
+			'arity' => '2',
+			'operands' => ['date', 'string'],
+			'result' => 'string',
+			'description' => 'Renders a date with a PHP date format string.',
+		],
+		'dateDiff' => [
+			'category' => 'date',
+			'arity' => 'dict',
+			'operands' => ['from', 'to', 'unit'],
+			'result' => 'integer',
+			'description' => 'Signed difference between two dates in years, months, weeks, days, hours, minutes or seconds.',
+		],
+		'dateAdd' => [
+			'category' => 'date',
+			'arity' => 'dict',
+			'operands' => ['date', 'amount', 'unit', 'duration'],
+			'result' => 'date',
+			'description' => 'Shifts a date by an amount and a unit, or by an ISO-8601 duration such as P6W.',
+		],
+		'sequence' => [
+			'category' => 'identifier',
+			'arity' => 'dict',
+			'operands' => ['scope', 'pad'],
+			'result' => 'string',
+			'description' => 'Reserves the next running number in a yearly, monthly or global scope, once, when the object is created.',
+		],
+		'max' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'The largest of its operands, skipping nulls.',
+		],
+		'min' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'The smallest of its operands, skipping nulls.',
+		],
+		'coalesce' => [
+			'category' => 'logic',
+			'arity' => '1+',
+			'operands' => ['any'],
+			'result' => 'any',
+			'description' => 'The first operand that is not null.',
+		],
+		'abs' => [
+			'category' => 'arithmetic',
+			'arity' => '1',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'The absolute value of its operand.',
+		],
+		'round' => [
+			'category' => 'arithmetic',
+			'arity' => '1..2',
+			'operands' => ['number', 'integer'],
+			'result' => 'number',
+			'description' => 'Rounds its operand, optionally to a number of decimals.',
+		],
+		'year' => [
+			'category' => 'date',
+			'arity' => '1',
+			'operands' => ['date'],
+			'result' => 'integer',
+			'description' => 'The four-digit year of a date.',
+		],
+		'monthsElapsed' => [
+			'category' => 'date',
+			'arity' => '2',
+			'operands' => ['date', 'date'],
+			'result' => 'integer',
+			'description' => 'Signed whole calendar months between the later and the earlier date.',
+		],
+		'sha256' => [
+			'category' => 'string',
+			'arity' => '1',
+			'operands' => ['any'],
+			'result' => 'string',
+			'description' => 'The lowercase hexadecimal SHA-256 digest of its operand.',
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PlaceholderResolver $placeholders Shared placeholder resolver for literal-string interpolation.
@@ -1220,4 +1462,61 @@ class CalculationEvaluator {
 
 		return hash('sha256', (string)$value);
 	}//end sha256Of()
+	/**
+	 * The properties an expression reads, derived from the expression itself.
+	 *
+	 * A `dependsOn` list written beside an expression is a second source of
+	 * truth, and it fails silently: a dependency the author forgot is a value
+	 * that never refreshes. The AST is a tree, so the answer is derivable, and
+	 * this is the one place that derives it. The annotation validator's cycle
+	 * check runs on the list this produces.
+	 *
+	 * Names are returned exactly as the expression writes them, including the
+	 * `@self.`, `@ref.` and `@aggregate.` prefixes, in first-seen order with
+	 * duplicates removed.
+	 *
+	 * @param mixed $expression Expression AST (any node).
+	 *
+	 * @return array<int, string> The property names the expression reads.
+	 *
+	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 */
+	public function referencedProperties(mixed $expression): array {
+		$names = [];
+		$this->collectReferences(expression: $expression, names: $names);
+
+		return array_values(array_unique($names));
+	}//end referencedProperties()
+
+	/**
+	 * Walk a node collecting every `prop` reference beneath it.
+	 *
+	 * @param mixed $expression Expression AST (any node).
+	 * @param array<int, string> $names Mutable accumulator of property names.
+	 *
+	 * @return void
+	 */
+	private function collectReferences(mixed $expression, array &$names): void {
+		if (is_array($expression) === false) {
+			return;
+		}
+
+		foreach ($expression as $key => $value) {
+			if ($key === 'prop') {
+				$name = $value;
+				if (is_array($name) === true) {
+					$name = ($name[0] ?? null);
+				}
+
+				if (is_string($name) === true && $name !== '') {
+					$names[] = $name;
+				}
+
+				continue;
+			}
+
+			$this->collectReferences(expression: $value, names: $names);
+		}
+	}//end collectReferences()
+
 }//end class

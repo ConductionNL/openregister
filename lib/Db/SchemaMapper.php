@@ -33,6 +33,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
@@ -1270,43 +1272,127 @@ class SchemaMapper extends QBMapper {
 	}//end validateAggregationsAnnotation()
 
 	/**
-	 * Validate the optional `x-openregister-calculations` annotation.
+	 * Validate declared calculations, from the annotation and from the properties.
+	 *
+	 * Two declarations reach one engine. `x-openregister-calculations` is
+	 * written by hand in a register file; a `calculation` key on a property is
+	 * forwarded by an administration surface. They are merged and validated
+	 * together, so a cycle between one of each is still a cycle.
+	 *
+	 * They differ in what a refusal costs. The annotation stays ADVISORY: a
+	 * register file shipped by an app must not be able to break the whole
+	 * import, so a malformed block is logged and the schema is stored. A
+	 * forwarded declaration is BLOCKING: a person just wrote it in a form and
+	 * pressed save, and storing an expression that will silently never
+	 * evaluate is the failure ADR-005 names. The save refuses and the response
+	 * carries the code and the node that refused it.
 	 *
 	 * @param Schema $schema Schema to validate.
 	 *
-	 * @throws Exception When the annotation is malformed.
+	 * @throws CalculationDeclarationException When a forwarded property declaration is invalid.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
 	 */
 	private function validateCalculationsAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-calculations'] ?? null);
+		$properties = ($schema->getProperties() ?? []);
+		$annotation = ($configuration['x-openregister-calculations'] ?? []);
 		if (is_array($annotation) === false) {
+			$annotation = [];
+		}
+
+		if (is_array($properties) === false) {
+			$properties = [];
+		}
+
+		$forwarding = new PropertyCalculations();
+		$forwarded = $forwarding->fromProperties(properties: $properties);
+		if ($annotation === [] && $forwarded === []) {
 			return;
+		}
+
+		$errors = [];
+
+		// A name declared in both places has two expressions and no rule says
+		// which wins, so the save refuses rather than picking one.
+		foreach ($forwarding->duplicates(annotation: $annotation, properties: $properties) as $duplicate) {
+			$errors[] = [
+				'code' => 'calculation-duplicate-declaration',
+				'message' => sprintf(
+					'Calculation "%s" is declared both on the property and in x-openregister-calculations.',
+					$duplicate
+				),
+			];
 		}
 
 		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-calculations' => $annotation,
+			'properties' => $properties,
+			'x-openregister-calculations' => $forwarding->merge(annotation: $annotation, properties: $properties),
 			'x-openregister-references' => ($configuration['x-openregister-references'] ?? []),
+			'x-openregister-aggregate-refs' => ($configuration['x-openregister-aggregate-refs'] ?? []),
 		];
 
-		$errors = (new CalculationAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
+		$errors = array_merge($errors, (new CalculationAnnotationValidator())->validate($shape));
+		if ($errors === []) {
 			return;
 		}
 
-		// Calculations are ADVISORY derived-field metadata, not a storage
-		// requirement. A malformed / non-canonical calculation block (e.g. a type
-		// outside the canonical set, or a missing expression) must not abort the
-		// whole schema import — the schema still stores objects, the calculation
-		// simply won't be evaluated. Degrade to a non-fatal warning.
+		$blocking = $this->blockingCalculationErrors(errors: $errors, forwarded: array_keys($forwarded));
+		if ($blocking !== []) {
+			throw new CalculationDeclarationException(errors: $blocking);
+		}
+
 		$messages = array_map(static fn (array $err) => $err['message'], $errors);
 		$this->logger->warning(
 			'x-openregister-calculations annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
 			. 'invalid and was ignored (calculation not evaluated): ' . implode(' ', $messages)
 		);
 	}//end validateCalculationsAnnotation()
+
+	/**
+	 * Pick out the errors a forwarded property declaration is answerable for.
+	 *
+	 * An error names the calculation it belongs to, so attribution is by name:
+	 * an error mentioning a forwarded name blocks, the rest stay advisory. A
+	 * duplicate declaration blocks on its own code, and `dependsOn` is never
+	 * blocking because it is a note to the author, not a broken expression.
+	 *
+	 * @param array<int, array{code: string, message: string}> $errors Every validation error.
+	 * @param array<int, string> $forwarded The names declared on a property.
+	 *
+	 * @return array<int, array{code: string, message: string}> The blocking errors.
+	 *
+	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 */
+	private function blockingCalculationErrors(array $errors, array $forwarded): array {
+		$blocking = [];
+		foreach ($errors as $error) {
+			if ($error['code'] === 'calculation-dependson-ignored') {
+				continue;
+			}
+
+			if ($error['code'] === 'calculation-duplicate-declaration') {
+				$blocking[] = $error;
+				continue;
+			}
+
+			foreach ($forwarded as $name) {
+				// The validator quotes the calculation name in every message,
+				// and a cycle message lists every name on the path.
+				if (str_contains($error['message'], '"' . $name . '"') === true
+					|| str_contains($error['message'], ' ' . $name . ' ->') === true
+					|| str_contains($error['message'], '-> ' . $name) === true
+				) {
+					$blocking[] = $error;
+					break;
+				}
+			}
+		}
+
+		return $blocking;
+	}//end blockingCalculationErrors()
 
 	/**
 	 * Validate the optional `x-openregister-quality` annotation.
