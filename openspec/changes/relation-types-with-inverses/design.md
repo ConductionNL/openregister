@@ -25,3 +25,28 @@ property exists, which is the common case.
 ## D-4: kind
 
 Code, in OpenRegister. Consuming apps annotate properties.
+
+## D-C61-1. A split records where it came from
+
+Zammad splits a ticket and keeps no provenance column, and the lane says
+so. Copying the act without copying the omission costs one relation row
+and answers "why does this zaak exist" for the rest of its life.
+
+## D-C61-2. Inheritance happens once, at creation, and is recorded
+
+Live inheritance of a classification means changing the parent silently
+reclassifies children, which is an access change nobody authorised. The
+child takes the values at creation, the relation says it did, and a later
+change to the parent is a decision somebody makes again.
+
+## D-C61-3. An external link is a relation, not a field
+
+A URL pasted into a description is invisible to the graph, the reverse
+view and the export. As a relation row with a title and a type it is all
+three, and it costs no new concept.
+
+## D-C61-4. The graph is depth-bounded by declaration
+
+An unbounded graph query over a municipal register is a query that never
+returns. The depth is declared per request within an administered
+maximum, and the answer says whether it was truncated.

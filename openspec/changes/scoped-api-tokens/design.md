@@ -35,3 +35,23 @@ wrote.
 ## D-5: kind
 
 Code, in OpenRegister. Consuming apps issue tokens.
+
+## D-C40-1. The end date is required, not offered
+
+An optional expiry is an expiry nobody sets, and the six-year migration
+token is the finding that follows. Issuing requires an end date, the
+holder is warned before it lapses, and renewing is a deliberate act with
+its own record.
+
+## D-C40-2. A service account is owned by a team
+
+An integration that runs as a person breaks when the person leaves, and
+nobody can tell whose it was. A service account is owned by a team, holds
+its own grants, and cannot sign in interactively, which is what stops it
+becoming a shared login.
+
+## D-C40-3. The outbound allowlist is checked at save
+
+Checking a destination at delivery time means the failure arrives at three
+in the morning, in a job, to nobody. Checking at save tells the person who
+typed it, while they are still there.

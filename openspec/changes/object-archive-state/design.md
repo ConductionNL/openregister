@@ -58,3 +58,28 @@ backend.
 - **An archived object in a flow.** A running flow that writes to an
   object archived under it gets the refusal like any other writer. Naming
   the archive in the refusal is what makes that debuggable.
+
+## D-C29-1. Frozen and archived are two states, not one flag
+
+Archived leaves the working views; frozen stays in them. A zaak in bezwaar
+must be findable and unchangeable at the same time, and collapsing the two
+into one state forces every leaf app to choose the wrong half.
+
+## D-C29-2. A freeze can be declared by the lifecycle
+
+A freeze that depends on somebody clicking is a freeze that happens late.
+A state declares that entering it freezes the object, so the registration
+data stops changing when the phase closes, not when somebody notices.
+
+## D-C29-3. Immutable is a property rule, not a state
+
+A vastgesteld besluit's date must not change even while the object is
+otherwise open. Putting immutability on the property means it holds
+regardless of the object's state, which is what the Archiefwet argument
+actually asks for.
+
+## D-C29-4. Withdrawn is not deleted
+
+A wrongly filed stuk must go without the record of its arrival going. The
+entry leaves the working timeline and stays in the record, with the
+withdrawal, its actor and its reason readable by anyone authorised.

@@ -1104,6 +1104,7 @@ class ValidateObject {
 			'indexes',
 			'options',
 			'computed',
+			'calculation',
 		];
 
 		foreach ($metadataProperties as $property) {
@@ -1171,6 +1172,7 @@ class ValidateObject {
 			'indexes',
 			'options',
 			'computed',
+			'calculation',
 		];
 
 		foreach ($metadataProperties as $property) {
@@ -1695,7 +1697,15 @@ class ValidateObject {
 		$computedProperties = [];
 		if (($schemaObject->properties ?? null) !== null) {
 			foreach ($schemaObject->properties as $propName => $propSchema) {
-				if (is_object($propSchema) === true && ($propSchema->computed ?? null) !== null) {
+				// Both derivation engines make a property system-generated: the
+				// Twig `computed` marker and the JSON-AST `calculation` key. A
+				// value the client sent for either is dropped before
+				// validation, and neither can be required from user input.
+				if (is_object($propSchema) === false) {
+					continue;
+				}
+
+				if (($propSchema->computed ?? null) !== null || ($propSchema->calculation ?? null) !== null) {
 					$computedProperties[] = $propName;
 				}
 			}

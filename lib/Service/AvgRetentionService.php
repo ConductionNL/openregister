@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -66,6 +67,7 @@ class AvgRetentionService {
 	 * @param MagicMapper $objectMapper Object loader.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a held or legally retained record.
+	 * @param RetentionClockService|null $clocks Reports a disagreement between the AVG and Archiefwet clocks.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
@@ -75,6 +77,7 @@ class AvgRetentionService {
 		private readonly MagicMapper $objectMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ArchivalRetentionGuard $archivalGuard,
+		private readonly ?RetentionClockService $clocks = null,
 	) {
 
 	}//end __construct()
@@ -368,6 +371,24 @@ class AvgRetentionService {
 			$refusal = $this->archivalGuard->erasureRefusal(object: $object);
 			if ($refusal !== null) {
 				$withheld[] = $refusal;
+				continue;
+			}
+
+			// TWO CLOCKS, AND THE DISAGREEMENT IS AN OUTPUT. The AVG says
+			// delete when the purpose ends; the selectielijst says keep for N
+			// years. Where they disagree the object stays and the conflict is
+			// reported, because resolving it silently is wrong in one
+			// direction for every object it touches.
+			$clockRefusal = $this->clocks?->refusalFor(object: $object);
+			if ($clockRefusal !== null) {
+				$withheld[] = array_merge(
+					[
+						'uuid' => (string)$object->getUuid(),
+						'schema' => $object->getSchema(),
+						'ground' => 'RETENTION_CLOCKS_DISAGREE',
+					],
+					$clockRefusal->toResponseBody()
+				);
 				continue;
 			}
 

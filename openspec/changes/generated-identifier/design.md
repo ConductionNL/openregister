@@ -34,3 +34,29 @@ generated value may still be referenced by computed fields afterwards.
 
 Code, in OpenRegister. Consuming apps add the annotation to a property,
 which is config.
+
+## D-C41-1. A random identifier is a sequence kind, not a second mechanism
+
+osTicket ships `RandomSequence` beside its counter and both allocate under
+the same lock. Keeping one allocation path with two kinds means the
+uniqueness argument is made once, which is the part that is hard to get
+right under concurrency.
+
+## D-C41-2. A foreign identifier names its issuer
+
+An identifier from another system with no issuer is a string that collides
+sooner or later. Each foreign identifier names the system that issued it,
+which makes the lookup exact and lets two senders use the same number
+without ambiguity.
+
+## D-C41-3. A rewrite keeps the old number findable
+
+A zaaknummer already quoted in a brief cannot stop working because the
+scheme changed. The old value is kept as a foreign identifier issued by
+this instance, so every letter ever sent still finds the record.
+
+## D-C41-4. One migration per sequence at a time
+
+Two concurrent renumberings of one sequence is a collision the lock cannot
+help with, because both are legitimate writers. The second is refused,
+naming the running one.

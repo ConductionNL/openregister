@@ -1771,8 +1771,12 @@ class Schema extends Entity implements JsonSerializable {
 				}
 			}
 
-			// Mark computed properties as readOnly in JSON Schema / OpenAPI output.
-			if (isset($property['computed']) === true && is_array($property['computed']) === true) {
+			// Mark computed properties as readOnly in JSON Schema / OpenAPI
+			// output. Both engines count: the Twig `computed` marker and the
+			// JSON-AST `calculation` key a property form forwards.
+			$isComputed = (isset($property['computed']) === true && is_array($property['computed']) === true);
+			$isCalculated = (isset($property['calculation']) === true && is_array($property['calculation']) === true);
+			if ($isComputed === true || $isCalculated === true) {
 				$prop->readOnly = true;
 			}
 
