@@ -144,6 +144,35 @@ class BulkJobMapper extends QBMapper {
 	}//end findAllJobs()
 
 	/**
+	 * Read just the state of a job.
+	 *
+	 * The commit loop asks this between every two objects, so a cancel stops
+	 * before the next object rather than at the next batch boundary (D-4).
+	 * Selecting one indexed column keeps that affordable.
+	 *
+	 * @param int $id The job id.
+	 *
+	 * @return string|null The state, or null when the job is gone.
+	 */
+	public function readState(int $id): ?string {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('state')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
+			->setMaxResults(1);
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false) {
+			return null;
+		}
+
+		return (string)$row['state'];
+	}//end readState()
+
+	/**
 	 * Create a job from an array of values, assigning a uuid and timestamps.
 	 *
 	 * @param array<string, mixed> $data The job values.
