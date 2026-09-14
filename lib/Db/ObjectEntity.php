@@ -767,18 +767,12 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setRegistryState()
 
 	/**
-	 * Whether the current user follows this object, when the render layer said.
-	 *
-	 * @return boolean|null True or false for a signed-in reader, null when unset.
-	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
-	 */
-	public function getWatching(): ?bool {
-		return $this->watching;
-	}//end getWatching()
-
-	/**
 	 * Write the current user's follow marker.
+	 *
+	 * Write-only on purpose: `mergeTransientRenderFields()` reads the property
+	 * directly, so a public getter would have no caller. This entity is already
+	 * at PHPMD's public-member ceiling, and a getter nothing calls is what it is
+	 * there to stop.
 	 *
 	 * Surfaced in the @self envelope as `watching` by getObjectArray().
 	 *
@@ -793,18 +787,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setWatching()
 
 	/**
-	 * How many users follow this object, when the render layer said.
-	 *
-	 * @return integer|null The count, or null when the caller may not see it.
-	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
-	 */
-	public function getWatcherCount(): ?int {
-		return $this->watcherCount;
-	}//end getWatcherCount()
-
-	/**
 	 * Write the follower count.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above.
 	 *
 	 * Surfaced in the @self envelope as `watcherCount` by getObjectArray().
 	 *

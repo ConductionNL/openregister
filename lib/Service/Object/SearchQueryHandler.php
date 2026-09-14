@@ -164,19 +164,7 @@ class SearchQueryHandler {
 			return $query;
 		}
 
-		$uid = $this->userSession?->getUser()?->getUID();
-		$watched = [];
-		if ($this->watcherMapper !== null && $uid !== null && $uid !== '') {
-			try {
-				$watched = $this->watcherMapper->uuidsForUser(userId: $uid);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[SearchQueryHandler] watching lens lookup failed',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-				$watched = [];
-			}
-		}
+		$watched = $this->subscriptionsOfCaller();
 
 		if (isset($query['_ids']) === true && is_array($query['_ids']) === true) {
 			$watched = array_values(array_intersect($query['_ids'], $watched));
@@ -192,6 +180,35 @@ class SearchQueryHandler {
 
 		return $query;
 	}//end applyWatchingLens()
+
+	/**
+	 * The uuids the calling user follows, or an empty list.
+	 *
+	 * Empty covers three different situations on purpose — anonymous, no
+	 * subscriptions, and a failed lookup — because the caller treats all three
+	 * the same way: a lens over nothing answers nothing. Keeping them apart
+	 * here would only let one of them accidentally mean "no restriction".
+	 *
+	 * @return array<int, string> The followed object uuids.
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 */
+	private function subscriptionsOfCaller(): array {
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($this->watcherMapper === null || $uid === null || $uid === '') {
+			return [];
+		}
+
+		try {
+			return $this->watcherMapper->uuidsForUser(userId: $uid);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SearchQueryHandler] watching lens lookup failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+	}//end subscriptionsOfCaller()
 
 	/**
 	 * Whether the target schema is served by an external object-source (DBAL

@@ -10,6 +10,10 @@
  *
  * Best-effort: a failure to prune never blocks the deletion path.
  *
+ * The removal goes through WatcherService rather than straight to the mapper,
+ * so "what happens to a subscription when its object goes" has ONE definition
+ * and the listener cannot drift from it.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -29,8 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -45,11 +49,11 @@ final class WatcherPruneListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherMapper $mapper The watcher rows.
+	 * @param WatcherService $watchers The subscription primitive, which owns the cleanup.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly WatcherMapper $mapper,
+		private readonly WatcherService $watchers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -74,7 +78,7 @@ final class WatcherPruneListener implements IEventListener {
 				return;
 			}
 
-			$this->mapper->deleteByObject(objectUuid: $uuid);
+			$this->watchers->cleanupForObject(objectUuid: $uuid);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[WatcherPruneListener] prune skipped: %s', $e->getMessage())

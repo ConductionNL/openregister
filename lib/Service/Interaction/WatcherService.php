@@ -60,6 +60,17 @@ use Psr\Log\LoggerInterface;
 
 /**
  * The one subscription primitive: watch, unwatch, list, and heal.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Twelve, and each one has a caller that
+ * no other method can serve: five are the API verbs, three are read by the render layer
+ * (the marker, the count, and who may see the count), two are the notification
+ * dispatcher's (resolve the audience, drop a watcher who lost read), one is the deletion
+ * cleanup and one is the caller's uid. Splitting them would put the three permission
+ * postures in more than one class, which is the drift this class exists to prevent.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The count is 51 against a threshold of
+ * 50, and almost all of it is guard clauses: every public method is wrapped so a
+ * subscription lookup can never take out an object read or a dispatch. Removing a branch
+ * here means removing a fail-safe.
  */
 class WatcherService {
 
@@ -140,8 +151,7 @@ class WatcherService {
 		$uid = $this->requireCaller();
 		$uuid = $this->requireUuid(object: $object);
 
-		$this->watchedByCallerMemo = null;
-		$this->countsMemo = null;
+		$this->forgetMemos();
 
 		return $this->mapper->subscribe(
 			userId: $uid,
@@ -166,8 +176,7 @@ class WatcherService {
 		$uid = $this->requireCaller();
 		$uuid = $this->requireUuid(object: $object);
 
-		$this->watchedByCallerMemo = null;
-		$this->countsMemo = null;
+		$this->forgetMemos();
 
 		return $this->mapper->unsubscribe(userId: $uid, objectUuid: $uuid);
 	}//end unwatch()
@@ -206,8 +215,7 @@ class WatcherService {
 	public function addWatcher(ObjectEntity $object, string $userId, ?string $register = null, ?string $schema = null): Watcher {
 		$this->requireManage(object: $object);
 
-		$this->watchedByCallerMemo = null;
-		$this->countsMemo = null;
+		$this->forgetMemos();
 
 		return $this->mapper->subscribe(
 			userId: $userId,
@@ -237,8 +245,7 @@ class WatcherService {
 			$this->requireManage(object: $object);
 		}
 
-		$this->watchedByCallerMemo = null;
-		$this->countsMemo = null;
+		$this->forgetMemos();
 
 		return $this->mapper->unsubscribe(
 			userId: $userId,
@@ -267,7 +274,11 @@ class WatcherService {
 	}//end isWatchedByCaller()
 
 	/**
-	 * The uuids one user watches, for the `_watching=true` lens.
+	 * The uuids one user watches, behind the follow marker.
+	 *
+	 * Private: the `_watching=true` lens reads WatcherMapper::uuidsForUser()
+	 * directly (SearchQueryHandler explains why), so the only caller of this is
+	 * the per-request memo below.
 	 *
 	 * @param string|null $userId The user, or null for the caller.
 	 * @param string|null $register Narrow to one register.
@@ -277,7 +288,7 @@ class WatcherService {
 	 *
 	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
-	public function watchedUuids(?string $userId = null, ?string $register = null, ?string $schema = null): array {
+	private function watchedUuids(?string $userId = null, ?string $register = null, ?string $schema = null): array {
 		$uid = ($userId ?? $this->callerUid());
 		if ($uid === null || $uid === '') {
 			return [];
@@ -424,8 +435,7 @@ class WatcherService {
 			}
 		}
 
-		$this->watchedByCallerMemo = null;
-		$this->countsMemo = null;
+		$this->forgetMemos();
 	}//end dropWatchers()
 
 	/**
@@ -442,11 +452,24 @@ class WatcherService {
 			return 0;
 		}
 
-		$this->watchedByCallerMemo = null;
-		$this->countsMemo = null;
+		$this->forgetMemos();
 
 		return $this->mapper->deleteByObject(objectUuid: $objectUuid);
 	}//end cleanupForObject()
+
+	/**
+	 * Drop the per-request memos after a write.
+	 *
+	 * Both memos answer "as of the start of this request". A write during the
+	 * request makes both of them wrong, and a stale follow marker on the very
+	 * response that confirms the follow is the one bug a reader would report.
+	 *
+	 * @return void
+	 */
+	private function forgetMemos(): void {
+		$this->watchedByCallerMemo = null;
+		$this->countsMemo = null;
+	}//end forgetMemos()
 
 	/**
 	 * The per-request set of uuids the caller watches.
