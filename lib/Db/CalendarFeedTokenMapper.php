@@ -33,6 +33,8 @@ use OCP\IDBConnection;
  * Class CalendarFeedTokenMapper
  *
  * @template-extends QBMapper<CalendarFeedToken>
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class CalendarFeedTokenMapper extends QBMapper {
 

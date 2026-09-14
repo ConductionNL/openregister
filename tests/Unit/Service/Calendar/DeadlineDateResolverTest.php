@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+// phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use DateTime;
 use DateTimeImmutable;
@@ -66,7 +67,11 @@ class DeadlineDateResolverTest extends TestCase {
 		);
 	}
 
-	/** A five-day week with no holidays, enough to move a Saturday. */
+	/**
+	 * A five-day week with no holidays, enough to move a Saturday.
+	 *
+	 * @return WorkingCalendar The calendar.
+	 */
 	private function weekdayCalendar(): WorkingCalendar {
 		return WorkingCalendar::fromArray(
 			[

@@ -41,6 +41,8 @@ use DateTimeZone;
 
 /**
  * Folds, escapes and assembles iCalendar bodies.
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class IcalendarWriter {
 
@@ -189,7 +191,11 @@ class IcalendarWriter {
 	 */
 	private function transitionComponent(array $transition, int $previousOffset): array {
 		$isDaylight = ((bool)($transition['isdst'] ?? false));
-		$name = ($isDaylight === true ? 'DAYLIGHT' : 'STANDARD');
+		$name = 'STANDARD';
+		if ($isDaylight === true) {
+			$name = 'DAYLIGHT';
+		}
+
 		$offsetTo = (int)($transition['offset'] ?? 0);
 
 		// The transition timestamp is UTC; DTSTART inside VTIMEZONE is the
@@ -219,7 +225,11 @@ class IcalendarWriter {
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
 	public function formatOffset(int $seconds): string {
-		$sign = ($seconds < 0 ? '-' : '+');
+		$sign = '+';
+		if ($seconds < 0) {
+			$sign = '-';
+		}
+
 		$absolute = abs($seconds);
 
 		return sprintf('%s%02d%02d', $sign, intdiv($absolute, 3600), intdiv(($absolute % 3600), 60));

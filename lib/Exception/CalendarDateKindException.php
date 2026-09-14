@@ -37,6 +37,8 @@ use InvalidArgumentException;
 
 /**
  * An unusable `calendarProvider.dates` declaration.
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class CalendarDateKindException extends InvalidArgumentException {
 

@@ -47,6 +47,8 @@ use OCP\Security\ISecureRandom;
  * The lifecycle of a calendar feed token.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class CalendarFeedTokenService {
 

@@ -51,6 +51,8 @@ use Throwable;
 
 /**
  * The working day a deadline publishes on.
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class DeadlineDateResolver {
 

@@ -52,6 +52,8 @@ use Throwable;
  * The read-only calendar feed over object dates.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class ObjectCalendarFeedService {
 
@@ -201,7 +203,7 @@ class ObjectCalendarFeedService {
 			if ($token->getScopeType() === CalendarFeedToken::SCOPE_VIEW) {
 				$view = $this->views->find($scopeId);
 				return [
-					'name' => ((string)$view->getName() !== '' ? (string)$view->getName() : 'OpenRegister'),
+					'name' => $this->displayName(candidate: (string)$view->getName()),
 					'schemaId' => null,
 					'viewId' => $scopeId,
 				];
@@ -209,7 +211,7 @@ class ObjectCalendarFeedService {
 
 			$schema = $this->schemas->find($scopeId);
 			return [
-				'name' => ((string)$schema->getTitle() !== '' ? (string)$schema->getTitle() : 'OpenRegister'),
+				'name' => $this->displayName(candidate: (string)$schema->getTitle()),
 				'schemaId' => (string)$schema->getId(),
 				'viewId' => null,
 			];
@@ -220,6 +222,22 @@ class ObjectCalendarFeedService {
 			return null;
 		}
 	}//end resolveScope()
+
+	/**
+	 * The name a client shows for the feed, never an empty string.
+	 *
+	 * @param string $candidate The scope's own name.
+	 *
+	 * @return string The display name.
+	 */
+	private function displayName(string $candidate): string {
+		$trimmed = trim($candidate);
+		if ($trimmed === '') {
+			return 'OpenRegister';
+		}
+
+		return $trimmed;
+	}//end displayName()
 
 	/**
 	 * List the objects the current principal may read within the scope.

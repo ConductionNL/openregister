@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+// phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use DateTime;
 use InvalidArgumentException;
@@ -71,7 +72,11 @@ class AppointmentAttendeeServiceTest extends TestCase {
 	private function captureSaves(): void {
 		$this->objects->method('saveObject')->willReturnCallback(
 			function (array | ObjectEntity $object): ObjectEntity {
-				$this->saved = (is_array($object) === true ? $object : $object->getObject());
+				$this->saved = $object;
+				if (is_array($object) === false) {
+					$this->saved = $object->getObject();
+				}
+
 				return $this->object();
 			}
 		);

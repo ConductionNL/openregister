@@ -61,6 +61,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLastReadAt(?DateTime $lastReadAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class CalendarFeedToken extends Entity implements JsonSerializable {
 

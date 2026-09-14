@@ -47,6 +47,8 @@ use Throwable;
  * Builds the iCalendar lines of one object date.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class ObjectDateEventBuilder {
 
@@ -235,7 +237,10 @@ class ObjectDateEventBuilder {
 			return false;
 		}
 
-		$end = ($declaration->endProperty !== null ? ($data[$declaration->endProperty] ?? null) : null);
+		$end = null;
+		if ($declaration->endProperty !== null) {
+			$end = ($data[$declaration->endProperty] ?? null);
+		}
 
 		return ($this->isDateOnly(value: $raw) === true && $this->isDateOnly(value: $end) === true);
 	}//end isAllDay()
@@ -298,9 +303,11 @@ class ObjectDateEventBuilder {
 	private function stamp(ObjectEntity $object): string {
 		$updated = $object->getUpdated();
 
-		$moment = ($updated === null
-			? new DateTimeImmutable('now', new DateTimeZone('UTC'))
-			: DateTimeImmutable::createFromInterface($updated));
+		$moment = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+		if ($updated !== null) {
+			$moment = DateTimeImmutable::createFromInterface($updated);
+		}
+
 
 		return $moment->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
 	}//end stamp()
@@ -460,9 +467,11 @@ class ObjectDateEventBuilder {
 			return [];
 		}
 
-		$trigger = ($declaration->alarmOffsetDays === 0
-			? '-PT0S'
-			: '-P' . $declaration->alarmOffsetDays . 'D');
+		$trigger = '-P' . $declaration->alarmOffsetDays . 'D';
+		if ($declaration->alarmOffsetDays === 0) {
+			$trigger = '-PT0S';
+		}
+
 
 		return [
 			'BEGIN:VALARM',

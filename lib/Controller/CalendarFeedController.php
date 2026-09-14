@@ -52,6 +52,8 @@ use Psr\Log\LoggerInterface;
  * Calendar feed controller.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class CalendarFeedController extends Controller {
 
@@ -105,7 +107,10 @@ class CalendarFeedController extends Controller {
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function feed(string $token): DataDisplayResponse | JSONResponse {
 		$resolved = $this->tokens->resolve(token: $token);
-		$body = ($resolved === null ? null : $this->feed->render(token: $resolved));
+		$body = null;
+		if ($resolved !== null) {
+			$body = $this->feed->render(token: $resolved);
+		}
 
 		if ($resolved === null || $body === null) {
 			$this->registerRejectedAttempt();
@@ -272,8 +277,11 @@ class CalendarFeedController extends Controller {
 		}
 
 		$trimmed = trim($value);
+		if ($trimmed === '') {
+			return null;
+		}
 
-		return ($trimmed === '' ? null : $trimmed);
+		return $trimmed;
 	}//end stringParam()
 
 	/**

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+// phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use DateTimeZone;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;

@@ -40,6 +40,8 @@ use OCA\OpenRegister\Service\ObjectService;
 
 /**
  * Reads and writes attendee answers on an object.
+ *
+ * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class AppointmentAttendeeService {
 
@@ -151,7 +153,11 @@ class AppointmentAttendeeService {
 			);
 		}
 
-		$moment = ($respondedAt === null ? new DateTime() : $respondedAt);
+		$moment = $respondedAt;
+		if ($moment === null) {
+			$moment = new DateTime();
+		}
+
 		$data = $object->getObject();
 		$responses = $this->normalise(value: ($data[self::RESPONSES_PROPERTY] ?? null));
 

@@ -797,8 +797,18 @@ return [
         ['name' => 'calendarFeed#index', 'url' => '/api/calendar-feeds', 'verb' => 'GET'],
         ['name' => 'calendarFeed#mint', 'url' => '/api/calendar-feeds', 'verb' => 'POST'],
         ['name' => 'calendarFeed#revoke', 'url' => '/api/calendar-feeds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
-        ['name' => 'calendarFeed#attendeeResponses', 'url' => '/api/objects/{id}/attendee-responses', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'calendarFeed#recordAttendeeResponse', 'url' => '/api/objects/{id}/attendee-responses', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        [
+            'name' => 'calendarFeed#attendeeResponses',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'calendarFeed#recordAttendeeResponse',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
 
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
