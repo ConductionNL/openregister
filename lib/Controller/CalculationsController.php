@@ -116,19 +116,13 @@ class CalculationsController extends Controller {
 			);
 		}
 
-		$objectId = $this->request->getParam('objectId');
-		$register = $this->request->getParam('register');
-		$schema = $this->request->getParam('schema');
-
-		if (is_string($objectId) === true && $objectId !== ''
-			&& is_string($register) === true && $register !== ''
-			&& is_string($schema) === true && $schema !== ''
-		) {
+		$target = $this->objectTarget();
+		if ($target !== null) {
 			$result = $this->trials->tryObject(
 				declaration: $declaration,
-				register: $register,
-				schema: $schema,
-				objectId: $objectId
+				register: $target['register'],
+				schema: $target['schema'],
+				objectId: $target['objectId']
 			);
 
 			return new JSONResponse($result, $this->statusFor(result: $result));
@@ -144,6 +138,33 @@ class CalculationsController extends Controller {
 		return new JSONResponse($result, $this->statusFor(result: $result));
 
 	}//end evaluate()
+
+	/**
+	 * The stored object a trial names, when it names one in full.
+	 *
+	 * All three of `register`, `schema` and `objectId` are needed to address an
+	 * object, so a request carrying only some of them is a sample trial, not a
+	 * half-addressed object lookup.
+	 *
+	 * @return array{register: string, schema: string, objectId: string}|null The
+	 *   addressed object, or null when the request does not name one.
+	 */
+	private function objectTarget(): ?array {
+		$target = [
+			'register' => $this->request->getParam('register'),
+			'schema' => $this->request->getParam('schema'),
+			'objectId' => $this->request->getParam('objectId'),
+		];
+
+		foreach ($target as $value) {
+			if (is_string($value) === false || $value === '') {
+				return null;
+			}
+		}
+
+		return $target;
+
+	}//end objectTarget()
 
 	/**
 	 * Map a trial result onto an HTTP status.
