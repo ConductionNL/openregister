@@ -49,8 +49,9 @@ The contract has no declaration that reads a JSON path and yields
 `unconfigured`. So the row carries no adapter block, and
 `LlmSettingsController::updateLLMSettings` reports what it saved:
 
-- no chat and no embedding provider: `unconfigured`, naming the section;
-- otherwise `configured`, naming both providers and saying it is not tested.
+- no chat and no embedding provider: `unconfigured`, saying chat answers 503;
+- one of the two: `limited`, naming the one chosen and the one missing;
+- both: `configured`, naming both providers and saying it is not tested.
 
 Until the first save the row reads its `unconfiguredMessage`.
 
