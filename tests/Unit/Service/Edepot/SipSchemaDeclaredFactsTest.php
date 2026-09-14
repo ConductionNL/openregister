@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SIP schema-declared facts tests
  *
  * @category Tests
@@ -60,6 +60,11 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 	 */
 	private $previousEntityLoader = null;
 
+	/**
+	 * The package file this test built, removed in tearDown.
+	 *
+	 * @var string
+	 */
 	private string $tempFile = '';
 
 	/**
@@ -96,24 +101,24 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 	public function testTheSipCarriesTheFactsTheSchemaDeclares(): void {
 		$xml = $this->mdtoInPackage();
 
-		$this->assertStringContainsString('<mdto:aggregatieniveau>', $xml);
-		$this->assertStringContainsString('<mdto:begripLabel>Dossier</mdto:begripLabel>', $xml);
+		$this->assertStringContainsString(needle: '<mdto:aggregatieniveau>', haystack: $xml);
+		$this->assertStringContainsString(needle: '<mdto:begripLabel>Dossier</mdto:begripLabel>', haystack: $xml);
 
-		$this->assertStringContainsString('<mdto:dekkingInTijd>', $xml);
+		$this->assertStringContainsString(needle: '<mdto:dekkingInTijd>', haystack: $xml);
 		$this->assertStringContainsString(
-			'<mdto:dekkingInTijdBegindatum>2021-01-01</mdto:dekkingInTijdBegindatum>',
-			$xml
+			needle: '<mdto:dekkingInTijdBegindatum>2021-01-01</mdto:dekkingInTijdBegindatum>',
+			haystack: $xml
 		);
 		$this->assertStringContainsString(
-			'<mdto:dekkingInTijdEinddatum>2021-12-31</mdto:dekkingInTijdEinddatum>',
-			$xml
+			needle: '<mdto:dekkingInTijdEinddatum>2021-12-31</mdto:dekkingInTijdEinddatum>',
+			haystack: $xml
 		);
 
 		// The schema RECORDED a restriction, so the document must not fall back
 		// to the term that means nobody recorded one.
-		$this->assertStringContainsString('<mdto:begripLabel>Geen beperking</mdto:begripLabel>', $xml);
-		$this->assertStringNotContainsString('<mdto:begripLabel>Nader te bepalen</mdto:begripLabel>', $xml);
-		$this->assertStringContainsString('Openbaar na toetsing', $xml);
+		$this->assertStringContainsString(needle: '<mdto:begripLabel>Geen beperking</mdto:begripLabel>', haystack: $xml);
+		$this->assertStringNotContainsString(needle: '<mdto:begripLabel>Nader te bepalen</mdto:begripLabel>', haystack: $xml);
+		$this->assertStringContainsString(needle: 'Openbaar na toetsing', haystack: $xml);
 	}//end testTheSipCarriesTheFactsTheSchemaDeclares()
 
 	/**
@@ -123,7 +128,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 	 */
 	public function testThatDocumentStillValidates(): void {
 		$dom = new DOMDocument();
-		$this->assertTrue($dom->loadXML($this->mdtoInPackage()));
+		$this->assertTrue(condition: $dom->loadXML($this->mdtoInPackage()));
 
 		$previous = libxml_use_internal_errors(true);
 		libxml_clear_errors();
@@ -136,7 +141,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 		libxml_clear_errors();
 		libxml_use_internal_errors($previous);
 
-		$this->assertTrue($valid, "The packaged document does not validate:\n  " . implode("\n  ", $errors));
+		$this->assertTrue(condition: $valid, message: "The packaged document does not validate:\n  " . implode("\n  ", $errors));
 	}//end testThatDocumentStillValidates()
 
 	/**
@@ -147,10 +152,10 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 	private function mdtoInPackage(): string {
 		$this->tempFile = (string)tempnam(sys_get_temp_dir(), 'sipfacts') . '.zip';
 
-		$tempManager = $this->createMock(ITempManager::class);
+		$tempManager = $this->createMock(originalClassName: ITempManager::class);
 		$tempManager->method('getTemporaryFile')->willReturn($this->tempFile);
 
-		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(
 			static fn (string $app, string $key, string $default = ''): string => $default
 		);
@@ -165,12 +170,12 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 		$result = $builder->build('transfer-facts', [['object' => $this->object(), 'files' => []]], 0, 'zip');
 
 		$zip = new ZipArchive();
-		$this->assertTrue($zip->open($result[0]) === true, 'The SIP could not be opened');
+		$this->assertTrue(condition: $zip->open($result[0]) === true, message: 'The SIP could not be opened');
 		$xml = (string)$zip->getFromName('objects/decl-uuid/mdto.xml');
 		$zip->close();
 		@unlink($result[0]);
 
-		$this->assertNotSame('', $xml, 'The SIP carries no MDTO document for the object');
+		$this->assertNotSame(expected: '', actual: $xml, message: 'The SIP carries no MDTO document for the object');
 
 		return $xml;
 	}//end mdtoInPackage()
@@ -181,7 +186,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 	 * @return MdtoXmlGenerator The generator.
 	 */
 	private function generator(): MdtoXmlGenerator {
-		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnMap(
 			[
 				['openregister', 'organisation_identifier', '', 'ORG-001'],
@@ -191,7 +196,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			]
 		);
 
-		$schema = $this->createMock(Schema::class);
+		$schema = $this->createMock(originalClassName: Schema::class);
 		$schema->method('getConfiguration')->willReturn(
 			[
 				'x-openregister-archival' => [
@@ -207,20 +212,20 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			]
 		);
 
-		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
 		$annotations = new ObjectArchivalAnnotation(
-			$schemaMapper,
-			new RetentionEvaluator(logger: new NullLogger()),
-			new NullLogger()
+			schemaMapper: $schemaMapper,
+			evaluator: new RetentionEvaluator(logger: new NullLogger()),
+			logger: new NullLogger()
 		);
 
-		$eventMapper = $this->createMock(MdtoEventMapper::class);
+		$eventMapper = $this->createMock(originalClassName: MdtoEventMapper::class);
 		$eventMapper->method('forObject')->willReturn([]);
 
 		$writer = new MdtoDocumentWriter();
-		$sourceReader = new MdtoSourceReader(new MdtoValueReader(), $annotations);
+		$sourceReader = new MdtoSourceReader(values: new MdtoValueReader(), annotations: $annotations);
 		$bestandGenerator = new MdtoBestandGenerator($writer);
 
 		return new MdtoXmlGenerator(
@@ -240,7 +245,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 	 * @return ObjectEntity The object.
 	 */
 	private function object(): ObjectEntity {
-		$object = $this->getMockBuilder(ObjectEntity::class)
+		$object = $this->getMockBuilder(className: ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize', 'getUuid', 'getObject', 'getSchema'])
 			->addMethods(['getRetention', 'getTmlo', 'getCreated'])

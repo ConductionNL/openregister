@@ -88,7 +88,7 @@ class TmloMdtoExportXsdTest extends TestCase {
 		);
 
 		$writer = new MdtoDocumentWriter();
-		$sourceReader = new MdtoSourceReader(new MdtoValueReader(), $this->objectAnnotations());
+		$sourceReader = new MdtoSourceReader(values: new MdtoValueReader(), annotations: $this->objectAnnotations());
 		$bestandGenerator = new MdtoBestandGenerator($writer);
 		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
 
@@ -99,7 +99,7 @@ class TmloMdtoExportXsdTest extends TestCase {
 			new MdtoXmlGenerator(
 				$appConfig,
 				$eventMapper,
-				new MdtoSourceReader(new MdtoValueReader(), $this->objectAnnotations()),
+				new MdtoSourceReader(values: new MdtoValueReader(), annotations: $this->objectAnnotations()),
 				$writer,
 				new MdtoBestandGenerator($writer),
 				$preconditions
@@ -254,9 +254,9 @@ class TmloMdtoExportXsdTest extends TestCase {
 	 */
 	private function objectAnnotations(): ObjectArchivalAnnotation {
 		return new ObjectArchivalAnnotation(
-			$this->createMock(SchemaMapper::class),
-			new RetentionEvaluator(logger: new NullLogger()),
-			new NullLogger()
+			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+			evaluator: new RetentionEvaluator(logger: new NullLogger()),
+			logger: new NullLogger()
 		);
 	}
 

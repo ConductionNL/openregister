@@ -1004,9 +1004,9 @@ class MdtoXmlGeneratorTest extends TestCase {
 	 */
 	private function objectAnnotations(): ObjectArchivalAnnotation {
 		return new ObjectArchivalAnnotation(
-			$this->createMock(SchemaMapper::class),
-			new RetentionEvaluator(logger: new NullLogger()),
-			new NullLogger()
+			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+			evaluator: new RetentionEvaluator(logger: new NullLogger()),
+			logger: new NullLogger()
 		);
 	}
 
