@@ -129,6 +129,8 @@ class DeadlineDateResolver {
 	 * @return DateTimeImmutable|null The engine's date, or null when unbound or unarmed.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface is the PHP conversion; there is no DI alternative.
 	 */
 	private function fromTimer(string $objectUuid, ObjectDateDeclaration $declaration): ?DateTimeImmutable {
 		if ($declaration->timerPurpose === null) {

@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calendar;
 
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -47,6 +48,11 @@ use Throwable;
  * Builds the iCalendar lines of one object date.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One VEVENT is one output
+ * shape, and its parts are the branches: three date kinds, all-day against
+ * timed, attendees, alarms. Splitting the class would spread the shape of a
+ * single iCalendar component over several files, where a change to it can be
+ * made in one of them and missed in the rest.
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
@@ -209,7 +215,14 @@ class ObjectDateEventBuilder {
 
 		if ($declaration->kind === ObjectDateDeclaration::KIND_APPOINTMENT) {
 			$minutes = ($declaration->durationMinutes ?? ObjectDateDeclaration::DEFAULT_APPOINTMENT_MINUTES);
-			return $start->modify('+' . $minutes . ' minutes');
+			if ($minutes < 1) {
+				$minutes = ObjectDateDeclaration::DEFAULT_APPOINTMENT_MINUTES;
+			}
+
+			// `add()` over `modify()`: modify() answers false on a modifier it
+			// cannot read, and an appointment that silently loses its end is
+			// worse than one that throws.
+			return $start->add(new DateInterval('PT' . $minutes . 'M'));
 		}
 
 		return $start;
@@ -299,6 +312,8 @@ class ObjectDateEventBuilder {
 	 * @param ObjectEntity $object The object.
 	 *
 	 * @return string The UTC stamp.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface is the PHP conversion; there is no DI alternative.
 	 */
 	private function stamp(ObjectEntity $object): string {
 		$updated = $object->getUpdated();
