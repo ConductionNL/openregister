@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
@@ -2138,6 +2139,12 @@ class RenderObject {
 		// for the counts, not one per rendered row.
 		$this->applyWatcherMarkers(entity: $entity);
 
+		// The reader's own unread marker and the tab badge counts
+		// (`object-read-state`). Same lazy posture as the watcher markers above,
+		// and the same per-request memo, so a page of objects costs ONE query
+		// for the marker rather than one per rendered row.
+		$this->applyReadStateMarkers(entity: $entity);
+
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
 		// effective retention for this row from the annotation's default +
@@ -2256,6 +2263,60 @@ class RenderObject {
 			);
 		}//end try
 	}//end applyWatcherMarkers()
+
+	/**
+	 * Attach `@self.unread` and the per-sub-resource badge counts.
+	 *
+	 * Resolved through the container rather than the constructor, for the same
+	 * reason as `applyWatcherMarkers()` above: the render layer does not acquire
+	 * a hard dependency on the read-state primitive, which resolves a session
+	 * and would otherwise close a construction cycle.
+	 *
+	 * ONLY the marker is attached here, never the sub-resource badge counts.
+	 * Counting a sub-resource means looking at the object's files and its dated
+	 * arrays, so doing it on this path would pay that cost for every row of
+	 * every list, which is exactly what the memoised marker exists to avoid. A
+	 * list carries the marker; the single-object read in ObjectsController::show()
+	 * adds the badges, because that is the only caller that can be sure it is
+	 * rendering one object.
+	 *
+	 * Failures are logged and swallowed: whether you have seen an object is
+	 * never worth failing the read of that object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function applyReadStateMarkers(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			$readState = $this->container->get(ReadStateService::class);
+
+			// Anonymous reads get no marker at all: there is no "you" to answer
+			// for, and a hard false would read as "you have seen this", which is
+			// a different claim.
+			if ($readState->callerUid() === null) {
+				return;
+			}
+
+			$entity->setUnread($readState->isUnreadForCaller(objectUuid: $uuid));
+		} catch (\Throwable $e) {
+			// A read-state lookup must never take out object rendering.
+			$this->logger->debug(
+				sprintf('[RenderObject] read state markers skipped for %s: %s', $uuid, $e->getMessage())
+			);
+		}//end try
+	}//end applyReadStateMarkers()
 
 	/**
 	 * Attach the resolved `@self._retention` decision.

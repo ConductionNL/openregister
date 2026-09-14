@@ -55,6 +55,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Data Import & Export | [data-import-export.md](data-import-export.md) | Integration | Implemented | CSV, Excel, JSON, XML, OpenAPI |
 | Event-Driven Architecture | [event-driven-architecture.md](event-driven-architecture.md) | Integration | Implemented | CloudEvents v1.0, PSR-14 |
 | Webhooks & Notifications | [webhooks-and-notifications.md](webhooks-and-notifications.md) | Integration | Implemented | CloudEvents, HMAC, VNG Notificaties |
+| Object Read State | [object-read-state.md](object-read-state.md) | Collaboration | Implemented | Per-user unread, tab badges, bell cleared by the work |
 | Workflow Automation | [workflow-automation.md](workflow-automation.md) | Automation | Implemented | n8n, Windmill, BPMN |
 | Archiving & Records Management | [archiving.md](archiving.md) | Compliance | Implemented | Archiefwet, MDTO, NEN 15489, e-Depot |
 | OpenAPI & GraphQL APIs | [api-generation.md](api-generation.md) | Integration | Implemented | OpenAPI 3.1.0, GraphQL, NL API Design Rules |
@@ -95,6 +96,7 @@ Connecting OpenRegister to external systems and workflows.
 - [Data Import & Export](data-import-export.md) — CSV, Excel, JSON, XML, OpenAPI configuration portability
 - [Event-Driven Architecture](event-driven-architecture.md) — Typed PHP events, pre/post mutation hooks, StoppableEventInterface
 - [Webhooks & Notifications](webhooks-and-notifications.md) — CloudEvents delivery, HMAC signing, VNG Notificaties, retry
+- [Object Read State](object-read-state.md) — Per-user unread state, the unread filter, tab badges, snooze and archive
 - [Workflow Automation](workflow-automation.md) — Schema hooks, n8n/Windmill integration, import-time workflow triggers
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register
 - [Real-Time Updates](realtime-updates.md) — SSE subscriptions, RBAC-filtered events, reconnection with replay

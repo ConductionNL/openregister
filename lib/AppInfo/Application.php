@@ -120,6 +120,8 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ObjectMetricsListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
+use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
@@ -3057,6 +3059,13 @@ class Application extends App implements IBootstrap {
 		// its audience behind, or a re-created uuid inherits followers who
 		// never chose to follow it.
 		$context->registerEventListener(ObjectDeletedEvent::class, WatcherPruneListener::class);
+
+		// Read state (`object-read-state`). A substantive change puts the object
+		// back to unread for every reader but its author; a deletion takes the
+		// read states with it and archives the notices that pointed at it, which
+		// would otherwise sit unread for ever pointing at nothing.
+		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);

@@ -140,6 +140,34 @@ return [
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
         ],
 
+        // Per-object read state. Reading an object is per-user state that must
+        // not be written through the object itself, which would put "alice
+        // looked at this" in the object's audit trail and cut a version on every
+        // open, so it gets its own entry point. Anyone who may READ the object
+        // may write their OWN read state, and nobody may write anybody else's:
+        // there is no `manage` escape here, because a read state is a fact about
+        // a person rather than about the object.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectReadState#show',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markRead',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markUnread',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
         // PUBLIC. A share token is a bearer capability: nobody is logged in, so
         // there is no principal for RBAC to resolve and core's validation of the
         // token IS the authorization. Read-only, addresses exactly one object,
@@ -951,6 +979,23 @@ return [
         ['name' => 'auditQuery#query', 'url' => '/api/v2/audit', 'verb' => 'GET'],
         // Notification History — read-only audit trail of every dispatch.
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
+        // The bell's own verbs (`object-read-state`). A snooze postpones a
+        // notice, an archive takes it out without claiming it was read, and a
+        // thread is marked read as a whole. Each is scoped to the caller's own
+        // notices inside NotificationClearingService, never by the route.
+        [
+            'name' => 'notificationHistory#snooze',
+            'url' => '/api/notification-history/{id}/snooze',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        [
+            'name' => 'notificationHistory#archive',
+            'url' => '/api/notification-history/{id}/archive',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        ['name' => 'notificationHistory#markThreadRead', 'url' => '/api/notification-history/thread/read', 'verb' => 'PUT'],
         // Notification Subscriptions — DEPRECATED per-user (register, schema) opt-in surface.
         // Superseded by override-only Notification Preferences below; kept during the deprecation window.
         ['name' => 'notificationSubscriptions#index',   'url' => '/api/notification-subscriptions', 'verb' => 'GET'],
