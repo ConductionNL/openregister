@@ -154,31 +154,7 @@ class VocabularyController extends Controller {
 			);
 		}
 
-		$declaration = null;
-		if ($schemaRef !== '' && $property !== '') {
-			try {
-				$schema = $this->schemaMapper->find(id: $schemaRef);
-			} catch (Throwable $missing) {
-				return $this->notFound();
-			}
-
-			$properties = ($schema->getProperties() ?? []);
-			$declaration = CodedPropertyDeclaration::fromProperty(property: ($properties[$property] ?? null));
-		}
-
-		if ($declaration === null && $schemeUri !== '') {
-			// The unsaved-declaration path. The schema editor has to show the
-			// hierarchy of a scheme the property is not yet bound to, because
-			// the person choosing the branch is choosing it FROM that tree.
-			// Reading a declaration off the query is how they see it before
-			// the save rather than after.
-			$declaration = CodedPropertyDeclaration::fromProperty(
-				property: [
-					CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
-				]
-			);
-		}
-
+		$declaration = $this->resolveDeclaration(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri);
 		if ($declaration === null) {
 			return $this->notFound();
 		}
@@ -225,6 +201,49 @@ class VocabularyController extends Controller {
 			]
 		);
 	}//end propertyOptions()
+
+	/**
+	 * The coded declaration this read is about, saved or not yet saved.
+	 *
+	 * Two sources, in order. A saved property is read off its schema. A scheme
+	 * named on its own is read off the query instead, because the schema editor
+	 * has to show the hierarchy of a scheme the property is not yet bound to:
+	 * the person choosing a branch is choosing it FROM that tree, so they need
+	 * it before the save rather than after.
+	 *
+	 * @param string $schemaRef The schema id or slug, empty when none was given.
+	 * @param string $property The property name, empty when none was given.
+	 * @param string $schemeUri The scheme uri for the unsaved path, empty when none was given.
+	 *
+	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	private function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
+		if ($schemaRef !== '' && $property !== '') {
+			try {
+				$schema = $this->schemaMapper->find(id: $schemaRef);
+			} catch (Throwable $missing) {
+				return null;
+			}
+
+			$properties = ($schema->getProperties() ?? []);
+			$declaration = CodedPropertyDeclaration::fromProperty(property: ($properties[$property] ?? null));
+			if ($declaration !== null) {
+				return $declaration;
+			}
+		}
+
+		if ($schemeUri === '') {
+			return null;
+		}
+
+		return CodedPropertyDeclaration::fromProperty(
+			property: [
+				CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
+			]
+		);
+	}//end resolveDeclaration()
 
 	/**
 	 * Build a declaration from the query, for a property that is not saved yet.
