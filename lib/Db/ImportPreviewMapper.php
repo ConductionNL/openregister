@@ -126,9 +126,15 @@ class ImportPreviewMapper extends QBMapper {
 		$preview = new ImportPreview();
 
 		foreach ($data as $key => $value) {
+			// Not method_exists(): an Entity's setters are magic, so
+			// method_exists() answers false for every one of them and the
+			// whole record would be written empty without a single error.
 			$method = 'set'.ucfirst($key);
-			if (method_exists($preview, $method) === true) {
+
+			try {
 				$preview->$method($value);
+			} catch (\Exception $exception) {
+				// An unknown field is ignored, as Entity::__call already does.
 			}
 		}
 
