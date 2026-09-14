@@ -65,3 +65,71 @@ API documentation SHALL name the register and schema.
 - **WHEN** the script PUTs the calendar with three added `exceptions`
 - **THEN** the next timer armed for that organisation skips the three dates
 - @e2e exclude {API contract, covered by Newman}
+
+### Requirement: A working calendar resolves per record type, unit and instance (REQ-WCA-005)
+
+A schema and an organisational unit MAY each name a working calendar. The
+engine SHALL resolve the calendar for a term in the order record type,
+unit, instance, and SHALL fall through to the instance calendar when
+nothing nearer names one. The resolved calendar SHALL be named in the
+term's diagnostic.
+
+#### Scenario: burgerzaken counts differently from vergunningen
+
+- **GIVEN** one schema naming a counter-hours calendar and another naming none
+- **WHEN** a term is computed on each
+- **THEN** the first uses the counter-hours calendar and the second uses the instance calendar
+
+#### Scenario: nothing declared behaves as today
+
+- **GIVEN** an instance where no schema and no unit names a calendar
+- **WHEN** terms are computed
+- **THEN** the instance calendar is used throughout, unchanged from before this change
+
+### Requirement: A person's working pattern is read from the app that owns it (REQ-WCA-006)
+
+When a term is computed for a named person, the engine MAY consult that
+person's working pattern from the app that owns working hours and
+absences. OpenRegister SHALL NOT store a person's working hours or
+absences. When no app answers, the resolved scope calendar SHALL decide,
+and the diagnostic SHALL say which of the two applied.
+
+#### Scenario: a part-time handler's term respects their pattern
+
+- **GIVEN** an app answering with a person's working pattern
+- **WHEN** a term is computed for that person
+- **THEN** the pattern is applied and the diagnostic names it
+
+#### Scenario: nothing answers, and the calendar decides
+
+- **GIVEN** no app answering for that person
+- **WHEN** the same term is computed
+- **THEN** the scope calendar is applied and the diagnostic says so
+- @e2e exclude {cross-app resolution, covered by unit tests with a fake provider}
+
+### Requirement: A calendar declares blackout periods and its first week of the year (REQ-WCA-007)
+
+A working calendar MAY declare blackout periods, each naming the kind of
+work it refuses, and its first week of the year. A blackout SHALL refuse a
+booking in that period without stopping a term from running, which is what
+a closure day does. Week numbers the system reports SHALL follow the
+declared first week.
+
+#### Scenario: no hoorzitting in the stembusperiode
+
+- **GIVEN** a blackout period refusing hearings
+- **WHEN** a hearing is scheduled inside it
+- **THEN** the booking is refused, naming the period
+
+#### Scenario: a blackout does not stop the clock
+
+- **GIVEN** the same blackout and a term running through it
+- **WHEN** the term is computed
+- **THEN** the days in the period count as they otherwise would
+
+#### Scenario: week one is the organisation's week one
+
+- **GIVEN** a declared first week of the year
+- **WHEN** a week number is reported
+- **THEN** it follows that declaration
+- @e2e exclude {calendar arithmetic, covered by unit tests}
