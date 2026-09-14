@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calendar;
 
-use InvalidArgumentException;
+use OCA\OpenRegister\Exception\CalendarDateKindException;
 
 /**
  * A validated date-kind declaration for one schema property.
@@ -124,13 +124,13 @@ final class ObjectDateDeclaration {
 	 *
 	 * @return self The validated declaration.
 	 *
-	 * @throws InvalidArgumentException When the declaration cannot be used.
+	 * @throws CalendarDateKindException When the declaration cannot be used.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
 	public static function fromArray(string $property, mixed $config): self {
 		if (is_array($config) === false) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					"calendarProvider.dates.%s must be an object declaring a kind, %s given.",
 					$property,
@@ -141,7 +141,7 @@ final class ObjectDateDeclaration {
 
 		$kind = ($config['kind'] ?? null);
 		if (is_string($kind) === false || in_array($kind, self::KINDS, true) === false) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					"calendarProvider.dates.%s declares kind '%s', which is not a date kind: use %s.",
 					$property,
@@ -176,7 +176,7 @@ final class ObjectDateDeclaration {
 	 *
 	 * @return array<int, self> The declarations, in declaration order.
 	 *
-	 * @throws InvalidArgumentException When any declaration cannot be used.
+	 * @throws CalendarDateKindException When any declaration cannot be used.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
@@ -188,7 +188,7 @@ final class ObjectDateDeclaration {
 		}
 
 		if (is_array($dates) === false) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				'calendarProvider.dates must be an object keyed by property name.'
 			);
 		}
@@ -197,7 +197,7 @@ final class ObjectDateDeclaration {
 		foreach ($dates as $property => $config) {
 			$name = trim((string)$property);
 			if ($name === '') {
-				throw new InvalidArgumentException(
+				throw new CalendarDateKindException(
 					'calendarProvider.dates carries an entry with no property name.'
 				);
 			}
@@ -217,7 +217,7 @@ final class ObjectDateDeclaration {
 	 *
 	 * @return int|null The offset, or null when none is declared.
 	 *
-	 * @throws InvalidArgumentException When the offset is unusable.
+	 * @throws CalendarDateKindException When the offset is unusable.
 	 */
 	private static function readAlarmOffsetDays(string $property, string $kind, array $config): ?int {
 		$raw = ($config['alarmOffsetDays'] ?? null);
@@ -227,7 +227,7 @@ final class ObjectDateDeclaration {
 		}
 
 		if ($kind !== self::KIND_DEADLINE) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					"calendarProvider.dates.%s declares alarmOffsetDays on a %s; only a deadline carries an alarm.",
 					$property,
@@ -237,7 +237,7 @@ final class ObjectDateDeclaration {
 		}
 
 		if (is_int($raw) === false || $raw < 0) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					'calendarProvider.dates.%s declares alarmOffsetDays that is not a whole number of days at or above zero.',
 					$property
@@ -257,13 +257,13 @@ final class ObjectDateDeclaration {
 	 *
 	 * @return string|null The end property, or null when none is declared.
 	 *
-	 * @throws InvalidArgumentException When a period declares no end.
+	 * @throws CalendarDateKindException When a period declares no end.
 	 */
 	private static function readEndProperty(string $property, string $kind, array $config): ?string {
 		$endProperty = self::stringOrNull(value: ($config['endProperty'] ?? null));
 
 		if ($kind === self::KIND_PERIOD && $endProperty === null) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					'calendarProvider.dates.%s is a period and must declare endProperty, the property carrying its end.',
 					$property
@@ -282,7 +282,7 @@ final class ObjectDateDeclaration {
 	 *
 	 * @return int|null The duration, or null when none is declared.
 	 *
-	 * @throws InvalidArgumentException When the duration is unusable.
+	 * @throws CalendarDateKindException When the duration is unusable.
 	 */
 	private static function readDurationMinutes(string $property, array $config): ?int {
 		$raw = ($config['durationMinutes'] ?? null);
@@ -292,7 +292,7 @@ final class ObjectDateDeclaration {
 		}
 
 		if (is_int($raw) === false || $raw <= 0) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					'calendarProvider.dates.%s declares durationMinutes that is not a whole number of minutes above zero.',
 					$property
@@ -312,7 +312,7 @@ final class ObjectDateDeclaration {
 	 *
 	 * @return string|null The purpose, or null when the deadline reads its raw date.
 	 *
-	 * @throws InvalidArgumentException When the purpose is not a timer purpose.
+	 * @throws CalendarDateKindException When the purpose is not a timer purpose.
 	 */
 	private static function readTimerPurpose(string $property, string $kind, array $config): ?string {
 		$purpose = self::stringOrNull(value: ($config['timerPurpose'] ?? null));
@@ -322,7 +322,7 @@ final class ObjectDateDeclaration {
 		}
 
 		if ($kind !== self::KIND_DEADLINE) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					'calendarProvider.dates.%s declares timerPurpose on a %s; only a deadline is computed by the term engine.',
 					$property,
@@ -332,7 +332,7 @@ final class ObjectDateDeclaration {
 		}
 
 		if (in_array($purpose, self::TIMER_PURPOSES, true) === false) {
-			throw new InvalidArgumentException(
+			throw new CalendarDateKindException(
 				sprintf(
 					"calendarProvider.dates.%s declares timerPurpose '%s': use %s.",
 					$property,

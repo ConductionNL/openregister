@@ -27,6 +27,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use JsonSerializable;
+use OCA\OpenRegister\Exception\CalendarDateKindException;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -2079,6 +2080,19 @@ class Schema extends Entity implements JsonSerializable {
 				// 400s and an app import aborts rather than silently shipping
 				// an unprotected schema.
 				if ((string)$key === self::WRITEONLY_PATHS_ANNOTATION) {
+					throw $e;
+				}
+
+				// A DECLARED DATE KIND IS EXEMPT FOR THE SAME REASON, INVERTED.
+				//
+				// Dropping `calendarProvider` as a whole is a safe degradation:
+				// the virtual calendar does not appear and somebody notices. A
+				// typo INSIDE the `dates` block is not: the schema saves, it
+				// looks annotated to whoever wrote it, and the feed publishes an
+				// agenda that is silently missing the term they just declared.
+				// Nobody reads an empty agenda and concludes the schema is
+				// wrong. So this one fails loudly, naming the property.
+				if ($e instanceof CalendarDateKindException) {
 					throw $e;
 				}
 
