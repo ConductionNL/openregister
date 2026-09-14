@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\BulkJob;
 
+use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -49,6 +50,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The executor is the seam
  * where the selection, the action, access control and the audit trail meet.
+ * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named
+ * constructors are its only constructor: the class is immutable and its
+ * private __construct exists so an outcome cannot be built without saying
+ * which of the four it is.
  */
 class BulkJobExecutor {
 
@@ -385,7 +390,7 @@ class BulkJobExecutor {
 		$member->setReason($result->getReason());
 
 		if ($written === true) {
-			$member->setAppliedAt(new \DateTime());
+			$member->setAppliedAt(new DateTime());
 		}
 
 		$this->memberMapper->save($member);

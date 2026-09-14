@@ -53,6 +53,10 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A REST surface over the
  * job record, the action catalogue and the lifecycle service.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Nine endpoints over one
+ * resource. Splitting them across controllers to move the number under the
+ * threshold would put the same ownership check in two places, which is the
+ * failure the threshold exists to prevent.
  *
  * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
  */
@@ -131,16 +135,31 @@ class BulkJobsController extends Controller {
 
 		$wantsAll = filter_var($this->request->getParam('all', 'false'), FILTER_VALIDATE_BOOLEAN);
 
+		// Two arms, each running exactly one query, and an early return
+		// rather than an else so neither arm can fall into the other.
 		if ($wantsAll === true && $this->isAdmin() === true) {
-			$jobs = $this->jobMapper->findAllJobs(state: $state, limit: $limit, offset: $offset);
-		} else {
-			$jobs = $this->jobMapper->findByActor(startedBy: $uid, state: $state, limit: $limit, offset: $offset);
+			return $this->jobList(
+				jobs: $this->jobMapper->findAllJobs(state: $state, limit: $limit, offset: $offset)
+			);
 		}
 
+		return $this->jobList(
+			jobs: $this->jobMapper->findByActor(startedBy: $uid, state: $state, limit: $limit, offset: $offset)
+		);
+	}//end index()
+
+	/**
+	 * Serialise a page of jobs.
+	 *
+	 * @param BulkJob[] $jobs The jobs.
+	 *
+	 * @return JSONResponse The listing.
+	 */
+	private function jobList(array $jobs): JSONResponse {
 		return new JSONResponse(
 			data: ['results' => array_map(static fn (BulkJob $job): array => $job->jsonSerialize(), $jobs)]
 		);
-	}//end index()
+	}//end jobList()
 
 	/**
 	 * One job, with its progress and its counts.
@@ -344,9 +363,13 @@ class BulkJobsController extends Controller {
 
 		$rows = ["object,outcome,reason,schema version,added at commit"];
 		$offset = 0;
+		$more = true;
 
-		do {
+		while ($more === true) {
 			$page = $this->service->members(job: $job, limit: self::MAX_PAGE, offset: $offset);
+
+			// A short page is the last page, so the next request is not made.
+			$more = (count($page) === self::MAX_PAGE);
 
 			foreach ($page as $member) {
 				$grown = 'no';
@@ -367,7 +390,7 @@ class BulkJobsController extends Controller {
 			}
 
 			$offset += self::MAX_PAGE;
-		} while (count($page) === self::MAX_PAGE);
+		}//end while
 
 		return new DataDownloadResponse(
 			data: implode("\n", $rows)."\n",

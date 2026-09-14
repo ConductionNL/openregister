@@ -75,6 +75,10 @@ abstract class AbstractPropertyWriteAction implements BulkActionInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
 	 * rehearsal and the commit is the design property of D-1.
+	 * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named
+	 * constructors are its only constructor: the class is immutable and its
+	 * private __construct exists so an outcome cannot be built without
+	 * saying which of the four it is.
 	 *
 	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */

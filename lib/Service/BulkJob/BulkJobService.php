@@ -98,6 +98,11 @@ class BulkJobService {
 	 * @param IJobList $jobList The background queue.
 	 * @param IAppConfig $appConfig Instance settings.
 	 * @param LoggerInterface $logger Logger.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection.
+	 * Each of the ten is a collaborator the lifecycle genuinely uses, and
+	 * bundling them behind a locator would hide the dependencies rather than
+	 * remove them.
 	 */
 	public function __construct(
 		private readonly BulkJobMapper $jobMapper,

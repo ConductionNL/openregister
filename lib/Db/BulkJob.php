@@ -78,6 +78,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) A job record. Every field is one
+ * column of one row, and moving the counters to a second table to get under
+ * the threshold would cost a join on every progress poll.
  */
 class BulkJob extends Entity implements JsonSerializable {
 
