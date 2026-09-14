@@ -1038,6 +1038,18 @@ return [
         // RBAC- and tenancy-scoped, which is its per-object guard (ADR-005/016).
         ['name' => 'calculations#operators', 'url' => '/api/schemas/calculation-operators', 'verb' => 'GET'],
         ['name' => 'calculations#evaluate', 'url' => '/api/schemas/calculation-evaluate', 'verb' => 'POST'],
+        // The rules engine's operator surface (rules-engine-operability). The
+        // inventory is derived from the schema on every read, so it is a read
+        // of configuration and is admin-only; the vocabulary is a static table
+        // with nothing per-instance in it and is open to any signed-in caller,
+        // as the operator catalogue beside it already is. A derived rule id
+        // carries colons, which are legal unescaped in a path segment, so every
+        // `ruleId` requirement is `[^/]+`.
+        ['name' => 'rules#vocabulary', 'url' => '/api/rules/vocabulary', 'verb' => 'GET'],
+        ['name' => 'rules#runs', 'url' => '/api/rules/{ruleId}/runs', 'verb' => 'GET', 'requirements' => ['ruleId' => '[^/]+']],
+        ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
+        ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
