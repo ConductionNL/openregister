@@ -50,15 +50,18 @@ class WebhookRetryJobTest extends TestCase {
 	/**
 	 * Create a WebhookLog entity with values set via setters.
 	 *
-	 * Note: The source code calls getWebhookId() but the entity property is "webhook".
-	 * Nextcloud Entity __call maps getWebhookId -> property webhookId which doesn't exist.
-	 * We use a test subclass that adds the webhookId property properly.
+	 * A real WebhookLog, deliberately. This helper used to build a
+	 * TestWebhookLog subclass carrying an invented `webhookId` property,
+	 * because the job called getWebhookId() and the entity only has
+	 * `webhook`. The subclass made the suite green while every real retry
+	 * threw "webhookId is not a valid attribute" out of Entity::__call.
+	 * The job now calls getWebhook(), so the crutch is gone and this test
+	 * exercises the same call surface production does.
 	 */
 	private function createWebhookLogEntity(int $id, int $webhookId, int $attempt, string $eventClass = 'TestEvent', array $payload = ['key' => 'value']): WebhookLog {
-		$log = new TestWebhookLog();
+		$log = new WebhookLog();
 		$log->setId($id);
 		$log->setWebhook($webhookId);
-		$log->setWebhookId($webhookId);
 		$log->setAttempt($attempt);
 		$log->setEventClass($eventClass);
 		$log->setPayloadArray($payload);
@@ -294,21 +297,3 @@ class WebhookRetryJobTest extends TestCase {
 	}
 }
 
-/**
- * Test subclass of WebhookLog that adds the webhookId property.
- *
- * The source code calls getWebhookId() via Entity::__call magic,
- * but the entity only has a "webhook" property. This subclass adds
- * webhookId so the getter works correctly in tests.
- *
- * @method int getWebhookId()
- * @method void setWebhookId(int $webhookId)
- */
-class TestWebhookLog extends WebhookLog {
-	protected int $webhookId = 0;
-
-	public function __construct() {
-		parent::__construct();
-		$this->addType('webhookId', 'integer');
-	}
-}

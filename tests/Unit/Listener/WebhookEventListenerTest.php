@@ -687,17 +687,15 @@ class WebhookEventListenerTest extends TestCase {
 	}
 
 	// --- ConfigurationUpdatedEvent ---
-	// Note: ConfigurationUpdatedEvent lacks a getConfiguration() method,
-	// so we must mock the event to add it.
+	// The event is built for real, not doubled. The double this test used to
+	// carry named getConfiguration() through addMethods(), which invents the
+	// method on the mock: the listener's real call fell straight through to a
+	// fatal error while the test stayed green.
 
 	public function testConfigurationUpdatedEventDispatchesWebhook(): void {
 		$configuration = new Configuration();
 
-		$event = $this->getMockBuilder(ConfigurationUpdatedEvent::class)
-			->disableOriginalConstructor()
-			->addMethods(['getConfiguration'])
-			->getMock();
-		$event->method('getConfiguration')->willReturn($configuration);
+		$event = new ConfigurationUpdatedEvent($configuration, new Configuration());
 
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
@@ -760,17 +758,14 @@ class WebhookEventListenerTest extends TestCase {
 	}
 
 	// --- ViewUpdatedEvent ---
-	// Note: ViewUpdatedEvent lacks a getView() method,
-	// so we must mock the event to add it.
+	// The event is built for real, not doubled, for the same reason as the
+	// configuration case above: addMethods(['getView']) invented an accessor
+	// the class did not have.
 
 	public function testViewUpdatedEventDispatchesWebhook(): void {
 		$view = new View();
 
-		$event = $this->getMockBuilder(ViewUpdatedEvent::class)
-			->disableOriginalConstructor()
-			->addMethods(['getView'])
-			->getMock();
-		$event->method('getView')->willReturn($view);
+		$event = new ViewUpdatedEvent($view, new View());
 
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')

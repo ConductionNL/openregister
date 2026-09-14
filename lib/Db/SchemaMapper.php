@@ -1180,6 +1180,14 @@ class SchemaMapper extends QBMapper {
 		// An unknown `executionMode`, a required input beside `autoWhen` and an
 		// `autoWhen` on a graph block each describe a move that can never
 		// happen as written. And no register carries either key yet.
+		//
+		// The two `provider` codes join them on the same test. A mistyped
+		// provider tag, or a `provider` declared beside `transitions`, does not
+		// fail at save time: it fails on a GET, when the client asks what the
+		// object can do and OpenRegister cannot resolve the app service that
+		// knows. Stored advisory, that is a lifecycle an author believes is
+		// wired and a user sees as a dead timeline. And `provider` is new, so
+		// no register carries the key yet.
 		$blocking = array_values(
 			array_filter(
 				$errors,
@@ -1192,6 +1200,8 @@ class SchemaMapper extends QBMapper {
 						'lifecycle-execution-mode-malformed',
 						'lifecycle-autowhen-requires-input',
 						'lifecycle-autowhen-graph-unsupported',
+						'lifecycle-provider-invalid',
+						'lifecycle-provider-mode-conflict',
 					],
 					true
 				)
@@ -1536,12 +1546,31 @@ class SchemaMapper extends QBMapper {
 
 		$shape = ['x-openregister-archival' => $annotation];
 
-		$errors = (new ArchivalAnnotationValidator())->validate(schema: $shape);
-		if (count($errors) === 0) {
+		$findings = (new ArchivalAnnotationValidator())->validate(schema: $shape);
+		$split = ArchivalAnnotationValidator::partition(findings: $findings);
+
+		// An UNKNOWN key is surfaced and ignored, never fatal — the same rule
+		// R07 applies to an unknown `x-openregister-*` key one level up
+		// (logDroppedAnnotationKeys). It declares nothing, so dropping it loses
+		// nothing, whereas refusing it refuses the whole schema: at import time
+		// that costs the register every object of that schema, and the operator
+		// sees it as a seeding failure several layers away from the annotation.
+		if (count($split['warnings']) > 0) {
+			$this->logger->warning(
+				sprintf(
+					'[OpenRegister.SchemaMapper] Ignored %d unknown x-openregister-archival key(s) on schema "%s": %s',
+					count($split['warnings']),
+					(string)($schema->getSlug() ?? ''),
+					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
+				)
+			);
+		}
+
+		if (count($split['errors']) === 0) {
 			return;
 		}
 
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
 

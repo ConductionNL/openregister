@@ -68,6 +68,14 @@ final class LifecycleAnnotationValidator {
 			$annotation['field'] = $annotation['property'];
 		}
 
+		// Provider mode: checked BEFORE graph so an annotation that declares
+		// both is refused by the provider-mode conflict rule below, with a
+		// message naming the real mistake, instead of being shape-checked as
+		// a graph block that happens to carry a stray key.
+		if (isset($annotation['provider']) === true) {
+			return $this->validateProviderMode(annotation: $annotation, schema: $schema);
+		}
+
 		// Graph mode: when a non-empty `graph` block is declared, the lifecycle
 		// field is a `$ref` with no enum, so shape-check the graph block instead
 		// of the static `transitions`/enum contract. Static-only schemas fall
@@ -286,6 +294,129 @@ final class LifecycleAnnotationValidator {
 
 		return $errors;
 	}//end validate()
+
+	/**
+	 * Validate a provider-mode annotation.
+	 *
+	 * Provider mode delegates the whole state machine to an app service, so
+	 * the schema cannot be asked what the states are: the enum requirement is
+	 * relaxed exactly as it is for graph mode, where the field is a `$ref`.
+	 * What IS checked is that the delegation can be performed at all, because
+	 * a provider that resolves to nothing fails at render time, on a GET, in
+	 * front of a user.
+	 *
+	 * Declaring `transitions` or `graph` beside `provider` is REFUSED rather
+	 * than resolved by precedence. The engine does have a precedence order,
+	 * but an author who wrote two modes on one field meant one of them, and
+	 * the one the engine drops would silently never run. That is the same
+	 * mistake the graph `condition` refusal already guards against: a rule
+	 * that reads as enforced and is not.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 * @param array<string, mixed> $schema Full schema definition.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateProviderMode(array $annotation, array $schema): array {
+		$errors = [];
+
+		// `provider` must name something resolvable: a non-empty string, a DI
+		// tag or an FQCN.
+		$provider = ($annotation['provider'] ?? null);
+		if (is_string($provider) === false || trim($provider) === '') {
+			$errors[] = [
+				'code' => 'lifecycle-provider-invalid',
+				'message' => 'x-openregister-lifecycle.provider must be a non-empty string naming a '
+					. 'registered LifecycleActionProviderInterface service.',
+			];
+		}
+
+		$errors = array_merge($errors, $this->validateProviderField(annotation: $annotation, schema: $schema));
+
+		// `initial` (optional): accept the literal-string form or the object
+		// form `{ from, field }`, as graph mode does.
+		if (isset($annotation['initial']) === true) {
+			$initialError = $this->validateInitialForm(initial: $annotation['initial']);
+			if ($initialError !== null) {
+				$errors[] = $initialError;
+			}
+		}
+
+		return array_merge($errors, $this->validateProviderModeConflicts(annotation: $annotation));
+	}//end validateProviderMode()
+
+	/**
+	 * Check a provider-mode `field` against the schema's properties.
+	 *
+	 * `field` stays required and non-empty, but the `enum`/`type:string`
+	 * constraint is relaxed: in provider mode the app owns the state
+	 * vocabulary, so the schema has nothing to enumerate.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 * @param array<string, mixed> $schema Full schema definition.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateProviderField(array $annotation, array $schema): array {
+		$field = ($annotation['field'] ?? null);
+		if (is_string($field) === false || $field === '') {
+			return [
+				[
+					'code' => 'lifecycle-missing-key',
+					'message' => 'x-openregister-lifecycle is missing required key "field".',
+				],
+			];
+		}
+
+		$properties = ($schema['properties'] ?? []);
+		if (is_array($properties) === true && isset($properties[$field]) === false) {
+			return [
+				[
+					'code' => 'lifecycle-field-missing',
+					'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
+				],
+			];
+		}
+
+		return [];
+	}//end validateProviderField()
+
+	/**
+	 * Refuse a second lifecycle mode declared beside `provider`.
+	 *
+	 * An empty `transitions: {}` or `graph: {}` declares no second mode, so it
+	 * is not a conflict; anything else is. See {@see validateProviderMode()}
+	 * for why this refuses rather than leaning on the engine's precedence.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateProviderModeConflicts(array $annotation): array {
+		$errors = [];
+		foreach (['transitions', 'graph'] as $rival) {
+			if (isset($annotation[$rival]) === false || $annotation[$rival] === []) {
+				continue;
+			}
+
+			$errors[] = [
+				'code' => 'lifecycle-provider-mode-conflict',
+				'message' => sprintf(
+					'x-openregister-lifecycle declares both `provider` and `%s`. A field has one '
+					. 'lifecycle mode: declare the transitions in the schema or in the provider, not both.',
+					$rival
+				),
+			];
+		}
+
+		return $errors;
+	}//end validateProviderModeConflicts()
 
 	/**
 	 * Validate a graph-mode `x-openregister-lifecycle` annotation.

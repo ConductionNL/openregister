@@ -132,15 +132,6 @@
       <code><![CDATA[CardDavBackend]]></code>
       <code><![CDATA[CardDavBackend]]></code>
     </UndefinedClass>
-    <UndefinedMethod>
-      <code><![CDATA[find]]></code>
-      <code><![CDATA[find]]></code>
-    </UndefinedMethod>
-  </file>
-  <file src="lib/Service/DeckCardService.php">
-    <UndefinedMethod>
-      <code><![CDATA[find]]></code>
-    </UndefinedMethod>
   </file>
   <file src="lib/Service/Edepot/Transport/SftpTransport.php">
     <UndefinedClass>

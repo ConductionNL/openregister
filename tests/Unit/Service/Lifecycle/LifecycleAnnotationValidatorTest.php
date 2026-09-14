@@ -620,4 +620,153 @@ class LifecycleAnnotationValidatorTest extends TestCase {
 		]);
 		$this->assertSame([], $errors);
 	}
+
+	// --- Provider mode -----------------------------------------------------
+
+	/**
+	 * The annotation dossiq's case schema will carry: a field the app owns,
+	 * a derived `initial`, and a provider tag. It validates clean, and in
+	 * particular the enum requirement is relaxed exactly as it is for graph
+	 * mode, because in provider mode the app owns the state vocabulary.
+	 */
+	public function testProviderModeValidatesWithoutAnEnum(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * A provider tag that names nothing is refused. It would resolve to
+	 * nothing at render time, on a GET, in front of a user.
+	 */
+	public function testEmptyProviderIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => '   ',
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-invalid', $codes);
+	}
+
+	/**
+	 * A non-string provider is refused for the same reason.
+	 */
+	public function testNonStringProviderIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => ['class' => 'CaseActionProvider'],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-invalid', $codes);
+	}
+
+	/**
+	 * The field still has to exist, even though its enum no longer does.
+	 */
+	public function testProviderFieldMustBeDeclaredInProperties(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['name' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-field-missing', $codes);
+	}
+
+	/**
+	 * Two modes on one field are refused rather than settled by precedence,
+	 * mirroring the graph-condition refusal: the mode the engine drops would
+	 * read as declared and never run.
+	 */
+	public function testProviderBesideTransitionsIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened'],
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-mode-conflict', $codes);
+	}
+
+	/**
+	 * Same rule for the other delegating mode.
+	 */
+	public function testProviderBesideGraphIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-mode-conflict', $codes);
+	}
+
+	/**
+	 * An EMPTY `transitions` map declares no second mode, so it is not a
+	 * conflict. Refusing it would break an author who left the key behind
+	 * while moving the state machine into the provider.
+	 */
+	public function testProviderBesideAnEmptyTransitionsMapIsAccepted(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				'transitions' => [],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * No regression: a graph annotation that carries no `provider` key is
+	 * still validated as a graph block.
+	 */
+	public function testGraphWithoutProviderIsStillGraphValidated(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'sideways',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-graph-allowedmoves-invalid', $codes);
+	}
 }

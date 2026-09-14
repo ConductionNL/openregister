@@ -290,7 +290,12 @@ class TaskEventsController extends Controller {
 				return new JSONResponse(['error' => 'Event not found'], Http::STATUS_NOT_FOUND);
 			}
 
-			$this->events->unlinkEvent(calendarId: (string)$linked['calendarId'], eventUri: $eventId);
+			// Delete, not unlink. This endpoint is the task-side twin of
+			// CalendarEventsController::destroy() and carried the same fault:
+			// unlinkEvent() strips the X-OPENREGISTER-* properties and leaves the
+			// meeting on the calendar, so deleting a task's meeting removed the
+			// link and nothing else while the response said success.
+			$this->events->deleteEvent(calendarId: (string)$linked['calendarId'], eventUri: $eventId);
 
 			if ($linked['uid'] !== null) {
 				$this->links->unlinkEvent(

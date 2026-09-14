@@ -52,6 +52,14 @@ The platform SHALL ship an `OCA\OpenRegister\Service\Archival\ArchivalAnnotation
 - **WHEN** the schema is saved
 - **THEN** `SchemaMapper::insert()` SHALL throw an `\Exception` whose message contains `archival-retention-unknown-key` and mentions `strategy`
 
+#### Scenario: Unknown key at the top level is reported, not rejected
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "Archiefwet 1995 selectielijst", action: "destroy" }`
+- **WHEN** the schema is saved
+- **THEN** the save SHALL succeed
+- **AND** `SchemaMapper` SHALL log one warning naming the schema and every ignored key
+- **AND** the import of a register declaring that schema SHALL link it, not drop it
+
 #### Scenario: Well-formed annotation passes
 - **GIVEN** a schema declares `x-openregister-archival.retention = { default: "P30D", rules: [{ condition: "statusCode < 400", retention: "PT1H", reason: "successful integrations" }] }`
 - **WHEN** the schema is saved
@@ -313,9 +321,21 @@ A fact no source establishes SHALL be ABSENT from `_retention` and from the
 export: no placeholder, and identical on create and on read, which is the rule
 `UnestablishedValues` applies to the rest of the block.
 
-Validation at schema save SHALL refuse an unknown key, at the top level and
-inside each block, as unknown `retention` keys already are. It SHALL also
-refuse a term outside the MDTO begrippenlijst the element cites:
+Validation at schema save SHALL REPORT an unknown key at the top level of
+`x-openregister-archival` and SHALL NOT refuse the schema for one: the key
+declares nothing, so ignoring it loses nothing, while refusing it costs the
+whole schema and, at import, every object that needed it. This is the rule R07
+already applies to an unknown `x-openregister-*` key one level up, which is
+dropped with a warning rather than refused; a key inside the annotation SHALL
+NOT be stricter than the key that contains it.
+
+Unknown keys inside each BLOCK (`retention`, `useRestriction`,
+`temporalCoverage`) SHALL still refuse the schema, as they already did: those
+sit beside a fact the schema is actually declaring, where a typo changes the
+meaning of a declaration rather than adding an inert one.
+
+Validation SHALL also refuse a term outside the MDTO begrippenlijst the element
+cites:
 `Aggregatieniveaus` for `aggregationLevel` and `BeperkingGebruikTypeLijst` for
 `useRestriction.type`. Both lists are formally OPEN, so this is stricter than
 MDTO, and deliberately: the exported element names the list it took the term

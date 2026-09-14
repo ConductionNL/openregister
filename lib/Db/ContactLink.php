@@ -59,8 +59,19 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLinkedBy(string $linkedBy)
  * @method DateTime getLinkedAt()
  * @method void setLinkedAt(DateTime $linkedAt)
+ * @method string|null getUserId()
+ * @method void setUserId(?string $userId)
+ * @method DateTime|null getValidFrom()
+ * @method void setValidFrom(?DateTime $validFrom)
+ * @method DateTime|null getValidUntil()
+ * @method void setValidUntil(?DateTime $validUntil)
+ * @method string|null getNote()
+ * @method void setNote(?string $note)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) One field per column of the link table; the four
+ *                                        people-on-objects columns (user, validity, note) took it past fifteen.
  */
 class ContactLink extends Entity implements JsonSerializable {
 
@@ -176,6 +187,41 @@ class ContactLink extends Entity implements JsonSerializable {
 	protected ?DateTime $linkedAt = null;
 
 	/**
+	 * The Nextcloud user id when the link names a user rather than a
+	 * contact (people-on-objects). A user link stores `user:<uid>` as its
+	 * contact uid so every lookup keyed on that column keeps working.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $userId = null;
+
+	/**
+	 * First day the person holds the role, or null for an open start.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $validFrom = null;
+
+	/**
+	 * Last day the person holds the role, or null for an open end.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $validUntil = null;
+
+	/**
+	 * A free note on the link (why this person, in this role).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $note = null;
+
+	/**
+	 * The prefix of a user link's contact uid.
+	 */
+	public const USER_UID_PREFIX = 'user:';
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -194,7 +240,44 @@ class ContactLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'metadata', type: 'string');
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+		$this->addType(fieldName: 'userId', type: 'string');
+		$this->addType(fieldName: 'validFrom', type: 'datetime');
+		$this->addType(fieldName: 'validUntil', type: 'datetime');
+		$this->addType(fieldName: 'note', type: 'string');
 	}//end __construct()
+
+	/**
+	 * Whether the link names a Nextcloud user rather than a contact.
+	 *
+	 * @return bool True for a user link.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function isUserLink(): bool {
+		return $this->userId !== null && $this->userId !== '';
+	}//end isUserLink()
+
+	/**
+	 * Whether today lies inside the validity window; an unset bound is open.
+	 *
+	 * @param DateTime|null $today The day to test, today when null.
+	 *
+	 * @return bool True when the person holds the role on that day.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function isActiveOn(?DateTime $today = null): bool {
+		$day = ($today ?? new DateTime('today'))->format('Y-m-d');
+		if ($this->validFrom !== null && $this->validFrom->format('Y-m-d') > $day) {
+			return false;
+		}
+
+		if ($this->validUntil !== null && $this->validUntil->format('Y-m-d') < $day) {
+			return false;
+		}
+
+		return true;
+	}//end isActiveOn()
 
 	/**
 	 * JSON serialization.
@@ -204,7 +287,12 @@ class ContactLink extends Entity implements JsonSerializable {
 	 * re-enriching from the vCard when the cached row is older than
 	 * 24 hours.
 	 *
+	 * Since people-on-objects it also carries `kind`, `userId`, the
+	 * validity window and `active`.
+	 *
 	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
 	public function jsonSerialize(): array {
 		// `metadata` is stored as JSON-encoded text — decode it for the
@@ -239,6 +327,25 @@ class ContactLink extends Entity implements JsonSerializable {
 			'metadata' => $metadata,
 			'linkedBy' => $this->linkedBy,
 			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+			'kind' => $this->kind(),
+			'userId' => $this->userId,
+			'validFrom' => $this->validFrom?->format('Y-m-d'),
+			'validUntil' => $this->validUntil?->format('Y-m-d'),
+			'note' => $this->note,
+			'active' => $this->isActiveOn(),
 		];
 	}//end jsonSerialize()
+
+	/**
+	 * The kind of person the link names.
+	 *
+	 * @return string `user` or `contact`.
+	 */
+	private function kind(): string {
+		if ($this->isUserLink() === true) {
+			return 'user';
+		}
+
+		return 'contact';
+	}//end kind()
 }//end class

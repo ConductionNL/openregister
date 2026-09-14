@@ -172,13 +172,27 @@ class CalendarEventsControllerTest extends TestCase {
 		$this->assertCount(1, $response->getData()['results']);
 	}
 
-	public function testDestroyCallsLegacyServiceAndCleansLink(): void {
+	/**
+	 * DELETE means delete.
+	 *
+	 * This test previously asserted `unlinkEvent`, which is what the controller
+	 * called, and so it locked the defect in place: unlink strips the
+	 * X-OPENREGISTER-* properties and leaves the meeting on the user's calendar,
+	 * so "Delete meeting" and "Unlink" did the same thing and both answered
+	 * `{"success": true}`. Cancelling a hearing left the hearing in everyone's
+	 * calendar while the case confirmed it had gone.
+	 *
+	 * The link row is still cleaned up: that half was always right.
+	 */
+	public function testDestroyDeletesTheEventAndCleansTheLink(): void {
 		$this->calendarLinkService->method('getLinkedEvents')->willReturn([
 			['id' => 'event.ics', 'uid' => 'ev-uid-1', 'calendarId' => '7'],
 		]);
 		$this->calendarEventService->expects($this->once())
-			->method('unlinkEvent')
+			->method('deleteEvent')
 			->with('7', 'event.ics');
+		$this->calendarEventService->expects($this->never())
+			->method('unlinkEvent');
 		$this->calendarLinkService->expects($this->once())
 			->method('unlinkEvent')
 			->with(self::OBJ_UUID, 'ev-uid-1');

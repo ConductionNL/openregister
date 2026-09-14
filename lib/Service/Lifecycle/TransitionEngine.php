@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
+use OCA\OpenRegister\Exception\LifecycleProviderException;
+use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -52,6 +54,15 @@ use Throwable;
  * Not declared `final`: TransitionControllerTest doubles this class, and
  * the controller injects it by concrete type. If sealing is reintroduced,
  * extract an interface for the controller to depend on first.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The third lifecycle mode
+ * (`provider`) is what carried this past the 1000-line threshold. The three
+ * modes answer one question and share one published contract, so splitting
+ * them across classes would duplicate `publishedInputs()` and let the shape
+ * a client reads drift per mode, which is the failure this change exists to
+ * avoid. Graph-mode derivation is the extractable block if the class grows
+ * again; it is left alone here so the provider change stays readable as a
+ * diff.
  */
 class TransitionEngine {
 	/**
@@ -77,6 +88,14 @@ class TransitionEngine {
 	 * @param LoggerInterface $logger Logger for post-commit listener failures.
 	 * @param LifecycleWriteBoundary $writeBoundary Names the transition for the listeners and wraps
 	 *                               the request-scoped automatic-transition pass.
+	 * @param LifecycleActionProviderRegistry $providerRegistry Resolves a provider-mode annotation's
+	 *                               `provider` tag to the app service that answers available actions.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten collaborators, all
+	 * constructor-injected because Nextcloud's DI offers no other route. The
+	 * tenth is the provider registry; folding it into an existing collaborator
+	 * would hide a lifecycle dependency inside something that is not about
+	 * lifecycles, which reads worse than the count.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
@@ -92,6 +111,7 @@ class TransitionEngine {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleWriteBoundary $writeBoundary,
+		private readonly LifecycleActionProviderRegistry $providerRegistry,
 	) {
 	}//end __construct()
 
@@ -297,7 +317,13 @@ class TransitionEngine {
 	private function resolveTransitionSubject(string $objectId): array {
 		$object = $this->objectService->find(id: $objectId);
 		if ($object === null) {
-			throw new RuntimeException(sprintf('Object "%s" not found.', $objectId));
+			// A distinct type, still a RuntimeException: the write endpoint has
+			// to tell "this object is gone" (404) apart from "this move was
+			// refused" (422) and "the provider broke" (502), and those first two
+			// shared a status code until this type existed.
+			throw new LifecycleSubjectNotFoundException(
+				message: sprintf('Object "%s" not found.', $objectId)
+			);
 		}
 
 		$schema = $this->loadSchema(object: $object);
@@ -357,19 +383,18 @@ class TransitionEngine {
 		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
 		$transitions = (array)($annotation['transitions'] ?? []);
 
-		// Static transitions take precedence. Graph mode applies only when no
-		// non-empty static `transitions` map is declared (design: mode
-		// selection & precedence — zero regression for static schemas).
+		// Static transitions take precedence; a delegating mode answers only
+		// when no non-empty static map is declared.
 		if ($transitions === []) {
-			$graph = (array)($annotation['graph'] ?? []);
-			if ($graph !== []) {
-				return $this->applyGraphTransition(
-					object: $object,
-					graph: $graph,
-					field: $field,
-					action: $action,
-					data: $data
-				);
+			$delegated = $this->applyDelegatedTransition(
+				object: $object,
+				annotation: $annotation,
+				field: $field,
+				action: $action,
+				data: $data
+			);
+			if ($delegated !== null) {
+				return $delegated;
 			}
 		}
 
@@ -447,6 +472,234 @@ class TransitionEngine {
 	}//end applyTransition()
 
 	/**
+	 * Apply the transition through a delegating mode, when the annotation declares one.
+	 *
+	 * Resolves in the SAME order the read path resolves it: `provider` (the
+	 * app owns the state machine) before `graph` (FK-scoped siblings at
+	 * runtime). The two paths must agree here or a schema can be offered moves
+	 * by one mode and judged by another, which is the disagreement a user
+	 * meets as a stage that highlights and then fails.
+	 *
+	 * Answers null when neither mode is declared, which is the caller's signal
+	 * to fall through to the static map. Null rather than a boolean flag
+	 * because both modes answer with the saved entity, so there is nothing to
+	 * return separately.
+	 *
+	 * @param ObjectEntity $object The transitioning object.
+	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
+	 * @param string $field The lifecycle field name on the object.
+	 * @param string $action The action name the caller posted.
+	 * @param array<string, mixed> $data The caller-supplied input values.
+	 *
+	 * @return ObjectEntity|null The saved object, or null when no delegating mode is declared.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function applyDelegatedTransition(
+		ObjectEntity $object,
+		array $annotation,
+		string $field,
+		string $action,
+		array $data,
+	): ?ObjectEntity {
+		$provider = trim((string)($annotation['provider'] ?? ''));
+		if ($provider !== '') {
+			return $this->applyProviderTransition(
+				object: $object,
+				tag: $provider,
+				field: $field,
+				action: $action,
+				data: $data
+			);
+		}
+
+		$graph = (array)($annotation['graph'] ?? []);
+		if ($graph !== []) {
+			return $this->applyGraphTransition(
+				object: $object,
+				graph: $graph,
+				field: $field,
+				action: $action,
+				data: $data
+			);
+		}
+
+		return null;
+	}//end applyDelegatedTransition()
+
+	/**
+	 * Hand a provider-mode transition to the app that owns the state machine.
+	 *
+	 * THE PROVIDER PERFORMS THE WRITE. OpenRegister resolves the tag, hands
+	 * over the object, the caller and the payload, and then re-reads. It does
+	 * not mutate the lifecycle field itself and it does not call
+	 * `saveObject()`. An app whose state machine is data owns more than the
+	 * field the status lands in — dossiq's `StatusTransitionService::execute()`
+	 * re-evaluates the transition's guards, takes an optimistic version lock,
+	 * refuses a closing move that carries no result, writes the status record
+	 * and dispatches the transition's side effects. A branch that took a new
+	 * value back and saved it would strand every one of those.
+	 *
+	 * THE ACTION IS NOT RE-DERIVED HERE, deliberately. OpenRegister does not
+	 * call `availableActions()` to check the posted action is one that was
+	 * published: the provider re-validates with the same reader it answered
+	 * the read with, so there is ONE authority. A check here would be a second
+	 * derivation, and a second derivation is what eventually disagrees with
+	 * the first. For the same reason `$data` is passed through untouched
+	 * rather than allowlisted: the `inputs` a client was shown came from the
+	 * provider, not from the schema, so the provider is the only thing that
+	 * can say whether they were satisfied.
+	 *
+	 * NO WRITE-BOUNDARY DECLARATION, and not by omission. The static path
+	 * calls {@see LifecycleWriteBoundary::declaringAction()} so the lifecycle
+	 * listeners judge the named transition rather than the first one sharing
+	 * its from/to pair. In provider mode there is no such name to look up: the
+	 * annotation carries no `transitions` map, so the listeners have nothing
+	 * to match and the declaration would tell them a name they cannot resolve.
+	 * Worse, it would claim OpenRegister is applying a named transition to
+	 * this uuid through its own save pipeline while in fact the app is writing
+	 * — across several objects — and it would hold that claim open for the
+	 * whole app call rather than around one save, which is precisely the
+	 * widened frame `declaringAction()`'s `finally` exists to prevent. The
+	 * enforcement the declaration supports has not been lost, it has moved:
+	 * the provider re-validates the move itself. That is the difference from
+	 * graph mode, which skips the declaration AND has nothing re-checking it,
+	 * which is why graph mode is documented as unenforced and this is not.
+	 *
+	 * The automatic-transition boundary still frames the write: `transition()`
+	 * wraps every mode in {@see LifecycleWriteBoundary::around()}, so a
+	 * rule-driven move that follows from this one is still drained and still
+	 * wins the entity that is answered.
+	 *
+	 * @param ObjectEntity $object The transitioning object, as it stood before the move.
+	 * @param string $tag The `provider` DI tag off the annotation.
+	 * @param string $field The lifecycle field name on the object.
+	 * @param string $action The action name the caller posted.
+	 * @param array<string, mixed> $data The caller-supplied input values.
+	 *
+	 * @return ObjectEntity The object re-read after the provider's write.
+	 *
+	 * @throws RuntimeException When the provider refuses the move.
+	 * @throws LifecycleProviderException When the tag resolves to nothing, resolves to the wrong
+	 *                          type, the provider fails unexpectedly, or the object cannot be
+	 *                          re-read afterwards.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function applyProviderTransition(
+		ObjectEntity $object,
+		string $tag,
+		string $field,
+		string $action,
+		array $data = [],
+	): ObjectEntity {
+		$provider = $this->providerRegistry->resolve(tag: $tag);
+
+		$actingUser = $this->userSession->getUser();
+		$objectId = (string)$object->getUuid();
+		$before = ($object->getObject() ?? []);
+		$from = (string)($before[$field] ?? '');
+
+		try {
+			$report = $provider->execute(
+				object: $before,
+				userId: (string)($actingUser?->getUID() ?? ''),
+				action: $action,
+				data: $data
+			);
+		} catch (RuntimeException $e) {
+			// THE APP SPEAKING, in the vocabulary the interface documents, so
+			// nothing is wrapped and nothing is reclassified. An ordinary
+			// RuntimeException is a refusal and reaches the caller as 422 with
+			// the provider's own sentence; a LifecycleProviderException is a
+			// declared breakage and reaches it as 502. Both are already the
+			// type the controller maps, and rewriting either would turn "the
+			// deadline has passed" into "the upstream is down" or the reverse.
+			throw $e;
+		} catch (Throwable $e) {
+			// ANYTHING ELSE IS NOT A REFUSAL. A TypeError or an Error means
+			// the provider failed in a way it never planned for, and reporting
+			// that as 422 would tell a handler the move was considered and
+			// declined when it was never considered at all.
+			$this->logger->error(
+				sprintf(
+					'Lifecycle provider "%s" failed to apply action "%s" to object "%s": %s',
+					$tag,
+					$action,
+					$objectId,
+					$e->getMessage()
+				),
+				['exception' => $e]
+			);
+			throw new LifecycleProviderException(
+				message: sprintf('Lifecycle provider "%s" could not apply action "%s".', $tag, $action),
+				code: 0,
+				previous: $e
+			);
+		}//end try
+
+		// Re-read rather than trust the report: what the client is answered
+		// with is the stored object, including whatever the provider's own
+		// side effects stamped onto it.
+		$saved = $this->objectService->find(id: $objectId);
+		if ($saved === null) {
+			$this->logger->error(
+				sprintf(
+					'Lifecycle provider "%s" applied action "%s" but object "%s" could not be re-read.',
+					$tag,
+					$action,
+					$objectId
+				)
+			);
+			throw new LifecycleProviderException(
+				message: sprintf(
+					'Lifecycle provider "%s" applied action "%s" but the object could not be read back.',
+					$tag,
+					$action
+				)
+			);
+		}
+
+		$this->dispatchTransitioned(
+			object: $saved,
+			action: $action,
+			from: $from,
+			to: $this->providerTargetState(report: $report, saved: $saved, field: $field),
+			userId: $actingUser?->getUID()
+		);
+
+		return $saved;
+	}//end applyProviderTransition()
+
+	/**
+	 * The state a provider moved the object into, for the transitioned event.
+	 *
+	 * The provider's report MAY name it as `to`, which is the only key
+	 * OpenRegister reads off that array. When it does not — dossiq's own
+	 * result shape is `status`/`statusRecord`/`dispatchedActions`/`version`,
+	 * and returning it verbatim is the point of ignoring the rest — the value
+	 * is read off the re-read object's lifecycle field, which is the stored
+	 * truth and cannot disagree with what was persisted.
+	 *
+	 * @param array<string, mixed> $report What the provider answered.
+	 * @param ObjectEntity $saved The object as re-read after the write.
+	 * @param string $field The lifecycle field name on the object.
+	 *
+	 * @return string The target state, empty when neither source names one.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function providerTargetState(array $report, ObjectEntity $saved, string $field): string {
+		$reported = trim((string)($report['to'] ?? ''));
+		if ($reported !== '') {
+			return $reported;
+		}
+
+		return (string)(($saved->getObject() ?? [])[$field] ?? '');
+	}//end providerTargetState()
+
+	/**
 	 * List actions whose `from` includes the object's current lifecycle value.
 	 *
 	 * @param string $objectId Object id/uuid/slug.
@@ -457,7 +710,12 @@ class TransitionEngine {
 	 * transition accepts no payload", which is exactly what the allowlist in
 	 * {@see resolveTransitionInputs()} enforces.
 	 *
-	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string}>
+	 * Three modes answer this question. A static `transitions` map is read
+	 * here; a `provider` tag delegates to the app that owns the state
+	 * machine; a `graph` block derives moves from FK-scoped siblings. Static
+	 * wins over both delegating modes wherever more than one is declared.
+	 *
+	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string,blocked?:bool}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
 	 * guard + per-transition from/requires/description checks each add one branch; none can be removed
@@ -511,9 +769,17 @@ class TransitionEngine {
 		$transitions = (array)($annotation['transitions'] ?? []);
 
 		// Static transitions take precedence. When no non-empty static map is
-		// declared but a `graph` block is, derive actions from FK-scoped
-		// siblings at runtime (design: mode selection & precedence).
+		// declared, fall through to the delegating modes in declaration order:
+		// `provider` (the app answers) before `graph` (FK-scoped siblings at
+		// runtime). Mode selection & precedence: a schema that declares a
+		// static map keeps it, whatever else it says, so an annotation that
+		// grows a second mode never silently loses the transitions it had.
 		if ($transitions === []) {
+			$provider = trim((string)($annotation['provider'] ?? ''));
+			if ($provider !== '') {
+				return $this->deriveProviderActions(object: $object, tag: $provider);
+			}
+
 			$graph = (array)($annotation['graph'] ?? []);
 			if ($graph !== []) {
 				return $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
@@ -555,6 +821,124 @@ class TransitionEngine {
 
 		return $available;
 	}//end availableActions()
+
+	/**
+	 * Ask the app for a provider-mode object's available actions.
+	 *
+	 * Provider mode exists for state machines whose shape is data rather than
+	 * schema — a per-object workflow template, a per-case-type status list, a
+	 * policy table an administrator edits. OpenRegister does not learn that
+	 * model; it resolves the declared tag and asks, exactly as it already
+	 * delegates guards and actions.
+	 *
+	 * Two failure modes are deliberately NOT collapsed into an empty list.
+	 * An unresolved tag throws out of the registry, and a provider that
+	 * throws while answering is wrapped here. Both reach the controller as
+	 * `LifecycleProviderException`, which answers 502: an empty list is a
+	 * legitimate answer ("this object offers no moves"), so a silent failure
+	 * would be indistinguishable from one and would render as a dead
+	 * timeline the client believes is correct.
+	 *
+	 * @param ObjectEntity $object The object whose actions are being listed.
+	 * @param string $tag The `provider` DI tag off the annotation.
+	 *
+	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string,blocked?:bool}>
+	 *
+	 * @throws LifecycleProviderException When the tag resolves to nothing, resolves to the
+	 *                          wrong type, or the provider throws while answering.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deriveProviderActions(ObjectEntity $object, string $tag): array {
+		$provider = $this->providerRegistry->resolve(tag: $tag);
+		$userId = (string)($this->userSession->getUser()?->getUID() ?? '');
+
+		try {
+			$entries = $provider->availableActions(
+				object: ($object->getObject() ?? []),
+				userId: $userId
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				sprintf(
+					'Lifecycle provider "%s" failed to list actions for object "%s": %s',
+					$tag,
+					(string)$object->getUuid(),
+					$e->getMessage()
+				),
+				['exception' => $e]
+			);
+			throw new LifecycleProviderException(
+				message: sprintf('Lifecycle provider "%s" could not list available actions.', $tag),
+				code: 0,
+				previous: $e
+			);
+		}//end try
+
+		return $this->publishProviderActions(entries: $entries);
+	}//end deriveProviderActions()
+
+	/**
+	 * Normalise a provider's answer onto the published action contract.
+	 *
+	 * `inputs` runs through the SAME {@see publishedInputs()} the static and
+	 * graph modes use, so the contract a client reads cannot drift per mode
+	 * and a malformed entry is dropped rather than published. An entry that
+	 * names no action is skipped, mirroring how a malformed static transition
+	 * spec is skipped rather than published half-formed. `label` and
+	 * `blocked` are carried through only when the provider set them, so the
+	 * response shape of a provider that does not use them is byte-identical
+	 * to a static one.
+	 *
+	 * @param array<int|string, mixed> $entries Whatever the provider returned.
+	 *
+	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string,blocked?:bool}>
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function publishProviderActions(array $entries): array {
+		$published = [];
+		foreach ($entries as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$action = (string)($entry['action'] ?? '');
+			if ($action === '') {
+				continue;
+			}
+
+			$requires = null;
+			if (isset($entry['requires']) === true) {
+				$requires = (string)$entry['requires'];
+			}
+
+			$description = null;
+			if (isset($entry['description']) === true) {
+				$description = (string)$entry['description'];
+			}
+
+			$item = [
+				'action' => $action,
+				'to' => (string)($entry['to'] ?? ''),
+				'requires' => $requires,
+				'description' => $description,
+				'inputs' => $this->publishedInputs(inputs: (array)($entry['inputs'] ?? [])),
+			];
+
+			if (isset($entry['label']) === true) {
+				$item['label'] = (string)$entry['label'];
+			}
+
+			if (isset($entry['blocked']) === true) {
+				$item['blocked'] = (bool)$entry['blocked'];
+			}
+
+			$published[] = $item;
+		}//end foreach
+
+		return $published;
+	}//end publishProviderActions()
 
 	/**
 	 * Derive the candidate transitions for a graph-mode object.
