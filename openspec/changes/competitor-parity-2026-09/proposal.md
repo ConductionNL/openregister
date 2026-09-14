@@ -213,3 +213,70 @@ ADR-046, ADR-047, ADR-048, ADR-052, ADR-065, ADR-066, ADR-067, ADR-069,
 ADR-071, ADR-076, ADR-078, ADR-079, ADR-091, ADR-095, ADR-098, ADR-099,
 ADR-102, ADR-103, ADR-108. openregister: ADR-001, ADR-002, ADR-003,
 ADR-006, ADR-007, ADR-008, ADR-009, ADR-010.
+
+## Discovery wave 1 (2026-09-14)
+
+A second input arrived after this umbrella was written: the round 4
+discovery sweep in ConductionNL/market-intelligence,
+`procest/_round4/discovery/`. `build-plan.md` groups 631 consolidated
+candidates into 70 clusters plus nine from the case-type depth study
+`casetype-configurability.md`, and the ownership rule puts **263 of the
+631 candidates on openregister**, more than on any other app. `decisions.md`
+holds 22 decisions; Ruben took all 22 on 2026-09-14 and lifted the build
+hold.
+
+Wave 1 is the platform under everything else. These are its openregister
+clusters, one change each, except where the plan names an existing change
+as the vehicle and it is extended instead.
+
+| change | cluster | candidates | size | decision | dossiq consumer |
+|---|---|---|---|---|---|
+| `rules-engine-operability` | 19, the rules engine | 17 | L | D3 option 2 | `field-rules-declared` |
+| `object-dates-as-a-calendar-feed` | 9, the case and its term in the caseworker's calendar | 2 | M | D11 option 1, feed first, and D5 | `every-term-on-the-engine-calendar` |
+| `bulk-action-jobs` | 52, bulk action as a background job | 8 | L | none, kept under D6 | renders progress and skips |
+| `object-read-state` | 62, per-user unread state | 6 | M | none | unread badge on the case tabs |
+| `code-list-lifecycle-and-hierarchy` | 6, code lists, hierarchies and expiring values | 20 | M | none | `code-lists-from-concepts` |
+| `delete-window-and-recorded-destruction` | 39, delete, restore and destroy | 5 | M | D10 as taken, no new recycle state | `case-delete-guard`, unchanged |
+| `archiving-as-a-process-with-sign-off` | 43, the archiving process | 17 | L | D7 option 1, owner moved to openregister | declares the resultaattype |
+| `property-vocabulary-published` | CT-1, the schema half | 10 study rows | M | none | `property-definition-management` |
+| `computed-values-by-json-ast` | CT-3, computed values | study row B2 | S | D3, second half | `property-definition-management` |
+
+Three changes are extended rather than created, because the build plan
+names each as the vehicle for its cluster:
+
+| change extended | cluster | what the extension adds |
+|---|---|---|
+| `permission-provenance-and-deny` | 11, roles and provenance (23 candidates) and 54, access compiled into the query (1) | the filter compiled into the query, permitted actions on the record, provenance in both directions, derived, scoped and expiring grants. D22 names this change by name |
+| `field-rules-by-state` | CT-2, the rules engine behind the smart field | a condition over the object's own data, a rule that makes a field required, entry and exit conditions on a state. The two gaps D3 names |
+| `property-code-list-from-concept-scheme` | CT-4, code lists a property takes its values from | a choice property with no source of values is refused at schema save |
+
+**Four decisions differ from the recommendations the plan assumed, and all
+four land here.** D10 takes no new recycle state: the existing soft delete
+of `deletion-audit-trail` carries the stated window and the recorded
+destruction, beside `object-archive-state`. D7 puts the archiving process
+with sign-off in openregister rather than filinq, so the evidence stays
+with the objects. D5 brings all five revivals back, which keeps the
+calendar cluster in this wave. D6 makes the promotion bar relevance-led,
+which is why cluster 52 stays with three driven passers and five `must`
+candidates.
+
+**Build order inside the wave.** `property-vocabulary-published` first: it
+is the cheapest row per hour in the study and two other changes read it.
+Then `permission-provenance-and-deny` with its extension, because access
+inside the query is the foundation under six other candidates. Then
+`rules-engine-operability` with `computed-values-by-json-ast` and the
+`field-rules-by-state` extension, which are one engine in three parts.
+Then `code-list-lifecycle-and-hierarchy`, `object-read-state` and
+`bulk-action-jobs`. Then `delete-window-and-recorded-destruction` and
+`archiving-as-a-process-with-sign-off`, which depend on the first of those
+two. `object-dates-as-a-calendar-feed` runs beside them, after
+`working-calendar-admin`.
+
+**One finding to raise rather than build.** The case-type study names the
+wall between the two property vocabularies as
+`schemas.case.properties.caseType.x-openregister-extends-form.map`. That
+annotation sits in OpenRegister's `x-` namespace, and a code search of
+`ConductionNL/openregister` on 2026-09-14 returned zero hits for
+`extends-form`. A leaf app is carrying an annotation that reads as a
+platform contract and is not one. `property-vocabulary-published` makes it
+one.
