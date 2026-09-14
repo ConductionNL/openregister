@@ -2898,7 +2898,14 @@
         "Store": "Продавница",
         "Install registers, schemas and flows that other organisations have published.": "Инсталирајте регистри, шеми и текови објавени од други организации.",
         "No such run": "Нема такво извршување",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Извршувањето не постои или немате право да го видите. Со бришење на тек се бришат и неговите извршувања."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Извршувањето не постои или немате право да го видите. Со бришење на тек се бришат и неговите извршувања.",
+        "Configured": "Конфигурирано",
+        "Limited": "Ограничено",
+        "Simulated": "Симулирано",
+        "Not available": "Не е достапно",
+        "Open settings": "Отвори поставки",
+        "Add integration": "Додај интеграција",
+        "Last checked": "Последна проверка"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

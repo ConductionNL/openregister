@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Sklep",
         "Install registers, schemas and flows that other organisations have published.": "Zainstaluj rejestry, schematy i przepływy opublikowane przez inne organizacje.",
         "No such run": "Nie ma takiego uruchomienia",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Uruchomienie nie istnieje lub nie masz do niego wglądu. Usunięcie przepływu usuwa też jego uruchomienia."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Uruchomienie nie istnieje lub nie masz do niego wglądu. Usunięcie przepływu usuwa też jego uruchomienia.",
+        "Configured": "Skonfigurowano",
+        "Limited": "Ograniczone",
+        "Simulated": "Symulowane",
+        "Not available": "Niedostępne",
+        "Open settings": "Otwórz ustawienia",
+        "Add integration": "Dodaj integrację",
+        "Last checked": "Ostatnio sprawdzono"
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 )
