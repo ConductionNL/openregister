@@ -108,7 +108,6 @@ class Version1Date20260914210000 extends SimpleMigrationStep {
 			$summary->addColumn('last_verdict', Types::STRING, ['notnull' => false, 'length' => 16]);
 			$summary->addColumn('last_error', Types::TEXT, ['notnull' => false]);
 			$summary->addColumn('last_error_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
-			$summary->addColumn('runs', Types::BIGINT, ['notnull' => true, 'default' => 0]);
 
 			$summary->setPrimaryKey(['id']);
 			// One summary per rule: recording twice updates, never duplicates.

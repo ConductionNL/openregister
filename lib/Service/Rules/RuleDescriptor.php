@@ -95,6 +95,27 @@ final class RuleDescriptor implements JsonSerializable {
 	}//end getId()
 
 	/**
+	 * The id a rule of this kind, schema and key will have.
+	 *
+	 * The hot paths that record an evaluation know those three facts and have
+	 * no descriptor in hand, and building one just to read its id would mean
+	 * carrying the whole declaration through the save pipeline. This is the
+	 * same derivation {@see self::getId()} performs, and a test holds the two
+	 * together.
+	 *
+	 * @param string $kind One of the RuleVocabulary KIND_ constants.
+	 * @param string $schemaSlug The slug of the schema the rule acts on.
+	 * @param string $key The rule's own key within its kind.
+	 *
+	 * @return string The derived id.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	public static function idFor(string $kind, string $schemaSlug, string $key): string {
+		return ($kind . self::ID_SEPARATOR . $schemaSlug . self::ID_SEPARATOR . $key);
+	}//end idFor()
+
+	/**
 	 * The rule's kind.
 	 *
 	 * @return string One of the RuleVocabulary KIND_ constants.

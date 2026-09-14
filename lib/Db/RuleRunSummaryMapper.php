@@ -44,6 +44,13 @@ use OCP\IDBConnection;
 class RuleRunSummaryMapper extends QBMapper {
 
 	/**
+	 * How long a repeat of the same verdict may go unwritten.
+	 *
+	 * @var integer
+	 */
+	public const THROTTLE_SECONDS = 60;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
@@ -116,13 +123,23 @@ class RuleRunSummaryMapper extends QBMapper {
 	 * thousand successful runs and is still there when an administrator asks
 	 * why a rule stopped being trusted.
 	 *
+	 * THROTTLED, BECAUSE THIS RUNS ON EVERY SAVE. A rule that fires on every
+	 * object save would otherwise cost one UPDATE per save per rule, and an
+	 * import of four hundred thousand objects would spend most of its time
+	 * rewriting a timestamp nobody is watching change. So a repeat of the same
+	 * verdict inside the throttle window is not written: `lastRun` is then
+	 * accurate to the window rather than to the second, which is the resolution
+	 * "has this rule run in ninety days" actually needs. A CHANGED verdict and
+	 * an error are always written, because those are the two things an
+	 * administrator is reading the summary for.
+	 *
 	 * @param string $ruleId The derived rule id.
 	 * @param string $schemaSlug The schema the rule is declared on.
 	 * @param string $verdict The verdict reached.
 	 * @param DateTime $at When the evaluation happened.
 	 * @param string|null $error The message, when the verdict was an error.
 	 *
-	 * @return RuleRunSummary The stored summary.
+	 * @return RuleRunSummary The stored summary, written or not.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
@@ -138,15 +155,18 @@ class RuleRunSummaryMapper extends QBMapper {
 			$summary = new RuleRunSummary();
 			$summary->setRuleId($ruleId);
 			$summary->setSchemaSlug($schemaSlug);
-			$summary->setRuns(0);
+		}
+
+		$isError = ($error !== null && $error !== '');
+		if ($this->worthWriting(summary: $summary, verdict: $verdict, at: $at, isError: $isError) === false) {
+			return $summary;
 		}
 
 		$summary->setSchemaSlug($schemaSlug);
 		$summary->setLastRun($at);
 		$summary->setLastVerdict($verdict);
-		$summary->setRuns(((int)$summary->getRuns() + 1));
 
-		if ($error !== null && $error !== '') {
+		if ($isError === true) {
 			$summary->setLastError($error);
 			$summary->setLastErrorAt($at);
 		}
@@ -158,4 +178,38 @@ class RuleRunSummaryMapper extends QBMapper {
 		return $this->update($summary);
 
 	}//end record()
+
+	/**
+	 * Whether this evaluation changes anything an administrator reads.
+	 *
+	 * @param RuleRunSummary $summary The summary as it stands.
+	 * @param string $verdict The verdict reached.
+	 * @param DateTime $at When the evaluation happened.
+	 * @param bool $isError Whether the verdict carries an error message.
+	 *
+	 * @return bool True when the row should be written.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag distinguishes the one case
+	 *   that always writes from the one that may be throttled; splitting it would be two
+	 *   methods with the same body and one line different.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $at, bool $isError): bool {
+		if ($summary->getId() === null || $isError === true) {
+			return true;
+		}
+
+		if ((string)$summary->getLastVerdict() !== $verdict) {
+			return true;
+		}
+
+		$lastRun = $summary->getLastRun();
+		if ($lastRun === null) {
+			return true;
+		}
+
+		return (($at->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
+
+	}//end worthWriting()
 }//end class

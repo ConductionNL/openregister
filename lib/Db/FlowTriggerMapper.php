@@ -96,6 +96,44 @@ class FlowTriggerMapper {
 	}//end flowUuidsFor()
 
 	/**
+	 * Every trigger row that names one schema, whatever the register or event.
+	 *
+	 * The rule inventory asks a different question from the hot path: not "does
+	 * this event on this register and schema match a flow" but "which flows can
+	 * act on objects of this schema at all". A disabled row is returned too,
+	 * because a switched-off rule is exactly what the inventory has to show.
+	 *
+	 * @param string $schemaSlug The schema's slug, as the trigger node names it.
+	 *
+	 * @return array<int, array{flow_uuid: string, event: string, register: string, enabled: bool}> The rows.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	public function findBySchema(string $schemaSlug): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('flow_uuid', 'event', 'register', 'enabled')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('schema_slug', $qb->createNamedParameter($schemaSlug)))
+			->orderBy('flow_uuid', 'ASC')
+			->addOrderBy('event', 'ASC');
+
+		$result = $qb->executeQuery();
+		$rows = [];
+		while (($row = $result->fetch()) !== false) {
+			$rows[] = [
+				'flow_uuid' => (string)$row['flow_uuid'],
+				'event' => (string)$row['event'],
+				'register' => (string)$row['register'],
+				'enabled' => (bool)$row['enabled'],
+			];
+		}
+
+		$result->closeCursor();
+
+		return $rows;
+	}//end findBySchema()
+
+	/**
 	 * Whether a flow has any derived trigger rows at all.
 	 *
 	 * This is what the column fallback turns on: a flow with NO rows has not

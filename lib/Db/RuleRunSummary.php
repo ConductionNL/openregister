@@ -48,8 +48,6 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLastError(?string $lastError)
  * @method DateTime|null getLastErrorAt()
  * @method void setLastErrorAt(?DateTime $lastErrorAt)
- * @method int getRuns()
- * @method void setRuns(int $runs)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -98,13 +96,6 @@ class RuleRunSummary extends Entity implements JsonSerializable {
 	protected ?DateTime $lastErrorAt = null;
 
 	/**
-	 * How often the rule has been evaluated since the summary was opened.
-	 *
-	 * @var integer|null
-	 */
-	protected ?int $runs = 0;
-
-	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -114,7 +105,6 @@ class RuleRunSummary extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'lastVerdict', type: 'string');
 		$this->addType(fieldName: 'lastError', type: 'string');
 		$this->addType(fieldName: 'lastErrorAt', type: 'datetime');
-		$this->addType(fieldName: 'runs', type: 'integer');
 
 	}//end __construct()
 
@@ -133,7 +123,6 @@ class RuleRunSummary extends Entity implements JsonSerializable {
 			'lastVerdict' => $this->lastVerdict,
 			'lastError' => $this->lastError,
 			'lastErrorAt' => $this->lastErrorAt?->format(DateTime::ATOM),
-			'runs' => (int)$this->runs,
 		];
 
 	}//end jsonSerialize()
