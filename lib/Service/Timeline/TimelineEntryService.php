@@ -223,6 +223,23 @@ class TimelineEntryService {
 	}//end get()
 
 	/**
+	 * The record behind one note, when there is one.
+	 *
+	 * Read by the notes endpoint BEFORE it deletes a note, because after the
+	 * delete there is nothing left to look the entry up by and its references
+	 * would be orphaned.
+	 *
+	 * @param integer $commentId The comment.
+	 *
+	 * @return TimelineEntry|null The record, or null for a note written before this change.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	public function entryForNote(int $commentId): ?TimelineEntry {
+		return $this->entryMapper->findByComment(commentId: $commentId);
+	}//end entryForNote()
+
+	/**
 	 * Pin an entry, or take the pin off.
 	 *
 	 * The pin is on the record, not per reader (D-4): the colleague who needs

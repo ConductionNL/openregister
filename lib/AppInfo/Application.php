@@ -1165,6 +1165,10 @@ class Application extends App implements IBootstrap {
 		);
 
 		$context->registerSearchProvider(ObjectsProvider::class);
+		// The entries beside the objects. Two providers, because a Woo
+		// request asks for every mention of a subject and the answer is a
+		// list of entries, each naming the case it sits on.
+		$context->registerSearchProvider(\OCA\OpenRegister\Search\TimelineEntriesProvider::class);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 	}//end registerConfigurationServices()

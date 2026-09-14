@@ -1114,6 +1114,33 @@ return [
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
+        // Timeline entries under objects: the entry as a record, with its
+        // kind, its fields, the pin, the follow-up and the raw inbound
+        // source. All #[NoAdminRequired] with a per-object RBAC guard in the
+        // method body (ADR-005/016/029); CSRF stays enabled on the writes.
+        ['name' => 'timelineEntries#index', 'url' => '/api/objects/{register}/{schema}/{id}/timeline', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timelineEntries#create', 'url' => '/api/objects/{register}/{schema}/{id}/timeline', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timelineEntries#show', 'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+        ['name' => 'timelineEntries#update', 'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+        ['name' => 'timelineEntries#source', 'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}/source', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+
+        // The cross-object entry search: the Woo path. Static, because it
+        // spans every object the caller may read rather than one of them.
+        ['name' => 'timelineEntries#searchEntries', 'url' => '/api/timeline/search', 'verb' => 'GET'],
+
+        // The three administered declarations behind the timeline. Reading
+        // them is open to any authenticated caller, because a handler writing
+        // an entry needs the list; declaring and withdrawing are admin-only.
+        ['name' => 'timelineAdmin#kinds', 'url' => '/api/timeline/kinds', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declareKind', 'url' => '/api/timeline/kinds', 'verb' => 'POST'],
+        ['name' => 'timelineAdmin#withdrawKind', 'url' => '/api/timeline/kinds/{slug}', 'verb' => 'DELETE', 'requirements' => ['slug' => '[^/]+']],
+        ['name' => 'timelineAdmin#patterns', 'url' => '/api/timeline/reference-patterns', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declarePattern', 'url' => '/api/timeline/reference-patterns', 'verb' => 'POST'],
+        ['name' => 'timelineAdmin#withdrawPattern', 'url' => '/api/timeline/reference-patterns/{slug}', 'verb' => 'DELETE', 'requirements' => ['slug' => '[^/]+']],
+        ['name' => 'timelineAdmin#textBlocks', 'url' => '/api/timeline/text-blocks', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declareTextBlock', 'url' => '/api/timeline/text-blocks', 'verb' => 'POST'],
+        ['name' => 'timelineAdmin#withdrawTextBlock', 'url' => '/api/timeline/text-blocks/{slug}', 'verb' => 'DELETE', 'requirements' => ['slug' => '[^/]+']],
+
         // Semantic-object handoff engine (ADR-051): availability + execute.
         // Both #[NoAdminRequired] with a per-object RBAC guard in the method
         // body (ADR-005/016/029); CSRF stays enabled on the POST.

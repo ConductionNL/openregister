@@ -156,18 +156,25 @@ class TimelineEntryMapper extends QBMapper {
 	}//end findForObject()
 
 	/**
-	 * Entries matching a term, across objects, inside the caller's reach.
+	 * Entries matching a term, across objects.
 	 *
-	 * `$objectUuids` is the list of objects the caller may read, resolved by
-	 * the caller before this method runs. An EMPTY list means the caller may
-	 * read nothing, and this method answers with nothing: it never falls back
-	 * to "no narrowing", which would turn an access failure into a full read.
+	 * The visibility predicate is part of the STATEMENT, never a filter on a
+	 * page that was already built (D-1): filtering afterwards shortens every
+	 * page by an unknown amount and still reports the unfiltered count.
 	 *
-	 * @param string            $term        The search term.
-	 * @param array<int,string> $objectUuids The objects the caller may read.
-	 * @param string|null       $visibility  The visibility the caller is entitled to, or null for both.
-	 * @param string|null       $kind        Narrow to one kind.
-	 * @param integer           $limit       Page size, capped at SEARCH_LIMIT.
+	 * `$objectUuids` has three states and they are deliberately not two.
+	 * `null` means "do not narrow by object": the caller resolves access per
+	 * row, which is what the cross-object search does, because the set of
+	 * objects a handler may read is unbounded. An EMPTY ARRAY means "narrow to
+	 * nothing" and returns nothing, which is what a subject-scoped reader with
+	 * an empty scope must get. Collapsing those two onto one empty value is
+	 * how an access failure turns into a full read.
+	 *
+	 * @param string                 $term        The search term.
+	 * @param array<int,string>|null $objectUuids The objects to narrow to, or null for no narrowing.
+	 * @param string|null            $visibility  The visibility the caller is entitled to, or null for both.
+	 * @param string|null            $kind        Narrow to one kind.
+	 * @param integer                $limit       Page size, capped at SEARCH_LIMIT.
 	 *
 	 * @return array<int, TimelineEntry> The matching rows, newest first.
 	 *
@@ -175,12 +182,12 @@ class TimelineEntryMapper extends QBMapper {
 	 */
 	public function search(
 		string $term,
-		array $objectUuids,
+		?array $objectUuids = null,
 		?string $visibility = null,
 		?string $kind = null,
 		int $limit = 50,
 	): array {
-		if ($objectUuids === []) {
+		if (is_array($objectUuids) === true && $objectUuids === []) {
 			return [];
 		}
 
@@ -195,14 +202,17 @@ class TimelineEntryMapper extends QBMapper {
 					$qb->createNamedParameter('%'.$this->db->escapeLikeParameter($term).'%')
 				)
 			)
-			->andWhere(
+			->orderBy('created', 'DESC')
+			->setMaxResults($capped);
+
+		if ($objectUuids !== null) {
+			$qb->andWhere(
 				$qb->expr()->in(
 					'object_uuid',
 					$qb->createNamedParameter($objectUuids, IQueryBuilder::PARAM_STR_ARRAY)
 				)
-			)
-			->orderBy('created', 'DESC')
-			->setMaxResults($capped);
+			);
+		}
 
 		if ($visibility !== null) {
 			$qb->andWhere($qb->expr()->eq('visibility', $qb->createNamedParameter($visibility)));
@@ -222,16 +232,16 @@ class TimelineEntryMapper extends QBMapper {
 	 * A callback nobody made is a property of the request, not of the case
 	 * (D-3), so the list that answers "what is still open" spans cases.
 	 *
-	 * @param array<int,string> $objectUuids The objects the caller may read.
-	 * @param string|null       $kind        Narrow to one kind.
-	 * @param integer           $limit       Page size.
+	 * @param array<int,string>|null $objectUuids The objects to narrow to; null does not narrow, [] narrows to nothing.
+	 * @param string|null            $kind        Narrow to one kind.
+	 * @param integer                $limit       Page size.
 	 *
 	 * @return array<int, TimelineEntry> The open rows, oldest first.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function findOpenFollowUps(array $objectUuids, ?string $kind = null, int $limit = 50): array {
-		if ($objectUuids === []) {
+	public function findOpenFollowUps(?array $objectUuids = null, ?string $kind = null, int $limit = 50): array {
+		if (is_array($objectUuids) === true && $objectUuids === []) {
 			return [];
 		}
 
@@ -239,14 +249,17 @@ class TimelineEntryMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('follow_up', $qb->createNamedParameter(TimelineEntry::FOLLOW_UP_OPEN)))
-			->andWhere(
+			->orderBy('created', 'ASC')
+			->setMaxResults($limit);
+
+		if ($objectUuids !== null) {
+			$qb->andWhere(
 				$qb->expr()->in(
 					'object_uuid',
 					$qb->createNamedParameter($objectUuids, IQueryBuilder::PARAM_STR_ARRAY)
 				)
-			)
-			->orderBy('created', 'ASC')
-			->setMaxResults($limit);
+			);
+		}
 
 		if ($kind !== null) {
 			$qb->andWhere($qb->expr()->eq('kind', $qb->createNamedParameter($kind)));
