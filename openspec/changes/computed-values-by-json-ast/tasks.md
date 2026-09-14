@@ -22,4 +22,4 @@
 
 ## 5. Hand over
 
-- [ ] 5.1 Hand the catalogue to the dossiq lane for `property-definition-management`, with study row B2 and ledger row 3.17.
+- [x] 5.1 Hand the catalogue to the dossiq lane for `property-definition-management`, with study row B2 and ledger row 3.17. Filed as ConductionNL/dossiq#2751: the two endpoints, the `calculation` property key, the refusal codes, and the three things dossiq adds.
