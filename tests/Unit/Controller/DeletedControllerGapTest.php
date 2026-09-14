@@ -56,12 +56,12 @@ class DeletedControllerGapTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->permissionHandler,
-			$this->createMock(DeletionWindowService::class),
-			$this->createMock(DestroyRightService::class),
-			$this->createMock(DestructionScopeService::class),
-			$this->createMock(DestructionRecorder::class),
-			$this->createMock(RetentionClockService::class),
-			$this->createMock(AuditTrailMapper::class)
+			$this->createMock(originalClassName: DeletionWindowService::class),
+			$this->createMock(originalClassName: DestroyRightService::class),
+			$this->createMock(originalClassName: DestructionScopeService::class),
+			$this->createMock(originalClassName: DestructionRecorder::class),
+			$this->createMock(originalClassName: RetentionClockService::class),
+			$this->createMock(originalClassName: AuditTrailMapper::class)
 		);
 
 		// index()/statistics() now scan magic tables directly (BUG-1 fix).
@@ -385,7 +385,7 @@ class DeletedControllerGapTest extends TestCase {
 	 * Test restore with object having empty deleted array (covers === [] branch).
 	 */
 	public function testRestoreObjectWithEmptyDeletedArray(): void {
-		// restore() is a write and now requires an authenticated caller.
+		// Restore is a write and now requires an authenticated caller.
 		$this->stubAdminUser();
 		$object = new ObjectEntity();
 		// getDeleted returns [] for null (Entity __call behavior)

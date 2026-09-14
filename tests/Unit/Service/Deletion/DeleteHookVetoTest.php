@@ -3,10 +3,10 @@
 /**
  * A hook can still veto a delete.
  *
- * dossiq's `case-delete-guard` refuses a delete that would strand something,
- * and it refuses by stopping propagation on ObjectDeletingEvent. This change
- * adds a window, a right and a scope around the delete path, and none of them
- * may move the veto: a guard that stops propagation still throws before a
+ * The dossiq guard `case-delete-guard` refuses a delete that would strand
+ * something, and it refuses by stopping propagation on ObjectDeletingEvent. This
+ * change adds a window, a right and a scope around the delete path, and none of
+ * them may move the veto: a guard that stops propagation still throws before a
  * single row is touched.
  *
  * The mapper is built without its constructor and given only the dispatcher,

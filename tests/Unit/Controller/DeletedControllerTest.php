@@ -53,12 +53,12 @@ class DeletedControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->permissionHandler,
-			$this->createMock(DeletionWindowService::class),
-			$this->createMock(DestroyRightService::class),
-			$this->createMock(DestructionScopeService::class),
-			$this->createMock(DestructionRecorder::class),
-			$this->createMock(RetentionClockService::class),
-			$this->createMock(AuditTrailMapper::class)
+			$this->createMock(originalClassName: DeletionWindowService::class),
+			$this->createMock(originalClassName: DestroyRightService::class),
+			$this->createMock(originalClassName: DestructionScopeService::class),
+			$this->createMock(originalClassName: DestructionRecorder::class),
+			$this->createMock(originalClassName: RetentionClockService::class),
+			$this->createMock(originalClassName: AuditTrailMapper::class)
 		);
 	}
 
@@ -149,7 +149,7 @@ class DeletedControllerTest extends TestCase {
 	}
 
 	public function testRestoreObjectNotDeleted(): void {
-		// restore() is a write and now requires an authenticated caller, the
+		// Restore is a write and now requires an authenticated caller, the
 		// same gate restoreMultiple() has had since the wave-3 C4 finding.
 		$this->stubAdminUser();
 		$object = new ObjectEntity();

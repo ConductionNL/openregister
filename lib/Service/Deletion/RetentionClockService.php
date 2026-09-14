@@ -53,6 +53,8 @@ use Throwable;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Deletion
+ *
+ * @spec openspec/specs/deletion-audit-trail/spec.md
  */
 class RetentionClockService {
 	/**

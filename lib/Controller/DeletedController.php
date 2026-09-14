@@ -968,7 +968,7 @@ class DeletedController extends Controller {
 					'objectUuid' => $id,
 					'total' => count($records),
 					'results' => array_map(
-						static fn (mixed $record): mixed => $record->jsonSerialize(),
+						static fn (\OCA\OpenRegister\Db\AuditTrail $record): array => $record->jsonSerialize(),
 						$records
 					),
 				]

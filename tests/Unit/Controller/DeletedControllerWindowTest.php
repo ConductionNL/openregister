@@ -55,24 +55,74 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 final class DeletedControllerWindowTest extends TestCase {
+	/**
+	 * Request double.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
 
+	/**
+	 * Object mapper double.
+	 *
+	 * @var MagicMapper&MockObject
+	 */
 	private MagicMapper&MockObject $objectMapper;
 
+	/**
+	 * Schema mapper double.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
 	private SchemaMapper&MockObject $schemaMapper;
 
+	/**
+	 * Window service double.
+	 *
+	 * @var DeletionWindowService&MockObject
+	 */
 	private DeletionWindowService&MockObject $windows;
 
+	/**
+	 * Destroy-right service double.
+	 *
+	 * @var DestroyRightService&MockObject
+	 */
 	private DestroyRightService&MockObject $rights;
 
+	/**
+	 * Destruction scope service double.
+	 *
+	 * @var DestructionScopeService&MockObject
+	 */
 	private DestructionScopeService&MockObject $scopes;
 
+	/**
+	 * Destruction recorder double.
+	 *
+	 * @var DestructionRecorder&MockObject
+	 */
 	private DestructionRecorder&MockObject $recorder;
 
+	/**
+	 * Retention clock service double.
+	 *
+	 * @var RetentionClockService&MockObject
+	 */
 	private RetentionClockService&MockObject $clocks;
 
+	/**
+	 * Audit trail mapper double.
+	 *
+	 * @var AuditTrailMapper&MockObject
+	 */
 	private AuditTrailMapper&MockObject $auditTrails;
 
+	/**
+	 * Controller under test.
+	 *
+	 * @var DeletedController
+	 */
 	private DeletedController $controller;
 
 	protected function setUp(): void {

@@ -54,6 +54,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A destruction scope spans the
  * entity services that hold what hangs off an object. The coupling is the
  * scope; the alternative is a second, quietly different list of what survives.
+ *
+ * @spec openspec/specs/deletion-audit-trail/spec.md
  */
 class DestructionScopeService {
 	/**
