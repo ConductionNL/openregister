@@ -100,6 +100,15 @@ return [
         ['name' => 'objectSharing#createLink',   'url' => '/api/objects/{register}/{schema}/{id}/links',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectSharing#inviteByEmail','url' => '/api/objects/{register}/{schema}/{id}/invitations',      'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 
+        // Who holds which right on one object, and how that set changed. The
+        // other direction of `/api/scopes`: that one answers a caller about
+        // themselves, these answer an auditor about everybody. Reading the
+        // object is not enough to read them — see the controller's guard.
+        // The history route precedes the index one so the longer path is
+        // matched first.
+        ['name' => 'objectPermissions#history', 'url' => '/api/objects/{register}/{schema}/{id}/permissions/history', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectPermissions#index',   'url' => '/api/objects/{register}/{schema}/{id}/permissions',         'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
         // Per-object watchers. Following an object is per-user state that must not
         // be written through the object itself — that would put a subscription in
         // the object's audit trail and cut a version on every follow — so it gets
@@ -377,6 +386,7 @@ return [
         ['name' => 'permissions#index',       'url' => '/api/permissions',              'verb' => 'GET'],
         ['name' => 'permissions#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
         ['name' => 'permissions#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
+        ['name' => 'permissions#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -1145,6 +1155,15 @@ return [
         ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
         ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
         ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+
+        // The property vocabulary: what a property may be, published so an
+        // editor is generated from it instead of retyped per app. Literal
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the vocabulary reaches no data at
+        // all, and the narrowing read lists schemas through the RBAC- and
+        // tenancy-scoped mapper (ADR-005/016).
+        ['name' => 'propertyVocabulary#index', 'url' => '/api/schemas/property-vocabulary', 'verb' => 'GET'],
+        ['name' => 'propertyVocabulary#extendingForms', 'url' => '/api/schemas/extending-forms', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

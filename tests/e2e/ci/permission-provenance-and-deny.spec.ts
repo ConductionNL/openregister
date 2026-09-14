@@ -317,6 +317,117 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		).toBe(totalBefore - 1)
 	})
 
+	/**
+	 * Task 4.1, the whole round trip: a grant, a deny on one row, the list, the
+	 * object, and the provenance for BOTH answers.
+	 *
+	 * The provenance is the half a client cannot reconstruct. A yes is easy to
+	 * verify by trying it; an absence has no reason at all unless the layer
+	 * gives one, and "why can this person not open this dossier" is the question
+	 * that otherwise ends in a database session.
+	 *
+	 * @e2e rbac-scopes::a-grant-says-where-it-came-from
+	 * @e2e rbac-scopes::an-absence-says-which-rule-removed-it
+	 * @e2e rbac-scopes::an-auditor-asks-who-could-open-a-dossier
+	 * @e2e rbac-scopes::the-page-renders-only-what-is-allowed
+	 */
+	test('the grant and the absence both say which rule decided them', async () => {
+		const readable = await owner.post(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
+			{ data: { key: `provenance-keep-${RUN}` } },
+		)
+		expect(readable.ok(), `object create failed: ${await readable.text()}`).toBeTruthy()
+		const readableUuid = uuidOf(await readable.json())
+
+		const hidden = await owner.post(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
+			{ data: { key: `provenance-hide-${RUN}` } },
+		)
+		expect(hidden.ok(), `object create failed: ${await hidden.text()}`).toBeTruthy()
+		const hiddenUuid = uuidOf(await hidden.json())
+
+		const denied = await owner.put(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hiddenUuid}`,
+			{
+				data: {
+					key: `provenance-hide-${RUN}`,
+					'@self': { authorization: { deny: { read: ['authenticated'] } } },
+				},
+			},
+		)
+		expect(denied.ok(), `writing the object deny failed: ${await denied.text()}`).toBeTruthy()
+
+		// THE LIST. One row of the two, and the total says the same.
+		const list = await other.get(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=provenance-${RUN}&limit=50`,
+		)
+		expect(list.ok(), `list failed: ${await list.text()}`).toBeTruthy()
+		const listed = rowsOf(await list.json()).map((row) => {
+			const self = (row['@self'] ?? {}) as Record<string, unknown>
+			return String(self.id ?? row.id ?? row.uuid ?? '')
+		})
+		expect(listed, 'the readable row is missing, so the list is broken rather than filtered').toContain(
+			readableUuid,
+		)
+		expect(listed, 'the denied row is still listed').not.toContain(hiddenUuid)
+
+		// THE OBJECT, and the actions it carries. A record that says what its
+		// reader may do with it is what stops a client rendering a button
+		// nobody may press.
+		const read = await other.get(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${readableUuid}`,
+		)
+		expect(read.ok(), `the readable object was refused: ${await read.text()}`).toBeTruthy()
+		const record = await read.json()
+		expect(
+			record['@self']?.actions,
+			'the record carried no actions, so every client is back to guessing',
+		).toContain('read')
+
+		const refused = await other.get(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hiddenUuid}`,
+		)
+		expect(refused.status(), 'the denied object was readable').toBeGreaterThanOrEqual(400)
+
+		// THE PROVENANCE OF THE YES. The grant names the rule behind it.
+		const scopes = await other.get(
+			`/index.php/apps/openregister/api/scopes?register=${registerId}&schema=${openSchemaId}`,
+		)
+		expect(scopes.ok(), `scopes read failed: ${await scopes.text()}`).toBeTruthy()
+		const scope = ((await scopes.json()).scopes ?? [])[0]
+		expect(scope, 'the caller has no scope on a schema that grants them read').toBeTruthy()
+		expect(scope.actions, 'read is missing from the actions list').toContain('read')
+		expect(
+			scope.provenance?.read?.source,
+			'the grant does not say where it came from',
+		).toBeTruthy()
+
+		// THE PROVENANCE OF THE NO. Read as the owner, who may review access:
+		// the deny is reported with the rule that carries it, and the mode that
+		// says whether it is biting yet.
+		const holders = await owner.get(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hiddenUuid}/permissions`,
+		)
+		expect(holders.ok(), `the access set was refused: ${await holders.text()}`).toBeTruthy()
+		const set = await holders.json()
+		expect(
+			(set.denied ?? []).map((rule: Record<string, unknown>) => rule.action),
+			'the absence has no rule behind it, which is the whole thing this read exists for',
+		).toContain('read')
+		expect(set.denyEnforcement, 'the report does not say whether the deny is biting yet').toBeTruthy()
+
+		// And the same caller reading the row nobody denied gets no denial,
+		// so the report is about this rule and not about every object.
+		const control = await owner.get(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${readableUuid}/permissions`,
+		)
+		expect(control.ok(), `the control access set was refused: ${await control.text()}`).toBeTruthy()
+		expect(
+			(await control.json()).denied,
+			'a row nobody denied is reported as denied',
+		).toHaveLength(0)
+	})
+
 	test('a caller with no grant sees nothing, and the total says so', async () => {
 		// THE LEAST-PRIVILEGED PROBE. The subject schema denies `read` to a
 		// group nobody is in, so this caller's refusal must come from the grant

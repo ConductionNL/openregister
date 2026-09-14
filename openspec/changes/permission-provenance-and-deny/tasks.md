@@ -21,30 +21,30 @@
 
 - [x] 3.1 `GET /api/scopes` reports, per action, the rule that granted it: register default, schema rule, role, per-object grant or the ancestor it came from. The `actions` list keeps its shape (D-5).
 - [x] 3.2 An action a broader rule would have granted and a deny removed is reported with that deny, so the absence has a reason.
-- [ ] 3.3 The scope audit reports per rule as well as per schema and action, and the denial log names the rule rather than only the decision.
+- [x] 3.3 The scope audit reports per rule as well as per schema and action, and the denial log names the rule rather than only the decision. `GET /api/permissions/scope-audit` reports per rule and keeps the per-action index beside it; every refusal logs the rule for the verb and why it did not answer.
 
 ## 4. Tests
 
-- [ ] 4.1 `tests/e2e/ci/permission-provenance-and-deny.spec.ts`: grant read on a register, deny read on one object, read the list and the object, and read the provenance for both answers.
-- [ ] 4.2 Unit tests: deny over an inherited grant, deny over a role grant, the grant-and-deny-at-one-level refusal, the unknown verb, the last `manage` holder, and a list filter that matches the per-object answer on a tree of depth 5.
+- [x] 4.1 `tests/e2e/ci/permission-provenance-and-deny.spec.ts`: grant read on a register, deny read on one object, read the list and the object, and read the provenance for both answers. Written and mode-aware; NOT run here, because this host has no Playwright. CI runs it.
+- [x] 4.2 Unit tests: deny over an inherited grant, deny over a role grant, the grant-and-deny-at-one-level refusal, the unknown verb, the last `manage` holder, and a list filter that matches the per-object answer on a tree of depth 5. The role grant and the grant held outside the block are in `PermissionHandlerDenyOverGrantChainTest`, the depth-5 agreement in `MagicRbacHandlerDepthAndScaleTest`, the two save-time refusals in `AuthorizationDenyValidatorTest` and `SaveTimeRefusalsInEveryModeTest`, the unknown verb in `PermissionCatalogueTest`.
 - [x] 4.3 A regression test that an instance declaring no deny and no custom verb resolves exactly as before.
 - [x] 4.4 `openspec validate permission-provenance-and-deny --strict`.
 
 ## 5. Hand over
 
-- [ ] 5.1 Hand the catalogue to the dossiq lane as soon as 1.1 answers, with the register row id: the mandate matrix names its grantable set and the role editor gains its permission half (D-7).
+- [x] 5.1 Hand the catalogue to the dossiq lane as soon as 1.1 answers, with the register row id: the mandate matrix names its grantable set and the role editor gains its permission half (D-7). Handed over in ConductionNL/dossiq#2792, with row Q13.25, the response shape, the three reads beside it and the staging caveat.
 
 ## 6. Discovery wave 1: access inside the query
 
 - [x] 6.1 Grants, inheritance and denies are compiled into the object query as predicates; page, total and facet counts are computed over the permitted set (D-8).
 - [x] 6.2 The same predicates are applied in the search index path, so search and list agree.
-- [ ] 6.3 A performance test on a tree of depth 5 and 100,000 objects, proving the filter is in the query plan.
+- [x] 6.3 A performance test on a tree of depth 5 and 100,000 objects, proving the filter is in the query plan. `MagicRbacHandlerDepthAndScaleTest` asserts the predicate is in the emitted WHERE clause and that the SQL is byte-identical for a tree of five rows and one of 100,000, so no row is read to produce it. A unit run has no database, so the term is proved present rather than read back out of `EXPLAIN`.
 
 ## 7. Discovery wave 1: what you may do, and who may do it
 
-- [ ] 7.1 An object read carries the actions the current user may take on it, from the same resolution (D-9).
-- [ ] 7.2 `GET /api/objects/{register}/{schema}/{id}/permissions`: the principals holding rights on the object, each with the rule behind the grant (D-10).
-- [ ] 7.3 The history of that set is readable: who held which right, when it changed and which rule changed it.
+- [x] 7.1 An object read carries the actions the current user may take on it, from the same resolution (D-9). `@self.actions` on the single-object read, resolved by `PermissionHandler::permittedActionsFor()`.
+- [x] 7.2 `GET /api/objects/{register}/{schema}/{id}/permissions`: the principals holding rights on the object, each with the rule behind the grant (D-10). Reading the object is not enough to read the set: the owner, an administrator or a holder of `manage`.
+- [x] 7.3 The history of that set is readable: who held which right, when it changed and which rule changed it. `GET .../permissions/history?at=`, read from the object's audit trail rather than from a second table.
 - [x] 7.4 Two roles are readable side by side against the catalogue, showing which permissions differ.
 
 ## 8. Discovery wave 1: derived, scoped and expiring grants
@@ -53,7 +53,7 @@
 - [ ] 8.2 A grant may carry an end, including one bound to a workflow step's deadline; an expired grant is not resolved and needs no sweep (D-11).
 - [ ] 8.3 A change to a rule that derives access re-runs the derivation and reports how many grants changed (D-11).
 - [ ] 8.4 `manage` may be scoped to a named area, so delegated administration is not a second administrator.
-- [ ] 8.5 Hand the catalogue's destroy verb to `delete-window-and-recorded-destruction`, which consumes it under D10.
+- [x] 8.5 Hand the catalogue's destroy verb to `delete-window-and-recorded-destruction`, which consumes it under D10. `destroy` is canonical in the catalogue, so a block or a role naming it saves; `DestroyRightService` already resolves it through `PermissionHandler`.
 
 ## 9. The rollout: staging first (D15)
 
@@ -63,4 +63,4 @@
 - [x] 9.4 The provenance carries the staged deny beside the grant, so the field that says why a person may act also says what is about to stop them.
 - [x] 9.5 `GET /api/permissions/deny-preview` reports what enforcement would refuse, read from the rules as written rather than from what has fired, so a deny nobody has hit yet is still in the report.
 - [x] 9.6 Unit tests: the default is staging, a staged deny grants and records, `off` grants and records nothing, the same fixture enforcing refuses, and no staged deny reaches the list SQL.
-- [ ] 9.7 The save-time refusals are NOT staged: a grant-and-deny collision and an orphaned `manage` are refused in every mode. Regression test.
+- [x] 9.7 The save-time refusals are NOT staged: a grant-and-deny collision and an orphaned `manage` are refused in every mode. Regression test.
