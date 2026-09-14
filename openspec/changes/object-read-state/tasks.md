@@ -30,10 +30,10 @@ surfaces, then the bell.
 
 ## 3. Unread as a query axis
 
-- [ ] 3.1 `SearchQueryHandler`: `_unread=true` resolves the caller and hands the
+- [x] 3.1 `SearchQueryHandler`: `_unread=true` resolves the caller and hands the
       mapper a uid, never a post-filter. An anonymous caller gets an honest
       empty page.
-- [ ] 3.2 `MagicSearchHandler`: a correlated `NOT EXISTS` against the read-state
+- [x] 3.2 `MagicSearchHandler`: a correlated `NOT EXISTS` against the read-state
       table inside `buildFilteredQuery()`, so the page, the total and the facets
       all see the same restriction. Reserve `_unread` and `_unreadFor`.
 
