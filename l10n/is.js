@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Verslun",
         "Install registers, schemas and flows that other organisations have published.": "Settu upp skrár, skemu og flæði sem aðrar stofnanir hafa birt.",
         "No such run": "Engin slík keyrsla",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Keyrslan er ekki til, eða þú mátt ekki sjá hana. Ef flæði er eytt eyðast keyrslur þess líka."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Keyrslan er ekki til, eða þú mátt ekki sjá hana. Ef flæði er eytt eyðast keyrslur þess líka.",
+        "Configured": "Stillt",
+        "Limited": "Takmarkað",
+        "Simulated": "Hermt",
+        "Not available": "Ekki tiltækt",
+        "Open settings": "Opna stillingar",
+        "Add integration": "Bæta við samþættingu",
+        "Last checked": "Síðast athugað"
     },
     "nplurals=2; plural=(n != 1);"
 )

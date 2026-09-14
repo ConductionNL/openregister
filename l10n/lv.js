@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Veikals",
         "Install registers, schemas and flows that other organisations have published.": "Instalējiet reģistrus, shēmas un plūsmas, ko publicējušas citas organizācijas.",
         "No such run": "Nav šādas izpildes",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izpilde nepastāv, vai jums nav tiesību to redzēt. Dzēšot plūsmu, tiek dzēstas arī tās izpildes."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izpilde nepastāv, vai jums nav tiesību to redzēt. Dzēšot plūsmu, tiek dzēstas arī tās izpildes.",
+        "Configured": "Konfigurēts",
+        "Limited": "Ierobežots",
+        "Simulated": "Simulēts",
+        "Not available": "Nav pieejams",
+        "Open settings": "Atvērt iestatījumus",
+        "Add integration": "Pievienot integrāciju",
+        "Last checked": "Pēdējoreiz pārbaudīts"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Magazin",
         "Install registers, schemas and flows that other organisations have published.": "Instalați registre, scheme și fluxuri publicate de alte organizații.",
         "No such run": "Nu există o astfel de execuție",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Execuția nu există sau nu aveți dreptul să o vedeți. Ștergerea unui flux îi șterge și execuțiile."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Execuția nu există sau nu aveți dreptul să o vedeți. Ștergerea unui flux îi șterge și execuțiile.",
+        "Configured": "Configurat",
+        "Limited": "Limitat",
+        "Simulated": "Simulat",
+        "Not available": "Indisponibil",
+        "Open settings": "Deschide setările",
+        "Add integration": "Adaugă integrare",
+        "Last checked": "Ultima verificare"
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

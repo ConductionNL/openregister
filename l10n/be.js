@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Крама",
         "Install registers, schemas and flows that other organisations have published.": "Усталюйце рэестры, схемы і патокі, апублікаваныя іншымі арганізацыямі.",
         "No such run": "Няма такога запуску",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не існуе, або вы не маеце права яго бачыць. Выдаленне патоку выдаляе і яго запускі."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не існуе, або вы не маеце права яго бачыць. Выдаленне патоку выдаляе і яго запускі.",
+        "Configured": "Наладжана",
+        "Limited": "Абмежавана",
+        "Simulated": "Імітавана",
+        "Not available": "Недаступна",
+        "Open settings": "Адкрыць налады",
+        "Add integration": "Дадаць інтэграцыю",
+        "Last checked": "Апошняя праверка"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

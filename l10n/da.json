@@ -2898,7 +2898,14 @@
         "Store": "Butik",
         "Install registers, schemas and flows that other organisations have published.": "Installer registre, skemaer og flows, som andre organisationer har udgivet.",
         "No such run": "Ingen sådan kørsel",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Kørslen findes ikke, eller du må ikke se den. Sletter du et flow, slettes dets kørsler også."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Kørslen findes ikke, eller du må ikke se den. Sletter du et flow, slettes dets kørsler også.",
+        "Configured": "Konfigureret",
+        "Limited": "Begrænset",
+        "Simulated": "Simuleret",
+        "Not available": "Ikke tilgængelig",
+        "Open settings": "Åbn indstillinger",
+        "Add integration": "Tilføj integration",
+        "Last checked": "Senest kontrolleret"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

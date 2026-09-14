@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Store",
         "Install registers, schemas and flows that other organisations have published.": "Installa registri, schemi e flussi pubblicati da altre organizzazioni.",
         "No such run": "Nessuna esecuzione trovata",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'esecuzione non esiste o non puoi vederla. Eliminando un flusso si eliminano le sue esecuzioni."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'esecuzione non esiste o non puoi vederla. Eliminando un flusso si eliminano le sue esecuzioni.",
+        "Configured": "Configurato",
+        "Limited": "Limitato",
+        "Simulated": "Simulato",
+        "Not available": "Non disponibile",
+        "Open settings": "Apri impostazioni",
+        "Add integration": "Aggiungi integrazione",
+        "Last checked": "Ultimo controllo"
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )
