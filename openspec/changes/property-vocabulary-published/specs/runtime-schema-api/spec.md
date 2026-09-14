@@ -13,9 +13,11 @@ supported.
 
 #### Scenario: an editor is generated rather than typed
 
-- **GIVEN** an instance whose validator accepts twenty property types
+- **GIVEN** an instance whose validator accepts more property types than any
+  leaf editor offers
 - **WHEN** the property vocabulary is read
-- **THEN** all twenty are returned, each with its constraint keys and formats
+- **THEN** every type the validator accepts is returned, each with its
+  constraint keys, its formats and its conversion answer
 
 #### Scenario: the published list cannot drift from the validator
 

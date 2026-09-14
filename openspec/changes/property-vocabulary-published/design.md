@@ -35,3 +35,33 @@ the hook the conversion preview needs.
 
 Code, in OpenRegister. The consuming apps read one endpoint and widen
 their own editors.
+
+## D-6. The count is nineteen, not twenty
+
+The study says twenty types and the proposal quotes it. The list it quotes
+holds nineteen: string, number, integer, boolean, array, object, null, file,
+geo, color, recurrence and the eight `Nc*` types. We took the recount rather
+than adding a twentieth entry to match a number, because a vocabulary that
+invents a type to satisfy a headline is exactly the drift this change exists
+to stop. The spec scenario now reads "every type the validator accepts"
+instead of a literal count, so the test cannot pass by counting wrong.
+
+The gap the study was measuring is unchanged: a leaf editor offers eight.
+
+## D-7. An unknown key is refused, a vendor extension is not
+
+D-3 refuses a key the vocabulary does not hold. Applied literally that would
+refuse `x-openregister-calculations` and every annotation any app has ever
+written, because the vocabulary cannot enumerate other people's namespaces.
+
+So a key starting with `x-` passes through. That is the JSON Schema convention
+for vendor extensions, it is already how every `x-openregister-*` annotation in
+this repository travels, and it means an app can annotate a property without
+waiting on a release here. Everything without the prefix has to be a type, a
+constraint, a modifier or a named pass-through keyword.
+
+The pass-through set is published with `enforced: false`. Standard JSON Schema
+keywords we store and hand on but do not check belong in the contract, marked
+as unchecked. A contract that hides which half it enforces is worse than no
+contract.
+
