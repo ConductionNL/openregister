@@ -5,3 +5,4 @@
 - [ ] 1.3 Re-rate 12.15 and 11.13 in the register as deliberate no's; re-point 7.7, 8.7, 13.10 to `retention-management` and 11.22, 13.11 to `processing-activity-register`.
 - [ ] 1.4 Build in the order above; archive each change on merge and tick it here.
 - [ ] 1.5 The regenerated register's two openregister gaps (2026-09-13): build `object-archive-state` and `rbac-inherits-to-children`, and hand their dossiq halves (`archived-cases-leave-the-lenses`, `deelzaken-inherit-the-parent-grants`) to the dossiq lane.
+- [ ] 1.6 Gap register v3's openregister gap (2026-09-14, market-intelligence #128): build `permission-provenance-and-deny` after `rbac-inherits-to-children`, and hand the catalogue to the dossiq lane as soon as it answers, so the mandate matrix can name its grantable set.
