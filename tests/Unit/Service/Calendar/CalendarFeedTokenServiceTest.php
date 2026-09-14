@@ -34,8 +34,6 @@ use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\CalendarFeedTokenMapper;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
 use OCP\IURLGenerator;
-use OCP\IUser;
-use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -48,7 +46,6 @@ class CalendarFeedTokenServiceTest extends TestCase {
 
 	private CalendarFeedTokenMapper&MockObject $mapper;
 	private ISecureRandom&MockObject $secureRandom;
-	private IUserSession&MockObject $userSession;
 	private IURLGenerator&MockObject $urlGenerator;
 	private CalendarFeedTokenService $service;
 
@@ -57,7 +54,6 @@ class CalendarFeedTokenServiceTest extends TestCase {
 
 		$this->mapper = $this->createMock(CalendarFeedTokenMapper::class);
 		$this->secureRandom = $this->createMock(ISecureRandom::class);
-		$this->userSession = $this->createMock(IUserSession::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 
 		$this->secureRandom->method('generate')->willReturn('opaque-token-value');
@@ -69,15 +65,8 @@ class CalendarFeedTokenServiceTest extends TestCase {
 		$this->service = new CalendarFeedTokenService(
 			mapper: $this->mapper,
 			secureRandom: $this->secureRandom,
-			userSession: $this->userSession,
 			urlGenerator: $this->urlGenerator
 		);
-	}
-
-	private function signedIn(string $uid = 'caseworker'): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn($uid);
-		$this->userSession->method('getUser')->willReturn($user);
 	}
 
 	private function tokenRow(string $owner = 'caseworker'): CalendarFeedToken {
@@ -93,12 +82,11 @@ class CalendarFeedTokenServiceTest extends TestCase {
 	}
 
 	public function testMintingBindsTheTokenToTheCallerAndReturnsItsUrl(): void {
-		$this->signedIn();
 		$this->mapper->method('insert')->willReturnCallback(
 			static fn (CalendarFeedToken $row): CalendarFeedToken => $row
 		);
 
-		$minted = $this->service->mint(scopeType: 'schema', scopeId: '9', label: 'Mijn termijnen');
+		$minted = $this->service->mint(userId: 'caseworker', scopeType: 'schema', scopeId: '9', label: 'Mijn termijnen');
 
 		$this->assertSame('caseworker', $minted['userId']);
 		$this->assertSame('schema', $minted['scopeType']);
@@ -108,20 +96,16 @@ class CalendarFeedTokenServiceTest extends TestCase {
 	}
 
 	public function testAnAnonymousCallerCannotMint(): void {
-		$this->userSession->method('getUser')->willReturn(null);
-
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service->mint(scopeType: 'schema', scopeId: '9');
+		$this->service->mint(userId: '', scopeType: 'schema', scopeId: '9');
 	}
 
 	public function testAnUnknownScopeTypeIsRefused(): void {
-		$this->signedIn();
-
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/is not a feed scope/');
 
-		$this->service->mint(scopeType: 'register', scopeId: '9');
+		$this->service->mint(userId: 'caseworker', scopeType: 'register', scopeId: '9');
 	}
 
 	public function testALiveTokenResolves(): void {
@@ -159,39 +143,36 @@ class CalendarFeedTokenServiceTest extends TestCase {
 	}
 
 	public function testRevokingStampsTheRow(): void {
-		$this->signedIn();
 		$row = $this->tokenRow();
 		$this->mapper->method('findById')->willReturn($row);
 		$this->mapper->expects($this->once())->method('update')->with($row);
 
-		$this->assertTrue($this->service->revoke(id: 5));
+		$this->assertTrue($this->service->revoke(id: 5, userId: 'caseworker'));
 		$this->assertNotNull($row->getRevokedAt());
 	}
 
 	public function testATokenSomebodyElseOwnsCannotBeRevoked(): void {
-		$this->signedIn('caseworker');
 		$this->mapper->method('findById')->willReturn($this->tokenRow(owner: 'someone-else'));
 		$this->mapper->expects($this->never())->method('update');
 
-		$this->assertFalse($this->service->revoke(id: 5));
+		$this->assertFalse($this->service->revoke(id: 5, userId: 'caseworker'));
 	}
 
 	public function testListingOnlyAnswersForTheSignedInPrincipal(): void {
-		$this->signedIn();
 		$this->mapper->expects($this->once())
 			->method('findByUser')
 			->with('caseworker')
 			->willReturn([$this->tokenRow()]);
 
-		$rows = $this->service->listForCurrentUser();
+		$rows = $this->service->listForUser(userId: 'caseworker');
 
 		$this->assertCount(1, $rows);
 		$this->assertStringContainsString('calendar-feeds', $rows[0]['url']);
 	}
 
 	public function testAnAnonymousCallerListsNothing(): void {
-		$this->userSession->method('getUser')->willReturn(null);
+		$this->mapper->expects($this->never())->method('findByUser');
 
-		$this->assertSame([], $this->service->listForCurrentUser());
+		$this->assertSame([], $this->service->listForUser(userId: ''));
 	}
 }

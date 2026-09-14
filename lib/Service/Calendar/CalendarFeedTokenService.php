@@ -40,7 +40,6 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\CalendarFeedTokenMapper;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
 
 /**
@@ -64,13 +63,11 @@ class CalendarFeedTokenService {
 	 *
 	 * @param CalendarFeedTokenMapper $mapper The token store.
 	 * @param ISecureRandom $secureRandom Nextcloud's secure RNG.
-	 * @param IUserSession $userSession The current session.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the subscribable link.
 	 */
 	public function __construct(
 		private readonly CalendarFeedTokenMapper $mapper,
 		private readonly ISecureRandom $secureRandom,
-		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
 	) {
 
@@ -80,8 +77,12 @@ class CalendarFeedTokenService {
 	 * Mint a feed token for the calling principal.
 	 *
 	 * Minting is a write that establishes a durable read surface, so it is
-	 * never anonymous, and a caller may only mint a feed for themselves.
+	 * never anonymous, and a caller may only mint a feed for themselves. The
+	 * principal is an argument rather than something this service reaches for,
+	 * so the identity the token will carry is decided at the HTTP boundary and
+	 * is visible there.
 	 *
+	 * @param string $userId The principal the token will name.
 	 * @param string $scopeType `schema` or `view`.
 	 * @param string $scopeId The schema id, or the view uuid.
 	 * @param string|null $label Optional human label.
@@ -94,6 +95,7 @@ class CalendarFeedTokenService {
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
 	public function mint(
+		string $userId,
 		string $scopeType,
 		string $scopeId,
 		?string $label = null,
@@ -115,8 +117,8 @@ class CalendarFeedTokenService {
 			throw new InvalidArgumentException('A feed token must name the schema or view it covers.');
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user === null) {
+		$userId = trim($userId);
+		if ($userId === '') {
 			throw new InvalidArgumentException('A logged-in user is required to mint a calendar feed token.');
 		}
 
@@ -128,7 +130,7 @@ class CalendarFeedTokenService {
 
 		$entity = new CalendarFeedToken();
 		$entity->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
-		$entity->setUserId($user->getUID());
+		$entity->setUserId($userId);
 		$entity->setScopeType($scopeType);
 		$entity->setScopeId($scopeId);
 		$entity->setLabel($label);
@@ -196,19 +198,19 @@ class CalendarFeedTokenService {
 	 * Revoke a token the calling principal owns.
 	 *
 	 * @param int $id The token row id.
+	 * @param string $userId The principal asking, compared against the row's owner.
 	 *
 	 * @return bool True when a token was revoked, false when there was none to revoke.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
-	public function revoke(int $id): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
+	public function revoke(int $id, string $userId): bool {
+		if (trim($userId) === '') {
 			return false;
 		}
 
 		$row = $this->mapper->findById(id: $id);
-		if ($row === null || $row->getUserId() !== $user->getUID()) {
+		if ($row === null || $row->getUserId() !== $userId) {
 			// A token somebody else owns is, to this caller, a token that does
 			// not exist.
 			return false;
@@ -225,27 +227,29 @@ class CalendarFeedTokenService {
 	}//end revoke()
 
 	/**
-	 * Every token the calling principal owns.
+	 * Every token one principal owns.
+	 *
+	 * @param string $userId The principal whose tokens to list.
 	 *
 	 * @return array<int, array<string, mixed>> The serialised tokens, with their URLs.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
-	public function listForCurrentUser(): array {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
+	public function listForUser(string $userId): array {
+		$userId = trim($userId);
+		if ($userId === '') {
 			return [];
 		}
 
 		$rows = [];
-		foreach ($this->mapper->findByUser(userId: $user->getUID()) as $row) {
+		foreach ($this->mapper->findByUser(userId: $userId) as $row) {
 			$data = $row->jsonSerialize();
 			$data['url'] = $this->feedUrl(token: (string)$row->getToken());
 			$rows[] = $data;
 		}
 
 		return $rows;
-	}//end listForCurrentUser()
+	}//end listForUser()
 
 	/**
 	 * The absolute URL a calendar client subscribes to.

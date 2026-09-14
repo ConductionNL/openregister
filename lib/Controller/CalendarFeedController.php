@@ -45,6 +45,7 @@ use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 
@@ -72,6 +73,7 @@ class CalendarFeedController extends Controller {
 	 * @param CalendarFeedTokenService $tokens The feed-token lifecycle.
 	 * @param ObjectCalendarFeedService $feed The feed generator.
 	 * @param AppointmentAttendeeService $attendees The attendee-response store.
+	 * @param IUserSession $userSession The current session, which names the principal.
 	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
@@ -81,6 +83,7 @@ class CalendarFeedController extends Controller {
 		private readonly CalendarFeedTokenService $tokens,
 		private readonly ObjectCalendarFeedService $feed,
 		private readonly AppointmentAttendeeService $attendees,
+		private readonly IUserSession $userSession,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -143,8 +146,14 @@ class CalendarFeedController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function mint(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['message' => 'Not Found'], Http::STATUS_NOT_FOUND);
+		}
+
 		try {
 			$minted = $this->tokens->mint(
+				userId: $user->getUID(),
 				scopeType: (string)$this->request->getParam('scopeType', ''),
 				scopeId: (string)$this->request->getParam('scopeId', ''),
 				label: $this->stringParam(name: 'label'),
@@ -168,7 +177,12 @@ class CalendarFeedController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function index(): JSONResponse {
-		return new JSONResponse(['results' => $this->tokens->listForCurrentUser()]);
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['results' => []]);
+		}
+
+		return new JSONResponse(['results' => $this->tokens->listForUser(userId: $user->getUID())]);
 	}//end index()
 
 	/**
@@ -185,7 +199,12 @@ class CalendarFeedController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function revoke(int $id): JSONResponse {
-		if ($this->tokens->revoke(id: $id) === false) {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['message' => 'Not Found'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->tokens->revoke(id: $id, userId: $user->getUID()) === false) {
 			return new JSONResponse(['message' => 'Not Found'], Http::STATUS_NOT_FOUND);
 		}
 
@@ -197,14 +216,23 @@ class CalendarFeedController extends Controller {
 	 *
 	 * The attendance recorded on an object, with responder and time.
 	 *
+	 * An object this caller may not read answers the same 404 as an object
+	 * that is not there. The decision is the object rules', asked through
+	 * `mayRead()`; answering 403 would confirm the uuid exists.
+	 *
 	 * @param string $id The object uuid.
 	 *
-	 * @return JSONResponse The responses, or 404 when the object is unknown.
+	 * @return JSONResponse The responses, or 404 when the object is unknown or denied.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function attendeeResponses(string $id): JSONResponse {
+		$refusal = $this->requireReadableObject(objectUuid: $id);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		try {
 			return new JSONResponse(['results' => $this->attendees->responsesFor(objectUuid: $id)]);
 		} catch (InvalidArgumentException $unknown) {
@@ -215,18 +243,24 @@ class CalendarFeedController extends Controller {
 	/**
 	 * POST /api/objects/{id}/attendee-responses
 	 *
-	 * Record one invitee's answer on the object. The write goes through the
-	 * ordinary object save path, so a caller who may not write the object
-	 * cannot record an answer on it.
+	 * Record one invitee's answer on the object. A caller who may not read the
+	 * object gets the same 404 as one asking about an object that is not
+	 * there, and the write itself still goes through the ordinary object save
+	 * path, so read access alone does not let anyone write.
 	 *
 	 * @param string $id The object uuid.
 	 *
-	 * @return JSONResponse The full response list, or 400.
+	 * @return JSONResponse The full response list, 400 on a refused answer, or 404.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function recordAttendeeResponse(string $id): JSONResponse {
+		$refusal = $this->requireReadableObject(objectUuid: $id);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		try {
 			$responses = $this->attendees->recordResponse(
 				objectUuid: $id,
@@ -240,6 +274,28 @@ class CalendarFeedController extends Controller {
 
 		return new JSONResponse(['results' => $responses], Http::STATUS_OK);
 	}//end recordAttendeeResponse()
+
+	/**
+	 * The refusal to send when this caller may not read the object, or null.
+	 *
+	 * The decision belongs to the object rules, so it is asked of them rather
+	 * than reproduced here. A denied object and an absent one answer the same
+	 * 404: a 403 would tell the caller that the uuid exists, which is the
+	 * choice `ObjectsController::show()` already made for the same reason.
+	 *
+	 * @param string $objectUuid The object the caller named.
+	 *
+	 * @return JSONResponse|null The 404 to return, or null when the read is allowed.
+	 *
+	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 */
+	private function requireReadableObject(string $objectUuid): ?JSONResponse {
+		if ($this->attendees->mayRead(objectUuid: $objectUuid) === false) {
+			return new JSONResponse(['message' => 'Not Found'], Http::STATUS_NOT_FOUND);
+		}
+
+		return null;
+	}//end requireReadableObject()
 
 	/**
 	 * Note a rejected token against the throttler.

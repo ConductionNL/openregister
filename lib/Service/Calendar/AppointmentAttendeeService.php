@@ -104,6 +104,37 @@ class AppointmentAttendeeService {
 	}//end __construct()
 
 	/**
+	 * Whether the calling principal may read this object at all.
+	 *
+	 * The answer comes from an RBAC-checked read, so it is the object rules
+	 * deciding and not a second copy of them. Callers use it to refuse before
+	 * they read or write, and they refuse with a 404: a 403 on an object the
+	 * caller may not see would confirm that the uuid exists.
+	 *
+	 * Shaped after `CaseAnchorReader::mayRead()`, which is how the rest of the
+	 * app asks this question.
+	 *
+	 * @param string $objectUuid The object the appointment was created from.
+	 *
+	 * @return boolean True only when the RBAC-checked read succeeds.
+	 *
+	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 */
+	public function mayRead(string $objectUuid): bool {
+		try {
+			return $this->objects->find(
+				id: $objectUuid,
+				_render: false,
+				_audit: false
+			) !== null;
+		} catch (\Throwable $denied) {
+			unset($denied);
+
+			return false;
+		}
+	}//end mayRead()
+
+	/**
 	 * Record one invitee's answer on the object.
 	 *
 	 * The write goes through the ordinary object save path with RBAC on, so a

@@ -38,6 +38,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -51,6 +53,7 @@ class CalendarFeedControllerTest extends TestCase {
 	private CalendarFeedTokenService&MockObject $tokens;
 	private ObjectCalendarFeedService&MockObject $feed;
 	private AppointmentAttendeeService&MockObject $attendees;
+	private IUserSession&MockObject $userSession;
 	private IThrottler&MockObject $throttler;
 	private CalendarFeedController $controller;
 
@@ -62,6 +65,11 @@ class CalendarFeedControllerTest extends TestCase {
 		$this->attendees = $this->createMock(AppointmentAttendeeService::class);
 		$this->throttler = $this->createMock(IThrottler::class);
 
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('caseworker');
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
 		$request = $this->createMock(IRequest::class);
 		$request->method('getRemoteAddress')->willReturn('203.0.113.10');
 
@@ -71,6 +79,7 @@ class CalendarFeedControllerTest extends TestCase {
 			$this->tokens,
 			$this->feed,
 			$this->attendees,
+			$this->userSession,
 			$this->throttler,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -131,6 +140,7 @@ class CalendarFeedControllerTest extends TestCase {
 	}
 
 	public function testAttendeeResponsesAreReadBackWithResponderAndTime(): void {
+		$this->attendees->method('mayRead')->willReturn(true);
 		$this->attendees->method('responsesFor')->willReturn(
 			[
 				['attendee' => 'ana@example.org', 'status' => 'ACCEPTED', 'respondedBy' => 'ana', 'respondedAt' => '2026-09-14T10:00:00+02:00'],
@@ -147,6 +157,7 @@ class CalendarFeedControllerTest extends TestCase {
 	}
 
 	public function testAnUnknownObjectAnswersNotFound(): void {
+		$this->attendees->method('mayRead')->willReturn(true);
 		$this->attendees->method('responsesFor')
 			->willThrowException(new \InvalidArgumentException('no such object'));
 
@@ -156,7 +167,46 @@ class CalendarFeedControllerTest extends TestCase {
 		);
 	}
 
+	public function testAnObjectTheCallerMayNotReadAnswersTheSame404AsAnAbsentOne(): void {
+		$this->attendees->method('mayRead')->willReturn(false);
+		$this->attendees->expects($this->never())->method('responsesFor');
+
+		$this->assertSame(
+			Http::STATUS_NOT_FOUND,
+			$this->controller->attendeeResponses(id: 'somebody-elses-object')->getStatus()
+		);
+	}
+
+	public function testAnAnswerCannotBeRecordedOnAnObjectTheCallerMayNotRead(): void {
+		$this->attendees->method('mayRead')->willReturn(false);
+		$this->attendees->expects($this->never())->method('recordResponse');
+
+		$this->assertSame(
+			Http::STATUS_NOT_FOUND,
+			$this->controller->recordAttendeeResponse(id: 'somebody-elses-object')->getStatus()
+		);
+	}
+
+	public function testListingAsksOnlyForTheSignedInPrincipalsTokens(): void {
+		$this->tokens->expects($this->once())
+			->method('listForUser')
+			->with('caseworker')
+			->willReturn([]);
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->index()->getStatus());
+	}
+
+	public function testRevokingPassesTheSignedInPrincipalIntoTheQuery(): void {
+		$this->tokens->expects($this->once())
+			->method('revoke')
+			->with(5, 'caseworker')
+			->willReturn(true);
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->revoke(id: 5)->getStatus());
+	}
+
 	public function testARefusedAnswerIsABadRequest(): void {
+		$this->attendees->method('mayRead')->willReturn(true);
 		$this->attendees->method('recordResponse')
 			->willThrowException(new \InvalidArgumentException('MAYBE is not an attendee answer'));
 

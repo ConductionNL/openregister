@@ -203,4 +203,23 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		$this->assertSame('ACCEPTED', $keyed['ana@example.org']['status']);
 		$this->assertSame('DECLINED', $keyed['bram@example.org']['status']);
 	}
+
+	public function testAnRbacDeniedObjectIsNotReadable(): void {
+		$this->objects->method('find')
+			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('denied'));
+
+		$this->assertFalse($this->service->mayRead(objectUuid: 'somebody-elses-object'));
+	}
+
+	public function testAnObjectThatIsNotThereIsNotReadable(): void {
+		$this->objects->method('find')->willReturn(null);
+
+		$this->assertFalse($this->service->mayRead(objectUuid: 'never-existed'));
+	}
+
+	public function testAnObjectTheRulesAllowIsReadable(): void {
+		$this->objects->method('find')->willReturn($this->object());
+
+		$this->assertTrue($this->service->mayRead(objectUuid: 'object-uuid'));
+	}
 }
