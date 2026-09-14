@@ -83,11 +83,17 @@ class WorkingCalendarValidationListener implements IEventListener {
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
 	 */
 	public function handle(Event $event): void {
+		$object = null;
 		if ($event instanceof ObjectCreatingEvent) {
 			$object = $event->getObject();
-		} elseif ($event instanceof ObjectUpdatingEvent) {
+		}
+
+		if ($event instanceof ObjectUpdatingEvent) {
 			$object = $event->getNewObject();
-		} else {
+		}
+
+		// Any other event is not a working-calendar write, so nothing to do.
+		if ($object === null) {
 			return;
 		}
 

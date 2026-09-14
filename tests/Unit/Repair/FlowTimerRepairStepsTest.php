@@ -50,7 +50,7 @@ class FlowTimerRepairStepsTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppPath')->with('openregister')->willReturn(realpath(__DIR__ . '/../../..'));
 		$configuration->expects(self::once())->method('importFromApp')
-			->with('openregister', self::callback(static fn (array $data): bool => count($data['components']['objects']) === 3 && isset($data['components']['schemas']['working-calendar'])), '1.0.0', false)
+			->with('openregister', self::callback(static fn (array $data): bool => count($data['components']['objects']) === 3 && isset($data['components']['schemas']['working-calendar'])), '1.1.0', false)
 			->willReturn([]);
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('info')->with(self::stringContains('Flow-timers register imported'));
