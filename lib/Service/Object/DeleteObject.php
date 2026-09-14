@@ -33,6 +33,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -141,6 +143,7 @@ class DeleteObject {
 	 * @param FileService|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapper|null $registerMapper Register mapper for register lookups
+	 * @param DeletionWindowService|null $deletionWindowService Resolves and states the recovery window
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 *
@@ -159,6 +162,7 @@ class DeleteObject {
 		private readonly ?FileService $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper = null,
+		private readonly ?DeletionWindowService $deletionWindowService = null,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->settingsService = $settingsService;
@@ -327,12 +331,27 @@ class DeleteObject {
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.org');
 
+		$deletedAt = new DateTime();
 		$deletionData = [
 			'deletedBy' => $userId,
-			'deletedAt' => (new DateTime())->format(DateTime::ATOM),
+			'deletedAt' => $deletedAt->format(DateTime::ATOM),
 			'objectId' => $objectEntity->getUuid(),
 			'organisation' => $activeOrganisation,
 		];
+
+		// THE WINDOW IS STATED, NOT ONLY COMPUTED. This path wrote no purge
+		// date at all, so the only object that ever carried one came through
+		// ObjectEntity::delete(). Nobody could read how long they had because
+		// nothing had written it down.
+		if ($this->deletionWindowService !== null) {
+			$deletionData = array_merge(
+				$deletionData,
+				$this->deletionWindowService->openWindow(
+					schema: $schemaEntity,
+					deletedAt: DateTimeImmutable::createFromMutable($deletedAt)
+				)
+			);
+		}
 
 		// PERF: snapshot the pre-delete state once and hand it to the mapper as
 		// the update's old entity — this skips the mapper's internal pre-update

@@ -148,6 +148,12 @@ class PermissionHandler {
 		'update',
 		'delete',
 		'list',
+		// `destroy` is a SECOND, narrower right than `delete`. Deleting puts an
+		// object in the trash, where it can come back; destroying ends it. They
+		// were one check until the delete window landed, which is why "admin
+		// SHOULD be enforced" was the only thing the spec could say about the
+		// destructive verb. See DestroyRightService.
+		'destroy',
 	];
 
 	/**
@@ -188,6 +194,7 @@ class PermissionHandler {
 		'create',
 		'update',
 		'delete',
+		'destroy',
 	];
 
 	/**
@@ -212,6 +219,7 @@ class PermissionHandler {
 		'create',
 		'update',
 		'delete',
+		'destroy',
 	];
 
 	/**
