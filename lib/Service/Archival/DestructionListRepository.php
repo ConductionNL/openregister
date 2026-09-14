@@ -85,6 +85,8 @@ class DestructionListRepository {
 	 * Is this instance configured to keep destruction lists at all?
 	 *
 	 * @return bool True when a register and a schema are named in the archival settings.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function isConfigured(): bool {
 		try {

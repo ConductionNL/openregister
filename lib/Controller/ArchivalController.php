@@ -49,6 +49,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Controller for archival destruction workflows.
@@ -239,27 +240,35 @@ class ArchivalController extends Controller {
 			return $authCheck;
 		}
 
-		$list = $this->lists->find(uuid: $id);
-		if ($list === null) {
+		try {
+			$list = $this->lists->find(uuid: $id);
+			if ($list === null) {
+				return new JSONResponse(
+					data: ['error' => 'Destruction list not found'],
+					statusCode: Http::STATUS_NOT_FOUND
+				);
+			}
+
+			$listData = ($list->getObject() ?? []);
+			$serialised = $list->jsonSerialize();
+
+			// The entries nobody is accountable for are NAMED, not counted. "3 of
+			// 15 unassigned" says there is work to do and not which work, and the
+			// whole point of a named reviewer is that the list can be chased.
+			$serialised['unassignedEntries'] = $this->reviews->unassignedEntries(listData: $listData);
+			$serialised['decisions'] = ($listData['decisions'] ?? []);
+
 			return new JSONResponse(
-				data: ['error' => 'Destruction list not found'],
-				statusCode: Http::STATUS_NOT_FOUND
+				data: $serialised,
+				statusCode: Http::STATUS_OK
 			);
-		}
-
-		$listData = ($list->getObject() ?? []);
-		$serialised = $list->jsonSerialize();
-
-		// The entries nobody is accountable for are NAMED, not counted. "3 of
-		// 15 unassigned" says there is work to do and not which work, and the
-		// whole point of a named reviewer is that the list can be chased.
-		$serialised['unassignedEntries'] = $this->reviews->unassignedEntries(listData: $listData);
-		$serialised['decisions'] = ($listData['decisions'] ?? []);
-
-		return new JSONResponse(
-			data: $serialised,
-			statusCode: Http::STATUS_OK
-		);
+		} catch (Throwable $e) {
+			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
+			return new JSONResponse(
+				data: ['error' => 'Destruction list could not be read'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
 	}//end getDestructionList()
 
 	/**
@@ -686,7 +695,18 @@ class ArchivalController extends Controller {
 			);
 		}
 
-		$list = $this->lists->find(uuid: $id);
+		try {
+			$list = $this->lists->find(uuid: $id);
+			$listData = (($list?->getObject()) ?? []);
+			$entry = $this->reviews->entry(listData: $listData, entryUuid: $entryId);
+		} catch (Throwable $e) {
+			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
+			return new JSONResponse(
+				data: ['error' => 'Destruction list could not be read'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
+
 		if ($list === null) {
 			return new JSONResponse(
 				data: ['error' => 'Destruction list not found'],
@@ -694,8 +714,6 @@ class ArchivalController extends Controller {
 			);
 		}
 
-		$listData = ($list->getObject() ?? []);
-		$entry = $this->reviews->entry(listData: $listData, entryUuid: $entryId);
 		if ($entry === null) {
 			return new JSONResponse(
 				data: ['error' => 'This destruction list has no entry for that record'],

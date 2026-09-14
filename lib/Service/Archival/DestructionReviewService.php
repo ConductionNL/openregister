@@ -85,6 +85,8 @@ class DestructionReviewService {
 	 * @param array<string, mixed> $listData The destruction list's own data.
 	 *
 	 * @return array<int, array<string, mixed>> The entries, empty when there are none.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function entries(array $listData): array {
 		$entries = ($listData['objects'] ?? []);
@@ -102,6 +104,8 @@ class DestructionReviewService {
 	 * @param string               $entryUuid The uuid of the object the entry is about.
 	 *
 	 * @return array<string, mixed>|null The entry, or null when the list has no such entry.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function entry(array $listData, string $entryUuid): ?array {
 		foreach ($this->entries(listData: $listData) as $entry) {
