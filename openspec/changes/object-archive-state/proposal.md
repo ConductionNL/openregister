@@ -110,3 +110,63 @@ takes a finished object out of the working view while keeping it whole.
   change does not move a date or a certificate.
 - Moving archived rows to another table. The state is a marker; storage
   tiering is a performance change with its own evidence.
+
+## Discovery cluster 29 extension (2026-09-14)
+
+The round 4 discovery sweep in ConductionNL/market-intelligence,
+`procest/_round4/discovery/build-plan.md`, names this change as the
+vehicle for cluster 29, "Read-only, frozen and locked". Owner
+openregister, size M, six candidates: C-case-core-8,
+C-tasks-and-phases-35, C-documents-5, C-communication-4,
+C-communication-12 and C-communication-13. Two are `must` and one is a
+matrix hole: C-documents-5. Passers: 7, all seven driven. dossiq rates
+`partial` on two and `no` on four. Decision: none of its own, and it enters
+under D6, relevance-led promotion.
+
+**What the cluster asks that archiving does not answer.** Archiving takes
+an object out of the working views. These six ask for an object that stays
+in them and stops changing, which is a different state and a common one: a
+zaak in bezwaar, a dossier awaiting overbrenging, a vastgesteld besluit.
+
+- **A record is frozen read-only while staying visible and searchable**
+  (C-case-core-8): openproject, "Administration Work packages, Status,
+  app/models/status.rb:82 is_readonly, enterprise", and redmine. dossiq:
+  "no status freeze".
+- **Work is frozen once the phase that owns it is complete**
+  (C-tasks-and-phases-35): xxllnc-zaken, "Case type > Zaakdossier
+  (case-type-editor-anatomy.md)".
+- **A document marked final can no longer be changed** (C-documents-5,
+  `must`, a hole): forgejo, gitea and opencase, "Repository Settings,
+  Tags, tag protection, /tag_protections". Archiefwet and a vastgesteld
+  besluit both require that what was published stays what was published.
+- **A record is closed to further comment while staying readable**
+  (C-communication-4): forgejo and gitea, "Issue sidebar, Lock
+  conversation, Issue.IsLocked".
+- **A note is locked so it can no longer be changed**
+  (C-communication-13, `must`): opencase, "Case Journal notes
+  (CaseDetail-JournalNotes.md)". An unlockable note is not evidence.
+- **An entry is removed from the working view without being destroyed, and
+  an authorised reader sees it again** (C-communication-12): otobo, "Show
+  and hide deleted articles (article_version.article_delete)". dossiq:
+  "document trash exists; a timeline entry cannot be withdrawn".
+
+**What the extension adds.**
+
+- **A frozen state beside the archived one.** Frozen keeps the object in
+  lists and search and refuses writes to its data. Archiving keeps
+  refusing writes and keeps leaving the lists. They are two states, not one
+  with a flag.
+- **A freeze may be declared by lifecycle.** A state may declare that
+  entering it freezes the object, so a completed phase freezes its
+  registration data without anyone remembering to.
+- **An immutable property.** A property may be declared immutable once set,
+  refused on update whatever the object's state, which is what a final
+  document and a vastgesteld besluit need.
+- **A record may be closed to new entries while staying readable.** No new
+  timeline entries, no new comments, the existing ones unchanged.
+- **An entry may be withdrawn.** It leaves the working timeline, stays in
+  the record, and an authorised reader sees it with the withdrawal and its
+  actor.
+- **A note may be locked.** A locked note refuses edits, which is what
+  `note-edit-history` calls the iTop-shaped answer, and the lock is an
+  audit fact.
