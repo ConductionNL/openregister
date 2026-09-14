@@ -93,3 +93,68 @@ ADR-095 gives an agent a structured tool grant.
   `PermissionHandler` (grant intersection), the SQL RBAC builder, the audit
   writer (`actorVia`), two settings surfaces.
 - Size: M.
+
+## Discovery cluster 40 extension (2026-09-14)
+
+The round 4 discovery sweep in ConductionNL/market-intelligence,
+`procest/_round4/discovery/build-plan.md`, names this change as the
+vehicle for cluster 40, "Tokens, service accounts and their expiry". Owner
+openregister, size M, depends on roles, grants and their provenance,
+decision D22, five candidates: C-access-and-privacy-35, -42, -43, -44 and
+-70. One is a `must` and a matrix hole: C-access-and-privacy-43. Passers:
+6, five driven and one documented. dossiq rates `partial` on two and `no`
+on three.
+
+**D22 as taken** puts access inside the query in openregister, which is
+what lets a token's grant narrow a query rather than filter a result.
+
+- **An issued credential carries an end date the product enforces, and the
+  holder is warned before it lapses** (C-access-and-privacy-43, `must`, a
+  hole): request-tracker, "Preferences, Auth Tokens
+  (share/html/Prefs/AuthTokens.html), sbin/rt-email-expiring-auth-tokens.in",
+  and vikunja. A leverancier gets a token for a migration that runs six
+  weeks and keeps it for six years.
+- **An integration gets an account of its own, apart from staff accounts**
+  (C-access-and-privacy-42): gitlab, "Admin, Settings, Service accounts",
+  and vikunja. Today an integration runs as a named person and their
+  leaving breaks it.
+- **An issued token carries its own rate limit** (C-access-and-privacy-44,
+  `could`): plane, "API tokens, api.py:39 allowed_rate_limit default
+  60/min per token".
+- **The addresses the product may call out to are an administered
+  allowlist** (C-access-and-privacy-70): plane, "Webhooks,
+  webhook.py:21-31 url validated to http or https and refused for
+  localhost".
+- **A user sees every token issued in their name and revokes one**
+  (C-access-and-privacy-35): openproject, "/my/access_tokens". This one is
+  already specified: `account-self-service` requires that the account page
+  lists and manages the signed-in user's personal API tokens. The
+  extension adds the expiry and the service account beside it, not the
+  listing.
+
+**What the extension adds.**
+
+- **A token carries a required end date.** Issued with one, enforced at
+  use, and the holder warned before it lapses. A token with no end date is
+  not issued.
+- **A service account is a principal, not a person.** It holds grants,
+  carries tokens, has an owning team rather than an owning person, and
+  survives that person leaving. It cannot sign in interactively.
+- **A token carries its own rate limit.** Set at issue, refused over it,
+  named in the refusal, so one runaway koppeling cannot take the case
+  system down for the balie.
+- **Outbound destinations are an administered allowlist.** A webhook or an
+  automation URL is checked against it, and a destination outside it is
+  refused at save rather than at delivery.
+
+The per-caller call record and the source-address binding on a token sit
+in `api-as-a-versioned-surface`, which specifies the API surface as a
+whole. Both changes name the other so that neither writes a second answer.
+
+**One inherited finding, reported not fixed.** The target spec
+`specs/auth-system/spec.md` carries a requirement header at line 888 that
+sits outside its `## Requirements` section, so that requirement is
+invisible to validate, list and archive, and `openspec archive` refuses
+any delta against the spec until it is repaired. The original proposal
+already noted the same requirement as invisible. It is on a line neither
+this change nor its extension touches, so it belongs to the debt sweep.
