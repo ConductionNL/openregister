@@ -53,6 +53,7 @@ use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -5275,4 +5276,70 @@ class ObjectsController extends Controller {
 		return $self;
 
 	}//end withUnreadCounts()
+
+	/**
+	 * Read the records that reference this object, grouped by schema.
+	 *
+	 * The reverse of `uses`: an address, an asset or a licence read as the thing
+	 * several cases hinge on. Each group carries its own total and one page of
+	 * records, each with its title, its status and when it last changed. The
+	 * caller's access is applied inside the query, so a caller who may read one
+	 * of three gets one of three and a total of one.
+	 *
+	 * @param string              $id                 The object being read as the hinge.
+	 * @param string              $register           The register slug or identifier.
+	 * @param string              $schema             The schema slug or identifier.
+	 * @param ObjectService       $objectService      The object service.
+	 * @param ReferencedByService $referencedByService The reverse view.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The grouped reverse view, or 404 when the object is gone.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function referencedBy(
+		string $id,
+		string $register,
+		string $schema,
+		ObjectService $objectService,
+		ReferencedByService $referencedByService,
+	): JSONResponse {
+		$isAdmin = $this->isCurrentUserAdmin();
+		$rbac = ($isAdmin === false);
+
+		try {
+			$objectEntity = $objectService->find(
+				id: $id,
+				files: false,
+				register: $register,
+				schema: $schema,
+				_rbac: $rbac,
+				_multitenancy: $rbac,
+				_render: false
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		if ($objectEntity === null) {
+			return new JSONResponse(
+				data: ['error' => "Object with id {$id} not found"],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$query = $this->request->getParams();
+		unset($query['id'], $query['register'], $query['schema'], $query['_route']);
+
+		return new JSONResponse(
+			data: $referencedByService->getReferencingGroups(
+				object: $objectEntity,
+				query: $query,
+				_rbac: $rbac
+			)
+		);
+	}//end referencedBy()
 }//end class
