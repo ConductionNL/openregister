@@ -1131,7 +1131,7 @@ export default {
 		operatorOptions() {
 			return this.operatorCatalogue.map((operator) => ({
 				value: operator.op,
-				label: `${operator.op} (${operator.category}) — ${operator.description}`,
+				label: `${operator.op} (${operator.category}): ${operator.description}`,
 			}))
 		},
 
