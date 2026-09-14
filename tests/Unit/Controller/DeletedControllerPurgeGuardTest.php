@@ -116,7 +116,7 @@ class DeletedControllerPurgeGuardTest extends TestCase {
 			$this->schemaMapper,
 			$this->userSession,
 			$this->groupManager,
-			$this->createMock(PermissionHandler::class),
+			$this->createMock(originalClassName: PermissionHandler::class),
 			$this->createMock(originalClassName: DeletionWindowService::class),
 			$this->createMock(originalClassName: DestroyRightService::class),
 			$this->createMock(originalClassName: DestructionScopeService::class),

@@ -2015,7 +2015,7 @@ class AuditTrailMapper extends QBMapper {
 			);
 		}
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 	}//end findForObjectByAction()
 
 	/**
