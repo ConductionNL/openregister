@@ -33,12 +33,14 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
@@ -47,6 +49,7 @@ use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
@@ -136,6 +139,7 @@ class SchemasController extends Controller {
 	 * @param JsonLdContextService $jsonLdContextService JSON-LD context service
 	 * @param SchemaImportService $schemaImportService Schema import service for importing schemas
 	 * @param SemanticTypeResolver $semanticTypeResolver Semantic-type → schema resolver (cross-app references)
+	 * @param SemanticRoleHandler|null $semanticRoles Reads and validates the title, status, assignee and term roles
 	 *
 	 * @return void
 	 *
@@ -160,6 +164,7 @@ class SchemasController extends Controller {
 		private readonly ?JsonLdContextService $jsonLdContextService = null,
 		private readonly ?SchemaImportService $schemaImportService = null,
 		private readonly ?SemanticTypeResolver $semanticTypeResolver = null,
+		private readonly ?SemanticRoleHandler $semanticRoles = null,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
@@ -499,6 +504,20 @@ class SchemasController extends Controller {
 				$schemaArr['@self']['propertyMetadata'] = $this->schemaMapper->getPropertySourceMetadata($schema);
 			}
 
+			// The semantic roles and the administered help text, resolved in
+			// the caller's language. A list component reads the roles and can
+			// then render a schema it has never seen (REQ-CLH-003).
+			if ($this->semanticRoles !== null) {
+				$properties = ($schema->getProperties() ?? []);
+				$language = $this->negotiatedLanguage();
+				$schemaArr['@self']['roles'] = $this->semanticRoles->roles(properties: $properties);
+				$schemaArr['@self']['help'] = $this->semanticRoles->helpTexts(
+					properties: $properties,
+					language: $language
+				);
+				$schemaArr['@self']['language'] = $language;
+			}
+
 			// If '@self.stats' is requested, attach statistics to the schema.
 			if (in_array('@self.stats', $extend, true) === true) {
 				// Get register counts for all schemas in one call.
@@ -551,6 +570,79 @@ class SchemasController extends Controller {
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
+	/**
+	 * Refuse a schema whose semantic roles or help text cannot be honoured.
+	 *
+	 * Two properties claiming one role is the refusal the spec names, and the
+	 * message names both: a list component that asks "which property is the
+	 * title" cannot be answered with two, and answering with the first would
+	 * make the choice depend on property order.
+	 *
+	 * @param array $data The incoming schema request data.
+	 *
+	 * @return JSONResponse|null A 422 response when invalid, else null.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	private function validateSemanticRoles(array $data): ?JSONResponse {
+		if ($this->semanticRoles === null) {
+			return null;
+		}
+
+		$properties = ($data['properties'] ?? null);
+		if (is_array($properties) === false) {
+			return null;
+		}
+
+		$errors = $this->semanticRoles->violations(properties: $properties);
+		if ($errors === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'Invalid semantic role declaration in schema properties',
+				'errors' => $errors,
+			],
+			statusCode: 422
+		);
+	}//end validateSemanticRoles()
+
+	/**
+	 * The language the caller asked for, defaulting to Dutch.
+	 *
+	 * @return string The BCP-47 tag.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	private function negotiatedLanguage(): string {
+		$explicit = trim((string)$this->request->getParam('language', ''));
+		if ($explicit !== '') {
+			return $explicit;
+		}
+
+		$header = trim((string)$this->request->getHeader('Accept-Language'));
+		if ($header === '') {
+			return 'nl';
+		}
+
+		$first = trim((string)(explode(',', $header)[0] ?? ''));
+		$first = trim((string)(explode(';', $first)[0] ?? ''));
+
+		if ($first === '') {
+			return 'nl';
+		}
+
+		return $first;
+	}//end negotiatedLanguage()
+
+	/**
+	 * Check a schema payload's JSON-LD context mapping before it is saved.
+	 *
+	 * @param array<string,mixed> $data The incoming schema payload.
+	 *
+	 * @return JSONResponse|null A 400 naming the bad mapping, or null when there is nothing to refuse.
+	 */
 	private function validateJsonLdMapping(array $data): ?JSONResponse {
 		if ($this->jsonLdContextService === null) {
 			return null;
@@ -599,7 +691,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<201, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 * @spec openspec/specs/json-ld-output/spec.md
@@ -653,6 +746,13 @@ class SchemasController extends Controller {
 		$jsonLdError = $this->validateJsonLdMapping(data: $data);
 		if ($jsonLdError !== null) {
 			return $jsonLdError;
+		}
+
+		// Refuse a duplicated semantic role before the write, naming both
+		// properties (REQ-CLH-003).
+		$roleError = $this->validateSemanticRoles(data: $data);
+		if ($roleError !== null) {
+			return $roleError;
 		}
 
 		// Refuse a register context that does not resolve BEFORE writing the schema.
@@ -740,6 +840,22 @@ class SchemasController extends Controller {
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
 			return new JSONResponse(data: $schema, statusCode: 201);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (CalculationDeclarationException $e) {
+			// A calculation a property form forwarded is the caller's input and
+			// a person is waiting on the answer, so the refusal names the node
+			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
@@ -815,7 +931,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
@@ -859,6 +976,13 @@ class SchemasController extends Controller {
 		$jsonLdError = $this->validateJsonLdMapping(data: $data);
 		if ($jsonLdError !== null) {
 			return $jsonLdError;
+		}
+
+		// Refuse a duplicated semantic role before the write, naming both
+		// properties (REQ-CLH-003).
+		$roleError = $this->validateSemanticRoles(data: $data);
+		if ($roleError !== null) {
+			return $roleError;
 		}
 
 		// Capture prior authorization so a change can be audit-logged below.
@@ -949,6 +1073,22 @@ class SchemasController extends Controller {
 			);
 
 			return new JSONResponse(data: $updatedSchema);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (CalculationDeclarationException $e) {
+			// A calculation a property form forwarded is the caller's input and
+			// a person is waiting on the answer, so the refusal names the node
+			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -1021,7 +1161,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -1419,6 +1560,22 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schema);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (CalculationDeclarationException $e) {
+			// A calculation a property form forwarded is the caller's input and
+			// a person is waiting on the answer, so the refusal names the node
+			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(

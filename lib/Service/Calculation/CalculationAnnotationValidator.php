@@ -55,42 +55,13 @@ final class CalculationAnnotationValidator {
 	private const VALID_DATE_DIFF_UNITS = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'];
 
 	/**
-	 * Operator vocabulary recognised by the v1 calculation evaluator.
+	 * Operator vocabulary recognised by the calculation evaluator.
+	 *
+	 * Read from the published catalogue rather than restated here, so a schema
+	 * can never be refused for an operator the catalogue offers an author. The
+	 * catalogue in turn sits beside the evaluator's dispatch.
 	 */
-	private const VALID_OPS = [
-		'prop',
-		'lit',
-		'concat',
-		'if',
-		'not',
-		'and',
-		'or',
-		'+',
-		'-',
-		'*',
-		'/',
-		'%',
-		'eq',
-		'ne',
-		'lt',
-		'lte',
-		'gt',
-		'gte',
-		'now',
-		'diffDays',
-		'formatDate',
-		'dateDiff',
-		'dateAdd',
-		'sequence',
-		'max',
-		'min',
-		'coalesce',
-		'abs',
-		'round',
-		'year',
-		'monthsElapsed',
-		'sha256',
-	];
+	private const VALID_OPS = CalculationEvaluator::OPERATORS;
 
 	/**
 	 * Allowed `metric` values for an aggregate-reference declaration.
@@ -205,6 +176,22 @@ final class CalculationAnnotationValidator {
 				continue;
 			}
 
+			// A `dependsOn` list beside an expression is a second source of
+			// truth, and the failure is silent: a dependency the author forgot
+			// is a value that never refreshes. The list below is derived from
+			// the expression, so a declared one is not read. Say so rather than
+			// leaving the author believing it did something.
+			if (array_key_exists('dependsOn', $spec) === true) {
+				$errors[] = [
+					'code' => 'calculation-dependson-ignored',
+					'message' => sprintf(
+						'Calculation "%s": "dependsOn" is not read. The properties an expression '
+						. 'reads are derived from the expression itself.',
+						$name
+					),
+				];
+			}
+
 			$deps[$name] = [];
 			$this->walk(
 				expr: $spec['expression'],
@@ -267,7 +254,7 @@ final class CalculationAnnotationValidator {
 		}
 
 		$op = (string)array_key_first($expr);
-		if (in_array($op, self::VALID_OPS, true) === false) {
+		if (array_key_exists($op, self::VALID_OPS) === false) {
 			$errors[] = [
 				'code' => 'calculation-unknown-op',
 				'message' => sprintf('Calculation "%s": unknown operator "%s".', $owner, $op),
