@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Áruház",
         "Install registers, schemas and flows that other organisations have published.": "Telepítsen más szervezetek által közzétett nyilvántartásokat, sémákat és folyamatokat.",
         "No such run": "Nincs ilyen futás",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "A futás nem létezik, vagy nem láthatja. Egy folyamat törlése a futásait is törli."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "A futás nem létezik, vagy nem láthatja. Egy folyamat törlése a futásait is törli.",
+        "Configured": "Beállítva",
+        "Limited": "Korlátozott",
+        "Simulated": "Szimulált",
+        "Not available": "Nem érhető el",
+        "Open settings": "Beállítások megnyitása",
+        "Add integration": "Integráció hozzáadása",
+        "Last checked": "Utoljára ellenőrizve"
     },
     "nplurals=2; plural=(n != 1);"
 )

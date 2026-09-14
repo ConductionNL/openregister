@@ -980,6 +980,9 @@ class RetentionService {
 				'classification' => $retention['classification'] ?? null,
 				'softDeleted' => $object->isSoftDeleted(),
 				'wooGepubliceerd' => $isWooPublished,
+				// Unassigned, said out loud, so a consumer reading a fresh
+				// list can see that nobody is accountable for this entry yet.
+				'reviewer' => null,
 			];
 		}
 
@@ -990,6 +993,9 @@ class RetentionService {
 			'objects' => $objectEntries,
 			'excluded' => [],
 			'approvals' => [],
+			// The one decision history: destroy, retain and transfer all
+			// land here, so the record an auditor reads is one artefact.
+			'decisions' => [],
 		];
 	}//end createDestructionList()
 

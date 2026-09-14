@@ -3,7 +3,7 @@
 /**
  * Integration tests for mock mode across every external integration leaf.
  *
- * Wires a REAL {@see ExternalIntegrationRouter} against a fake SourceMapper
+ * Wires a REAL {@see ExternalIntegrationRouter} against an ObjectService double
  * that returns a `configuration.mock=true` source carrying a realistic
  * upstream-shaped `mockResponse`, plus a CallService that EXPLODES if ever
  * reached — so a passing test proves each leaf returns its canned fixture
@@ -32,46 +32,20 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion + local fixture helpers take positional args by convention; mirroring ExternalIntegrationRouterTest in this repo.
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\MessageDispatchController;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
-
-/**
- * A source ObjectEntity stand-in carrying a mock `configuration`.
- */
-class MockSourceEntity {
-	public function __construct(
-		private array $configuration,
-	) {
-	}//end __construct()
-
-	public function getObject(): array {
-		return ['isEnabled' => true, 'configuration' => $this->configuration];
-	}//end getObject()
-}//end class
-
-/**
- * SourceMapper stand-in returning the mock source for any id.
- */
-class MockModeSourceMapper {
-	public function __construct(
-		private array $configuration,
-	) {
-	}//end __construct()
-
-	public function find($id) {
-		return new MockSourceEntity($this->configuration);
-	}//end find()
-}//end class
 
 /**
  * CallService stand-in that explodes if reached — proves no real call.
@@ -104,14 +78,24 @@ class IntegrationMockModeTest extends TestCase {
 			$configuration['mockMeta'] = $mockMeta;
 		}
 
-		$mapper = new MockModeSourceMapper($configuration);
+		// Every leaf's source resolves to the same mock-flagged source object,
+		// the way integriq stores it: an ObjectEntity in its own register.
+		$source = new ObjectEntity();
+		$source->setObject(['isEnabled' => true, 'configuration' => $configuration]);
+
+		$objectService = $this->getMockBuilder(ObjectService::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['find'])
+			->getMock();
+		$objectService->method('find')->willReturn($source);
+
 		$callService = new NeverCalledCallService();
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static function (string $id) use ($mapper, $callService) {
-				if (str_ends_with($id, 'SourceMapper') === true) {
-					return $mapper;
+			static function (string $id) use ($objectService, $callService) {
+				if ($id === ObjectService::class) {
+					return $objectService;
 				}
 
 				if (str_ends_with($id, 'CallService') === true) {

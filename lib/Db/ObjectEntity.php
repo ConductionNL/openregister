@@ -70,6 +70,8 @@ use OCP\IUserSession;
  * @method void setRegister(?string $register)
  * @method string|null getSchema()
  * @method void setSchema(?string $schema)
+ * @method string|null getSchemaVersion()
+ * @method void setSchemaVersion(?string $schemaVersion)
  * @method array|null getObject()
  * @method void setObject(?array $object)
  * @method array|null getFiles()
@@ -141,6 +143,10 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are the
+ * column surface plus the transient render fields, not an API design choice.
+ * The class already sat at the threshold, so any accessor trips it; splitting
+ * ObjectEntity is owned by the debt sweep, not by a feature that adds one field.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -614,6 +620,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?int $watcherCount = null;
 
 	/**
+	 * Whether this object is unread for the current user (`object-read-state`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `ReadStateService::isUnreadForCaller()`. Not persisted: a read state is
+	 * per-user, per-object state living in
+	 * `openregister_object_read_state`, which is what keeps reading an object
+	 * out of its own audit trail and versions. Exposed in @self as `unread`, and
+	 * omitted for an anonymous read, where there is no "you" to answer for.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $unread = null;
+
+	/**
+	 * How many entries of each sub-resource are unread (`object-read-state`).
+	 *
+	 * Transient, and one map rather than a field per tab, so a page renders
+	 * every tab badge from one read instead of a call per tab. Exposed in @self
+	 * as `unreadCounts`.
+	 *
+	 * @var array<string, int>|null
+	 */
+	protected ?array $unreadCounts = null;
+
+	/**
 	 * AVG / GDPR Art 30 processing-activity override.
 	 *
 	 * Transient field — set by callers that want to tag an upcoming
@@ -844,6 +875,43 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setWatcherCount(?int $count): void {
 		$this->watcherCount = $count;
 	}//end setWatcherCount()
+
+	/**
+	 * Write the current user's unread marker.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `unread` by getObjectArray().
+	 *
+	 * @param boolean|null $unread Whether the object is unread for the current user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	public function setUnread(?bool $unread): void {
+		$this->unread = $unread;
+	}//end setUnread()
+
+	/**
+	 * Write the per-sub-resource unread counts.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above.
+	 *
+	 * Surfaced in the @self envelope as `unreadCounts` by getObjectArray().
+	 *
+	 * @param array<string, int>|null $counts Sub-resource name to unread count, or null to omit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	public function setUnreadCounts(?array $counts): void {
+		$this->unreadCounts = $counts;
+	}//end setUnreadCounts()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1230,9 +1298,10 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
 	 * search relevance, the RFC 8141 URN, per-language translation
 	 * completeness, the effective archival retention decision, the
-	 * registry subscription state (`registry-subscriptions`, finding B22), and
-	 * the reader's own follow marker plus the follower count
-	 * (`object-watchers`).
+	 * registry subscription state (`registry-subscriptions`, finding B22), the
+	 * reader's own follow marker plus the follower count (`object-watchers`),
+	 * and the reader's unread marker plus the tab badge counts
+	 * (`object-read-state`).
 	 * Each is optional and omitted entirely when unset — none of these are
 	 * persisted on this entity; they are populated by RenderObject at read
 	 * time.
@@ -1245,53 +1314,51 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @return array<string, mixed> The array with any set transient fields merged in.
 	 */
 	private function mergeTransientRenderFields(array $objectArray): array {
-		// Only included when a search was performed with _fuzzy=true.
-		if ($this->relevance !== null) {
-			$objectArray['relevance'] = $this->relevance;
+		// Every transient render field, keyed by the name it takes in @self.
+		// Each is set by the render layer and left null otherwise, and a null
+		// one is omitted rather than written as null, because "not rendered"
+		// and "rendered as nothing" are different claims to a client.
+		//
+		// - relevance: only when a search ran with _fuzzy=true.
+		// - urn: RenderObject populates it via UrnService::buildForObject, so a
+		//   raw entity that never went through the renderer has none.
+		// - translationCompleteness: absent when the schema has no translatable
+		//   properties, or the object has not been rendered.
+		// - _retention: the effective archival retention decision.
+		// - _clocks: both retention clocks, each naming its rule, never flattened
+		//   into one date.
+		// - registry: the registry subscription state, absent for an object
+		//   that never requested one.
+		// - watching, watcherCount: the reader's own follow state and the size
+		//   of the audience (`object-watchers`).
+		// - unread: whether the reader has seen this object since it last
+		//   changed (`object-read-state`). Absent for an anonymous read, where
+		//   there is no "you" to answer for.
+		//
+		// This is a map rather than a chain of ifs because the chain grew one
+		// branch per feature and ran past the complexity budget.
+		$transient = [
+			'relevance'               => $this->relevance,
+			'urn'                     => $this->urn,
+			'translationCompleteness' => $this->translationCompleteness,
+			'_retention'              => $this->archivalRetention,
+			'_clocks'                 => $this->retentionClocks,
+			'registry'                => $this->registryState,
+			'watching'                => $this->watching,
+			'watcherCount'            => $this->watcherCount,
+			'unread'                  => $this->unread,
+		];
+
+		foreach ($transient as $key => $value) {
+			if ($value !== null) {
+				$objectArray[$key] = $value;
+			}
 		}
 
-		// The renderer populates $this->urn via UrnService::buildForObject;
-		// when absent (e.g. raw entity not run through RenderObject) the
-		// field is simply omitted from @self.
-		if ($this->urn !== null) {
-			$objectArray['urn'] = $this->urn;
-		}
-
-		// Skipped (omitted from @self) when the schema has no translatable
-		// properties or the object hasn't been rendered yet.
-		if ($this->translationCompleteness !== null) {
-			$objectArray['translationCompleteness'] = $this->translationCompleteness;
-		}
-
-		// Add the effective archival retention decision when set by the render
-		// layer (add-archival-annotation-support). Exposed as `_retention` and
-		// omitted entirely when the object carries no retention metadata.
-		if ($this->archivalRetention !== null) {
-			$objectArray['_retention'] = $this->archivalRetention;
-		}
-
-		// Both clocks, each naming its rule. Omitted when the render layer did
-		// not resolve them, never flattened into one date.
-		if ($this->retentionClocks !== null) {
-			$objectArray['_clocks'] = $this->retentionClocks;
-		}
-
-		// Add the registry subscription state when set by the render layer.
-		// Exposed as `registry` and omitted entirely for an object that
-		// never requested one.
-		if ($this->registryState !== null) {
-			$objectArray['registry'] = $this->registryState;
-		}
-
-		// Whether the reader follows this object (`object-watchers`). Omitted
-		// entirely for an anonymous read, where there is no "you" to answer for.
-		if ($this->watching !== null) {
-			$objectArray['watching'] = $this->watching;
-		}
-
-		// The size of the object's audience, for a reader who may edit it.
-		if ($this->watcherCount !== null) {
-			$objectArray['watcherCount'] = $this->watcherCount;
+		// The tab badges, as one map. Omitted when there is nothing to badge,
+		// because an empty map and "no badges here" are the same claim.
+		if ($this->unreadCounts !== null && $this->unreadCounts !== []) {
+			$objectArray['unreadCounts'] = $this->unreadCounts;
 		}
 
 		return $objectArray;

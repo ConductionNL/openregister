@@ -17,6 +17,10 @@
     </projectFiles>
     <stubs>
         <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
+        <!-- Integriq connection-registry events: sent by class-name string from
+             ConnectionReporter, declared here so the contract shape is known. -->
+        <file name="tests/stubs/Integriq/Event/ConnectionStatusReportedEvent.php" />
+        <file name="tests/stubs/Integriq/Event/ConnectionRefreshRequestedEvent.php" />
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>

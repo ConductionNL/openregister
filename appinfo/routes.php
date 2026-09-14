@@ -149,6 +149,34 @@ return [
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
         ],
 
+        // Per-object read state. Reading an object is per-user state that must
+        // not be written through the object itself, which would put "alice
+        // looked at this" in the object's audit trail and cut a version on every
+        // open, so it gets its own entry point. Anyone who may READ the object
+        // may write their OWN read state, and nobody may write anybody else's:
+        // there is no `manage` escape here, because a read state is a fact about
+        // a person rather than about the object.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectReadState#show',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markRead',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markUnread',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
         // PUBLIC. A share token is a bearer capability: nobody is logged in, so
         // there is no principal for RBAC to resolve and core's validation of the
         // token IS the authorization. Read-only, addresses exactly one object,
@@ -805,6 +833,29 @@ return [
         // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-resolve-a-public-case-token-rbac-respecting
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
+        // Object dates as a calendar feed. The public endpoint carries no
+        // session, so it is reachable without one, but the calendar it answers
+        // is generated as the principal the token names and holds exactly what
+        // that principal may list. An unknown, revoked or expired token gets
+        // the same 404 as any other.
+        // @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+        ['name' => 'calendarFeed#feed', 'url' => '/api/public/calendar-feeds/{token}.ics', 'verb' => 'GET', 'requirements' => ['token' => '[^/.]+']],
+        ['name' => 'calendarFeed#index', 'url' => '/api/calendar-feeds', 'verb' => 'GET'],
+        ['name' => 'calendarFeed#mint', 'url' => '/api/calendar-feeds', 'verb' => 'POST'],
+        ['name' => 'calendarFeed#revoke', 'url' => '/api/calendar-feeds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        [
+            'name' => 'calendarFeed#attendeeResponses',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'calendarFeed#recordAttendeeResponse',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
         // (uri/scheme values are full URIs, unsafe as path segments). 404
@@ -813,6 +864,14 @@ return [
         ['name' => 'vocabulary#resolveByUri', 'url' => '/api/vocabulary/concept', 'verb' => 'GET'],
         ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
         ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
+
+        // Code-list options for one schema property, as a flat list or as a
+        // tree, narrowed by the context in play and by each value's validity
+        // window. A retired value is absent here and still resolves through
+        // the three routes above, which is the whole point of retiring
+        // rather than deleting (REQ-CLH-001, REQ-CLH-002).
+        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+        ['name' => 'vocabulary#propertyOptions', 'url' => '/api/vocabulary/options', 'verb' => 'GET'],
 
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
@@ -928,6 +987,17 @@ return [
         ['name' => 'bulk#deleteSchemaObjects', 'url' => '/api/bulk/{register}/{schema}/delete-objects', 'verb' => 'POST'],
         ['name' => 'bulk#deleteRegister', 'url' => '/api/bulk/{register}/delete-register', 'verb' => 'POST'],
         ['name' => 'bulk#runSchemaValidation', 'url' => '/api/bulk/schema/{schema}/validate', 'verb' => 'POST'],
+        // Bulk action jobs — a bulk act as one previewed, cancellable job.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'bulkJobs#actions', 'url' => '/api/bulk-actions', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#index', 'url' => '/api/bulk-jobs', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#create', 'url' => '/api/bulk-jobs', 'verb' => 'POST'],
+        ['name' => 'bulkJobs#show', 'url' => '/api/bulk-jobs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#members', 'url' => '/api/bulk-jobs/{id}/members', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#download', 'url' => '/api/bulk-jobs/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
@@ -953,6 +1023,23 @@ return [
         ['name' => 'auditQuery#query', 'url' => '/api/v2/audit', 'verb' => 'GET'],
         // Notification History — read-only audit trail of every dispatch.
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
+        // The bell's own verbs (`object-read-state`). A snooze postpones a
+        // notice, an archive takes it out without claiming it was read, and a
+        // thread is marked read as a whole. Each is scoped to the caller's own
+        // notices inside NotificationClearingService, never by the route.
+        [
+            'name' => 'notificationHistory#snooze',
+            'url' => '/api/notification-history/{id}/snooze',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        [
+            'name' => 'notificationHistory#archive',
+            'url' => '/api/notification-history/{id}/archive',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        ['name' => 'notificationHistory#markThreadRead', 'url' => '/api/notification-history/thread/read', 'verb' => 'PUT'],
         // Notification Subscriptions — DEPRECATED per-user (register, schema) opt-in surface.
         // Superseded by override-only Notification Preferences below; kept during the deprecation window.
         ['name' => 'notificationSubscriptions#index',   'url' => '/api/notification-subscriptions', 'verb' => 'GET'],
@@ -1071,6 +1158,14 @@ return [
         ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+
+        // Property type conversion — the supported conversions are published,
+        // and a conversion over populated objects is previewed before it is
+        // taken. An unsupported one is refused with its reason and never
+        // attempted (REQ-CLH-005).
+        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+        ['name' => 'schemaMigration#conversions', 'url' => '/api/schemas/property-conversions', 'verb' => 'GET'],
+        ['name' => 'schemaMigration#previewConversion', 'url' => '/api/schemas/{id}/conversions/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // Schema import from external standards (schema-import-standards). Admin-gated by NC framework default.
         ['name' => 'schemaImport#types', 'url' => '/api/schema-import/{dialect}/types', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],
         ['name' => 'schemaImport#snapshot', 'url' => '/api/schema-import/{dialect}/snapshot', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],
@@ -1386,6 +1481,13 @@ return [
 		['name' => 'archival#releaseLegalHold', 'url' => '/api/archival/legal-holds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'archival#listLegalHolds', 'url' => '/api/archival/legal-holds', 'verb' => 'GET'],
 		['name' => 'archival#listCertificates', 'url' => '/api/archival/certificates', 'verb' => 'GET'],
+
+		// The archiving process: a named reviewer per entry, their worklist, and
+		// the three answers they may give. `{entryId}` is the uuid of the RECORD
+		// the entry is about, which is how a destruction list names its entries.
+		['name' => 'archival#assignReviewer', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/reviewer', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],

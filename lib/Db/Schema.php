@@ -27,6 +27,8 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use JsonSerializable;
+use OCA\OpenRegister\Exception\CalendarDateKindException;
+use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\Entity;
@@ -2085,6 +2087,19 @@ class Schema extends Entity implements JsonSerializable {
 					throw $e;
 				}
 
+				// A DECLARED DATE KIND IS EXEMPT FOR THE SAME REASON, INVERTED.
+				//
+				// Dropping `calendarProvider` as a whole is a safe degradation:
+				// the virtual calendar does not appear and somebody notices. A
+				// typo INSIDE the `dates` block is not: the schema saves, it
+				// looks annotated to whoever wrote it, and the feed publishes an
+				// agenda that is silently missing the term they just declared.
+				// Nobody reads an empty agenda and concludes the schema is
+				// wrong. So this one fails loudly, naming the property.
+				if ($e instanceof CalendarDateKindException) {
+					throw $e;
+				}
+
 				$this->droppedKeys[] = (string)$key;
 			}//end try
 		}//end foreach
@@ -2311,13 +2326,27 @@ class Schema extends Entity implements JsonSerializable {
 	 * When calendarProvider.enabled is true, dtstart and titleTemplate are required.
 	 * Warns (but does not reject) if referenced property names don't exist in schema properties.
 	 *
+	 * The `dates` block is validated whether or not the provider is enabled: a
+	 * date kind that is stored unchecked is a kind the feed refuses to read
+	 * later, at a moment nobody is looking at the schema editor. Every refusal
+	 * names the property.
+	 *
 	 * @param array $config The calendarProvider config array
 	 *
-	 * @throws InvalidArgumentException If required fields are missing when enabled
+	 * @throws InvalidArgumentException If required fields are missing when enabled,
+	 *                                  or a declared date kind is unusable
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
+	 * is a named constructor reading a config block; there is no instance to inject.
 	 */
 	private function validateCalendarProviderConfig(array $config): void {
+		// Declared date kinds are refused on save, enabled or not.
+		ObjectDateDeclaration::allFromConfig(calendarConfig: $config);
+
 		// Only validate required fields when enabled.
 		if (empty($config['enabled']) === true) {
 			return;
@@ -2453,6 +2482,14 @@ class Schema extends Entity implements JsonSerializable {
 		// key earlier. The two comments above record the same bug twice.
 		'x-openregister-action',
 		'x-openregister-approval-chains',
+		// What makes an object unread again, and which sub-resources badge a
+		// tab (`object-read-state`). Read by SubstantiveChangeEvaluator. Absent
+		// from this list the key would be silently dropped, every schema would
+		// fall back to "any non-computed property is news", and the annotation
+		// that exists to stop a nightly recalculation marking four hundred
+		// cases unread would never fire. The same or#460/#462-class trap the
+		// four comments above record.
+		'x-openregister-read-state',
 		// Per-schema opt-in for OCP\ContextChat content submission (default
 		// OFF — see ContentProvider / ContextChatSubmissionListener). Absent
 		// from the vocabulary means the key round-trips through

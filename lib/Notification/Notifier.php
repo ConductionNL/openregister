@@ -160,6 +160,7 @@ class Notifier implements INotifier {
 			'credential_relink_needed' => $this->prepareCredentialRelinkNeeded(...),
 			'retention_holds_skipped' => $this->prepareRetentionHoldsSkipped(...),
 			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
+			'destruction_review_pending' => $this->prepareDestructionReviewPending(...),
 			default => null,
 		};
 
@@ -249,6 +250,46 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareDestructionHoldsSkipped()
+
+	/**
+	 * Render "records are waiting on your decision".
+	 *
+	 * The reminder the review process rests on: a destruction list entry with a
+	 * named reviewer and nobody asking is an entry that waits forever.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	private function prepareDestructionReviewPending(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$pendingCount = (int)($parameters['pendingCount'] ?? 0);
+
+		$notification->setParsedSubject(
+			$l->t('Records are waiting on your archiving decision')
+		);
+
+		$notification->setParsedMessage(
+			$l->n(
+				'%n record on a destruction list is assigned to you and has not been answered yet. '
+				. 'Each one is destroyed, kept for longer, or transferred to an e-Depot, and the '
+				. 'answer is recorded against your name.',
+				'%n records on destruction lists are assigned to you and have not been answered yet. '
+				. 'Each one is destroyed, kept for longer, or transferred to an e-Depot, and the '
+				. 'answer is recorded against your name.',
+				$pendingCount
+			)
+		);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareDestructionReviewPending()
 
 	/**
 	 * Prepare configuration update notification.

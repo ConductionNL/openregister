@@ -63,3 +63,33 @@ The constraint declares which it is.
 ## D-8. kind
 
 Code, in OpenRegister. Consuming apps declare schemes and roles.
+
+## D-9. Hand-over to the dossiq lane (task 6.1)
+
+What `code-lists-from-concepts` can now consume, without asking openregister
+for anything further:
+
+- `x-openregister-concepts` on a property, with `scheme`, `store`, `branch`,
+  `leafOnly`, `maxDepth`, `contextProperty`, `contextKey` and
+  `score.property`.
+- `GET /api/vocabulary/options?schema=&property=&context=&tree=1`, which
+  returns the option list or the option tree in the negotiated language, with
+  every out-of-window value already absent. `?scheme=` answers the same for a
+  declaration that is not saved yet, which is what the schema editor's
+  hierarchy preview uses.
+- `<property>[branch]=<uri>&<property>[depth]=<n>` on any objects listing.
+- A `concept` carrying `validFrom`, `validUntil`, `weight`, `exclusiveGroup`,
+  `systemDefined`, `contexts` and `fields`, and a `conceptScheme` carrying
+  `conceptShape` and `exclusiveGroups`. A resultaattype scheme declaring
+  `bewaartermijn` and `grondslag` in `conceptShape` gets them validated on
+  every concept, so dossiq can move those two off the case type.
+- `@self.roles` and `@self.help` on the schema read, so a list component
+  renders a case type it has never seen.
+
+Cluster 6 candidate ids: C-configuration-2, -7, -8, -9, -10, -11, -13, -15,
+-22, -39, -46, -54, -62, -66, -67, -80, -99, -104, -105 and C-case-core-13.
+Ledger rows: 11.34, 11.40, 11.44, 11.45.
+
+Still open, and deliberately: the four candidates the proposal put out of
+scope stay out of scope, and the editor half of `enumValues` stays with the
+dossiq lane as `property-code-list-from-concept-scheme` task 4.2 records.
