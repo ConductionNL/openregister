@@ -182,6 +182,10 @@ class ConceptShapeGuard {
 
 		$uri = trim((string)($scheme['uri'] ?? ''));
 
-		return ($uri === '' ? null : $uri);
+		if ($uri === '') {
+			return null;
+		}
+
+		return $uri;
 	}//end schemeUriOf()
 }//end class

@@ -126,7 +126,8 @@ class PropertyConversionService {
 		$targets = (self::SUPPORTED[$from] ?? []);
 		if ($targets === []) {
 			return sprintf(
-				'A property of type "%s" cannot be converted to another type, because there is no per-value test that says honestly whether a value would survive it.',
+				'A property of type "%s" cannot be converted to another type, because there is '
+				.'no per-value test that says honestly whether a value would survive it.',
 				$from
 			);
 		}

@@ -79,6 +79,8 @@ class SchemaMigrationController extends Controller {
 	 * @param IJobList $jobList Job list (enqueue runs).
 	 * @param IUserSession $userSession Current user.
 	 * @param LoggerInterface $logger Logger.
+	 * @param PropertyConversionService|null $conversions Publishes and previews a property type change.
+	 * @param MagicMapper|null $objects Reads the stored values a conversion preview is measured over.
 	 */
 	public function __construct(
 		string $appName,

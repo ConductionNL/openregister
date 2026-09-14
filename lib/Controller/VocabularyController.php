@@ -4,8 +4,8 @@
  * VocabularyController — public read-only resolution endpoints for the SKOS
  * vocabulary register (skos-concept-registers, SKOS-004).
  *
- * Three endpoints, all `#[PublicPage]` because vocabularies are public
- * reference data (design.md D5) — writes to the `vocabulary` register stay
+ * Four endpoints, all `#[PublicPage]` because vocabularies are public
+ * reference data (design.md D5). Writes to the `vocabulary` register stay
  * admin-gated via its schema `authorization` block, only reads are opened
  * here:
  *   - GET /api/vocabulary/concept          resolve a concept by exact uri
@@ -13,6 +13,10 @@
  *   - GET /api/vocabulary/concepts         list a scheme's concepts, paginated,
  *                                          with a language-agnostic label search
  *                                          across prefLabel/altLabel (design.md D5)
+ *   - GET /api/vocabulary/options          the options one coded property offers,
+ *                                          flat or as a tree, with every value
+ *                                          outside its validity window absent
+ *                                          (code-list-lifecycle-and-hierarchy)
  *
  * Unknown uris/notations/schemes always resolve to a uniform 404 with the
  * standard `{"message": ...}` error shape — never an empty 200 (SKOS-004).
@@ -96,7 +100,9 @@ class VocabularyController extends Controller {
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param ObjectService $objectService OR object read path (findAll — real API only).
+	 * @param ObjectService $objectService OR object read path (findAll, real API only).
+	 * @param SchemaMapper $schemaMapper Reads the schema a coded property is declared on.
+	 * @param CodedOptionsBuilder $options Builds a coded property's option list or option tree.
 	 *
 	 * @return void
 	 */
@@ -198,10 +204,14 @@ class VocabularyController extends Controller {
 		}
 
 		$context = trim((string)$this->request->getParam('context', ''));
+		if ($context === '') {
+			$context = null;
+		}
+
 		$options = $this->options->options(
 			declaration: $declaration,
 			language: $language,
-			context: ($context === '' ? null : $context)
+			context: $context
 		);
 
 		return new JSONResponse(
@@ -209,7 +219,7 @@ class VocabularyController extends Controller {
 				'property' => $property,
 				'scheme' => $declaration->scheme,
 				'language' => $language,
-				'context' => ($context === '' ? null : $context),
+				'context' => $context,
 				'results' => $options,
 				'total' => count($options),
 			]
@@ -278,7 +288,11 @@ class VocabularyController extends Controller {
 		$first = trim((string)(explode(',', $header)[0] ?? ''));
 		$first = trim((string)(explode(';', $first)[0] ?? ''));
 
-		return ($first === '' ? 'nl' : $first);
+		if ($first === '') {
+			return 'nl';
+		}
+
+		return $first;
 	}//end negotiatedLanguage()
 
 	/**

@@ -77,6 +77,7 @@ class ComputedFieldHandler {
 	 * @param MappingExtension $mappingExtension Twig extension with custom filters and functions.
 	 * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
+	 * @param CodedValueGuard|null $codedValues Rolls concept weights up into the declared score property.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */

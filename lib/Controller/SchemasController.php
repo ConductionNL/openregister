@@ -137,6 +137,7 @@ class SchemasController extends Controller {
 	 * @param JsonLdContextService $jsonLdContextService JSON-LD context service
 	 * @param SchemaImportService $schemaImportService Schema import service for importing schemas
 	 * @param SemanticTypeResolver $semanticTypeResolver Semantic-type → schema resolver (cross-app references)
+	 * @param SemanticRoleHandler|null $semanticRoles Reads and validates the title, status, assignee and term roles
 	 *
 	 * @return void
 	 *
@@ -626,9 +627,20 @@ class SchemasController extends Controller {
 		$first = trim((string)(explode(',', $header)[0] ?? ''));
 		$first = trim((string)(explode(';', $first)[0] ?? ''));
 
-		return ($first === '' ? 'nl' : $first);
+		if ($first === '') {
+			return 'nl';
+		}
+
+		return $first;
 	}//end negotiatedLanguage()
 
+	/**
+	 * Check a schema payload's JSON-LD context mapping before it is saved.
+	 *
+	 * @param array<string,mixed> $data The incoming schema payload.
+	 *
+	 * @return JSONResponse|null A 400 naming the bad mapping, or null when there is nothing to refuse.
+	 */
 	private function validateJsonLdMapping(array $data): ?JSONResponse {
 		if ($this->jsonLdContextService === null) {
 			return null;

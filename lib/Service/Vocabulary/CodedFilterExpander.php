@@ -212,7 +212,11 @@ class CodedFilterExpander {
 
 		$branch = trim($branch);
 
-		return ($branch === '' ? null : $branch);
+		if ($branch === '') {
+			return null;
+		}
+
+		return $branch;
 	}//end branchOf()
 
 	/**

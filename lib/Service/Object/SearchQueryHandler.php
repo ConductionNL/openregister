@@ -114,6 +114,7 @@ class SearchQueryHandler {
 	 * @param SearchTrailService $searchTrailService Service for recording search trails.
 	 * @param WatcherMapper|null $watcherMapper Subscriptions, for the `_watching=true` lens.
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
+	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */

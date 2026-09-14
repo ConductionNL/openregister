@@ -243,7 +243,11 @@ class CodedValueGuard {
 	 */
 	private function valuesOf(mixed $value): array {
 		if (is_string($value) === true) {
-			return ($value === '' ? [] : [$value]);
+			if ($value === '') {
+				return [];
+			}
+
+			return [$value];
 		}
 
 		if (is_array($value) === false) {

@@ -190,7 +190,11 @@ class SemanticRoleHandler {
 		if (is_string($raw) === true) {
 			$raw = trim($raw);
 
-			return ($raw === '' ? null : $raw);
+			if ($raw === '') {
+				return null;
+			}
+
+			return $raw;
 		}
 
 		if (is_object($raw) === true) {
@@ -248,7 +252,11 @@ class SemanticRoleHandler {
 
 		$role = trim($role);
 
-		return ($role === '' ? null : $role);
+		if ($role === '') {
+			return null;
+		}
+
+		return $role;
 	}//end rawRoleOf()
 
 	/**

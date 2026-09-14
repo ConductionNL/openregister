@@ -128,8 +128,10 @@ class UniqueConstraintEvaluator {
 			}
 
 			$name = trim((string)($entry['name'] ?? ''));
-			if ($name === '') {
-				$name = (is_string($key) === true ? $key : implode('+', $properties));
+			if ($name === '' && is_string($key) === true) {
+				$name = $key;
+			} elseif ($name === '') {
+				$name = implode('+', $properties);
 			}
 
 			$constraints[] = [
@@ -172,7 +174,11 @@ class UniqueConstraintEvaluator {
 			$filters[$property] = $value;
 		}
 
-		return ($filters === [] ? null : $filters);
+		if ($filters === []) {
+			return null;
+		}
+
+		return $filters;
 	}//end filtersFor()
 
 	/**
@@ -216,7 +222,11 @@ class UniqueConstraintEvaluator {
 		if (is_string($value) === true) {
 			$value = trim($value);
 
-			return ($value === '' ? [] : [$value]);
+			if ($value === '') {
+				return [];
+			}
+
+			return [$value];
 		}
 
 		if (is_array($value) === false) {

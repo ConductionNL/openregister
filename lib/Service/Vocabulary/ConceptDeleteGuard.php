@@ -183,7 +183,8 @@ class ConceptDeleteGuard {
 		}
 
 		$message = sprintf(
-			'The value "%s" is held by %d object(s) and cannot be deleted. Close its validity window to retire it instead, which keeps those records readable.',
+			'The value "%s" is held by %d object(s) and cannot be deleted. Close its '
+			.'validity window to retire it instead, which keeps those records readable.',
 			$label,
 			(int)($usage['count'] ?? 0)
 		);

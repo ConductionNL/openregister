@@ -135,16 +135,35 @@ class CodedPropertyDeclaration {
 			$maxDepth = (int)$raw['maxDepth'];
 		}
 
+		// An absent part reads as an empty string above and as null on the
+		// declaration, so the four optional parts are normalised once here
+		// rather than each carrying its own check at the call.
+		if ($branch === '') {
+			$branch = null;
+		}
+
+		if ($contextProperty === '') {
+			$contextProperty = null;
+		}
+
+		if ($contextKey === '') {
+			$contextKey = null;
+		}
+
+		if ($scoreProperty === '') {
+			$scoreProperty = null;
+		}
+
 		return new self(
 			scheme: $scheme,
 			store: $store,
 			allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
-			branch: ($branch === '' ? null : $branch),
+			branch: $branch,
 			leafOnly: (($raw['leafOnly'] ?? false) === true),
 			maxDepth: $maxDepth,
-			contextProperty: ($contextProperty === '' ? null : $contextProperty),
-			contextKey: ($contextKey === '' ? null : $contextKey),
-			scoreProperty: ($scoreProperty === '' ? null : $scoreProperty)
+			contextProperty: $contextProperty,
+			contextKey: $contextKey,
+			scoreProperty: $scoreProperty
 		);
 	}//end fromProperty()
 

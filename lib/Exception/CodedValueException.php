@@ -49,7 +49,7 @@ class CodedValueException extends RuntimeException {
 		string $message,
 		private readonly array $errors = [],
 	) {
-		parent::__construct($message, 422);
+		parent::__construct(message: $message, code: 422);
 	}//end __construct()
 
 	/**
