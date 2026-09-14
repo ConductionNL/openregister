@@ -117,6 +117,7 @@ Disagreements).
 | external-register-view-leaf | 5.13 | M | object-source-providers | dossiq, integriq, pipelinq, humaniq, zaakafhandelapp |
 | object-archive-state | Q2.33 | M | none | dossiq, decidiq, pipelinq, keepiq, stackiq, opencatalogi |
 | rbac-inherits-to-children | Q13.23 | M | object-level-sharing-and-private-scope | dossiq, opencatalogi, stackiq, decidiq, buildiq |
+| permission-provenance-and-deny | Q13.25 | M | rbac-inherits-to-children | dossiq, keepiq, integriq, decidiq, humaniq, portaliq |
 
 Sizes: 17 S, 8 M. Rows closed on openregister: 26 register rows (22 slugs
 plus 5.6, 11.10, 2.24 and 9.4's openregister halves; 8.12 and Q8.20 share
@@ -134,6 +135,16 @@ market-intelligence #123), which lists eight gaps with no change. Two of
 the eight are openregister's: Q2.33 `object-archive-state` and Q13.23
 `rbac-inherits-to-children`. Both are opened by the last sweep of the
 phase, with dossiq consumer changes named in each proposal.
+
+**Q13.25 arrived a day later**, with gap register v3
+(market-intelligence #128) and batch 12 of round 4. Where a role's
+permissions come from, and whether one can be taken away, is this layer's
+question: the grantable set is not published anywhere an administrator
+can read it, and nothing subtracts. It also reopens one line
+`rbac-inherits-to-children` wrote off, "no competitor in the register has
+one": Huly ships nine `Forbid` permissions beside its fifty-two, driven.
+`permission-provenance-and-deny` depends on that change and completes the
+rule from the other side.
 
 ## Build order
 

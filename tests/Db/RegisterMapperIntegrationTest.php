@@ -81,12 +81,12 @@ class RegisterMapperIntegrationTest extends TestCase {
 	}
 
 	public function testFindAllRespectsOffset(): void {
-		$all = $this->mapper->findAll(null, null, [], [], [], [], null, false, false);
+		$all = $this->mapper->findAll(null, null, [], [], [], _rbac: false, _multitenancy: false);
 		if (count($all) < 2) {
 			$this->markTestSkipped('Need at least 2 registers for offset test');
 		}
 
-		$offset = $this->mapper->findAll(null, 1, [], [], [], [], null, false, false);
+		$offset = $this->mapper->findAll(null, 1, [], [], [], _rbac: false, _multitenancy: false);
 		$this->assertCount(count($all) - 1, $offset);
 	}
 
@@ -99,8 +99,6 @@ class RegisterMapperIntegrationTest extends TestCase {
 			['source' => 'internal'],
 			[],
 			[],
-			[],
-			null,
 			false,
 			false
 		);
@@ -118,8 +116,6 @@ class RegisterMapperIntegrationTest extends TestCase {
 			['deleted' => 'IS NULL'],
 			[],
 			[],
-			[],
-			null,
 			false,
 			false
 		);
@@ -134,8 +130,6 @@ class RegisterMapperIntegrationTest extends TestCase {
 			['source' => 'IS NOT NULL'],
 			[],
 			[],
-			[],
-			null,
 			false,
 			false
 		);
@@ -197,7 +191,6 @@ class RegisterMapperIntegrationTest extends TestCase {
 
 		$results = $this->mapper->findMultiple(
 			[$r1->getId(), $r2->getId()],
-			null,
 			false,
 			false
 		);
@@ -209,7 +202,6 @@ class RegisterMapperIntegrationTest extends TestCase {
 		$r1 = $this->createTestRegister();
 		$results = $this->mapper->findMultiple(
 			[$r1->getId(), 999999999],
-			null,
 			false,
 			false
 		);
@@ -346,7 +338,6 @@ class RegisterMapperIntegrationTest extends TestCase {
 
 		$schemas = $this->mapper->getSchemasByRegisterId(
 			$register->getId(),
-			null,
 			false,
 			false
 		);

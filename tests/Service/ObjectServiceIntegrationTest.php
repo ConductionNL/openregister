@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -368,6 +369,13 @@ class ObjectServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSetSchemaWithSlug(): void {
+		// A slug is resolved INSIDE the current register since 5e7471bed
+		// (2026-08-22, "make {register} a hard boundary on every path that names
+		// one"). ObjectService is a singleton, so without naming the register
+		// this test inherited whichever one the previous test left behind and
+		// the slug resolved against the wrong boundary.
+		$this->service->setRegister($this->testRegister);
+
 		$result = $this->service->setSchema($this->testSchema->getSlug());
 
 		$this->assertInstanceOf(ObjectService::class, $result);
@@ -462,7 +470,13 @@ class ObjectServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testSetSchemaWithNonexistentIdThrows(): void {
-		$this->expectException(ValidationException::class);
+		// Same boundary change: an id the current register does not carry is a
+		// SchemaNotInRegisterException (a DoesNotExistException), not the
+		// ValidationException the old unscoped lookup raised. The more specific
+		// exception is the point of 5e7471bed, so this follows it.
+		$this->service->setRegister($this->testRegister);
+
+		$this->expectException(SchemaNotInRegisterException::class);
 		$this->service->setSchema(999999999);
 	}
 
@@ -1294,62 +1308,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Publish / Depublish tests
-	// =========================================================================
-
-	/**
-	 * Test publishObjects bulk publish
-	 *
-	 * @return void
-	 */
-	public function testPublishObjectsBulk(): void {
-		$obj = $this->createTestObject(['name' => 'Publish Test']);
-
-		$this->service->setRegister($this->testRegister);
-		$this->service->setSchema($this->testSchema);
-
-		$result = $this->service->publishObjects(
-			[$obj->getUuid()],
-			true,
-			false,
-			false
-		);
-
-		$this->assertIsArray($result);
-	}
-
-	/**
-	 * Test depublishObjects bulk depublish
-	 *
-	 * @return void
-	 */
-	public function testDepublishObjectsBulk(): void {
-		$obj = $this->createTestObject(['name' => 'Depublish Test']);
-
-		$this->service->setRegister($this->testRegister);
-		$this->service->setSchema($this->testSchema);
-
-		// First publish
-		$this->service->publishObjects(
-			[$obj->getUuid()],
-			true,
-			false,
-			false
-		);
-
-		// Then depublish
-		$result = $this->service->depublishObjects(
-			[$obj->getUuid()],
-			true,
-			false,
-			false
-		);
-
-		$this->assertIsArray($result);
-	}
-
-	// =========================================================================
-	// Lock / Unlock tests
+	// Publish / Depublish: REMOVED, the feature is gone
+	//
+	// testPublishObjectsBulk and testDepublishObjectsBulk drove
+	// ObjectService::publishObjects() and depublishObjects(). Object-level
+	// published metadata was retired in 12927d356 (2026-03-13) in favour of RBAC
+	// `$now` rules, and those methods went with the routes. Nothing inherited
+	// them, so nothing inherits the tests. Visibility over time is now a
+	// `match` rule with `$now`, covered in RbacOperatorMatchingIntegrationTest.
 	// =========================================================================
 
 	/**
@@ -1470,24 +1436,6 @@ class ObjectServiceIntegrationTest extends TestCase {
 
 		// Objects deleted, remove from cleanup
 		$this->createdObjectUuids = [];
-	}
-
-	/**
-	 * Test publishObjectsBySchema
-	 *
-	 * @return void
-	 */
-	public function testPublishObjectsBySchema(): void {
-		$this->createTestObject(['name' => 'Schema Publish Test']);
-
-		$result = $this->service->publishObjectsBySchema(
-			$this->testSchema->getId(),
-			true
-		);
-
-		$this->assertIsArray($result);
-		$this->assertArrayHasKey('published_count', $result);
-		$this->assertArrayHasKey('schema_id', $result);
 	}
 
 	// =========================================================================

@@ -148,10 +148,15 @@ class OrganisationMapperIntegrationTest extends TestCase {
 	}
 
 	public function testFindAllRespectsOffset(): void {
+		// This used to skip when the instance happened to hold fewer than two
+		// organisations, which made it a test that only ran on a dirty database.
+		// The fixture it needs costs two lines, and the sibling limit test
+		// already creates them.
+		$this->createTestOrganisation();
+		$this->createTestOrganisation();
+
 		$all = $this->mapper->findAll(10000, 0);
-		if (count($all) < 2) {
-			$this->markTestSkipped('Need at least 2 organisations for offset test');
-		}
+		$this->assertGreaterThanOrEqual(2, count($all));
 
 		$offset = $this->mapper->findAll(10000, 1);
 		$this->assertCount(count($all) - 1, $offset);

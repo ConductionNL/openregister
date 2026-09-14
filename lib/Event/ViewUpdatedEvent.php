@@ -60,4 +60,43 @@ class ViewUpdatedEvent extends Event {
 		$this->newView = $newView;
 		$this->oldView = $oldView;
 	}//end __construct()
+
+	/**
+	 * Get the updated view
+	 *
+	 * The listener that turns this event into a webhook payload calls
+	 * getView(). The class carried no accessor at all, so that call was a
+	 * fatal error on every dispatch; the only test covering it doubled the
+	 * event with addMethods(['getView']), which invents the method on the
+	 * mock and never consults the real class.
+	 *
+	 * @return View The view after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getView(): View {
+		return $this->newView;
+	}//end getView()
+
+	/**
+	 * Get the updated view
+	 *
+	 * @return View The view after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getNewView(): View {
+		return $this->newView;
+	}//end getNewView()
+
+	/**
+	 * Get the original view
+	 *
+	 * @return View The view before update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getOldView(): View {
+		return $this->oldView;
+	}//end getOldView()
 }//end class

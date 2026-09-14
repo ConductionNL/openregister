@@ -138,14 +138,31 @@ class DashboardServiceTest extends TestCase {
 
 	// ========== recalculateSizes ==========
 
+	/**
+	 * Make the mapper answer the given register+schema pairs.
+	 *
+	 * A magic table is one table per pair, so recalculateSizes() walks the pairs,
+	 * resolves each pair's register and schema, and reads that pair's table.
+	 *
+	 * @param array<int, array{0: int, 1: int}> $pairs   Register and schema ids.
+	 * @param array                            $objects The objects every table answers.
+	 *
+	 * @return void
+	 */
+	private function givenPairsHolding(array $pairs, array $objects = []): void {
+		$this->objectMapper->method('getAllRegisterSchemaPairs')->willReturn(
+			array_map(static fn (array $pair): array => ['registerId' => $pair[0], 'schemaId' => $pair[1]], $pairs)
+		);
+		$this->registerMapper->method('find')->willReturnCallback(fn ($id) => $this->createRegisterEntity((int)$id));
+		$this->schemaMapper->method('find')->willReturnCallback(fn ($id) => $this->createSchemaEntity((int)$id));
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn($objects);
+	}
+
 	public function testRecalculateSizesProcessesAllObjects(): void {
 		$obj1 = $this->createMock(ObjectEntity::class);
 		$obj2 = $this->createMock(ObjectEntity::class);
 
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([$obj1, $obj2]);
+		$this->givenPairsHolding([[1, 2]], [$obj1, $obj2]);
 
 		$this->objectMapper
 			->expects($this->exactly(2))
@@ -161,10 +178,7 @@ class DashboardServiceTest extends TestCase {
 		$obj1 = $this->createObjectEntity(1);
 		$obj2 = $this->createObjectEntity(2);
 
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([$obj1, $obj2]);
+		$this->givenPairsHolding([[1, 2]], [$obj1, $obj2]);
 
 		$callCount = 0;
 		$this->objectMapper
@@ -184,46 +198,74 @@ class DashboardServiceTest extends TestCase {
 		$this->assertSame(1, $result['failed']);
 	}
 
-	public function testRecalculateSizesWithRegisterFilter(): void {
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([]);
+	/**
+	 * Read which register+schema tables recalculateSizes() opened.
+	 *
+	 * @param int|null $registerId The register filter.
+	 * @param int|null $schemaId   The schema filter.
+	 *
+	 * @return string[] "register/schema" for every table read.
+	 */
+	private function tablesReadFor(?int $registerId, ?int $schemaId): array {
+		$this->objectMapper->method('getAllRegisterSchemaPairs')->willReturn(
+			[
+				['registerId' => 1, 'schemaId' => 2],
+				['registerId' => 1, 'schemaId' => 4],
+				['registerId' => 3, 'schemaId' => 2],
+			]
+		);
+		$this->registerMapper->method('find')->willReturnCallback(fn ($id) => $this->createRegisterEntity((int)$id));
+		$this->schemaMapper->method('find')->willReturnCallback(fn ($id) => $this->createSchemaEntity((int)$id));
 
-		$result = $this->service->recalculateSizes(1, null);
+		$read = [];
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (Register $register, Schema $schema) use (&$read): array {
+				$read[] = $register->getId() . '/' . $schema->getId();
+				return [];
+			}
+		);
+
+		$result = $this->service->recalculateSizes($registerId, $schemaId);
 
 		$this->assertSame(0, $result['processed']);
 		$this->assertSame(0, $result['failed']);
+
+		return $read;
+	}
+
+	public function testRecalculateSizesWithoutFiltersReadsEveryTable(): void {
+		$this->assertSame(['1/2', '1/4', '3/2'], $this->tablesReadFor(null, null));
+	}
+
+	public function testRecalculateSizesWithRegisterFilter(): void {
+		$this->assertSame(['1/2', '1/4'], $this->tablesReadFor(1, null));
 	}
 
 	public function testRecalculateSizesWithSchemaFilter(): void {
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([]);
-
-		$result = $this->service->recalculateSizes(null, 2);
-
-		$this->assertSame(0, $result['processed']);
-		$this->assertSame(0, $result['failed']);
+		$this->assertSame(['1/2', '3/2'], $this->tablesReadFor(null, 2));
 	}
 
 	public function testRecalculateSizesWithBothFilters(): void {
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([]);
-
-		$result = $this->service->recalculateSizes(1, 2);
-
-		$this->assertSame(0, $result['processed']);
-		$this->assertSame(0, $result['failed']);
+		$this->assertSame(['1/4'], $this->tablesReadFor(1, 4));
 	}
 
-	public function testRecalculateSizesThrowsOnFindAllError(): void {
+	public function testRecalculateSizesCountsAnUnresolvablePairAsOneFailure(): void {
+		$this->objectMapper->method('getAllRegisterSchemaPairs')->willReturn(
+			[['registerId' => 9, 'schemaId' => 2]]
+		);
+		$this->registerMapper->method('find')->willThrowException(new Exception('Register gone'));
+		$this->objectMapper->expects($this->never())->method('findAllInRegisterSchemaTable');
+
+		$result = $this->service->recalculateSizes();
+
+		$this->assertSame(0, $result['processed']);
+		$this->assertSame(1, $result['failed']);
+	}
+
+	public function testRecalculateSizesThrowsWhenThePairsCannotBeListed(): void {
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('getAllRegisterSchemaPairs')
 			->willThrowException(new Exception('DB error'));
 
 		$this->expectException(Exception::class);
@@ -332,7 +374,7 @@ class DashboardServiceTest extends TestCase {
 	public function testRecalculateAllSizesCombinesResults(): void {
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('getAllRegisterSchemaPairs')
 			->willReturn([]);
 
 		$this->auditTrailMapper
@@ -354,10 +396,7 @@ class DashboardServiceTest extends TestCase {
 		$obj2 = $this->createMock(ObjectEntity::class);
 		$log1 = $this->createMock(AuditTrail::class);
 
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([$obj1, $obj2]);
+		$this->givenPairsHolding([[1, 2]], [$obj1, $obj2]);
 		$this->objectMapper
 			->method('update')
 			->willReturnArgument(0);
@@ -389,7 +428,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testRecalculateAllSizesThrowsWhenObjectRecalcFails(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('getAllRegisterSchemaPairs')
 			->willThrowException(new Exception('DB error'));
 
 		$this->expectException(Exception::class);
@@ -728,9 +767,7 @@ class DashboardServiceTest extends TestCase {
 		$obj1 = $this->createObjectEntity(1);
 		$obj2 = $this->createObjectEntity(2);
 
-		$this->objectMapper
-			->method('findAll')
-			->willReturn([$obj1, $obj2]);
+		$this->givenPairsHolding([[1, 2]], [$obj1, $obj2]);
 
 		$callCount = 0;
 		$this->objectMapper
@@ -760,7 +797,7 @@ class DashboardServiceTest extends TestCase {
 		$obj1 = $this->createMock(ObjectEntity::class);
 		$log1 = $this->createMock(AuditTrail::class);
 
-		$this->objectMapper->method('findAll')->willReturn([$obj1]);
+		$this->givenPairsHolding([[1, 2]], [$obj1]);
 		$this->objectMapper->method('update')->willReturnArgument(0);
 
 		$this->auditTrailMapper->method('findAll')->willReturn([$log1]);

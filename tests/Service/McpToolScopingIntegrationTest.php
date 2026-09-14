@@ -149,20 +149,21 @@ class McpToolScopingIntegrationTest extends TestCase {
 
 	}//end testObjectsToolReturnsErrorEnvelopeWhenBothMissing()
 
-	public function testExecuteObjectsThrowsInvalidArgumentExceptionDirectly(): void {
-		// The spec scenario specifies the exception type at the
-		// executeObjects() boundary (before callTool()'s try/catch). We
-		// call the private method via reflection to lock that contract.
-		$ref = new \ReflectionObject($this->tools);
-		$method = $ref->getMethod('executeObjects');
-		$method->setAccessible(true);
+	public function testObjectsProviderThrowsInvalidArgumentExceptionDirectly(): void {
+		// The spec scenario specifies the exception type at the boundary BELOW
+		// callTool()'s try/catch. That boundary moved: McpToolsService no longer
+		// carries a private executeObjects(); the objects tool is contributed by
+		// BuiltIn\ObjectsToolProvider and its invokeTool() raises the guard. The
+		// contract is the same and the provider is public, so no reflection is
+		// needed to lock it.
+		$provider = \OC::$server->get(\OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider::class);
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Both register and schema IDs are required for object operations');
 
-		$method->invoke($this->tools, ['action' => 'list']);
+		$provider->invokeTool(toolId: 'objects', arguments: ['action' => 'list']);
 
-	}//end testExecuteObjectsThrowsInvalidArgumentExceptionDirectly()
+	}//end testObjectsProviderThrowsInvalidArgumentExceptionDirectly()
 
 	public function testObjectsToolSetsRegisterAndSchemaOnObjectService(): void {
 		$this->tools->callTool(
