@@ -16,14 +16,14 @@ NOT keep a store of its own.
 - **GIVEN** the seeded `nl-national` calendar and an administrator
 - **WHEN** the administrator adds an `exceptions` entry for 2027-05-05 and saves
 - **THEN** `GET /api/objects/flow-timers/working-calendar/nl-national` returns the exception and a timer armed afterwards skips 2027-05-05
-- @e2e exclude {proposal only; task 3.2 adds tests/e2e/ci/working-calendar-admin.spec.ts when the page ships}
+- Covered by `tests/e2e/ci/working-calendar-admin.spec.ts` (`@e2e flow-business-timers::an-administrator-adds-a-local-closure-day`), which seeds its own calendar rather than editing the seeded `nl-national` other suites depend on.
 
 #### Scenario: the preview shows Koningsdag observed on the 26th
 
 - **GIVEN** the `nl-national` rules and the year 2031, in which 27 April is a Sunday
 - **WHEN** the administrator previews 2031
 - **THEN** the list holds 2031-04-26 named Koningsdag and not 2031-04-27
-- @e2e exclude {the preview reads WorkingCalendar::nonWorkingDates, covered by calendar unit tests}
+- @e2e exclude {the preview reads WorkingCalendar::nonWorkingDates, covered by `WorkingCalendarYearBoundaryTest` and by Newman request 6, which asserts Koningsdag 2031 lands on the 26th}
 
 ### Requirement: Every write of a working calendar is validated the same way
 
@@ -37,7 +37,7 @@ calendar consisting only of enumerated dates SHALL be refused at write time.
 - **GIVEN** a request body with `workingWeekdays`, `hoursPerWorkingDay`, an empty `rules` list and twenty `exceptions`
 - **WHEN** it is posted to `/api/objects/flow-timers/working-calendar`
 - **THEN** the response is 422 and names the missing rules
-- @e2e exclude {API contract, covered by Newman and the hook's unit test}
+- @e2e exclude {API contract, covered by Newman (`tests/newman/openregister-working-calendars.postman_collection.json`, request 2) and by `WorkingCalendarGuardListenersTest::testAnEnumeratedOnlyCalendarIsRefusedOnCreate`; the admin form's half is additionally asserted in `tests/e2e/ci/working-calendar-admin.spec.ts`}
 
 ### Requirement: Only an administrator writes a calendar, and a referenced one cannot be deleted
 
@@ -51,7 +51,7 @@ ten of their uuids.
 - **GIVEN** a calendar `gemeente-x` and one armed timer with `calendar_slug` `gemeente-x`
 - **WHEN** an administrator deletes the calendar
 - **THEN** the response is 409, names one timer, and the calendar still resolves
-- @e2e exclude {delete guard, covered by the hook's unit test}
+- @e2e exclude {delete guard, covered by `WorkingCalendarGuardListenersTest::testACalendarWithAnArmedTimerSurvivesTheDelete`, which asserts the 409, the count and the uuid sample}
 
 ### Requirement: The objects API is the public API of the calendar
 
@@ -64,4 +64,4 @@ API documentation SHALL name the register and schema.
 - **GIVEN** an administrator's API credentials and a calendar `gemeente-x`
 - **WHEN** the script PUTs the calendar with three added `exceptions`
 - **THEN** the next timer armed for that organisation skips the three dates
-- @e2e exclude {API contract, covered by Newman}
+- @e2e exclude {API contract, covered by Newman requests 4 and 5, which PUT three closure days and read every one of them back}
