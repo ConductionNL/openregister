@@ -2,14 +2,14 @@
 
 ## 1. Nomination
 
-- [ ] 1.1 On reaching a terminal state, derive the archival nomination and the archiefactiedatum from the selectielijst and write both on the object with the rule that produced each (D-2).
-- [ ] 1.2 An object that cannot be nominated is reported with the reason, never skipped silently.
-- [ ] 1.3 Recomputation is an explicit act and is recorded.
+- [x] 1.1 On reaching a terminal state, derive the archival nomination and the archiefactiedatum from the selectielijst and write both on the object with the rule that produced each (D-2).
+- [x] 1.2 An object that cannot be nominated is reported with the reason, never skipped silently.
+- [x] 1.3 Recomputation is an explicit act and is recorded.
 
 ## 2. The preservation regime
 
-- [ ] 2.1 A preservation state beside the archive state of `object-archive-state`: out of working views, refusing content writes, keeping references (D-3).
-- [ ] 2.2 The two states are declared side by side and a schema may offer either, both or neither.
+- [ ] 2.1 A preservation state beside the archive state of `object-archive-state`: out of working views, refusing content writes, keeping references (D-3). **BLOCKED**: `object-archive-state` has not shipped, so there is no archive state for a preservation state to sit beside. Building half of it and calling the requirement met is the failure this note exists to prevent. Nomination already moves a closed record to `RecordState::SEMI_STATIC`, which is the state the regime will govern.
+- [ ] 2.2 The two states are declared side by side and a schema may offer either, both or neither. **BLOCKED on `object-archive-state`**, see 2.1.
 
 ## 3. The reviewer and the worklist
 
@@ -24,14 +24,14 @@
 
 ## 5. The facts on the object, the mapping and the plan
 
-- [ ] 5.1 The object read carries nomination, archiefactiedatum, selectielijst row, statutory basis, any hold and the destruction or transfer record.
+- [x] 5.1 The object read carries nomination, archiefactiedatum, selectielijst row, statutory basis, any hold and the destruction or transfer record.
 - [ ] 5.2 An administered MDTO and TMLO element mapping with a validator; a transfer with an unmapped mandatory element is refused naming the element (D-6).
 - [ ] 5.3 Import a selectielijst or classification plan from a file, versioned, with a diff against the version in use (D-7).
 
 ## 6. Tests
 
-- [~] 6.1 `tests/e2e/ci/archiving-process.spec.ts`: the review half is written and tagged (assign, worklist, retain, transfer, one history). Closing an object and reading its nomination waits on task 1, and is added to the same file then.
-- [~] 6.2 Unit tests: the unassigned list, the three answers, the reviewer guard and the reminder pass are written (42 tests). The derivation, the unnominatable object, the preservation state and the plan diff wait on tasks 1, 2 and 5.
+- [x] 6.1 `tests/e2e/ci/archiving-process.spec.ts`: assign, worklist, retain, transfer, one history, and now closing an object and reading its nomination, its date, its selectielijst row and its recomputation.
+- [~] 6.2 Unit tests: the unassigned list, the three answers, the reviewer guard, the reminder pass, the derivation and its rule, the unnominatable object and the facts on the read are written (61 tests). The preservation state waits on task 2 and the plan diff on task 5.3.
 - [x] 6.3 `openspec validate archiving-as-a-process-with-sign-off --strict`.
 
 ## 7. Hand over
@@ -41,11 +41,20 @@
 
 ## Shipped so far
 
-Part one (the review half) shipped on `feat/archiving-as-a-process-with-sign-off`:
-tasks 3.1 to 3.3, 4.1, 4.2, 6.3 and 7.2, with the review half of 6.1 and 6.2.
-The process contract it publishes is in the PR body, for the dossiq and filinq
-consumer lanes.
+Part one (the review half) shipped as openregister#3736: tasks 3.1 to 3.3, 4.1,
+4.2, 6.3 and 7.2, with the review half of 6.1 and 6.2. The process contract it
+publishes is in that PR body, for the dossiq and filinq consumer lanes.
 
-Part two (nomination at closure, the preservation regime, the facts on the
-object, the administered mapping and the imported plan: tasks 1, 2 and 5) ships
-on its own branch off `development`.
+Part two (nomination at closure and the facts on the object) ships on
+`feat/archiving-nomination-and-preservation`: tasks 1.1 to 1.3 and 5.1.
+
+What is left, and why:
+
+- Task 2, the preservation regime, is BLOCKED on `object-archive-state`. That
+  change is unimplemented: there is no `@self.archived` marker and no
+  `x-openregister-archive` annotation anywhere in `lib/`, so a preservation
+  state cannot be shown to be distinct from an archive state that does not
+  exist. It goes in the same PR as `object-archive-state` or straight after it.
+- Task 5.2, the administered MDTO and TMLO element mapping with a validator,
+  and task 5.3, the selectielijst import with a version diff, are each their own
+  piece of work and belong in a third PR.
