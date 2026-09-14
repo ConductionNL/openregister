@@ -45,6 +45,8 @@ use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
+use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -1092,6 +1094,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateLifecycleAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
+		$this->validateRelationAnnotation(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
@@ -1398,6 +1401,47 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (calculation not evaluated): ' . implode(' ', $messages)
 		);
 	}//end validateCalculationsAnnotation()
+
+	/**
+	 * Validate the relation declarations on a schema's properties.
+	 *
+	 * Blocking, and deliberately so. Both keys are new, so no register carries
+	 * one and refusing breaks no existing import, which is the test the
+	 * advisory policy above sets. And both failures they catch are silent
+	 * ones: a symmetric relation that also names an inverse reads one way on
+	 * one side and the other way on the other, and a `type` naming a
+	 * vocabulary entry that does not exist renders as the generic "referenced
+	 * by" fallback forever while its author believes the link is typed.
+	 *
+	 * Validated here rather than in the controller because this is the one
+	 * choke point the create, update and file-upload paths all pass through.
+	 *
+	 * @param Schema $schema Schema being saved.
+	 *
+	 * @throws RelationDeclarationException When a relation declaration cannot be honoured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function validateRelationAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+		];
+
+		$vocabulary = ($configuration[RelationAnnotationValidator::VOCABULARY_ANNOTATION] ?? null);
+		if ($vocabulary !== null) {
+			$shape[RelationAnnotationValidator::VOCABULARY_ANNOTATION] = $vocabulary;
+		}
+
+		$errors = (new RelationAnnotationValidator())->validate($shape);
+		if ($errors === []) {
+			return;
+		}
+
+		throw new RelationDeclarationException(errors: $errors);
+	}//end validateRelationAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-quality` annotation.
