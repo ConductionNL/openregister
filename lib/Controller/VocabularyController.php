@@ -139,23 +139,46 @@ class VocabularyController extends Controller {
 	public function propertyOptions(): JSONResponse {
 		$schemaRef = trim((string)$this->request->getParam('schema', ''));
 		$property = trim((string)$this->request->getParam('property', ''));
-		if ($schemaRef === '' || $property === '') {
+		$schemeUri = trim((string)$this->request->getParam('scheme', ''));
+
+		if (($schemaRef === '' || $property === '') && $schemeUri === '') {
 			return new JSONResponse(
-				['message' => 'Query parameters "schema" and "property" are both required.'],
+				['message' => 'Either "schema" and "property", or "scheme", must be given.'],
 				Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		try {
-			$schema = $this->schemaMapper->find(id: $schemaRef);
-		} catch (Throwable $missing) {
+		$declaration = null;
+		if ($schemaRef !== '' && $property !== '') {
+			try {
+				$schema = $this->schemaMapper->find(id: $schemaRef);
+			} catch (Throwable $missing) {
+				return $this->notFound();
+			}
+
+			$properties = ($schema->getProperties() ?? []);
+			$declaration = CodedPropertyDeclaration::fromProperty(property: ($properties[$property] ?? null));
+		}
+
+		if ($declaration === null && $schemeUri !== '') {
+			// The unsaved-declaration path. The schema editor has to show the
+			// hierarchy of a scheme the property is not yet bound to, because
+			// the person choosing the branch is choosing it FROM that tree.
+			// Reading a declaration off the query is how they see it before
+			// the save rather than after.
+			$declaration = CodedPropertyDeclaration::fromProperty(
+				property: [
+					CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
+				]
+			);
+		}
+
+		if ($declaration === null) {
 			return $this->notFound();
 		}
 
-		$properties = ($schema->getProperties() ?? []);
-		$declaration = CodedPropertyDeclaration::fromProperty(property: ($properties[$property] ?? null));
-		if ($declaration === null) {
-			return $this->notFound();
+		if ($property === '') {
+			$property = 'scheme';
 		}
 
 		$language = $this->negotiatedLanguage();
@@ -192,6 +215,45 @@ class VocabularyController extends Controller {
 			]
 		);
 	}//end propertyOptions()
+
+	/**
+	 * Build a declaration from the query, for a property that is not saved yet.
+	 *
+	 * @param string $scheme The scheme's uri.
+	 *
+	 * @return array<string,mixed> The declaration.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	private function declarationFromQuery(string $scheme): array {
+		$declaration = ['scheme' => $scheme];
+
+		$branch = trim((string)$this->request->getParam('branch', ''));
+		if ($branch !== '') {
+			$declaration['branch'] = $branch;
+		}
+
+		$store = trim((string)$this->request->getParam('store', ''));
+		if ($store !== '') {
+			$declaration['store'] = $store;
+		}
+
+		$maxDepth = $this->request->getParam('maxDepth', null);
+		if (is_numeric($maxDepth) === true) {
+			$declaration['maxDepth'] = (int)$maxDepth;
+		}
+
+		$declaration['leafOnly'] = filter_var(
+			$this->request->getParam('leafOnly', false),
+			FILTER_VALIDATE_BOOLEAN
+		);
+		$declaration['allowDeprecated'] = filter_var(
+			$this->request->getParam('allowDeprecated', false),
+			FILTER_VALIDATE_BOOLEAN
+		);
+
+		return $declaration;
+	}//end declarationFromQuery()
 
 	/**
 	 * The language the caller asked for, defaulting to Dutch.
