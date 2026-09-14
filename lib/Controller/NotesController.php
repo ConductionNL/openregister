@@ -240,44 +240,26 @@ class NotesController extends Controller {
 				);
 			}
 
-			$data = $this->request->getParams();
-
-			$wantsVisibility = array_key_exists('visibility', $data);
-			if (empty($data['message']) === true && $wantsVisibility === false) {
-				return new JSONResponse(
-					data: ['error' => 'Note message is required'],
-					statusCode: 400
-				);
-			}
-
-			$visibility = null;
-			$previous = null;
-			if ($wantsVisibility === true) {
-				$refusal = $this->refuseVisibility(object: $object, requested: $data['visibility']);
-				if ($refusal !== null) {
-					return $refusal;
-				}
-
-				$visibility = (string)$data['visibility'];
-				$previous = (string)($this->noteService->getNote(noteId: (int)$noteId)['visibility'] ?? '');
-			}
-
-			$message = null;
-			if (empty($data['message']) === false) {
-				$message = (string)$data['message'];
+			$write = $this->resolveNoteWrite(
+				object: $object,
+				data: $this->request->getParams(),
+				noteId: (int)$noteId
+			);
+			if ($write['refusal'] !== null) {
+				return $write['refusal'];
 			}
 
 			$note = $this->noteService->updateNote(
 				noteId: (int)$noteId,
-				message: $message,
-				visibility: $visibility
+				message: $write['message'],
+				visibility: $write['visibility']
 			);
 
-			if ($previous !== null) {
+			if ($write['previous'] !== null) {
 				$this->visibility->auditVisibilityChange(
 					object: $object,
 					noteId: (int)$noteId,
-					from: $previous,
+					from: $write['previous'],
 					to: (string)($note['visibility'] ?? '')
 				);
 			}
@@ -329,6 +311,70 @@ class NotesController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
 	}//end destroy()
+
+	/**
+	 * Work out what an update writes, or why it may not be written.
+	 *
+	 * Pulled out of {@see update()} so that method stays under the complexity
+	 * the standard allows. The shape it returns is the whole decision: a
+	 * `refusal` response to hand straight back, or the message and visibility
+	 * to write, plus the `previous` visibility the audit entry needs.
+	 * `previous` is null whenever the caller did not ask to move the flag, so
+	 * the caller audits nothing.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $object The object the note hangs on
+	 * @param array<string,mixed> $data The request payload
+	 * @param int $noteId The note being updated
+	 *
+	 * @return array{refusal: JSONResponse|null, message: string|null, visibility: string|null, previous: string|null}
+	 *         The refusal to return, or the write to make.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
+	 */
+	private function resolveNoteWrite(
+		\OCA\OpenRegister\Db\ObjectEntity $object,
+		array $data,
+		int $noteId,
+	): array {
+		$write = [
+			'refusal' => null,
+			'message' => null,
+			'visibility' => null,
+			'previous' => null,
+		];
+
+		$wantsVisibility = array_key_exists('visibility', $data);
+		$hasMessage = (empty($data['message']) === false);
+
+		if ($hasMessage === false && $wantsVisibility === false) {
+			$write['refusal'] = new JSONResponse(
+				data: ['error' => 'Note message is required'],
+				statusCode: 400
+			);
+
+			return $write;
+		}
+
+		if ($hasMessage === true) {
+			$write['message'] = (string)$data['message'];
+		}
+
+		if ($wantsVisibility === false) {
+			return $write;
+		}
+
+		$refusal = $this->refuseVisibility(object: $object, requested: $data['visibility']);
+		if ($refusal !== null) {
+			$write['refusal'] = $refusal;
+
+			return $write;
+		}
+
+		$write['visibility'] = (string)$data['visibility'];
+		$write['previous'] = (string)($this->noteService->getNote(noteId: $noteId)['visibility'] ?? '');
+
+		return $write;
+	}//end resolveNoteWrite()
 
 	/**
 	 * Refuse a visibility write the caller may not make, or one it spelled wrong.
