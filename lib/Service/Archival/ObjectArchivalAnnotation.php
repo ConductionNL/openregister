@@ -60,6 +60,8 @@ class ObjectArchivalAnnotation {
 
 	/**
 	 * The uuid the memo below belongs to.
+	 *
+	 * @var string|null
 	 */
 	private ?string $memoUuid = null;
 
