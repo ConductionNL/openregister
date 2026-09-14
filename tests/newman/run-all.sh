@@ -114,6 +114,7 @@ DOMAIN_ORDER=(
     "flow-subjects"
     "delegation"
     "register-descriptors"
+    "working-calendars"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -163,6 +164,12 @@ declare -A DOMAIN_COLLECTIONS=(
     # success left 8 of 15 declared registers absent on a dev instance, and the
     # only symptom was two unrelated e2e suites dying on a register lookup.
     [register-descriptors]="$REPO_ROOT/tests/newman/openregister-register-descriptors.postman_collection.json"
+    # Working calendars over the objects API — the round trip, the 422 on a
+    # calendar made only of enumerated dates, and the year preview. Registered
+    # in CI rather than left to a Playwright spec because the contract this
+    # tests is an API contract: a script pushing a municipal holiday list is
+    # the consumer the gap register named, and it never opens a browser.
+    [working-calendars]="$REPO_ROOT/tests/newman/openregister-working-calendars.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
