@@ -104,6 +104,64 @@ class ObjectRelationCleanupService {
 	}//end cleanup()
 
 	/**
+	 * Count the timeline rows that are not notes and not tasks: the email,
+	 * calendar-event, contact and deck-card links drawn beside them.
+	 *
+	 * Counted rather than inferred, because a destruction preview that
+	 * promises a number has to be able to produce it. A source that cannot be
+	 * read contributes nothing and says so through the logger rather than
+	 * inflating the count.
+	 *
+	 * @param string $objectUuid UUID of the object.
+	 *
+	 * @return int The number of timeline link rows.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function countTimelineLinks(string $objectUuid): int {
+		$total = 0;
+		$sources = [
+			'emails' => fn (): array => $this->emailService->getEmailsForObject($objectUuid),
+			'calendar events' => fn (): array => $this->calendarEventService->getEventsForObject($objectUuid),
+			'contacts' => fn (): array => $this->contactService->getContactsForObject($objectUuid),
+			'deck cards' => fn (): array => $this->deckCardService->getCardsForObject($objectUuid),
+		];
+
+		foreach ($sources as $label => $read) {
+			try {
+				$total += count($read());
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					'Could not count ' . $label . ' for object ' . $objectUuid . ': ' . $e->getMessage(),
+					['exception' => $e]
+				);
+			}
+		}
+
+		return $total;
+	}//end countTimelineLinks()
+
+	/**
+	 * Destroy the timeline rows that are not notes and not tasks.
+	 *
+	 * Runs the same four cleanups {@see cleanup()} runs, without the notes and
+	 * tasks it also covers: those are their own declared scope members and a
+	 * schema may name one without the other.
+	 *
+	 * @param string $objectUuid UUID of the object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function destroyTimelineLinks(string $objectUuid): void {
+		$this->cleanupEmails(objectUuid: $objectUuid);
+		$this->cleanupCalendarEvents(objectUuid: $objectUuid);
+		$this->cleanupContacts(objectUuid: $objectUuid);
+		$this->cleanupDeckCards(objectUuid: $objectUuid);
+	}//end destroyTimelineLinks()
+
+	/**
 	 * Clean up notes for the deleted object.
 	 *
 	 * @param string $objectUuid The object UUID.

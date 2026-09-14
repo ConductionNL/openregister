@@ -111,3 +111,75 @@ when another object points at it.
 - **GIVEN** an open object whose `contact` property points at an archived contact
 - **WHEN** the open object is read with its references expanded
 - **THEN** the archived contact's name is returned
+
+### Requirement: An object can be frozen while staying visible and searchable (REQ-OAS-004)
+
+An object MAY be frozen. A frozen object SHALL stay in working views and
+in search results, SHALL refuse every write to its data, and SHALL be
+unfrozen by an authorised principal. Freezing and unfreezing SHALL be
+audit facts. A lifecycle state MAY declare that entering it freezes the
+object.
+
+#### Scenario: a zaak in bezwaar is findable and unchangeable
+
+- **GIVEN** an object that is frozen
+- **WHEN** a user lists and searches the register
+- **THEN** the object appears, and a write to it is refused naming the frozen state
+
+#### Scenario: closing a phase freezes its registration data
+
+- **GIVEN** a lifecycle state declaring that entering it freezes the object
+- **WHEN** the object enters that state
+- **THEN** the object is frozen, with an audit entry naming the state
+
+#### Scenario: frozen is not archived
+
+- **GIVEN** one frozen object and one archived object
+- **WHEN** the working list is read
+- **THEN** the frozen one is present and the archived one is not
+
+### Requirement: A property may be immutable once set (REQ-OAS-005)
+
+A property MAY be declared immutable once set. An update that changes such
+a property SHALL be refused, naming the property, whatever the object's
+state and whoever the actor is. A property that has no value yet SHALL
+still be settable.
+
+#### Scenario: a vastgesteld besluit keeps its date
+
+- **GIVEN** an immutable date property carrying a value
+- **WHEN** an update sends a different value
+- **THEN** the write is refused, naming the property
+
+#### Scenario: an unset immutable property can still be set once
+
+- **GIVEN** the same property with no value
+- **WHEN** a value is written
+- **THEN** it is accepted, and a later change is refused
+
+### Requirement: A record closes to new entries, and an entry can be withdrawn or locked (REQ-OAS-006)
+
+An object MAY be closed to new timeline entries and comments while staying
+readable, with existing entries unchanged. An individual entry MAY be
+withdrawn: it leaves the working timeline, stays in the record, and is
+readable with its withdrawal, actor and reason by an authorised principal.
+A note MAY be locked, after which edits to it are refused. Closing,
+withdrawing and locking SHALL be audit facts.
+
+#### Scenario: a dossier under beroep stops accepting correspondence
+
+- **GIVEN** an object closed to new entries
+- **WHEN** a new entry is written
+- **THEN** it is refused, and the existing entries are unchanged
+
+#### Scenario: a wrongly filed stuk goes without its arrival going
+
+- **GIVEN** an entry that is withdrawn
+- **WHEN** the working timeline is read
+- **THEN** it is absent, and an authorised reader still sees it with the withdrawal and its actor
+
+#### Scenario: a locked note is evidence
+
+- **GIVEN** a locked note
+- **WHEN** an edit is attempted
+- **THEN** it is refused, naming the lock

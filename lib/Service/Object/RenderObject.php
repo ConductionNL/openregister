@@ -43,6 +43,7 @@ use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
@@ -2151,8 +2152,57 @@ class RenderObject {
 		// output. See ArchivalDecisionResolver for why this merge exists at all.
 		$this->applyArchivalDecision(entity: $entity);
 
+		// Both retention clocks, each naming the rule that produced it. Runs
+		// last because it reads the retention block the two calls above fill.
+		$this->applyRetentionClocks(entity: $entity);
+
 		return $entity;
 	}//end renderEntity()
+
+	/**
+	 * Attach `@self._clocks`: the AVG date and the Archiefwet date, each with
+	 * its rule.
+	 *
+	 * Resolved through the container rather than the constructor for the same
+	 * reason the watcher markers are: this class already takes twenty-two
+	 * collaborators and a records-management read has no business widening
+	 * that list further.
+	 *
+	 * Skipped entirely for an object that carries neither a processing
+	 * activity nor an archiefactiedatum, so listing a register of ordinary
+	 * objects costs nothing. Failures are logged and swallowed: a retention
+	 * edge case must never take out object rendering.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	private function applyRetentionClocks(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$hasActivity = (($entity->getProcessingActivityId() ?? '') !== '');
+		$hasActionDate = (($entity->getRetention() ?? [])['archiefactiedatum'] ?? null) !== null;
+		if ($hasActivity === false && $hasActionDate === false) {
+			return;
+		}
+
+		try {
+			$clocks = $this->container->get(RetentionClockService::class);
+			$entity->setRetentionClocks($clocks->clocksFor(object: $entity));
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] retention clocks skipped for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}
+	}//end applyRetentionClocks()
 
 	/**
 	 * Attach `@self.watching` and, for an editor, `@self.watcherCount`.

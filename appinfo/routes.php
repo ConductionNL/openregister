@@ -973,6 +973,13 @@ return [
         ['name' => 'deleted#topDeleters', 'url' => '/api/deleted/top-deleters', 'verb' => 'GET'],
         ['name' => 'deleted#restore', 'url' => '/api/deleted/{id}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#restoreMultiple', 'url' => '/api/deleted/restore', 'verb' => 'POST'],
+        [
+            'name' => 'deleted#destructionPreview',
+            'url' => '/api/deleted/{id}/destruction-preview',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        ['name' => 'deleted#destructionRecord', 'url' => '/api/deleted/{id}/destruction', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroy', 'url' => '/api/deleted/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroyMultiple', 'url' => '/api/deleted', 'verb' => 'DELETE'],
         // Revert.
@@ -1031,6 +1038,14 @@ return [
         // semantic-type URI to the installed provider schema. Static path,
         // registered before the `{id}` schema routes so it is not shadowed.
         ['name' => 'schemas#resolveByImplements', 'url' => '/api/schemas/resolve-by-implements', 'verb' => 'GET'],
+        // JSON-AST calculations (computed-values-by-json-ast): the operator
+        // catalogue an expression builder is generated from, and the dry run
+        // that evaluates a declaration before the schema is saved. Static
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the dry run's object lookup is
+        // RBAC- and tenancy-scoped, which is its per-object guard (ADR-005/016).
+        ['name' => 'calculations#operators', 'url' => '/api/schemas/calculation-operators', 'verb' => 'GET'],
+        ['name' => 'calculations#evaluate', 'url' => '/api/schemas/calculation-evaluate', 'verb' => 'POST'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

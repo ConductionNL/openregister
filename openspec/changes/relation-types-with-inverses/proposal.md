@@ -78,3 +78,70 @@ on the relation primitive every app links with".
   with `label` falling back to the property title and `inverseLabel` to
   "referenced by".
 - Size: S.
+
+## Discovery cluster 61 extension (2026-09-14)
+
+The round 4 discovery sweep in ConductionNL/market-intelligence,
+`procest/_round4/discovery/build-plan.md`, names this change as the
+vehicle for cluster 61, "Relations, split, merge and the relation graph".
+Owner openregister, size L, seven candidates: C-case-core-15, -17, -19,
+-22, -23, -33 and -38. Highest relevance `should`, no `must`, no matrix
+hole. Passers: 9, eight driven and one documented. Proving system
+kanboard. dossiq rates `partial` on one and `no` on six. The cluster
+enters under D6 on relevance rather than on a count, and
+C-case-core-17 is admitted under D21 as documented.
+
+**What the cluster asks that the inverse label does not answer.** This
+change names both ends of a link. The cluster asks what else a link can
+be, and what you can do along one.
+
+- **A new record starts from one entry of an existing one**
+  (C-case-core-15): zammad, "Split
+  (app/controllers/tickets_controller.rb:420-434, no provenance column)".
+  One melding that turns out to be two zaken is routine, and zammad's own
+  gap is worth copying deliberately: it keeps no provenance.
+- **A sub-record inherits the parent's classification, sensitivity and
+  responsible user** (C-case-core-22): opencase, "Case detail Actions
+  (CaseDetail-CaseHierarchy.md)". dossiq: `DeelzaakService.php`.
+- **A web address outside the product is an item on the record in its own
+  right** (C-case-core-23, `could`): kanboard and plane, "Task, Add
+  external link, with a title and a type".
+- **Mentioning another record in a sentence records a navigable link on
+  both sides** (C-case-core-33): forgejo and gitea, "Issue sidebar,
+  Reference, and a mention in prose creating a timeline event".
+- **The graph of what a record is linked to is drawn and exported**
+  (C-case-core-38, `could`): glpi, "Impact graph (Tools,
+  front/impactitem.php, impactcsv.php, src/Impact.php)", and
+  request-tracker.
+- **A recurring underlying cause is its own record many records point at**
+  (C-case-core-17, documented): jira-service-management, "Create a problem
+  work item". Tien bezwaren met dezelfde oorzaak zijn een beleidsprobleem.
+- **A second record type with its own lifecycle beside the first, under
+  one parent class** (C-case-core-19, `could`): glpi, "Assistance,
+  Problems". Recorded, not built: OpenRegister's schemas already are
+  separate types, and dossiq's note that `caseType` is data on one case
+  schema is dossiq's modelling choice, not a platform gap.
+
+**What the extension adds.**
+
+- **A split that keeps its provenance.** A new object created from an
+  entry of an existing one carries a typed relation to the source and the
+  entry it came from. That is the column zammad does not have.
+- **Declared inheritance along a relation.** A relation type may declare
+  which properties a child takes from its parent at creation:
+  classification, confidentiality and responsible principal are the three
+  the corpus names. Inheritance happens once, at creation, and is recorded.
+- **An external link is a relation target.** A URL with a title and a type
+  is a relation row like any other, so it appears in the graph and in the
+  reverse view rather than in a description field.
+- **A reference written in prose is a relation.** A reference recorded by
+  the timeline's pattern resolution creates a typed relation row on both
+  sides, so the graph follows from the writing.
+- **The graph is readable and exportable.** One bounded query returns the
+  objects within a declared depth of a root, with the relation type and
+  direction on each edge, and the same answer exports.
+
+`relation-resourceurl-deeplinks` keeps the deep link shape, and the
+reverse view of everything that references an object is
+`objects-as-the-hinge-between-cases`. This extension owns the relation
+row, not the surface that reads it.
