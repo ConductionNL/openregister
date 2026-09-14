@@ -157,6 +157,8 @@ class DerivedGrantStore {
 	 * @param string $userId The account.
 	 *
 	 * @return array<string, mixed> The claims.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	public function claimsFor(string $userId): array {
 		$raw = $this->config->getUserValue($userId, self::APP_ID, self::CLAIMS_KEY, '');
@@ -212,6 +214,8 @@ class DerivedGrantStore {
 	 * @param string $userId The account.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	public function forget(string $userId): void {
 		$this->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, '[]');
