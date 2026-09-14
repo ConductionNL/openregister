@@ -2694,6 +2694,93 @@ class SaveObjectTest extends TestCase {
 		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
 	}
 
+	/**
+	 * Build an entity relating to one uuid through property `org`, with `$ref` as given.
+	 *
+	 * @param mixed $ref The `$ref` value declared on the `org` property.
+	 *
+	 * @return array{0: ObjectEntity, 1: Schema, 2: Register}
+	 */
+	private function inverseRelationFixture(mixed $ref): array {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-1111-4111-8111-111111111111');
+		$entity->setRelations(['org' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
+
+		$schema = $this->createMockSchema(1, 'person', [], ['org' => ['type' => 'string', '$ref' => $ref]]);
+		$register = $this->createMockRegister(1, 'test');
+
+		return [$entity, $schema, $register];
+	}
+
+	public function testUpdateInverseRelationsResolvesABareSchemaSlug(): void {
+		[$entity, $schema, $register] = $this->inverseRelationFixture('organisation');
+
+		$target = $this->createMockSchema(2, 'organisation');
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->with('organisation')
+			->willReturn($target);
+
+		$related = new ObjectEntity();
+		$related->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+		$related->setRelations([]);
+		$this->objectEntityMapper->method('find')->willReturn($related);
+
+		$this->objectEntityMapper->expects($this->once())->method('update')->with($related);
+		$this->logger->expects($this->never())->method('warning');
+
+		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+
+		$this->assertSame(['11111111-1111-4111-8111-111111111111'], $related->getRelations());
+	}
+
+	public function testUpdateInverseRelationsStillResolvesThePointerForm(): void {
+		[$entity, $schema, $register] = $this->inverseRelationFixture('#/components/schemas/organisation');
+
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->with('organisation')
+			->willReturn($this->createMockSchema(2, 'organisation'));
+
+		$related = new ObjectEntity();
+		$related->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+		$related->setRelations([]);
+		$this->objectEntityMapper->method('find')->willReturn($related);
+
+		$this->objectEntityMapper->expects($this->once())->method('update')->with($related);
+
+		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+	}
+
+	public function testUpdateInverseRelationsSkipsAPropertyWithoutRefSilently(): void {
+		[$entity, $schema, $register] = $this->inverseRelationFixture('');
+
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->logger->expects($this->never())->method('warning');
+
+		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+	}
+
+	public function testUpdateInverseRelationsWarnsOnAnUnreadableRef(): void {
+		[$entity, $schema, $register] = $this->inverseRelationFixture('https://example.com/schemas/organisation');
+
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with(
+				$this->stringContains('Relation skipped'),
+				$this->callback(
+					static fn (array $context): bool => $context['ref'] === 'https://example.com/schemas/organisation'
+						&& $context['property'] === 'org'
+						&& $context['schema'] === 'person'
+				)
+			);
+
+		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+	}
+
 	public function testUpdateInverseRelationsSkipsNullRelations(): void {
 		$entity = new ObjectEntity();
 		$entity->setUuid('test-uuid');
