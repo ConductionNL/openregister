@@ -39,11 +39,11 @@ surfaces, then the bell.
 
 ## 4. The surfaces
 
-- [ ] 4.1 `ObjectEntity`: the transient `unread` flag and `unreadCounts` map.
-- [ ] 4.2 `RenderObject`: attach both, memoised per request, never per row.
-- [ ] 4.3 `lib/Controller/ObjectReadStateController.php`: mark read, mark
+- [x] 4.1 `ObjectEntity`: the transient `unread` flag and `unreadCounts` map.
+- [x] 4.2 `RenderObject`: attach both, memoised per request, never per row.
+- [x] 4.3 `lib/Controller/ObjectReadStateController.php`: mark read, mark
       unread, and mark a sub-resource read. A user's own state only.
-- [ ] 4.4 Routes in `appinfo/routes.php`.
+- [x] 4.4 Routes in `appinfo/routes.php`.
 
 ## 5. The bell
 
@@ -54,9 +54,9 @@ surfaces, then the bell.
 - [x] 5.3 `lib/Service/Notification/NotificationClearingService.php`: opening
       the work clears the bell, and a notification whose subject is gone is
       archived rather than left unread.
-- [ ] 5.4 `NotificationHistoryController`: snooze, archive, mark a thread read,
+- [x] 5.4 `NotificationHistoryController`: snooze, archive, mark a thread read,
       and the subject-type axis on the list.
-- [ ] 5.5 Routes for the four verbs.
+- [x] 5.5 Routes for the four verbs.
 
 ## 6. Verification
 

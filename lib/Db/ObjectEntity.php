@@ -598,6 +598,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?int $watcherCount = null;
 
 	/**
+	 * Whether this object is unread for the current user (`object-read-state`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `ReadStateService::isUnreadForCaller()`. Not persisted: a read state is
+	 * per-user, per-object state living in
+	 * `openregister_object_read_state`, which is what keeps reading an object
+	 * out of its own audit trail and versions. Exposed in @self as `unread`, and
+	 * omitted for an anonymous read, where there is no "you" to answer for.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $unread = null;
+
+	/**
+	 * How many entries of each sub-resource are unread (`object-read-state`).
+	 *
+	 * Transient, and one map rather than a field per tab, so a page renders
+	 * every tab badge from one read instead of a call per tab. Exposed in @self
+	 * as `unreadCounts`.
+	 *
+	 * @var array<string, int>|null
+	 */
+	protected ?array $unreadCounts = null;
+
+	/**
 	 * AVG / GDPR Art 30 processing-activity override.
 	 *
 	 * Transient field — set by callers that want to tag an upcoming
@@ -802,6 +827,43 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setWatcherCount(?int $count): void {
 		$this->watcherCount = $count;
 	}//end setWatcherCount()
+
+	/**
+	 * Write the current user's unread marker.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `unread` by getObjectArray().
+	 *
+	 * @param boolean|null $unread Whether the object is unread for the current user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	public function setUnread(?bool $unread): void {
+		$this->unread = $unread;
+	}//end setUnread()
+
+	/**
+	 * Write the per-sub-resource unread counts.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above.
+	 *
+	 * Surfaced in the @self envelope as `unreadCounts` by getObjectArray().
+	 *
+	 * @param array<string, int>|null $counts Sub-resource name to unread count, or null to omit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	public function setUnreadCounts(?array $counts): void {
+		$this->unreadCounts = $counts;
+	}//end setUnreadCounts()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1188,9 +1250,10 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
 	 * search relevance, the RFC 8141 URN, per-language translation
 	 * completeness, the effective archival retention decision, the
-	 * registry subscription state (`registry-subscriptions`, finding B22), and
-	 * the reader's own follow marker plus the follower count
-	 * (`object-watchers`).
+	 * registry subscription state (`registry-subscriptions`, finding B22), the
+	 * reader's own follow marker plus the follower count (`object-watchers`),
+	 * and the reader's unread marker plus the tab badge counts
+	 * (`object-read-state`).
 	 * Each is optional and omitted entirely when unset — none of these are
 	 * persisted on this entity; they are populated by RenderObject at read
 	 * time.
@@ -1244,6 +1307,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// The size of the object's audience, for a reader who may edit it.
 		if ($this->watcherCount !== null) {
 			$objectArray['watcherCount'] = $this->watcherCount;
+		}
+
+		// Whether the reader has seen this object since it last changed
+		// (`object-read-state`). Omitted entirely for an anonymous read.
+		if ($this->unread !== null) {
+			$objectArray['unread'] = $this->unread;
+		}
+
+		// The tab badges, as one map. Omitted when there is nothing to badge,
+		// because an empty map and "no badges here" are the same claim.
+		if ($this->unreadCounts !== null && $this->unreadCounts !== []) {
+			$objectArray['unreadCounts'] = $this->unreadCounts;
 		}
 
 		return $objectArray;

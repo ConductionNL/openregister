@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
@@ -2523,6 +2524,16 @@ class ObjectsController extends Controller {
 			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
 			$renderedData = $renderedObject;
 			if (isset($renderedData['@self']) === true) {
+				// The tab badges (`object-read-state`). Attached HERE and
+				// nowhere else, because this is the only read path that knows it
+				// is rendering exactly one object: counting a sub-resource looks
+				// at the object's files and its dated arrays, so doing it in
+				// RenderObject would pay that cost per row on every list.
+				$renderedData['@self'] = $this->withUnreadCounts(
+					self: $renderedData['@self'],
+					object: $objectEntity
+				);
+
 				$extendArray = [];
 				if (is_array($extend) === true) {
 					$extendArray = $extend;
@@ -5172,4 +5183,43 @@ class ObjectsController extends Controller {
 			statusCode: LockedException::HTTP_STATUS
 		);
 	}//end lockedResponse()
+	/**
+	 * Add the per-sub-resource unread counts to a single object's `@self`.
+	 *
+	 * One map, from one read, so the detail page renders every tab badge
+	 * without a call per tab. Absent entirely for an anonymous read and when
+	 * there is nothing to badge, because an empty map and "no badges here" are
+	 * the same claim and neither should be rendered as a nought.
+	 *
+	 * Resolved through the container rather than the constructor, the same lazy
+	 * posture the render layer uses for the same primitive: a read-state lookup
+	 * must never be able to take out an object read.
+	 *
+	 * @param array<string, mixed> $self The `@self` envelope as rendered.
+	 * @param ObjectEntity $object The object being read.
+	 *
+	 * @return array<string, mixed> The envelope, with the counts when there are any.
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function withUnreadCounts(array $self, ObjectEntity $object): array {
+		try {
+			$readState = $this->container->get(ReadStateService::class);
+			if ($readState->callerUid() === null) {
+				return $self;
+			}
+
+			$counts = $readState->unreadCounts(object: $object);
+			if ($counts !== []) {
+				$self['unreadCounts'] = $counts;
+			}
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				sprintf('[ObjectsController] unread counts skipped: %s', $e->getMessage())
+			);
+		}//end try
+
+		return $self;
+
+	}//end withUnreadCounts()
 }//end class
