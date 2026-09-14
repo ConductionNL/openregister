@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CalendarFeedToken entity — a revocable, principal-bound subscription to an
+ * CalendarFeedToken entity: a revocable, principal-bound subscription to an
  * OpenRegister calendar feed.
  *
  * A calendar client sends no session, so the feed is addressed by an opaque
