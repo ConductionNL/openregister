@@ -1143,6 +1143,15 @@ return [
         // RBAC- and tenancy-scoped, which is its per-object guard (ADR-005/016).
         ['name' => 'calculations#operators', 'url' => '/api/schemas/calculation-operators', 'verb' => 'GET'],
         ['name' => 'calculations#evaluate', 'url' => '/api/schemas/calculation-evaluate', 'verb' => 'POST'],
+
+        // The property vocabulary: what a property may be, published so an
+        // editor is generated from it instead of retyped per app. Literal
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the vocabulary reaches no data at
+        // all, and the narrowing read lists schemas through the RBAC- and
+        // tenancy-scoped mapper (ADR-005/016).
+        ['name' => 'propertyVocabulary#index', 'url' => '/api/schemas/property-vocabulary', 'verb' => 'GET'],
+        ['name' => 'propertyVocabulary#extendingForms', 'url' => '/api/schemas/extending-forms', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
