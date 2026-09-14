@@ -150,3 +150,11 @@ what lets a token's grant narrow a query rather than filter a result.
 The per-caller call record and the source-address binding on a token sit
 in `api-as-a-versioned-surface`, which specifies the API surface as a
 whole. Both changes name the other so that neither writes a second answer.
+
+**One inherited finding, reported not fixed.** The target spec
+`specs/auth-system/spec.md` carries a requirement header at line 888 that
+sits outside its `## Requirements` section, so that requirement is
+invisible to validate, list and archive, and `openspec archive` refuses
+any delta against the spec until it is repaired. The original proposal
+already noted the same requirement as invisible. It is on a line neither
+this change nor its extension touches, so it belongs to the debt sweep.

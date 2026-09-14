@@ -27,3 +27,4 @@
 - [ ] C40.5 An administered outbound allowlist checked at save (D-C40-3).
 - [ ] C40.6 Tests: the missing end date refusal, the expired token, the leaver who does not break the integration, the interactive sign-in refusal, the allowlist refusal at save.
 - [ ] C40.7 Hand over to the dossiq and integriq lanes with candidate ids C-access-and-privacy-35, -42, -43, -44 and -70, noting that C-access-and-privacy-35 is already answered by `account-self-service`.
+- [ ] C40.8 Report the inherited defect in `specs/auth-system/spec.md`: a requirement header outside the `## Requirements` section at line 888, which makes archive refuse every delta against the spec. Debt sweep, not this change.
