@@ -1130,7 +1130,7 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		(new AuthorizationDenyValidator(new DenyResolver()))->assertStorable(
+		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
 			authorization: $authorization,
 			subject: sprintf('the schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? ''))
 		);

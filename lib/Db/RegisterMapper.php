@@ -678,7 +678,7 @@ class RegisterMapper extends QBMapper {
 			return;
 		}
 
-		(new AuthorizationDenyValidator(new DenyResolver()))->assertStorable(
+		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
 			authorization: $authorization,
 			subject: sprintf('the register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? ''))
 		);

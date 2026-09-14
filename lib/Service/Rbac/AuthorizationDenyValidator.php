@@ -125,7 +125,7 @@ class AuthorizationDenyValidator {
 			return;
 		}
 
-		throw new AuthorizationBlockException(implode(' ', $findings));
+		throw new AuthorizationBlockException(message: implode(' ', $findings));
 	}//end assertStorable()
 
 	/**
