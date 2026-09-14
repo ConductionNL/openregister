@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
+use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -110,12 +111,23 @@ class ReadStateServiceTest extends TestCase {
 			$session->method('getUser')->willReturn($user);
 		}
 
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+
+		// A REAL calculator over the mocked evaluator and file mapper, not a
+		// mocked one. The counting rules are what the unreadCounts cases below
+		// assert; handing the service a double would leave them asserting that
+		// a stub returns what it was told to.
+		$counter = new UnreadCountCalculator(
+			evaluator: $this->evaluator,
+			fileMapper: $this->fileMapper,
+			logger: $logger
+		);
+
 		return new ReadStateService(
 			mapper: $this->mapper,
-			evaluator: $this->evaluator,
 			userSession: $session,
-			fileMapper: $this->fileMapper,
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
+			counter: $counter,
+			logger: $logger
 		);
 
 	}//end serviceAs()

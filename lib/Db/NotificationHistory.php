@@ -68,6 +68,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setArchivedAt(?DateTime $archivedAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) One property per column of
+ * `openregister_notification_history`. The bell filters and sorts on the
+ * subject axis, the snooze and the archive, so those have to be columns a
+ * query can reach; folding them into a blob would make the list unfilterable.
  */
 class NotificationHistory extends Entity implements JsonSerializable {
 

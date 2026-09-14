@@ -413,10 +413,6 @@ class MagicSearchHandler {
 		$_rbac = $query['_rbac'] ?? true;
 		$_multitenancy = $query['_multitenancy'] ?? true;
 		$relationsContains = $query['_relations_contains'] ?? null;
-		// The resolved reader behind `_unread=true`. SearchQueryHandler names
-		// the principal; this layer only knows a uid, which is what lets the
-		// lens be tested without a session.
-		$unreadFor = $query['_unreadFor'] ?? null;
 
 		// Resolve multitenancy flag based on public schema access and explicit request.
 		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
@@ -476,9 +472,7 @@ class MagicSearchHandler {
 
 		// The unread lens, resolved IN the query so the page, the total and the
 		// facets cannot disagree about what was excluded.
-		if (is_string($unreadFor) === true && $unreadFor !== '') {
-			$this->applyUnreadFilter(qb: $queryBuilder, userId: $unreadFor);
-		}
+		$this->applyUnreadFilter(qb: $queryBuilder, userId: ($query['_unreadFor'] ?? null));
 
 		// Apply full-text search if provided.
 		// Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
@@ -1955,14 +1949,24 @@ class MagicSearchHandler {
 	 * bound at execution. Creating it on the inner builder produces SQL with a
 	 * placeholder nothing fills, which is a silent empty page, not an error.
 	 *
+	 * The lens is off unless `_unreadFor` named a reader, so the guard lives
+	 * here rather than at the call site: `buildFilteredQuery()` already carries
+	 * every other filter's branch, and one more is what pushed it over its
+	 * complexity budget.
+	 *
 	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param string $userId The reader whose read state is checked.
+	 * @param mixed $userId The reader whose read state is checked, or null when
+	 *                      no unread lens was asked for.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
-	private function applyUnreadFilter(IQueryBuilder $qb, string $userId): void {
+	private function applyUnreadFilter(IQueryBuilder $qb, mixed $userId): void {
+		if (is_string($userId) === false || $userId === '') {
+			return;
+		}
+
 		$reader = $qb->createNamedParameter($userId);
 
 		$sub = $this->db->getQueryBuilder();

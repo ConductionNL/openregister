@@ -41,7 +41,6 @@ namespace OCA\OpenRegister\Service\Interaction;
 
 use DateTime;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
@@ -74,16 +73,14 @@ class ReadStateService {
 	 * Constructor.
 	 *
 	 * @param ObjectReadStateMapper $mapper The read-state rows.
-	 * @param SubstantiveChangeEvaluator $evaluator Decides what counts as news.
 	 * @param IUserSession $userSession Resolves the calling user.
-	 * @param FileMapper $fileMapper Counts an object's files for the files badge.
+	 * @param UnreadCountCalculator $counter Counts what is unread on the tabs.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly ObjectReadStateMapper $mapper,
-		private readonly SubstantiveChangeEvaluator $evaluator,
 		private readonly IUserSession $userSession,
-		private readonly FileMapper $fileMapper,
+		private readonly UnreadCountCalculator $counter,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -240,15 +237,8 @@ class ReadStateService {
 		}
 
 		$state = $this->mapper->findOne(userId: $uid, objectUuid: $uuid);
-		$subSeen = ($state?->getSubSeen() ?? []);
 
-		$counts = [];
-		foreach ($this->evaluator->subResources(object: $object) as $name => $descriptor) {
-			$since = $this->seenMoment(name: $name, subSeen: $subSeen, state: $state);
-			$counts[$name] = $this->countSince(object: $object, descriptor: $descriptor, since: $since);
-		}
-
-		return $counts;
+		return $this->counter->countsFor(object: $object, state: $state);
 
 	}//end unreadCounts()
 
@@ -356,151 +346,6 @@ class ReadStateService {
 
 	}//end seenSetForCaller()
 
-	/**
-	 * The moment one sub-resource was last seen.
-	 *
-	 * Falls back to the object's own seen moment, so opening a case before its
-	 * messages tab existed does not badge every historical message.
-	 *
-	 * @param string $name The sub-resource name.
-	 * @param array<string, string> $subSeen The stored per-sub-resource moments.
-	 * @param ObjectReadState|null $state The read state row, when there is one.
-	 *
-	 * @return DateTime|null The moment, or null when the object was never seen.
-	 */
-	private function seenMoment(string $name, array $subSeen, ?ObjectReadState $state): ?DateTime {
-		$stamp = ($subSeen[$name] ?? null);
-		if (is_string($stamp) === true && $stamp !== '') {
-			try {
-				return new DateTime($stamp);
-			} catch (\Throwable $e) {
-				// A stored stamp that will not parse is treated as never seen,
-				// which badges rather than hides. The alternative is a silently
-				// empty badge on a row nobody can explain.
-				return null;
-			}
-		}
-
-		return $state?->getLastSeenAt();
-
-	}//end seenMoment()
-
-	/**
-	 * How many entries of one sub-resource arrived after a moment.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param array<string, string> $descriptor The sub-resource descriptor.
-	 * @param DateTime|null $since The seen moment, or null when never seen.
-	 *
-	 * @return integer The unread count.
-	 */
-	private function countSince(ObjectEntity $object, array $descriptor, ?DateTime $since): int {
-		if (($descriptor['kind'] ?? '') === SubstantiveChangeEvaluator::FILES) {
-			return $this->countFilesSince(object: $object, since: $since);
-		}
-
-		$body = $object->getObject();
-		if (is_array($body) === false) {
-			return 0;
-		}
-
-		$entries = ($body[$descriptor['property'] ?? ''] ?? null);
-		if (is_array($entries) === false) {
-			return 0;
-		}
-
-		$field = (string)($descriptor['dateField'] ?? '');
-		$count = 0;
-		foreach ($entries as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			if ($this->isAfter(value: ($entry[$field] ?? null), since: $since) === true) {
-				$count++;
-			}
-		}
-
-		return $count;
-
-	}//end countSince()
-
-	/**
-	 * How many of the object's files changed after a moment.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param DateTime|null $since The seen moment, or null when never seen.
-	 *
-	 * @return integer The unread file count.
-	 */
-	private function countFilesSince(ObjectEntity $object, ?DateTime $since): int {
-		try {
-			$files = $this->fileMapper->getFilesForObject(object: $object);
-		} catch (\Throwable $e) {
-			// A folder lookup must never take out an object read. An absent
-			// count reads as nought, which under-badges rather than failing.
-			$this->logger->debug(
-				sprintf('[ReadStateService] file count skipped for %s: %s', (string)$object->getUuid(), $e->getMessage())
-			);
-			return 0;
-		}
-
-		$count = 0;
-		foreach ($files as $file) {
-			if (is_array($file) === false) {
-				continue;
-			}
-
-			if ($this->isAfter(value: ($file['mtime'] ?? null), since: $since) === true) {
-				$count++;
-			}
-		}
-
-		return $count;
-
-	}//end countFilesSince()
-
-	/**
-	 * Whether a stored moment is later than the seen moment.
-	 *
-	 * Accepts the two shapes the sources actually carry: an ISO string on an
-	 * object property, and a unix timestamp on a filecache row.
-	 *
-	 * @param mixed $value The entry's moment.
-	 * @param DateTime|null $since The seen moment, or null when never seen.
-	 *
-	 * @return boolean True when the entry is newer than the seen moment.
-	 */
-	private function isAfter(mixed $value, ?DateTime $since): bool {
-		if ($value === null || $value === '') {
-			return false;
-		}
-
-		$moment = null;
-		if (is_int($value) === true || (is_string($value) === true && ctype_digit($value) === true)) {
-			$moment = (new DateTime())->setTimestamp((int)$value);
-		}
-
-		if ($moment === null && is_string($value) === true) {
-			try {
-				$moment = new DateTime($value);
-			} catch (\Throwable $e) {
-				return false;
-			}
-		}
-
-		if ($moment === null) {
-			return false;
-		}
-
-		if ($since === null) {
-			// Never seen: every entry that carries a moment at all is new.
-			return true;
-		}
-
-		return $moment > $since;
-
-	}//end isAfter()
 
 	/**
 	 * The calling user's uid, or a refusal.
