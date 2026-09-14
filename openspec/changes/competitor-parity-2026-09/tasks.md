@@ -9,3 +9,8 @@
 - [ ] 1.7 Discovery wave 1 (2026-09-14, round 4 discovery sweep, 263 of 631 candidates on openregister): build the nine new changes and the three extensions in the order above, and hand each dossiq half to the dossiq lane with its candidate ids.
 - [ ] 1.8 Raise the `x-openregister-extends-form` finding with the dossiq lane: the annotation uses the platform namespace and the platform defines nothing of the kind.
 - [ ] 1.9 Tell the filinq lane that decision D7 moved the archiving process with sign-off to openregister, and that the preservation format half (C-documents-9, C-documents-21, C-documents-33) stays with filinq.
+- [ ] 1.10 Discovery wave 4 (2026-09-14): build `survey-object` (cluster 67, decisions D5 and D21) and archive it on merge.
+- [ ] 1.11 Give the pipelinq lane the survey object shape `customer-satisfaction-closed-loop` runs on, and agree what pipelinq owns of the campaign.
+- [ ] 1.12 Give the dossiq lane the one declaration cluster 67 needs, and the portaliq lane the rendering half under D5.
+- [ ] 1.13 Correct the wave 3 extension table's cluster numbers in the register's own tooling if it reads them: `relation-types-with-inverses` is cluster 62, `working-calendar-admin` is cluster 69.
+
