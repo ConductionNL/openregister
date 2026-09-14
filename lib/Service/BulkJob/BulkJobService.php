@@ -158,7 +158,8 @@ class BulkJobService {
 	 *
 	 * @return BulkJob The previewed job.
 	 *
-	 * @throws InvalidArgumentException When the action or its parameters do not resolve.
+	 * @throws InvalidArgumentException When the action, its parameters or the
+	 *                                  register and schema do not resolve.
 	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
 	 *
 	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
@@ -174,6 +175,7 @@ class BulkJobService {
 	): BulkJob {
 		$action = $this->registry->get(id: $actionId);
 		$action->validateParameters(parameters: $parameters);
+		$this->assertScope(registerId: $registerId, schemaId: $schemaId);
 
 		$selectionType = $this->selectionTypeOf(selection: $selection);
 		$ceiling = $this->getCeiling();
@@ -380,6 +382,34 @@ class BulkJobService {
 			offset: $offset
 		);
 	}//end members()
+
+	/**
+	 * Refuse a job that does not say which register and schema it acts on.
+	 *
+	 * The object search resolves its table from the register and the schema,
+	 * and answers an EMPTY LIST rather than an error when it has neither. A
+	 * job without a scope would therefore hydrate nothing, report every
+	 * member as not visible, and look like a working job over an unlucky
+	 * selection. Refusing it here is the difference between an error and a
+	 * confident wrong answer.
+	 *
+	 * @param int|null $registerId The register.
+	 * @param int|null $schemaId The schema.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When either is missing.
+	 */
+	private function assertScope(?int $registerId, ?int $schemaId): void {
+		if ($registerId !== null && $schemaId !== null) {
+			return;
+		}
+
+		throw new InvalidArgumentException(
+			'A bulk job needs both a register and a schema. The object search resolves its table from the two, '
+				.'and without them it answers an empty selection rather than an error.'
+		);
+	}//end assertScope()
 
 	/**
 	 * Refuse a selection larger than the instance ceiling.

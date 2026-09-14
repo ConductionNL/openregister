@@ -340,38 +340,6 @@ class BulkJob extends Entity implements JsonSerializable {
 	}//end isActive()
 
 	/**
-	 * The uuids of an explicit selection, empty for a query selection.
-	 *
-	 * @return array<int, string> The selected uuids.
-	 */
-	public function getSelectedIds(): array {
-		$selection = ($this->selection ?? []);
-		$ids = ($selection['ids'] ?? []);
-
-		if (is_array($ids) === false) {
-			return [];
-		}
-
-		return array_values(array_map(static fn ($id): string => (string)$id, $ids));
-	}//end getSelectedIds()
-
-	/**
-	 * The query of a query-backed selection, empty for an id selection.
-	 *
-	 * @return array<string, mixed> The stored query.
-	 */
-	public function getSelectionQuery(): array {
-		$selection = ($this->selection ?? []);
-		$query = ($selection['query'] ?? []);
-
-		if (is_array($query) === false) {
-			return [];
-		}
-
-		return $query;
-	}//end getSelectionQuery()
-
-	/**
 	 * JSON serialisation.
 	 *
 	 * @return array<string, mixed> The serialised job.

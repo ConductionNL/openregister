@@ -131,7 +131,7 @@ final class BulkJobServiceTest extends TestCase {
 		$this->jobMapper->expects($this->never())->method('createFromArray');
 
 		try {
-			$this->service(1000)->create('openregister:assign', [], ['ids' => ['x']], null, 'coordinator');
+			$this->service(1000)->create('openregister:assign', [], ['ids' => ['x']], null, 'coordinator', 1, 2);
 			$this->fail('The ceiling should have refused this selection.');
 		} catch (BulkJobRefusedException $exception) {
 			$this->assertSame('ceiling', $exception->getReason());
@@ -155,7 +155,7 @@ final class BulkJobServiceTest extends TestCase {
 			}
 		);
 
-		$job = $this->service(1000)->create('openregister:assign', [], ['ids' => ['x']], null, 'coordinator');
+		$job = $this->service(1000)->create('openregister:assign', [], ['ids' => ['x']], null, 'coordinator', 1, 2);
 
 		$this->assertSame(1000, $job->getTotal());
 		$this->assertSame(BulkJob::STATE_PREVIEWED, $job->getState());
@@ -281,7 +281,17 @@ final class BulkJobServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('either an ids array or a query object');
 
-		$this->service()->create('openregister:assign', [], [], null, 'coordinator');
+		$this->service()->create('openregister:assign', [], [], null, 'coordinator', 1, 2);
+	}
+
+	public function testAJobWithoutARegisterAndSchemaIsRefusedRatherThanEmpty(): void {
+		$this->registry->method('get')->willReturn($this->action());
+		$this->resolver->expects($this->never())->method('resolveUuids');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('needs both a register and a schema');
+
+		$this->service()->create('openregister:assign', [], ['ids' => ['a']], null, 'coordinator', null, null);
 	}
 
 	public function testASelectionThatIsBothIsRefused(): void {
@@ -290,6 +300,6 @@ final class BulkJobServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('never both');
 
-		$this->service()->create('openregister:assign', [], ['ids' => ['a'], 'query' => []], null, 'coordinator');
+		$this->service()->create('openregister:assign', [], ['ids' => ['a'], 'query' => []], null, 'coordinator', 1, 2);
 	}
 }

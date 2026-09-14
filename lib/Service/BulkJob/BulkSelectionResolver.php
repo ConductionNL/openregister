@@ -105,23 +105,6 @@ class BulkSelectionResolver {
 	}//end resolveUuids()
 
 	/**
-	 * How many objects a query-backed selection matches right now.
-	 *
-	 * @param array<string, mixed> $query The stored query.
-	 * @param int|null $registerId The register the selection lives in.
-	 * @param int|null $schemaId The schema the selection lives in.
-	 *
-	 * @return int The match count.
-	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
-	 */
-	public function countQuery(array $query, ?int $registerId, ?int $schemaId): int {
-		return $this->objectService->countSearchObjects(
-			query: $this->scopedQuery(query: $query, registerId: $registerId, schemaId: $schemaId)
-		);
-	}//end countQuery()
-
-	/**
 	 * Load the objects behind a list of uuids, keyed by uuid.
 	 *
 	 * A uuid the caller may not read simply does not come back, which the
