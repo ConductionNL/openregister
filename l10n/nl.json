@@ -2962,7 +2962,10 @@
         "Not available": "Niet beschikbaar",
         "Open settings": "Instellingen openen",
         "Add integration": "Integratie toevoegen",
-        "Last checked": "Laatst gecontroleerd"
+        "Last checked": "Laatst gecontroleerd",
+        "Object \"%1$s\" created in register \"%2$s\"": "Object \"%1$s\" aangemaakt in register \"%2$s\"",
+        "Object \"%1$s\" updated in register \"%2$s\"": "Object \"%1$s\" bijgewerkt in register \"%2$s\"",
+        "Object \"%1$s\" assigned to you in register \"%2$s\"": "Object \"%1$s\" aan je toegewezen in register \"%2$s\""
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
