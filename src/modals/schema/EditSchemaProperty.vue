@@ -552,7 +552,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				:disabled="loading"
 				:label="t('openregister', 'Concept scheme URI')"
 				:placeholder="
-					t('openregister', 'https://identifier.overheid.nl/tooi/...')
+					t('openregister', 'https://identifier.overheid.nl/tooi/…')
 				" />
 			<div class="helper-text">
 				{{
@@ -975,11 +975,14 @@ export default {
 				contextProperty: '',
 				scoreProperty: '',
 			},
+
 			codedStoreOptions: [
 				{ value: 'uri', label: 'The concept URI' },
 				{ value: 'notation', label: 'The notation' },
 			],
+
 			semanticRole: '',
+
 			semanticRoleOptions: [
 				{ value: '', label: 'Nothing in particular' },
 				{ value: 'title', label: 'The title' },
@@ -987,6 +990,7 @@ export default {
 				{ value: 'assignee', label: 'The assignee' },
 				{ value: 'term', label: 'The term' },
 			],
+
 			helpTextNl: '',
 			helpTextEn: '',
 			conceptTree: [],
@@ -1629,7 +1633,7 @@ export default {
 				scheme: coded.scheme || '',
 				store: coded.store === 'notation' ? 'notation' : 'uri',
 				branch: coded.branch || '',
-				maxDepth: coded.maxDepth != null ? String(coded.maxDepth) : '',
+				maxDepth: (coded.maxDepth !== null && coded.maxDepth !== undefined) ? String(coded.maxDepth) : '',
 				leafOnly: coded.leafOnly === true,
 				allowDeprecated: coded.allowDeprecated === true,
 				contextProperty: coded.contextProperty || '',
@@ -1673,7 +1677,7 @@ export default {
 				if (this.codedConfig.branch) {
 					coded.branch = this.codedConfig.branch.trim()
 				}
-				if (this.codedConfig.maxDepth !== '' && this.codedConfig.maxDepth != null) {
+				if (this.codedConfig.maxDepth !== '' && this.codedConfig.maxDepth !== null && this.codedConfig.maxDepth !== undefined) {
 					const depth = parseInt(this.codedConfig.maxDepth, 10)
 					if (!Number.isNaN(depth)) coded.maxDepth = depth
 				}
@@ -1723,7 +1727,7 @@ export default {
 			const params = new URLSearchParams({ scheme, tree: '1' })
 			if (this.codedConfig.branch) params.set('branch', this.codedConfig.branch.trim())
 			if (this.codedConfig.store) params.set('store', this.codedConfig.store)
-			if (this.codedConfig.maxDepth !== '' && this.codedConfig.maxDepth != null) {
+			if (this.codedConfig.maxDepth !== '' && this.codedConfig.maxDepth !== null && this.codedConfig.maxDepth !== undefined) {
 				params.set('maxDepth', String(this.codedConfig.maxDepth))
 			}
 			if (this.codedConfig.leafOnly) params.set('leafOnly', 'true')
