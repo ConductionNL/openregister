@@ -126,8 +126,8 @@ class BulkJobsController extends Controller {
 		}
 
 		$state = $this->request->getParam('state');
-		$limit = $this->boundedInt(value: $this->request->getParam('limit'), fallback: 50);
-		$offset = $this->boundedInt(value: $this->request->getParam('offset'), fallback: 0);
+		$limit = $this->pageSize(value: $this->request->getParam('limit'), fallback: 50);
+		$offset = $this->pageOffset(value: $this->request->getParam('offset'));
 
 		$wantsAll = filter_var($this->request->getParam('all', 'false'), FILTER_VALIDATE_BOOLEAN);
 
@@ -308,8 +308,8 @@ class BulkJobsController extends Controller {
 		}
 
 		$outcome = $this->nullableString(value: $this->request->getParam('outcome'));
-		$limit = $this->boundedInt(value: $this->request->getParam('limit'), fallback: 100);
-		$offset = $this->boundedInt(value: $this->request->getParam('offset'), fallback: 0);
+		$limit = $this->pageSize(value: $this->request->getParam('limit'), fallback: 100);
+		$offset = $this->pageOffset(value: $this->request->getParam('offset'));
 
 		$members = $this->service->members(
 			job: $job,
@@ -482,20 +482,39 @@ class BulkJobsController extends Controller {
 	}//end arrayParam()
 
 	/**
-	 * Read a page-size or offset parameter, bounded.
+	 * Read a page-size parameter, bounded by the largest page.
 	 *
 	 * @param mixed $value The raw parameter.
 	 * @param int $fallback The value to use when none was sent.
 	 *
-	 * @return int The bounded value.
+	 * @return int The page size.
 	 */
-	private function boundedInt(mixed $value, int $fallback): int {
+	private function pageSize(mixed $value, int $fallback): int {
 		if ($value === null || is_numeric($value) === false) {
 			return $fallback;
 		}
 
-		return (int)max(0, min(self::MAX_PAGE, (int)$value));
-	}//end boundedInt()
+		return (int)max(1, min(self::MAX_PAGE, (int)$value));
+	}//end pageSize()
+
+	/**
+	 * Read an offset parameter.
+	 *
+	 * Deliberately NOT bounded by the page size: a job may carry a thousand
+	 * members, and capping the offset at one page would make the members
+	 * beyond it unreachable while the route still answered 200.
+	 *
+	 * @param mixed $value The raw parameter.
+	 *
+	 * @return int The offset.
+	 */
+	private function pageOffset(mixed $value): int {
+		if ($value === null || is_numeric($value) === false) {
+			return 0;
+		}
+
+		return (int)max(0, (int)$value);
+	}//end pageOffset()
 
 	/**
 	 * Read an optional string parameter.
