@@ -36,9 +36,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration;
 
 use LogicException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -46,14 +49,20 @@ use RuntimeException;
 /**
  * Routes external integrations' CRUD calls through OpenConnector.
  *
- * The router is intentionally thin: it knows how to talk to
- * OpenConnector's CallService / SourceMapper, classify the failure
- * mode when something goes wrong, and that's it. Per-provider
+ * The router is intentionally thin. It reads the declared source from the
+ * connector's register, hands it to the connector's CallService, and
+ * classifies the failure mode when something goes wrong. Per-provider
  * specifics (URL paths, payload shapes) live in the provider
- * implementations themselves — the router just provides the safe
- * transport.
+ * implementations themselves. The router only provides the safe transport.
  */
 class ExternalIntegrationRouter {
+
+	/**
+	 * The schema slug the connector stores its sources under.
+	 *
+	 * @var string
+	 */
+	private const SOURCE_SCHEMA = 'source';
 
 	/**
 	 * Cached availability flag for the OpenConnector NC app.
@@ -70,9 +79,10 @@ class ExternalIntegrationRouter {
 	 * @param IAppManager $appManager NC app manager — used to
 	 *                                detect whether OpenConnector
 	 *                                is installed + enabled.
-	 * @param ContainerInterface $container DI container — used to
-	 *                                      lazily resolve OpenConnector's
-	 *                                      SourceMapper / CallService.
+	 * @param ContainerInterface $container DI container, used to lazily
+	 *                                      resolve ObjectService (to read
+	 *                                      the source) and the connector's
+	 *                                      CallService.
 	 * @param LoggerInterface $logger Logger for failure traces.
 	 *
 	 * @return void
@@ -368,70 +378,119 @@ class ExternalIntegrationRouter {
 	}//end isOpenConnectorAvailable()
 
 	/**
-	 * Resolve an OpenConnector source by id.
+	 * Resolve the connector source a provider declared, by uuid or by slug.
 	 *
-	 * Tries OpenConnector's SourceMapper. When the source isn't found
-	 * (or the mapper isn't loaded), surfaces a
-	 * `openconnector-source-missing` exception so the UI shows
-	 * "Reconfigure connector" rather than a generic 500.
+	 * The connector keeps its sources as OpenRegister objects: schema `source`
+	 * in the connector's own register. OpenRegister owns ObjectService, so the
+	 * router reads the source directly and needs no class from the connector.
+	 * When no source answers, it raises `openconnector-source-missing` so the
+	 * UI shows "Reconfigure connector" rather than a generic 500.
 	 *
-	 * @param string $sourceId Source identifier declared by the provider.
+	 * @param string $sourceId Source uuid or slug declared by the provider.
 	 * @param string $providerId Provider id (for error messages only).
 	 *
-	 * @return mixed The resolved Source entity (OpenConnector-shaped).
+	 * @return ObjectEntity The source object.
 	 *
 	 * @throws ProviderUnavailableException When the source is missing.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
 	 */
-	private function loadSource(string $sourceId, string $providerId) {
+	private function loadSource(string $sourceId, string $providerId): ObjectEntity {
 		try {
-			// NOT repointed to OCA\Integriq\Db\SourceMapper: that class does
-			// not exist. The connector REMOVED SourceMapper — its own
-			// SynchronizationService now reimplements
-			// `SourceMapper::findOrCreateByLocation()` over object storage and
-			// its tests record that "OR removed that class". Renaming the
-			// namespace here would swap a lookup that misses for one that
-			// misses identically, while looking fixed. The `get()` throws into
-			// the catch below, which raises `openconnector-source-missing` and
-			// the UI shows "Reconfigure connector" — so this one at least
-			// fails visibly. It needs a real replacement seam, not a rename.
-			//
-			// @stale-fleet-app-id exclude integriq has no lib/Db/ at all. Re-verified
-			// 2026-09-10: ac47457f deleted SourceMapper with 14 other mapper and
-			// entity shims in the chain-C OpenRegister cutover, and no
-			// OCA\Integriq\Db\SourceMapper was ever added in its place. The only
-			// remaining mention in that repo is a docblock in
-			// SynchronizationService recording that it reimplements the legacy
-			// SourceMapper::findOrCreateByLocation() over object storage. Renaming
-			// the namespace swaps one missing class for another.
-			$mapper = $this->container->get('OCA\\OpenConnector\\Db\\SourceMapper');
-			$source = null;
-
-			// OpenConnector's SourceMapper supports a stringy slug
-			// lookup via `findByReference()` or `find(<id>)`. We try
-			// both because the public API surface has evolved.
-			if (method_exists($mapper, 'findByReference') === true) {
-				$source = $mapper->findByReference($sourceId);
-			} elseif (method_exists($mapper, 'find') === true) {
-				$source = $mapper->find($sourceId);
-			}
-
-			if ($source === null) {
-				throw new RuntimeException(sprintf('OpenConnector source "%s" not found', $sourceId));
-			}
-
-			return $source;
+			$source = $this->findSource(sourceId: $sourceId);
 		} catch (\Throwable $e) {
-			throw new ProviderUnavailableException(
-				message: sprintf(
-					'OpenConnector source "%s" for integration "%s" is missing or unreadable.',
-					$sourceId,
-					$providerId
-				),
-				cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING,
-				previous: $e
-			);
-		}//end try
+			throw $this->sourceMissing(sourceId: $sourceId, providerId: $providerId, previous: $e);
+		}
+
+		if ($source === null) {
+			throw $this->sourceMissing(sourceId: $sourceId, providerId: $providerId, previous: null);
+		}
+
+		return $source;
 	}//end loadSource()
+
+	/**
+	 * Look the source up in each register slug the connector may use.
+	 *
+	 * This seam replaces `OCA\OpenConnector\Db\SourceMapper`, which ac47457f
+	 * deleted in the chain-C OpenRegister cutover (openregister#3562,
+	 * openregister#3706). The connector stores a source as an object in its own
+	 * register, schema `source`, and reads it with
+	 * `ObjectService::find(id, register, schema, _rbac: false, _multitenancy: false)`.
+	 * The router does the same.
+	 *
+	 * The register slug moved with the app id: integriq's `MigrateRegisterSlug`
+	 * repair step renames `openconnector` to `integriq`. An instance that has
+	 * not run that step still carries the old slug, so the lookup tries every
+	 * spelling {@see FleetAppId::candidates()} knows, newest first.
+	 *
+	 * `find()` matches an object's id, uuid, slug or uri, so a provider may
+	 * declare either the source uuid or its slug. This is a server-side routing
+	 * read, not a user read: RBAC, multitenancy and the read audit trail are off.
+	 *
+	 * @param string $sourceId Source uuid or slug.
+	 *
+	 * @return ObjectEntity|null The source, or null when no register holds it.
+	 *
+	 * @throws \Throwable When ObjectService cannot be resolved or fails for a
+	 *                    reason other than a missing register or object.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
+	 */
+	private function findSource(string $sourceId): ?ObjectEntity {
+		if ($sourceId === '') {
+			return null;
+		}
+
+		$objectService = $this->container->get(ObjectService::class);
+		if ($objectService instanceof ObjectService === false) {
+			throw new RuntimeException('The container did not return an ObjectService.');
+		}
+
+		foreach (FleetAppId::candidates(canonical: 'integriq') as $register) {
+			try {
+				$source = $objectService->find(
+					id: $sourceId,
+					register: $register,
+					schema: self::SOURCE_SCHEMA,
+					_rbac: false,
+					_multitenancy: false,
+					_audit: false
+				);
+			} catch (DoesNotExistException $e) {
+				// This register slug is absent here, or it holds no such source.
+				// Either way the next spelling may still answer.
+				continue;
+			}
+
+			if ($source !== null) {
+				return $source;
+			}
+		}
+
+		return null;
+	}//end findSource()
+
+	/**
+	 * Build the `openconnector-source-missing` failure.
+	 *
+	 * @param string $sourceId Source uuid or slug declared by the provider.
+	 * @param string $providerId Provider id (for the message only).
+	 * @param \Throwable|null $previous The lookup failure, when there was one.
+	 *
+	 * @return ProviderUnavailableException The classified failure.
+	 */
+	private function sourceMissing(string $sourceId, string $providerId, ?\Throwable $previous): ProviderUnavailableException {
+		return new ProviderUnavailableException(
+			message: sprintf(
+				'OpenConnector source "%s" for integration "%s" is missing or unreadable.',
+				$sourceId,
+				$providerId
+			),
+			cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING,
+			previous: $previous
+		);
+	}//end sourceMissing()
 
 	/**
 	 * Read the `configuration` array off a resolved OpenConnector source,
@@ -660,8 +719,9 @@ class ExternalIntegrationRouter {
 	 * headers — never the request/response body, so no BSN or payload data
 	 * ever lands in `meta`.
 	 *
-	 * The CallLog's `getResponse()` payload is
-	 * `{ statusCode, responseTime, headers, body, encoding, … }`. The
+	 * The call log's response payload is
+	 * `{ statusCode, responseTime, headers, body, encoding, … }`, read through
+	 * {@see callLogResponse()}. The
 	 * `X-Correlation-ID` response header (case-insensitive) is surfaced as
 	 * `correlationId`. Headers are flattened to `array<string,string>`
 	 * (Guzzle returns `array<string,string[]>`).
@@ -669,23 +729,19 @@ class ExternalIntegrationRouter {
 	 * @param mixed $response The raw return from CallService.
 	 *
 	 * @return array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
 	 */
 	private function extractMeta($response): array {
 		$meta = [
-			'status' => 0,
+			'status' => $this->callLogStatus(response: $response),
 			'durationMs' => 0,
 			'correlationId' => null,
 			'headers' => [],
 		];
 
-		if (is_object($response) === true && method_exists($response, 'getStatusCode') === true) {
-			$meta['status'] = (int)$response->getStatusCode();
-		}
-
-		$payload = null;
-		if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
-			$payload = $response->getResponse();
-		} elseif (is_array($response) === true) {
+		$payload = $this->callLogResponse(response: $response);
+		if ($payload === null && is_array($response) === true) {
 			$payload = $response;
 		}
 
@@ -771,13 +827,11 @@ class ExternalIntegrationRouter {
 	 * @return void
 	 *
 	 * @throws ProviderUnavailableException When the upstream answered >= 400.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
 	 */
 	private function assertUpstreamOk($response): void {
-		if (is_object($response) === false || method_exists($response, 'getStatusCode') === false) {
-			return;
-		}
-
-		$status = (int)$response->getStatusCode();
+		$status = $this->callLogStatus(response: $response);
 		if ($status < 400) {
 			return;
 		}
@@ -794,11 +848,82 @@ class ExternalIntegrationRouter {
 	}//end assertUpstreamOk()
 
 	/**
+	 * The response half of a CallService call log, or null when there is none.
+	 *
+	 * integriq's CallService returns the call log as an OpenRegister
+	 * `ObjectEntity`. Its `getObject()` carries
+	 * `response: { statusCode, responseTime, headers, body, encoding, … }`, and
+	 * the returned entity keeps the body even when the stored row drops it. An
+	 * early exit (a disabled source, an exhausted rate limit) carries only a
+	 * top-level `statusCode`, so it has no response half. Older connector
+	 * builds returned a CallLog exposing `getResponse()` instead.
+	 *
+	 * @param mixed $response The raw return from CallService.
+	 *
+	 * @return array<string,mixed>|null The response payload.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
+	 */
+	private function callLogResponse($response): ?array {
+		if (is_object($response) === false) {
+			return null;
+		}
+
+		$payload = null;
+		if (method_exists($response, 'getResponse') === true) {
+			$payload = $response->getResponse();
+		} elseif (method_exists($response, 'getObject') === true) {
+			$payload = ($response->getObject()['response'] ?? null);
+		}
+
+		if (is_array($payload) === false) {
+			return null;
+		}
+
+		return $payload;
+	}//end callLogResponse()
+
+	/**
+	 * The HTTP status a CallService call log records, or 0 when it records none.
+	 *
+	 * Reads `getStatusCode()` on an older CallLog. On integriq's `ObjectEntity`
+	 * call log it reads `response.statusCode`, falling back to the top-level
+	 * `statusCode` an early exit carries (409 for a disabled source, 429 for an
+	 * exhausted rate limit).
+	 *
+	 * @param mixed $response The raw return from CallService.
+	 *
+	 * @return int The recorded status.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
+	 */
+	private function callLogStatus($response): int {
+		if (is_object($response) === false) {
+			return 0;
+		}
+
+		if (method_exists($response, 'getStatusCode') === true) {
+			return (int)$response->getStatusCode();
+		}
+
+		$status = ($this->callLogResponse(response: $response)['statusCode'] ?? null);
+		if ($status === null && method_exists($response, 'getObject') === true) {
+			$status = ($response->getObject()['statusCode'] ?? null);
+		}
+
+		if (is_numeric($status) === false) {
+			return 0;
+		}
+
+		return (int)$status;
+	}//end callLogStatus()
+
+	/**
 	 * Normalise a CallService response into a decoded array.
 	 *
-	 * OpenConnector's CallService returns a `CallLog` whose
-	 * `getResponse()` is `{ statusCode, headers, body, encoding, … }` —
-	 * the actual upstream payload is the (usually JSON) `body` string
+	 * The connector's CallService returns a call log whose response payload
+	 * ({@see callLogResponse()}) is `{ statusCode, headers, body, encoding, … }`.
+	 * The actual upstream payload is the (usually JSON) `body` string
 	 * (base64-encoded when the upstream wasn't UTF-8). We unwrap that,
 	 * JSON-decode it, and hand the caller the upstream body directly.
 	 * A raw array / scalar string from an older CallService is decoded
@@ -808,6 +933,8 @@ class ExternalIntegrationRouter {
 	 * @param mixed $response The raw return from CallService.
 	 *
 	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles four distinct OpenConnector response shapes
 	 * (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required
@@ -821,10 +948,10 @@ class ExternalIntegrationRouter {
 			return $response;
 		}
 
-		// CallLog (OpenConnector) — pull the upstream body out of getResponse().
-		if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
-			$payload = $response->getResponse();
-			if (is_array($payload) === true && array_key_exists('body', $payload) === true) {
+		// A call log: pull the upstream body out of its response payload.
+		$payload = $this->callLogResponse(response: $response);
+		if ($payload !== null) {
+			if (array_key_exists('body', $payload) === true) {
 				$body = $payload['body'];
 				if (($payload['encoding'] ?? null) === 'base64' && is_string($body) === true) {
 					$body = (string)base64_decode($body, true);
@@ -833,9 +960,7 @@ class ExternalIntegrationRouter {
 				return $this->decodeResponse(response: $body);
 			}
 
-			if (is_array($payload) === true) {
-				return $payload;
-			}
+			return $payload;
 		}
 
 		if (is_object($response) === true && method_exists($response, 'jsonSerialize') === true) {

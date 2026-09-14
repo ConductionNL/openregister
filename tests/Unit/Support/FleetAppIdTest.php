@@ -107,6 +107,20 @@ class FleetAppIdTest extends TestCase
 
 
     /**
+     * The candidate list names every spelling, newest first, without asking
+     * the app manager: a caller looking up stored data needs both names.
+     *
+     * @return void
+     */
+    public function testCandidatesListEverySpellingNewestFirst(): void
+    {
+        $this->assertSame(['integriq', 'openconnector'], FleetAppId::candidates('integriq'));
+        $this->assertSame(['openregister'], FleetAppId::candidates('openregister'));
+
+    }//end testCandidatesListEverySpellingNewestFirst()
+
+
+    /**
      * An absent app resolves to null rather than to a plausible-looking id.
      *
      * @return void

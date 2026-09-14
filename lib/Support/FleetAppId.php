@@ -100,6 +100,28 @@ final class FleetAppId
 
 
     /**
+     * Every id an app has answered to, newest first.
+     *
+     * For the rare lookup that cannot ask the app manager which one is
+     * installed, because the name it needs is stored data that moves on its
+     * own schedule. integriq's register slug is one: a repair step renames it
+     * from `openconnector` to `integriq` after the app id has already moved.
+     * An app without a rename answers to its canonical name only.
+     *
+     * @param string $canonical Canonical (new) app name, e.g. 'integriq'.
+     *
+     * @return list<string> The candidate ids, newest first.
+     *
+     * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
+     */
+    public static function candidates(string $canonical): array
+    {
+        return (self::CANDIDATES[$canonical] ?? [$canonical]);
+
+    }//end candidates()
+
+
+    /**
      * The id this instance actually has installed, or null if none is.
      *
      * @param IAppManager $appManager The Nextcloud app manager.
