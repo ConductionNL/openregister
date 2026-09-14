@@ -56,6 +56,8 @@ use Throwable;
  * NOT `final`, and only so that the save-path listeners' unit tests can hand
  * one a double and assert what a save recorded without standing a database up
  * behind it. There is meant to be exactly one implementation in production.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 class RuleRunRecorder {
 
@@ -131,13 +133,18 @@ class RuleRunRecorder {
 	): void {
 		$moment = ($at ?? new DateTime());
 
+		$error = null;
+		if ($trace->getVerdict() === RuleVocabulary::VERDICT_ERROR) {
+			$error = $trace->getMessage();
+		}
+
 		try {
 			$this->summaries->record(
 				ruleId: $ruleId,
 				schemaSlug: $schemaSlug,
 				verdict: $trace->getVerdict(),
 				at: $moment,
-				error: ($trace->getVerdict() === RuleVocabulary::VERDICT_ERROR ? $trace->getMessage() : null)
+				error: $error
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

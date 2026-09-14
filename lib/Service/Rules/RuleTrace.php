@@ -40,6 +40,8 @@ use JsonSerializable;
  *
  * The operand is null on a `fired` verdict and on a rule with no condition at
  * all, because in neither case did an operand decide anything.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class RuleTrace implements JsonSerializable {
 
@@ -156,11 +158,18 @@ final class RuleTrace implements JsonSerializable {
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public static function renderValue(mixed $value): string {
+		if (is_bool($value) === true) {
+			if ($value === true) {
+				return 'true';
+			}
+
+			return 'false';
+		}
+
 		$rendered = match (true) {
 			$value === null => 'null',
-			is_bool($value) === true => ($value === true ? 'true' : 'false'),
 			is_scalar($value) === true => (string)$value,
-			default => (json_encode($value) ?: 'unrenderable'),
+			default => self::encode(value: $value),
 		};
 
 		if (mb_strlen($rendered) <= self::VALUE_LIMIT) {
@@ -169,6 +178,28 @@ final class RuleTrace implements JsonSerializable {
 
 		return (mb_substr($rendered, 0, self::VALUE_LIMIT) . '…');
 	}//end renderValue()
+
+	/**
+	 * A structured value as JSON, or a word saying it could not be rendered.
+	 *
+	 * `json_encode` answers `false` for a value it cannot encode, and `false`
+	 * cast to a string is the empty string, which in a log column reads exactly
+	 * like a property that was genuinely empty.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string The JSON, or the word.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private static function encode(mixed $value): string {
+		$json = json_encode($value);
+		if ($json === false) {
+			return 'unrenderable';
+		}
+
+		return $json;
+	}//end encode()
 
 	/**
 	 * The trace as an API surface returns it.

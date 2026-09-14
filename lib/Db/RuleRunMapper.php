@@ -40,6 +40,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<RuleRun>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 class RuleRunMapper extends QBMapper {
 

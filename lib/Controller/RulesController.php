@@ -36,7 +36,9 @@ use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
+use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Throwable;
@@ -55,6 +57,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller composes the inventory,
  *   the run log, the trial and the switch, which are the four halves of the one surface
  *   this change exists to add.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 class RulesController extends Controller {
 
@@ -99,6 +103,8 @@ class RulesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * @contract tests/e2e/ci/rules-engine-operability.spec.ts
+	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function vocabulary(): JSONResponse {
@@ -115,6 +121,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function index(string $schema): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -142,6 +149,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function setEnabled(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -188,6 +196,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function evaluate(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -238,6 +247,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function runs(string $ruleId): JSONResponse {
 		$verdict = $this->request->getParam('verdict');
 		if (is_string($verdict) === false || $this->vocabulary->hasVerdict(verdict: $verdict) === false) {

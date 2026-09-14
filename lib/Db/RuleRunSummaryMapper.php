@@ -40,6 +40,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<RuleRunSummary>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 class RuleRunSummaryMapper extends QBMapper {
 
@@ -172,10 +174,10 @@ class RuleRunSummaryMapper extends QBMapper {
 		}
 
 		if ($summary->getId() === null) {
-			return $this->insert($summary);
+			return $this->insert(entity: $summary);
 		}
 
-		return $this->update($summary);
+		return $this->update(entity: $summary);
 
 	}//end record()
 

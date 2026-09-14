@@ -51,6 +51,8 @@ use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The inventory reads the four places a
  *   rule is declared plus the summary store; each collaborator is one of those places and
  *   folding any of them away would mean this class reading the tables itself.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class RuleInventoryService {
 

@@ -55,6 +55,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The trial resolves a named object
  *   through the three mappers and evaluates through both condition dialects; each is one
  *   collaborator on the one dry-run path.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class RuleTrialService {
 
@@ -301,7 +303,10 @@ final class RuleTrialService {
 		// dialect at all. Accepting the AST here is task 4.2 and lands with the
 		// same change to LifecycleConditionEvaluator, so the two stay in step.
 		$holds = FlowExpression::isTrue(logic: $rule->getCondition(), data: $document);
-		$verdict = ($holds === true ? RuleVocabulary::VERDICT_FIRED : RuleVocabulary::VERDICT_NO_MATCH);
+		$verdict = RuleVocabulary::VERDICT_NO_MATCH;
+		if ($holds === true) {
+			$verdict = RuleVocabulary::VERDICT_FIRED;
+		}
 
 		return $this->result(
 			rule: $rule,

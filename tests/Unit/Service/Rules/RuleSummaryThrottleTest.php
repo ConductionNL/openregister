@@ -64,7 +64,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 * @return RuleRunSummaryMapper The mapper.
 	 */
 	private function mapper(): RuleRunSummaryMapper {
-		return new RuleRunSummaryMapper($this->createMock(IDBConnection::class));
+		return new RuleRunSummaryMapper(db: $this->createMock(originalClassName: IDBConnection::class));
 
 	}//end mapper()
 
@@ -77,7 +77,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 */
 	public function testARepeatInsideTheWindowIsDropped(): void {
 		$this->assertFalse(
-			$this->mapper()->worthWriting(
+			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_FIRED,
 				at: new DateTime('2026-09-14 12:00:30'),
@@ -97,7 +97,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 */
 	public function testTheSameVerdictPastTheWindowIsWritten(): void {
 		$this->assertTrue(
-			$this->mapper()->worthWriting(
+			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_FIRED,
 				at: new DateTime('2026-09-14 12:02:00'),
@@ -118,7 +118,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 */
 	public function testAChangedVerdictIsNeverDropped(): void {
 		$this->assertTrue(
-			$this->mapper()->worthWriting(
+			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_REFUSED,
 				at: new DateTime('2026-09-14 12:00:01'),
@@ -138,7 +138,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 */
 	public function testAnErrorIsNeverDropped(): void {
 		$this->assertTrue(
-			$this->mapper()->worthWriting(
+			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_ERROR, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_ERROR,
 				at: new DateTime('2026-09-14 12:00:01'),
@@ -157,7 +157,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 */
 	public function testAFirstEvaluationIsAlwaysWritten(): void {
 		$this->assertTrue(
-			$this->mapper()->worthWriting(
+			condition: $this->mapper()->worthWriting(
 				summary: new RuleRunSummary(),
 				verdict: RuleVocabulary::VERDICT_FIRED,
 				at: new DateTime('2026-09-14 12:00:00'),
@@ -185,14 +185,14 @@ class RuleSummaryThrottleTest extends TestCase {
 		);
 
 		$this->assertSame(
-			$descriptor->getId(),
-			RuleDescriptor::idFor(
+			expected: $descriptor->getId(),
+			actual: RuleDescriptor::idFor(
 				kind: RuleVocabulary::KIND_CALCULATION,
 				schemaSlug: 'bezwaar',
 				key: 'uiterlijkeDatum'
 			)
 		);
-		$this->assertSame('calculation:bezwaar:uiterlijkeDatum', $descriptor->getId());
+		$this->assertSame(expected: 'calculation:bezwaar:uiterlijkeDatum', actual: $descriptor->getId());
 
 	}//end testTheDerivedIdMatchesTheDescriptorsOwn()
 }//end class

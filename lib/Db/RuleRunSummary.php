@@ -50,6 +50,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLastErrorAt(?DateTime $lastErrorAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 class RuleRunSummary extends Entity implements JsonSerializable {
 

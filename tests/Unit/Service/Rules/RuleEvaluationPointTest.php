@@ -99,14 +99,14 @@ class RuleEvaluationPointTest extends TestCase {
 	public function testBothWriteMethodsDispatchTheSaveEvent(): void {
 		$mapper = (string)file_get_contents($this->lib() . '/Db/MagicMapper.php');
 
-		$this->assertStringContainsString('new ObjectCreatingEvent(', $mapper);
-		$this->assertStringContainsString('new ObjectUpdatingEvent(', $mapper);
+		$this->assertStringContainsString(needle: 'new ObjectCreatingEvent(', haystack: $mapper);
+		$this->assertStringContainsString(needle: 'new ObjectUpdatingEvent(', haystack: $mapper);
 
 		foreach (array_unique(array_values(self::WRITE_PATHS)) as $method) {
 			$this->assertStringContainsString(
-				'public function ' . $method . '(',
-				$mapper,
-				sprintf('MagicMapper no longer declares %s(); a write path has moved.', $method)
+				needle: 'public function ' . $method . '(',
+				haystack: $mapper,
+				message: sprintf('MagicMapper no longer declares %s(); a write path has moved.', $method)
 			);
 		}
 
@@ -132,9 +132,9 @@ class RuleEvaluationPointTest extends TestCase {
 		}
 
 		$this->assertSame(
-			[],
-			$offenders,
-			'These files write objects with the save events suppressed, so the declared rules '
+			expected: [],
+			actual: $offenders,
+			message: 'These files write objects with the save events suppressed, so the declared rules '
 				. 'never see them: ' . implode(', ', $offenders)
 		);
 
@@ -154,16 +154,16 @@ class RuleEvaluationPointTest extends TestCase {
 		$application = (string)file_get_contents($this->lib() . '/AppInfo/Application.php');
 
 		$this->assertStringContainsString(
-			'registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class)',
-			$application
+			needle: 'registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class)',
+			haystack: $application
 		);
 		$this->assertStringContainsString(
-			'registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class)',
-			$application
+			needle: 'registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class)',
+			haystack: $application
 		);
 		$this->assertStringContainsString(
-			'registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class)',
-			$application
+			needle: 'registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class)',
+			haystack: $application
 		);
 
 	}//end testTheRuleListenersAreSubscribedToThoseEvents()
@@ -184,11 +184,11 @@ class RuleEvaluationPointTest extends TestCase {
 			$source = (string)file_get_contents($this->lib() . '/Listener/' . $listener . '.php');
 
 			$this->assertStringContainsString(
-				'RuleRunRecorder',
-				$source,
-				sprintf('%s no longer records its verdict; the run log has a blind spot.', $listener)
+				needle: 'RuleRunRecorder',
+				haystack: $source,
+				message: sprintf('%s no longer records its verdict; the run log has a blind spot.', $listener)
 			);
-			$this->assertStringContainsString('->record(', $source);
+			$this->assertStringContainsString(needle: '->record(', haystack: $source);
 		}
 
 	}//end testBothListenersRecordTheirVerdict()
@@ -207,8 +207,8 @@ class RuleEvaluationPointTest extends TestCase {
 		$calculation = (string)file_get_contents($this->lib() . '/Listener/CalculationOnSaveListener.php');
 		$condition = (string)file_get_contents($this->lib() . '/Service/Lifecycle/LifecycleConditionEvaluator.php');
 
-		$this->assertStringContainsString("\$spec['enabled'] ?? true) === false", $calculation);
-		$this->assertStringContainsString("\$spec['enabled'] ?? true) === false", $condition);
+		$this->assertStringContainsString(needle: "\$spec['enabled'] ?? true) === false", haystack: $calculation);
+		$this->assertStringContainsString(needle: "\$spec['enabled'] ?? true) === false", haystack: $condition);
 
 	}//end testBothEnginesHonourTheSwitch()
 }//end class

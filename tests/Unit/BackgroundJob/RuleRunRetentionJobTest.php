@@ -49,7 +49,7 @@ class RuleRunRetentionJobTest extends TestCase {
 	 * @return RuleRunRetentionJob The job.
 	 */
 	private function job(int $days, array &$cutoffs, bool $pruneThrows = false): RuleRunRetentionJob {
-		$runs = $this->createMock(RuleRunMapper::class);
+		$runs = $this->createMock(originalClassName: RuleRunMapper::class);
 		$runs->method('pruneBefore')->willReturnCallback(
 			static function (DateTime $before, int $batches = 25) use (&$cutoffs, $pruneThrows): int {
 				if ($pruneThrows === true) {
@@ -61,14 +61,14 @@ class RuleRunRetentionJobTest extends TestCase {
 			}
 		);
 
-		$recorder = $this->createMock(RuleRunRecorder::class);
+		$recorder = $this->createMock(originalClassName: RuleRunRecorder::class);
 		$recorder->method('retentionDays')->willReturn($days);
 
 		return new RuleRunRetentionJob(
-			$this->createMock(ITimeFactory::class),
-			$runs,
-			$recorder,
-			$this->createMock(LoggerInterface::class)
+			time: $this->createMock(originalClassName: ITimeFactory::class),
+			runs: $runs,
+			recorder: $recorder,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 	}//end job()
@@ -96,13 +96,13 @@ class RuleRunRetentionJobTest extends TestCase {
 	 */
 	public function testThePruneCutsAtTheConfiguredPeriod(): void {
 		$cutoffs = [];
-		$this->sweep($this->job(days: 7, cutoffs: $cutoffs));
+		$this->sweep(job: $this->job(days: 7, cutoffs: $cutoffs));
 
-		$this->assertCount(1, $cutoffs);
+		$this->assertCount(expectedCount: 1, haystack: $cutoffs);
 		$elapsed = ((new DateTime())->getTimestamp() - $cutoffs[0]->getTimestamp());
 		// Seven days, give or take the second the test took to get here.
-		$this->assertGreaterThanOrEqual((7 * 86400 - 5), $elapsed);
-		$this->assertLessThanOrEqual((7 * 86400 + 5), $elapsed);
+		$this->assertGreaterThanOrEqual(expected: (7 * 86400 - 5), actual: $elapsed);
+		$this->assertLessThanOrEqual(expected: (7 * 86400 + 5), actual: $elapsed);
 
 	}//end testThePruneCutsAtTheConfiguredPeriod()
 
@@ -122,8 +122,8 @@ class RuleRunRetentionJobTest extends TestCase {
 			dirname(__DIR__, 3) . '/lib/BackgroundJob/RuleRunRetentionJob.php'
 		);
 
-		$this->assertStringNotContainsString('RuleRunSummaryMapper', $source);
-		$this->assertStringContainsString('pruneBefore', $source);
+		$this->assertStringNotContainsString(needle: 'RuleRunSummaryMapper', haystack: $source);
+		$this->assertStringContainsString(needle: 'pruneBefore', haystack: $source);
 
 	}//end testThePruneNeverReachesTheSummary()
 
@@ -138,9 +138,9 @@ class RuleRunRetentionJobTest extends TestCase {
 	public function testAFailingPruneEndsTheJobRatherThanThrowing(): void {
 		$cutoffs = [];
 
-		$this->sweep($this->job(days: 30, cutoffs: $cutoffs, pruneThrows: true));
+		$this->sweep(job: $this->job(days: 30, cutoffs: $cutoffs, pruneThrows: true));
 
-		$this->assertSame([], $cutoffs);
+		$this->assertSame(expected: [], actual: $cutoffs);
 
 	}//end testAFailingPruneEndsTheJobRatherThanThrowing()
 }//end class

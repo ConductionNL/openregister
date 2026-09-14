@@ -44,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * The schema's own version is bumped by the save that carries the switch, so
  * the change is also diffable against the previous schema version. This entry
  * is what names the ACTOR and the intent.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class RuleAuditService {
 
@@ -95,8 +97,8 @@ final class RuleAuditService {
 				$entry['actorName'],
 				$rule->getId(),
 				$rule->getSchemaSlug(),
-				($entry['from'] === true ? 'enabled' : 'disabled'),
-				($entry['to'] === true ? 'enabled' : 'disabled')
+				$this->word(enabled: $entry['from']),
+				$this->word(enabled: $entry['to'])
 			),
 			[
 				'eventType' => self::EVENT_TYPE,
@@ -110,4 +112,23 @@ final class RuleAuditService {
 
 		return $entry;
 	}//end switched()
+
+	/**
+	 * The word an audit line uses for a switch state.
+	 *
+	 * @param bool $enabled The state.
+	 *
+	 * @return string The word.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The argument IS the state being named.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function word(bool $enabled): string {
+		if ($enabled === true) {
+			return 'enabled';
+		}
+
+		return 'disabled';
+	}//end word()
 }//end class

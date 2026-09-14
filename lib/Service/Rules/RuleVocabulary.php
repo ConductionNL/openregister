@@ -39,6 +39,8 @@ namespace OCA\OpenRegister\Service\Rules;
  * change design, a condition is written in the JSON AST whose catalogue is
  * {@see \OCA\OpenRegister\Service\Calculation\OperatorCatalogue}, and a second
  * copy of it here is the drift this class exists to avoid.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class RuleVocabulary {
 
@@ -178,7 +180,8 @@ final class RuleVocabulary {
 	/**
 	 * The whole vocabulary, in the shape a consuming surface renders.
 	 *
-	 * @return array{kinds: array<int, array<string, mixed>>, verdicts: array<int, array{verdict: string, description: string}>, actions: array<int, array{action: string, description: string}>} The three closed sets.
+	 * @return array<string, array<int, array<string, mixed>>> The three closed sets,
+	 *   keyed `kinds`, `verdicts` and `actions`.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */

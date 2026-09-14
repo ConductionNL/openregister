@@ -51,6 +51,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The tracer bridges both condition
  *   dialects on purpose: the AST evaluator, the JSONLogic facade and the trace value
  *   object are the three collaborators that one walk needs.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class ConditionTracer {
 

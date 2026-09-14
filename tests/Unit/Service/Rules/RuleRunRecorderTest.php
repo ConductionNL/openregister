@@ -60,7 +60,7 @@ class RuleRunRecorderTest extends TestCase {
 		array &$summaries,
 		bool $summaryThrows = false,
 	): RuleRunRecorder {
-		$runs = $this->createMock(RuleRunMapper::class);
+		$runs = $this->createMock(originalClassName: RuleRunMapper::class);
 		$runs->method('insert')->willReturnCallback(
 			static function (RuleRun $run) use (&$rows): RuleRun {
 				$rows[] = $run;
@@ -68,7 +68,7 @@ class RuleRunRecorderTest extends TestCase {
 			}
 		);
 
-		$summaryMapper = $this->createMock(RuleRunSummaryMapper::class);
+		$summaryMapper = $this->createMock(originalClassName: RuleRunSummaryMapper::class);
 		$summaryMapper->method('record')->willReturnCallback(
 			static function (
 				string $ruleId,
@@ -86,7 +86,7 @@ class RuleRunRecorderTest extends TestCase {
 			}
 		);
 
-		$config = $this->createMock(IAppConfig::class);
+		$config = $this->createMock(originalClassName: IAppConfig::class);
 		$config->method('getValueString')->willReturnCallback(
 			static function (string $app, string $key, string $default = '') use ($logEnabled): string {
 				if ($key === RuleRunRecorder::CONFIG_ENABLED) {
@@ -98,11 +98,11 @@ class RuleRunRecorderTest extends TestCase {
 		);
 
 		return new RuleRunRecorder(
-			$runs,
-			$summaryMapper,
-			$this->createMock(IUserSession::class),
-			$config,
-			$this->createMock(LoggerInterface::class)
+			runs: $runs,
+			summaries: $summaryMapper,
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			config: $config,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 	}//end recorder()
@@ -130,13 +130,13 @@ class RuleRunRecorderTest extends TestCase {
 			registerSlug: 'zaken'
 		);
 
-		$this->assertCount(1, $rows);
-		$this->assertSame(RuleVocabulary::VERDICT_NO_MATCH, $rows[0]->getVerdict());
-		$this->assertSame('bedrag', $rows[0]->getOperand());
-		$this->assertSame('120', $rows[0]->getOperandValue());
-		$this->assertSame('uuid-1', $rows[0]->getObjectUuid());
-		$this->assertSame('zaken', $rows[0]->getRegisterSlug());
-		$this->assertCount(1, $summaries);
+		$this->assertCount(expectedCount: 1, haystack: $rows);
+		$this->assertSame(expected: RuleVocabulary::VERDICT_NO_MATCH, actual: $rows[0]->getVerdict());
+		$this->assertSame(expected: 'bedrag', actual: $rows[0]->getOperand());
+		$this->assertSame(expected: '120', actual: $rows[0]->getOperandValue());
+		$this->assertSame(expected: 'uuid-1', actual: $rows[0]->getObjectUuid());
+		$this->assertSame(expected: 'zaken', actual: $rows[0]->getRegisterSlug());
+		$this->assertCount(expectedCount: 1, haystack: $summaries);
 
 	}//end testARefusalIsRecordedWithItsDecidingOperand()
 
@@ -158,8 +158,8 @@ class RuleRunRecorderTest extends TestCase {
 			trace: RuleTrace::fired()
 		);
 
-		$this->assertSame([], $rows);
-		$this->assertCount(1, $summaries);
+		$this->assertSame(expected: [], actual: $rows);
+		$this->assertCount(expectedCount: 1, haystack: $summaries);
 
 	}//end testSwitchingTheDetailLogOffKeepsTheSummary()
 
@@ -181,8 +181,8 @@ class RuleRunRecorderTest extends TestCase {
 			trace: RuleTrace::errored(message: 'Unknown property "ontvangstdatum".')
 		);
 
-		$this->assertSame('Unknown property "ontvangstdatum".', $summaries[0]['error']);
-		$this->assertSame(RuleVocabulary::VERDICT_ERROR, $rows[0]->getVerdict());
+		$this->assertSame(expected: 'Unknown property "ontvangstdatum".', actual: $summaries[0]['error']);
+		$this->assertSame(expected: RuleVocabulary::VERDICT_ERROR, actual: $rows[0]->getVerdict());
 
 	}//end testAnErrorCarriesItsMessageIntoTheSummary()
 
@@ -210,8 +210,8 @@ class RuleRunRecorderTest extends TestCase {
 			trace: RuleTrace::fired()
 		);
 
-		$this->assertSame([], $summaries);
-		$this->assertCount(1, $rows);
+		$this->assertSame(expected: [], actual: $summaries);
+		$this->assertCount(expectedCount: 1, haystack: $rows);
 
 	}//end testAFailingLogStoreNeverReachesTheSave()
 
@@ -224,7 +224,7 @@ class RuleRunRecorderTest extends TestCase {
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function testAnUnreadableRetentionPeriodFallsBackToTheDefault(): void {
-		$config = $this->createMock(IAppConfig::class);
+		$config = $this->createMock(originalClassName: IAppConfig::class);
 		$config->method('getValueString')->willReturnCallback(
 			static function (string $app, string $key, string $default = ''): string {
 				if ($key === RuleRunRecorder::CONFIG_RETENTION_DAYS) {
@@ -236,14 +236,14 @@ class RuleRunRecorderTest extends TestCase {
 		);
 
 		$recorder = new RuleRunRecorder(
-			$this->createMock(RuleRunMapper::class),
-			$this->createMock(RuleRunSummaryMapper::class),
-			$this->createMock(IUserSession::class),
-			$config,
-			$this->createMock(LoggerInterface::class)
+			runs: $this->createMock(originalClassName: RuleRunMapper::class),
+			summaries: $this->createMock(originalClassName: RuleRunSummaryMapper::class),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			config: $config,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
-		$this->assertSame(RuleRunRecorder::DEFAULT_RETENTION_DAYS, $recorder->retentionDays());
+		$this->assertSame(expected: RuleRunRecorder::DEFAULT_RETENTION_DAYS, actual: $recorder->retentionDays());
 
 	}//end testAnUnreadableRetentionPeriodFallsBackToTheDefault()
 }//end class

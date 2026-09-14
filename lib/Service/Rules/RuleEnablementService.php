@@ -49,6 +49,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Switching a rule reaches the four
  *   places a rule is declared plus the audit entry; each collaborator owns one of them.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class RuleEnablementService {
 

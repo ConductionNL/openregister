@@ -53,7 +53,11 @@ class ConditionTracerTest extends TestCase {
 		parent::setUp();
 
 		$this->tracer = new ConditionTracer(
-			new CalculationEvaluator(new PlaceholderResolver($this->createMock(IUserSession::class)))
+			ast: new CalculationEvaluator(
+				placeholders: new PlaceholderResolver(
+					userSession: $this->createMock(originalClassName: IUserSession::class)
+				)
+			)
 		);
 
 	}//end setUp()
@@ -73,9 +77,9 @@ class ConditionTracerTest extends TestCase {
 			verdict: RuleVocabulary::VERDICT_NO_MATCH
 		);
 
-		$this->assertSame(RuleVocabulary::VERDICT_NO_MATCH, $trace->getVerdict());
-		$this->assertSame('bedrag', $trace->getOperand());
-		$this->assertSame('120', $trace->getOperandValue());
+		$this->assertSame(expected: RuleVocabulary::VERDICT_NO_MATCH, actual: $trace->getVerdict());
+		$this->assertSame(expected: 'bedrag', actual: $trace->getOperand());
+		$this->assertSame(expected: '120', actual: $trace->getOperandValue());
 
 	}//end testARuleThatDidNotFireNamesTheOperandAndTheValueItRead()
 
@@ -93,8 +97,8 @@ class ConditionTracerTest extends TestCase {
 			verdict: RuleVocabulary::VERDICT_NO_MATCH
 		);
 
-		$this->assertSame('bedrag', $trace->getOperand());
-		$this->assertSame('120', $trace->getOperandValue());
+		$this->assertSame(expected: 'bedrag', actual: $trace->getOperand());
+		$this->assertSame(expected: '120', actual: $trace->getOperandValue());
 
 	}//end testTheAstDialectTracesToTheSameOperand()
 
@@ -117,8 +121,8 @@ class ConditionTracerTest extends TestCase {
 			verdict: RuleVocabulary::VERDICT_NO_MATCH
 		);
 
-		$this->assertSame('status', $trace->getOperand());
-		$this->assertSame('gesloten', $trace->getOperandValue());
+		$this->assertSame(expected: 'status', actual: $trace->getOperand());
+		$this->assertSame(expected: 'gesloten', actual: $trace->getOperandValue());
 
 	}//end testAnAndNamesTheClauseThatActuallyFailed()
 
@@ -137,8 +141,8 @@ class ConditionTracerTest extends TestCase {
 			verdict: RuleVocabulary::VERDICT_REFUSED
 		);
 
-		$this->assertSame('object.outcome', $trace->getOperand());
-		$this->assertSame('null', $trace->getOperandValue());
+		$this->assertSame(expected: 'object.outcome', actual: $trace->getOperand());
+		$this->assertSame(expected: 'null', actual: $trace->getOperandValue());
 
 	}//end testAnAbsentPropertyIsReportedAsNull()
 
@@ -157,8 +161,8 @@ class ConditionTracerTest extends TestCase {
 			verdict: RuleVocabulary::VERDICT_FIRED
 		);
 
-		$this->assertNull($trace->getOperand());
-		$this->assertNull($trace->getOperandValue());
+		$this->assertNull(actual: $trace->getOperand());
+		$this->assertNull(actual: $trace->getOperandValue());
 
 	}//end testAFiredRuleCarriesNoOperand()
 
@@ -181,9 +185,9 @@ class ConditionTracerTest extends TestCase {
 			message: 'Refused by the engine.'
 		);
 
-		$this->assertSame(RuleVocabulary::VERDICT_REFUSED, $trace->getVerdict());
-		$this->assertSame('Refused by the engine.', $trace->getMessage());
-		$this->assertNull($trace->getOperand());
+		$this->assertSame(expected: RuleVocabulary::VERDICT_REFUSED, actual: $trace->getVerdict());
+		$this->assertSame(expected: 'Refused by the engine.', actual: $trace->getMessage());
+		$this->assertNull(actual: $trace->getOperand());
 
 	}//end testAnUnreadableConditionKeepsTheVerdict()
 
@@ -204,8 +208,8 @@ class ConditionTracerTest extends TestCase {
 			verdict: RuleVocabulary::VERDICT_NO_MATCH
 		);
 
-		$this->assertSame((RuleTrace::VALUE_LIMIT + 1), mb_strlen((string)$trace->getOperandValue()));
-		$this->assertStringEndsWith('…', (string)$trace->getOperandValue());
+		$this->assertSame(expected: (RuleTrace::VALUE_LIMIT + 1), actual: mb_strlen((string)$trace->getOperandValue()));
+		$this->assertStringEndsWith(suffix: '…', string: (string)$trace->getOperandValue());
 
 	}//end testALongValueIsCutAndSaysSo()
 }//end class

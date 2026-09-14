@@ -59,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(DateTime $created)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 class RuleRun extends Entity implements JsonSerializable {
 

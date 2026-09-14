@@ -41,6 +41,8 @@ use JsonSerializable;
  * The id is derived from the same three facts every time, so a rule keeps its
  * id across reads, across restarts and across the machine it is read on, which
  * is what lets the run log key on it without a registry to allocate ids.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 final class RuleDescriptor implements JsonSerializable {
 

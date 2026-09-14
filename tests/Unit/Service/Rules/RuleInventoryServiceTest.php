@@ -48,17 +48,17 @@ class RuleInventoryServiceTest extends TestCase {
 	 * @return RuleInventoryService The service.
 	 */
 	private function service(array $triggerRows = [], array $summaries = []): RuleInventoryService {
-		$triggers = $this->createMock(FlowTriggerMapper::class);
+		$triggers = $this->createMock(originalClassName: FlowTriggerMapper::class);
 		$triggers->method('findBySchema')->willReturn($triggerRows);
 
-		$summaryMapper = $this->createMock(RuleRunSummaryMapper::class);
+		$summaryMapper = $this->createMock(originalClassName: RuleRunSummaryMapper::class);
 		$summaryMapper->method('findBySchema')->willReturn($summaries);
 
 		return new RuleInventoryService(
-			$triggers,
-			$summaryMapper,
-			new PropertyCalculations(),
-			new RuleVocabulary()
+			triggers: $triggers,
+			summaries: $summaryMapper,
+			propertyCalculations: new PropertyCalculations(),
+			vocabulary: new RuleVocabulary()
 		);
 
 	}//end service()
@@ -114,18 +114,18 @@ class RuleInventoryServiceTest extends TestCase {
 
 		$rules = $service->describe(schema: $this->schema());
 
-		$this->assertCount(4, $rules);
+		$this->assertCount(expectedCount: 4, haystack: $rules);
 		$this->assertSame(
-			[
+			expected: [
 				RuleVocabulary::KIND_CALCULATION,
 				RuleVocabulary::KIND_STATE_FIELD_RULE,
 				RuleVocabulary::KIND_LIFECYCLE_CONDITION,
 				RuleVocabulary::KIND_FLOW,
 			],
-			array_map(static fn ($rule): string => $rule->getKind(), $rules)
+			actual: array_map(static fn ($rule): string => $rule->getKind(), $rules)
 		);
-		$this->assertSame('calculation:bezwaar:uiterlijkeDatum', $rules[0]->getId());
-		$this->assertSame('x-openregister-lifecycle.transitions.sluiten.condition', $rules[2]->jsonSerialize()['source']);
+		$this->assertSame(expected: 'calculation:bezwaar:uiterlijkeDatum', actual: $rules[0]->getId());
+		$this->assertSame(expected: 'x-openregister-lifecycle.transitions.sluiten.condition', actual: $rules[2]->jsonSerialize()['source']);
 
 	}//end testAnAdministratorReadsWhatWillRunInEvaluationOrder()
 
@@ -141,14 +141,14 @@ class RuleInventoryServiceTest extends TestCase {
 	public function testARemovedAnnotationLeavesTheInventory(): void {
 		$service = $this->service();
 
-		$this->assertCount(3, $service->describe(schema: $this->schema(withCondition: true)));
+		$this->assertCount(expectedCount: 3, haystack: $service->describe(schema: $this->schema(withCondition: true)));
 
 		$rules = $service->describe(schema: $this->schema(withCondition: false));
 
-		$this->assertCount(2, $rules);
+		$this->assertCount(expectedCount: 2, haystack: $rules);
 		$this->assertSame(
-			[],
-			array_values(
+			expected: [],
+			actual: array_values(
 				array_filter(
 					$rules,
 					static fn ($rule): bool => $rule->getKind() === RuleVocabulary::KIND_LIFECYCLE_CONDITION
@@ -173,8 +173,8 @@ class RuleInventoryServiceTest extends TestCase {
 
 		$rule = $this->service()->find(schema: $schema, ruleId: 'calculation:bezwaar:uiterlijkeDatum');
 
-		$this->assertNotNull($rule);
-		$this->assertFalse($rule->isEnabled());
+		$this->assertNotNull(actual: $rule);
+		$this->assertFalse(condition: $rule->isEnabled());
 
 	}//end testASwitchedOffRuleReadsAsDisabled()
 
@@ -204,10 +204,10 @@ class RuleInventoryServiceTest extends TestCase {
 			$byId[$row['id']] = $row;
 		}
 
-		$this->assertFalse($byId['calculation:bezwaar:uiterlijkeDatum']['ranInsideWindow']);
-		$this->assertSame('2026-01-01T00:00:00+00:00', $byId['calculation:bezwaar:uiterlijkeDatum']['lastRun']);
-		$this->assertFalse($byId['lifecycleCondition:bezwaar:sluiten']['ranInsideWindow']);
-		$this->assertNull($byId['lifecycleCondition:bezwaar:sluiten']['lastRun']);
+		$this->assertFalse(condition: $byId['calculation:bezwaar:uiterlijkeDatum']['ranInsideWindow']);
+		$this->assertSame(expected: '2026-01-01T00:00:00+00:00', actual: $byId['calculation:bezwaar:uiterlijkeDatum']['lastRun']);
+		$this->assertFalse(condition: $byId['lifecycleCondition:bezwaar:sluiten']['ranInsideWindow']);
+		$this->assertNull(actual: $byId['lifecycleCondition:bezwaar:sluiten']['lastRun']);
 
 	}//end testARuleThatHasNotRunInsideTheWindowIsVisibleAsSuch()
 
@@ -232,7 +232,7 @@ class RuleInventoryServiceTest extends TestCase {
 			now: new DateTime('2026-09-14 00:00:00')
 		);
 
-		$this->assertTrue($rows[0]['ranInsideWindow']);
+		$this->assertTrue(condition: $rows[0]['ranInsideWindow']);
 
 	}//end testARecentRunIsInsideTheWindow()
 
@@ -259,8 +259,8 @@ class RuleInventoryServiceTest extends TestCase {
 
 		$rules = $this->service()->describe(schema: $schema);
 
-		$this->assertCount(1, $rules);
-		$this->assertSame('calculation:zaak:kenmerk', $rules[0]->getId());
+		$this->assertCount(expectedCount: 1, haystack: $rules);
+		$this->assertSame(expected: 'calculation:zaak:kenmerk', actual: $rules[0]->getId());
 
 	}//end testAPropertyForwardedCalculationIsInventoriedOnce()
 
@@ -281,9 +281,9 @@ class RuleInventoryServiceTest extends TestCase {
 
 		$rule = $service->find(schema: $this->schema(), ruleId: 'flow:bezwaar:flow-9');
 
-		$this->assertNotNull($rule);
-		$this->assertFalse($rule->isEnabled());
-		$this->assertSame(['events' => ['created', 'updated']], $rule->getCondition());
+		$this->assertNotNull(actual: $rule);
+		$this->assertFalse(condition: $rule->isEnabled());
+		$this->assertSame(expected: ['events' => ['created', 'updated']], actual: $rule->getCondition());
 
 	}//end testAFlowOnTwoEventsIsOneRule()
 }//end class

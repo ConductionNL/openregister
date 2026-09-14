@@ -43,6 +43,8 @@ use Throwable;
  * summary is NOT pruned here and that is the whole point: after this job has
  * deleted a rule's last thousand rows, the inventory still reports when that
  * rule last ran and what it last errored with.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 class RuleRunRetentionJob extends TimedJob {
 
