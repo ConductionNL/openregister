@@ -2898,7 +2898,14 @@
         "Store": "Pood",
         "Install registers, schemas and flows that other organisations have published.": "Paigalda registrid, skeemid ja voog, mille teised organisatsioonid on avaldanud.",
         "No such run": "Sellist käivitust pole",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Käivitust pole olemas või teil pole õigust seda näha. Voo kustutamine kustutab ka selle käivitused."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Käivitust pole olemas või teil pole õigust seda näha. Voo kustutamine kustutab ka selle käivitused.",
+        "Configured": "Seadistatud",
+        "Limited": "Piiratud",
+        "Simulated": "Simuleeritud",
+        "Not available": "Pole saadaval",
+        "Open settings": "Ava seaded",
+        "Add integration": "Lisa integratsioon",
+        "Last checked": "Viimati kontrollitud"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

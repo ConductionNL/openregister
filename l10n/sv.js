@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Butik",
         "Install registers, schemas and flows that other organisations have published.": "Installera register, scheman och flöden som andra organisationer har publicerat.",
         "No such run": "Ingen sådan körning",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Körningen finns inte, eller så får du inte se den. Raderar du ett flöde raderas även dess körningar."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Körningen finns inte, eller så får du inte se den. Raderar du ett flöde raderas även dess körningar.",
+        "Configured": "Konfigurerad",
+        "Limited": "Begränsad",
+        "Simulated": "Simulerad",
+        "Not available": "Inte tillgänglig",
+        "Open settings": "Öppna inställningar",
+        "Add integration": "Lägg till integration",
+        "Last checked": "Senast kontrollerad"
     },
     "nplurals=2; plural=(n != 1);"
 )
