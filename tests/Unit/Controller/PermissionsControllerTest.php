@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\ScopeAudit;
 use OCP\IAppConfig;
@@ -53,10 +54,16 @@ class PermissionsControllerTest extends TestCase {
 	 * @param string       $mode      One of DenyEnforcementMode::MODES.
 	 * @param Register[]   $registers The registers the mappers answer with.
 	 * @param Schema[]     $schemas   The schemas the mappers answer with.
+	 * @param DerivedGrantStore|null $derivedGrants The derived-grant store, when a case uses one.
 	 *
 	 * @return PermissionsController The controller under test.
 	 */
-	private function controllerFor(string $mode, array $registers = [], array $schemas = []): PermissionsController {
+	private function controllerFor(
+		string $mode,
+		array $registers = [],
+		array $schemas = [],
+		?DerivedGrantStore $derivedGrants = null,
+	): PermissionsController {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($mode);
 
@@ -83,7 +90,8 @@ class PermissionsControllerTest extends TestCase {
 			denyResolver: new DenyResolver(),
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper,
-			audit: new ScopeAudit()
+			audit: new ScopeAudit(),
+			derivedGrants: $derivedGrants
 		);
 	}//end controllerFor()
 
@@ -122,6 +130,60 @@ class PermissionsControllerTest extends TestCase {
 
 		return $schema;
 	}//end schemaWith()
+
+	/**
+	 * The re-run reports what moved, in the shape an administrator reads.
+	 *
+	 * @return void
+	 */
+	public function testTheDerivedGrantReRunReportsWhatMoved(): void {
+		$store = $this->createMock(originalClassName: DerivedGrantStore::class);
+		$store->method('rules')->willReturn([['claim' => 'department', 'equals' => 'vergunningen']]);
+		$store->method('reapply')->willReturn(
+			[
+				'users' => 3,
+				'changed' => 1,
+				'grantsBefore' => 2,
+				'grantsAfter' => 1,
+				'accounts' => ['bea'],
+			]
+		);
+
+		$response = $this->controllerFor(mode: DenyEnforcementMode::MODE_STAGING, derivedGrants: $store)
+			->reapplyDerivedGrants();
+
+		$this->assertSame(200, $response->getStatus());
+		$body = $response->getData();
+
+		foreach (['ruleCount', 'users', 'changed', 'grantsBefore', 'grantsAfter', 'accounts'] as $key) {
+			$this->assertArrayHasKey($key, $body, sprintf('the re-run lost its "%s" key', $key));
+		}
+
+		$this->assertSame(1, $body['ruleCount']);
+		$this->assertSame(1, $body['changed']);
+		$this->assertSame(['bea'], $body['accounts']);
+	}//end testTheDerivedGrantReRunReportsWhatMoved()
+
+	/**
+	 * An instance with no rules says so, rather than reporting that nothing moved.
+	 *
+	 * The second reads as a rule that had no effect, which is the answer
+	 * somebody debugging a rule would most like to be given by mistake.
+	 *
+	 * @return void
+	 */
+	public function testTheReRunSaysWhenNoRulesAreDeclared(): void {
+		$store = $this->createMock(originalClassName: DerivedGrantStore::class);
+		$store->method('rules')->willReturn([]);
+		$store->expects($this->never())->method('reapply');
+
+		$response = $this->controllerFor(mode: DenyEnforcementMode::MODE_STAGING, derivedGrants: $store)
+			->reapplyDerivedGrants();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(0, $response->getData()['ruleCount']);
+		$this->assertStringContainsString('No claim rules', $response->getData()['message']);
+	}//end testTheReRunSaysWhenNoRulesAreDeclared()
 
 	/**
 	 * 🔴 The scope audit names the rule behind every principal, not only the set.

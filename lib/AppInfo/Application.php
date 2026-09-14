@@ -2558,6 +2558,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
 		$context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+		// Access derived from what an identity provider asserted, once per
+		// sign-in. Costs one app-config read on an instance that declares no
+		// rule, and never fails a sign-in: see the listener.
+		$context->registerEventListener(
+			\OCP\User\Events\UserLoggedInEvent::class,
+			\OCA\OpenRegister\Listener\IdentityClaimsLoginListener::class
+		);
+
 		// Flow node discovery. OpenRegister contributes its own built-ins
 		// through the same event every consuming app uses, so the contribution
 		// path is exercised by its owner and cannot rot unnoticed.

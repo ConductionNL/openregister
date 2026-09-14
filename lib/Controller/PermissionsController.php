@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\ScopeAudit;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCP\AppFramework\Controller;
@@ -77,6 +78,7 @@ class PermissionsController extends Controller {
 	 * @param RegisterMapper      $registerMapper Register lookup.
 	 * @param SchemaMapper        $schemaMapper   Schema lookup.
 	 * @param ScopeAudit          $audit          Assembles the per-rule audit.
+	 * @param DerivedGrantStore|null $derivedGrants Access derived from identity claims; absent means none is configured.
 	 */
 	public function __construct(
 		string $appName,
@@ -87,6 +89,7 @@ class PermissionsController extends Controller {
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ScopeAudit $audit = new ScopeAudit(),
+		private readonly ?DerivedGrantStore $derivedGrants = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -183,6 +186,55 @@ class PermissionsController extends Controller {
 			]
 		);
 	}//end denyPreview()
+
+	/**
+	 * Re-run the derivation and report how many accounts moved.
+	 *
+	 * An access change nobody is told about is the one that surprises an
+	 * auditor. Narrowing a rule that reached two hundred people is a decision
+	 * somebody should see the size of before they walk away from the screen, so
+	 * this answers in numbers and names the accounts whose access moved
+	 * (design D-11).
+	 *
+	 * ADMINISTRATOR ONLY, by the framework rather than by a check in this
+	 * method. The route carries no `#[NoAdminRequired]`, so Nextcloud's own
+	 * middleware refuses a non-administrator before the method runs. A body
+	 * check beside that attribute is the exact mismatch the semantic-auth gate
+	 * exists to catch.
+	 *
+	 * @return JSONResponse What the re-run did.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function reapplyDerivedGrants(): JSONResponse {
+		if ($this->derivedGrants === null) {
+			return new JSONResponse(
+				['message' => 'Derived grants are not available on this instance'],
+				501
+			);
+		}
+
+		$rules = $this->derivedGrants->rules();
+		if ($rules === []) {
+			// An instance with no rules has nothing to re-run, and saying so is
+			// a different answer from "nothing moved". The second reads as a
+			// rule that had no effect, which is what somebody debugging a rule
+			// would most like to be told by mistake.
+			return new JSONResponse(
+				[
+					'ruleCount' => 0,
+					'users' => 0,
+					'changed' => 0,
+					'message' => 'No claim rules are declared, so nothing was derived',
+				]
+			);
+		}
+
+		$report = $this->derivedGrants->reapply();
+
+		return new JSONResponse(array_merge(['ruleCount' => count($rules)], $report));
+	}//end reapplyDerivedGrants()
 
 	/**
 	 * The scope audit, per rule as well as per schema and per action.
