@@ -111,7 +111,13 @@ class LifecycleConditionTest extends TestCase {
 				$this->l10n,
 				$this->logger
 			),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+					new \OCA\OpenRegister\Service\Search\PlaceholderResolver($this->createMock(\OCP\IUserSession::class))
+				)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 	}//end setUp()
 
@@ -225,7 +231,13 @@ class LifecycleConditionTest extends TestCase {
 				$this->l10n,
 				$this->logger
 			),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+					new \OCA\OpenRegister\Service\Search\PlaceholderResolver($this->createMock(\OCP\IUserSession::class))
+				)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$this->schemaWithTransition(
@@ -483,7 +495,13 @@ class LifecycleConditionTest extends TestCase {
 			$this->permissionHandler,
 			$this->logger,
 			new LifecycleConditionEvaluator($this->userSession, $this->groupManager, $this->l10n, $this->logger),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context)
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+					new \OCA\OpenRegister\Service\Search\PlaceholderResolver($this->createMock(\OCP\IUserSession::class))
+				)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$schema = new Schema();

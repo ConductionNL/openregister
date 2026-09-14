@@ -34,6 +34,10 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Service\Rules\RuleDescriptor;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -89,6 +93,8 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleConditionEvaluator $conditionEvaluator,
 		private readonly LifecycleTransitionResolver $transitionResolver,
+		private readonly ConditionTracer $conditionTracer,
+		private readonly RuleRunRecorder $ruleRuns,
 	) {
 	}//end __construct()
 
@@ -248,6 +254,18 @@ class LifecycleValidationListener implements IEventListener {
 			schemaSlug: (string)$schema->getSlug(),
 			field: $field
 		);
+		$this->recordCondition(
+			object: $newObject,
+			schema: $schema,
+			spec: $spec,
+			newData: $newData,
+			oldData: $oldData,
+			action: (string)$action,
+			from: (string)$oldValue,
+			to: $newValue,
+			refusal: $refusal
+		);
+
 		if ($refusal !== null) {
 			$this->reject(event: $event, error: $refusal);
 			return;
@@ -271,6 +289,91 @@ class LifecycleValidationListener implements IEventListener {
 			}
 		}
 	}//end handle()
+
+	/**
+	 * Record what a transition's condition decided, and on which operand.
+	 *
+	 * This is the run log's whole purpose: "waarom is de flow niet gelopen" is
+	 * answered here rather than out of a log file. A transition with no
+	 * condition is not a rule and records nothing, and a condition switched off
+	 * records nothing either, because it was not evaluated.
+	 *
+	 * @param ObjectEntity $object The object being saved.
+	 * @param Schema $schema The schema the transition is declared on.
+	 * @param array<string, mixed> $spec The matched transition's spec.
+	 * @param array<string, mixed> $newData The object as it would be saved.
+	 * @param array<string, mixed> $oldData The object as currently stored.
+	 * @param string $action The matched transition's name.
+	 * @param string $from The lifecycle value being moved away from.
+	 * @param string $to The lifecycle value being moved to.
+	 * @param array<string, mixed>|null $refusal The refusal the evaluator produced, or null.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one half of the
+	 *   fact being recorded: which rule, on which object, against which document, with
+	 *   which verdict. Bundling them into a carrier object would hide exactly that.
+	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDescriptor::idFor is the published
+	 *   derivation of a rule id.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function recordCondition(
+		ObjectEntity $object,
+		Schema $schema,
+		array $spec,
+		array $newData,
+		array $oldData,
+		string $action,
+		string $from,
+		string $to,
+		?array $refusal,
+	): void {
+		$condition = ($spec['condition'] ?? null);
+		if ($condition === null || ($spec['enabled'] ?? true) === false) {
+			return;
+		}
+
+		$slug = (string)($schema->getSlug() ?? '');
+		if ($slug === '') {
+			return;
+		}
+
+		$verdict = RuleVocabulary::VERDICT_FIRED;
+		$message = null;
+		if ($refusal !== null) {
+			// The condition held against the write: the rule did what it
+			// declares, which is to refuse. `refused`, not `no_match`.
+			$verdict = RuleVocabulary::VERDICT_REFUSED;
+			$message = (string)($refusal['message'] ?? '');
+		}
+
+		$trace = $this->conditionTracer->trace(
+			condition: $condition,
+			document: $this->conditionEvaluator->document(
+				newData: $newData,
+				oldData: $oldData,
+				action: $action,
+				from: $from,
+				to: $to
+			),
+			verdict: $verdict,
+			message: $message
+		);
+
+		$this->ruleRuns->record(
+			ruleId: RuleDescriptor::idFor(
+				kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION,
+				schemaSlug: $slug,
+				key: $action
+			),
+			schemaSlug: $slug,
+			trace: $trace,
+			objectUuid: ($object->getUuid() ?? null),
+			registerSlug: ($object->getRegister() ?? null)
+		);
+
+	}//end recordCondition()
 
 	/**
 	 * Look up the schema referenced by an object instance.

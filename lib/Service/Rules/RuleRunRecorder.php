@@ -52,8 +52,12 @@ use Throwable;
  * thousand rows. The app config key turns the detail rows off; the summary is
  * kept either way, because it is one row per rule and it is what the inventory
  * reads.
+ *
+ * NOT `final`, and only so that the save-path listeners' unit tests can hand
+ * one a double and assert what a save recorded without standing a database up
+ * behind it. There is meant to be exactly one implementation in production.
  */
-final class RuleRunRecorder {
+class RuleRunRecorder {
 
 	/**
 	 * The app the settings live under.
