@@ -222,15 +222,15 @@ class ControllersIntegrationTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 
-		$this->overrideContainerService(IRequest::class, $this->request);
-		$this->overrideContainerService(IUserSession::class, $this->userSession);
+		$this->overrideContainerService(id: IRequest::class, instance: $this->request);
+		$this->overrideContainerService(id: IUserSession::class, instance: $this->userSession);
 
-		$this->registersController = $this->resolveController(RegistersController::class);
-		$this->schemasController = $this->resolveController(SchemasController::class);
-		$this->viewsController = $this->resolveController(ViewsController::class);
-		$this->settingsController = $this->resolveController(SettingsController::class);
-		$this->searchTrailController = $this->resolveController(SearchTrailController::class);
-		$this->endpointsController = $this->resolveController(EndpointsController::class);
+		$this->registersController = $this->resolveController(class: RegistersController::class);
+		$this->schemasController = $this->resolveController(class: SchemasController::class);
+		$this->viewsController = $this->resolveController(class: ViewsController::class);
+		$this->settingsController = $this->resolveController(class: SettingsController::class);
+		$this->searchTrailController = $this->resolveController(class: SearchTrailController::class);
+		$this->endpointsController = $this->resolveController(class: EndpointsController::class);
 
 		// Create test fixtures.
 		$this->createTestFixtures();

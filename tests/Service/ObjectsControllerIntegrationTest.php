@@ -180,11 +180,11 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->groupManager->method('isAdmin')->willReturnCallback(fn () => $this->callerIsAdmin);
 
-		$this->overrideContainerService(IRequest::class, $this->request);
-		$this->overrideContainerService(IUserSession::class, $this->userSession);
-		$this->overrideContainerService(IGroupManager::class, $this->groupManager);
+		$this->overrideContainerService(id: IRequest::class, instance: $this->request);
+		$this->overrideContainerService(id: IUserSession::class, instance: $this->userSession);
+		$this->overrideContainerService(id: IGroupManager::class, instance: $this->groupManager);
 
-		$this->controller = $this->resolveController(ObjectsController::class);
+		$this->controller = $this->resolveController(class: ObjectsController::class);
 
 		// Create test register and schema fixtures.
 		$this->createTestFixtures();
@@ -1740,6 +1740,6 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	// is covered.
 
 	private function rebuildController(): void {
-		$this->controller = $this->resolveController(ObjectsController::class);
+		$this->controller = $this->resolveController(class: ObjectsController::class);
 	}
 }

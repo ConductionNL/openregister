@@ -70,9 +70,9 @@ class SessionAndRequestLeakCanaryTest extends TestCase {
 		$service = (new Application())->getContainer()->get($serviceId);
 
 		$this->assertNotInstanceOf(
-			MockObject::class,
-			$service,
-			$serviceId . ' is a PHPUnit double: an earlier test file overrode it on the app '
+			expected: MockObject::class,
+			actual: $service,
+			message: $serviceId . ' is a PHPUnit double: an earlier test file overrode it on the app '
 				. 'container and did not restore it, so every file after that one is testing '
 				. 'against that file\'s doubles. Look for a missing restoreContainerOverrides() '
 				. 'in a tearDown.'
