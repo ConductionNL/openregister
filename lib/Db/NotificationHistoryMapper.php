@@ -48,11 +48,6 @@ use OCP\IDBConnection;
  */
 class NotificationHistoryMapper extends QBMapper {
 	/**
-	 * Constructor.
-	 *
-	 * @param IDBConnection $db Database connection.
-	 */
-	/**
 	 * Filter key to column, for the list and its count.
 	 *
 	 * ONE map, read by both `findFiltered()` and `countFiltered()`. It was two
@@ -74,6 +69,11 @@ class NotificationHistoryMapper extends QBMapper {
 		'subjectId' => 'subject_id',
 	];
 
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
 	public function __construct(IDBConnection $db) {
 		parent::__construct(
 			db: $db,
@@ -147,12 +147,13 @@ class NotificationHistoryMapper extends QBMapper {
 	 * Find history rows matching the supplied filters.
 	 *
 	 * Supported filters: `ruleId`, `channel`, `recipient`, `objectUuid`,
-	 * `schemaId`, `registerId`, `status`. Unknown keys are silently
-	 * ignored. All filters are AND-combined.
+	 * `schemaId`, `registerId`, `status`, `subjectType` and `subjectId`.
+	 * Unknown keys are silently ignored. All filters are AND-combined.
 	 *
 	 * @param array<string, string|null> $filters Filter map.
 	 * @param int|null $limit Result limit.
 	 * @param int|null $offset Result offset.
+	 * @param DateTime|null $asOf The moment a snooze is measured against, defaulting to now.
 	 *
 	 * @return array<int, NotificationHistory>
 	 */
@@ -195,6 +196,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 * Count rows matching the same filters as `findFiltered()`.
 	 *
 	 * @param array<string, string|null> $filters Filter map.
+	 * @param DateTime|null $asOf The moment a snooze is measured against, defaulting to now.
 	 *
 	 * @return int Row count.
 	 */
