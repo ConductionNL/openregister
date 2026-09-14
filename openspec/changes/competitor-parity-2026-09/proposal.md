@@ -366,6 +366,45 @@ and in any order: `api-as-a-versioned-surface`,
 `several-legal-entities-in-one-instance`. Every one of those is L or
 depends on something that is, and none of them blocks a tender answer.
 
+## Discovery wave 4 (2026-09-14)
+
+One cluster of the sweep stayed open after wave 3: cluster 67, "The
+satisfaction survey as its own object". The gap register's cluster table
+recorded it as "no change opened; pipelinq `customer-satisfaction-closed-loop`
+carries ledger row 6.16, not the cluster". Row 6.16 is the campaign.
+The cluster is the object the campaign runs on, and it is openregister's.
+
+| change | cluster | candidates | size | decision | consumer |
+|---|---|---|---|---|---|
+| `survey-object` | 67, the satisfaction survey as its own object | C-reporting-8, C-reporting-31 | M | D5, D21 | pipelinq `customer-satisfaction-closed-loop` runs its campaign on it; dossiq fires an invitation per case type on closure and declares nothing else; portaliq renders it for a requester with no account |
+
+The cluster's mechanism line names all three: "new openregister change
+`survey-object` carrying the questions, the answers and the export; dossiq
+fires it per case type on closure and portaliq renders it for a requester
+with no account (D5)". Its stated dependency is cluster 51, the intake form
+as its own object, which is portaliq's.
+
+### A numbering correction to the wave 3 table above
+
+The extension table in wave 2 and 3 numbers two clusters wrong, and both
+numbers belong to other owners. `relation-types-with-inverses` is cluster
+**62**, "Relations, split, merge and the relation graph", not 61, which is
+integriq's outbound sender identity. `working-calendar-admin` is cluster
+**69**, "Working calendars, per instance, per unit and per person", not 67,
+which is this section's survey cluster. Both sources agree on 62 and 69:
+`build-plan.md` headings and the gap register's cluster table. The
+candidate lists in that table are correct, only the cluster numbers beside
+them were wrong, and they are left in place so the correction is visible.
+
+### What other apps owe wave 4
+
+- **pipelinq**: the campaign, the reminder schedule and the reporting over
+  time, under ledger row 6.16.
+- **dossiq**: one declaration, which case types fire a survey on closure.
+  Row 6.16 records the rest as a deliberate no.
+- **portaliq**: the rendering for a requester with no account, under D5,
+  and its cluster 51 dependency.
+
 ## Platform integration programme (D9)
 
 Ten changes, one per Nextcloud interface, one programme. The input is not
