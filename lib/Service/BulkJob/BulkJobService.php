@@ -134,6 +134,8 @@ class BulkJobService {
 	 * How many members one background batch walks.
 	 *
 	 * @return int The batch size.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function getBatchSize(): int {
 		$size = $this->appConfig->getValueInt(self::APP_ID, self::BATCH_SIZE_KEY, self::BATCH_SIZE_DEFAULT);

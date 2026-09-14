@@ -48,18 +48,53 @@ use Psr\Log\NullLogger;
 
 final class BulkJobServiceTest extends TestCase {
 
+	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapper
+	 */
 	private BulkJobMapper $jobMapper;
 
+	/**
+	 * Member persistence.
+	 *
+	 * @var BulkJobMemberMapper
+	 */
 	private BulkJobMemberMapper $memberMapper;
 
+	/**
+	 * The action catalogue.
+	 *
+	 * @var BulkActionRegistry
+	 */
 	private BulkActionRegistry $registry;
 
+	/**
+	 * Selection resolution.
+	 *
+	 * @var BulkSelectionResolver
+	 */
 	private BulkSelectionResolver $resolver;
 
+	/**
+	 * The one executor.
+	 *
+	 * @var BulkJobExecutor
+	 */
 	private BulkJobExecutor $executor;
 
+	/**
+	 * The background queue, which records the enqueues.
+	 *
+	 * @var IJobList
+	 */
 	private IJobList $jobList;
 
+	/**
+	 * Instance settings, which hold the ceiling.
+	 *
+	 * @var IAppConfig
+	 */
 	private IAppConfig $appConfig;
 
 	protected function setUp(): void {

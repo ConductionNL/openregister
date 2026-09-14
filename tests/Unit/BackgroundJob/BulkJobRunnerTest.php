@@ -37,10 +37,25 @@ use Psr\Log\NullLogger;
 
 final class BulkJobRunnerTest extends TestCase {
 
+	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapper
+	 */
 	private BulkJobMapper $jobMapper;
 
+	/**
+	 * The lifecycle service the runner drives.
+	 *
+	 * @var BulkJobService
+	 */
 	private BulkJobService $service;
 
+	/**
+	 * The background queue, which records the re-enqueues.
+	 *
+	 * @var IJobList
+	 */
 	private IJobList $jobList;
 
 	/**

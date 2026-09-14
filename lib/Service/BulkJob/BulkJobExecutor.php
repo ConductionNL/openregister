@@ -230,6 +230,8 @@ class BulkJobExecutor {
 	 * @param BulkJob $job The job.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function refreshCounts(BulkJob $job): void {
 		$counts = $this->memberMapper->countByOutcome(jobId: (int)$job->getId());
@@ -480,7 +482,12 @@ class BulkJobExecutor {
 	 * @return string|null The schema version.
 	 */
 	private function schemaVersionOf(ObjectEntity $object): ?string {
-		$version = ($object->jsonSerialize()['schemaVersion'] ?? null);
+		// The getter resolves through Entity::__call, and the @method
+		// annotation on ObjectEntity is what makes it visible to static
+		// analysis. Reading the version off jsonSerialize() does NOT work:
+		// that method omits the field entirely, so every member came back
+		// unversioned and the homogeneity guard never fired.
+		$version = $object->getSchemaVersion();
 
 		if (is_string($version) === false || $version === '') {
 			return null;

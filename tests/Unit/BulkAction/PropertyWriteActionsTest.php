@@ -39,6 +39,11 @@ use Psr\Log\NullLogger;
 
 final class PropertyWriteActionsTest extends TestCase {
 
+	/**
+	 * The object write path, which records every patch.
+	 *
+	 * @var ObjectService
+	 */
 	private ObjectService $objectService;
 
 	/**

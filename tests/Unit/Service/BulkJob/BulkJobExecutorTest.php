@@ -50,20 +50,60 @@ use Psr\Log\NullLogger;
 
 final class BulkJobExecutorTest extends TestCase {
 
+	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapper
+	 */
 	private BulkJobMapper $jobMapper;
 
+	/**
+	 * Member persistence.
+	 *
+	 * @var BulkJobMemberMapper
+	 */
 	private BulkJobMemberMapper $memberMapper;
 
+	/**
+	 * Selection resolution.
+	 *
+	 * @var BulkSelectionResolver
+	 */
 	private BulkSelectionResolver $resolver;
 
+	/**
+	 * The action catalogue.
+	 *
+	 * @var BulkActionRegistry
+	 */
 	private BulkActionRegistry $registry;
 
+	/**
+	 * Per-object access checks.
+	 *
+	 * @var PermissionHandler
+	 */
 	private PermissionHandler $permissionHandler;
 
+	/**
+	 * Schema lookup behind the access check.
+	 *
+	 * @var SchemaMapper
+	 */
 	private SchemaMapper $schemaMapper;
 
+	/**
+	 * The audit entries each member gets.
+	 *
+	 * @var AuditTrailMapper
+	 */
 	private AuditTrailMapper $auditTrailMapper;
 
+	/**
+	 * Actor lookup.
+	 *
+	 * @var IUserManager
+	 */
 	private IUserManager $userManager;
 
 	/**
@@ -219,7 +259,16 @@ final class BulkJobExecutorTest extends TestCase {
 
 	public function testAnObjectTheActorMayNotWriteIsRefusedAndNotSkipped(): void {
 		$this->permissionHandler->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $rbac = true, ?ObjectEntity $object = null): bool => $object?->getUuid() !== 'b'
+			static function (
+				Schema $schema,
+				string $action,
+				?string $userId = null,
+				?string $objectOwner = null,
+				bool $rbac = true,
+				?ObjectEntity $object = null
+			): bool {
+				return $object?->getUuid() !== 'b';
+			}
 		);
 
 		$this->executor()->writePreviewMembers(

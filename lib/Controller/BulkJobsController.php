@@ -236,8 +236,6 @@ class BulkJobsController extends Controller {
 			$committed = $this->service->commit(job: $job, justification: $justification);
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);
-		} catch (InvalidArgumentException $exception) {
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
 		}
 
 		return new JSONResponse(data: $committed->jsonSerialize(), statusCode: 202);
