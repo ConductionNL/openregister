@@ -139,6 +139,7 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
 | `relation` | Resolves a typed `x-openregister-relations` field; reads either a uid string, an array of uids, or an array of objects with `userId`. |
 | `object-acl` | ACL holders of the object for the configured `recipient.permission` ∈ `[read, manage]`. |
 | `expression` | Arbitrary resolver class (DI tag in `recipient.resolver`). Must implement `RecipientResolverInterface::resolve(ObjectEntity $object, array $context): string[]`. |
+| `watchers` | Whoever follows the object. Spelled `{"watchers": true}`, with no `kind`; anything but boolean true is refused when the schema is saved. Resolved at dispatch time, so a watcher who has lost read on the object receives nothing and is dropped from the list. |
 
 #### Example
 

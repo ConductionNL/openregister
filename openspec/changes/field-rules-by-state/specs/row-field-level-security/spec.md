@@ -31,3 +31,32 @@ lists for the current user and state.
 - **WHEN** a front desk user and a handler read the same object
 - **THEN** the front desk user's response lacks `internalNote` and the handler's holds it
 - @e2e exclude {stripping, covered by PropertyRbacHandler unit tests}
+
+### Requirement: A field rule may be conditional on the object's own data
+
+A `hidden`, `readOnly` or `required` entry MAY carry a condition over the
+object's data. The condition operand MAY be any property the schema
+declares, including one declared through an extending form, and not only
+the lifecycle field or a built-in scalar. The rule SHALL apply only when
+its condition holds, and `@self.fieldRules` SHALL report the rules that
+apply to this object as it stands, not the rules that could apply.
+
+#### Scenario: a field becomes required because of a value
+
+- **GIVEN** state `open` requiring `motivering` when `bedrag` is above 50000
+- **WHEN** an object with `bedrag` of 60000 is saved without `motivering`
+- **THEN** the save fails with 422 naming `motivering`
+
+#### Scenario: the same field is not required below the threshold
+
+- **GIVEN** the same rule
+- **WHEN** an object with `bedrag` of 400 is saved without `motivering`
+- **THEN** the save succeeds
+- **AND** `@self.fieldRules.required` does not contain `motivering`
+
+#### Scenario: a condition reads a property an extending form declared
+
+- **GIVEN** a rule whose condition reads a property authored through an extending form
+- **WHEN** the object is saved
+- **THEN** the condition is evaluated against that property's value
+- @e2e exclude {evaluator, covered by unit tests}

@@ -14,14 +14,14 @@ and lists SHALL carry `@self.watching` for the current user.
 - **GIVEN** an object with three audit entries
 - **WHEN** a user watches it and reads it back
 - **THEN** `@self.watching` is true and the object still has three audit entries
-- @e2e exclude {proposal only; task 4.1 adds tests/e2e/ci/object-watchers.spec.ts when the endpoints ship}
+- `@e2e tests/e2e/ci/object-watchers.spec.ts`
 
 #### Scenario: a user without read cannot watch
 
 - **GIVEN** an object the user may not read
 - **WHEN** the user calls the watch endpoint
 - **THEN** the response is 404 and no row is written
-- @e2e exclude {RBAC guard, covered by WatcherService unit tests}
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and WatcherService unit tests
 
 ### Requirement: Watchers are a lens and a list
 
@@ -35,7 +35,7 @@ another user, and any watcher SHALL be able to remove themselves.
 - **GIVEN** a case watched by two users and a team lead with `update`
 - **WHEN** the team lead lists the watchers
 - **THEN** both users are returned with the time they subscribed
-- @e2e exclude {list endpoint, covered by Newman}
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/newman/openregister-object-watchers.postman_collection.json
 
 ### Requirement: Deleting an object removes its watchers
 
@@ -46,4 +46,4 @@ Deleting an object SHALL delete its watcher rows.
 - **GIVEN** an object with four watchers
 - **WHEN** it is deleted permanently
 - **THEN** the watcher table holds no row for it
-- @e2e exclude {deletion cleanup, covered by unit tests}
+- @e2e exclude {deletion cleanup has no HTTP surface to read; asserted by WatcherServiceTest::testDeletingAnObjectRemovesItsWatchers and wired by WatcherPruneListener}

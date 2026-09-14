@@ -71,3 +71,36 @@ dossiq's half needs only the catalogue to start: the mandate matrix can
 name its grantable set the day `GET /api/permissions` answers, before any
 deny exists. Building the catalogue first therefore unblocks the consumer
 halfway through this change rather than at the end of it.
+
+## D-8. Compiled into the query, because a post-filter has already lied
+
+A permission check that runs on the result set gives a correct page of
+wrong data: the total is wrong, the facet counts are wrong, and page three
+is missing rows that page two should have shown. The grant, the
+inheritance and the deny become predicates, in the SQL and in the search
+index, and the same evaluation produces both. This is D22's whole point,
+and it is why the decision says the two readings are the same English
+sentence and different products.
+
+## D-9. The record answers what you may do with it
+
+Returning the permitted actions with the object costs one resolution that
+has already happened. Not returning them costs every client a guess, and
+the user finds out by clicking into a 403. The list is the resolved verbs
+for this caller on this object, from the same pass that decided the read.
+
+## D-10. Provenance reads both ways
+
+"What may I do here" and "who may do this here" are two directions of one
+index. The second is the auditor's question and the one no product in the
+corpus was asked. It returns principals with their verbs and the rule
+behind each, and its history answers who could see what, when.
+
+## D-11. An end on a grant, and a recalculation when a rule moves
+
+A grant with an end date is a property of the grant, evaluated at
+resolution time, so an expired grant needs no job to take it away. A
+derived grant is different: when the rule that derives it changes, the
+derivation is re-run and the number of changed grants is reported, because
+an access change nobody is told about is the one that surprises an
+auditor.

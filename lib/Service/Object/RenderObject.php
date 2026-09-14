@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -2130,6 +2131,12 @@ class RenderObject {
 			);
 		}
 
+		// The reader's own follow marker, and the size of the audience
+		// (`object-watchers`). Both come from WatcherService, whose per-request
+		// memo means a page of objects costs ONE query for the marker and ONE
+		// for the counts, not one per rendered row.
+		$this->applyWatcherMarkers(entity: $entity);
+
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
 		// effective retention for this row from the annotation's default +
@@ -2146,6 +2153,59 @@ class RenderObject {
 
 		return $entity;
 	}//end renderEntity()
+
+	/**
+	 * Attach `@self.watching` and, for an editor, `@self.watcherCount`.
+	 *
+	 * Resolved through the container rather than the constructor so the render
+	 * layer does not acquire a hard dependency on the subscription primitive:
+	 * the same lazy posture the registry-subscription lookup above uses, and for
+	 * the same reason, since WatcherService resolves permissions and would
+	 * otherwise close a construction cycle.
+	 *
+	 * Failures are logged and swallowed: whether somebody follows an object is
+	 * never worth failing the read of that object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	private function applyWatcherMarkers(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			$watchers = $this->container->get(WatcherService::class);
+
+			// Anonymous reads get no marker at all: there is no "you" to answer
+			// for, and a hard false would read as "you do not follow this",
+			// which is a different claim.
+			if ($watchers->callerUid() === null) {
+				return;
+			}
+
+			$entity->setWatching($watchers->isWatchedByCaller(objectUuid: $uuid));
+
+			// The count is a fact about the object's audience, so it is only
+			// told to a reader who may edit the object.
+			if ($watchers->maySeeWatchers(object: $entity) === true) {
+				$entity->setWatcherCount($watchers->watcherCount(objectUuid: $uuid));
+			}
+		} catch (\Throwable $e) {
+			// A subscription lookup must never take out object rendering.
+			$this->logger->debug(
+				sprintf('[RenderObject] watcher markers skipped for %s: %s', $uuid, $e->getMessage())
+			);
+		}//end try
+	}//end applyWatcherMarkers()
 
 	/**
 	 * Attach the resolved `@self._retention` decision.

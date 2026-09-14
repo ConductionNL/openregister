@@ -86,3 +86,40 @@ reference".
   facet handler.
 - Backwards compatible: `enum` keeps working.
 - Size: S.
+
+## Extension, discovery wave 1 (2026-09-14)
+
+Cluster CT-4 of `procest/_round4/discovery/build-plan.md`, from the depth
+study `procest/_round4/discovery/casetype-configurability.md`
+(ConductionNL/market-intelligence, 2026-09-14): "Code lists a property
+takes its values from". Study rows A4 and part of B3. Owner openregister
+for the mechanism, dossiq for the declaration, size S each. The build plan
+names this change as the vehicle, so it is extended rather than
+duplicated.
+
+The study's verdict on the mechanism is that it is already written here:
+
+> `openregister/openspec/changes/property-code-list-from-concept-scheme`
+> adds `x-openregister-concepts` so a property takes its values from a
+> SKOS concept scheme, with labels for the form and no schema change when
+> the list changes. dossiq's half is
+> `openspec/changes/code-lists-from-concepts` (0 of 4), which adds
+> `propertyDefinition.conceptScheme`. Both are written. Neither is built.
+
+Two things sit beside that and are not in this change today.
+
+**The B3 half, options narrowed by another field's value, is carried
+elsewhere.** `code-list-lifecycle-and-hierarchy` REQ-CLH-002 lets a coded
+property bind its option subset to another property's value or to a
+declared context key, beside the hierarchy and the validity window. It is
+written once, there, so the two do not diverge.
+
+**The A4 defect has an openregister half.** The study's finding is
+dossiq's editor: "the Properties tab has no input for enumValues, so
+choosing enum yields a list nobody can fill". The reason an administrator
+can reach that state at all is that this layer accepts a choice property
+with no source of values. A property that is a choice and has neither a
+non-empty `enum` nor a concept scheme is a field that can never be filled
+correctly, and the save is where that is cheapest to catch. That
+requirement is added below, and the editor half goes to the dossiq lane
+with the study row.
