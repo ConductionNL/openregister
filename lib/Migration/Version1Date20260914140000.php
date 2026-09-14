@@ -113,15 +113,23 @@ class Version1Date20260914140000 extends SimpleMigrationStep {
 	}//end changeSchema()
 
 	/**
-	 * Add the subject axis and the snooze and archive stamps to the bell.
+	 * Add the read stamp, the subject axis and the snooze and archive stamps.
 	 *
 	 * `subject_type` and `subject_id` give the notification list an axis: a bell
 	 * with four hundred entries is unusable without one, and the existing
 	 * `schema_id` answers a different question (which schema produced the rule)
 	 * than "what is this notice about". `snoozed_until` returns a notice to the
-	 * bell on a date; `archived_at` takes it out without claiming it was read,
-	 * which is why neither can live in the read-state table, whose `read_at` is
-	 * not nullable.
+	 * bell on a date and `archived_at` takes it out without claiming it was
+	 * read, so neither can live in `openregister_notification_readstate`, whose
+	 * `read_at` is NOT NULL and would force an archive to lie about a read.
+	 *
+	 * `read_at` lands here beside them for the same reason, and because a
+	 * history row already carries exactly ONE recipient, so the row IS the
+	 * per-user fact. That is not a second home for an existing one: a grep of
+	 * `lib/` on 2026-09-14 finds NotificationReadStateMapper with no caller at
+	 * all. It stays for identifiers that are not history rows (a core
+	 * notification id, a channel token), and NotificationClearingService is the
+	 * one writer of this column.
 	 *
 	 * @param ISchemaWrapper $schema The schema being changed.
 	 *
@@ -136,6 +144,11 @@ class Version1Date20260914140000 extends SimpleMigrationStep {
 
 		$table = $schema->getTable(self::HISTORY_TABLE);
 		$added = 0;
+
+		if ($table->hasColumn('read_at') === false) {
+			$table->addColumn('read_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+			$added++;
+		}
 
 		if ($table->hasColumn('subject_type') === false) {
 			$table->addColumn('subject_type', Types::STRING, ['notnull' => false, 'length' => 64]);

@@ -17,16 +17,16 @@ surfaces, then the bell.
 
 ## 2. What makes an object unread again
 
-- [ ] 2.1 `lib/Service/Interaction/SubstantiveChangeEvaluator.php`: read
+- [x] 2.1 `lib/Service/Interaction/SubstantiveChangeEvaluator.php`: read
       `x-openregister-read-state` off the schema and answer whether one write
       was substantive. Undeclared means any non-computed property.
-- [ ] 2.2 `lib/Service/Interaction/ReadStateService.php`: the one place that
+- [x] 2.2 `lib/Service/Interaction/ReadStateService.php`: the one place that
       decides who may read and write a read state, marks an object seen, marks
       it back to unread, invalidates it for everyone but the actor, and counts
       the unread sub-resources.
-- [ ] 2.3 `lib/Listener/ReadStateInvalidationListener.php` on `ObjectUpdatedEvent`.
-- [ ] 2.4 `lib/Listener/ReadStatePruneListener.php` on `ObjectDeletedEvent`.
-- [ ] 2.5 Register both listeners in `lib/AppInfo/Application.php`.
+- [x] 2.3 `lib/Listener/ReadStateInvalidationListener.php` on `ObjectUpdatedEvent`.
+- [x] 2.4 `lib/Listener/ReadStatePruneListener.php` on `ObjectDeletedEvent`.
+- [x] 2.5 Register both listeners in `lib/AppInfo/Application.php`.
 
 ## 3. Unread as a query axis
 
@@ -47,11 +47,11 @@ surfaces, then the bell.
 
 ## 5. The bell
 
-- [ ] 5.1 Migration: `subject_type`, `subject_id`, `snoozed_until` and
+- [x] 5.1 Migration: `subject_type`, `subject_id`, `snoozed_until` and
       `archived_at` on `openregister_notification_history`, add-only.
-- [ ] 5.2 `NotificationHistory` and its mapper: the four fields, the snooze and
+- [x] 5.2 `NotificationHistory` and its mapper: the four fields, the snooze and
       archive writes, the subject filter, and the thread read.
-- [ ] 5.3 `lib/Service/Notification/NotificationClearingService.php`: opening
+- [x] 5.3 `lib/Service/Notification/NotificationClearingService.php`: opening
       the work clears the bell, and a notification whose subject is gone is
       archived rather than left unread.
 - [ ] 5.4 `NotificationHistoryController`: snooze, archive, mark a thread read,

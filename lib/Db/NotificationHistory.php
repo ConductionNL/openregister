@@ -56,6 +56,16 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLocale(?string $locale)
  * @method DateTime getDispatchedAt()
  * @method void setDispatchedAt(DateTime $dispatchedAt)
+ * @method DateTime|null getReadAt()
+ * @method void setReadAt(?DateTime $readAt)
+ * @method string|null getSubjectType()
+ * @method void setSubjectType(?string $subjectType)
+ * @method string|null getSubjectId()
+ * @method void setSubjectId(?string $subjectId)
+ * @method DateTime|null getSnoozedUntil()
+ * @method void setSnoozedUntil(?DateTime $snoozedUntil)
+ * @method DateTime|null getArchivedAt()
+ * @method void setArchivedAt(?DateTime $archivedAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -146,6 +156,60 @@ class NotificationHistory extends Entity implements JsonSerializable {
 	protected ?DateTime $dispatchedAt = null;
 
 	/**
+	 * When the recipient read this notice, or null while it is unread.
+	 *
+	 * Per-user by construction: a history row carries exactly one recipient, so
+	 * the row IS the per-user fact and no join is needed to answer "is this
+	 * unread for me". Written only by NotificationClearingService, which is also
+	 * what clears a notice when the work it asked for is opened.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $readAt = null;
+
+	/**
+	 * What the notice is ABOUT, as an axis for the list.
+	 *
+	 * Distinct from `schema_id`, which says which schema's rule produced it. A
+	 * bell with four hundred entries needs to be narrowable to "documents" or
+	 * "messages", and those are not schemas.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $subjectType = null;
+
+	/**
+	 * The identifier of the subject within its type.
+	 *
+	 * For an object notice this is the object uuid; for a sub-resource notice it
+	 * is that sub-resource's own id, which is what lets opening one tab clear
+	 * only the notices about that tab.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $subjectId = null;
+
+	/**
+	 * When a snoozed notice returns to the unread list.
+	 *
+	 * Absent from the unread list until that moment, and unread afterwards: a
+	 * snooze postpones a notice, it never reads it.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $snoozedUntil = null;
+
+	/**
+	 * When the notice was taken out of the list without being read.
+	 *
+	 * Archiving is not reading. The read state is left exactly as it was, so a
+	 * notice archived unread still says so.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $archivedAt = null;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -160,6 +224,11 @@ class NotificationHistory extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'errorMessage', type: 'string');
 		$this->addType(fieldName: 'locale', type: 'string');
 		$this->addType(fieldName: 'dispatchedAt', type: 'datetime');
+		$this->addType(fieldName: 'readAt', type: 'datetime');
+		$this->addType(fieldName: 'subjectType', type: 'string');
+		$this->addType(fieldName: 'subjectId', type: 'string');
+		$this->addType(fieldName: 'snoozedUntil', type: 'datetime');
+		$this->addType(fieldName: 'archivedAt', type: 'datetime');
 
 	}//end __construct()
 
@@ -182,6 +251,12 @@ class NotificationHistory extends Entity implements JsonSerializable {
 			'errorMessage' => $this->errorMessage,
 			'locale' => $this->locale,
 			'dispatchedAt' => $this->dispatchedAt?->format(DateTime::ATOM),
+			'readAt' => $this->readAt?->format(DateTime::ATOM),
+			'read' => ($this->readAt !== null),
+			'subjectType' => $this->subjectType,
+			'subjectId' => $this->subjectId,
+			'snoozedUntil' => $this->snoozedUntil?->format(DateTime::ATOM),
+			'archivedAt' => $this->archivedAt?->format(DateTime::ATOM),
 		];
 
 	}//end jsonSerialize()
