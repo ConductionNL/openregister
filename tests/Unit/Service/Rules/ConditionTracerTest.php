@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
@@ -53,9 +54,11 @@ class ConditionTracerTest extends TestCase {
 		parent::setUp();
 
 		$this->tracer = new ConditionTracer(
-			ast: new CalculationEvaluator(
-				placeholders: new PlaceholderResolver(
-					userSession: $this->createMock(originalClassName: IUserSession::class)
+			dialect: new ConditionDialect(
+				ast: new CalculationEvaluator(
+					placeholders: new PlaceholderResolver(
+						userSession: $this->createMock(originalClassName: IUserSession::class)
+					)
 				)
 			)
 		);

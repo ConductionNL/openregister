@@ -71,6 +71,11 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @param int|null $maxObjects The ceiling the rule declares for one run.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$enabled` is a FIELD of the value
+	 *   object, not a mode switch: it records whether the rule is on, every caller passes
+	 *   it by name, and the class branches on it nowhere. Splitting the constructor in two
+	 *   would produce two descriptors that differ only in one stored value.
 	 */
 	public function __construct(
 		private readonly string $kind,

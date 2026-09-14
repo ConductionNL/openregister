@@ -68,6 +68,9 @@ use Psr\Log\LoggerInterface;
  * is treated as a closed set rather than a schema-author-defined list.
  *
  * @template-implements IEventListener<ObjectUpdatingEvent>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The listener is the save path's one
+ *   lifecycle gate; every dependency is one of its steps.
  */
 class LifecycleValidationListener implements IEventListener {
 	/**
@@ -80,6 +83,8 @@ class LifecycleValidationListener implements IEventListener {
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param LifecycleConditionEvaluator $conditionEvaluator Decides whether a transition `condition` lets it through.
 	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
+	 * @param ConditionTracer $conditionTracer Names the operand that decided a condition.
+	 * @param RuleRunRecorder $ruleRuns Records each condition's verdict for the rule inventory.
 	 *
 	 * @return void
 	 *

@@ -122,7 +122,7 @@ class CalculationOnSaveListenerSequenceTest extends TestCase {
 			new CalculationEvaluator(new PlaceholderResolver($userSession)),
 			$this->payloadBuilder,
 			$this->sequences,
-			$this->createMock(RuleRunRecorder::class),
+			$this->createMock(originalClassName: RuleRunRecorder::class),
 			$this->createMock(LoggerInterface::class)
 		);
 

@@ -117,7 +117,7 @@ class RuleRunRecorder {
 	 * @param RuleTrace $trace The verdict and the operand that decided it.
 	 * @param string|null $objectUuid The object evaluated, when there was one.
 	 * @param string|null $registerSlug The register the object lives in.
-	 * @param DateTime|null $at The moment of evaluation; defaults to now.
+	 * @param DateTime|null $moment The moment of evaluation; defaults to now.
 	 *
 	 * @return void
 	 *
@@ -129,9 +129,9 @@ class RuleRunRecorder {
 		RuleTrace $trace,
 		?string $objectUuid = null,
 		?string $registerSlug = null,
-		?DateTime $at = null,
+		?DateTime $moment = null,
 	): void {
-		$moment = ($at ?? new DateTime());
+		$recordedAt = ($moment ?? new DateTime());
 
 		$error = null;
 		if ($trace->getVerdict() === RuleVocabulary::VERDICT_ERROR) {
@@ -143,7 +143,7 @@ class RuleRunRecorder {
 				ruleId: $ruleId,
 				schemaSlug: $schemaSlug,
 				verdict: $trace->getVerdict(),
-				at: $moment,
+				moment: $recordedAt,
 				error: $error
 			);
 		} catch (Throwable $e) {
@@ -168,7 +168,7 @@ class RuleRunRecorder {
 			$run->setOperandValue($this->cut(value: $trace->getOperandValue()));
 			$run->setMessage($trace->getMessage());
 			$run->setActor($this->userSession->getUser()?->getUID());
-			$run->setCreated($moment);
+			$run->setCreated($recordedAt);
 
 			$this->runs->insert($run);
 		} catch (Throwable $e) {

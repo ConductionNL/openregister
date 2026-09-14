@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
-use OCA\OpenRegister\Service\Flow\FlowExpression;
 use Throwable;
 
 /**
@@ -47,10 +45,6 @@ use Throwable;
  * with the refusal the caller actually received. This class only explains a
  * decision already taken, which is why a tracer that throws is caught by the
  * caller and costs a trace rather than a save.
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The tracer bridges both condition
- *   dialects on purpose: the AST evaluator, the JSONLogic facade and the trace value
- *   object are the three collaborators that one walk needs.
  *
  * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
@@ -79,12 +73,12 @@ final class ConditionTracer {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluator $ast The JSON-AST evaluator, for AST clauses.
+	 * @param ConditionDialect $dialect Decides which dialect a clause is in and whether it holds.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalculationEvaluator $ast,
+		private readonly ConditionDialect $dialect,
 	) {
 	}//end __construct()
 
@@ -97,6 +91,10 @@ final class ConditionTracer {
 	 * @param string|null $message The engine's own sentence, when it has one.
 	 *
 	 * @return RuleTrace The verdict with its deciding operand, when one decided.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RuleTrace::renderValue is a pure rendering
+	 *   function on an immutable value object, not a collaborator: injecting the value
+	 *   object's own formatter would be a seam with exactly one possible implementation.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
@@ -144,32 +142,20 @@ final class ConditionTracer {
 		$op = (string)array_key_first($node);
 		$args = $node[$op];
 
-		// `and`: the first false clause is the answer, so descend into it.
-		if ($op === 'and' && is_array($args) === true) {
-			foreach ($args as $clause) {
-				if ($this->holds(node: $clause, document: $document) === true) {
-					continue;
-				}
-
-				return $this->operandOf(node: $clause, document: $document);
+		if (is_array($args) === true) {
+			// `and` and `or` are the two shapes whose falseness is explained by
+			// a clause rather than by an operand, so each has its own descent.
+			if ($op === 'and') {
+				return $this->decidingClauseOfAnd(clauses: $args, document: $document);
 			}
 
-			return null;
-		}
-
-		// `or`: every clause is false, so the first one is as good an answer as
-		// any and is the one the author wrote first.
-		if ($op === 'or' && is_array($args) === true && $args !== []) {
-			return $this->operandOf(node: $args[array_key_first($args)], document: $document);
+			if ($op === 'or') {
+				return $this->decidingClauseOfOr(clauses: $args, document: $document);
+			}
 		}
 
 		if ($op === '!' || $op === 'not') {
-			$inner = $args;
-			if (is_array($args) === true && array_is_list($args) === true && $args !== []) {
-				$inner = $args[0];
-			}
-
-			return $this->operandOf(node: $inner, document: $document);
+			return $this->operandOf(node: $this->negated(args: $args), document: $document);
 		}
 
 		if (in_array($op, self::COMPARISONS, true) === true && is_array($args) === true) {
@@ -178,6 +164,70 @@ final class ConditionTracer {
 
 		return $this->firstReference(args: [$node], document: $document);
 	}//end decidingOperand()
+
+	/**
+	 * The operand of the first clause of an `and` that does not hold.
+	 *
+	 * An `and` is false because one of its clauses is, and the clause is the
+	 * useful answer, so this evaluates clauses in order until one fails and
+	 * then explains that one.
+	 *
+	 * @param array<int|string, mixed> $clauses The `and`'s clauses.
+	 * @param array<string, mixed> $document The evaluation document.
+	 *
+	 * @return array{operand: string, value: mixed}|null The deciding operand, or null.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function decidingClauseOfAnd(array $clauses, array $document): ?array {
+		foreach ($clauses as $clause) {
+			if ($this->dialect->holds(node: $clause, document: $document) === true) {
+				continue;
+			}
+
+			return $this->operandOf(node: $clause, document: $document);
+		}
+
+		return null;
+	}//end decidingClauseOfAnd()
+
+	/**
+	 * The operand of the first clause of an `or`.
+	 *
+	 * Every clause of a false `or` is false, so the first one is as good an
+	 * answer as any and is the one the author wrote first.
+	 *
+	 * @param array<int|string, mixed> $clauses The `or`'s clauses.
+	 * @param array<string, mixed> $document The evaluation document.
+	 *
+	 * @return array{operand: string, value: mixed}|null The deciding operand, or null.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function decidingClauseOfOr(array $clauses, array $document): ?array {
+		if ($clauses === []) {
+			return null;
+		}
+
+		return $this->operandOf(node: $clauses[array_key_first($clauses)], document: $document);
+	}//end decidingClauseOfOr()
+
+	/**
+	 * The clause a negation wraps, whether it is written as a list or bare.
+	 *
+	 * @param mixed $args The negation's argument.
+	 *
+	 * @return mixed The wrapped clause.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function negated(mixed $args): mixed {
+		if (is_array($args) === true && array_is_list($args) === true && $args !== []) {
+			return $args[0];
+		}
+
+		return $args;
+	}//end negated()
 
 	/**
 	 * The deciding operand of an arbitrary clause.
@@ -228,12 +278,8 @@ final class ConditionTracer {
 				continue;
 			}
 
-			$path = $arg[$key];
-			if (is_array($path) === true && $path !== []) {
-				$path = $path[array_key_first($path)];
-			}
-
-			if (is_string($path) === false || $path === '') {
+			$path = $this->pathOf(reference: $arg[$key]);
+			if ($path === null) {
 				continue;
 			}
 
@@ -242,6 +288,32 @@ final class ConditionTracer {
 
 		return null;
 	}//end firstReference()
+
+	/**
+	 * The property path a reference operand names.
+	 *
+	 * JSONLogic writes `{"var": "bedrag"}` and also accepts
+	 * `{"var": ["bedrag", "default"]}`, where the path is the first element.
+	 * Anything that is not a non-empty string names no property.
+	 *
+	 * @param mixed $reference The reference operand's argument.
+	 *
+	 * @return string|null The path, or null when the operand names no property.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function pathOf(mixed $reference): ?string {
+		$path = $reference;
+		if (is_array($path) === true && $path !== []) {
+			$path = $path[array_key_first($path)];
+		}
+
+		if (is_string($path) === false || $path === '') {
+			return null;
+		}
+
+		return $path;
+	}//end pathOf()
 
 	/**
 	 * Read a dotted path out of the evaluation document.
@@ -266,54 +338,4 @@ final class ConditionTracer {
 		return $cursor;
 	}//end read()
 
-	/**
-	 * Whether one clause holds, in whichever dialect it is written.
-	 *
-	 * @param mixed $node The clause.
-	 * @param array<string, mixed> $document The evaluation document.
-	 *
-	 * @return bool True when the clause holds.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's stateless
-	 *   JSONLogic facade; calling it statically IS the reuse.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 */
-	private function holds(mixed $node, array $document): bool {
-		if (is_array($node) === false || $node === []) {
-			return (bool)$node;
-		}
-
-		$op = (string)array_key_first($node);
-		if ($this->isAstOperator(op: $op) === true) {
-			try {
-				return (bool)$this->ast->evaluate($document, $node);
-			} catch (Throwable $e) {
-				return false;
-			}
-		}
-
-		return FlowExpression::isTrue(logic: $node, data: $document);
-	}//end holds()
-
-	/**
-	 * Whether an operator key belongs to the JSON AST rather than to JSONLogic.
-	 *
-	 * The two vocabularies overlap on nothing that matters here: JSONLogic
-	 * writes `>` where the AST writes `gt`, so the AST's own catalogue decides,
-	 * minus the keys both dialects spell the same way.
-	 *
-	 * @param string $op The operator key.
-	 *
-	 * @return bool True when the AST evaluator owns the key.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 */
-	private function isAstOperator(string $op): bool {
-		if (in_array($op, ['and', 'or', 'not', '+', '-', '*', '/', '%', 'if'], true) === true) {
-			return false;
-		}
-
-		return array_key_exists($op, CalculationEvaluator::OPERATORS);
-	}//end isAstOperator()
 }//end class

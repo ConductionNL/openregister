@@ -74,7 +74,7 @@ class RuleRunRecorderTest extends TestCase {
 				string $ruleId,
 				string $schemaSlug,
 				string $verdict,
-				DateTime $at,
+				DateTime $moment,
 				?string $error = null,
 			) use (&$summaries, $summaryThrows): RuleRunSummary {
 				if ($summaryThrows === true) {
@@ -214,6 +214,38 @@ class RuleRunRecorderTest extends TestCase {
 		$this->assertCount(expectedCount: 1, haystack: $rows);
 
 	}//end testAFailingLogStoreNeverReachesTheSave()
+
+	/**
+	 * The moment the caller names is the moment that is recorded.
+	 *
+	 * THIS TEST EXISTS BECAUSE THE BUG DID. Renaming this parameter left the
+	 * body reading the old name, so the argument was silently ignored and every
+	 * row carried "now" instead. Every other test here passes no moment, so all
+	 * of them stayed green while the one thing a caller can control about a log
+	 * row stopped working.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	public function testTheRecordedMomentIsTheOneTheCallerNamed(): void {
+		$rows = [];
+		$summaries = [];
+		$moment = new DateTime('2026-03-04 05:06:07');
+
+		$this->recorder(logEnabled: '', rows: $rows, summaries: $summaries)->record(
+			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
+			schemaSlug: 'bezwaar',
+			trace: RuleTrace::fired(),
+			moment: $moment
+		);
+
+		$this->assertSame(
+			expected: '2026-03-04 05:06:07',
+			actual: $rows[0]->getCreated()->format('Y-m-d H:i:s')
+		);
+
+	}//end testTheRecordedMomentIsTheOneTheCallerNamed()
 
 	/**
 	 * The retention period falls back to the default for anything that is not

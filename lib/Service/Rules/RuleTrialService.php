@@ -248,6 +248,9 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The trial result.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RuleTrace::fired and ::errored are named
+	 *   constructors on an immutable value object, not a collaborator to inject.
+	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	private function runCalculation(RuleDescriptor $rule, array $payload, ?string $objectUuid): array {

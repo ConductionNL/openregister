@@ -120,8 +120,12 @@ class LifecycleValidationListenerTest extends TestCase {
 			),
 			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
 			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
-				new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-					new \OCA\OpenRegister\Service\Search\PlaceholderResolver($this->createMock(\OCP\IUserSession::class))
+				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+						placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+							userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+						)
+					)
 				)
 			),
 			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)

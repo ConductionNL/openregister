@@ -125,6 +125,8 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 * @SuppressWarnings(PHPMD.StaticAccess)        RuleTrace::fired and ::errored are named
+	 *   constructors on an immutable value object, not a collaborator to inject.
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method runs the linear save-time
 	 *   materialisation pipeline (inject @self, @ref, @aggregate, then evaluate each calc and
 	 *   strip the synthetic keys); the steps share one payload and must stay in order, so

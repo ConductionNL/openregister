@@ -138,7 +138,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 * @param string $ruleId The derived rule id.
 	 * @param string $schemaSlug The schema the rule is declared on.
 	 * @param string $verdict The verdict reached.
-	 * @param DateTime $at When the evaluation happened.
+	 * @param DateTime $moment When the evaluation happened.
 	 * @param string|null $error The message, when the verdict was an error.
 	 *
 	 * @return RuleRunSummary The stored summary, written or not.
@@ -149,7 +149,7 @@ class RuleRunSummaryMapper extends QBMapper {
 		string $ruleId,
 		string $schemaSlug,
 		string $verdict,
-		DateTime $at,
+		DateTime $moment,
 		?string $error = null,
 	): RuleRunSummary {
 		$summary = $this->findByRule(ruleId: $ruleId);
@@ -160,17 +160,17 @@ class RuleRunSummaryMapper extends QBMapper {
 		}
 
 		$isError = ($error !== null && $error !== '');
-		if ($this->worthWriting(summary: $summary, verdict: $verdict, at: $at, isError: $isError) === false) {
+		if ($this->worthWriting(summary: $summary, verdict: $verdict, moment: $moment, isError: $isError) === false) {
 			return $summary;
 		}
 
 		$summary->setSchemaSlug($schemaSlug);
-		$summary->setLastRun($at);
+		$summary->setLastRun($moment);
 		$summary->setLastVerdict($verdict);
 
 		if ($isError === true) {
 			$summary->setLastError($error);
-			$summary->setLastErrorAt($at);
+			$summary->setLastErrorAt($moment);
 		}
 
 		if ($summary->getId() === null) {
@@ -186,7 +186,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @param RuleRunSummary $summary The summary as it stands.
 	 * @param string $verdict The verdict reached.
-	 * @param DateTime $at When the evaluation happened.
+	 * @param DateTime $moment When the evaluation happened.
 	 * @param bool $isError Whether the verdict carries an error message.
 	 *
 	 * @return bool True when the row should be written.
@@ -201,7 +201,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
-	public function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $at, bool $isError): bool {
+	public function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $moment, bool $isError): bool {
 		if ($summary->getId() === null || $isError === true) {
 			return true;
 		}
@@ -215,7 +215,7 @@ class RuleRunSummaryMapper extends QBMapper {
 			return true;
 		}
 
-		return (($at->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
+		return (($moment->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
 
 	}//end worthWriting()
 }//end class

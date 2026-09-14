@@ -80,7 +80,7 @@ class RuleSummaryThrottleTest extends TestCase {
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_FIRED,
-				at: new DateTime('2026-09-14 12:00:30'),
+				moment: new DateTime('2026-09-14 12:00:30'),
 				isError: false
 			)
 		);
@@ -100,7 +100,7 @@ class RuleSummaryThrottleTest extends TestCase {
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_FIRED,
-				at: new DateTime('2026-09-14 12:02:00'),
+				moment: new DateTime('2026-09-14 12:02:00'),
 				isError: false
 			)
 		);
@@ -121,7 +121,7 @@ class RuleSummaryThrottleTest extends TestCase {
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_REFUSED,
-				at: new DateTime('2026-09-14 12:00:01'),
+				moment: new DateTime('2026-09-14 12:00:01'),
 				isError: false
 			)
 		);
@@ -141,7 +141,7 @@ class RuleSummaryThrottleTest extends TestCase {
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_ERROR, lastRun: '2026-09-14 12:00:00'),
 				verdict: RuleVocabulary::VERDICT_ERROR,
-				at: new DateTime('2026-09-14 12:00:01'),
+				moment: new DateTime('2026-09-14 12:00:01'),
 				isError: true
 			)
 		);
@@ -160,7 +160,7 @@ class RuleSummaryThrottleTest extends TestCase {
 			condition: $this->mapper()->worthWriting(
 				summary: new RuleRunSummary(),
 				verdict: RuleVocabulary::VERDICT_FIRED,
-				at: new DateTime('2026-09-14 12:00:00'),
+				moment: new DateTime('2026-09-14 12:00:00'),
 				isError: false
 			)
 		);
