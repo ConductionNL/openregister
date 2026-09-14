@@ -42,7 +42,7 @@
 
 ## 7. Discovery wave 1: what you may do, and who may do it
 
-- [ ] 7.1 An object read carries the actions the current user may take on it, from the same resolution (D-9).
+- [x] 7.1 An object read carries the actions the current user may take on it, from the same resolution (D-9). `@self.actions` on the single-object read, resolved by `PermissionHandler::permittedActionsFor()`.
 - [ ] 7.2 `GET /api/objects/{register}/{schema}/{id}/permissions`: the principals holding rights on the object, each with the rule behind the grant (D-10).
 - [ ] 7.3 The history of that set is readable: who held which right, when it changed and which rule changed it.
 - [x] 7.4 Two roles are readable side by side against the catalogue, showing which permissions differ.

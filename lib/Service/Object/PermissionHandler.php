@@ -1001,6 +1001,69 @@ class PermissionHandler {
 	}//end enforcedDenialFor()
 
 	/**
+	 * The verbs this caller may exercise on one row.
+	 *
+	 * Resolved through {@see hasPermission()}, verb by verb, which is the same
+	 * decision the read itself made and is memoised per request on
+	 * `(user, schema, action, owner, uuid)`. So a record returned with its
+	 * actions costs the resolutions the client would have had to provoke
+	 * anyway, and the client stops guessing: today it either renders a delete
+	 * button nobody may press, or hides one somebody may (design D-9).
+	 *
+	 * THE SCHEMA VERBS ARE NOT IN THE LIST. `create`, `list` and `manage` are
+	 * answers about the schema and the register, not about this row, and a
+	 * record that carried them would invite a client to read them as rights ON
+	 * the row. The row verbs are `read`, `update`, `delete`, `destroy` and every
+	 * custom verb an app declared, because those are the ones an object screen
+	 * offers.
+	 *
+	 * @param Schema            $schema The schema the row belongs to.
+	 * @param ObjectEntity|null $object The row, when the question is about one.
+	 * @param string|null       $userId The caller, or null to resolve from the session.
+	 *
+	 * @return array<int, string> The verbs, in catalogue order.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	public function permittedActionsFor(
+		Schema $schema,
+		?ObjectEntity $object = null,
+		?string $userId = null,
+	): array {
+		$permitted = [];
+		foreach ($this->rowVerbs() as $verb) {
+			$granted = $this->hasPermission(
+				schema: $schema,
+				action: $verb,
+				userId: $userId,
+				objectOwner: $object?->getOwner(),
+				object: $object
+			);
+			if ($granted === true) {
+				$permitted[] = $verb;
+			}
+		}
+
+		return $permitted;
+	}//end permittedActionsFor()
+
+	/**
+	 * The catalogue verbs that are answers about a row.
+	 *
+	 * @return array<int, string> The row verbs, in catalogue order.
+	 */
+	private function rowVerbs(): array {
+		$schemaOnly = ['create', 'list', 'manage'];
+
+		return array_values(
+			array_filter(
+				$this->permissionCatalogue()->verbs(),
+				static fn (string $verb): bool => in_array($verb, $schemaOnly, true) === false
+			)
+		);
+	}//end rowVerbs()
+
+	/**
 	 * Why this caller may or may not do each of these verbs.
 	 *
 	 * The answer per action names the rule that decided it: the object's own
