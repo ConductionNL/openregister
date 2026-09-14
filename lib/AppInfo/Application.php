@@ -2656,6 +2656,13 @@ class Application extends App implements IBootstrap {
 		// ToolRegistrationListener for agent function tools.
 		$context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
+		// BulkActionRegistrationListener for the built-in bulk actions. A leaf
+		// app registers its own action on the same event (ADR-022).
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\BulkActionRegistrationEvent::class,
+			\OCA\OpenRegister\Listener\BulkActionRegistrationListener::class
+		);
+
 		// Tables schema-lifecycle listener — retire the managed virtual schema of
 		// a deleted Tables table. Guarded by class_exists so boot never fatals on
 		// an instance without the (soft-dependency) Tables app installed.
