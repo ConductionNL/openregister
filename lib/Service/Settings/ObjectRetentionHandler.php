@@ -284,6 +284,7 @@ class ObjectRetentionHandler {
 			return [
 				'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
 				'notificationLeadDays' => $archivalData['notificationLeadDays'] ?? 30,
+				'reviewReminderFrequency' => $archivalData['reviewReminderFrequency'] ?? 'P7D',
 				'defaultExtensionPeriod' => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
 				'destructionBatchSize' => $archivalData['destructionBatchSize'] ?? 50,
 				'selectielijstRegister' => $archivalData['selectielijstRegister'] ?? null,
@@ -313,6 +314,7 @@ class ObjectRetentionHandler {
 			$archivalConfig = [
 				'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
 				'notificationLeadDays' => $archivalData['notificationLeadDays'] ?? 30,
+				'reviewReminderFrequency' => $archivalData['reviewReminderFrequency'] ?? 'P7D',
 				'defaultExtensionPeriod' => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
 				'destructionBatchSize' => $archivalData['destructionBatchSize'] ?? 50,
 				'selectielijstRegister' => $archivalData['selectielijstRegister'] ?? null,
@@ -340,6 +342,7 @@ class ObjectRetentionHandler {
 		return [
 			'destructionCheckInterval' => 86400,
 			'notificationLeadDays' => 30,
+			'reviewReminderFrequency' => 'P7D',
 			'defaultExtensionPeriod' => 'P1Y',
 			'destructionBatchSize' => 50,
 			'selectielijstRegister' => null,

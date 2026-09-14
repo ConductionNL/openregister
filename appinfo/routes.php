@@ -1438,6 +1438,13 @@ return [
 		['name' => 'archival#listLegalHolds', 'url' => '/api/archival/legal-holds', 'verb' => 'GET'],
 		['name' => 'archival#listCertificates', 'url' => '/api/archival/certificates', 'verb' => 'GET'],
 
+		// The archiving process: a named reviewer per entry, their worklist, and
+		// the three answers they may give. `{entryId}` is the uuid of the RECORD
+		// the entry is about, which is how a destruction list names its entries.
+		['name' => 'archival#assignReviewer', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/reviewer', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
+
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
 		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PUT'],

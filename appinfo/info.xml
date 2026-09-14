@@ -127,6 +127,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TransferCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ReviewReminderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SyncDataJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
