@@ -19,16 +19,32 @@ use PHPUnit\Framework\TestCase;
  * unnecessary and reported as unread.
  */
 class DerivedDependenciesTest extends TestCase {
+	/**
+	 * @var CalculationEvaluator The pure evaluator, which derives the list.
+	 */
 	private CalculationEvaluator $eval;
+	/**
+	 * @var CalculationAnnotationValidator The validator, which runs the cycle check on it.
+	 */
 	private CalculationAnnotationValidator $validator;
 
+	/**
+	 * Wire the collaborators this suite needs.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
-		$userSession = $this->createMock(IUserSession::class);
+		$userSession = $this->createMock(originalClassName: IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 		$this->eval = new CalculationEvaluator(new PlaceholderResolver($userSession));
 		$this->validator = new CalculationAnnotationValidator();
 	}
 
+	/**
+	 * Nested prop references are all found.
+	 *
+	 * @return void
+	 */
 	public function testNestedPropReferencesAreAllFound(): void {
 		$expression = [
 			'if' => [
@@ -38,9 +54,14 @@ class DerivedDependenciesTest extends TestCase {
 			],
 		];
 
-		$this->assertSame(['bedrag', 'naam'], $this->eval->referencedProperties($expression));
+		$this->assertSame(expected: ['bedrag', 'naam'], actual: $this->eval->referencedProperties($expression));
 	}
 
+	/**
+	 * Dict shaped operators are walked too.
+	 *
+	 * @return void
+	 */
 	public function testDictShapedOperatorsAreWalkedToo(): void {
 		$expression = [
 			'dateAdd' => [
@@ -50,23 +71,35 @@ class DerivedDependenciesTest extends TestCase {
 			],
 		];
 
-		$this->assertSame(['ontvangstdatum', 'termijnWeken'], $this->eval->referencedProperties($expression));
+		$this->assertSame(expected: ['ontvangstdatum', 'termijnWeken'], actual: $this->eval->referencedProperties($expression));
 	}
 
+	/**
+	 * System and reference prefixes are returned as written.
+	 *
+	 * @return void
+	 */
 	public function testSystemAndReferencePrefixesAreReturnedAsWritten(): void {
 		$expression = ['diffDays' => [['prop' => '@self.created'], ['prop' => '@ref.zaak.startdatum']]];
 
-		$this->assertSame(
-			['@self.created', '@ref.zaak.startdatum'],
-			$this->eval->referencedProperties($expression)
-		);
+		$this->assertSame(expected: ['@self.created', '@ref.zaak.startdatum'], actual: $this->eval->referencedProperties($expression));
 	}
 
+	/**
+	 * A bare scalar reads nothing.
+	 *
+	 * @return void
+	 */
 	public function testABareScalarReadsNothing(): void {
-		$this->assertSame([], $this->eval->referencedProperties('$now'));
-		$this->assertSame([], $this->eval->referencedProperties(null));
+		$this->assertSame(expected: [], actual: $this->eval->referencedProperties('$now'));
+		$this->assertSame(expected: [], actual: $this->eval->referencedProperties(null));
 	}
 
+	/**
+	 * A cycle is caught with no declared dependency lists.
+	 *
+	 * @return void
+	 */
 	public function testACycleIsCaughtWithNoDeclaredDependencyLists(): void {
 		$errors = $this->validator->validate(
 			[
@@ -79,9 +112,14 @@ class DerivedDependenciesTest extends TestCase {
 		);
 
 		$codes = array_column($errors, 'code');
-		$this->assertContains('calculation-cycle', $codes);
+		$this->assertContains(needle: 'calculation-cycle', haystack: $codes);
 	}
 
+	/**
+	 * A declared dependency list is reported as unread.
+	 *
+	 * @return void
+	 */
 	public function testADeclaredDependencyListIsReportedAsUnread(): void {
 		$errors = $this->validator->validate(
 			[
@@ -97,6 +135,6 @@ class DerivedDependenciesTest extends TestCase {
 		);
 
 		$codes = array_column($errors, 'code');
-		$this->assertContains('calculation-dependson-ignored', $codes);
+		$this->assertContains(needle: 'calculation-dependson-ignored', haystack: $codes);
 	}
 }

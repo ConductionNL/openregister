@@ -48,6 +48,9 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 	/** @var SchemaMapper&\PHPUnit\Framework\MockObject\MockObject */
 	private $schemaMapper;
 
+	/**
+	 * @var CalculationOnSaveListener The save-time listener under test.
+	 */
 	private CalculationOnSaveListener $listener;
 
 	/**
@@ -56,12 +59,12 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$userSession = $this->createMock(IUserSession::class);
+		$userSession = $this->createMock(originalClassName: IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$registerMapper = $this->createMock(RegisterMapper::class);
-		$payloadBuilder = $this->createMock(CalculationPayloadBuilder::class);
+		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
+		$registerMapper = $this->createMock(originalClassName: RegisterMapper::class);
+		$payloadBuilder = $this->createMock(originalClassName: CalculationPayloadBuilder::class);
 
 		$payloadBuilder->method('build')
 			->willReturnCallback(static fn (ObjectEntity $o): array => $o->getObject());
@@ -77,8 +80,8 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 			$registerMapper,
 			new CalculationEvaluator(new PlaceholderResolver($userSession)),
 			$payloadBuilder,
-			$this->createMock(SequenceService::class),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(originalClassName: SequenceService::class),
+			$this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 	}//end setUp()
@@ -140,11 +143,11 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 	 */
 	public function testAComputedPropertyIsWrittenFromItsInputs(): void {
 		$this->schemaWithForwardedCalculation();
-		$object = $this->objectWith(['ontvangstdatum' => '2026-01-01']);
+		$object = $this->objectWith(data: ['ontvangstdatum' => '2026-01-01']);
 
 		$this->listener->handle(new ObjectCreatingEvent($object));
 
-		$this->assertSame('2026-02-12', $object->getObject()['uiterlijkeDatum']);
+		$this->assertSame(expected: '2026-02-12', actual: $object->getObject()['uiterlijkeDatum']);
 
 	}//end testAComputedPropertyIsWrittenFromItsInputs()
 
@@ -155,13 +158,13 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 	 */
 	public function testAChangeToAnInputRecomputes(): void {
 		$this->schemaWithForwardedCalculation();
-		$object = $this->objectWith(
+		$object = $this->objectWith(data:
 			['ontvangstdatum' => '2026-03-02', 'uiterlijkeDatum' => '2026-02-12']
 		);
 
 		$this->listener->handle(new ObjectUpdatingEvent($object));
 
-		$this->assertSame('2026-04-13', $object->getObject()['uiterlijkeDatum']);
+		$this->assertSame(expected: '2026-04-13', actual: $object->getObject()['uiterlijkeDatum']);
 
 	}//end testAChangeToAnInputRecomputes()
 
@@ -176,14 +179,14 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 	 */
 	public function testAValueWrittenDirectlyIntoAComputedPropertyDoesNotSurvive(): void {
 		$this->schemaWithForwardedCalculation();
-		$object = $this->objectWith(
+		$object = $this->objectWith(data:
 			['ontvangstdatum' => '2026-01-01', 'uiterlijkeDatum' => '2099-12-31']
 		);
 
 		$this->listener->handle(new ObjectCreatingEvent($object));
 
-		$this->assertNotSame('2099-12-31', $object->getObject()['uiterlijkeDatum']);
-		$this->assertSame('2026-02-12', $object->getObject()['uiterlijkeDatum']);
+		$this->assertNotSame(expected: '2099-12-31', actual: $object->getObject()['uiterlijkeDatum']);
+		$this->assertSame(expected: '2026-02-12', actual: $object->getObject()['uiterlijkeDatum']);
 
 	}//end testAValueWrittenDirectlyIntoAComputedPropertyDoesNotSurvive()
 
@@ -199,11 +202,11 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 		$schema->setConfiguration([]);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
-		$object = $this->objectWith(['naam' => 'Anna']);
+		$object = $this->objectWith(data: ['naam' => 'Anna']);
 		$this->listener->handle(new ObjectCreatingEvent($object));
 
-		$this->assertSame('Anna', $object->getObject()['naam']);
-		$this->assertArrayNotHasKey('uiterlijkeDatum', $object->getObject());
+		$this->assertSame(expected: 'Anna', actual: $object->getObject()['naam']);
+		$this->assertArrayNotHasKey(key: 'uiterlijkeDatum', array: $object->getObject());
 
 	}//end testASchemaWithNoDeclarationsIsUntouched()
 }//end class

@@ -21,8 +21,16 @@ use ReflectionClass;
  * spec excludes from e2e for exactly this reason.
  */
 class OperatorCatalogueTest extends TestCase {
+	/**
+	 * @var OperatorCatalogue The published catalogue under test.
+	 */
 	private OperatorCatalogue $catalogue;
 
+	/**
+	 * Wire the collaborators this suite needs.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		$this->catalogue = new OperatorCatalogue();
 	}
@@ -34,13 +42,13 @@ class OperatorCatalogueTest extends TestCase {
 	 */
 	private function dispatchedOperators(): array {
 		$file = (new ReflectionClass(CalculationEvaluator::class))->getFileName();
-		$this->assertIsString($file);
+		$this->assertIsString(actual: $file);
 		$source = (string)file_get_contents($file);
 
 		$start = strpos($source, 'return match ($op) {');
 		$end = strpos($source, '};//end match', (int)$start);
-		$this->assertIsInt($start, 'the evaluator no longer has a single match dispatch');
-		$this->assertIsInt($end, 'the evaluator match is no longer terminated by //end match');
+		$this->assertIsInt(actual: $start, message: 'the evaluator no longer has a single match dispatch');
+		$this->assertIsInt(actual: $end, message: 'the evaluator match is no longer terminated by //end match');
 
 		$block = substr($source, (int)$start, (int)$end - (int)$start);
 		preg_match_all("/^\s*((?:'[^']+'\s*,\s*)*'[^']+')\s*=>/m", $block, $matches);
@@ -58,39 +66,55 @@ class OperatorCatalogueTest extends TestCase {
 		return $operators;
 	}
 
+	/**
+	 * Catalogue matches the evaluator dispatch.
+	 *
+	 * @return void
+	 */
 	public function testCatalogueMatchesTheEvaluatorDispatch(): void {
 		$dispatched = $this->dispatchedOperators();
 		$published = $this->catalogue->operators();
 		sort($published);
 
-		$this->assertNotEmpty($dispatched, 'no match arms were parsed out of the evaluator');
-		$this->assertSame(
-			$dispatched,
-			$published,
-			'the published catalogue and the evaluator dispatch have drifted apart'
-		);
+		$this->assertNotEmpty(actual: $dispatched, message: 'no match arms were parsed out of the evaluator');
+		$this->assertSame(expected: $dispatched, actual: $published, message: 'the published catalogue and the evaluator dispatch have drifted apart');
 	}
 
+	/**
+	 * Every row carries arity operands result and A sentence.
+	 *
+	 * @return void
+	 */
 	public function testEveryRowCarriesArityOperandsResultAndASentence(): void {
 		foreach ($this->catalogue->all() as $row) {
-			$this->assertNotSame('', $row['op']);
-			$this->assertNotSame('', $row['arity'], $row['op'] . ' has no arity');
-			$this->assertIsArray($row['operands'], $row['op'] . ' has no operand list');
-			$this->assertNotSame('', $row['result'], $row['op'] . ' has no result type');
-			$this->assertNotSame('', $row['description'], $row['op'] . ' has no description');
-			$this->assertNotSame('', $row['category'], $row['op'] . ' has no category');
+			$this->assertNotSame(expected: '', actual: $row['op']);
+			$this->assertNotSame(expected: '', actual: $row['arity'], message: $row['op'] . ' has no arity');
+			$this->assertIsArray(actual: $row['operands'], message: $row['op'] . ' has no operand list');
+			$this->assertNotSame(expected: '', actual: $row['result'], message: $row['op'] . ' has no result type');
+			$this->assertNotSame(expected: '', actual: $row['description'], message: $row['op'] . ' has no description');
+			$this->assertNotSame(expected: '', actual: $row['category'], message: $row['op'] . ' has no category');
 		}
 	}
 
+	/**
+	 * Catalogue answers for A known and an unknown operator.
+	 *
+	 * @return void
+	 */
 	public function testCatalogueAnswersForAKnownAndAnUnknownOperator(): void {
-		$this->assertTrue($this->catalogue->has('dateAdd'));
-		$this->assertFalse($this->catalogue->has('frobnicate'));
+		$this->assertTrue(condition: $this->catalogue->has('dateAdd'));
+		$this->assertFalse(condition: $this->catalogue->has('frobnicate'));
 	}
 
+	/**
+	 * Categories are the distinct categories of the rows.
+	 *
+	 * @return void
+	 */
 	public function testCategoriesAreTheDistinctCategoriesOfTheRows(): void {
 		$categories = $this->catalogue->categories();
-		$this->assertContains('date', $categories);
-		$this->assertContains('arithmetic', $categories);
-		$this->assertSame(array_values(array_unique($categories)), $categories);
+		$this->assertContains(needle: 'date', haystack: $categories);
+		$this->assertContains(needle: 'arithmetic', haystack: $categories);
+		$this->assertSame(expected: array_values(array_unique($categories)), actual: $categories);
 	}
 }

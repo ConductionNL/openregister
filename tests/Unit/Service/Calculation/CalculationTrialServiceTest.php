@@ -24,25 +24,38 @@ use PHPUnit\Framework\TestCase;
  * on the sample path would be a failure, not a silent pass.
  */
 class CalculationTrialServiceTest extends TestCase {
+	/**
+	 * @var CalculationTrialService The dry-run service under test.
+	 */
 	private CalculationTrialService $trials;
 
+	/**
+	 * Wire the collaborators this suite needs.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
-		$userSession = $this->createMock(IUserSession::class);
+		$userSession = $this->createMock(originalClassName: IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->expects($this->never())->method($this->anything());
 
 		$this->trials = new CalculationTrialService(
 			new CalculationAnnotationValidator(),
 			new CalculationEvaluator(new PlaceholderResolver($userSession)),
-			$this->createMock(CalculationPayloadBuilder::class),
-			$this->createMock(RegisterMapper::class),
+			$this->createMock(originalClassName: CalculationPayloadBuilder::class),
+			$this->createMock(originalClassName: RegisterMapper::class),
 			$schemaMapper,
-			$this->createMock(MagicMapper::class),
+			$this->createMock(originalClassName: MagicMapper::class),
 		);
 	}
 
+	/**
+	 * A sample trial returns the value and writes nothing.
+	 *
+	 * @return void
+	 */
 	public function testASampleTrialReturnsTheValueAndWritesNothing(): void {
 		$result = $this->trials->trySample(
 			[
@@ -52,40 +65,55 @@ class CalculationTrialServiceTest extends TestCase {
 			['ontvangstdatum' => '2026-01-01']
 		);
 
-		$this->assertTrue($result['ok']);
-		$this->assertSame('2026-02-12', $result['value']);
-		$this->assertSame(['ontvangstdatum'], $result['dependencies']);
+		$this->assertTrue(condition: $result['ok']);
+		$this->assertSame(expected: '2026-02-12', actual: $result['value']);
+		$this->assertSame(expected: ['ontvangstdatum'], actual: $result['dependencies']);
 	}
 
+	/**
+	 * An unknown operator comes back as an error not an exception.
+	 *
+	 * @return void
+	 */
 	public function testAnUnknownOperatorComesBackAsAnErrorNotAnException(): void {
 		$result = $this->trials->trySample(
 			['type' => 'integer', 'expression' => ['frobnicate' => [['prop' => 'aantal']]]],
 			['aantal' => 3]
 		);
 
-		$this->assertFalse($result['ok']);
-		$this->assertSame('calculation-unknown-op', $result['error']['code']);
-		$this->assertStringContainsString('frobnicate', $result['error']['message']);
+		$this->assertFalse(condition: $result['ok']);
+		$this->assertSame(expected: 'calculation-unknown-op', actual: $result['error']['code']);
+		$this->assertStringContainsString(needle: 'frobnicate', haystack: $result['error']['message']);
 	}
 
+	/**
+	 * An expression that fails at runtime reports the evaluator message.
+	 *
+	 * @return void
+	 */
 	public function testAnExpressionThatFailsAtRuntimeReportsTheEvaluatorMessage(): void {
 		$result = $this->trials->trySample(
 			['type' => 'number', 'expression' => ['/' => [['prop' => 'a'], ['prop' => 'b']]]],
 			['a' => 10, 'b' => 0]
 		);
 
-		$this->assertFalse($result['ok']);
-		$this->assertSame('calculation-trial-failed', $result['error']['code']);
-		$this->assertSame(['a', 'b'], $result['dependencies']);
+		$this->assertFalse(condition: $result['ok']);
+		$this->assertSame(expected: 'calculation-trial-failed', actual: $result['error']['code']);
+		$this->assertSame(expected: ['a', 'b'], actual: $result['dependencies']);
 	}
 
+	/**
+	 * A trial never burns A sequence number.
+	 *
+	 * @return void
+	 */
 	public function testATrialNeverBurnsASequenceNumber(): void {
 		$result = $this->trials->trySample(
 			['type' => 'string', 'expression' => ['sequence' => ['scope' => 'yearly']]],
 			[]
 		);
 
-		$this->assertTrue($result['ok']);
-		$this->assertNull($result['value'], 'a trial must not reserve a running number');
+		$this->assertTrue(condition: $result['ok']);
+		$this->assertNull(actual: $result['value'], message: 'a trial must not reserve a running number');
 	}
 }
