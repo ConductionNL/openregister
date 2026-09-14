@@ -155,9 +155,9 @@ class AnonymisationBackendService {
 	/**
 	 * Issue a fresh probe for a single method, bypassing and refreshing the cache.
 	 *
-	 * @param string $method One of BackendState::METHODS.
-	 *
 	 * An OpenAnonymiser test also tells integriq's connection registry what it found.
+	 *
+	 * @param string $method One of BackendState::METHODS.
 	 *
 	 * @return ProbeResult The fresh probe result.
 	 *
