@@ -139,6 +139,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder Optional PDOK geocoder (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry Relation resourceUrl resolver (null-safe)
 	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService Optional recovery-window service (null-safe)
 	 *
 	 * @return void
 	 *
