@@ -31,6 +31,8 @@ use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -81,7 +83,9 @@ class ArchivalControllerReviewTest extends TestCase {
 			$this->lists,
 			new DestructionReviewService(),
 			$this->outcomes,
-			$this->createMock(AuditTrailMapper::class)
+			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ArchivalNominationService::class),
+			$this->createMock(SchemaMapper::class)
 		);
 	}
 
