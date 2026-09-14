@@ -69,6 +69,7 @@ class ReviewOutcomeService {
 	 * @param string      $entryUuid The uuid of the record.
 	 * @param string      $reason    Why the reviewer answered this way, recorded on the record too.
 	 * @param string|null $newDate   The new archiefactiedatum, for a retention.
+	 * @param string|null $reviewer  Who answered, written onto the record's own outcome for a transfer.
 	 *
 	 * @return string|null The uuid of the transfer list a transfer created, null for the other answers.
 	 *
