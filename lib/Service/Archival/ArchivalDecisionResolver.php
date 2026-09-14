@@ -59,6 +59,15 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * Merges every archival source an object carries into one resolved
  * `@self._retention` decision, in MDTO concepts with English keys.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity IS the job.
+ *              Five stored blocks describe the same arc in different words, and
+ *              each branch here is one source this class had to learn to read;
+ *              the class exists because those branches used to be spread over
+ *              the codebase and had already drifted apart. Folding them together
+ *              would not simplify the problem, it would hide which source
+ *              answered, which is the one thing a records officer needs when a
+ *              disposal date looks wrong.
  */
 class ArchivalDecisionResolver {
 
