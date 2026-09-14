@@ -114,6 +114,7 @@ DOMAIN_ORDER=(
     "flow-subjects"
     "delegation"
     "register-descriptors"
+    "object-watchers"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -163,6 +164,12 @@ declare -A DOMAIN_COLLECTIONS=(
     # success left 8 of 15 declared registers absent on a dev instance, and the
     # only symptom was two unrelated e2e suites dying on a register lookup.
     [register-descriptors]="$REPO_ROOT/tests/newman/openregister-register-descriptors.postman_collection.json"
+    # Object watchers — following an object you do not own. Registered here
+    # because the capability is HTTP-shaped: routes, auth attributes and the
+    # 404-not-403 posture on an object the caller cannot resolve. A unit suite
+    # cannot see any of those, and a route missing from appinfo/routes.php is a
+    # 404 no PHPUnit test would notice.
+    [object-watchers]="$REPO_ROOT/tests/newman/openregister-object-watchers.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
