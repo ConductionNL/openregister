@@ -75,11 +75,11 @@ class DeletedController extends Controller {
 	 * @param IUserSession $userSession The user session
 	 * @param IGroupManager $groupManager The group manager for admin checks
 	 * @param PermissionHandler $permissionHandler Handler for per-schema RBAC checks
-	 * @param DeletionWindowService $deletionWindowService Publishes the recovery window
+	 * @param DeletionWindowService $windowService Publishes the recovery window
 	 * @param DestroyRightService $destroyRightService Decides whether the caller may destroy
-	 * @param DestructionScopeService $destructionScopeService Previews and carries out the declared scope
+	 * @param DestructionScopeService $scopeService Previews and carries out the declared scope
 	 * @param DestructionRecorder $destructionRecorder Writes the record that survives the object
-	 * @param RetentionClockService $retentionClockService Reads the AVG and Archiefwet clocks
+	 * @param RetentionClockService $clockService Reads the AVG and Archiefwet clocks
 	 * @param AuditTrailMapper $auditTrailMapper Reads back a destruction record and records a restore
 	 *
 	 * @return void
@@ -93,11 +93,11 @@ class DeletedController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly DeletionWindowService $deletionWindowService,
+		private readonly DeletionWindowService $windowService,
 		private readonly DestroyRightService $destroyRightService,
-		private readonly DestructionScopeService $destructionScopeService,
+		private readonly DestructionScopeService $scopeService,
 		private readonly DestructionRecorder $destructionRecorder,
-		private readonly RetentionClockService $retentionClockService,
+		private readonly RetentionClockService $clockService,
 		private readonly AuditTrailMapper $auditTrailMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -336,7 +336,7 @@ class DeletedController extends Controller {
 		$rows = [];
 		foreach ($objects as $object) {
 			$row = $object->jsonSerialize();
-			$window = $this->deletionWindowService->windowFor(
+			$window = $this->windowService->windowFor(
 				object: $object,
 				schema: $this->resolveSchema(object: $object)
 			);
@@ -363,7 +363,7 @@ class DeletedController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|500,
 	 *     array{error?: string,
-	 *     results?: list<\OCA\OpenRegister\Db\ObjectEntity>, total?: int,
+	 *     results?: list<array<string, mixed>>, total?: int,
 	 *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null},
 	 *     array<never, never>>
 	 *
@@ -549,7 +549,7 @@ class DeletedController extends Controller {
 				);
 			}
 
-			$window = $this->deletionWindowService->windowFor(
+			$window = $this->windowService->windowFor(
 				object: $object,
 				schema: $this->resolveSchema(object: $object)
 			);
@@ -805,7 +805,7 @@ class DeletedController extends Controller {
 
 			// A HOLD OUTRANKS BOTH CLOCKS, and two clocks that disagree refuse
 			// rather than pick a winner in silence.
-			$clockRefusal = $this->retentionClockService->refusalFor(object: $object);
+			$clockRefusal = $this->clockService->refusalFor(object: $object);
 			if ($clockRefusal !== null) {
 				return new JSONResponse(
 					data: $clockRefusal->toResponseBody(),
@@ -816,7 +816,7 @@ class DeletedController extends Controller {
 			// THE WINDOW IS A REFUSAL, NOT DECORATION. Inside it the object can
 			// still come back, so destroying it needs the window waived
 			// explicitly, and the refusal says how long is left.
-			$window = $this->deletionWindowService->windowFor(object: $object, schema: $schema);
+			$window = $this->windowService->windowFor(object: $object, schema: $schema);
 			$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
 			if ($window !== null && $window->hasLapsed() === false && $force === false) {
 				return new JSONResponse(
@@ -835,7 +835,7 @@ class DeletedController extends Controller {
 			// The scope is previewed, then destroyed, then reported. An
 			// unclear scope refuses before anything is touched.
 			try {
-				$scopeReport = $this->destructionScopeService->destroy(object: $object, schema: $schema);
+				$scopeReport = $this->scopeService->destroy(object: $object, schema: $schema);
 				$record = $this->destructionRecorder->record(
 					object: $object,
 					scope: $scopeReport,
@@ -912,14 +912,14 @@ class DeletedController extends Controller {
 				);
 			}
 
-			$window = $this->deletionWindowService->windowFor(object: $object, schema: $schema);
+			$window = $this->windowService->windowFor(object: $object, schema: $schema);
 
 			return new JSONResponse(
 				data: [
 					'objectUuid' => (string)$object->getUuid(),
-					'preview' => $this->destructionScopeService->preview(object: $object, schema: $schema),
+					'preview' => $this->scopeService->preview(object: $object, schema: $schema),
 					'deletionWindow' => $window?->toArray(),
-					'clocks' => $this->retentionClockService->clocksFor(object: $object),
+					'clocks' => $this->clockService->clocksFor(object: $object),
 				]
 			);
 		} catch (\Exception $e) {
