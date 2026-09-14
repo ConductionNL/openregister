@@ -44,6 +44,9 @@ use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
@@ -1103,8 +1106,53 @@ class SchemaMapper extends QBMapper {
 		$this->validateMcpAnnotation(schema: $schema);
 		$this->validateRegistryAnnotation(schema: $schema);
 		$this->validateExtendingFormAnnotation(schema: $schema);
+		$this->validateAuthorizationDeny(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
+
+	/**
+	 * Refuse an authorization block whose deny contradicts its own grants.
+	 *
+	 * A deny is the first rule in this layer that subtracts, and the two
+	 * contradictions it makes possible are cheap to catch here and expensive to
+	 * discover later: a principal granted and denied the same verb at one level,
+	 * and a register left with no principal holding `manage`.
+	 *
+	 * The refusal is HTTP 422 rather than 400. The request was understood and
+	 * well formed; the rules inside it disagree with each other, and the message
+	 * names both so the author knows which two to look at.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function validateAuthorizationDeny(Schema $schema): void {
+		$authorization = $schema->getAuthorization();
+		if (is_array($authorization) === false || $authorization === []) {
+			return;
+		}
+
+		$subject = sprintf('the schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? ''));
+
+		// The catalogue check runs FIRST. An unknown verb is the mistake that
+		// survives longest: it matches nothing, so it grants nothing and denies
+		// nothing, and the block looks correct in every screen that shows it.
+		// Refusing it here is what publishing the set is for.
+		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
+			authorization: $authorization,
+			roleDefinitions: null,
+			subject: $subject
+		);
+
+		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
+			authorization: $authorization,
+			subject: $subject
+		);
+	}//end validateAuthorizationDeny()
 
 	/**
 	 * R07: surface dropped `x-openregister-*` keys via the structured

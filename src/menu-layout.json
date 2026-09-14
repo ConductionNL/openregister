@@ -33,6 +33,7 @@
 		"Sources",
 		"Endpoints",
 		"Webhooks",
+		"Connections",
 		"Configurations"
 	]
 }

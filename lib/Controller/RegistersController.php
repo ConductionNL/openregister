@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
@@ -587,6 +588,14 @@ class RegistersController extends Controller {
 			$this->registerCacheHandler->invalidate(registerId: $register->getId());
 
 			return new JSONResponse(data: $register, statusCode: 201);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -711,6 +720,14 @@ class RegistersController extends Controller {
 			}//end try
 
 			return new JSONResponse(data: $updatedRegister);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(

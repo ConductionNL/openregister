@@ -1,5 +1,6 @@
 <template>
 	<SettingsSection
+		id="section-text-extraction"
 		:name="t('openregister', 'Text Extraction')"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"

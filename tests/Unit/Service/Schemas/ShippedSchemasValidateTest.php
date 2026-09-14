@@ -81,28 +81,36 @@ class ShippedSchemasValidateTest extends TestCase {
 	}
 
 	/**
-	 * Collect every properties object nested anywhere in a descriptor.
+	 * The schemas one descriptor declares, keyed by name.
 	 *
-	 * @param mixed $node The current node.
-	 * @param string $path Where the node sits, for the failure message.
-	 * @param array $found Accumulator of path to properties object.
+	 * Read from `components.schemas` rather than walked for anything holding a
+	 * `properties` key. A generic walk cannot tell a schema from a property
+	 * that happens to be NAMED `properties`, and `vocabulary_register.json`
+	 * has exactly that: `conceptShape.properties.properties`. The walk called
+	 * it a schema and the test failed on its own bookkeeping instead of on the
+	 * vocabulary. Nested properties and array items need no walk here anyway,
+	 * because `validateProperties` recurses into both itself.
 	 *
-	 * @return void
+	 * @param array $descriptor The parsed descriptor.
+	 *
+	 * @return array<string, array<string, mixed>> Schema name to its properties object.
 	 */
-	private function collectPropertyObjects(mixed $node, string $path, array &$found): void {
-		if (is_array($node) === false) {
-			return;
+	private function schemasIn(array $descriptor): array {
+		$components = ($descriptor['components'] ?? null);
+		if (is_array($components) === false || is_array($components['schemas'] ?? null) === false) {
+			return [];
 		}
 
-		if (isset($node['properties']) === true && is_array($node['properties']) === true) {
-			$found[$path . '/properties'] = $node['properties'];
-		}
-
-		foreach ($node as $key => $child) {
-			if (is_array($child) === true) {
-				$this->collectPropertyObjects(node: $child, path: $path . '/' . (string)$key, found: $found);
+		$found = [];
+		foreach ($components['schemas'] as $name => $schema) {
+			if (is_array($schema) === false || is_array($schema['properties'] ?? null) === false) {
+				continue;
 			}
+
+			$found[(string)$name] = $schema['properties'];
 		}
+
+		return $found;
 	}
 
 	/**
@@ -125,20 +133,18 @@ class ShippedSchemasValidateTest extends TestCase {
 				continue;
 			}
 
-			$found = [];
-			$this->collectPropertyObjects(node: $descriptor, path: basename($file), found: $found);
-			foreach ($found as $path => $properties) {
+			foreach ($this->schemasIn(descriptor: $descriptor) as $name => $properties) {
 				$checked++;
 				try {
 					$this->validator->validateProperties(properties: $properties, path: '');
 				} catch (Throwable $refusal) {
-					$failures[] = $path . ': ' . $refusal->getMessage();
+					$failures[] = basename($file) . '/' . $name . ': ' . $refusal->getMessage();
 				}
 			}
 		}
 
 		$this->assertGreaterThan(
-			expected: 50,
+			expected: 20,
 			actual: $checked,
 			message: 'far fewer schemas were walked than this repository ships, so the walk is broken, not clean'
 		);

@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Obchod",
         "Install registers, schemas and flows that other organisations have published.": "Nainstalujte registry, schémata a toky zveřejněné jinými organizacemi.",
         "No such run": "Žádný takový běh",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Běh neexistuje, nebo ho nesmíte vidět. Smazáním toku se smažou i jeho běhy."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Běh neexistuje, nebo ho nesmíte vidět. Smazáním toku se smažou i jeho běhy.",
+        "Configured": "Nakonfigurováno",
+        "Limited": "Omezeno",
+        "Simulated": "Simulováno",
+        "Not available": "Není k dispozici",
+        "Open settings": "Otevřít nastavení",
+        "Add integration": "Přidat integraci",
+        "Last checked": "Naposledy zkontrolováno"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

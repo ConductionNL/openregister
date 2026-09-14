@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -68,6 +69,19 @@ class SearchQueryHandler {
 	 * @var string
 	 */
 	private const NO_WATCHED_OBJECTS = '__no-watched-objects__';
+
+	/**
+	 * The id an `_unread=true` query falls back to when there is no caller.
+	 *
+	 * An anonymous reader has no read state, so a naive `NOT EXISTS` would be
+	 * true for every row and the lens would answer the WHOLE register instead of
+	 * nothing. That is the silent-widening failure the watchers lens guards
+	 * against too, and it is guarded the same way: a literal no object can
+	 * carry.
+	 *
+	 * @var string
+	 */
+	private const NO_UNREAD_READER = '__no-unread-reader__';
 
 	/**
 	 * Memoized effective search-trail recording mode for this request.
@@ -113,6 +127,7 @@ class SearchQueryHandler {
 	 * @param SearchTrailService $searchTrailService Service for recording search trails.
 	 * @param WatcherMapper|null $watcherMapper Subscriptions, for the `_watching=true` lens.
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
+	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
@@ -125,6 +140,10 @@ class SearchQueryHandler {
 		private readonly SearchTrailService $searchTrailService,
 		private readonly ?WatcherMapper $watcherMapper = null,
 		private readonly ?IUserSession $userSession = null,
+		// The branch-filter expander. Nullable with a null default so the many
+		// unit tests that build this handler positionally keep working; the
+		// container resolves the real instance by type in production.
+		private readonly ?CodedFilterExpander $codedFilters = null,
 	) {
 	}//end __construct()
 
@@ -209,6 +228,50 @@ class SearchQueryHandler {
 			return [];
 		}
 	}//end subscriptionsOfCaller()
+
+	/**
+	 * Resolve `_unread=true` into the uid whose read state the query reads.
+	 *
+	 * The lens is resolved INSIDE the query, not applied to a fetched page: the
+	 * mapper turns `_unreadFor` into a correlated `NOT EXISTS` against the
+	 * read-state table, so the page, the total and the facets all see the same
+	 * restriction. A post-filter would give a first page of 25 with a total of
+	 * 120 and a second page that skipped rows, which reads as a paging bug and
+	 * is not one.
+	 *
+	 * Identity is resolved HERE, at the edge, and never in the query builder:
+	 * ADR-005 wants the principal named where the request arrives, and it also
+	 * means the mapper can be tested with a uid rather than a session.
+	 *
+	 * @param array<string, mixed> $query The query built so far.
+	 *
+	 * @return array<string, mixed> The query, carrying the resolved reader.
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function applyUnreadLens(array $query): array {
+		if (array_key_exists('_unread', $query) === false) {
+			return $query;
+		}
+
+		$asked = filter_var($query['_unread'], FILTER_VALIDATE_BOOLEAN);
+		unset($query['_unread']);
+		if ($asked === false) {
+			return $query;
+		}
+
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($uid === null || $uid === '') {
+			// No reader, so nothing can be unread FOR them. An honest empty
+			// page, never the whole register.
+			$query['_ids'] = [self::NO_UNREAD_READER];
+			return $query;
+		}
+
+		$query['_unreadFor'] = $uid;
+
+		return $query;
+	}//end applyUnreadLens()
 
 	/**
 	 * Whether the target schema is served by an external object-source (DBAL
@@ -475,6 +538,15 @@ class SearchQueryHandler {
 			$objectFilters[$key] = $value;
 		}
 
+		// STEP 2b: expand a branch filter into the concepts it stands for.
+		// `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root
+		// plus every narrower concept under it), walked at query time and
+		// bounded by depth, so moving a concept in the scheme changes what the
+		// filter matches with no reindex anywhere.
+		if ($this->codedFilters !== null) {
+			$objectFilters = $this->codedFilters->expand(filters: $objectFilters, schemaRef: $schema);
+		}
+
 		// Add object field filters directly to query.
 		$query = array_merge($query, $objectFilters);
 
@@ -503,6 +575,10 @@ class SearchQueryHandler {
 		// The `_watching=true` lens, applied AFTER `_ids` is normalised to an
 		// array so the two can intersect rather than fight.
 		$query = $this->applyWatchingLens(query: $query);
+
+		// The `_unread=true` lens, after the watching lens so that "unread among
+		// what I follow" narrows twice rather than one overwriting the other.
+		$query = $this->applyUnreadLens(query: $query);
 
 		return $query;
 	}//end buildSearchQuery()
