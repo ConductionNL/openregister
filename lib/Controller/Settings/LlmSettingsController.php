@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\AppFramework\Controller;
@@ -52,6 +53,7 @@ class LlmSettingsController extends Controller {
 	 * @param SettingsService $settingsService Settings service.
 	 * @param VectorizationService $vectorizationService Vectorization service.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ConnectionReporter $connectionReporter Reports the saved provider to integriq's connection registry.
 	 */
 	public function __construct(
 		$appName,
@@ -61,6 +63,7 @@ class LlmSettingsController extends Controller {
 		private readonly SettingsService $settingsService,
 		private readonly VectorizationService $vectorizationService,
 		private readonly LoggerInterface $logger,
+		private readonly ConnectionReporter $connectionReporter,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -139,6 +142,11 @@ class LlmSettingsController extends Controller {
 			}
 
 			$result = $this->settingsService->updateLLMSettingsOnly($data);
+			$this->connectionReporter->reportLlmProviders(
+				chatProvider: ($result['chatProvider'] ?? null),
+				embeddingProvider: ($result['embeddingProvider'] ?? null)
+			);
+
 			return new JSONResponse(
 				data: [
 					'success' => true,

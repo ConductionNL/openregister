@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
+use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
 use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
@@ -59,6 +60,7 @@ class EdepotSettingsController extends Controller {
 	 * @param RestApiTransport $restTransport REST API transport.
 	 * @param OpenConnectorTransport $ocTransport OpenConnector transport.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ConnectionReporter $connectionReporter Reports connection test outcomes to integriq's connection registry.
 	 */
 	public function __construct(
 		$appName,
@@ -69,6 +71,7 @@ class EdepotSettingsController extends Controller {
 		private readonly RestApiTransport $restTransport,
 		private readonly OpenConnectorTransport $ocTransport,
 		private readonly LoggerInterface $logger,
+		private readonly ConnectionReporter $connectionReporter,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -167,6 +170,7 @@ class EdepotSettingsController extends Controller {
 				$transport = $this->resolveTransport(type: ($params['transport'] ?? 'rest_api'));
 				$config = $this->transferService->getTransportConfig();
 				$testResult = $transport->testConnection($config);
+				$this->reportTest(passed: $testResult, transport: $transport->getName());
 			}
 
 			$response = ['success' => true];
@@ -194,6 +198,7 @@ class EdepotSettingsController extends Controller {
 			$config = $this->transferService->getTransportConfig();
 			$transport = $this->resolveTransport(type: ($config['transport'] ?? 'rest_api'));
 			$result = $transport->testConnection($config);
+			$this->reportTest(passed: $result, transport: $transport->getName());
 
 			$message = 'Connection failed';
 			if ($result === true) {
@@ -208,6 +213,12 @@ class EdepotSettingsController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
+			$this->connectionReporter->report(
+				key: 'edepot',
+				status: 'error',
+				message: 'The e-Depot connection test failed: ' . $e->getMessage()
+			);
+
 			return new JSONResponse(
 				data: [
 					'success' => false,
@@ -217,6 +228,33 @@ class EdepotSettingsController extends Controller {
 			);
 		}//end try
 	}//end testEdepotConnection()
+
+	/**
+	 * Tell integriq what an e-Depot connection test found.
+	 *
+	 * @param bool   $passed    Whether the transport answered.
+	 * @param string $transport The transport name the test used.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	private function reportTest(bool $passed, string $transport): void {
+		if ($passed === true) {
+			$this->connectionReporter->report(
+				key: 'edepot',
+				status: 'configured',
+				message: 'The connection test passed over ' . $transport . '.'
+			);
+			return;
+		}
+
+		$this->connectionReporter->report(
+			key: 'edepot',
+			status: 'error',
+			message: 'The connection test failed over ' . $transport . '.'
+		);
+	}//end reportTest()
 
 	/**
 	 * Resolve transport implementation by type name.

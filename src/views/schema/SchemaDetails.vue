@@ -43,6 +43,7 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 						</NcActionButton>
 						<NcActionButton
 							closeAfterClick
+							data-testid="add-schema-property"
 							@click="
 								() => {
 									schemaStore.setSchemaPropertyKey(null)

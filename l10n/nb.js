@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Butikk",
         "Install registers, schemas and flows that other organisations have published.": "Installer registre, skjemaer og flyter som andre organisasjoner har publisert.",
         "No such run": "Ingen slik kjøring",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Kjøringen finnes ikke, eller du har ikke tilgang til å se den. Sletter du en flyt, slettes kjøringene dens også."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Kjøringen finnes ikke, eller du har ikke tilgang til å se den. Sletter du en flyt, slettes kjøringene dens også.",
+        "Configured": "Konfigurert",
+        "Limited": "Begrenset",
+        "Simulated": "Simulert",
+        "Not available": "Ikke tilgjengelig",
+        "Open settings": "Åpne innstillinger",
+        "Add integration": "Legg til integrasjon",
+        "Last checked": "Sist kontrollert"
     },
     "nplurals=2; plural=(n != 1);"
 )

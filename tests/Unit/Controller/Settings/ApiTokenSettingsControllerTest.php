@@ -38,7 +38,8 @@ class ApiTokenSettingsControllerTest extends TestCase {
 			$this->config,
 			$this->settingsService,
 			$this->clientService,
-			$this->logger
+			$this->logger,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 	}
 
@@ -190,9 +191,11 @@ class ApiTokenSettingsControllerTest extends TestCase {
 	}
 
 	public function testTestGitHubTokenUsesTokenFromRequest(): void {
-		// When token is in request params, config is not queried.
+		// When a token is in the request params, that token is the one sent. The
+		// saved token is still read, only to decide whether the test says anything
+		// about the saved connection (adopt-connection-registry).
 		$this->request->method('getParams')->willReturn(['token' => 'ghp_request_token']);
-		$this->config->expects($this->never())->method('getValueString');
+		$this->config->method('getValueString')->willReturn('ghp_saved_token');
 
 		$response = $this->createMock(IResponse::class);
 		$response->method('getBody')->willReturn(json_encode(['login' => 'octocat']));

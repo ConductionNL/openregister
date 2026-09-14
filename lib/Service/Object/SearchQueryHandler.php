@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -126,6 +127,7 @@ class SearchQueryHandler {
 	 * @param SearchTrailService $searchTrailService Service for recording search trails.
 	 * @param WatcherMapper|null $watcherMapper Subscriptions, for the `_watching=true` lens.
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
+	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
@@ -138,6 +140,10 @@ class SearchQueryHandler {
 		private readonly SearchTrailService $searchTrailService,
 		private readonly ?WatcherMapper $watcherMapper = null,
 		private readonly ?IUserSession $userSession = null,
+		// The branch-filter expander. Nullable with a null default so the many
+		// unit tests that build this handler positionally keep working; the
+		// container resolves the real instance by type in production.
+		private readonly ?CodedFilterExpander $codedFilters = null,
 	) {
 	}//end __construct()
 
@@ -530,6 +536,15 @@ class SearchQueryHandler {
 
 			// This is an object field filter.
 			$objectFilters[$key] = $value;
+		}
+
+		// STEP 2b: expand a branch filter into the concepts it stands for.
+		// `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root
+		// plus every narrower concept under it), walked at query time and
+		// bounded by depth, so moving a concept in the scheme changes what the
+		// filter matches with no reindex anywhere.
+		if ($this->codedFilters !== null) {
+			$objectFilters = $this->codedFilters->expand(filters: $objectFilters, schemaRef: $schema);
 		}
 
 		// Add object field filters directly to query.

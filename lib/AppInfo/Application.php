@@ -131,6 +131,9 @@ use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
+use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
@@ -2892,6 +2895,27 @@ class Application extends App implements IBootstrap {
 		// cannot be deleted, because the resolver refuses an unknown name
 		// rather than downgrading to weekdays.
 		$context->registerEventListener(ObjectDeletingEvent::class, WorkingCalendarDeleteGuardListener::class);
+
+		// Code-list lifecycle — a value outside its validity window, a broader
+		// value under a leaf-only property and two values of one exclusive
+		// group are all refused at WRITE time, on every door, so a retired
+		// resultaattype cannot be chosen again while every dossier that
+		// already holds it keeps reading correctly.
+		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
+
+		// ... and the delete half: a value the product defines, or one that
+		// objects still hold, is refused with its count. Closing the validity
+		// window is the operation that is always safe.
+		$context->registerEventListener(ObjectDeletingEvent::class, ConceptDeleteGuardListener::class);
+
+		// Named uniqueness constraints — a `refuse` constraint stops the write
+		// naming the combination and the conflicting object; a `report` one
+		// lets it through and records the breach on the object's validation
+		// envelope, where it can be read afterwards. Both are real: a gemeente
+		// refuses a second bezwaar and only reports a repeated e-mail.
+		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
 
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)

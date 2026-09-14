@@ -29,6 +29,7 @@ use Exception;
 use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -559,6 +560,21 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $archivalRetention = null;
 
 	/**
+	 * The AVG clock and the Archiefwet clock, each with the rule that produced
+	 * it.
+	 *
+	 * Transient property populated by the render layer
+	 * (`delete-window-and-recorded-destruction`). Two dates rather than one,
+	 * deliberately: the AVG says delete when the lawful purpose ends and the
+	 * Archiefwet says keep for N years, and a product that merges them into a
+	 * single date is wrong in one direction for every object. Exposed in @self
+	 * as `_clocks`, omitted entirely when not set.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $retentionClocks = null;
+
+	/**
 	 * Registry subscription state for this object (`registry-subscriptions`,
 	 * finding B22).
 	 *
@@ -772,6 +788,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setArchivalRetention(?array $retention): void {
 		$this->archivalRetention = $retention;
 	}//end setArchivalRetention()
+
+	/**
+	 * Read the two retention clocks.
+	 *
+	 * @return array<string, mixed>|null The clocks, or null when not resolved.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function getRetentionClocks(): ?array {
+		return $this->retentionClocks;
+	}//end getRetentionClocks()
+
+	/**
+	 * Write the two retention clocks.
+	 *
+	 * Surfaced in the @self envelope as `_clocks` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $clocks The AVG and Archiefwet clocks with their rules.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function setRetentionClocks(?array $clocks): void {
+		$this->retentionClocks = $clocks;
+	}//end setRetentionClocks()
 
 	/**
 	 * Get the registry subscription state, when set by the render layer.
@@ -1281,6 +1323,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// - translationCompleteness: absent when the schema has no translatable
 		//   properties, or the object has not been rendered.
 		// - _retention: the effective archival retention decision.
+		// - _clocks: both retention clocks, each naming its rule, never flattened
+		//   into one date.
 		// - registry: the registry subscription state, absent for an object
 		//   that never requested one.
 		// - watching, watcherCount: the reader's own follow state and the size
@@ -1296,6 +1340,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'urn'                     => $this->urn,
 			'translationCompleteness' => $this->translationCompleteness,
 			'_retention'              => $this->archivalRetention,
+			'_clocks'                 => $this->retentionClocks,
 			'registry'                => $this->registryState,
 			'watching'                => $this->watching,
 			'watcherCount'            => $this->watcherCount,
@@ -1695,6 +1740,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @throws Exception If no user is logged in
 	 *
 	 * @return static Returns the entity
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
 		$currentUser = $userSession->getUser();
@@ -1704,17 +1751,28 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		$userId = $currentUser->getUID();
 		$now = new DateTime();
+
+		// The retention handed in is the window. It used to be ignored: every
+		// object got a hard-coded 31 days whatever the schema or the instance
+		// said, so a schema declaring a year of recovery quietly had a month.
+		// A non-positive retention is not a window, so the default applies.
+		$days = $retentionPeriod;
+		if ($days === null || $days < 1) {
+			$days = DeletionWindowService::DEFAULT_RETENTION_DAYS;
+		}
+
 		$purgeDate = clone $now;
-		// $purgeDate->add(new DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
-		$purgeDate->add(new DateInterval('P31D'));
+		$purgeDate->add(new DateInterval('P' . (string)$days . 'D'));
 
 		$this->setDeleted(
 			[
 				'deleted' => $now->format('c'),
+				'deletedAt' => $now->format('c'),
 				'deletedBy' => $userId,
 				'deletedReason' => $deletedReason,
-				'retentionPeriod' => $retentionPeriod,
+				'retentionPeriod' => $days,
 				'purgeDate' => $purgeDate->format('c'),
+				'destroyableFrom' => $purgeDate->format('c'),
 			]
 		);
 

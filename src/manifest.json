@@ -338,6 +338,72 @@
       "_note": "Standalone integration-registry surface for the per-leaf screenshot harness; bypasses object-detail so sub-resource plugins do not race the render."
     },
     {
+      "id": "connections",
+      "route": "/settings/connections",
+      "type": "index",
+      "title": "Connections",
+      "permission": "admin",
+      "requiresApp": {
+        "id": "integriq",
+        "name": "Integriq"
+      },
+      "_note": "OpenRegister's outside connections (adopt-connection-registry, hydra connection-registry D8). The rows are integriq's `app_connection` objects, synced from lib/Settings/connections.json; integriq works out each status and OpenRegister only reports. The `app=openregister` preset is the menu entry's `query` (ADR-097 decision 5), which the index page merges into the fetch as a bare filter key. This is NOT the ADR-019 Integrations page (`integrationsView`), which shows integrations beside one object and stays as it is.",
+      "config": {
+        "register": "integriq",
+        "schema": "app_connection",
+        "showViewAction": false,
+        "showAdd": false,
+        "headerActions": [
+          {
+            "id": "add-integration",
+            "label": "Add integration",
+            "icon": "PowerPlugOutline",
+            "handler": "openIntegriqConnections"
+          }
+        ],
+        "defaultSort": {
+          "field": "order",
+          "direction": "asc"
+        },
+        "folderSidebar": {
+          "source": "field",
+          "field": "status",
+          "allLabel": "All"
+        },
+        "columns": [
+          {
+            "key": "title",
+            "label": "Title"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "formatter": "connectionStatus"
+          },
+          {
+            "key": "statusMessage",
+            "label": "Message",
+            "sortable": false
+          },
+          {
+            "key": "checkedAt",
+            "label": "Last checked",
+            "formatter": "datetime"
+          },
+          {
+            "key": "settingsUrl",
+            "label": "Settings",
+            "sortable": false,
+            "formatter": "connectionSettingsLabel",
+            "widget": "link",
+            "widgetProps": {
+              "href": "{settingsUrl}"
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "quality",
       "route": "/quality",
       "type": "custom",
@@ -480,6 +546,20 @@
           "icon": "Webhook",
           "route": "webhooks",
           "order": 95
+        },
+        {
+          "id": "Connections",
+          "label": "Connections",
+          "icon": "PowerPlugOutline",
+          "route": "connections",
+          "query": {
+            "app": "openregister"
+          },
+          "order": 96,
+          "permission": "admin",
+          "visibleIf": {
+            "appInstalled": "integriq"
+          }
         }
       ]
     },

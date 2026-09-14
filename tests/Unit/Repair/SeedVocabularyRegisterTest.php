@@ -114,7 +114,7 @@ class SeedVocabularyRegisterTest extends TestCase {
 					$schemas = ($data['components']['schemas'] ?? []);
 					return isset($schemas['conceptScheme']) === true && isset($schemas['concept']) === true;
 				}),
-				$this->equalTo('1.0.0'),
+				$this->equalTo('1.1.0'),
 				$this->equalTo(false)
 			);
 

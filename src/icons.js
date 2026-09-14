@@ -40,6 +40,7 @@ import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
+import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
 import ShieldAccountOutline from 'vue-material-design-icons/ShieldAccountOutline.vue'
 import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
@@ -79,6 +80,7 @@ export default {
 	Merge,
 	MessageTextOutline,
 	OfficeBuildingOutline,
+	PowerPlugOutline,
 	RobotOutline,
 	ShieldAccountOutline,
 	ShieldLockOutline,

@@ -2930,7 +2930,14 @@
         "Store": "Trgovina",
         "Install registers, schemas and flows that other organisations have published.": "Namestite registre, sheme in tokove, ki so jih objavile druge organizacije.",
         "No such run": "Ni takšnega izvajanja",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izvajanje ne obstaja ali pa ga ne smete videti. Z brisanjem toka se izbrišejo tudi njegova izvajanja."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izvajanje ne obstaja ali pa ga ne smete videti. Z brisanjem toka se izbrišejo tudi njegova izvajanja.",
+        "Configured": "Nastavljeno",
+        "Limited": "Omejeno",
+        "Simulated": "Simulirano",
+        "Not available": "Ni na voljo",
+        "Open settings": "Odpri nastavitve",
+        "Add integration": "Dodaj integracijo",
+        "Last checked": "Nazadnje preverjeno"
     },
     "pluralForm": "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);",
     "plurals": {

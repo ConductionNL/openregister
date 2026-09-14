@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Κατάστημα",
         "Install registers, schemas and flows that other organisations have published.": "Εγκαταστήστε μητρώα, σχήματα και ροές που έχουν δημοσιεύσει άλλοι οργανισμοί.",
         "No such run": "Δεν υπάρχει τέτοια εκτέλεση",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Η εκτέλεση δεν υπάρχει ή δεν επιτρέπεται να τη δείτε. Η διαγραφή μιας ροής διαγράφει και τις εκτελέσεις της."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Η εκτέλεση δεν υπάρχει ή δεν επιτρέπεται να τη δείτε. Η διαγραφή μιας ροής διαγράφει και τις εκτελέσεις της.",
+        "Configured": "Διαμορφωμένο",
+        "Limited": "Περιορισμένο",
+        "Simulated": "Προσομοιωμένο",
+        "Not available": "Μη διαθέσιμο",
+        "Open settings": "Άνοιγμα ρυθμίσεων",
+        "Add integration": "Προσθήκη ενσωμάτωσης",
+        "Last checked": "Τελευταίος έλεγχος"
     },
     "nplurals=2; plural=(n != 1);"
 )
