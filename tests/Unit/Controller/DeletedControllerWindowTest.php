@@ -3,11 +3,12 @@
 /**
  * The delete window and the recorded destruction, at the controller.
  *
- * Four answers are pinned here because each of them used to be something
- * else: the trash listing publishes the window, a restore inside the window
- * is one act and is recorded with its actor, a destroy inside the window
- * refuses and says how long is left, and a destroy after it records the act
- * before the row goes.
+ * Each answer here used to be something else: the trash listing publishes
+ * the window, a restore inside the window is one act and is recorded with
+ * its actor, a destroy inside the window refuses and says how long is left,
+ * a destroy after it records the act before the row goes, the record stays
+ * readable once the object is gone, and the preview counts the scope
+ * without touching it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -322,4 +323,62 @@ final class DeletedControllerWindowTest extends TestCase {
 		self::assertSame(200, $response->getStatus());
 		self::assertSame(1, $response->getData()['total']);
 	}//end testTheDestructionRecordIsReadableAfterTheObjectIsGone()
+	public function testThePreviewReportsTheScopeWithCountsAndDestroysNothing(): void {
+		$this->objectMapper->method('find')->willReturn($this->trashed());
+		$this->rights->method('refusalFor')->willReturn(null);
+		$this->windows->method('windowFor')->willReturn($this->window(7));
+		$this->clocks->method('clocksFor')->willReturn(
+			[
+				'avg'      => ['date' => null, 'rule' => 'no-processing-activity'],
+				'archive'  => ['date' => null, 'rule' => 'no-selectielijst'],
+				'conflict' => null,
+				'held'     => false,
+			]
+		);
+
+		$this->scopes->expects(self::once())
+			->method('preview')
+			->willReturn(
+				[
+					'scope'       => [DestructionScope::NOTES],
+					'counts'      => [DestructionScope::NOTES => 4],
+					'total'       => 4,
+					'unknown'     => [],
+					'unavailable' => [],
+					'destroyable' => true,
+				]
+			);
+
+		// A preview that destroys is not a preview. Spies rather than never()
+		// expectations, for the reason the destroy test above gives.
+		$destroyed = [];
+		$this->scopes->method('destroy')->willReturnCallback(
+			static function () use (&$destroyed): array {
+				$destroyed[] = 'scope';
+
+				return ['scope' => [], 'destroyed' => [], 'total' => 0, 'failed' => []];
+			}
+		);
+		$this->objectMapper->method('delete')->willReturnCallback(
+			static function (ObjectEntity $entity) use (&$destroyed): ObjectEntity {
+				$destroyed[] = (string)$entity->getUuid();
+
+				return $entity;
+			}
+		);
+
+		$response = $this->controller->destructionPreview('zaak-100');
+		$body = $response->getData();
+
+		self::assertSame(200, $response->getStatus());
+		self::assertSame('zaak-100', $body['objectUuid']);
+		self::assertSame([DestructionScope::NOTES], $body['preview']['scope']);
+		self::assertSame(4, $body['preview']['counts'][DestructionScope::NOTES]);
+		self::assertSame(4, $body['preview']['total']);
+		self::assertTrue($body['preview']['destroyable']);
+		self::assertSame(7, $body['deletionWindow']['daysRemaining']);
+		self::assertNull($body['clocks']['conflict']);
+		self::assertSame([], $destroyed);
+	}//end testThePreviewReportsTheScopeWithCountsAndDestroysNothing()
+
 }//end class
