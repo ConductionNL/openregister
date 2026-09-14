@@ -25,7 +25,7 @@
 
 ## 4. Tests
 
-- [ ] 4.1 `tests/e2e/ci/permission-provenance-and-deny.spec.ts`: grant read on a register, deny read on one object, read the list and the object, and read the provenance for both answers.
+- [x] 4.1 `tests/e2e/ci/permission-provenance-and-deny.spec.ts`: grant read on a register, deny read on one object, read the list and the object, and read the provenance for both answers. Written and mode-aware; NOT run here, because this host has no Playwright. CI runs it.
 - [x] 4.2 Unit tests: deny over an inherited grant, deny over a role grant, the grant-and-deny-at-one-level refusal, the unknown verb, the last `manage` holder, and a list filter that matches the per-object answer on a tree of depth 5. The role grant and the grant held outside the block are in `PermissionHandlerDenyOverGrantChainTest`, the depth-5 agreement in `MagicRbacHandlerDepthAndScaleTest`, the two save-time refusals in `AuthorizationDenyValidatorTest` and `SaveTimeRefusalsInEveryModeTest`, the unknown verb in `PermissionCatalogueTest`.
 - [x] 4.3 A regression test that an instance declaring no deny and no custom verb resolves exactly as before.
 - [x] 4.4 `openspec validate permission-provenance-and-deny --strict`.
