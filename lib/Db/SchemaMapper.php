@@ -1339,7 +1339,7 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		$blocking = $this->blockingCalculationErrors(errors: $errors, forwarded: array_keys($forwarded));
+		$blocking = $forwarding->blockingErrors(errors: $errors, forwarded: array_map('strval', array_keys($forwarded)));
 		if ($blocking !== []) {
 			throw new CalculationDeclarationException(errors: $blocking);
 		}
@@ -1350,49 +1350,6 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (calculation not evaluated): ' . implode(' ', $messages)
 		);
 	}//end validateCalculationsAnnotation()
-
-	/**
-	 * Pick out the errors a forwarded property declaration is answerable for.
-	 *
-	 * An error names the calculation it belongs to, so attribution is by name:
-	 * an error mentioning a forwarded name blocks, the rest stay advisory. A
-	 * duplicate declaration blocks on its own code, and `dependsOn` is never
-	 * blocking because it is a note to the author, not a broken expression.
-	 *
-	 * @param array<int, array{code: string, message: string}> $errors Every validation error.
-	 * @param array<int, string> $forwarded The names declared on a property.
-	 *
-	 * @return array<int, array{code: string, message: string}> The blocking errors.
-	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
-	 */
-	private function blockingCalculationErrors(array $errors, array $forwarded): array {
-		$blocking = [];
-		foreach ($errors as $error) {
-			if ($error['code'] === 'calculation-dependson-ignored') {
-				continue;
-			}
-
-			if ($error['code'] === 'calculation-duplicate-declaration') {
-				$blocking[] = $error;
-				continue;
-			}
-
-			foreach ($forwarded as $name) {
-				// The validator quotes the calculation name in every message,
-				// and a cycle message lists every name on the path.
-				if (str_contains($error['message'], '"' . $name . '"') === true
-					|| str_contains($error['message'], ' ' . $name . ' ->') === true
-					|| str_contains($error['message'], '-> ' . $name) === true
-				) {
-					$blocking[] = $error;
-					break;
-				}
-			}
-		}
-
-		return $blocking;
-	}//end blockingCalculationErrors()
 
 	/**
 	 * Validate the optional `x-openregister-quality` annotation.

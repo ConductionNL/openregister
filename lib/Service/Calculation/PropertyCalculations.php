@@ -113,4 +113,47 @@ final class PropertyCalculations {
 			)
 		);
 	}//end duplicates()
+	/**
+	 * Pick out the errors a forwarded property declaration is answerable for.
+	 *
+	 * An error names the calculation it belongs to, so attribution is by name:
+	 * an error mentioning a forwarded name blocks the save, and the rest stay
+	 * advisory so a register file cannot break its own import. A duplicate
+	 * declaration blocks on its own code, and `dependsOn` is never blocking
+	 * because it is a note to the author, not a broken expression.
+	 *
+	 * @param array<int, array{code: string, message: string}> $errors Every validation error.
+	 * @param array<int, string> $forwarded The names declared on a property.
+	 *
+	 * @return array<int, array{code: string, message: string}> The blocking errors, in input order.
+	 *
+	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 */
+	public function blockingErrors(array $errors, array $forwarded): array {
+		$blocking = [];
+		foreach ($errors as $error) {
+			if ($error['code'] === 'calculation-dependson-ignored') {
+				continue;
+			}
+
+			if ($error['code'] === 'calculation-duplicate-declaration') {
+				$blocking[] = $error;
+				continue;
+			}
+
+			foreach ($forwarded as $name) {
+				// The validator quotes the calculation name in every message,
+				// and a cycle message lists every name on the path.
+				if (str_contains($error['message'], '"' . $name . '"') === true
+					|| str_contains($error['message'], ' ' . $name . ' ->') === true
+					|| str_contains($error['message'], '-> ' . $name) === true
+				) {
+					$blocking[] = $error;
+					break;
+				}
+			}
+		}
+
+		return $blocking;
+	}//end blockingErrors()
 }//end class
