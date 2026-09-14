@@ -2336,7 +2336,8 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig is a named constructor that reads a config block; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
+	 * is a named constructor reading a config block; there is no instance to inject.
 	 */
 	private function validateCalendarProviderConfig(array $config): void {
 		// Declared date kinds are refused on save, enabled or not.

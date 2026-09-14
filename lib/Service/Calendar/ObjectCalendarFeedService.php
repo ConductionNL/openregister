@@ -339,7 +339,9 @@ class ObjectCalendarFeedService {
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig is a named constructor; injecting a factory for one parse would add a class to hide a static.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
+	 * is a named constructor; a factory for one parse would add a class to hide a
+	 * static.
 	 */
 	private function declarationsOn(Schema $schema): array {
 		$config = $schema->getCalendarProviderConfig();
