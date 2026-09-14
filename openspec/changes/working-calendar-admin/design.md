@@ -41,3 +41,24 @@ dates until the recompute job ships."
 ## D-6: kind
 
 Code, in OpenRegister. Consuming apps change nothing.
+
+## D-C67-1. Scope resolution is declared, and falls through
+
+Record type, then unit, then instance. A fall-through is the behaviour an
+instance has today, so adding scopes changes nothing until somebody
+declares one. The resolved calendar is named in the term's own diagnostic,
+which is what `term-engine-diagnostic` reads.
+
+## D-C67-2. A person's hours are read from the app that owns them
+
+D19 puts working hours and absence with humaniq, beside leave and payroll.
+Storing a second copy here would give the fleet two answers to whether
+somebody is at work. The engine asks; when nothing answers, the scope
+calendar decides, and the diagnostic says which happened.
+
+## D-C67-3. A blackout is not a closure day
+
+A closure day does not count towards a term. A blackout refuses a booking
+in a period while the term keeps running. Conflating them either stops the
+clock during the zomerstop, which is wrong, or schedules a hoorzitting in
+it, which is also wrong.

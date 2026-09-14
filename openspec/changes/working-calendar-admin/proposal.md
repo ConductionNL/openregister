@@ -99,3 +99,55 @@ anywhere is refused when `WorkingCalendar::fromArray()` would refuse it.
   hook, `lib/Settings/flow_timer_register.json` (authorization block).
 - Backwards compatible: existing calendars validate today.
 - Size: M.
+
+## Discovery cluster 67 extension (2026-09-14)
+
+The round 4 discovery sweep in ConductionNL/market-intelligence,
+`procest/_round4/discovery/build-plan.md`, names this change and
+`calendar-change-recomputes-timers` as the vehicles for cluster 67,
+"Working calendars, per instance, per unit and per person". Owner
+openregister, size M, four candidates: C-deadlines-3, C-deadlines-11,
+C-deadlines-14 and C-deadlines-23. Highest relevance `should`, no `must`,
+no matrix hole. Passers: 4, two driven and two documented. Proving system
+openproject. dossiq rates `partial` on one and `no` on three. The cluster
+enters under D6 on relevance, and C-deadlines-11 and C-deadlines-23 are
+admitted under D21 as documented.
+
+**D19 as taken** draws the line this extension needs. humaniq owns
+rostering, availability and working hours for a person as an employee.
+openregister owns the working calendar the term engine reads. dossiq reads
+both and owns neither. So this change gains a calendar per unit and a
+calendar per record type, and it takes a person's working pattern from
+humaniq rather than administering one.
+
+- **A person's own working days, hours and absences, beside the instance
+  calendar** (C-deadlines-3): openproject, "Administration Users,
+  resources :users, resources :working_hours and resources
+  :non_working_times under /users/:id, with working_days_preview". Under
+  D19 the administration of this is humaniq's; what this change owns is
+  reading it when a term is computed for that person.
+- **One record type runs on its own working calendar** (C-deadlines-14):
+  odoo, "project_project.py:108 resource_calendar_id". Burgerzaken has
+  counter hours and vergunningen does not. dossiq:
+  "WorkingDayCalculator.php is one national calendar for the whole app".
+- **Declared periods in which work of a kind may not be scheduled**
+  (C-deadlines-11, `could`, documented): jira-service-management, "What
+  are change windows?". De stembusperiode or de zomerstop.
+- **Which week is week one is an administered choice**
+  (C-deadlines-23, `could`, documented): easy-redmine. An off-by-one week
+  number in a rapportage is a small, durable embarrassment.
+
+**What the extension adds.**
+
+- **A calendar resolves per scope, in a declared order.** Record type, then
+  organisational unit, then instance. A schema or a unit that names no
+  calendar falls through to the instance one, which is what happens today.
+- **A person's working pattern is read, not administered.** When a term is
+  computed for a named person, the engine may consult that person's
+  working pattern from the app that owns it. When no such app answers, the
+  scope calendar decides. openregister never stores a person's hours.
+- **A blackout period is declared on a calendar.** A period in which work
+  of a declared kind may not be scheduled, distinct from a closure day: a
+  closure day does not count towards a term, a blackout refuses a booking.
+- **The first week of the year is an administered choice** on the calendar,
+  so week numbers in a report agree with the organisation's own counting.
