@@ -2,9 +2,9 @@
 
 ## 1. The catalogue
 
-- [ ] 1.1 `GET /api/permissions`: every grantable verb with the app that declared it, the scope levels it may be granted at and a sentence in plain language (D-1).
-- [ ] 1.2 An app declares its custom verbs; a declared verb with no evaluator is refused and names the app, an evaluator with no declaration is reported in the RBAC settings (D-2).
-- [ ] 1.3 A role's `actions` array and every authorization block are validated against the catalogue; an unknown verb fails the save with 422 naming the verb.
+- [x] 1.1 `GET /api/permissions`: every grantable verb with the app that declared it, the scope levels it may be granted at and a sentence in plain language (D-1).
+- [x] 1.2 An app declares its custom verbs; a declared verb with no evaluator is refused and names the app, an evaluator with no declaration is reported in the RBAC settings (D-2).
+- [x] 1.3 A role's `actions` array and every authorization block are validated against the catalogue; an unknown verb fails the save with 422 naming the verb.
 
 ## 2. Deny
 
@@ -19,8 +19,8 @@
 
 ## 3. Provenance
 
-- [ ] 3.1 `GET /api/scopes` reports, per action, the rule that granted it: register default, schema rule, role, per-object grant or the ancestor it came from. The `actions` list keeps its shape (D-5).
-- [ ] 3.2 An action a broader rule would have granted and a deny removed is reported with that deny, so the absence has a reason.
+- [x] 3.1 `GET /api/scopes` reports, per action, the rule that granted it: register default, schema rule, role, per-object grant or the ancestor it came from. The `actions` list keeps its shape (D-5).
+- [x] 3.2 An action a broader rule would have granted and a deny removed is reported with that deny, so the absence has a reason.
 - [ ] 3.3 The scope audit reports per rule as well as per schema and action, and the denial log names the rule rather than only the decision.
 
 ## 4. Tests
@@ -45,7 +45,7 @@
 - [ ] 7.1 An object read carries the actions the current user may take on it, from the same resolution (D-9).
 - [ ] 7.2 `GET /api/objects/{register}/{schema}/{id}/permissions`: the principals holding rights on the object, each with the rule behind the grant (D-10).
 - [ ] 7.3 The history of that set is readable: who held which right, when it changed and which rule changed it.
-- [ ] 7.4 Two roles are readable side by side against the catalogue, showing which permissions differ.
+- [x] 7.4 Two roles are readable side by side against the catalogue, showing which permissions differ.
 
 ## 8. Discovery wave 1: derived, scoped and expiring grants
 
@@ -60,7 +60,7 @@
 - [x] 9.1 `openregister.deny_enforcement` takes `off`, `staging` or `enforcing`. The default is `staging`, and a value nobody declared reads as `staging` rather than as `enforcing` (D-12).
 - [x] 9.2 All four enforcement paths read that one switch: the object read, the relation-path check and both list emitters. Below `enforcing` no deny predicate reaches the query, so no total and no facet count moves.
 - [x] 9.3 A staged denial is recorded with the rule that carries it, the principal it names, the verb and the caller. Staging still resolves; only the verdict is dropped.
-- [ ] 9.4 The provenance carries the staged deny beside the grant, so the field that says why a person may act also says what is about to stop them.
-- [ ] 9.5 `GET /api/permissions/deny-preview` reports what enforcement would refuse, read from the rules as written rather than from what has fired, so a deny nobody has hit yet is still in the report.
+- [x] 9.4 The provenance carries the staged deny beside the grant, so the field that says why a person may act also says what is about to stop them.
+- [x] 9.5 `GET /api/permissions/deny-preview` reports what enforcement would refuse, read from the rules as written rather than from what has fired, so a deny nobody has hit yet is still in the report.
 - [x] 9.6 Unit tests: the default is staging, a staged deny grants and records, `off` grants and records nothing, the same fixture enforcing refuses, and no staged deny reaches the list SQL.
 - [ ] 9.7 The save-time refusals are NOT staged: a grant-and-deny collision and an orphaned `manage` are refused in every mode. Regression test.

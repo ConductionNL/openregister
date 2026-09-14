@@ -29,6 +29,7 @@ use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -674,13 +675,36 @@ class RegisterMapper extends QBMapper {
 	 */
 	private function validateAuthorizationDeny(Register $register): void {
 		$authorization = $register->getAuthorization();
+		$configuration = $register->getConfiguration();
+		$roleDefinitions = null;
+		if (is_array($configuration) === true) {
+			$roleDefinitions = ($configuration['roles'] ?? null);
+		}
+
+		if ((is_array($authorization) === false || $authorization === []) && $roleDefinitions === null) {
+			return;
+		}
+
+		$subject = sprintf('the register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? ''));
+
+		// The catalogue check runs FIRST, and it is the only one that reads the
+		// register's ROLE definitions: a role's `actions` array is where an
+		// unknown verb used to survive longest. It matched nothing, so it
+		// granted nothing, and the role read as correctly configured in every
+		// screen that showed it.
+		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
+			authorization: $authorization,
+			roleDefinitions: $roleDefinitions,
+			subject: $subject
+		);
+
 		if (is_array($authorization) === false || $authorization === []) {
 			return;
 		}
 
 		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
 			authorization: $authorization,
-			subject: sprintf('the register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? ''))
+			subject: $subject
 		);
 	}//end validateAuthorizationDeny()
 

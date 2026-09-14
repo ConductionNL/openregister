@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1130,9 +1131,21 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
+		$subject = sprintf('the schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? ''));
+
+		// The catalogue check runs FIRST. An unknown verb is the mistake that
+		// survives longest: it matches nothing, so it grants nothing and denies
+		// nothing, and the block looks correct in every screen that shows it.
+		// Refusing it here is what publishing the set is for.
+		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
+			authorization: $authorization,
+			roleDefinitions: null,
+			subject: $subject
+		);
+
 		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
 			authorization: $authorization,
-			subject: sprintf('the schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? ''))
+			subject: $subject
 		);
 	}//end validateAuthorizationDeny()
 

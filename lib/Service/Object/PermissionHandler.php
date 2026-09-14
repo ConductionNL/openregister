@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -253,6 +255,7 @@ class PermissionHandler {
 	 *                                                      same reason.
 	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
 	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
+	 * @param PermissionCatalogue|null $permissionCatalogue The grantable set; nullable for the same reason.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -271,6 +274,7 @@ class PermissionHandler {
 		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
 		private readonly ?DenyResolver $denyResolver = null,
 		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
+		private readonly ?PermissionCatalogue $permissionCatalogue = null,
 	) {
 	}//end __construct()
 
@@ -809,6 +813,33 @@ class PermissionHandler {
 			if ($verdict !== null) {
 				return $verdict;
 			}
+
+			// DECLARED, AND NOBODY VOTED. The declaration is what makes a verb
+			// offerable in a role editor, so a declared verb with no listener is
+			// a verb an administrator can grant and nothing can ever decide.
+			// Falling through to the standard chain would let the schema's own
+			// rules answer for a verb the declaring app said it owns, which is
+			// the quiet version of the same mistake: the grant looks honoured
+			// and the app that defines the verb never saw the question.
+			//
+			// So it fails closed, and it names the app that owes the listener,
+			// because "permission denied" with no owner is a ticket nobody can
+			// route (design D-2).
+			$declaration = $this->permissionCatalogue()->declarationFor($action);
+			if ($declaration !== null && $declaration['canonical'] === false) {
+				$this->logger->warning(
+					message: '[PermissionHandler] A declared custom verb has no evaluator; refusing',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'action' => $action,
+						'declaredBy' => $declaration['app'],
+						'schemaId' => $schema->getId(),
+						'userId' => $userId,
+					]
+				);
+				return false;
+			}
 		}
 
 		// 'authenticated' pseudo-group: any logged-in user qualifies,
@@ -960,6 +991,108 @@ class PermissionHandler {
 
 		return null;
 	}//end enforcedDenialFor()
+
+	/**
+	 * Why this caller may or may not do each of these verbs.
+	 *
+	 * The answer per action names the rule that decided it: the object's own
+	 * block, the schema rule, the register default, the named role, or the deny
+	 * that removed it. A security officer asking "why can this person update
+	 * this dossier" got a yes before this existed, which answers a different
+	 * question, and an absence had no reason at all.
+	 *
+	 * THE COST IS A FIELD, NOT A PASS. The cascade is resolved once here, the
+	 * same resolution the verdict uses, and the levels are then read back for
+	 * the naming. Nothing is evaluated twice (ADR-009).
+	 *
+	 * STAGED DENIES RIDE ALONG. Below `enforcing` the grant stands and the deny
+	 * that would remove it is reported as `stagedDeny`, so the field that says
+	 * why a person may act also says what stops them the day the switch moves.
+	 *
+	 * @param Schema             $schema  The schema being reported on.
+	 * @param array<int, string> $actions The verbs to report.
+	 * @param string|null        $userId  The caller, or null to resolve from the session.
+	 * @param ObjectEntity|null  $object  The row, when the question is about one.
+	 *
+	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	public function provenanceFor(
+		Schema $schema,
+		array $actions,
+		?string $userId = null,
+		?ObjectEntity $object = null,
+	): array {
+		if ($userId === null) {
+			$userId = $this->userSession->getUser()?->getUID();
+		}
+
+		$userGroups = [];
+		if ($userId !== null) {
+			$userObj = $this->userManager->get($userId);
+			if ($userObj !== null) {
+				$userGroups = $this->groupManager->getUserGroupIds($userObj);
+			}
+		}
+
+		$principals = $this->denyResolver()->principalsFor(userId: $userId, userGroups: $userGroups);
+
+		try {
+			$cascaded = $this->resolveAuthorization(schema: $schema, object: $object);
+		} catch (\Throwable $e) {
+			// An unresolvable cascade is reported as unresolvable rather than as
+			// an absence. "Nobody granted you this" and "the rules could not be
+			// read" send an administrator to two different screens.
+			return array_fill_keys($actions, ['source' => 'unresolvable', 'granted' => false]);
+		}
+
+		$register = $this->getRegisterForSchema(schema: $schema);
+		$registerAuthorization = null;
+		if ($register !== null) {
+			$registerAuthorization = $this->getRegisterAuthorization(registerId: $register->getId());
+		}
+
+		$enforced = $this->denyEnforcementMode()->enforces();
+		$denials = [];
+		foreach ($actions as $action) {
+			$denials[$action] = $this->denialFor(
+				authorization: $cascaded,
+				action: $action,
+				userId: $userId,
+				object: $object
+			);
+		}
+
+		return (new ProvenanceResolver(denyResolver: $this->denyResolver()))->forActions(
+			actions: $actions,
+			principals: $principals,
+			blocks: [
+				'object' => $object?->getAuthorization(),
+				'schema' => $schema->getAuthorization(),
+				'register' => $registerAuthorization,
+				'roleDefinitions' => $this->getRoleDefinitionsForSchema(schema: $schema),
+			],
+			denials: $denials,
+			enforced: $enforced
+		);
+	}//end provenanceFor()
+
+	/**
+	 * The grantable permission set.
+	 *
+	 * Nullable-with-default like the resolvers above. A fresh instance built
+	 * from the same dispatcher answers the same catalogue, and one built
+	 * WITHOUT a dispatcher answers the canonical verbs alone, which is the
+	 * fail-closed direction: it can only make a verb unknown, never grantable.
+	 *
+	 * @return PermissionCatalogue The set that can be granted here.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function permissionCatalogue(): PermissionCatalogue {
+		return ($this->permissionCatalogue ?? new PermissionCatalogue(eventDispatcher: $this->eventDispatcher));
+	}//end permissionCatalogue()
 
 	/**
 	 * The deny enforcement switch.
@@ -1278,6 +1411,27 @@ class PermissionHandler {
 		}
 
 		$verdict = $event->getVerdict();
+
+		// AN EVALUATOR WITH NO DECLARATION. The opposite configuration error,
+		// and the more dangerous one: a listener is deciding a verb no app has
+		// published, so the verb works, and it is invisible to every role editor
+		// and every audit that reads the catalogue. It is NOT refused here,
+		// because refusing would break the apps that vote today and were written
+		// before declarations existed. It is reported, which is what design D-2
+		// asks for: a configuration error surfaced, never a silent grant.
+		if ($this->permissionCatalogue()->isGrantable($action) === false) {
+			$this->logger->warning(
+				message: '[PermissionHandler] A listener decided a verb no app declares; it cannot be offered or audited',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'action' => $action,
+					'verdict' => $verdict,
+					'schemaId' => $schema->getId(),
+				]
+			);
+		}
+
 		$this->dispatchCustomScopeEvaluated(
 			schema: $schema,
 			action: $action,

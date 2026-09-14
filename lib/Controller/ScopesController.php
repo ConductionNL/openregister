@@ -98,11 +98,25 @@ class ScopesController extends Controller {
 	 *       {
 	 *         "register": "decidesk",
 	 *         "schema": "meeting",
-	 *         "actions": ["read", "list"]
+	 *         "actions": ["read", "list"],
+	 *         "provenance": {
+	 *           "read": {"granted": true, "source": "role", "role": "behandelaar",
+	 *                    "principal": "behandelaars", "rule": ["behandelaars"]},
+	 *           "update": {"granted": false, "source": "deny",
+	 *                      "deny": {"principal": "waarnemers", "rule": "waarnemers"}}
+	 *         }
 	 *       },
 	 *       ...
 	 *     ]
 	 *   }
+	 *
+	 * `actions` keeps its shape: a list of strings, unchanged, so every feature
+	 * gate reading it keeps working. `provenance` sits beside it and names the
+	 * rule behind each answer, including the deny behind an absence, because an
+	 * absence with no reason is the hardest thing in this layer to debug.
+	 *
+	 * While the deny is staged (D15) an action carries `stagedDeny`: it is
+	 * granted today, and that is the rule that removes it when the switch moves.
 	 *
 	 * Admin callers receive every (register, schema) pair with all five
 	 * actions populated — this matches the admin-bypass semantics in
@@ -148,10 +162,19 @@ class ScopesController extends Controller {
 					continue;
 				}
 
+				// `actions` keeps its shape, exactly. Every feature gate in the
+				// fleet reads it as a list of strings, and provenance is added
+				// BESIDE it rather than inside it so none of them has to change
+				// to keep working.
 				$scopes[] = [
 					'register' => $reg->getSlug(),
 					'schema' => $sch->getSlug(),
 					'actions' => $actions,
+					'provenance' => $this->provenanceFor(
+						schema: $sch,
+						userId: $userId,
+						isAdmin: $isAdmin
+					),
 				];
 			}//end foreach
 		}//end foreach
@@ -248,19 +271,60 @@ class ScopesController extends Controller {
 	}//end resolveSchemas()
 
 	/**
+	 * The rule behind each of this caller's answers on one schema.
+	 *
+	 * The verdict above says WHAT the caller may do. This says WHY, per action:
+	 * the register default, the schema rule, the named role, the per-object
+	 * grant, or the deny that removed it. A security officer asking "why can
+	 * this person update this dossier" got a yes before, which answers a
+	 * different question.
+	 *
+	 * @param Schema      $schema  Schema being reported on.
+	 * @param string|null $userId  Active user (null = unauthenticated probe).
+	 * @param bool        $isAdmin Whether the caller is in the `admin` group.
+	 *
+	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function provenanceFor(Schema $schema, ?string $userId, bool $isAdmin): array {
+		// An administrator holds everything by bypass, not by rule, and saying
+		// so is more useful than naming a rule that did not decide. A report
+		// that invented a rule here would send somebody looking for it.
+		if ($isAdmin === true) {
+			return array_fill_keys(
+				self::ACTIONS,
+				['granted' => true, 'source' => 'admin', 'rule' => null, 'principal' => 'admin', 'role' => null]
+			);
+		}
+
+		try {
+			return $this->permissionHandler->provenanceFor(
+				schema: $schema,
+				actions: self::ACTIONS,
+				userId: $userId
+			);
+		} catch (\Throwable $e) {
+			// The verdict above already answered. A provenance that throws must
+			// not take the scope list with it: a client that cannot read WHY is
+			// inconvenienced, one that cannot read WHAT is broken.
+			return [];
+		}
+	}//end provenanceFor()
+
+	/**
 	 * Probe the permission chain for every canonical action.
 	 *
-	 * Admin callers short-circuit to the full action vocabulary —
-	 * mirrors the admin-bypass branch in `PermissionHandler::hasPermission`.
+	 * Admin callers short-circuit to the full action vocabulary, mirroring the
+	 * admin-bypass branch in `PermissionHandler::hasPermission`.
 	 *
 	 * @param Schema $schema Schema being evaluated.
 	 * @param string|null $userId Active user (null = unauthenticated probe).
-	 * @param bool $isAdmin Whether the caller is in the `admin`
-	 *                      group.
+	 * @param bool $isAdmin Whether the caller is in the `admin` group.
 	 *
 	 * @return array<int, string> Permitted action vocabulary.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	private function collectActionsForUser(Schema $schema, ?string $userId, bool $isAdmin): array {
 		if ($isAdmin === true) {
