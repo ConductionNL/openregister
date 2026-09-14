@@ -1298,7 +1298,8 @@ class Application extends App implements IBootstrap {
 					commentsManager: $container->get('OCP\Comments\ICommentsManager'),
 					userSession: $container->get('OCP\IUserSession'),
 					userManager: $container->get('OCP\IUserManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class)
 				);
 			}
 		);
@@ -1437,7 +1438,8 @@ class Application extends App implements IBootstrap {
 					registry: $container->get(IntegrationRegistry::class),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class)
+					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class)
 				);
 			}
 		);

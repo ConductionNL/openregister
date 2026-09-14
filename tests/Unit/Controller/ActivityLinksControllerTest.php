@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\ActivityLinksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ActivityFilterService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -72,6 +73,13 @@ class ActivityLinksControllerTest extends TestCase {
 	 */
 	private ActivityLinksController $controller;
 
+	/**
+	 * Timeline visibility service mock.
+	 *
+	 * @var TimelineVisibilityService&MockObject
+	 */
+	private TimelineVisibilityService&MockObject $visibility;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -79,11 +87,14 @@ class ActivityLinksControllerTest extends TestCase {
 		$this->filterService = $this->createMock(ActivityFilterService::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
+		$this->visibility = $this->createMock(TimelineVisibilityService::class);
+
 		$this->controller = new ActivityLinksController(
 			'openregister',
 			$this->request,
 			$this->filterService,
 			$this->objectService,
+			$this->visibility,
 		);
 	}//end setUp()
 
@@ -242,4 +253,72 @@ class ActivityLinksControllerTest extends TestCase {
 
 		$this->assertSame(404, $response->getStatus());
 	}//end testTypesReturns404WhenObjectNotFound()
+
+	public function testTheFeedServesAReaderThePublicViewItDidNotAskFor(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn(null);
+		$this->visibility->method('mayManage')->willReturn(false);
+		$this->visibility->method('effectiveFilter')->willReturn('public');
+
+		$this->filterService->expects($this->once())
+			->method('getActivityEntries')
+			->with(
+				'test-uuid-1234',
+				null,
+				null,
+				null,
+				0,
+				null,
+				'public'
+			)
+			->willReturn(['results' => [], 'total' => 0, 'nextCursor' => null]);
+
+		$response = $this->controller->index('reg', 'sch', 'obj');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('public', $response->getData()['visibility']);
+		$this->assertFalse($response->getData()['canSetVisibility']);
+		$this->assertSame([], $response->getData()['results']);
+	}//end testTheFeedServesAReaderThePublicViewItDidNotAskFor()
+
+	public function testTheFeedLeavesAHandlerUnfiltered(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) {
+				return match ($key) {
+					'limit' => 10,
+					default => $default,
+				};
+			}
+		);
+		$this->visibility->method('mayManage')->willReturn(true);
+		$this->visibility->method('effectiveFilter')->willReturn(null);
+
+		$this->filterService->expects($this->once())
+			->method('getActivityEntries')
+			->with(
+				'test-uuid-1234',
+				null,
+				null,
+				null,
+				10,
+				null,
+				null
+			)
+			->willReturn(
+				[
+					'results' => [['id' => '7', 'visibility' => 'internal']],
+					'total' => 1,
+					'nextCursor' => null,
+				]
+			);
+
+		$response = $this->controller->index('reg', 'sch', 'obj');
+
+		$this->assertNull($response->getData()['visibility']);
+		$this->assertTrue($response->getData()['canSetVisibility']);
+		$this->assertCount(1, $response->getData()['results']);
+	}//end testTheFeedLeavesAHandlerUnfiltered()
 }//end class

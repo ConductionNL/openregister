@@ -140,9 +140,16 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @param string $objectId Owning object uuid.
 	 * @param array<string,mixed> $payload Note payload (message field).
 	 *
+	 * A `visibility` in the payload is deliberately ignored here: setting the
+	 * flag is a write on the object's audience and is authorised by
+	 * NotesController against `update` on the object, which this generic
+	 * dispatch path does not evaluate. A note created through this leaf is
+	 * therefore internal, and moving it across the counter goes through the
+	 * notes endpoint that does the check.
+	 *
 	 * @return array<string,mixed> Created note row.
 	 *
-	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$message = (string)($payload['message'] ?? '');
