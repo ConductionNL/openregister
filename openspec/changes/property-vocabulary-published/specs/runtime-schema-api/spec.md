@@ -49,17 +49,20 @@ value. A property that validates today SHALL continue to validate.
 
 An application that lets an administrator author schema properties through
 its own form SHALL declare which vocabulary keys that form forwards. The
-declaration SHALL be validated against the vocabulary, an unknown key
-SHALL be refused naming it, and a forwarded property SHALL be validated
-exactly as a directly declared one. The declared narrowing SHALL be
-readable, so the difference between the app's list and the vocabulary can
-be counted.
+declaration SHALL map each vocabulary key to the application's own field
+name, in that direction, because that is the direction the shipped consumer
+reads. The declaration SHALL be validated against the vocabulary, a
+vocabulary key the vocabulary does not hold SHALL be refused naming it, and
+a forwarded property SHALL be validated exactly as a directly declared one.
+The declared narrowing SHALL be readable, so the difference between the
+app's list and the vocabulary can be counted.
 
 #### Scenario: a narrower editor is a stated narrowing
 
-- **GIVEN** an app whose property form forwards eight of the vocabulary's keys
+- **GIVEN** an app whose property form forwards six of the vocabulary's keys,
+  each named on the left of its map
 - **WHEN** its declaration is read
-- **THEN** the eight are listed and the keys it does not forward can be derived
+- **THEN** the six are listed and the keys it does not forward can be derived
 
 #### Scenario: forwarding a key nobody defines is refused
 
@@ -67,3 +70,12 @@ be counted.
 - **WHEN** the declaration is saved
 - **THEN** it is refused naming the key
 - @e2e exclude {validator, covered by unit tests}
+
+#### Scenario: a key an app owns stays out of the vocabulary until it is defined
+
+- **GIVEN** a property annotation in the `x-` namespace that this layer does
+  not define
+- **WHEN** a schema carrying it is saved
+- **THEN** the save succeeds and the annotation is not published as a
+  vocabulary key
+- @e2e exclude {vendor-extension passthrough, covered by a unit test}

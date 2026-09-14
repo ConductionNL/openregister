@@ -31,11 +31,25 @@ namespace OCA\OpenRegister\Service\Schemas;
  * The extending-form declaration, validated against the published vocabulary.
  *
  * The annotation already existed in the wild before it existed here. dossiq
- * carries `x-openregister-extends-form.map` on a case-type property and
- * forwards eight keys through it, in OpenRegister's own `x-` namespace, and a
- * code search of this repository on 2026-09-14 returned nothing that defined
- * it. This class is the definition: the shape, the validation and the reading
- * that lets anybody count what an app's form leaves out.
+ * carries `x-openregister-extends-form` on a case-type property, in
+ * OpenRegister's own `x-` namespace, and a code search of this repository on
+ * 2026-09-14 returned nothing that defined it. This class is the definition:
+ * the shape, the validation and the reading that lets anybody count what an
+ * app's form leaves out.
+ *
+ * **The map reads role to field, and that direction is not a choice.** The
+ * shipped consumer is `propertiesFromDefinitions` in
+ * `@conduction/nextcloud-vue`, whose `mapped($record, $map, $role)` does
+ * `$map[$role]` and then `$record[$field]`, with a `DEFAULT_MAP` of
+ * `title: 'name'`, `type: 'propertyType'`, `enum: 'enumValues'`. So the key is
+ * the vocabulary role this platform owns, and the value is the app's own field
+ * name, which this platform does not own. Defining it the other way round
+ * would have refused five of dossiq's six keys by name, which is how a
+ * platform breaks a consumer while believing it is documenting one.
+ *
+ * `definitions` names where the records come from; the consumer ignores a
+ * declaration without it, so a declaration without it forwards nothing and is
+ * refused here rather than stored as a no-op.
  *
  * The annotation sits either on the schema configuration, or on the property
  * that points at the thing being configured. Both are read.
@@ -50,6 +64,20 @@ final class ExtendingFormDeclaration {
 	 * @var string
 	 */
 	public const ANNOTATION = 'x-openregister-extends-form';
+
+	/**
+	 * Roles that are not vocabulary keys, and the key each one supplies.
+	 *
+	 * Exactly one today. `propertiesFromDefinitions` reads
+	 * `mapped($record, $map, 'definition')` as the fallback source for a
+	 * description, so `definition` is a second source for `description`
+	 * rather than a property key of its own. It is declared here because a
+	 * shipped role the platform refuses by name is the same breakage as a
+	 * mis-read map, one release later.
+	 *
+	 * @var array<string, string>
+	 */
+	public const SOURCE_ALIASES = ['definition' => 'description'];
 
 	/**
 	 * Wire the vocabulary the declaration is checked against.
@@ -128,30 +156,34 @@ final class ExtendingFormDeclaration {
 			return $errors;
 		}
 
-		foreach ($this->pairs(annotation: $annotation) as $field => $key) {
-			if (is_string($key) === false || $key === '') {
+		foreach ($this->pairs(annotation: $annotation) as $role => $field) {
+			$role = (string)$role;
+			if (is_string($field) === false || $field === '') {
 				$errors[] = [
-					'code' => 'extends-form-key-not-a-string',
-					'key' => (string)$field,
+					'code' => 'extends-form-field-not-a-string',
+					'key' => $role,
 					'path' => $path,
-					'message' => "The key forwarded by '{$field}' at '$path' must be a non-empty string.",
+					'message' => "The field '{$role}' reads at '$path' must be a non-empty string.",
 				];
+			}
+
+			if ($this->vocabulary->hasKey(key: $role) === true) {
 				continue;
 			}
 
-			if ($this->vocabulary->hasKey(key: $key) === true) {
+			if (array_key_exists($role, self::SOURCE_ALIASES) === true) {
 				continue;
 			}
 
 			$errors[] = [
 				'code' => 'extends-form-unknown-key',
-				'key' => $key,
+				'key' => $role,
 				'path' => $path,
-				'message' => "'{$key}' at '$path' is not in the property vocabulary, so no form can forward it.",
+				'message' => "'{$role}' at '$path' is not in the property vocabulary, so no form can forward it.",
 			];
 		}
 
-		return array_merge($errors, $this->validateNoDuplicateTargets(annotation: $annotation, path: $path));
+		return $errors;
 	}//end validate()
 
 	/**
@@ -169,8 +201,17 @@ final class ExtendingFormDeclaration {
 		}
 
 		$keys = [];
-		foreach ($this->pairs(annotation: $annotation) as $key) {
-			if (is_string($key) === true && $key !== '' && in_array($key, $keys, true) === false) {
+		foreach (array_keys($this->pairs(annotation: $annotation)) as $role) {
+			$key = (string)$role;
+			if (array_key_exists($key, self::SOURCE_ALIASES) === true) {
+				$key = self::SOURCE_ALIASES[$key];
+			}
+
+			if ($this->vocabulary->hasKey(key: $key) === false) {
+				continue;
+			}
+
+			if (in_array($key, $keys, true) === false) {
 				$keys[] = $key;
 			}
 		}
@@ -215,6 +256,7 @@ final class ExtendingFormDeclaration {
 			'path' => $path,
 			'app' => (string)($declaration['app'] ?? ''),
 			'form' => (string)($declaration['form'] ?? ''),
+			'definitions' => ($declaration['definitions'] ?? null),
 			'map' => $this->pairs(annotation: $declaration),
 			'forwards' => $forwards,
 			'narrows' => $narrows,
@@ -245,8 +287,19 @@ final class ExtendingFormDeclaration {
 	 */
 	public function toProperty(mixed $annotation, array $formValues): array {
 		$property = [];
-		foreach ($this->pairs(annotation: $annotation) as $field => $key) {
-			if (is_string($key) === false || array_key_exists($field, $formValues) === false) {
+		foreach ($this->pairs(annotation: $annotation) as $role => $field) {
+			$key = (string)$role;
+			if (array_key_exists($key, self::SOURCE_ALIASES) === true) {
+				$key = self::SOURCE_ALIASES[$key];
+			}
+
+			if (is_string($field) === false || array_key_exists($field, $formValues) === false) {
+				continue;
+			}
+
+			// An alias only fills in for the key it supplies, so an explicit
+			// `description` wins over the `definition` that stands in for it.
+			if (array_key_exists($key, $property) === true) {
 				continue;
 			}
 
@@ -257,22 +310,23 @@ final class ExtendingFormDeclaration {
 	}//end toProperty()
 
 	/**
-	 * The field-to-key pairs, whichever spelling the declaration used.
+	 * The role-to-field pairs, whichever spelling the declaration used.
 	 *
-	 * `map` names the app's own form field on the left. `forwards` is the
-	 * short spelling for a form whose fields are already named after the
-	 * vocabulary.
+	 * `map` names the vocabulary role on the LEFT and the app's own field on
+	 * the right, which is the direction `propertiesFromDefinitions` reads.
+	 * `forwards` is the short spelling for a form whose fields are already
+	 * named after the vocabulary, so role and field are the same word.
 	 *
 	 * @param array $annotation The declaration.
 	 *
-	 * @return array<string, mixed> Form field name to vocabulary key.
+	 * @return array<string, mixed> Vocabulary role to the app's field name.
 	 */
 	private function pairs(array $annotation): array {
 		$map = ($annotation['map'] ?? null);
 		if (is_array($map) === true) {
 			$pairs = [];
-			foreach ($map as $field => $key) {
-				$pairs[(string)$field] = $key;
+			foreach ($map as $role => $field) {
+				$pairs[(string)$role] = $field;
 			}
 
 			return $pairs;
@@ -354,40 +408,23 @@ final class ExtendingFormDeclaration {
 			];
 		}
 
-		return [];
-	}//end validateShape()
-
-	/**
-	 * Refuse two form fields that write the same property key.
-	 *
-	 * @param array $annotation The declaration.
-	 * @param string $path Where the declaration sits.
-	 *
-	 * @return array<int, array{code: string, key: string, path: string, message: string}> The refusals.
-	 */
-	private function validateNoDuplicateTargets(array $annotation, string $path): array {
-		$seen = [];
-		$errors = [];
-		foreach ($this->pairs(annotation: $annotation) as $field => $key) {
-			if (is_string($key) === false) {
-				continue;
-			}
-
-			if (in_array($key, $seen, true) === true) {
-				$errors[] = [
-					'code' => 'extends-form-duplicate-key',
-					'key' => $key,
+		// `propertiesFromDefinitions` skips a declaration with no
+		// `definitions`, so storing one would be an annotation that reads as
+		// configured and renders no field at all.
+		$definitions = ($annotation['definitions'] ?? null);
+		if ($definitions === null || $definitions === '' || $definitions === []) {
+			return [
+				[
+					'code' => 'extends-form-no-definitions',
+					'key' => 'definitions',
 					'path' => $path,
-					'message' => "Two form fields at '$path' forward '{$key}', and no rule says which wins. Field '{$field}' is the second.",
-				];
-				continue;
-			}
-
-			$seen[] = $key;
+					'message' => "'" . self::ANNOTATION . "' at '$path' must name its 'definitions', or the form renders no fields.",
+				],
+			];
 		}
 
-		return $errors;
-	}//end validateNoDuplicateTargets()
+		return [];
+	}//end validateShape()
 
 	/**
 	 * Read a stored annotation as an array.

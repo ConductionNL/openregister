@@ -116,18 +116,19 @@ class PropertyVocabularyControllerTest extends TestCase {
 				'naam' => ['type' => 'string'],
 				'zaaktype' => [
 					'type' => 'string',
+					// DEFAULT_MAP from the shipped consumer: role on the left,
+					// the app's own field name on the right.
 					'x-openregister-extends-form' => [
 						'app' => 'dossiq',
 						'form' => 'property-definition-management',
+						'definitions' => 'caseTypeFieldDefinition',
 						'map' => [
-							'propertyType' => 'type',
-							'label' => 'title',
-							'helpText' => 'description',
-							'isRequired' => 'required',
-							'choices' => 'enum',
-							'defaultValue' => 'default',
-							'displayOrder' => 'order',
-							'isSearchable' => 'facetable',
+							'title' => 'name',
+							'description' => 'description',
+							'type' => 'propertyType',
+							'enum' => 'enumValues',
+							'required' => 'isRequired',
+							'default' => 'defaultValue',
 						],
 					],
 				],
@@ -148,9 +149,9 @@ class PropertyVocabularyControllerTest extends TestCase {
 		$this->assertSame('zaak', $declaration['schema']);
 		$this->assertSame('dossiq', $declaration['app']);
 		$this->assertSame('properties/zaaktype/x-openregister-extends-form', $declaration['path']);
-		$this->assertSame(8, $declaration['counts']['forwards']);
+		$this->assertSame(6, $declaration['counts']['forwards']);
 		$this->assertSame(
-			count($this->vocabulary->keys()) - 8,
+			count($this->vocabulary->keys()) - 6,
 			$declaration['counts']['narrows']
 		);
 		$this->assertContains('pattern', $declaration['narrows']);

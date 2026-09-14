@@ -35,19 +35,22 @@ const SCHEMAS = `${API}/schemas`
 const RUN_ID = `e2e-${Date.now()}`
 const SCHEMA_SLUG = `${RUN_ID}-zaaktype`
 
-/** The eight keys the study found dossiq's case-type form forwarding. */
-const EIGHT_KEY_FORM = {
+/**
+ * The map the shipped consumer reads, copied from `DEFAULT_MAP` in
+ * `propertiesFromDefinitions` (`@conduction/nextcloud-vue`): the vocabulary
+ * role on the left, the app's own field name on the right.
+ */
+const SHIPPED_FORM = {
 	app: 'dossiq',
 	form: 'property-definition-management',
+	definitions: 'caseTypeFieldDefinition',
 	map: {
-		propertyType: 'type',
-		label: 'title',
-		helpText: 'description',
-		isRequired: 'required',
-		choices: 'enum',
-		defaultValue: 'default',
-		displayOrder: 'order',
-		isSearchable: 'facetable',
+		title: 'name',
+		description: 'description',
+		type: 'propertyType',
+		enum: 'enumValues',
+		required: 'isRequired',
+		default: 'defaultValue',
 	},
 }
 
@@ -214,7 +217,7 @@ test.describe('property-vocabulary', () => {
 					zaaktype: {
 						type: 'string',
 						title: 'Zaaktype',
-						'x-openregister-extends-form': EIGHT_KEY_FORM,
+						'x-openregister-extends-form': SHIPPED_FORM,
 					},
 				},
 			},
@@ -232,24 +235,22 @@ test.describe('property-vocabulary', () => {
 		)
 		expect(ours, 'our declaration is listed').toBeTruthy()
 
-		expect(ours.forwards, 'the eight forwarded keys are listed').toEqual([
-			'type',
+		expect(ours.forwards, 'the six forwarded keys are listed').toEqual([
 			'title',
 			'description',
-			'required',
+			'type',
 			'enum',
+			'required',
 			'default',
-			'order',
-			'facetable',
 		])
 		expect(ours.app, 'the declaration names the app that forwards').toBe('dossiq')
 
 		// The narrowing is the number the study was counting.
-		expect(ours.counts.forwards).toBe(8)
+		expect(ours.counts.forwards).toBe(6)
 		expect(
 			ours.counts.narrows,
 			'what the form leaves out is derivable, not guessed',
-		).toBe(ours.counts.vocabulary - 8)
+		).toBe(ours.counts.vocabulary - 6)
 		expect(ours.narrows, 'pattern is one of the keys this form leaves out').toContain('pattern')
 	})
 
@@ -265,7 +266,11 @@ test.describe('property-vocabulary', () => {
 				properties: {
 					zaaktype: {
 						type: 'string',
-						'x-openregister-extends-form': { app: 'dossiq', map: { fieldKind: 'propertyType' } },
+						'x-openregister-extends-form': {
+							app: 'dossiq',
+							definitions: 'caseTypeFieldDefinition',
+							map: { fieldKind: 'propertyType' },
+						},
 					},
 				},
 			},
@@ -274,7 +279,7 @@ test.describe('property-vocabulary', () => {
 		expect(resp.status(), 'the declaration is refused, not stored').toBe(422)
 		expect(
 			JSON.stringify(await resp.json()),
-			'the refusal names the key nobody defines',
-		).toContain('propertyType')
+			'the refusal names the role nobody defines',
+		).toContain('fieldKind')
 	})
 })

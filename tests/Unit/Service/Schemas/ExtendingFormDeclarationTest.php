@@ -60,26 +60,27 @@ class ExtendingFormDeclarationTest extends TestCase {
 	}
 
 	/**
-	 * The eight keys dossiq's case-type form forwards today.
+	 * The map the shipped consumer actually reads.
 	 *
-	 * Taken from the shape the study found in the wild:
-	 * `schemas.case.properties.caseType.x-openregister-extends-form.map`.
+	 * Copied from `DEFAULT_MAP` in `propertiesFromDefinitions`
+	 * (`@conduction/nextcloud-vue`, `src/utils/dynamicProperties.js`): the
+	 * vocabulary role on the LEFT, the app's own field name on the right.
+	 * Written the other way round, five of these six are refused by name.
 	 *
 	 * @return array<string, mixed> The declaration.
 	 */
-	private function eightKeyForm(): array {
+	private function shippedForm(): array {
 		return [
 			'app' => 'dossiq',
 			'form' => 'property-definition-management',
+			'definitions' => 'caseTypeFieldDefinition',
 			'map' => [
-				'propertyType' => 'type',
-				'label' => 'title',
-				'helpText' => 'description',
-				'isRequired' => 'required',
-				'choices' => 'enum',
-				'defaultValue' => 'default',
-				'displayOrder' => 'order',
-				'isSearchable' => 'facetable',
+				'title' => 'name',
+				'description' => 'description',
+				'type' => 'propertyType',
+				'enum' => 'enumValues',
+				'required' => 'isRequired',
+				'default' => 'defaultValue',
 			],
 		];
 	}
@@ -90,18 +91,18 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testANarrowerEditorIsAStatedNarrowing(): void {
-		$declaration = $this->eightKeyForm();
+		$declaration = $this->shippedForm();
 		$described = $this->declarations->describe(annotation: $declaration);
 
-		$this->assertSame(expected: 8, actual: $described['counts']['forwards']);
+		$this->assertSame(expected: 6, actual: $described['counts']['forwards']);
 		$this->assertSame(
-			expected: ['type', 'title', 'description', 'required', 'enum', 'default', 'order', 'facetable'],
+			expected: ['title', 'description', 'type', 'enum', 'required', 'default'],
 			actual: $described['forwards']
 		);
 
 		// The keys it does not forward are derivable, which is the whole point.
 		$this->assertSame(
-			expected: (count($this->vocabulary->keys()) - 8),
+			expected: (count($this->vocabulary->keys()) - 6),
 			actual: $described['counts']['narrows']
 		);
 		$this->assertContains(needle: 'pattern', haystack: $described['narrows']);
@@ -116,14 +117,18 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testForwardingAKeyNobodyDefinesIsRefused(): void {
-		$declaration = ['app' => 'dossiq', 'map' => ['fieldKind' => 'propertyType']];
+		$declaration = [
+			'app' => 'dossiq',
+			'definitions' => 'caseTypeFieldDefinition',
+			'map' => ['fieldKind' => 'propertyType'],
+		];
 
 		$errors = $this->declarations->validate(annotation: $declaration);
 
 		$this->assertCount(expectedCount: 1, haystack: $errors);
 		$this->assertSame(expected: 'extends-form-unknown-key', actual: $errors[0]['code']);
-		$this->assertSame(expected: 'propertyType', actual: $errors[0]['key']);
-		$this->assertStringContainsString(needle: 'propertyType', haystack: $errors[0]['message']);
+		$this->assertSame(expected: 'fieldKind', actual: $errors[0]['key']);
+		$this->assertStringContainsString(needle: 'fieldKind', haystack: $errors[0]['message']);
 	}
 
 	/**
@@ -145,24 +150,25 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 */
 	public function testTwoSpellingsOfWhatItForwardsAreRefused(): void {
 		$errors = $this->declarations->validate(
-			annotation: ['map' => ['label' => 'title'], 'forwards' => ['title']]
+			annotation: ['definitions' => 'd', 'map' => ['title' => 'name'], 'forwards' => ['title']]
 		);
 
 		$this->assertSame(expected: 'extends-form-two-spellings', actual: $errors[0]['code']);
 	}
 
 	/**
-	 * Two form fields writing one property key are refused, naming the second.
+	 * A declaration that never says where its records come from is refused.
+	 *
+	 * `propertiesFromDefinitions` skips a declaration with no `definitions`,
+	 * so accepting one would store an annotation that reads as configured and
+	 * renders no field at all.
 	 *
 	 * @return void
 	 */
-	public function testTwoFieldsForwardingOneKeyAreRefused(): void {
-		$errors = $this->declarations->validate(
-			annotation: ['map' => ['label' => 'title', 'heading' => 'title']]
-		);
+	public function testADeclarationWithNoDefinitionsIsRefused(): void {
+		$errors = $this->declarations->validate(annotation: ['map' => ['title' => 'name']]);
 
-		$this->assertSame(expected: 'extends-form-duplicate-key', actual: $errors[0]['code']);
-		$this->assertStringContainsString(needle: 'heading', haystack: $errors[0]['message']);
+		$this->assertSame(expected: 'extends-form-no-definitions', actual: $errors[0]['code']);
 	}
 
 	/**
@@ -171,12 +177,12 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheShortSpellingForwardsTheSameWay(): void {
-		$errors = $this->declarations->validate(annotation: ['forwards' => ['type', 'title', 'pattern']]);
-		$this->assertSame(expected: [], actual: $errors);
+		$short = ['definitions' => 'caseTypeFieldDefinition', 'forwards' => ['type', 'title', 'pattern']];
 
+		$this->assertSame(expected: [], actual: $this->declarations->validate(annotation: $short));
 		$this->assertSame(
 			expected: ['type', 'title', 'pattern'],
-			actual: $this->declarations->forwards(annotation: ['forwards' => ['type', 'title', 'pattern']])
+			actual: $this->declarations->forwards(annotation: $short)
 		);
 	}
 
@@ -190,18 +196,18 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 */
 	public function testAForwardedPropertyIsValidatedLikeAHandWrittenOne(): void {
 		$validator = new PropertyValidatorHandler();
-		$declaration = $this->eightKeyForm();
+		$declaration = $this->shippedForm();
 
 		$good = $this->declarations->toProperty(
 			annotation: $declaration,
-			formValues: ['propertyType' => 'string', 'label' => 'Naam', 'isRequired' => true]
+			formValues: ['name' => 'Naam', 'propertyType' => 'string', 'isRequired' => true]
 		);
-		$this->assertSame(expected: ['type' => 'string', 'title' => 'Naam', 'required' => true], actual: $good);
+		$this->assertSame(expected: ['title' => 'Naam', 'type' => 'string', 'required' => true], actual: $good);
 		$this->assertTrue(condition: $validator->validateProperty(property: $good, path: '/naam'));
 
 		$bad = $this->declarations->toProperty(
 			annotation: $declaration,
-			formValues: ['propertyType' => 'sting', 'label' => 'Naam']
+			formValues: ['name' => 'Naam', 'propertyType' => 'sting']
 		);
 		$this->expectExceptionMessage(message: 'sting');
 		$validator->validateProperty(property: $bad, path: '/naam');
@@ -214,11 +220,40 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 */
 	public function testAnUnansweredFormFieldIsLeftOutOfTheProperty(): void {
 		$property = $this->declarations->toProperty(
-			annotation: $this->eightKeyForm(),
+			annotation: $this->shippedForm(),
 			formValues: ['propertyType' => 'string']
 		);
 
 		$this->assertSame(expected: ['type' => 'string'], actual: $property);
+	}
+
+	/**
+	 * The `definition` alias supplies a description, and never beats one.
+	 *
+	 * The shipped consumer reads `definition` as the fallback source for a
+	 * description. A role the vocabulary does not hold, refused by name, would
+	 * break a form that already works, so it is declared rather than refused.
+	 *
+	 * @return void
+	 */
+	public function testTheDefinitionAliasSuppliesADescription(): void {
+		$declaration = [
+			'definitions' => 'caseTypeFieldDefinition',
+			'map' => ['type' => 'propertyType', 'definition' => 'shortText'],
+		];
+
+		$this->assertSame(expected: [], actual: $this->declarations->validate(annotation: $declaration));
+		$this->assertSame(
+			expected: ['type', 'description'],
+			actual: $this->declarations->forwards(annotation: $declaration)
+		);
+		$this->assertSame(
+			expected: ['type' => 'string', 'description' => 'Korte toelichting'],
+			actual: $this->declarations->toProperty(
+				annotation: $declaration,
+				formValues: ['propertyType' => 'string', 'shortText' => 'Korte toelichting']
+			)
+		);
 	}
 
 	/**
@@ -230,7 +265,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 		$found = $this->declarations->fromSchema(
 			configuration: [ExtendingFormDeclaration::ANNOTATION => ['forwards' => ['type']]],
 			properties: [
-				'caseType' => ['type' => 'string', ExtendingFormDeclaration::ANNOTATION => $this->eightKeyForm()],
+				'caseType' => ['type' => 'string', ExtendingFormDeclaration::ANNOTATION => $this->shippedForm()],
 				'naam' => ['type' => 'string'],
 			]
 		);
@@ -258,7 +293,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 */
 	public function testTheDeclarationSurvivesTheSchemaSave(): void {
 		$schema = new Schema();
-		$schema->setConfiguration([ExtendingFormDeclaration::ANNOTATION => $this->eightKeyForm()]);
+		$schema->setConfiguration([ExtendingFormDeclaration::ANNOTATION => $this->shippedForm()]);
 
 		$stored = ($schema->getConfiguration() ?? []);
 
@@ -268,7 +303,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 			message: 'the declaration was dropped on save, so the narrowing it states is invisible'
 		);
 		$this->assertSame(
-			expected: 8,
+			expected: 6,
 			actual: count($this->declarations->forwards(annotation: $stored[ExtendingFormDeclaration::ANNOTATION]))
 		);
 	}

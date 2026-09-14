@@ -217,6 +217,34 @@ class PropertyVocabularyTest extends TestCase {
 	}
 
 	/**
+	 * A key another lane owns saves, and stays out of the published list.
+	 *
+	 * `x-openregister-property-source` is dossiq's, and integriq's
+	 * `registry-backed-field-source` is where its meaning is being defined.
+	 * Both halves matter: refusing it would break a shipped schema, and
+	 * publishing it would be this lane inventing semantics for a key it does
+	 * not own. Covers the scenario "a key an app owns stays out of the
+	 * vocabulary until it is defined".
+	 *
+	 * @return void
+	 */
+	public function testAKeyAnotherLaneOwnsSavesButIsNotPublished(): void {
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: ['type' => 'string', 'x-openregister-property-source' => ['registry' => 'kvk']],
+				path: '/kvkNummer'
+			),
+			message: 'a shipped annotation this layer does not define must still save'
+		);
+
+		$this->assertNotContains(
+			needle: 'x-openregister-property-source',
+			haystack: $this->vocabulary->keys(),
+			message: 'the vocabulary published a key whose meaning another change defines'
+		);
+	}
+
+	/**
 	 * Every key the vocabulary publishes survives a save on a type that takes it.
 	 *
 	 * The guard against publishing a key the save path then refuses, which

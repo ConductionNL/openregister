@@ -209,6 +209,10 @@ final class PropertyVocabulary {
 	 * @return array<int, string> The accepted property keys.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the four tables and merges them
+	 *                                       once. Re-merging them here would be the second list
+	 *                                       this whole change exists to remove.
 	 */
 	public function keys(): array {
 		return PropertyValidatorHandler::vocabularyKeys();
