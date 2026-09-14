@@ -32,6 +32,8 @@ use DateTimeZone;
  * Each notification entry has:
  * - `trigger`: { type: created|updated|transition, action?: string }
  * - `recipients`: [{ kind: users|field, users?: [...] | field?: "name" }]
+ *   plus the watchers block `{"watchers": true}`, which addresses whoever
+ *   follows the triggering object (`object-watchers`)
  * - `channels`: ["nc-notification"]   (v1)
  * - `subject`: string template OR per-locale map
  *   ({nl: "...", en: "...", defaultLocale?: "nl"}; supports {{field}}
@@ -47,7 +49,7 @@ final class NotificationAnnotationValidator {
 
 	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
 
-	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression'];
+	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression', 'watchers'];
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
 
@@ -658,6 +660,29 @@ final class NotificationAnnotationValidator {
 				}
 
 				$kind = (string)($recipient['kind'] ?? '');
+
+				// The watchers block is spelled `{"watchers": true}` — it names
+				// a subscription list rather than a value to look up, so it
+				// carries no `kind`. Anything but boolean true is refused
+				// rather than coerced: `"yes"` is how a rule quietly addresses
+				// nobody, and a rule that addresses nobody should say so at
+				// save time, not at midnight.
+				if (array_key_exists('watchers', $recipient) === true) {
+					if ($recipient['watchers'] !== true) {
+						$errors[] = [
+							'code' => 'notification-recipient-watchers-not-true',
+							'message' => sprintf(
+								'Notification "%s" recipient[%d] watchers must be boolean true.',
+								$name,
+								$i
+							),
+						];
+						continue;
+					}
+
+					$kind = 'watchers';
+				}
+
 				if (in_array($kind, self::VALID_RECIPIENT_KINDS, true) === false) {
 					$errors[] = [
 						'code' => 'notification-bad-recipient-kind',

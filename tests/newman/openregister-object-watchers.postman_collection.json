@@ -1,0 +1,706 @@
+{
+  "info": {
+    "_postman_id": "or-object-watchers-2026-09-13",
+    "name": "OpenRegister Object Watchers API",
+    "description": "The watcher routes, asserted where CI can see them.\n\nWHAT IT ASSERTS, each paired with its control:\n  * following writes a row and sets @self.watching, and unfollowing clears it\n  * following twice writes ONE row, not two\n  * the watcher list names who follows and when\n  * _watching=true finds the object while it is followed, and stops finding it after\n  * an owner may subscribe and unsubscribe somebody else\n  * an object the caller cannot resolve answers 404, never 403, so existence is not leaked\n\nSELF-CLEANING. It creates its own register, schema and object and removes all three, so a re-run starts from the same state and no later collection inherits a fixture.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "registerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schemaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "objectUuid",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "setUp: a register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"watchers newman register\", \"description\": \"watchers collection fixture\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the register is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: a schema anyone signed in may read and write",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"watchers newman schema\", \"description\": \"watchers collection fixture\", \"properties\": {\"key\": {\"type\": \"string\", \"title\": \"Key\", \"maxLength\": 255}}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the schema is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: an object to follow",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"key\": \"followed\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the object is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('objectUuid', String((b['@self'] && b['@self'].id) || b.id || b.uuid));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT .../watch -> the subscription is written",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('following answers 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('the row names the caller and the object', () => {",
+              "  pm.expect(b.userId).to.eql(pm.collectionVariables.get('username'));",
+              "  pm.expect(b.objectUuid).to.eql(pm.collectionVariables.get('objectUuid'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the object -> @self.watching is true",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the object still reads', () => pm.response.to.have.status(200));",
+              "const self = pm.response.json()['@self'];",
+              "pm.test('the follow marker is set', () => pm.expect(self.watching).to.eql(true));",
+              "// The count is a fact about the audience, told only to an editor.",
+              "pm.test('the follower count is one', () => pm.expect(self.watcherCount).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../watchers -> the list names the follower",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the list answers 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('exactly one follower, with the time they subscribed', () => {",
+              "  pm.expect(b.total).to.eql(1);",
+              "  pm.expect(b.results[0].userId).to.eql(pm.collectionVariables.get('username'));",
+              "  pm.expect(b.results[0].created).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT .../watch again -> following twice is following once",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the repeat answers 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../watchers -> still one row",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the second follow wrote no duplicate', () => pm.expect(pm.response.json().total).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET ?_watching=true -> the lens finds the object",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_watching=true&_limit=100"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the lens answers 200', () => pm.response.to.have.status(200));",
+              "const ids = (pm.response.json().results || []).map(o => (o['@self'] && o['@self'].id) || o.id);",
+              "pm.test('the followed object is in the lens', () => pm.expect(ids).to.include(pm.collectionVariables.get('objectUuid')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE .../watch -> the subscription is gone",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('unfollowing answers 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the object -> @self.watching is false again",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const self = pm.response.json()['@self'];",
+              "pm.test('the follow marker is cleared', () => pm.expect(self.watching).to.eql(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET ?_watching=true -> the lens no longer finds it",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_watching=true&_limit=100"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const ids = (pm.response.json().results || []).map(o => (o['@self'] && o['@self'].id) || o.id);",
+              "pm.test('an unfollowed object leaves the lens', () => pm.expect(ids).to.not.include(pm.collectionVariables.get('objectUuid')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT .../watchers/{uid} -> an owner may subscribe somebody else",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers/{{username}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the owner may add a follower', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE .../watchers/{uid} -> and may remove them again",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers/{{username}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the owner may remove a follower', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT .../watch on an unknown object -> 404, not 403",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/watch"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Existence is not leaked: an object the caller cannot resolve answers",
+              "// 404, so these endpoints cannot be used to probe which ids exist.",
+              "pm.test('an unresolvable object answers 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the object",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture object is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the schema",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture schema is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the register",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture register is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

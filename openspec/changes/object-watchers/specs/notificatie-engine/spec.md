@@ -16,18 +16,18 @@ receive nothing and SHALL be removed from the watcher list.
 - **GIVEN** a schema whose `status-changed` rule declares `recipients: [{"watchers": true}]` and a user watching one object
 - **WHEN** the object's status changes
 - **THEN** the watcher receives the notification once, whether or not they are also the assignee
-- @e2e exclude {dispatcher resolution, covered by dispatcher unit tests}
+- @e2e exclude {delivery runs through the queue and a background job, so an e2e assertion would be a timing race; asserted by NotificationRecipientResolverWatchersTest::testWatchersAreResolvedToUids and ::testAWatcherWhoIsAlsoTheAssigneeIsToldOnce}
 
 #### Scenario: a watcher who lost access hears nothing
 
 - **GIVEN** a watcher whose group membership no longer grants read on the object
 - **WHEN** a rule addressed to watchers fires
 - **THEN** the user receives nothing and is no longer listed as a watcher
-- @e2e exclude {RBAC at dispatch, covered by dispatcher unit tests}
+- @e2e exclude {same timing race as above; asserted by NotificationRecipientResolverWatchersTest::testAWatcherWhoLostReadIsSkippedAndDropped}
 
 #### Scenario: the block is validated at schema save
 
 - **GIVEN** a rule with `recipients: [{"watchers": "yes"}]`
 - **WHEN** the schema is saved
 - **THEN** the save fails with HTTP 422
-- @e2e exclude {annotation validator, covered by unit tests}
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and NotificationAnnotationValidatorWatchersTest
