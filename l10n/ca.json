@@ -2898,7 +2898,14 @@
         "Store": "Botiga",
         "Install registers, schemas and flows that other organisations have published.": "Instal·leu registres, esquemes i fluxos publicats per altres organitzacions.",
         "No such run": "No existeix aquesta execució",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'execució no existeix o no la podeu veure. En esborrar un flux, se n'esborren les execucions."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'execució no existeix o no la podeu veure. En esborrar un flux, se n'esborren les execucions.",
+        "Configured": "Configurat",
+        "Limited": "Limitat",
+        "Simulated": "Simulat",
+        "Not available": "No disponible",
+        "Open settings": "Obre la configuració",
+        "Add integration": "Afegeix una integració",
+        "Last checked": "Última comprovació"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

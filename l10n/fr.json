@@ -2914,7 +2914,14 @@
         "Store": "Boutique",
         "Install registers, schemas and flows that other organisations have published.": "Installez des registres, schémas et flux publiés par d'autres organisations.",
         "No such run": "Aucune exécution trouvée",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'exécution n'existe pas, ou vous n'êtes pas autorisé à la voir. Supprimer un flux supprime ses exécutions."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'exécution n'existe pas, ou vous n'êtes pas autorisé à la voir. Supprimer un flux supprime ses exécutions.",
+        "Configured": "Configuré",
+        "Limited": "Limité",
+        "Simulated": "Simulé",
+        "Not available": "Non disponible",
+        "Open settings": "Ouvrir les paramètres",
+        "Add integration": "Ajouter une intégration",
+        "Last checked": "Dernière vérification"
     },
     "pluralForm": "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

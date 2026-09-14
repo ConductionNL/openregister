@@ -2849,7 +2849,14 @@ OC.L10N.register(
         "Could not load the task": "Could not load the task",
         "The task refused that action": "The task refused that action",
         "No such run": "No such run",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.",
+        "Configured": "Configured",
+        "Limited": "Limited",
+        "Simulated": "Simulated",
+        "Not available": "Not available",
+        "Open settings": "Open settings",
+        "Add integration": "Add integration",
+        "Last checked": "Last checked"
     },
     "nplurals=2; plural=(n != 1);"
 )

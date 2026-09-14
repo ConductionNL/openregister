@@ -31,16 +31,25 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\DestructionListRepository;
+use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
+use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
+use Throwable;
 
 /**
  * Controller for archival destruction workflows.
@@ -53,6 +62,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Controller requires many service dependencies
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)   REST endpoints for full destruction workflow
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is one refusal per rule,
+ *              spread over the endpoints rather than piled into one: 401, 403, 404, 409 and
+ *              400 each say a different thing to a reviewer who was turned away. Each endpoint
+ *              on its own is well under the threshold.
  */
 class ArchivalController extends Controller {
 
@@ -114,6 +127,14 @@ class ArchivalController extends Controller {
 	 * @param IUserSession $userSession User session.
 	 * @param IGroupManager $groupManager Group manager.
 	 * @param LoggerInterface $logger Logger.
+	 * @param DestructionListRepository $lists Finds the destruction lists this instance holds.
+	 * @param DestructionReviewService $reviews Assignment, sign-off and the decision history.
+	 * @param ReviewOutcomeService $outcomes Carries an answer out against the record.
+	 * @param AuditTrailMapper $auditMapper Records who signed off what.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor; every parameter is a
+	 *              distinct collaborator, and four of them arrived with the review half of the
+	 *              archiving process rather than by widening what this controller already did.
 	 */
 	public function __construct(
 		string $appName,
@@ -124,6 +145,10 @@ class ArchivalController extends Controller {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,
+		private readonly DestructionListRepository $lists,
+		private readonly DestructionReviewService $reviews,
+		private readonly ReviewOutcomeService $outcomes,
+		private readonly AuditTrailMapper $auditMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -151,14 +176,50 @@ class ArchivalController extends Controller {
 			return $authCheck;
 		}
 
-		$status = $this->request->getParam('status');
+		// 🔴 THIS USED TO RETURN `results: []` AND A COMMENT SAYING A FULL
+		// IMPLEMENTATION WOULD QUERY THE REGISTER. An empty list is what a
+		// correctly configured instance with nothing to destroy also answers,
+		// so a records officer had no way to tell the two apart, and neither
+		// did anything built on top.
+		if ($this->lists->isConfigured() === false) {
+			return new JSONResponse(
+				data: [
+					'results' => [],
+					'total' => 0,
+					'configured' => false,
+					'error' => 'No destruction list register and schema are configured',
+				],
+				statusCode: Http::STATUS_OK
+			);
+		}
 
-		// In a full implementation, this would query the archival register
-		// for destruction list objects. For now, return the structure.
+		$status = $this->request->getParam('status');
+		$statuses = null;
+		if (is_string($status) === true && $status !== '') {
+			$statuses = [$status];
+		}
+
+		$results = [];
+		foreach ($this->lists->findLists(statuses: $statuses) as $list) {
+			$listData = ($list->getObject() ?? []);
+			$unassigned = $this->reviews->unassignedEntries(listData: $listData);
+
+			$results[] = [
+				'uuid' => $list->getUuid(),
+				'status' => ($listData['status'] ?? null),
+				'createdAt' => ($listData['createdAt'] ?? null),
+				'createdBy' => ($listData['createdBy'] ?? null),
+				'entryCount' => count($this->reviews->entries(listData: $listData)),
+				'unassignedCount' => count($unassigned),
+				'decisionCount' => count(($listData['decisions'] ?? [])),
+			];
+		}
+
 		return new JSONResponse(
 			data: [
-				'results' => [],
-				'total' => 0,
+				'results' => $results,
+				'total' => count($results),
+				'configured' => true,
 				'filter' => $status,
 			],
 			statusCode: Http::STATUS_OK
@@ -184,17 +245,34 @@ class ArchivalController extends Controller {
 		}
 
 		try {
-			$object = $this->objectMapper->find($id);
+			$list = $this->lists->find(uuid: $id);
+			if ($list === null) {
+				return new JSONResponse(
+					data: ['error' => 'Destruction list not found'],
+					statusCode: Http::STATUS_NOT_FOUND
+				);
+			}
+
+			$listData = ($list->getObject() ?? []);
+			$serialised = $list->jsonSerialize();
+
+			// The entries nobody is accountable for are NAMED, not counted. "3 of
+			// 15 unassigned" says there is work to do and not which work, and the
+			// whole point of a named reviewer is that the list can be chased.
+			$serialised['unassignedEntries'] = $this->reviews->unassignedEntries(listData: $listData);
+			$serialised['decisions'] = ($listData['decisions'] ?? []);
+
 			return new JSONResponse(
-				data: $object->jsonSerialize(),
+				data: $serialised,
 				statusCode: Http::STATUS_OK
 			);
-		} catch (\Exception $e) {
+		} catch (Throwable $e) {
+			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
 			return new JSONResponse(
-				data: ['error' => 'Destruction list not found'],
-				statusCode: Http::STATUS_NOT_FOUND
+				data: ['error' => 'Destruction list could not be read'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 			);
-		}
+		}//end try
 	}//end getDestructionList()
 
 	/**
@@ -516,6 +594,312 @@ class ArchivalController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end listCertificates()
+
+	/**
+	 * Make one person accountable for one entry on a destruction list.
+	 *
+	 * PUT /api/archival/destruction-lists/{id}/entries/{entryId}/reviewer
+	 *
+	 * @param string $id      The destruction list uuid.
+	 * @param string $entryId The uuid of the record the entry is about.
+	 *
+	 * @return JSONResponse The entry, with its reviewer.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	#[NoAdminRequired]
+	public function assignReviewer(string $id, string $entryId): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
+
+		$list = $this->lists->find(uuid: $id);
+		if ($list === null) {
+			return new JSONResponse(
+				data: ['error' => 'Destruction list not found'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$reviewer = $this->request->getParam('reviewer');
+		if ($reviewer !== null && is_string($reviewer) === false) {
+			return new JSONResponse(
+				data: ['error' => 'A reviewer is a user id, or null to unassign'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$listData = ($list->getObject() ?? []);
+
+		try {
+			$listData = $this->reviews->assignReviewer(
+				listData: $listData,
+				entryUuid: $entryId,
+				reviewer: $reviewer
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$this->lists->save(list: $list, listData: $listData);
+
+		$this->auditMapper->createAuditTrailEntry(
+			$list,
+			'archival.review_assigned',
+			[
+				'entry' => $entryId,
+				'reviewer' => $reviewer,
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'entry' => $this->reviews->entry(listData: $listData, entryUuid: $entryId),
+				'unassignedEntries' => $this->reviews->unassignedEntries(listData: $listData),
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end assignReviewer()
+
+	/**
+	 * Answer one entry: destroy it, keep it, or hand it to an e-Depot.
+	 *
+	 * POST /api/archival/destruction-lists/{id}/entries/{entryId}/decision
+	 *
+	 * 🔴 ONLY THE NAMED REVIEWER MAY ANSWER. The guard is here in the body and
+	 * again in {@see DestructionReviewService::recordAnswer()}, because this
+	 * endpoint is `#[NoAdminRequired]`: without a per-entry check any
+	 * authenticated user could sign off any record's destruction, which is the
+	 * IDOR shape ADR-005 rule 3 names. An entry nobody is accountable for is
+	 * refused rather than thrown open to the first archivist, which is exactly
+	 * the group-addressed approval this change replaces.
+	 *
+	 * @param string $id      The destruction list uuid.
+	 * @param string $entryId The uuid of the record the entry is about.
+	 *
+	 * @return JSONResponse The recorded decision.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One refusal per rule; collapsing them
+	 *              would hide which rule refused the answer.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      As above.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	#[NoAdminRequired]
+	public function decideEntry(string $id, string $entryId): JSONResponse {
+		$userId = $this->currentUserId();
+		if ($userId === null) {
+			return new JSONResponse(
+				data: ['error' => 'Niet geauthenticeerd'],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
+
+		try {
+			$list = $this->lists->find(uuid: $id);
+			$listData = (($list?->getObject()) ?? []);
+			$entry = $this->reviews->entry(listData: $listData, entryUuid: $entryId);
+		} catch (Throwable $e) {
+			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
+			return new JSONResponse(
+				data: ['error' => 'Destruction list could not be read'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
+
+		if ($list === null) {
+			return new JSONResponse(
+				data: ['error' => 'Destruction list not found'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		if ($entry === null) {
+			return new JSONResponse(
+				data: ['error' => 'This destruction list has no entry for that record'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$assigned = ($entry['reviewer'] ?? null);
+		if (is_string($assigned) === false || $assigned === '') {
+			return new JSONResponse(
+				data: ['error' => 'This entry has no reviewer; assign one before it can be answered'],
+				statusCode: Http::STATUS_CONFLICT
+			);
+		}
+
+		if ($assigned !== $userId) {
+			return new JSONResponse(
+				data: ['error' => 'This entry is somebody else\'s to answer'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return $this->recordDecision(
+			list: $list,
+			listData: $listData,
+			entryId: $entryId,
+			userId: $userId
+		);
+	}//end decideEntry()
+
+	/**
+	 * Apply the answer to the record, then write it into the decision history.
+	 *
+	 * In that order: a transfer whose list could not be made must not leave a
+	 * history saying the record was handed over.
+	 *
+	 * @param ObjectEntity          $list     The destruction list object.
+	 * @param array<string, mixed>              $listData Its own data.
+	 * @param string                            $entryId  The record the entry is about.
+	 * @param string                            $userId   The reviewer answering.
+	 *
+	 * @return JSONResponse The recorded decision.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	private function recordDecision(
+		ObjectEntity $list,
+		array $listData,
+		string $entryId,
+		string $userId,
+	): JSONResponse {
+		$answer = (string)$this->request->getParam('answer', '');
+		$reason = (string)$this->request->getParam('reason', '');
+		$newDate = $this->request->getParam('newArchiefactiedatum');
+		if ($newDate !== null) {
+			$newDate = (string)$newDate;
+		}
+
+		if (in_array($answer, DestructionReviewService::ANSWERS, true) === false) {
+			return new JSONResponse(
+				data: [
+					'error' => sprintf(
+						'"%s" is not a review answer; the answers are %s',
+						$answer,
+						implode(', ', DestructionReviewService::ANSWERS)
+					),
+				],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$transferRef = $this->outcomes->apply(
+				answer: $answer,
+				entryUuid: $entryId,
+				reason: $reason,
+				newDate: $newDate
+			);
+
+			$listData = $this->reviews->recordAnswer(
+				listData: $listData,
+				entryUuid: $entryId,
+				answer: $answer,
+				reviewer: $userId,
+				reason: $reason,
+				newDate: $newDate,
+				transferRef: $transferRef
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		} catch (RuntimeException $e) {
+			$this->logger->error('[ArchivalController] Review answer could not be carried out: ' . $e->getMessage());
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+
+		$this->lists->save(list: $list, listData: $listData);
+
+		$decisions = ($listData['decisions'] ?? []);
+		$decision = end($decisions);
+
+		$this->auditMapper->createAuditTrailEntry(
+			$list,
+			'archival.review_decided',
+			[
+				'entry' => $entryId,
+				'answer' => $answer,
+				'reviewer' => $userId,
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'decision' => $decision,
+				'entry' => $this->reviews->entry(listData: $listData, entryUuid: $entryId),
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end recordDecision()
+
+	/**
+	 * What is waiting on the person asking, across every list.
+	 *
+	 * GET /api/archival/reviews/pending
+	 *
+	 * Scoped to the caller by construction: it reads the session user id and
+	 * asks for that reviewer's entries, so there is no id to tamper with.
+	 *
+	 * @return JSONResponse The caller's pending entries.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	#[NoAdminRequired]
+	public function myPendingReviews(): JSONResponse {
+		$userId = $this->currentUserId();
+		if ($userId === null) {
+			return new JSONResponse(
+				data: ['error' => 'Niet geauthenticeerd'],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
+
+		$pending = [];
+		foreach ($this->lists->findLists(statuses: DestructionListRepository::OPEN_STATUSES) as $list) {
+			$pending = array_merge(
+				$pending,
+				$this->reviews->pendingEntries(
+					listData: ($list->getObject() ?? []),
+					listUuid: (string)$list->getUuid(),
+					reviewer: $userId
+				)
+			);
+		}
+
+		return new JSONResponse(
+			data: [
+				'reviewer' => $userId,
+				'results' => $pending,
+				'total' => count($pending),
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end myPendingReviews()
+
+	/**
+	 * The user id of whoever is asking, or null when nobody is signed in.
+	 *
+	 * @return string|null The user id.
+	 */
+	private function currentUserId(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
+
+		return $user->getUID();
+	}//end currentUserId()
 
 	/**
 	 * Check if the current user has the archivist role.

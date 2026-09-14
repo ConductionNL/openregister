@@ -1,0 +1,132 @@
+{
+    "app": "openregister",
+    "connections": [
+        {
+            "key": "llm",
+            "title": "LLM provider",
+            "description": "The chat and embedding provider: OpenAI, Fireworks AI or Ollama.",
+            "order": 10,
+            "settingsUrl": "/settings/admin/openregister#section-llm",
+            "unconfiguredMessage": "Nothing saved yet. Choose a chat or embedding provider in the LLM configuration section. Chat answers 503 until one is chosen."
+        },
+        {
+            "key": "anonymiser",
+            "title": "OpenAnonymiser",
+            "description": "The OpenAnonymiser ExApp that finds personal data in files, reached through AppAPI.",
+            "order": 20,
+            "settingsUrl": "/settings/admin/openregister#section-text-extraction",
+            "unconfiguredMessage": "Not checked yet. Run the OpenAnonymiser connection test in the text extraction section."
+        },
+        {
+            "key": "translation",
+            "title": "Translation provider",
+            "description": "The provider that fills an empty language of a translatable property.",
+            "order": 30,
+            "reportedOnly": true,
+            "unconfiguredMessage": "Not checked yet. OpenRegister reports the bound provider every six hours from cron."
+        },
+        {
+            "key": "dsar-identity",
+            "title": "DSAR identity check",
+            "description": "Verifies who a data subject is before a request is handled.",
+            "order": 40,
+            "reportedOnly": true,
+            "unconfiguredMessage": "Not checked yet. OpenRegister reports the registered providers every six hours from cron."
+        },
+        {
+            "key": "dsar-regulator",
+            "title": "DSAR regulator escalation",
+            "description": "Escalates a data subject request to a supervisory authority.",
+            "order": 50,
+            "reportedOnly": true,
+            "unconfiguredMessage": "Not checked yet. OpenRegister reports the registered providers every six hours from cron."
+        },
+        {
+            "key": "edepot",
+            "title": "e-Depot",
+            "description": "Transfers archived records to an e-Depot over REST, SFTP or Integriq.",
+            "order": 60,
+            "unconfiguredMessage": "Not checked yet. Set the transport through the e-Depot settings API, then run its connection test."
+        },
+        {
+            "key": "github",
+            "title": "GitHub",
+            "description": "Imports and publishes configurations in GitHub repositories.",
+            "order": 70,
+            "settingsUrl": "/settings/admin/openregister#api-tokens",
+            "requiredConfig": ["github_api_token"],
+            "unconfiguredMessage": "No token saved. GitHub then allows 60 requests an hour, which a configuration import soon uses up."
+        },
+        {
+            "key": "gitlab",
+            "title": "GitLab",
+            "description": "Imports configurations from GitLab repositories.",
+            "order": 80,
+            "settingsUrl": "/settings/admin/openregister#api-tokens",
+            "requiredConfig": ["gitlab_api_token"],
+            "unconfiguredMessage": "No token saved. Add a GitLab token in the API tokens section."
+        },
+        {
+            "key": "brp",
+            "title": "BRP",
+            "description": "Looks a person up in the municipal population register.",
+            "order": 90,
+            "unconfiguredMessage": "Not checked yet. Person lookup calls the Integriq source brp-haalcentraal. Link that source to check it.",
+            "sourceTemplate": "brp-haalcentraal"
+        },
+        {
+            "key": "kvk",
+            "title": "KvK",
+            "description": "Looks a company up in the chamber of commerce register.",
+            "order": 100,
+            "unconfiguredMessage": "Not checked yet. Company lookup calls the Integriq source kvk. Link that source to check it.",
+            "sourceTemplate": "kvk"
+        },
+        {
+            "key": "opencorporates",
+            "title": "OpenCorporates",
+            "description": "Searches companies in the open OpenCorporates register.",
+            "order": 110,
+            "unconfiguredMessage": "Not checked yet. The lookup calls the Integriq source opencorporates. Link that source to check it.",
+            "sourceTemplate": "opencorporates"
+        },
+        {
+            "key": "openproject",
+            "title": "OpenProject",
+            "description": "Links work packages in OpenProject to an object.",
+            "order": 120,
+            "unconfiguredMessage": "Not checked yet. The link calls the Integriq source openproject. Link that source to check it."
+        },
+        {
+            "key": "xwiki",
+            "title": "XWiki",
+            "description": "Links wiki pages in XWiki to an object.",
+            "order": 130,
+            "unconfiguredMessage": "Not checked yet. The link calls the Integriq source xwiki. Link that source to check it.",
+            "sourceTemplate": "xwiki"
+        },
+        {
+            "key": "message-dispatch",
+            "title": "Text and WhatsApp messages",
+            "description": "Sends a message about an object through an SMS or WhatsApp source.",
+            "order": 140,
+            "unconfiguredMessage": "Not checked yet. Messages go through the Integriq sources cmcom-sms, messagebird-sms, twilio-sms, whatsapp-cloud-api or whatsapp-bsp. Link one to check it.",
+            "sourceTemplate": "whatsapp-cloud-api"
+        },
+        {
+            "key": "pdok",
+            "title": "PDOK",
+            "description": "Turns an address into map coordinates, and back, with the public PDOK Locatieserver.",
+            "order": 150,
+            "unconfiguredMessage": "Not checked. Geocoding calls PDOK through Integriq without a source, so nothing probes it."
+        },
+        {
+            "key": "office-converter",
+            "title": "Office converter",
+            "description": "Converts a PDF to ODT and back through Nextcloud Office, for the PDF anonymisation fallback.",
+            "order": 160,
+            "available": false,
+            "unavailableMessage": "The null converter is bound, and nothing calls the converter or its fallback yet."
+        }
+    ]
+}
