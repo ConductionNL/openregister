@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
@@ -83,20 +84,31 @@ class WorkingCalendarValidationListener implements IEventListener {
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
 	 */
 	public function handle(Event $event): void {
-		$object = null;
 		if ($event instanceof ObjectCreatingEvent) {
-			$object = $event->getObject();
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$object = $event->getNewObject();
-		}
-
-		// Any other event is not a working-calendar write, so nothing to do.
-		if ($object === null) {
+			$this->validate(event: $event, object: $event->getObject());
 			return;
 		}
 
+		if ($event instanceof ObjectUpdatingEvent) {
+			$this->validate(event: $event, object: $event->getNewObject());
+		}
+
+	}//end handle()
+
+	/**
+	 * Validate one working-calendar write, and refuse it when the guard says so.
+	 *
+	 * The event type is a union rather than Event, because setErrors() is
+	 * declared on each write event separately instead of on a shared parent.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 * @param ObjectEntity $object The object the write carries.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
+	 */
+	private function validate(ObjectCreatingEvent | ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		try {
 			if ($this->guard->isWorkingCalendar(object: $object) === false) {
 				return;
@@ -127,7 +139,7 @@ class WorkingCalendarValidationListener implements IEventListener {
 			);
 		}//end try
 
-	}//end handle()
+	}//end validate()
 
 	/**
 	 * The slug the stored calendar already carries, for a partial update.

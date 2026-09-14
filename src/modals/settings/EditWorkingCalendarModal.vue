@@ -420,6 +420,10 @@ export default {
 		 */
 		calendar: {
 			immediate: true,
+			/**
+			 * @param {object} value The calendar being edited.
+			 * @spec exclude watcher body reloading the form when the parent hands it another calendar
+			 */
 			handler(value) {
 				this.form = this.toForm(value)
 				this.error = ''
