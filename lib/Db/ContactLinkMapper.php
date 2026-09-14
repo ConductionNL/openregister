@@ -286,4 +286,32 @@ class ContactLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findPrimaryParty()
+
+	/**
+	 * Every link whose metadata records that a merge operation moved it.
+	 *
+	 * The memo lives on the row the merge changed, so reversing a merge is a
+	 * read of the rows themselves rather than surgery on the merge snapshot.
+	 * The LIKE narrows; the caller decodes the memo and decides, so a row
+	 * whose metadata merely contains the id as text is never acted on.
+	 *
+	 * @param string $operationId The merge operation's uuid.
+	 *
+	 * @return ContactLink[] The candidate links.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 */
+	public function findByOperationMemo(string $operationId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->like(
+					'metadata',
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($operationId) . '%')
+				)
+			);
+
+		return $this->findEntities(query: $qb);
+	}//end findByOperationMemo()
 }//end class
