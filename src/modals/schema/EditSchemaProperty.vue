@@ -537,6 +537,102 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				</div>
 			</div>
 
+			<!-- Computed value (computed-values-by-json-ast). The JSON AST is the
+			     engine an administrator authors: it diffs cleanly in a schema
+			     history and cannot reach a function nobody reviewed. Twig
+			     `computed` stays for schemas authored in code. -->
+			<NcCheckboxRadioSwitch
+				v-model="calculationEnabled"
+				:disabled="loading"
+				data-testid="property-calculation-toggle">
+				{{ t('openregister', 'Computed value') }}
+			</NcCheckboxRadioSwitch>
+
+			<div
+				v-if="calculationEnabled"
+				class="calculationContainer"
+				data-testid="property-calculation">
+				<div class="helper-text">
+					{{
+						t(
+							'openregister',
+							'The value is derived from the other properties of this object and is written on save. It cannot be edited by hand.',
+						)
+					}}
+				</div>
+
+				<NcSelect
+					:disabled="loading"
+					:modelValue="calculationTypeOption"
+					:options="calculationTypeOptions"
+					label="label"
+					trackBy="value"
+					:inputLabel="t('openregister', 'Result type')"
+					:clearable="false"
+					data-testid="property-calculation-type"
+					@update:modelValue="(opt) => (calculationType = opt.value)" />
+
+				<NcSelect
+					:disabled="loading || operatorsLoading"
+					:modelValue="null"
+					:options="operatorOptions"
+					label="label"
+					trackBy="value"
+					:inputLabel="t('openregister', 'Insert an operator')"
+					data-testid="property-calculation-operators"
+					@update:modelValue="insertOperator" />
+
+				<NcTextArea
+					v-model="calculationExpression"
+					:disabled="loading"
+					:error="!verifyJsonValidity(calculationExpression)"
+					:label="t('openregister', 'Expression (JSON)')"
+					:helperText="
+						!verifyJsonValidity(calculationExpression)
+							? t('openregister', 'This is not valid JSON yet.')
+							: ''
+					"
+					data-testid="property-calculation-expression" />
+
+				<NcTextArea
+					v-model="calculationSample"
+					:disabled="loading"
+					:error="!verifyJsonValidity(calculationSample)"
+					:label="t('openregister', 'Sample object (JSON)')"
+					data-testid="property-calculation-sample" />
+
+				<NcButton
+					:disabled="loading || calculationTrying"
+					variant="secondary"
+					data-testid="property-calculation-try"
+					@click="tryCalculation">
+					{{ t('openregister', 'Try it') }}
+				</NcButton>
+
+				<div
+					v-if="calculationTrialValue !== null"
+					class="calculationTrialResult"
+					data-testid="property-calculation-result">
+					{{ calculationTrialValue }}
+				</div>
+				<NcNoteCard
+					v-if="calculationTrialError"
+					type="error"
+					data-testid="property-calculation-error">
+					{{ calculationTrialError }}
+				</NcNoteCard>
+				<div
+					v-if="calculationDependencies.length"
+					class="helper-text"
+					data-testid="property-calculation-dependencies">
+					{{
+						t('openregister', 'Reads: {properties}', {
+							properties: calculationDependencies.join(', '),
+						})
+					}}
+				</div>
+			</div>
+
 			<NcTextField
 				v-model="properties.example"
 				:disabled="loading"
@@ -775,6 +871,8 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -823,6 +921,17 @@ export default {
 			facetFormat: '',
 			facetUseDefaultRanges: true,
 			facetCustomRanges: [],
+			// Computed value, authored in the JSON AST (computed-values-by-json-ast).
+			calculationEnabled: false,
+			calculationType: 'string',
+			calculationExpression: '',
+			calculationSample: '{}',
+			calculationTrying: false,
+			calculationTrialValue: null,
+			calculationTrialError: '',
+			calculationDependencies: [],
+			operatorCatalogue: [],
+			operatorsLoading: false,
 			properties: {
 				description: '',
 				title: '',
@@ -980,6 +1089,52 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The result types a calculation may declare.
+		 *
+		 * @return {Array<object>} The select options.
+		 * @spec exclude UI display helper — static list of calculation result types.
+		 */
+		calculationTypeOptions() {
+			return [
+				{ value: 'string', label: t('openregister', 'Text') },
+				{ value: 'integer', label: t('openregister', 'Whole number') },
+				{ value: 'number', label: t('openregister', 'Number') },
+				{ value: 'boolean', label: t('openregister', 'Yes or no') },
+				{ value: 'date', label: t('openregister', 'Date') },
+			]
+		},
+
+		/**
+		 * The currently selected result type, as a select option.
+		 *
+		 * @return {object|null} The matching option.
+		 * @spec exclude UI display helper — maps the stored value onto its select option.
+		 */
+		calculationTypeOption() {
+			return (
+				this.calculationTypeOptions.find(
+					(option) => option.value === this.calculationType,
+				) || null
+			)
+		},
+
+		/**
+		 * The operator picker, generated from the published catalogue.
+		 *
+		 * Never a hand-written list: the catalogue is read from the engine, so
+		 * an operator the evaluator gains appears here without an edit.
+		 *
+		 * @return {Array<object>} The select options.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		operatorOptions() {
+			return this.operatorCatalogue.map((operator) => ({
+				value: operator.op,
+				label: `${operator.op} (${operator.category}) — ${operator.description}`,
+			}))
+		},
+
 		/**
 		 * @spec exclude UI state helper — reports whether the property is a date/date-time type.
 		 */
@@ -1200,9 +1355,112 @@ export default {
 	mounted() {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
+		this.loadOperatorCatalogue()
 	},
 
 	methods: {
+		/**
+		 * Read the published operator catalogue and build the picker from it.
+		 *
+		 * @return {Promise<void>} Resolves once the catalogue is loaded or the read failed.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		async loadOperatorCatalogue() {
+			this.operatorsLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/schemas/calculation-operators'),
+				)
+				this.operatorCatalogue = response.data?.operators || []
+			} catch {
+				// A picker nobody can fill is a worse answer than an empty one:
+				// the expression box still takes a hand-written AST.
+				this.operatorCatalogue = []
+			} finally {
+				this.operatorsLoading = false
+			}
+		},
+
+		/**
+		 * Append an operator skeleton to the expression being written.
+		 *
+		 * @param {object|null} option The chosen operator option.
+		 * @return {void}
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		insertOperator(option) {
+			if (!option || !option.value) return
+			const skeleton = JSON.stringify({ [option.value]: [] })
+			this.calculationExpression = this.calculationExpression
+				? `${this.calculationExpression}\n${skeleton}`
+				: skeleton
+		},
+
+		/**
+		 * Evaluate the expression against the sample payload, without saving.
+		 *
+		 * @return {Promise<void>} Resolves once the trial answered.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		async tryCalculation() {
+			this.calculationTrying = true
+			this.calculationTrialValue = null
+			this.calculationTrialError = ''
+
+			let expression
+			let sample
+			try {
+				expression = JSON.parse(this.calculationExpression || 'null')
+				sample = JSON.parse(this.calculationSample || '{}')
+			} catch {
+				this.calculationTrialError = t(
+					'openregister',
+					'The expression or the sample is not valid JSON.',
+				)
+				this.calculationTrying = false
+				return
+			}
+
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/schemas/calculation-evaluate'),
+					{
+						calculation: { type: this.calculationType, expression },
+						object: sample,
+					},
+				)
+				this.calculationTrialValue = String(response.data?.value ?? '')
+				this.calculationDependencies = response.data?.dependencies || []
+			} catch (error) {
+				const body = error?.response?.data
+				this.calculationTrialError =
+					body?.error?.message
+					|| body?.error
+					|| t('openregister', 'The expression could not be evaluated.')
+				this.calculationDependencies = body?.dependencies || []
+			} finally {
+				this.calculationTrying = false
+			}
+		},
+
+		/**
+		 * The declaration to store on the property, or null when there is none.
+		 *
+		 * @return {object|null} The `calculation` key's value.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		buildCalculationValue() {
+			if (!this.calculationEnabled || !this.calculationExpression) return null
+			try {
+				return {
+					type: this.calculationType,
+					expression: JSON.parse(this.calculationExpression),
+				}
+			} catch {
+				return null
+			}
+		},
+
 		/**
 		 * @spec exclude Form-field binding — appends a blank oneOf entry.
 		 */
@@ -1250,6 +1508,18 @@ export default {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty =
 					schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+
+				// Hydrate the computed-value form from the stored declaration.
+				const calculation = schemaProperty.calculation
+				if (calculation && typeof calculation === 'object') {
+					this.calculationEnabled = true
+					this.calculationType = calculation.type || 'string'
+					this.calculationExpression = JSON.stringify(
+						calculation.expression ?? null,
+						null,
+						2,
+					)
+				}
 
 				// Initialize facetable state from property value.
 				const facetableValue = schemaProperty.facetable
@@ -1458,6 +1728,7 @@ export default {
 						// create the new property with title as key
 						...this.properties,
 						facetable: facetableValue,
+						calculation: this.buildCalculationValue(),
 						// due to bad (no) support for number fields inside nextcloud/vue, parse the text to a number
 						order: parseFloat(this.properties.order) || null,
 						minLength: parseFloat(this.properties.minLength) || null,
@@ -1674,6 +1945,20 @@ export default {
 .objectConfigurationContainer,
 .facetConfigContainer {
 	margin-block-end: 15px;
+}
+
+.calculationContainer {
+	margin-block-end: 15px;
+	padding-left: 8px;
+	border-left: 2px solid var(--color-border);
+}
+
+.calculationTrialResult {
+	margin-block: 8px;
+	padding: 8px;
+	border-radius: var(--border-radius);
+	background-color: var(--color-background-dark);
+	font-family: monospace;
 }
 
 .objectConfigurationTitle,
