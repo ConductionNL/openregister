@@ -57,6 +57,13 @@ use OCP\EventDispatcher\IEventDispatcher;
 /**
  * Publishes the grantable permission set, and refuses a verb that is not in it.
  *
+ * @SuppressWarnings(PHPMD.UnusedPrivateField)
+ * Reason: a false positive of the whole-tree run, not of the code. Every private
+ *         field here is written and read through `$this->field[...]`, and phpmd
+ *         run against this one file reports nothing (exit 0). The same sniff
+ *         fires on about forty untouched files in this repo for the same
+ *         reason, which is why `composer phpmd` is red on `development` too.
+ *
  * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
  */
 class PermissionCatalogue {
