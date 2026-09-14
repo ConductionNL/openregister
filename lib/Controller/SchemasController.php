@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -742,6 +743,14 @@ class SchemasController extends Controller {
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
 			return new JSONResponse(data: $schema, statusCode: 201);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
 		} catch (CalculationDeclarationException $e) {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
@@ -960,6 +969,14 @@ class SchemasController extends Controller {
 			);
 
 			return new JSONResponse(data: $updatedSchema);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
 		} catch (CalculationDeclarationException $e) {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
@@ -1439,6 +1456,14 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schema);
+		} catch (AuthorizationBlockException $e) {
+			// A deny that contradicts a grant beside it, or one that would leave
+			// nobody holding `manage`. The request was understood; the rules
+			// inside it disagree, which is 422 and not 400.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatusCode()
+			);
 		} catch (CalculationDeclarationException $e) {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node

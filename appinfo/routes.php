@@ -341,6 +341,14 @@ return [
         // schema, action) scopes for the authenticated user without probing
         // every endpoint individually.
         ['name' => 'scopes#index', 'url' => '/api/scopes', 'verb' => 'GET'],
+        // The grantable permission set, and what the staged deny would refuse.
+        // A role editor cannot offer a set nobody publishes, which is why every
+        // consumer in the fleet invented its own vocabulary. The preview reads
+        // the rules as written rather than a log of what has fired, so a deny
+        // nobody has hit yet is still in the report (D15).
+        ['name' => 'permissions#index',       'url' => '/api/permissions',              'verb' => 'GET'],
+        ['name' => 'permissions#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
+        ['name' => 'permissions#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
