@@ -124,6 +124,57 @@ class SourceRowReader {
 	}//end hash()
 
 	/**
+	 * The prefix every staged upload carries, so a staged copy is
+	 * recognisable and a caller's own file is never deleted by mistake.
+	 *
+	 * @var string
+	 */
+	public const STAGE_PREFIX = 'openregister-import-';
+
+	/**
+	 * Copy an uploaded file somewhere it survives the request.
+	 *
+	 * PHP removes an upload's temp file when the request ends, so a preview
+	 * that runs on cron rather than in the request has nothing left to read.
+	 * The copy is host-local, which is the same assumption the rest of the
+	 * import path makes about an upload, and it is removed as soon as the
+	 * preview has decided every row.
+	 *
+	 * @param string $filePath The uploaded file's temp path.
+	 * @param string $token A token making the staged name unique, usually the preview uuid.
+	 *
+	 * @return string The staged path.
+	 *
+	 * @throws InvalidArgumentException When the copy cannot be made.
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
+	 */
+	public function stage(string $filePath, string $token): string {
+		$staged = rtrim(sys_get_temp_dir(), '/').'/'.self::STAGE_PREFIX.$token;
+
+		if (copy($filePath, $staged) === false) {
+			throw new InvalidArgumentException('The source file could not be staged for a background preview.');
+		}
+
+		return $staged;
+	}//end stage()
+
+	/**
+	 * Whether a path is a staged copy this class made.
+	 *
+	 * @param string|null $filePath The path to test.
+	 *
+	 * @return bool True when the path is a staged copy.
+	 */
+	public function isStaged(?string $filePath): bool {
+		if ($filePath === null || $filePath === '') {
+			return false;
+		}
+
+		return str_starts_with(basename($filePath), self::STAGE_PREFIX);
+	}//end isStaged()
+
+	/**
 	 * Guess a format from a file name, so a caller need not always say.
 	 *
 	 * @param string $fileName The uploaded file's name.

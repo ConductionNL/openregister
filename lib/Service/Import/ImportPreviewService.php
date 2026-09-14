@@ -250,8 +250,35 @@ class ImportPreviewService {
 			$this->previewMapper->persist(preview: $preview);
 
 			throw $exception;
+		} finally {
+			// The decisions are kept, the file is not: a staged copy of a
+			// municipal migration file sitting in the temp directory after the
+			// preview is done is data nobody asked to keep.
+			$this->releaseSource(preview: $preview);
 		}//end try
 	}//end runPreview()
+
+	/**
+	 * Remove a staged copy of the source, and forget where it was.
+	 *
+	 * @param ImportPreview $preview The preview.
+	 *
+	 * @return void
+	 */
+	private function releaseSource(ImportPreview $preview): void {
+		$path = $preview->getSourcePath();
+
+		if ($this->reader->isStaged(filePath: $path) === false) {
+			return;
+		}
+
+		if (is_file((string)$path) === true) {
+			@unlink((string)$path);
+		}
+
+		$preview->setSourcePath(null);
+		$this->previewMapper->persist(preview: $preview);
+	}//end releaseSource()
 
 	/**
 	 * Create and run a preview in one call.
