@@ -233,6 +233,43 @@ class NotificationHistory extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
+	 * Whether this notice belongs in the unread list at a given moment.
+	 *
+	 * THE SINGLE DEFINITION of the three list-state rules, in the terms the
+	 * requirement states them:
+	 *
+	 *  - a notice that has been read is not unread,
+	 *  - an archived notice has left the list without being read,
+	 *  - a notice snoozed past this moment is absent now and back afterwards,
+	 *    still unread.
+	 *
+	 * `NotificationHistoryMapper::applyListStateFilters()` is the SQL pushdown
+	 * of exactly this predicate, so the list can be paged and counted in the
+	 * database rather than in PHP. The two are kept side by side deliberately:
+	 * this one is what the rules MEAN and is unit-testable against a clock, and
+	 * the mapper's is the same three clauses in the same order. A change to
+	 * either without the other is the drift to watch for.
+	 *
+	 * @param DateTime|null $asOf The moment to judge against, defaulting to now.
+	 *
+	 * @return boolean True when the notice is in the unread list at that moment.
+	 *
+	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 */
+	public function isInUnreadListAt(?DateTime $asOf = null): bool {
+		if ($this->readAt !== null || $this->archivedAt !== null) {
+			return false;
+		}
+
+		if ($this->snoozedUntil === null) {
+			return true;
+		}
+
+		return ($this->snoozedUntil <= ($asOf ?? new DateTime()));
+
+	}//end isInUnreadListAt()
+
+	/**
 	 * JSON serialization.
 	 *
 	 * @return array<string, mixed>
@@ -257,6 +294,10 @@ class NotificationHistory extends Entity implements JsonSerializable {
 			'subjectId' => $this->subjectId,
 			'snoozedUntil' => $this->snoozedUntil?->format(DateTime::ATOM),
 			'archivedAt' => $this->archivedAt?->format(DateTime::ATOM),
+			// Answered here so a client that has just snoozed or archived
+			// something knows whether it left the list, without having to
+			// re-derive the three rules for itself and get one of them wrong.
+			'inUnreadList' => $this->isInUnreadListAt(),
 		];
 
 	}//end jsonSerialize()

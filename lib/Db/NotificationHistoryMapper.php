@@ -242,6 +242,10 @@ class NotificationHistoryMapper extends QBMapper {
 	 * `countFiltered()` must agree, and a page narrower than its own total is
 	 * the shape they disagree in.
 	 *
+	 * This is the SQL pushdown of `NotificationHistory::isInUnreadListAt()`,
+	 * which states the same three rules in PHP and is where they are unit-tested
+	 * against a clock. Same rules, same order; change one and change the other.
+	 *
 	 * @param IQueryBuilder $qb The query being built.
 	 * @param array<string, mixed> $filters The filter map.
 	 * @param DateTime $asOf The moment to judge a snooze against.

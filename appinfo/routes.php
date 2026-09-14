@@ -967,9 +967,19 @@ return [
         // notice, an archive takes it out without claiming it was read, and a
         // thread is marked read as a whole. Each is scoped to the caller's own
         // notices inside NotificationClearingService, never by the route.
-        ['name' => 'notificationHistory#snooze',         'url' => '/api/notification-history/{id}/snooze',  'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
-        ['name' => 'notificationHistory#archive',        'url' => '/api/notification-history/{id}/archive', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
-        ['name' => 'notificationHistory#markThreadRead', 'url' => '/api/notification-history/thread/read',  'verb' => 'PUT'],
+        [
+            'name' => 'notificationHistory#snooze',
+            'url' => '/api/notification-history/{id}/snooze',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        [
+            'name' => 'notificationHistory#archive',
+            'url' => '/api/notification-history/{id}/archive',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        ['name' => 'notificationHistory#markThreadRead', 'url' => '/api/notification-history/thread/read', 'verb' => 'PUT'],
         // Notification Subscriptions — DEPRECATED per-user (register, schema) opt-in surface.
         // Superseded by override-only Notification Preferences below; kept during the deprecation window.
         ['name' => 'notificationSubscriptions#index',   'url' => '/api/notification-subscriptions', 'verb' => 'GET'],

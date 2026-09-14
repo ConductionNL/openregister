@@ -60,9 +60,9 @@ surfaces, then the bell.
 
 ## 6. Verification
 
-- [ ] 6.1 PHPUnit: a user's own state only, the marker advances on a
+- [x] 6.1 PHPUnit: a user's own state only, the marker advances on a
       substantive change, the list carries the marker in one query.
-- [ ] 6.2 The mutation: the marker never advances, shown red.
-- [ ] 6.3 Playwright under `tests/e2e/ci/`, one anchor per spec scenario that is
+- [x] 6.2 The mutation: the marker never advances, shown red.
+- [x] 6.3 Playwright under `tests/e2e/ci/`, one anchor per spec scenario that is
       not excluded.
 - [ ] 6.4 `docs/` note on the annotation.
