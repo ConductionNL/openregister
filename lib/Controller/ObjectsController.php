@@ -53,6 +53,7 @@ use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
@@ -5342,4 +5343,75 @@ class ObjectsController extends Controller {
 			)
 		);
 	}//end referencedBy()
+
+	/**
+	 * Read this object's map features, its own and the ones it inherits.
+	 *
+	 * Each inherited feature names the relation it arrived through, and a feature
+	 * the record holds itself outranks an inherited one for the same purpose. The
+	 * inherited one is still returned, marked superseded, because "where did the
+	 * other pin go" is a question worth an answer.
+	 *
+	 * @param string             $id            The object whose features are read.
+	 * @param string             $register      The register slug or identifier.
+	 * @param string             $schema        The schema slug or identifier.
+	 * @param ObjectService      $objectService The object service.
+	 * @param InheritedGeoCollector $collector  The feature collector.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse A GeoJSON FeatureCollection, or 404 when the object is gone.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function geoFeatures(
+		string $id,
+		string $register,
+		string $schema,
+		ObjectService $objectService,
+		InheritedGeoCollector $collector,
+	): JSONResponse {
+		$isAdmin = $this->isCurrentUserAdmin();
+		$rbac = ($isAdmin === false);
+
+		try {
+			$objectEntity = $objectService->find(
+				id: $id,
+				files: false,
+				register: $register,
+				schema: $schema,
+				_rbac: $rbac,
+				_multitenancy: $rbac,
+				_render: false
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		if ($objectEntity === null) {
+			return new JSONResponse(
+				data: ['error' => "Object with id {$id} not found"],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$schemaEntity = null;
+		try {
+			$schemaEntity = $this->schemaMapper->find(
+				id: $objectEntity->getSchema(),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				sprintf('[ObjectsController] geo features without a schema: %s', $e->getMessage())
+			);
+		}
+
+		return new JSONResponse(
+			data: $collector->collect(object: $objectEntity, schema: $schemaEntity, _rbac: $rbac)
+		);
+	}//end geoFeatures()
 }//end class
