@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\ScopeAudit;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -81,7 +82,8 @@ class PermissionsControllerTest extends TestCase {
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger()),
 			denyResolver: new DenyResolver(),
 			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			schemaMapper: $schemaMapper,
+			audit: new ScopeAudit()
 		);
 	}//end controllerFor()
 

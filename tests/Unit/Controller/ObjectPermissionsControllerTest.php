@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -72,6 +74,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 	 * @param boolean                $manages Whether the caller holds `manage` on the schema.
 	 * @param string                 $owner   The object's owner.
 	 * @param array<int, AuditTrail> $trail   The object's audit trail.
+	 * @param boolean                $schemaDeclaresRules Whether the schema's cascade writes any rules down.
 	 *
 	 * @return ObjectPermissionsController The controller under test.
 	 */
@@ -81,6 +84,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		bool $manages = false,
 		string $owner = 'bea',
 		array $trail = [],
+		bool $schemaDeclaresRules = true,
 	): ObjectPermissionsController {
 		$object = new ObjectEntity();
 		$object->setUuid(self::UUID);
@@ -89,6 +93,15 @@ class ObjectPermissionsControllerTest extends TestCase {
 
 		$permissionHandler = $this->createMock(originalClassName: PermissionHandler::class);
 		$permissionHandler->method('hasPermission')->willReturn($manages);
+		// The schema below writes rules down, which is what the guard requires
+		// before a `manage` grant counts: on a schema that configures nothing,
+		// `manage` resolves default-open for everybody.
+		$resolved = [];
+		if ($schemaDeclaresRules === true) {
+			$resolved = ['roles' => ['behandelaar' => ['behandelaars']]];
+		}
+
+		$permissionHandler->method('resolveAuthorization')->willReturn($resolved);
 
 		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->method('getObject')->willReturn($object);
@@ -128,15 +141,20 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_STAGING);
 
+		$report = new ObjectAccessReport(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper,
+			auditTrailMapper: $auditTrailMapper,
+			holders: new ObjectPermissionsResolver(),
+			history: new ObjectAccessHistory(),
+			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
+		);
+
 		return new ObjectPermissionsController(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			objectService: $objectService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			auditTrailMapper: $auditTrailMapper,
-			resolver: new ObjectPermissionsResolver(),
-			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger()),
+			report: $report,
 			userSession: $userSession,
 			groupManager: $groupManager
 		);
@@ -214,6 +232,46 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertNotEmpty($response->getData()['holders']);
 	}//end testAManagerReadsTheAccessSetOfSomebodyElsesObject()
+
+	/**
+	 * 🔴 On a schema that configures nothing, `manage` is not a review right.
+	 *
+	 * A schema with no rules resolves default-open, so `manage` answers true for
+	 * every signed-in caller. Reporting the access set on that basis would hand
+	 * back exactly the `authorization` block that a non-admin object read strips
+	 * out. Only the owner and an administrator may ask there.
+	 *
+	 * @return void
+	 */
+	public function testADefaultOpenSchemaDoesNotMakeEverybodyAnAuditor(): void {
+		$response = $this->controllerFor(
+			userId: 'noor',
+			manages: true,
+			owner: 'bea',
+			schemaDeclaresRules: false
+		)->index('zaken', 'zaak', self::UUID);
+
+		$this->assertSame(403, $response->getStatus());
+	}//end testADefaultOpenSchemaDoesNotMakeEverybodyAnAuditor()
+
+	/**
+	 * The owner still reads it there, because the object is theirs.
+	 *
+	 * The control: without it, the refusal above could be a refusal for
+	 * everybody on an unconfigured schema, which would make the endpoint useless
+	 * exactly where an owner most wants it.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerStillReadsItOnADefaultOpenSchema(): void {
+		$response = $this->controllerFor(
+			userId: 'bea',
+			owner: 'bea',
+			schemaDeclaresRules: false
+		)->index('zaken', 'zaak', self::UUID);
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testTheOwnerStillReadsItOnADefaultOpenSchema()
 
 	/**
 	 * The history reports the change, who made it and the set it produced.

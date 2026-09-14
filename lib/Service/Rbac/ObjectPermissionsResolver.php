@@ -15,11 +15,10 @@
  * dossier and not WHERE that was granted has to go and find it, and the finding
  * is the expensive half.
  *
- * THE HISTORY IS READ FROM THE AUDIT TRAIL, NOT FROM A SECOND TABLE. An object's
- * `authorization` column is versioned by the same trail that versions its data,
- * so the set at a past moment is reconstructible from what is already recorded.
- * A dedicated table would have had to be written from the day it shipped to
- * answer a question about last year, which is exactly when it cannot.
+ * THE HISTORY IS A SEPARATE CLASS. "Who may open this" and "who could open it in
+ * March" are two questions: this one reads the rules as they stand,
+ * {@see ObjectAccessHistory} reads the trail. Keeping them apart is what lets
+ * each stay short enough to check by eye.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Rbac
@@ -40,8 +39,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * Reads an object's access set out of the rules, and its history out of the trail.
@@ -66,13 +63,6 @@ class ObjectPermissionsResolver {
 	 * @var string
 	 */
 	private const ROLES_KEY = 'roles';
-
-	/**
-	 * The audit-trail column whose changes this report reads.
-	 *
-	 * @var string
-	 */
-	private const AUTHORIZATION_KEY = 'authorization';
 
 	/**
 	 * Constructor.
@@ -121,146 +111,6 @@ class ObjectPermissionsResolver {
 	}//end holders()
 
 	/**
-	 * The history of one object's access set.
-	 *
-	 * Every trail entry whose change set touches the authorization column is one
-	 * moment the access set moved, and the entry names who moved it. An entry
-	 * that changed only the object's data is not one, and is dropped rather than
-	 * reported as a change nobody made.
-	 *
-	 * @param array<int, AuditTrail> $entries The object's audit trail, newest first.
-	 * @param string|null            $at      An ISO-8601 moment to report the set AS OF, or null for every change.
-	 *
-	 * @return array{changes: array<int, array<string, mixed>>, asOf: array<string, mixed>|null}
-	 *         The changes, and the set as it stood at the named moment.
-	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
-	 */
-	public function history(array $entries, ?string $at = null): array {
-		$moment = $this->momentOf(value: $at);
-
-		$changes = [];
-		$asOf = null;
-
-		foreach ($entries as $entry) {
-			$change = $this->authorizationChangeIn(entry: $entry);
-			if ($change === null) {
-				continue;
-			}
-
-			$changes[] = $change;
-
-			// The entries arrive newest first, so the first change at or before
-			// the moment asked about is the one that produced the set standing
-			// at that moment: everything after it had not happened yet.
-			if ($moment !== null && $asOf === null && $change['at'] !== null) {
-				$changedAt = strtotime($change['at']);
-				if ($changedAt !== false && $changedAt <= $moment) {
-					$asOf = [
-						'at' => $change['at'],
-						'holders' => $this->holders(blocks: ['object' => $change['to']])['holders'],
-						'setBy' => $change['by'],
-						'changedAfterwardsBy' => $this->laterChangeIn(changes: $changes),
-					];
-				}
-			}
-		}//end foreach
-
-		return ['changes' => $changes, 'asOf' => $asOf];
-	}//end history()
-
-	/**
-	 * The change that came after the one answering for a past moment.
-	 *
-	 * "The grant was held then, and this is the rule that removed it afterwards"
-	 * is the whole of the auditor's question, and the second half is the half a
-	 * point-in-time read usually leaves out.
-	 *
-	 * @param array<int, array<string, mixed>> $changes The changes collected so far, newest first.
-	 *
-	 * @return array<string, mixed>|null The later change, or null when nothing changed since.
-	 */
-	private function laterChangeIn(array $changes): ?array {
-		if (count($changes) < 2) {
-			return null;
-		}
-
-		$later = $changes[(count($changes) - 2)];
-
-		return ['at' => $later['at'], 'by' => $later['by'], 'to' => $later['to']];
-	}//end laterChangeIn()
-
-	/**
-	 * One trail entry's authorization change, or null when it carried none.
-	 *
-	 * @param AuditTrail $entry The trail entry.
-	 *
-	 * @return array<string, mixed>|null The change.
-	 */
-	private function authorizationChangeIn(AuditTrail $entry): ?array {
-		$changed = $entry->getChanged();
-		if (is_array($changed) === false || isset($changed[self::AUTHORIZATION_KEY]) === false) {
-			return null;
-		}
-
-		$change = $changed[self::AUTHORIZATION_KEY];
-		if (is_array($change) === false) {
-			return null;
-		}
-
-		return [
-			'at' => $entry->getCreated()?->format('c'),
-			'by' => $entry->getUser(),
-			'byName' => $entry->getUserName(),
-			'action' => $entry->getAction(),
-			'from' => $this->blockOf(value: ($change['old'] ?? null)),
-			'to' => $this->blockOf(value: ($change['new'] ?? null)),
-		];
-	}//end authorizationChangeIn()
-
-	/**
-	 * One side of a change, as a block.
-	 *
-	 * @param mixed $value The stored value, which may be JSON text.
-	 *
-	 * @return array|null The block.
-	 */
-	private function blockOf(mixed $value): ?array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === true && $value !== '') {
-			$decoded = json_decode($value, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		}
-
-		return null;
-	}//end blockOf()
-
-	/**
-	 * The moment a request asked about, as a timestamp.
-	 *
-	 * @param string|null $value The request's value.
-	 *
-	 * @return integer|null The timestamp, or null when nothing usable was asked.
-	 */
-	private function momentOf(?string $value): ?int {
-		if ($value === null || trim($value) === '') {
-			return null;
-		}
-
-		$moment = strtotime($value);
-		if ($moment === false) {
-			return null;
-		}
-
-		return $moment;
-	}//end momentOf()
-
-	/**
 	 * Every grant one block writes, as one entry per principal and verb.
 	 *
 	 * @param array|null $block           The block at one level.
@@ -273,6 +123,11 @@ class ObjectPermissionsResolver {
 		if (is_array($block) === false || $block === []) {
 			return [];
 		}
+
+		// The control keys minus `roles`, which is handled on its own branch
+		// below. Subtracting it rather than relying on the branch order keeps
+		// the two readings of the same key from contradicting each other.
+		$settings = array_values(array_diff(PermissionCatalogue::CONTROL_KEYS, [self::ROLES_KEY]));
 
 		$rules = [];
 		foreach ($block as $key => $entries) {
@@ -288,30 +143,46 @@ class ObjectPermissionsResolver {
 				continue;
 			}
 
-			if (in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true) {
+			if (in_array($key, $settings, true) === true) {
 				continue;
 			}
 
-			foreach ($entries as $entry) {
-				$principal = $this->principalOf(rule: $entry);
-				if ($principal === null) {
-					continue;
-				}
-
-				$rules[] = [
-					'principal' => $principal,
-					'action' => $key,
-					'level' => $level,
-					'role' => null,
-					'rule' => $entry,
-					'conditional' => (is_array($entry) === true && isset($entry['match']) === true),
-					'declared' => $this->catalogue->isGrantable($key),
-				];
-			}
+			$rules = array_merge($rules, $this->verbGrantsIn(entries: $entries, action: $key, level: $level));
 		}//end foreach
 
 		return $rules;
 	}//end grantsIn()
+
+	/**
+	 * Every entry written directly under one verb, as a rule apiece.
+	 *
+	 * @param array  $entries The entries as written.
+	 * @param string $action  The verb they grant.
+	 * @param string $level   Where the block is written.
+	 *
+	 * @return array<int, array<string, mixed>> The rules.
+	 */
+	private function verbGrantsIn(array $entries, string $action, string $level): array {
+		$rules = [];
+		foreach ($entries as $entry) {
+			$principal = $this->principalOf(rule: $entry);
+			if ($principal === null) {
+				continue;
+			}
+
+			$rules[] = [
+				'principal' => $principal,
+				'action' => $action,
+				'level' => $level,
+				'role' => null,
+				'rule' => $entry,
+				'conditional' => (is_array($entry) === true && isset($entry['match']) === true),
+				'declared' => $this->catalogue->isGrantable($action),
+			];
+		}
+
+		return $rules;
+	}//end verbGrantsIn()
 
 	/**
 	 * Every grant a block's role assignments write.

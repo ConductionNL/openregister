@@ -3,7 +3,7 @@
 /**
  * Who holds which right on one object, and how that set changed.
  *
- * The other direction of the index `GET /api/scopes` reads (design D-10).
+ * The other direction of the `GET /api/scopes` read (design D-10).
  * `/api/scopes` answers one caller's question about themselves; this answers the
  * auditor's question about everybody: which principals hold which verbs on this
  * dossier, and which rule put each of them there.
@@ -11,8 +11,14 @@
  * WHO MAY ASK. The object is resolved through `ObjectService`, so a caller who
  * cannot read it gets 404 and learns nothing, not even that it exists. Reading
  * WHO ELSE has access is a second question and takes a second right: the owner,
- * an administrator, or a caller holding `manage` on the schema. An ordinary
- * reader of a dossier has no business enumerating the case workers on it.
+ * an administrator, or a caller holding `manage` through a rule somebody
+ * actually wrote. An ordinary reader of a dossier has no business enumerating
+ * the case workers on it.
+ *
+ * WHY THE WORK IS NOT IN HERE. The blocks in play, the role definitions and the
+ * trail are assembled in {@see \OCA\OpenRegister\Service\Rbac\ObjectAccessReport}.
+ * A controller that interpreted the rules itself would be a second reading of
+ * them, and the two would only ever meet in a support ticket.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -33,15 +39,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -59,35 +60,20 @@ use OCP\IUserSession;
 class ObjectPermissionsController extends Controller {
 
 	/**
-	 * How many trail entries the history reads at most.
-	 *
-	 * @var integer
-	 */
-	private const HISTORY_LIMIT = 200;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName          Application identifier.
-	 * @param IRequest                  $request          Active HTTP request.
-	 * @param ObjectService             $objectService    Resolves the object through the RBAC boundary.
-	 * @param RegisterMapper            $registerMapper   Register lookup.
-	 * @param SchemaMapper              $schemaMapper     Schema lookup.
-	 * @param AuditTrailMapper          $auditTrailMapper The trail the history is read from.
-	 * @param ObjectPermissionsResolver $resolver         Reads the access set out of the rules.
-	 * @param DenyEnforcementMode       $enforcement      The staging switch.
-	 * @param IUserSession              $userSession      The calling principal.
-	 * @param IGroupManager             $groupManager     Administrator detection.
+	 * @param string             $appName       Application identifier.
+	 * @param IRequest           $request       Active HTTP request.
+	 * @param ObjectService      $objectService Resolves the object through the RBAC boundary.
+	 * @param ObjectAccessReport $report        Assembles the answer.
+	 * @param IUserSession       $userSession   The calling principal.
+	 * @param IGroupManager      $groupManager  Administrator detection.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly ObjectPermissionsResolver $resolver,
-		private readonly DenyEnforcementMode $enforcement,
+		private readonly ObjectAccessReport $report,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {
@@ -132,32 +118,17 @@ class ObjectPermissionsController extends Controller {
 			return $object;
 		}
 
-		$schemaEntity = $this->schemaEntity();
-		$refusal = $this->requireAccessReview(object: $object, schema: $schemaEntity);
+		$refusal = $this->requireAccessReview(object: $object);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		$registerEntity = $this->registerEntity();
-		$set = $this->resolver->holders(
-			blocks: [
-				'object' => $object->getAuthorization(),
-				'schema' => $schemaEntity?->getAuthorization(),
-				'register' => $registerEntity?->getAuthorization(),
-			],
-			roleDefinitions: $this->roleDefinitionsOf(register: $registerEntity)
-		);
-
 		return new JSONResponse(
-			[
-				'object' => $object->getUuid(),
-				'register' => $register,
-				'schema' => $schema,
-				'owner' => $object->getOwner(),
-				'holders' => $set['holders'],
-				'denied' => $set['denied'],
-				'denyEnforcement' => $this->enforcement->current(),
-			]
+			$this->report->setFor(
+				object: $object,
+				registerRef: $this->objectService->getRegister(),
+				schemaRef: $this->objectService->getSchema()
+			)
 		);
 	}//end index()
 
@@ -175,6 +146,11 @@ class ObjectPermissionsController extends Controller {
 	 *
 	 * @return JSONResponse The history.
 	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable)
+	 * Reason: `at` is the query parameter's name, and Nextcloud binds a request
+	 *         parameter to the method argument that shares it. Renaming the
+	 *         argument renames the endpoint's contract.
+	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
@@ -185,17 +161,13 @@ class ObjectPermissionsController extends Controller {
 			return $object;
 		}
 
-		$refusal = $this->requireAccessReview(object: $object, schema: $this->schemaEntity());
+		$refusal = $this->requireAccessReview(object: $object);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
 		try {
-			$entries = $this->auditTrailMapper->findForObjectByAction(
-				objectUuid: (string)$object->getUuid(),
-				actions: [],
-				limit: self::HISTORY_LIMIT
-			);
+			return new JSONResponse($this->report->historyFor(object: $object, moment: $at));
 		} catch (\Throwable $e) {
 			// An unreadable trail is reported as unreadable. Answering "no
 			// changes" would be the same shape as "nothing ever changed", which
@@ -205,30 +177,16 @@ class ObjectPermissionsController extends Controller {
 				Http::STATUS_INTERNAL_SERVER_ERROR
 			);
 		}
-
-		$history = $this->resolver->history(entries: $entries, at: $at);
-
-		return new JSONResponse(
-			[
-				'object' => $object->getUuid(),
-				'at' => $at,
-				'changes' => $history['changes'],
-				'asOf' => $history['asOf'],
-				'entriesRead' => count($entries),
-				'limit' => self::HISTORY_LIMIT,
-			]
-		);
 	}//end history()
 
 	/**
 	 * Refuse a caller who may read the object but not review its access.
 	 *
 	 * @param ObjectEntity $object The object.
-	 * @param Schema|null  $schema The schema it belongs to.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the caller may ask.
 	 */
-	private function requireAccessReview(ObjectEntity $object, ?Schema $schema): ?JSONResponse {
+	private function requireAccessReview(ObjectEntity $object): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
 
@@ -236,17 +194,11 @@ class ObjectPermissionsController extends Controller {
 			return null;
 		}
 
-		if ($user !== null && $this->groupManager->isAdmin($userId) === true) {
+		if ($userId !== null && $this->groupManager->isAdmin($userId) === true) {
 			return null;
 		}
 
-		if ($schema !== null
-			&& $this->objectService->getPermissionHandler()->hasPermission(
-				schema: $schema,
-				action: 'manage',
-				userId: $userId
-			) === true
-		) {
+		if ($this->managesTheSchema(userId: $userId) === true) {
 			return null;
 		}
 
@@ -257,50 +209,40 @@ class ObjectPermissionsController extends Controller {
 	}//end requireAccessReview()
 
 	/**
-	 * The register the object belongs to, or null when it cannot be resolved.
+	 * Whether this caller holds `manage` here through a rule somebody wrote.
 	 *
-	 * @return Register|null The register.
+	 * 🔴 THE GRANT HAS TO BE WRITTEN DOWN. A schema that configures nothing
+	 * resolves default-open, so `manage` would answer true for every signed-in
+	 * caller, and this endpoint would hand back the rules that `renderEntity()`
+	 * deliberately strips out of a non-admin object read. On such a schema only
+	 * the owner and an administrator may ask.
+	 *
+	 * @param string|null $userId The caller.
+	 *
+	 * @return bool True when the caller may review access here.
 	 */
-	private function registerEntity(): ?Register {
+	private function managesTheSchema(?string $userId): bool {
+		$schema = $this->report->schema(reference: $this->objectService->getSchema());
+		if (($schema instanceof Schema) === false) {
+			return false;
+		}
+
+		$handler = $this->objectService->getPermissionHandler();
+
 		try {
-			return $this->registerMapper->find($this->objectService->getRegister());
+			$resolved = $handler->resolveAuthorization(schema: $schema);
 		} catch (\Throwable $e) {
-			return null;
-		}
-	}//end registerEntity()
-
-	/**
-	 * The schema the object belongs to, or null when it cannot be resolved.
-	 *
-	 * @return Schema|null The schema.
-	 */
-	private function schemaEntity(): ?Schema {
-		try {
-			return $this->schemaMapper->find($this->objectService->getSchema());
-		} catch (\Throwable $e) {
-			return null;
-		}
-	}//end schemaEntity()
-
-	/**
-	 * The role definitions a register declares.
-	 *
-	 * @param Register|null $register The register.
-	 *
-	 * @return mixed The definitions, or null when there are none.
-	 */
-	private function roleDefinitionsOf(?Register $register): mixed {
-		if ($register === null) {
-			return null;
+			// Fail closed: a report about rules nobody could resolve would be a
+			// report about nothing.
+			return false;
 		}
 
-		$configuration = $register->getConfiguration();
-		if (is_array($configuration) === false) {
-			return null;
+		if (is_array($resolved) === false || $resolved === []) {
+			return false;
 		}
 
-		return ($configuration['roles'] ?? null);
-	}//end roleDefinitionsOf()
+		return $handler->hasPermission(schema: $schema, action: 'manage', userId: $userId);
+	}//end managesTheSchema()
 
 	/**
 	 * Resolve the object through the RBAC boundary.
