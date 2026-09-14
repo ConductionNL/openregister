@@ -1,0 +1,543 @@
+{
+  "info": {
+    "_postman_id": "openregister-working-calendars-v1",
+    "name": "OpenRegister Working Calendars API",
+    "description": "The working calendar over its PUBLIC api, which is the objects api (rows 8.12 and Q8.20).\n\nWHY THESE ARE CONTRACT TESTS\n\nThe register's note on 8.12 counted five private implementations of a working day in the fleet, four different definitions of one, and no settings screen anywhere. The engine half already existed: a calendar is an object in the flow-timers register and the timer store resolves it. What did not exist was the guarantee that a write arriving through the api is refused on the same grounds a write through the admin page is.\n\nSo the assertions below are mostly about refusals and about arithmetic nobody can tabulate. A calendar made only of enumerated dates has an expiry date and degrades silently after it, which is why it has to be a 422 rather than a stored row. Koningsdag 2031 is the other half: 27 April 2031 is a Sunday, so the observed date is the 26th, and a hand-written table gets that right only for the years somebody thought about.\n\nThere is deliberately no calendar CRUD endpoint to test. The objects api is the api.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('calendarTimestamp')) {",
+          "    pm.collectionVariables.set('calendarTimestamp', String(Date.now()));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "calendarTimestamp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "calendarSlug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "calendarId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. The seeded national calendar is readable over the objects API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "const rows = body.results || [];",
+              "const national = rows.find(function (row) { return row.slug === 'nl-national'; });",
+              "pm.test('nl-national is present', function () { pm.expect(national, 'nl-national').to.be.an('object'); });",
+              "pm.test('its holidays are RULES, not a list of dates', function () {",
+              "    pm.expect(national.rules.length, 'rule count').to.be.above(0);",
+              "    const kinds = national.rules.map(function (rule) { return rule.kind; });",
+              "    pm.expect(kinds, 'an easter rule is declared').to.include('easter');",
+              "});",
+              "pm.test('hoursPerWorkingDay makes hours and business days commensurable', function () {",
+              "    pm.expect(Number(national.hoursPerWorkingDay), 'hours').to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/flow-timers/working-calendar?_limit=100",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "flow-timers",
+            "working-calendar"
+          ],
+          "query": [
+            {
+              "key": "_limit",
+              "value": "100"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. An enumerated-only calendar is refused with 422",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// A calendar that is only a list of dates has an expiry date and",
+              "// degrades SILENTLY after it. That is the failure mode the fleet",
+              "// carried, so the write path has to refuse it rather than store it.",
+              "const ts = pm.collectionVariables.get('calendarTimestamp');",
+              "pm.request.body.raw = JSON.stringify({",
+              "    slug: 'wc-enumerated-' + ts,",
+              "    title: 'Enumerated only',",
+              "    workingWeekdays: [1, 2, 3, 4, 5],",
+              "    hoursPerWorkingDay: 8,",
+              "    rules: [],",
+              "    exceptions: [",
+              "        { date: '2027-01-01', name: 'Nieuwjaarsdag' },",
+              "        { date: '2027-12-25', name: 'Eerste Kerstdag' },",
+              "        { date: '2027-12-26', name: 'Tweede Kerstdag' }",
+              "    ]",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('422, not 201', function () { pm.response.to.have.status(422); });",
+              "const body = pm.response.json();",
+              "const message = JSON.stringify(body);",
+              "pm.test('the refusal names the missing rules', function () {",
+              "    pm.expect(message).to.include('declare computed rules');",
+              "});",
+              "pm.test('the refusal names the calendar', function () {",
+              "    pm.expect(message).to.include('wc-enumerated-');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/flow-timers/working-calendar",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "flow-timers",
+            "working-calendar"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "3. A rule-bearing calendar is created",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const ts = pm.collectionVariables.get('calendarTimestamp');",
+              "pm.collectionVariables.set('calendarSlug', 'wc-gemeente-' + ts);",
+              "pm.request.body.raw = JSON.stringify({",
+              "    slug: 'wc-gemeente-' + ts,",
+              "    title: 'Gemeente, newman contract test',",
+              "    workingWeekdays: [1, 2, 3, 4, 5],",
+              "    hoursPerWorkingDay: 8,",
+              "    rules: [{\"kind\": \"fixed\", \"month\": 1, \"day\": 1, \"name\": \"Nieuwjaarsdag\"}, {\"kind\": \"easter\", \"offset\": -2, \"name\": \"Goede Vrijdag\"}, {\"kind\": \"easter\", \"offset\": 1, \"name\": \"Tweede Paasdag\"}, {\"kind\": \"fixed\", \"month\": 4, \"day\": 27, \"name\": \"Koningsdag\", \"observedShift\": {\"whenWeekday\": \"sunday\", \"days\": -1}}, {\"kind\": \"fixed\", \"month\": 5, \"day\": 5, \"name\": \"Bevrijdingsdag\"}, {\"kind\": \"easter\", \"offset\": 39, \"name\": \"Hemelvaartsdag\"}, {\"kind\": \"easter\", \"offset\": 50, \"name\": \"Tweede Pinksterdag\"}, {\"kind\": \"fixed\", \"month\": 12, \"day\": 25, \"name\": \"Eerste Kerstdag\"}, {\"kind\": \"fixed\", \"month\": 12, \"day\": 26, \"name\": \"Tweede Kerstdag\"}],",
+              "    exceptions: []",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', function () { pm.expect(pm.response.code, 'status').to.be.oneOf([200, 201]); });",
+              "const body = pm.response.json();",
+              "const id = (body['@self'] && (body['@self'].id || body['@self'].uuid)) || body.id || body.uuid;",
+              "pm.collectionVariables.set('calendarId', String(id));",
+              "pm.test('the store echoes the rules back', function () {",
+              "    pm.expect(body.rules.length, 'rule count').to.eql(9);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/flow-timers/working-calendar",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "flow-timers",
+            "working-calendar"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "4. A script pushes a municipal holiday list",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Q8.20: the objects API is the calendar's public API, so pushing a",
+              "// municipal closure list is a PUT like any other, not a bespoke",
+              "// endpoint and not a form somebody has to fill in by hand.",
+              "const slug = pm.collectionVariables.get('calendarSlug');",
+              "pm.request.body.raw = JSON.stringify({",
+              "    slug: slug,",
+              "    title: 'Gemeente, newman contract test',",
+              "    workingWeekdays: [1, 2, 3, 4, 5],",
+              "    hoursPerWorkingDay: 8,",
+              "    rules: [{\"kind\": \"fixed\", \"month\": 1, \"day\": 1, \"name\": \"Nieuwjaarsdag\"}, {\"kind\": \"easter\", \"offset\": -2, \"name\": \"Goede Vrijdag\"}, {\"kind\": \"easter\", \"offset\": 1, \"name\": \"Tweede Paasdag\"}, {\"kind\": \"fixed\", \"month\": 4, \"day\": 27, \"name\": \"Koningsdag\", \"observedShift\": {\"whenWeekday\": \"sunday\", \"days\": -1}}, {\"kind\": \"fixed\", \"month\": 5, \"day\": 5, \"name\": \"Bevrijdingsdag\"}, {\"kind\": \"easter\", \"offset\": 39, \"name\": \"Hemelvaartsdag\"}, {\"kind\": \"easter\", \"offset\": 50, \"name\": \"Tweede Pinksterdag\"}, {\"kind\": \"fixed\", \"month\": 12, \"day\": 25, \"name\": \"Eerste Kerstdag\"}, {\"kind\": \"fixed\", \"month\": 12, \"day\": 26, \"name\": \"Tweede Kerstdag\"}],",
+              "    exceptions: [",
+              "        { date: '2027-05-05', name: 'Lokale sluitingsdag' },",
+              "        { date: '2027-08-17', name: 'Kermis' },",
+              "        { date: '2027-11-02', name: 'Gemeentelijke feestdag' }",
+              "    ]",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/flow-timers/working-calendar/{{calendarId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "flow-timers",
+            "working-calendar",
+            "{{calendarId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "5. The three closure days are readable back",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "const dates = (body.exceptions || []).map(function (entry) { return entry.date; });",
+              "pm.test('every pushed date survived the round trip', function () {",
+              "    pm.expect(dates).to.include('2027-05-05');",
+              "    pm.expect(dates).to.include('2027-08-17');",
+              "    pm.expect(dates).to.include('2027-11-02');",
+              "});",
+              "pm.test('the rules survived alongside them', function () {",
+              "    pm.expect(body.rules.length, 'rule count').to.eql(9);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/flow-timers/working-calendar/{{calendarId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "flow-timers",
+            "working-calendar",
+            "{{calendarId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. The preview places Koningsdag 2031 on the Saturday",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 27 April 2031 is a Sunday, so the observed date is the 26th. A",
+              "// tabulated calendar gets this right for the years somebody typed",
+              "// and wrong for every other, with no error either way.",
+              "pm.request.body.raw = JSON.stringify({",
+              "    year: 2031,",
+              "    calendar: {",
+              "        slug: 'preview-only',",
+              "        workingWeekdays: [1, 2, 3, 4, 5],",
+              "        hoursPerWorkingDay: 8,",
+              "        rules: [{\"kind\": \"fixed\", \"month\": 1, \"day\": 1, \"name\": \"Nieuwjaarsdag\"}, {\"kind\": \"easter\", \"offset\": -2, \"name\": \"Goede Vrijdag\"}, {\"kind\": \"easter\", \"offset\": 1, \"name\": \"Tweede Paasdag\"}, {\"kind\": \"fixed\", \"month\": 4, \"day\": 27, \"name\": \"Koningsdag\", \"observedShift\": {\"whenWeekday\": \"sunday\", \"days\": -1}}, {\"kind\": \"fixed\", \"month\": 5, \"day\": 5, \"name\": \"Bevrijdingsdag\"}, {\"kind\": \"easter\", \"offset\": 39, \"name\": \"Hemelvaartsdag\"}, {\"kind\": \"easter\", \"offset\": 50, \"name\": \"Tweede Pinksterdag\"}, {\"kind\": \"fixed\", \"month\": 12, \"day\": 25, \"name\": \"Eerste Kerstdag\"}, {\"kind\": \"fixed\", \"month\": 12, \"day\": 26, \"name\": \"Tweede Kerstdag\"}]",
+              "    }",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "const byDate = {};",
+              "(body.dates || []).forEach(function (entry) { byDate[entry.date] = entry.name; });",
+              "pm.test('Koningsdag 2031 is observed on the 26th', function () {",
+              "    pm.expect(byDate['2031-04-26'], '2031-04-26').to.eql('Koningsdag');",
+              "});",
+              "pm.test('and not on the 27th', function () {",
+              "    pm.expect(byDate['2031-04-27'], '2031-04-27').to.eql(undefined);",
+              "});",
+              "pm.test('the moving feasts follow Easter 2031 (13 April)', function () {",
+              "    pm.expect(byDate['2031-04-11'], 'Goede Vrijdag').to.eql('Goede Vrijdag');",
+              "    pm.expect(byDate['2031-04-14'], 'Tweede Paasdag').to.eql('Tweede Paasdag');",
+              "    pm.expect(byDate['2031-05-22'], 'Hemelvaartsdag').to.eql('Hemelvaartsdag');",
+              "    pm.expect(byDate['2031-06-02'], 'Tweede Pinksterdag').to.eql('Tweede Pinksterdag');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/flow-timers/calendars/preview",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "flow-timers",
+            "calendars",
+            "preview"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "7. The preview refuses what the save would refuse",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('422', function () { pm.response.to.have.status(422); });",
+              "pm.test('with the validator sentence, not a generic failure', function () {",
+              "    pm.expect(JSON.stringify(pm.response.json())).to.include('declare computed rules');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/flow-timers/calendars/preview",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "flow-timers",
+            "calendars",
+            "preview"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"year\": 2031, \"calendar\": {\"slug\": \"preview-only\", \"workingWeekdays\": [1, 2, 3, 4, 5], \"hoursPerWorkingDay\": 8, \"rules\": [], \"exceptions\": [{\"date\": \"2031-01-01\", \"name\": \"x\"}]}}"
+        }
+      }
+    },
+    {
+      "name": "8. Cleanup: the calendar no timer names is deleted",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('deleted', function () { pm.expect(pm.response.code, 'status').to.be.oneOf([200, 204]); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/flow-timers/working-calendar/{{calendarId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "flow-timers",
+            "working-calendar",
+            "{{calendarId}}"
+          ]
+        }
+      }
+    }
+  ]
+}

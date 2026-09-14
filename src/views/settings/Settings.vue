@@ -47,6 +47,9 @@
 		<!-- Retention Configuration Section -->
 		<FlowConfiguration />
 
+		<!-- Working calendars: the one clock every deadline is counted against -->
+		<WorkingCalendars />
+
 		<RetentionConfiguration />
 
 		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
@@ -90,6 +93,7 @@ import RbacConfiguration from './sections/RbacConfiguration.vue'
 import RegisterDescriptors from './sections/RegisterDescriptors.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
+import WorkingCalendars from './sections/WorkingCalendars.vue'
 import { useSettingsStore } from '../../store/settings.js'
 
 /**
@@ -111,6 +115,7 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		FlowConfiguration,
+		WorkingCalendars,
 		RegisterDescriptors,
 		RetentionConfiguration,
 		LogIntegrity,

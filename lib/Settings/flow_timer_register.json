@@ -3,7 +3,7 @@
   "info": {
     "title": "Flow Timers",
     "description": "Configuration data for the business-timer store (flow-business-timers): named working calendars whose non-working dates are COMPUTED from rules so they never expire, and escalation ladders whose rungs are editable data rather than a compiled-in constant (ADR-001, ADR-031). Materialised by the SeedFlowTimerRegister repair step; OpenRegister does not self-import its own register JSON at boot (ADR-037).",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "x-openregister": {
     "type": "core",
@@ -17,8 +17,23 @@
       "flow-timers": {
         "slug": "flow-timers",
         "title": "Flow Timers",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "description": "Working calendars and escalation ladders consumed by the business-timer store. The timers themselves live in openregister_flow_timers, not here.",
+        "authorization": {
+          "scope": "private",
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
         "published": "2026-09-01T00:00:00+00:00",
         "schemas": [
           "working-calendar",
@@ -31,10 +46,25 @@
       "working-calendar": {
         "slug": "working-calendar",
         "title": "Working calendar",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "published": "2026-09-01T00:00:00+00:00",
         "summary": "Which weekdays work, which dates do not (computed from rules), and how many hours a working day holds.",
         "description": "A named working calendar resolved by the business-timer store in the order: the calendar named on the timer, the calendar configured for the subject's organisation, the seeded national default. Non-working dates are computed from rules of kind fixed, easter or observedShift, so the calendar does not expire; enumerated exceptions may accompany rules but a calendar consisting only of enumerated dates is refused. hoursPerWorkingDay is required because without it hours and businessDays are not commensurable.",
+        "authorization": {
+          "scope": "private",
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
         "required": [
           "slug",
           "workingWeekdays",
@@ -182,10 +212,25 @@
       "escalation-ladder": {
         "slug": "escalation-ladder",
         "title": "Escalation ladder",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "published": "2026-09-01T00:00:00+00:00",
         "summary": "An ordered set of rungs, each a distance from the deadline with the roles, priority and message identity to raise.",
         "description": "Editable escalation data for the business-timer store. Each rung fires at most once per timer, decided by the unique fire ledger. The rung's roles are resolved against the subject's performer (handler = the assignee) or through roleBindings; the message value is an identity the notification subsystem resolves. Nothing here renders or sends.",
+        "authorization": {
+          "scope": "private",
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
         "required": [
           "slug",
           "rungs"

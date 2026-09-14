@@ -3604,9 +3604,20 @@ class ObjectsController extends Controller {
 				statusCode: 409
 			);
 		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+			// A guard on the deleting event may name its own status. A refusal
+			// because another row still references this one is a conflict, not
+			// a malformed body, and 422 would tell the caller to fix a payload
+			// that has nothing wrong with it. Only a hook that says so gets a
+			// different status; everything else keeps the 422 it had.
+			$errors = $exception->getErrors();
+			$statusCode = 422;
+			if (isset($errors['status']) === true && is_int($errors['status']) === true) {
+				$statusCode = $errors['status'];
+			}
+
 			return new JSONResponse(
-				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
-				statusCode: 422
+				data: ['error' => $exception->getMessage(), 'errors' => $errors],
+				statusCode: $statusCode
 			);
 		} catch (DoesNotExistException $exception) {
 			// Absent objects (native or external) are a uniform 404.

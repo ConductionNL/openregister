@@ -184,6 +184,12 @@ return [
         // the controller.
         ['name' => 'registerDescriptor#index', 'url' => '/api/register-descriptors', 'verb' => 'GET'],
         ['name' => 'registerDescriptor#import', 'url' => '/api/register-descriptors/{appId}/{slug}/import', 'verb' => 'POST'],
+
+        // Working calendars — the year preview of an UNSAVED definition, so an
+        // administrator can see what a rule means before committing it. There
+        // is no CRUD here on purpose: calendars are objects in the flow-timers
+        // register and the objects API is their public API (design D-1).
+        ['name' => 'workingCalendar#preview', 'url' => '/api/flow-timers/calendars/preview', 'verb' => 'POST'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],

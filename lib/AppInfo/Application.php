@@ -129,6 +129,8 @@ use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
+use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
@@ -2875,6 +2877,19 @@ class Application extends App implements IBootstrap {
 		// persistence (see x-openregister-survivorship). MDM capability.
 		$context->registerEventListener(ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class);
+
+		// Working-calendar write guard — runs WorkingCalendar::fromArray() at
+		// WRITE time, so the objects API, the admin page and a configuration
+		// import refuse the same calendar with the same message. Before this,
+		// the same validator only ran at ARM time: a malformed calendar was
+		// accepted on save and surfaced days later on an unrelated timer.
+		$context->registerEventListener(ObjectCreatingEvent::class, WorkingCalendarValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, WorkingCalendarValidationListener::class);
+
+		// ... and the other half: a calendar an armed or suspended timer names
+		// cannot be deleted, because the resolver refuses an unknown name
+		// rather than downgrading to weekdays.
+		$context->registerEventListener(ObjectDeletingEvent::class, WorkingCalendarDeleteGuardListener::class);
 
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)
