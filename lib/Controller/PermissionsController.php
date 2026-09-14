@@ -60,6 +60,8 @@ use OCP\IRequest;
 
 /**
  * Publishes the grantable permission set and the staged deny report.
+ *
+ * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
  */
 class PermissionsController extends Controller {
 
@@ -230,8 +232,8 @@ class PermissionsController extends Controller {
 				'register' => $register,
 				'roles' => $rows,
 				'unknownRoles' => $missing,
-				'shared' => $this->sharedActions($rows),
-				'onlyIn' => $this->exclusiveActions($rows),
+				'shared' => $this->sharedActions(rows: $rows),
+				'onlyIn' => $this->exclusiveActions(rows: $rows),
 			]
 		);
 	}//end compareRoles()
@@ -250,7 +252,11 @@ class PermissionsController extends Controller {
 	 */
 	private function roleActionsOf(Register $register): array {
 		$configuration = $register->getConfiguration();
-		$definitions = ((is_array($configuration) === true) ? ($configuration['roles'] ?? []) : []);
+		$definitions = [];
+		if (is_array($configuration) === true) {
+			$definitions = ($configuration['roles'] ?? []);
+		}
+
 		if (is_array($definitions) === false) {
 			return [];
 		}
@@ -262,9 +268,11 @@ class PermissionsController extends Controller {
 			}
 
 			$actions = ($definition['actions'] ?? []);
-			$map[(string)$definition['name']] = ((is_array($actions) === true)
-				? array_values(array_filter($actions, 'is_string'))
-				: []);
+			if (is_array($actions) === false) {
+				$actions = [];
+			}
+
+			$map[(string)$definition['name']] = array_values(array_filter($actions, 'is_string'));
 		}
 
 		return $map;
@@ -358,7 +366,7 @@ class PermissionsController extends Controller {
 					'action' => $action,
 					'principal' => $this->principalOf(rule: $rule),
 					'conditional' => (is_array($rule) === true && isset($rule['match']) === true),
-					'match' => ((is_array($rule) === true) ? ($rule['match'] ?? null) : null),
+					'match' => $this->matchOf(rule: $rule),
 					'declared' => $this->catalogue->isGrantable($action),
 				];
 			}
@@ -366,6 +374,24 @@ class PermissionsController extends Controller {
 
 		return $entries;
 	}//end rulesIn()
+
+	/**
+	 * The `match` clause of one deny entry, or null when it has none.
+	 *
+	 * Reported rather than summarised: "some rows" is a different promise from
+	 * "every row", and the difference is invisible in a count.
+	 *
+	 * @param mixed $rule The entry as written.
+	 *
+	 * @return mixed The clause, or null.
+	 */
+	private function matchOf(mixed $rule): mixed {
+		if (is_array($rule) === false) {
+			return null;
+		}
+
+		return ($rule['match'] ?? null);
+	}//end matchOf()
 
 	/**
 	 * The principal one deny entry names.
@@ -403,9 +429,10 @@ class PermissionsController extends Controller {
 	private function registersFor(?string $filter): array {
 		try {
 			if ($filter !== null && $filter !== '') {
-				$register = $this->registerMapper->find($filter);
-
-				return (($register === null) ? [] : [$register]);
+				// The mapper throws when nothing matches; find() never
+				// answers null. The catch below is what turns an unknown
+				// filter into an empty report rather than a 500.
+				return [$this->registerMapper->find($filter)];
 			}
 
 			return $this->registerMapper->findAll();
@@ -424,9 +451,8 @@ class PermissionsController extends Controller {
 	private function schemasFor(?string $filter): array {
 		try {
 			if ($filter !== null && $filter !== '') {
-				$schema = $this->schemaMapper->find($filter);
-
-				return (($schema === null) ? [] : [$schema]);
+				// See registersFor(): the mapper throws rather than answering null.
+				return [$this->schemaMapper->find($filter)];
 			}
 
 			return $this->schemaMapper->findAll();

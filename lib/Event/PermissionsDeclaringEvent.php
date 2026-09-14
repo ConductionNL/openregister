@@ -48,6 +48,8 @@ use OCP\EventDispatcher\Event;
 
 /**
  * Collects the custom permission verbs the installed apps declare.
+ *
+ * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
  */
 class PermissionsDeclaringEvent extends Event {
 

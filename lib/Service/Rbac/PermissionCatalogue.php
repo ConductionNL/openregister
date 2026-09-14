@@ -56,6 +56,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 
 /**
  * Publishes the grantable permission set, and refuses a verb that is not in it.
+ *
+ * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
  */
 class PermissionCatalogue {
 
@@ -257,14 +259,14 @@ class PermissionCatalogue {
 				continue;
 			}
 
-			if ($this->isGrantable($key) === false) {
+			if ($this->isGrantable(verb: $key) === false) {
 				$unknown[$key] = true;
 			}
 		}
 
 		$deny = ($authorization[DenyResolver::DENY_KEY] ?? null);
 		if (is_array($deny) === true) {
-			foreach ($this->unknownVerbsIn($deny) as $verb) {
+			foreach ($this->unknownVerbsIn(authorization: $deny) as $verb) {
 				$unknown[$verb] = true;
 			}
 		}
@@ -305,7 +307,7 @@ class PermissionCatalogue {
 
 			$unknown = [];
 			foreach ($actions as $action) {
-				if (is_string($action) === true && $this->isGrantable($action) === false) {
+				if (is_string($action) === true && $this->isGrantable(verb: $action) === false) {
 					$unknown[] = $action;
 				}
 			}
@@ -343,8 +345,8 @@ class PermissionCatalogue {
 			$findings[] = sprintf(
 				'%s names %s, which no app declares. Grantable here: %s.',
 				ucfirst($subject),
-				$this->quoteList($unknown),
-				$this->quoteList($this->verbs())
+				$this->quoteList(values: $unknown),
+				$this->quoteList(values: $this->verbs())
 			);
 		}
 
@@ -353,7 +355,7 @@ class PermissionCatalogue {
 				'The role "%s" on %s names %s, which no app declares.',
 				$role,
 				$subject,
-				$this->quoteList($verbs)
+				$this->quoteList(values: $verbs)
 			);
 		}
 

@@ -27,8 +27,8 @@
 
 - [ ] 4.1 `tests/e2e/ci/permission-provenance-and-deny.spec.ts`: grant read on a register, deny read on one object, read the list and the object, and read the provenance for both answers.
 - [ ] 4.2 Unit tests: deny over an inherited grant, deny over a role grant, the grant-and-deny-at-one-level refusal, the unknown verb, the last `manage` holder, and a list filter that matches the per-object answer on a tree of depth 5.
-- [ ] 4.3 A regression test that an instance declaring no deny and no custom verb resolves exactly as before.
-- [ ] 4.4 `openspec validate permission-provenance-and-deny --strict`.
+- [x] 4.3 A regression test that an instance declaring no deny and no custom verb resolves exactly as before.
+- [x] 4.4 `openspec validate permission-provenance-and-deny --strict`.
 
 ## 5. Hand over
 

@@ -59,6 +59,8 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 /**
  * Names the rule behind a granted action, and the deny behind an absent one.
+ *
+ * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
  */
 class ProvenanceResolver {
 
@@ -175,6 +177,14 @@ class ProvenanceResolver {
 		// the grant as the source with a deny attached would describe the rule
 		// that LOST, and an administrator reading it would go and edit that one.
 		if ($denial !== null && $denyEnforced === true) {
+			// The rule the deny beat, named rather than dropped: two rules in
+			// tension is what an administrator has to see to resolve it, and a
+			// deny reported alone reads as "nobody ever granted you this".
+			$beatenBy = null;
+			if ($grant['granted'] === true) {
+				$beatenBy = $grant['source'];
+			}
+
 			return [
 				'action' => $action,
 				'granted' => false,
@@ -184,7 +194,7 @@ class ProvenanceResolver {
 				'role' => null,
 				'deny' => $denial,
 				'stagedDeny' => null,
-				'wouldHaveBeenGrantedBy' => ($grant['granted'] === true ? $grant['source'] : null),
+				'wouldHaveBeenGrantedBy' => $beatenBy,
 			];
 		}
 
@@ -289,10 +299,15 @@ class ProvenanceResolver {
 		// No block anywhere is not the same as a block that refuses. The first
 		// is a schema nobody has configured, and the difference is the whole of
 		// what an administrator needs to know.
+		$source = self::SOURCE_NONE;
+		if ($anyBlock === false) {
+			$source = self::SOURCE_DEFAULT_OPEN;
+		}
+
 		return [
 			'action' => $action,
 			'granted' => ($anyBlock === false),
-			'source' => (($anyBlock === false) ? self::SOURCE_DEFAULT_OPEN : self::SOURCE_NONE),
+			'source' => $source,
 			'rule' => null,
 			'principal' => null,
 			'role' => null,

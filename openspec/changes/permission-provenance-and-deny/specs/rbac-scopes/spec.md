@@ -257,14 +257,12 @@ and REQ-PPD-003 SHALL apply in every mode.
 - **WHEN** a member of that group reads an object of the schema
 - **THEN** the read succeeds
 - **AND** the system records that the deny would have refused it, naming the rule
-- @e2e exclude {mode is instance configuration, covered by unit tests}
 
 #### Scenario: the list is unchanged while staging
 
 - **GIVEN** the same instance, the same deny and a schema holding 100 readable objects
 - **WHEN** the caller lists the schema
 - **THEN** the total is 100
-- @e2e exclude {SQL emitter, covered by unit tests}
 
 #### Scenario: the administrator turns it on
 

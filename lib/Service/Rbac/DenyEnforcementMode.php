@@ -66,6 +66,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Reads the deny enforcement mode, and records what a staged deny would refuse.
+ *
+ * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
  */
 class DenyEnforcementMode {
 

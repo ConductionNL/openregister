@@ -44,6 +44,33 @@ const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 /** A short unique suffix so a re-run never collides with its predecessor. */
 const RUN = Math.random().toString(36).slice(2, 10)
 
+/**
+ * The OCS path holding the deny enforcement mode.
+ *
+ * The deny ships STAGED (D15): by default it is resolved, recorded and applied
+ * to nothing. Every case in this file asserts what a deny DOES, so the suite
+ * turns enforcement on for its own run and puts the key back afterwards. A file
+ * that skipped this would fail for the right reason and read as the capability
+ * being broken.
+ */
+const MODE_PATH =
+	'/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openregister/deny_enforcement'
+
+/** OCS wants this header on every request or it answers 401. */
+const OCS_HEADERS = { 'OCS-APIRequest': 'true' }
+
+/** Put the instance in one deny enforcement mode. */
+async function setDenyMode(admin: APIRequestContext, mode: string): Promise<void> {
+	const res = await admin.post(MODE_PATH, {
+		headers: OCS_HEADERS,
+		form: { value: mode },
+	})
+	expect(
+		res.status(),
+		`could not set the deny enforcement mode to "${mode}"; every case below would be measuring the default`,
+	).toBe(200)
+}
+
 /** Seeded by `tests/e2e/ci/seed.sh`; both deliberately non-admin. */
 const OWNER = 'e2e-owner'
 const OTHER = 'e2e-other'
@@ -165,6 +192,18 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		})
 		expect(denied.ok(), `subject schema create failed: ${await denied.text()}`).toBeTruthy()
 		deniedSchemaId = String((await denied.json()).id)
+
+		// Enforcement LAST, after every fixture is written. The save-time
+		// refusals apply in every mode, so the fixtures above are unaffected by
+		// the order; doing it here keeps the mode on for the shortest window.
+		await setDenyMode(admin, 'enforcing')
+	})
+
+	test.afterAll(async () => {
+		// Back to the shipped default, whatever happened above. A suite that
+		// left an instance enforcing would hand the next spec a deny it never
+		// asked for, and that failure would land somewhere else entirely.
+		await admin.delete(MODE_PATH, { headers: OCS_HEADERS })
 	})
 
 	test('the deny survives the schema save, and is read back as written', async () => {
@@ -367,5 +406,83 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			'a register whose administration is denied away cannot be edited again',
 		).toBe(422)
 		expect(await res.text(), 'the refusal must name what would be orphaned').toContain('manage')
+	})
+
+	/**
+	 * 🔴 STAGING changes nothing, and that is the point (D15).
+	 *
+	 * The same caller, the same schema and the same object-level deny as the
+	 * list case above, which removes the row. Only the mode differs. The two
+	 * together are what proves the switch is doing the work: a deny that
+	 * refused in both modes would pass one case and fail the other, and so
+	 * would a deny that refused in neither.
+	 *
+	 * The mode goes back to `enforcing` in a finally, because a case that left
+	 * the instance staged would silently pass every assertion in any spec that
+	 * runs after it.
+	 *
+	 * @e2e rbac-scopes::a-new-deny-refuses-nobody-on-the-day-it-is-written
+	 * @e2e rbac-scopes::the-list-is-unchanged-while-staging
+	 */
+	test('while staging, the denied row is still read and still counted', async () => {
+		const created = await owner.post(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
+			{ data: { key: `deny-staged-${RUN}` } },
+		)
+		expect(created.ok(), `object create failed: ${await created.text()}`).toBeTruthy()
+		const uuid = uuidOf(await created.json())
+
+		const denied = await owner.put(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${uuid}`,
+			{
+				data: {
+					key: `deny-staged-${RUN}`,
+					'@self': { authorization: { deny: { read: ['authenticated'] } } },
+				},
+			},
+		)
+		expect(denied.ok(), `writing the object deny failed: ${await denied.text()}`).toBeTruthy()
+
+		// THE CONTROL, enforcing: the caller cannot read it. Without this the
+		// case below would pass against a fixture whose deny never landed.
+		const whenEnforcing = await other.get(
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${uuid}`,
+		)
+		expect(
+			whenEnforcing.status(),
+			'the control failed: this row must be refused while enforcing, or the case below proves nothing',
+		).toBe(403)
+
+		try {
+			await setDenyMode(admin, 'staging')
+
+			const staged = await other.get(
+				`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${uuid}`,
+			)
+			expect(
+				staged.ok(),
+				`a staged deny refused a read: ${staged.status()} ${await staged.text()}`,
+			).toBeTruthy()
+
+			const list = await other.get(
+				`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-staged-${RUN}&limit=50`,
+			)
+			expect(list.ok(), `list failed while staging: ${await list.text()}`).toBeTruthy()
+			const body = await list.json()
+			const ids = rowsOf(body).map((row) => {
+				const self = (row['@self'] ?? {}) as Record<string, unknown>
+				return String(self.id ?? row.id ?? row.uuid ?? '')
+			})
+			expect(
+				ids,
+				'a staged deny removed the row from the list; the total and every facet count would already have moved',
+			).toContain(uuid)
+			expect(
+				totalOf(body),
+				'a staged deny changed the total, which is exactly what staging must not do',
+			).toBeGreaterThanOrEqual(1)
+		} finally {
+			await setDenyMode(admin, 'enforcing')
+		}
 	})
 })
