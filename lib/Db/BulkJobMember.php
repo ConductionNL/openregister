@@ -45,6 +45,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSchemaVersion(?string $schemaVersion)
  * @method bool getAddedAtCommit()
  * @method void setAddedAtCommit(bool $addedAtCommit)
+ * @method DateTime|null getAppliedAt()
+ * @method void setAppliedAt(?DateTime $appliedAt)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -53,13 +55,6 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class BulkJobMember extends Entity implements JsonSerializable {
-
-	/**
-	 * The action has not reached this member yet.
-	 *
-	 * @var string
-	 */
-	public const OUTCOME_PENDING = 'pending';
 
 	/**
 	 * The action would apply, or did apply, to this member.
@@ -91,13 +86,6 @@ class BulkJobMember extends Entity implements JsonSerializable {
 	public const OUTCOME_FAILED = 'failed';
 
 	/**
-	 * The commit stopped before reaching this member (D-4).
-	 *
-	 * @var string
-	 */
-	public const OUTCOME_CANCELLED = 'cancelled';
-
-	/**
 	 * The job this member belongs to.
 	 *
 	 * @var integer|null
@@ -112,7 +100,9 @@ class BulkJobMember extends Entity implements JsonSerializable {
 	protected ?string $objectUuid = null;
 
 	/**
-	 * The outcome for this object.
+	 * The outcome for this object: what the preview said would happen, then
+	 * what the commit did. Whether a write actually landed is `appliedAt`,
+	 * never this column.
 	 *
 	 * @var string|null
 	 */
@@ -143,6 +133,18 @@ class BulkJobMember extends Entity implements JsonSerializable {
 	protected bool $addedAtCommit = false;
 
 	/**
+	 * When a real write landed on this member.
+	 *
+	 * This is the idempotence key, and deliberately not the outcome column.
+	 * A member the preview says would apply still has to be walked by the
+	 * commit; only a write stamps this, so a retry skips exactly the members
+	 * that were written (D-5).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $appliedAt = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -166,6 +168,7 @@ class BulkJobMember extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'reason', type: 'string');
 		$this->addType(fieldName: 'schemaVersion', type: 'string');
 		$this->addType(fieldName: 'addedAtCommit', type: 'boolean');
+		$this->addType(fieldName: 'appliedAt', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
@@ -208,6 +211,7 @@ class BulkJobMember extends Entity implements JsonSerializable {
 			'reason' => $this->reason,
 			'schemaVersion' => $this->schemaVersion,
 			'addedAtCommit' => $this->addedAtCommit,
+			'appliedAt' => $this->appliedAt?->format(DateTime::ATOM),
 			'created' => $this->created?->format(DateTime::ATOM),
 			'updated' => $this->updated?->format(DateTime::ATOM),
 		];

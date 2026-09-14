@@ -215,8 +215,9 @@ class BulkJobService {
 			actor: $this->userManager->get($actorUid)
 		);
 
+		// The cursor is still zero, so refreshCounts reports nothing walked
+		// while reporting what the rehearsal found.
 		$this->executor->refreshCounts(job: $job);
-		$job->setProcessed(0);
 
 		return $this->jobMapper->save($job);
 	}//end create()

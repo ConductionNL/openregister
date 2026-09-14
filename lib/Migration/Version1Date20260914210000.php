@@ -104,12 +104,18 @@ class Version1Date20260914210000 extends SimpleMigrationStep {
 			$table->addColumn('reason', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('schema_version', Types::STRING, ['notnull' => false, 'length' => 32]);
 			$table->addColumn('added_at_commit', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
+			// The idempotence key, and deliberately not the outcome column: a
+			// member the PREVIEW says would apply still has to be walked by
+			// the commit. Only a real write stamps this, so a retry skips
+			// exactly the members that were written and no others (D-5).
+			$table->addColumn('applied_at', Types::DATETIME, ['notnull' => false]);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => false]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
 
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['job_id'], 'idx_or_bulkmem_job');
 			$table->addIndex(['job_id', 'outcome'], 'idx_or_bulkmem_outcome');
+			$table->addIndex(['job_id', 'applied_at'], 'idx_or_bulkmem_applied');
 			$table->addUniqueIndex(['job_id', 'object_uuid'], 'idx_or_bulkmem_unique');
 
 			$output->info('Created openregister_bulk_job_members table');

@@ -78,9 +78,12 @@ class BulkJobMemberMapper extends QBMapper {
 	/**
 	 * Find the next batch of members a commit still has to walk.
 	 *
-	 * Members already marked applied are excluded, which is what makes a
-	 * retry idempotent: a job that failed at member 300 of 400 resumes at
-	 * 301 rather than acting on the first 300 a second time (D-5).
+	 * Members that were actually WRITTEN are excluded, which is what makes a
+	 * retry idempotent: a job that failed at member 300 of 400 resumes at 301
+	 * rather than acting on the first 300 a second time (D-5). The test is
+	 * `applied_at`, never the outcome column: a member the preview reports as
+	 * "would apply" has not been written yet, and excluding it here would
+	 * make the commit skip exactly the members it exists to act on.
 	 *
 	 * @param int $jobId The job id.
 	 * @param int $afterId Only members with a higher id.
@@ -94,14 +97,43 @@ class BulkJobMemberMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-			->andWhere(
-				$qb->expr()->neq('outcome', $qb->createNamedParameter(BulkJobMember::OUTCOME_APPLIED))
-			)
+			->andWhere($qb->expr()->isNull('applied_at'))
 			->orderBy('id', 'ASC')
 			->setMaxResults($limit);
 
 		return $this->findEntities(query: $qb);
 	}//end findPendingBatch()
+
+	/**
+	 * How many members the commit has walked so far.
+	 *
+	 * Members are walked in id order and the job's cursor holds the last one,
+	 * so the count of members at or below it is the honest position: it does
+	 * not move when a preview outcome changes, and it restarts when a retry
+	 * resets the cursor, which is what that run actually did.
+	 *
+	 * @param int $jobId The job id.
+	 * @param int $cursor The job's cursor.
+	 *
+	 * @return int The number of members walked.
+	 */
+	public function countWalked(int $jobId, int $cursor): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->func()->count('id'), 'member_count')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->lte('id', $qb->createNamedParameter($cursor, IQueryBuilder::PARAM_INT)));
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false) {
+			return 0;
+		}
+
+		return (int)$row['member_count'];
+	}//end countWalked()
 
 	/**
 	 * Count the members of a job per outcome.

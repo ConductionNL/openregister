@@ -263,14 +263,15 @@ final class BulkJobExecutorTest extends TestCase {
 			$member->setId(($index + 1));
 			$member->setJobId(7);
 			$member->setObjectUuid($uuid);
-			$member->setOutcome(BulkJobMember::OUTCOME_PENDING);
+			// What the preview said, with no write behind it yet. This is
+			// exactly the member a commit must still walk.
+			$member->setOutcome(BulkJobMember::OUTCOME_APPLIED);
 			$pending[] = $member;
 		}
 
 		$this->memberMapper->method('findPendingBatch')->willReturn($pending);
-		$this->memberMapper->method('countByOutcome')->willReturn(
-			[BulkJobMember::OUTCOME_APPLIED => 2, BulkJobMember::OUTCOME_PENDING => 1]
-		);
+		$this->memberMapper->method('countByOutcome')->willReturn([BulkJobMember::OUTCOME_APPLIED => 2]);
+		$this->memberMapper->method('countWalked')->willReturn(2);
 
 		// The job is running for the first two members and cancelling for the third.
 		$states = [BulkJob::STATE_RUNNING, BulkJob::STATE_RUNNING, BulkJob::STATE_CANCELLING];
@@ -301,12 +302,42 @@ final class BulkJobExecutorTest extends TestCase {
 
 		$this->memberMapper->method('findPendingBatch')->willReturn([]);
 		$this->memberMapper->method('countByOutcome')->willReturn([BulkJobMember::OUTCOME_APPLIED => 2]);
+		$this->memberMapper->method('countWalked')->willReturn(2);
 		$this->jobMapper->method('save')->willReturnArgument(0);
 
 		$this->assertFalse($this->executor()->processBatch($job, 25));
 		$this->assertSame(BulkJob::STATE_COMPLETED, $job->getState());
 		$this->assertSame(2, $job->getApplied());
 		$this->assertSame(2, $job->getProcessed());
+	}
+
+	public function testAMemberThePreviewCalledAppliedIsStillWrittenAtCommit(): void {
+		$job = $this->job(BulkJob::STATE_RUNNING);
+
+		$member = new BulkJobMember();
+		$member->setId(1);
+		$member->setJobId(7);
+		$member->setObjectUuid('a');
+		// The rehearsal said this one would apply. Nothing was written.
+		$member->setOutcome(BulkJobMember::OUTCOME_APPLIED);
+		$this->assertNull($member->getAppliedAt(), 'the fixture must start unwritten');
+
+		$this->memberMapper->method('findPendingBatch')->willReturn([$member]);
+		$this->memberMapper->method('countByOutcome')->willReturn([BulkJobMember::OUTCOME_APPLIED => 1]);
+		$this->memberMapper->method('countWalked')->willReturn(1);
+		$this->jobMapper->method('readState')->willReturn(BulkJob::STATE_RUNNING);
+		$this->jobMapper->method('save')->willReturnArgument(0);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->resolver->method('hydrate')->willReturn(['a' => $this->object('a')]);
+
+		$calls = [];
+		$this->registry->method('get')->willReturn($this->action([], BulkActionResult::applied(), $calls));
+
+		$this->executor()->processBatch($job, 25);
+
+		$this->assertSame([['uuid' => 'a', 'commit' => true]], $calls, 'the commit never reached the member');
+		$this->assertNotNull($member->getAppliedAt(), 'a written member must carry its write stamp');
+		$this->assertSame(1, $job->getCursor());
 	}
 
 	public function testTheCommitWritesOneAuditEntryPerAppliedMember(): void {
@@ -317,10 +348,11 @@ final class BulkJobExecutorTest extends TestCase {
 		$member->setId(1);
 		$member->setJobId(7);
 		$member->setObjectUuid('a');
-		$member->setOutcome(BulkJobMember::OUTCOME_PENDING);
+		$member->setOutcome(BulkJobMember::OUTCOME_APPLIED);
 
 		$this->memberMapper->method('findPendingBatch')->willReturn([$member]);
 		$this->memberMapper->method('countByOutcome')->willReturn([BulkJobMember::OUTCOME_APPLIED => 1]);
+		$this->memberMapper->method('countWalked')->willReturn(1);
 		$this->jobMapper->method('readState')->willReturn(BulkJob::STATE_RUNNING);
 		$this->jobMapper->method('save')->willReturnArgument(0);
 		$this->registry->method('get')->willReturn($this->action());

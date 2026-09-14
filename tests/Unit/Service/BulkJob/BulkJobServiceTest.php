@@ -226,7 +226,7 @@ final class BulkJobServiceTest extends TestCase {
 
 		$member = new BulkJobMember();
 		$member->setId(301);
-		$member->setOutcome(BulkJobMember::OUTCOME_PENDING);
+		$member->setOutcome(BulkJobMember::OUTCOME_APPLIED);
 		$this->memberMapper->method('findPendingBatch')->willReturn([$member]);
 
 		$queued = [];

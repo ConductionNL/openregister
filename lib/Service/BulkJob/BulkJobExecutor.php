@@ -239,8 +239,9 @@ class BulkJobExecutor {
 		$job->setRefused((int)($counts[BulkJobMember::OUTCOME_REFUSED] ?? 0));
 		$job->setFailed((int)($counts[BulkJobMember::OUTCOME_FAILED] ?? 0));
 
-		$pending = (int)($counts[BulkJobMember::OUTCOME_PENDING] ?? 0);
-		$job->setProcessed((int)max(0, (array_sum($counts) - $pending)));
+		$job->setProcessed(
+			$this->memberMapper->countWalked(jobId: (int)$job->getId(), cursor: $job->getCursor())
+		);
 	}//end refreshCounts()
 
 	/**
@@ -326,7 +327,7 @@ class BulkJobExecutor {
 			$this->recordAudit(job: $job, object: $object);
 		}
 
-		$this->recordOutcome(member: $member, result: $result);
+		$this->recordOutcome(member: $member, result: $result, written: $result->isApplied());
 	}//end commitMember()
 
 	/**
@@ -369,12 +370,22 @@ class BulkJobExecutor {
 	 *
 	 * @param BulkJobMember $member The member.
 	 * @param BulkActionResult $result The outcome.
+	 * @param bool $written True when a real write landed on this member.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The write stamp is the
+	 * idempotence key and cannot be read off the outcome, which a preview
+	 * also sets.
 	 */
-	private function recordOutcome(BulkJobMember $member, BulkActionResult $result): void {
+	private function recordOutcome(BulkJobMember $member, BulkActionResult $result, bool $written = false): void {
 		$member->setOutcome($result->getOutcome());
 		$member->setReason($result->getReason());
+
+		if ($written === true) {
+			$member->setAppliedAt(new \DateTime());
+		}
+
 		$this->memberMapper->save($member);
 	}//end recordOutcome()
 
