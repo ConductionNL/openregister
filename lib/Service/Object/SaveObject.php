@@ -999,16 +999,40 @@ class SaveObject {
 					$ref = $propertyConfig['items']['$ref'];
 				}
 
-				// Parse the schema slug from the $ref (e.g., "#/components/schemas/organisatie" -> "organisation").
+				// A property with no $ref is not a relation (`data`, `subject`,
+				// `payload` are free-form blobs). Skip it silently: it is the common
+				// case, and a warning for it would bury the one below that matters.
+				if (empty($ref) === true || is_string($ref) === false) {
+					continue;
+				}
+
+				// Parse the schema slug from the $ref. Both forms are in real use
+				// across the fleet's register definitions, so both are accepted:
+				// "#/components/schemas/organisation" (pointer) and "organisation"
+				// (bare slug). Only the pointer used to be recognised, so a bare slug
+				// was skipped and its inverse relation was never written.
 				$targetSchemaSlug = '';
 				if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
 					$targetSchemaSlug = $matches[1];
+				} elseif (preg_match('~^[A-Za-z][A-Za-z0-9_-]*$~', $ref) === 1) {
+					// Slug-shaped values only, so a URL or a malformed pointer still
+					// falls through and is reported instead of being looked up.
+					$targetSchemaSlug = $ref;
 				}
 
 				if (empty($targetSchemaSlug) === true) {
-					$this->logger->debug(
-						message: '[SaveObject] No target schema in $ref for relation',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $baseProperty]
+					// Reachable only when a $ref was authored and cannot be read. The
+					// declared relation will then not be maintained, and the only
+					// symptom is data that quietly fails to relate, so it is a warning.
+					$this->logger->warning(
+						message: '[SaveObject] Relation skipped: $ref is neither a "#/components/schemas/<slug>" pointer nor a bare schema slug',
+						context: [
+							'file'     => __FILE__,
+							'line'     => __LINE__,
+							'property' => $baseProperty,
+							'ref'      => $ref,
+							'schema'   => $schema->getSlug(),
+						]
 					);
 					continue;
 				}
