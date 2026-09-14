@@ -27,6 +27,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use JsonSerializable;
+use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\Entity;
@@ -2307,13 +2308,24 @@ class Schema extends Entity implements JsonSerializable {
 	 * When calendarProvider.enabled is true, dtstart and titleTemplate are required.
 	 * Warns (but does not reject) if referenced property names don't exist in schema properties.
 	 *
+	 * The `dates` block is validated whether or not the provider is enabled: a
+	 * date kind that is stored unchecked is a kind the feed refuses to read
+	 * later, at a moment nobody is looking at the schema editor. Every refusal
+	 * names the property.
+	 *
 	 * @param array $config The calendarProvider config array
 	 *
-	 * @throws InvalidArgumentException If required fields are missing when enabled
+	 * @throws InvalidArgumentException If required fields are missing when enabled,
+	 *                                  or a declared date kind is unusable
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
 	private function validateCalendarProviderConfig(array $config): void {
+		// Declared date kinds are refused on save, enabled or not.
+		ObjectDateDeclaration::allFromConfig(calendarConfig: $config);
+
 		// Only validate required fields when enabled.
 		if (empty($config['enabled']) === true) {
 			return;
