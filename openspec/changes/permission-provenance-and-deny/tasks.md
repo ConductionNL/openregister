@@ -63,4 +63,4 @@
 - [x] 9.4 The provenance carries the staged deny beside the grant, so the field that says why a person may act also says what is about to stop them.
 - [x] 9.5 `GET /api/permissions/deny-preview` reports what enforcement would refuse, read from the rules as written rather than from what has fired, so a deny nobody has hit yet is still in the report.
 - [x] 9.6 Unit tests: the default is staging, a staged deny grants and records, `off` grants and records nothing, the same fixture enforcing refuses, and no staged deny reaches the list SQL.
-- [ ] 9.7 The save-time refusals are NOT staged: a grant-and-deny collision and an orphaned `manage` are refused in every mode. Regression test.
+- [x] 9.7 The save-time refusals are NOT staged: a grant-and-deny collision and an orphaned `manage` are refused in every mode. Regression test.
