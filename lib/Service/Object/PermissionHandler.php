@@ -922,8 +922,77 @@ class PermissionHandler {
 			return true;
 		}
 
+		// THE REFUSAL NAMES THE RULE THAT PRODUCED IT. A denial log that carries
+		// only the verdict tells an administrator that somebody was refused and
+		// leaves them to guess which of four levels refused them; the rules for
+		// the verb are what they need to open. The deny path above logs its own
+		// rule, so what reaches here is the other refusal: the rules exist and
+		// none of them names this caller (task 3.3).
+		$this->logRefusal(
+			authorization: $authorization,
+			action: $action,
+			userId: $userId,
+			userGroups: $userGroups,
+			schema: $schema,
+			object: $object
+		);
+
 		return false;
 	}//end evaluatePermission()
+
+	/**
+	 * Record a refusal with the rule behind it.
+	 *
+	 * `rule` is the entry list written for this verb in the cascaded block: the
+	 * grant the caller is not in, which is the thing an administrator opens.
+	 * When the block names no such key, the refusal came from a policy rather
+	 * than from a rule, and `rule` is null with `reason` saying which.
+	 *
+	 * Info level, like the deny refusal beside it. A refusal is ordinary
+	 * traffic; it is only worth a warning when it surprises somebody, and this
+	 * log exists so that it does not.
+	 *
+	 * @param array|null        $authorization The cascaded block.
+	 * @param string            $action        The verb that was refused.
+	 * @param string|null       $userId        The caller.
+	 * @param array<int,string> $userGroups    The caller's groups.
+	 * @param Schema            $schema        The schema being decided.
+	 * @param ObjectEntity|null $object        The row, when there was one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function logRefusal(
+		?array $authorization,
+		string $action,
+		?string $userId,
+		array $userGroups,
+		Schema $schema,
+		?ObjectEntity $object,
+	): void {
+		$rule = null;
+		$reason = 'no authorization block names this verb';
+		if (is_array($authorization) === true && isset($authorization[$action]) === true) {
+			$rule = $authorization[$action];
+			$reason = 'the rule for this verb does not name this caller';
+		}
+
+		$this->logger->info(
+			message: '[PermissionHandler] Action refused; the rule that decided it is named below',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $schema->getId(),
+				'objectUuid' => $object?->getUuid(),
+				'action' => $action,
+				'userId' => $userId,
+				'principals' => $userGroups,
+				'rule' => $rule,
+				'reason' => $reason,
+			]
+		);
+	}//end logRefusal()
 
 	/**
 	 * The deny rule that is allowed to change this answer, or null.
@@ -999,6 +1068,69 @@ class PermissionHandler {
 
 		return null;
 	}//end enforcedDenialFor()
+
+	/**
+	 * The verbs this caller may exercise on one row.
+	 *
+	 * Resolved through {@see hasPermission()}, verb by verb, which is the same
+	 * decision the read itself made and is memoised per request on
+	 * `(user, schema, action, owner, uuid)`. So a record returned with its
+	 * actions costs the resolutions the client would have had to provoke
+	 * anyway, and the client stops guessing: today it either renders a delete
+	 * button nobody may press, or hides one somebody may (design D-9).
+	 *
+	 * THE SCHEMA VERBS ARE NOT IN THE LIST. `create`, `list` and `manage` are
+	 * answers about the schema and the register, not about this row, and a
+	 * record that carried them would invite a client to read them as rights ON
+	 * the row. The row verbs are `read`, `update`, `delete`, `destroy` and every
+	 * custom verb an app declared, because those are the ones an object screen
+	 * offers.
+	 *
+	 * @param Schema            $schema The schema the row belongs to.
+	 * @param ObjectEntity|null $object The row, when the question is about one.
+	 * @param string|null       $userId The caller, or null to resolve from the session.
+	 *
+	 * @return array<int, string> The verbs, in catalogue order.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	public function permittedActionsFor(
+		Schema $schema,
+		?ObjectEntity $object = null,
+		?string $userId = null,
+	): array {
+		$permitted = [];
+		foreach ($this->rowVerbs() as $verb) {
+			$granted = $this->hasPermission(
+				schema: $schema,
+				action: $verb,
+				userId: $userId,
+				objectOwner: $object?->getOwner(),
+				object: $object
+			);
+			if ($granted === true) {
+				$permitted[] = $verb;
+			}
+		}
+
+		return $permitted;
+	}//end permittedActionsFor()
+
+	/**
+	 * The catalogue verbs that are answers about a row.
+	 *
+	 * @return array<int, string> The row verbs, in catalogue order.
+	 */
+	private function rowVerbs(): array {
+		$schemaOnly = ['create', 'list', 'manage'];
+
+		return array_values(
+			array_filter(
+				$this->permissionCatalogue()->verbs(),
+				static fn (string $verb): bool => in_array($verb, $schemaOnly, true) === false
+			)
+		);
+	}//end rowVerbs()
 
 	/**
 	 * Why this caller may or may not do each of these verbs.
