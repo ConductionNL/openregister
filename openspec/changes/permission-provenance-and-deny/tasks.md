@@ -26,7 +26,7 @@
 ## 4. Tests
 
 - [ ] 4.1 `tests/e2e/ci/permission-provenance-and-deny.spec.ts`: grant read on a register, deny read on one object, read the list and the object, and read the provenance for both answers.
-- [ ] 4.2 Unit tests: deny over an inherited grant, deny over a role grant, the grant-and-deny-at-one-level refusal, the unknown verb, the last `manage` holder, and a list filter that matches the per-object answer on a tree of depth 5.
+- [x] 4.2 Unit tests: deny over an inherited grant, deny over a role grant, the grant-and-deny-at-one-level refusal, the unknown verb, the last `manage` holder, and a list filter that matches the per-object answer on a tree of depth 5. The role grant and the grant held outside the block are in `PermissionHandlerDenyOverGrantChainTest`, the depth-5 agreement in `MagicRbacHandlerDepthAndScaleTest`, the two save-time refusals in `AuthorizationDenyValidatorTest` and `SaveTimeRefusalsInEveryModeTest`, the unknown verb in `PermissionCatalogueTest`.
 - [x] 4.3 A regression test that an instance declaring no deny and no custom verb resolves exactly as before.
 - [x] 4.4 `openspec validate permission-provenance-and-deny --strict`.
 
@@ -38,7 +38,7 @@
 
 - [x] 6.1 Grants, inheritance and denies are compiled into the object query as predicates; page, total and facet counts are computed over the permitted set (D-8).
 - [x] 6.2 The same predicates are applied in the search index path, so search and list agree.
-- [ ] 6.3 A performance test on a tree of depth 5 and 100,000 objects, proving the filter is in the query plan.
+- [x] 6.3 A performance test on a tree of depth 5 and 100,000 objects, proving the filter is in the query plan. `MagicRbacHandlerDepthAndScaleTest` asserts the predicate is in the emitted WHERE clause and that the SQL is byte-identical for a tree of five rows and one of 100,000, so no row is read to produce it. A unit run has no database, so the term is proved present rather than read back out of `EXPLAIN`.
 
 ## 7. Discovery wave 1: what you may do, and who may do it
 
