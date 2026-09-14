@@ -473,3 +473,92 @@ app. Then `platform-collaboration-resources` and
 `platform-share-provider`, and `platform-cloud-federation-provider` behind
 it, which depends on it. Then `platform-user-migrator`. Then
 `platform-caldav-backend`, after wave 1's feed has landed.
+
+## The pending proposals (wave 4, 2026-09-14)
+
+A third input: the 39 rows of the pending-proposals half of the parity
+programme that the ownership rules put on openregister, the largest share
+of the wave. Each row carries its ledger id, its capability text, its
+rating for dossiq, the `source` field, the ledger note and, for the 98 rows
+promoted under decision D1, the table row from the corpus batch file
+`procest/_round4/compare/proposed-rows-dossiq-2026-09-10.md` in
+ConductionNL/market-intelligence.
+
+**What the competitor evidence is, for all 39.** Every one of these rows is
+a D1 promotion, and the corpus says in as many words what its competitor
+columns hold: "Every competitor column is `unread`, and none of them is
+`no`. ... `no` is a reading of a product somebody opened, and filling these
+cells with it would fabricate thirty readings per row." No competitor claim
+is made in any of the thirteen proposals below. Q13.25 is the exception in
+this section: it is not a D1 row and it does carry a driven reading.
+
+**Ten rows are already carried, in substance, by artefacts in this
+repository.** Each was claimed only after its proposal and every file under
+its `specs/` was opened, and each claim names the requirement that carries
+the row.
+
+| row | artefact | the requirement that carries it |
+|---|---|---|
+| 1.18 | changes/dedup-check-before-create | "A schema declares what a strong match does at create": the matches are returned, `overrideGroups` may override, and the override is audited with the matched objects |
+| 6.26 | specs/notificatie-engine | "Trigger types `created` and `updated` MUST be supported", whose scenario declares `trigger: {type: "updated", only_if_changed: ["assignee"]}`, with recipients resolved from the object by the `recipients` block |
+| 11.37 | changes/field-rules-by-state | "A field rule may be conditional on the object's own data", scenario "a field becomes required because of a value", enforced on save and so on the API |
+| 11.38 | changes/rules-engine-operability | REQ-REO-004 "Every write path evaluates the declared rules", with `@self.fieldRules` from `field-rules-by-state` as the form's half |
+| 11.48 | changes/code-list-lifecycle-and-hierarchy | REQ-CLH-001, scenario "a retired value keeps working on old records": outside its window a concept is not offered and still resolves on read |
+| 11.49 | changes/rules-engine-operability | REQ-REO-002 "A rule evaluation records the operand that decided it", readable per rule with filters on verdict and period |
+| 11.52 | changes/code-list-lifecycle-and-hierarchy | REQ-CLH-001 scenario "a list item carries its own fields" (`bewaartermijn`, `grondslag`) with REQ-CLH-002's branch source and tree options |
+| 13.29 | changes/data-subject-rights-across-the-instance | REQ-DSR-001 and REQ-DSR-002: the preview reports erasable, pseudonymised and protected counts, and the run goes through the recorded destruction |
+| 13.31 | changes/archiving-as-a-process-with-sign-off | REQ-APS-002 "Every item on a destruction list has an accountable reviewer" and REQ-APS-003, beside specs/archival-destruction-workflow's "Two-step approval for sensitive schemas" |
+| 13.35 | specs/audit-hash-chain | "Every audit trail entry MUST include a SHA-256 hash chained to the previous entry" with the verification endpoint and tamper reporting |
+| Q13.25 | changes/permission-provenance-and-deny | REQ-PPD-001 "The set of grantable permissions is published", which refuses an undeclared verb at save, and REQ-PPD-002 "A rule may deny a verb, and a deny is not overridden" |
+
+**Twenty-nine rows have no artefact and get thirteen changes.**
+
+| change | rows | size | consumes from, or is consumed by |
+|---|---|---|---|
+| `duplicate-merge-and-dismissed-pairs` | 5.14, 5.15, 11.42 | M | extends mdm-merge and dedup-check-before-create; dossiq renders the merge screen |
+| `undo-a-bulk-action` | 2.41 | M | extends bulk-action-jobs; dossiq declares which of its bulk actions are reversible |
+| `relations-that-travel-and-what-they-expose` | 2.48, 5.16, 13.36 | L | extends relation-types-with-inverses and party-roles-beyond-the-requester; dossiq declares its relation types |
+| `a-conflicting-save-shows-the-other-value` | 2.50 | S | extends specs/objects-crud; dossiq renders the side-by-side choice |
+| `notification-kinds-an-administrator-forces` | 6.28 | S | extends notification-routing-per-group-and-scope; dossiq declares its internal and forced kinds |
+| `service-hours-and-repeating-reminders` | 8.26, 8.28 | M | extends working-calendar-admin and the scheduled trigger; dossiq declares its hours and its reminders |
+| `search-over-history-and-an-administered-dictionary` | 9.17, 9.18 | M | extends search-quality-operators-and-facets, which named both as out of scope; dossiq and portaliq consume |
+| `runs-recorded-and-causes-named` | 10.16, 10.19, 11.39 | L | extends enhanced-audit-trail, data-quality-scoring and import-preview-and-conflict-policy; integriq holds the adapters |
+| `local-changes-to-app-shipped-configuration` | 11.36 | M | extends specs/schema-import; dossiq's CaseTypePublishService is the leaf half |
+| `rules-compose-read-transitions-and-time` | 11.40, 11.44, 11.50, 11.53 | L | extends rules-engine-operability and field-rules-by-state; dossiq's `field-rules-declared` |
+| `fields-a-user-adds-and-choices-a-record-narrows` | 11.45, 11.47 | M | extends property-vocabulary-published; dossiq's `property-definition-management` |
+| `grants-that-follow-a-slot-a-relation-or-a-reason` | 13.27, 13.30, 13.34, 13.40, 13.41 | L | extends permission-provenance-and-deny and rbac-inherits-to-children; dossiq declares its role slots |
+| `anonymising-as-an-archival-outcome` | 13.32 | M | extends archiving-as-a-process-with-sign-off and gdpr-data-subject-rights; dossiq declares the profile per case type |
+
+**Build order.** `a-conflicting-save-shows-the-other-value` and
+`notification-kinds-an-administrator-forces` first, both S and both a
+declaration over something that already works. Then
+`duplicate-merge-and-dismissed-pairs`,
+`fields-a-user-adds-and-choices-a-record-narrows` and
+`local-changes-to-app-shipped-configuration`. Then
+`service-hours-and-repeating-reminders` behind `working-calendar-admin`,
+and `undo-a-bulk-action` behind `bulk-action-jobs`. Then
+`rules-compose-read-transitions-and-time` beside
+`rules-engine-operability`, which is one engine in two parts. Then
+`search-over-history-and-an-administered-dictionary` and
+`runs-recorded-and-causes-named`. Then
+`relations-that-travel-and-what-they-expose`, and
+`grants-that-follow-a-slot-a-relation-or-a-reason` behind it, which needs
+the party relationship it adds. `anonymising-as-an-archival-outcome` last,
+after the archiving process it extends.
+
+**Two departures from the grouping the lane was handed.** 11.53, an
+administrator's own validation with its own message, was grouped with the
+rules that run on every write; it sits better with rule composition,
+because a validation is a named condition with a message and the two share
+one evaluator. And 10.16, an audit entry naming its cause, was grouped with
+the tamper-evident log; it sits with the records of what ran, because a
+cause that is a run has to name one.
+
+**One finding to raise rather than build.** ADR-005 in this repository says
+repair steps "MUST be safe to run on every upgrade: match existing
+registers/schemas by slug, create-or-update, never duplicate", and
+`specs/schema-import` already specifies the guarded update, the preserved
+local additions and the reported conflicts for standards-imported schemas
+only. Read together, an app-shipped descriptor overwrites a municipality's
+local edit on the next `occ upgrade` and nothing records that the edit
+existed. That asymmetry, not a missing feature, is what row 11.36 found.
