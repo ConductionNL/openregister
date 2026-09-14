@@ -37,5 +37,5 @@
 
 ## 7. Hand over
 
-- [ ] 7.1 Hand the preview and the policy to the integriq lane as the target its source adapters write into, with candidate ids C-configuration-16, C-configuration-88, C-configuration-95, C-integrations-22 and C-integrations-50.
+- [ ] 7.1 Hand the preview and the policy to integriq's `migration-source-adapters` (integriq#2001) as the target its source adapters write into, with candidate ids C-configuration-16, C-configuration-88, C-configuration-95, C-integrations-22 and C-integrations-50.
 - [ ] 7.2 Tell the filinq lane that the copy before destruction is what a vernietiging record points at.

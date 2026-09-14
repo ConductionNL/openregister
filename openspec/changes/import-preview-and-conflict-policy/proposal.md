@@ -109,15 +109,18 @@ destruction, and nothing serialises the instance as a whole.
   registers, schemas, objects, files and configuration, and a load of one
   into another instance, both as bulk jobs with progress and a per-row
   outcome. Secrets are excluded and the file says so.
-- **A source adapter is integriq's.** This change owns the mapping, the
-  preview, the policy and the writer. Reading a running installation of
-  another product is a connector.
+- **A source adapter is integriq's.** This change owns the target half:
+  the mapping, the preview, the policy and the writer. Reading a running
+  installation of another product is the adapter half, and integriq's
+  `migration-source-adapters` (integriq#2001) holds it. C-configuration-88,
+  C-configuration-16 and C-configuration-95 are answered by the two halves
+  together, and neither half is useful alone.
 
 ## Consumers
 
-- **integriq**: builds the source adapters for the named competing
-  products, writing into this preview and this policy rather than into the
-  database.
+- **integriq**: `migration-source-adapters` (integriq#2001) builds the
+  source adapters for the named competing products, writing into this
+  preview and this policy rather than into the database.
 - **dossiq**: the migration of running dossiers, and the bulk correction of
   a mis-registered field, in one screen.
 - **filinq**: the copy before destruction is what the archiving process
@@ -149,8 +152,9 @@ destruction, and nothing serialises the instance as a whole.
 
 ## Out of scope
 
-- Reading a running installation of a competing product. That is an
-  integriq connector, and this change is what it writes into.
+- Reading a running installation of a competing product. That is
+  integriq's `migration-source-adapters` (integriq#2001), and this change
+  is the target it writes into.
 - The delete window itself, which `delete-window-and-recorded-destruction`
   carries under D10 as taken.
 - The archiving process and its sign-off, which
