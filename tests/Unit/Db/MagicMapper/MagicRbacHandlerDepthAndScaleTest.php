@@ -304,8 +304,8 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 	 * A post-filter has to look at the rows, so its cost and its shape both move
 	 * with them. This emitter is handed the schema and the action and nothing
 	 * else, and the assertion is that the SQL it produces for a tree of five
-	 * rows is byte-identical to the SQL it produces for a tree of 100,000 —
-	 * which is what "computed over the permitted set" means for the total and
+	 * rows is byte-identical to the SQL it produces for a tree of 100,000.
+	 * That is what "computed over the permitted set" means for the total and
 	 * for every facet count.
 	 *
 	 * @return void

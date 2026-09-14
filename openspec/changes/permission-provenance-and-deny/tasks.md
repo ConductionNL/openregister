@@ -32,7 +32,7 @@
 
 ## 5. Hand over
 
-- [ ] 5.1 Hand the catalogue to the dossiq lane as soon as 1.1 answers, with the register row id: the mandate matrix names its grantable set and the role editor gains its permission half (D-7).
+- [x] 5.1 Hand the catalogue to the dossiq lane as soon as 1.1 answers, with the register row id: the mandate matrix names its grantable set and the role editor gains its permission half (D-7). Handed over in ConductionNL/dossiq#2792, with row Q13.25, the response shape, the three reads beside it and the staging caveat.
 
 ## 6. Discovery wave 1: access inside the query
 
