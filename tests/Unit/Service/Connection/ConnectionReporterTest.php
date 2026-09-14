@@ -77,8 +77,8 @@ class ConnectionReporterTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->dispatcher = $this->createMock(IEventDispatcher::class);
-		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->dispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
+		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 		$this->sent = [];
 		$this->dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (Event $event): void {
@@ -126,15 +126,15 @@ class ConnectionReporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAReportIsSentWithTheAppKeyStatusAndMessage(): void {
-		$this->assertTrue($this->reporter()->report(key: 'edepot', status: 'error', message: 'Connection failed over sftp.'));
+		$this->assertTrue(condition: $this->reporter()->report(key: 'edepot', status: 'error', message: 'Connection failed over sftp.'));
 
-		$this->assertCount(1, $this->sent);
+		$this->assertCount(expectedCount: 1, haystack: $this->sent);
 		$event = $this->sent[0];
-		$this->assertInstanceOf(ConnectionStatusReportedEvent::class, $event);
-		$this->assertSame('openregister', $event->app);
-		$this->assertSame('edepot', $event->key);
-		$this->assertSame('error', $event->status);
-		$this->assertSame('Connection failed over sftp.', $event->message);
+		$this->assertInstanceOf(expected: ConnectionStatusReportedEvent::class, actual: $event);
+		$this->assertSame(expected: 'openregister', actual: $event->app);
+		$this->assertSame(expected: 'edepot', actual: $event->key);
+		$this->assertSame(expected: 'error', actual: $event->status);
+		$this->assertSame(expected: 'Connection failed over sftp.', actual: $event->message);
 	}//end testAReportIsSentWithTheAppKeyStatusAndMessage()
 
 	/**
@@ -146,8 +146,8 @@ class ConnectionReporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheEventNamesAreTheContractNames(): void {
-		$this->assertSame(ConnectionStatusReportedEvent::class, ConnectionReporter::STATUS_EVENT);
-		$this->assertSame(ConnectionRefreshRequestedEvent::class, ConnectionReporter::REFRESH_EVENT);
+		$this->assertSame(expected: ConnectionStatusReportedEvent::class, actual: ConnectionReporter::STATUS_EVENT);
+		$this->assertSame(expected: ConnectionRefreshRequestedEvent::class, actual: ConnectionReporter::REFRESH_EVENT);
 	}//end testTheEventNamesAreTheContractNames()
 
 	/**
@@ -161,10 +161,10 @@ class ConnectionReporterTest extends TestCase {
 	public function testTheLookupAnswersNullForAnAbsentClass(): void {
 		$method = new ReflectionMethod(ConnectionReporter::class, 'resolveEventClass');
 
-		$this->assertNull($method->invoke($this->reporter(), 'OCA\\Nobody\\Event\\ShipsThisEvent'));
+		$this->assertNull(actual: $method->invoke($this->reporter(), 'OCA\\Nobody\\Event\\ShipsThisEvent'));
 		$this->assertSame(
-			'\\' . ConnectionReporter::STATUS_EVENT,
-			$method->invoke($this->reporter(), ConnectionReporter::STATUS_EVENT)
+			expected: '\\' . ConnectionReporter::STATUS_EVENT,
+			actual: $method->invoke($this->reporter(), ConnectionReporter::STATUS_EVENT)
 		);
 	}//end testTheLookupAnswersNullForAnAbsentClass()
 
@@ -180,8 +180,8 @@ class ConnectionReporterTest extends TestCase {
 
 		$reporter = $this->reporterWithoutIntegriq();
 
-		$this->assertFalse($reporter->report(key: 'llm', status: 'configured', message: 'ok'));
-		$this->assertSame([], $reporter->refreshFromSave(savedKeys: ['github_api_token']));
+		$this->assertFalse(condition: $reporter->report(key: 'llm', status: 'configured', message: 'ok'));
+		$this->assertSame(expected: [], actual: $reporter->refreshFromSave(savedKeys: ['github_api_token']));
 	}//end testWithoutIntegriqNothingIsSentOrLogged()
 
 	/**
@@ -191,10 +191,10 @@ class ConnectionReporterTest extends TestCase {
 	 */
 	public function testAnUnknownKeyIsRefused(): void {
 		$this->logger->expects($this->once())->method('warning')
-			->with($this->stringContains('unknown connection key'), ['key' => 'whatsapp']);
+			->with($this->stringContains(string: 'unknown connection key'), ['key' => 'whatsapp']);
 
-		$this->assertFalse($this->reporter()->report(key: 'whatsapp', status: 'configured'));
-		$this->assertSame([], $this->sent);
+		$this->assertFalse(condition: $this->reporter()->report(key: 'whatsapp', status: 'configured'));
+		$this->assertSame(expected: [], actual: $this->sent);
 	}//end testAnUnknownKeyIsRefused()
 
 	/**
@@ -205,15 +205,15 @@ class ConnectionReporterTest extends TestCase {
 	public function testStatusMustBeOneOfTheSix(): void {
 		$reporter = $this->reporter();
 
-		$this->assertFalse($reporter->report(key: 'llm', status: 'degraded'));
-		$this->assertSame([], $this->sent);
+		$this->assertFalse(condition: $reporter->report(key: 'llm', status: 'degraded'));
+		$this->assertSame(expected: [], actual: $this->sent);
 
 		foreach (ConnectionReporter::STATUSES as $status) {
-			$this->assertTrue($reporter->report(key: 'llm', status: $status));
+			$this->assertTrue(condition: $reporter->report(key: 'llm', status: $status));
 		}
 
-		$this->assertCount(6, $this->sent);
-		$this->assertContains('limited', ConnectionReporter::STATUSES);
+		$this->assertCount(expectedCount: 6, haystack: $this->sent);
+		$this->assertContains(needle: 'limited', haystack: ConnectionReporter::STATUSES);
 	}//end testStatusMustBeOneOfTheSix()
 
 	/**
@@ -222,15 +222,15 @@ class ConnectionReporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAThrowingListenerNeverEscapes(): void {
-		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willThrowException(new RuntimeException('registry down'));
-		$this->logger->expects($this->exactly(2))->method('warning')
-			->with($this->stringContains('Could not send'), $this->anything());
+		$this->logger->expects($this->exactly(count: 2))->method('warning')
+			->with($this->stringContains(string: 'Could not send'), $this->anything());
 
 		$reporter = new ConnectionReporter(eventDispatcher: $dispatcher, logger: $this->logger);
 
-		$this->assertFalse($reporter->report(key: 'anonymiser', status: 'configured', message: 'Detected.'));
-		$this->assertSame([], $reporter->refreshFromSave(savedKeys: ['github_api_token']));
+		$this->assertFalse(condition: $reporter->report(key: 'anonymiser', status: 'configured', message: 'Detected.'));
+		$this->assertSame(expected: [], actual: $reporter->refreshFromSave(savedKeys: ['github_api_token']));
 	}//end testAThrowingListenerNeverEscapes()
 
 	/**
@@ -241,12 +241,12 @@ class ConnectionReporterTest extends TestCase {
 	public function testASaveRequestsARefreshForTheTouchedConnection(): void {
 		$refreshed = $this->reporter()->refreshFromSave(savedKeys: ['gitlab_api_token', 'gitlab_api_url']);
 
-		$this->assertSame(['gitlab'], $refreshed);
-		$this->assertCount(1, $this->sent);
+		$this->assertSame(expected: ['gitlab'], actual: $refreshed);
+		$this->assertCount(expectedCount: 1, haystack: $this->sent);
 		$event = $this->sent[0];
-		$this->assertInstanceOf(ConnectionRefreshRequestedEvent::class, $event);
-		$this->assertSame('openregister', $event->app);
-		$this->assertSame('gitlab', $event->key);
+		$this->assertInstanceOf(expected: ConnectionRefreshRequestedEvent::class, actual: $event);
+		$this->assertSame(expected: 'openregister', actual: $event->app);
+		$this->assertSame(expected: 'gitlab', actual: $event->key);
 	}//end testASaveRequestsARefreshForTheTouchedConnection()
 
 	/**
@@ -255,7 +255,7 @@ class ConnectionReporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testASaveOnlyTouchesTheConnectionsItNamed(): void {
-		$this->assertSame([], $this->reporter()->refreshFromSave(savedKeys: ['gitlab_api_url']));
-		$this->assertSame([], $this->sent);
+		$this->assertSame(expected: [], actual: $this->reporter()->refreshFromSave(savedKeys: ['gitlab_api_url']));
+		$this->assertSame(expected: [], actual: $this->sent);
 	}//end testASaveOnlyTouchesTheConnectionsItNamed()
 }//end class

@@ -68,7 +68,7 @@ class ConnectionsDeclarationTest extends TestCase {
 	 */
 	private function raw(): string {
 		$raw = file_get_contents($this->root() . '/lib/Settings/connections.json');
-		$this->assertIsString($raw, 'lib/Settings/connections.json must exist');
+		$this->assertIsString(actual: $raw, message: 'lib/Settings/connections.json must exist');
 
 		return $raw;
 	}//end raw()
@@ -80,7 +80,7 @@ class ConnectionsDeclarationTest extends TestCase {
 	 */
 	private function declaration(): array {
 		$decoded = json_decode($this->raw(), true, 512, JSON_THROW_ON_ERROR);
-		$this->assertIsArray($decoded);
+		$this->assertIsArray(actual: $decoded);
 
 		return $decoded;
 	}//end declaration()
@@ -106,7 +106,7 @@ class ConnectionsDeclarationTest extends TestCase {
 	 */
 	public function testTheFileValidatesAgainstIntegriqsSchema(): void {
 		$schema = file_get_contents($this->root() . self::SCHEMA);
-		$this->assertIsString($schema);
+		$this->assertIsString(actual: $schema);
 
 		$validator = new Validator();
 		$result = $validator->validate(json_decode($this->raw()), $schema);
@@ -116,7 +116,7 @@ class ConnectionsDeclarationTest extends TestCase {
 			$errors = (new ErrorFormatter())->format($result->error());
 		}
 
-		$this->assertTrue($result->isValid(), json_encode($errors, JSON_PRETTY_PRINT));
+		$this->assertTrue(condition: $result->isValid(), message: json_encode($errors, JSON_PRETTY_PRINT));
 	}//end testTheFileValidatesAgainstIntegriqsSchema()
 
 	/**
@@ -129,12 +129,12 @@ class ConnectionsDeclarationTest extends TestCase {
 	 */
 	public function testTheSchemaRefusesAnUnknownField(): void {
 		$schema = file_get_contents($this->root() . self::SCHEMA);
-		$this->assertIsString($schema);
+		$this->assertIsString(actual: $schema);
 
 		$declaration = json_decode($this->raw());
 		$declaration->connections[0]->setingsUrl = '/settings/admin/openregister#section-llm';
 
-		$this->assertFalse((new Validator())->validate($declaration, $schema)->isValid());
+		$this->assertFalse(condition: (new Validator())->validate($declaration, $schema)->isValid());
 	}//end testTheSchemaRefusesAnUnknownField()
 
 	/**
@@ -145,9 +145,9 @@ class ConnectionsDeclarationTest extends TestCase {
 	public function testTheFileNamesThisApp(): void {
 		$infoXml = simplexml_load_file($this->root() . '/appinfo/info.xml');
 
-		$this->assertNotFalse($infoXml);
-		$this->assertSame((string)$infoXml->id, $this->declaration()['app']);
-		$this->assertSame(ConnectionReporter::APP_ID, $this->declaration()['app']);
+		$this->assertNotFalse(condition: $infoXml);
+		$this->assertSame(expected: (string)$infoXml->id, actual: $this->declaration()['app']);
+		$this->assertSame(expected: ConnectionReporter::APP_ID, actual: $this->declaration()['app']);
 	}//end testTheFileNamesThisApp()
 
 	/**
@@ -159,14 +159,14 @@ class ConnectionsDeclarationTest extends TestCase {
 		$connections = $this->declaration()['connections'];
 		$keys = array_column($connections, 'key');
 
-		$this->assertSame(array_values(array_unique($keys)), $keys, 'a key is declared twice');
-		$this->assertSame(ConnectionReporter::KEYS, $keys);
+		$this->assertSame(expected: array_values(array_unique($keys)), actual: $keys, message: 'a key is declared twice');
+		$this->assertSame(expected: ConnectionReporter::KEYS, actual: $keys);
 
 		$orders = array_column($connections, 'order');
 		$sorted = $orders;
 		sort($sorted);
-		$this->assertSame($sorted, $orders);
-		$this->assertCount(count($keys), array_unique($orders));
+		$this->assertSame(expected: $sorted, actual: $orders);
+		$this->assertCount(expectedCount: count($keys), haystack: array_unique($orders));
 	}//end testTheKeysAreUniqueOrderedAndKnownToTheReporter()
 
 	/**
@@ -175,8 +175,8 @@ class ConnectionsDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoTextCarriesAnEmDash(): void {
-		$this->assertStringNotContainsString("\u{2014}", $this->raw());
-		$this->assertStringNotContainsString(' -- ', $this->raw());
+		$this->assertStringNotContainsString(needle: "\u{2014}", haystack: $this->raw());
+		$this->assertStringNotContainsString(needle: ' -- ', haystack: $this->raw());
 	}//end testNoTextCarriesAnEmDash()
 
 	/**
@@ -198,17 +198,17 @@ class ConnectionsDeclarationTest extends TestCase {
 			}
 
 			$url = (string)$connection['settingsUrl'];
-			$this->assertStringStartsWith('/settings/admin/openregister#', $url, $connection['key']);
+			$this->assertStringStartsWith(prefix: '/settings/admin/openregister#', string: $url, message: $connection['key']);
 			$anchor = substr($url, (int)strpos($url, '#') + 1);
 			$this->assertMatchesRegularExpression(
-				'/\bid="' . preg_quote($anchor, '/') . '"/',
-				$sources,
-				$connection['key'] . ' links to a missing element #' . $anchor
+				pattern: '/\bid="' . preg_quote($anchor, '/') . '"/',
+				string: $sources,
+				message: $connection['key'] . ' links to a missing element #' . $anchor
 			);
 			$linked++;
 		}
 
-		$this->assertSame(4, $linked);
+		$this->assertSame(expected: 4, actual: $linked);
 	}//end testEverySettingsLinkPointsAtAnExistingElement()
 
 	/**
@@ -234,7 +234,7 @@ class ConnectionsDeclarationTest extends TestCase {
 			}
 		}
 
-		$this->assertSame(ConnectionReporter::REFRESH_KEYS, $declared);
+		$this->assertSame(expected: ConnectionReporter::REFRESH_KEYS, actual: $declared);
 	}//end testTheRefreshMapMatchesTheDeclaredConfigKeys()
 
 	/**
@@ -248,8 +248,8 @@ class ConnectionsDeclarationTest extends TestCase {
 	public function testAnUnsetLlmCannotReadSimulated(): void {
 		$llm = $this->connectionsByKey()['llm'];
 
-		$this->assertArrayNotHasKey('adapter', $llm);
-		$this->assertStringContainsString('503', (string)$llm['unconfiguredMessage']);
+		$this->assertArrayNotHasKey(key: 'adapter', array: $llm);
+		$this->assertStringContainsString(needle: '503', haystack: (string)$llm['unconfiguredMessage']);
 	}//end testAnUnsetLlmCannotReadSimulated()
 
 	/**
@@ -261,11 +261,11 @@ class ConnectionsDeclarationTest extends TestCase {
 		$byKey = $this->connectionsByKey();
 
 		$reportedOnly = array_keys(array_filter($byKey, static fn (array $c): bool => ($c['reportedOnly'] ?? false) === true));
-		$this->assertSame(['translation', 'dsar-identity', 'dsar-regulator'], $reportedOnly);
+		$this->assertSame(expected: ['translation', 'dsar-identity', 'dsar-regulator'], actual: $reportedOnly);
 
 		$unavailable = array_keys(array_filter($byKey, static fn (array $c): bool => ($c['available'] ?? true) === false));
-		$this->assertSame(['office-converter'], $unavailable);
-		$this->assertMatchesRegularExpression('/nothing calls/i', (string)$byKey['office-converter']['unavailableMessage']);
+		$this->assertSame(expected: ['office-converter'], actual: $unavailable);
+		$this->assertMatchesRegularExpression(pattern: '/nothing calls/i', string: (string)$byKey['office-converter']['unavailableMessage']);
 	}//end testSeamsAreReportedOnlyAndTheConverterIsUnavailable()
 
 	/**
@@ -280,24 +280,24 @@ class ConnectionsDeclarationTest extends TestCase {
 		$byKey = $this->connectionsByKey();
 
 		$this->assertSame(
-			\OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider::SOURCE_ID,
-			$byKey['brp']['sourceTemplate']
+			expected: \OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider::SOURCE_ID,
+			actual: $byKey['brp']['sourceTemplate']
 		);
-		$this->assertSame(\OCA\OpenRegister\Service\Integration\Providers\KvkProvider::SOURCE_ID, $byKey['kvk']['sourceTemplate']);
+		$this->assertSame(expected: \OCA\OpenRegister\Service\Integration\Providers\KvkProvider::SOURCE_ID, actual: $byKey['kvk']['sourceTemplate']);
 		$this->assertSame(
-			\OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider::SOURCE_ID,
-			$byKey['opencorporates']['sourceTemplate']
+			expected: \OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider::SOURCE_ID,
+			actual: $byKey['opencorporates']['sourceTemplate']
 		);
 		$this->assertSame(
-			\OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::SOURCE_ID,
-			$byKey['message-dispatch']['sourceTemplate']
+			expected: \OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::SOURCE_ID,
+			actual: $byKey['message-dispatch']['sourceTemplate']
 		);
 		$this->assertContains(
-			$byKey['message-dispatch']['sourceTemplate'],
-			\OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::ALLOWED_SOURCES
+			needle: $byKey['message-dispatch']['sourceTemplate'],
+			haystack: \OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::ALLOWED_SOURCES
 		);
-		$this->assertSame('xwiki', $byKey['xwiki']['sourceTemplate']);
-		$this->assertArrayNotHasKey('sourceTemplate', $byKey['openproject'], 'integriq ships no openproject source template');
+		$this->assertSame(expected: 'xwiki', actual: $byKey['xwiki']['sourceTemplate']);
+		$this->assertArrayNotHasKey(key: 'sourceTemplate', array: $byKey['openproject'], message: 'integriq ships no openproject source template');
 	}//end testSourceTemplatesNameTheSourceTheProviderCalls()
 
 	/**
@@ -307,7 +307,7 @@ class ConnectionsDeclarationTest extends TestCase {
 	 */
 	public function testPerRecordConnectionsAreNotDeclared(): void {
 		foreach (array_keys($this->connectionsByKey()) as $key) {
-			$this->assertDoesNotMatchRegularExpression('/webhook|oauth|federat/i', $key);
+			$this->assertDoesNotMatchRegularExpression(pattern: '/webhook|oauth|federat/i', string: $key);
 		}
 	}//end testPerRecordConnectionsAreNotDeclared()
 
