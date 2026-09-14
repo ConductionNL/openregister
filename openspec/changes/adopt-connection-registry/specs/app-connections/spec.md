@@ -35,7 +35,7 @@ be declared.
 - **THEN** it SHALL read Not available with a message saying nothing calls it
 
 #### Scenario: an unset LLM does not read Simulated
-@e2e exclude The claim is a property of the declaration and the save report; tests/Unit/Settings/ConnectionsDeclarationTest.php asserts the llm entry has no adapter block and tests/Unit/Controller/Settings/LlmSettingsConnectionReportTest.php asserts the unconfigured report.
+@e2e exclude The claim is a property of the declaration and the save report; tests/Unit/Settings/ConnectionsDeclarationTest.php asserts the llm entry has no adapter block and tests/Unit/Controller/Settings/SettingsConnectionReportTest.php (testAnLlmSaveWithoutProvidersReportsUnconfigured) asserts the unconfigured report.
 
 - **GIVEN** no chat and no embedding provider is chosen
 - **WHEN** the admin saves the LLM settings
@@ -88,7 +88,7 @@ request that sent it, whether integriq is absent or its listener fails. No
 report SHALL be sent on every request (ADR-076).
 
 #### Scenario: a failed e-Depot test reaches the row
-@e2e exclude An e-Depot endpoint cannot be stood up from the browser suite; tests/Unit/Service/Connection/ConnectionReporterTest.php asserts the event and tests/Unit/Controller/Settings/EdepotSettingsConnectionReportTest.php asserts the controller sends it.
+@e2e exclude An e-Depot endpoint cannot be stood up from the browser suite; tests/Unit/Service/Connection/ConnectionReporterTest.php asserts the event and tests/Unit/Controller/Settings/SettingsConnectionReportTest.php (testAFailingEdepotTestReportsAnError) asserts the controller sends it.
 
 - **GIVEN** the e-Depot transport points at an endpoint that does not answer
 - **WHEN** the admin runs the e-Depot connection test
