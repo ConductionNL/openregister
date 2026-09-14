@@ -120,6 +120,8 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ObjectMetricsListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
+use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
@@ -129,6 +131,9 @@ use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
+use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
@@ -2656,6 +2661,13 @@ class Application extends App implements IBootstrap {
 		// ToolRegistrationListener for agent function tools.
 		$context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
+		// BulkActionRegistrationListener for the built-in bulk actions. A leaf
+		// app registers its own action on the same event (ADR-022).
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\BulkActionRegistrationEvent::class,
+			\OCA\OpenRegister\Listener\BulkActionRegistrationListener::class
+		);
+
 		// Tables schema-lifecycle listener — retire the managed virtual schema of
 		// a deleted Tables table. Guarded by class_exists so boot never fatals on
 		// an instance without the (soft-dependency) Tables app installed.
@@ -2891,6 +2903,27 @@ class Application extends App implements IBootstrap {
 		// rather than downgrading to weekdays.
 		$context->registerEventListener(ObjectDeletingEvent::class, WorkingCalendarDeleteGuardListener::class);
 
+		// Code-list lifecycle — a value outside its validity window, a broader
+		// value under a leaf-only property and two values of one exclusive
+		// group are all refused at WRITE time, on every door, so a retired
+		// resultaattype cannot be chosen again while every dossier that
+		// already holds it keeps reading correctly.
+		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
+
+		// ... and the delete half: a value the product defines, or one that
+		// objects still hold, is refused with its count. Closing the validity
+		// window is the operation that is always safe.
+		$context->registerEventListener(ObjectDeletingEvent::class, ConceptDeleteGuardListener::class);
+
+		// Named uniqueness constraints — a `refuse` constraint stops the write
+		// naming the combination and the conflicting object; a `report` one
+		// lets it through and records the breach on the object's validation
+		// envelope, where it can be read afterwards. Both are real: a gemeente
+		// refuses a second bezwaar and only reports a repeated e-mail.
+		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
+
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)
 		// is created/updated/deleted, recompute the referenced master's golden
@@ -3033,6 +3066,13 @@ class Application extends App implements IBootstrap {
 		// its audience behind, or a re-created uuid inherits followers who
 		// never chose to follow it.
 		$context->registerEventListener(ObjectDeletedEvent::class, WatcherPruneListener::class);
+
+		// Read state (`object-read-state`). A substantive change puts the object
+		// back to unread for every reader but its author; a deletion takes the
+		// read states with it and archives the notices that pointed at it, which
+		// would otherwise sit unread for ever pointing at nothing.
+		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);

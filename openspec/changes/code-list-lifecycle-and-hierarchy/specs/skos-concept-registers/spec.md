@@ -75,3 +75,30 @@ evaluated by the calculation engine.
 - **WHEN** the object is read
 - **THEN** the score reads 8
 - @e2e exclude {calculation engine, covered by unit tests}
+
+### Requirement: A code-list value is retired, never deleted out from under its records (REQ-CLH-006)
+
+A concept the product itself defines SHALL NOT be deletable, and a concept
+any object still holds SHALL NOT be deletable. Both refusals SHALL name the
+validity window as the way to retire the value instead, and the second SHALL
+name how many objects hold it. A concept nothing holds, and that the product
+does not define, SHALL stay deletable.
+
+#### Scenario: a system-defined value cannot be deleted
+
+- **GIVEN** a concept marked as system-defined
+- **WHEN** it is deleted through the objects API
+- **THEN** the delete is refused and the message points at the validity window
+
+#### Scenario: a value in use cannot be deleted, and the refusal names the count
+
+- **GIVEN** a concept and objects holding it
+- **WHEN** it is deleted through the objects API
+- **THEN** the delete is refused naming how many objects hold it
+
+#### Scenario: a value nothing holds stays deletable
+
+- **GIVEN** a concept no object holds and the product does not define
+- **WHEN** it is deleted
+- **THEN** the delete succeeds
+- @e2e exclude {counting, covered by ConceptDeleteGuard unit tests}

@@ -139,12 +139,17 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 		$this->assertTrue($verdict, 'listener allow MUST grant the custom action');
 		$this->assertCount(1, self::eventsOfType($dispatched, CustomScopeEvaluatingEvent::class), 'the evaluating event MUST fire');
 		$this->assertCount(1, self::eventsOfType($dispatched, CustomScopeEvaluatedEvent::class), 'the paired telemetry event MUST fire');
-		$this->assertInstanceOf(CustomScopeEvaluatingEvent::class, $dispatched[0]);
-		$this->assertInstanceOf(CustomScopeEvaluatedEvent::class, $dispatched[1]);
-		$this->assertSame('besluit_nemen', $dispatched[0]->getAction());
-		$this->assertSame(['behandelaar'], $dispatched[0]->getUserGroups());
-		$this->assertTrue($dispatched[1]->getVerdict());
-		$this->assertTrue($dispatched[1]->isFromListener());
+		// Read by TYPE, not by position. The handler dispatches a third event on
+		// this path since the permission catalogue landed (an app declares its
+		// verbs before one of them can be decided), and a test that indexed
+		// $dispatched[1] was asserting about dispatch ORDER while claiming to
+		// assert about the telemetry event.
+		$evaluating = self::eventsOfType($dispatched, CustomScopeEvaluatingEvent::class)[0];
+		$evaluated = self::eventsOfType($dispatched, CustomScopeEvaluatedEvent::class)[0];
+		$this->assertSame('besluit_nemen', $evaluating->getAction());
+		$this->assertSame(['behandelaar'], $evaluating->getUserGroups());
+		$this->assertTrue($evaluated->getVerdict());
+		$this->assertTrue($evaluated->isFromListener());
 	}//end testListenerVotingAllowGrantsCustomAction()
 
 	public function testListenerVotingDenyRejectsCustomAction(): void {
@@ -173,8 +178,9 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 			self::eventsOfType($dispatched, CustomScopeEvaluatedEvent::class),
 			'paired telemetry event MUST fire on deny too'
 		);
-		$this->assertFalse($dispatched[1]->getVerdict());
-		$this->assertTrue($dispatched[1]->isFromListener());
+		$evaluated = self::eventsOfType($dispatched, CustomScopeEvaluatedEvent::class)[0];
+		$this->assertFalse($evaluated->getVerdict());
+		$this->assertTrue($evaluated->isFromListener());
 	}//end testListenerVotingDenyRejectsCustomAction()
 
 	public function testFirstVerdictWinsRegardlessOfRegistrationOrder(): void {

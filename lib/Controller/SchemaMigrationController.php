@@ -30,12 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
+use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCP\AppFramework\Controller;
@@ -50,6 +52,18 @@ use Psr\Log\LoggerInterface;
  * Controller for schema versioning, revalidation and migration.
  */
 class SchemaMigrationController extends Controller {
+
+	/**
+	 * How many objects a conversion preview reads.
+	 *
+	 * A preview is a decision aid, not an exhaustive migration: reading every
+	 * row of a four-million-row table to answer "what would this cost" is a
+	 * cost of its own. The counts are exact over what was read and the
+	 * response says how many that was.
+	 *
+	 * @var integer
+	 */
+	public const CONVERSION_SCAN_LIMIT = 10000;
 	/**
 	 * Constructor.
 	 *
@@ -65,6 +79,8 @@ class SchemaMigrationController extends Controller {
 	 * @param IJobList $jobList Job list (enqueue runs).
 	 * @param IUserSession $userSession Current user.
 	 * @param LoggerInterface $logger Logger.
+	 * @param PropertyConversionService|null $conversions Publishes and previews a property type change.
+	 * @param MagicMapper|null $objects Reads the stored values a conversion preview is measured over.
 	 */
 	public function __construct(
 		string $appName,
@@ -79,10 +95,147 @@ class SchemaMigrationController extends Controller {
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ?PropertyConversionService $conversions = null,
+		private readonly ?MagicMapper $objects = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
+
+	/**
+	 * The property-type conversions the system supports.
+	 *
+	 * Published as a list rather than implied by trial and error: an
+	 * administrator planning a schema change needs to know what is possible
+	 * before designing around it, and a conversion that is not on this list is
+	 * refused rather than attempted (REQ-CLH-005).
+	 *
+	 * @return JSONResponse The supported conversions.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	public function conversions(): JSONResponse {
+		if ($this->conversions === null) {
+			return new JSONResponse(['results' => [], 'total' => 0]);
+		}
+
+		$supported = $this->conversions->supported();
+
+		return new JSONResponse(['results' => $supported, 'total' => count($supported)]);
+	}//end conversions()
+
+	/**
+	 * Preview what converting one property's type would cost.
+	 *
+	 * Answers over the values the schema's objects actually hold: how many
+	 * convert, how many do not, and a sample of the ones that do not. An
+	 * unsupported conversion is refused here with its reason and nothing is
+	 * attempted, which is the difference between a decision and a data-loss
+	 * incident discovered months later.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return JSONResponse The preview, or a refusal with its reason.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	public function previewConversion(int $id): JSONResponse {
+		if ($this->conversions === null || $this->objects === null) {
+			return new JSONResponse(['error' => 'Property conversion is not configured'], 501);
+		}
+
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Schema not found'], 404);
+		}
+
+		$property = trim((string)$this->request->getParam('property', ''));
+		$target = trim((string)$this->request->getParam('to', ''));
+		if ($property === '' || $target === '') {
+			return new JSONResponse(['error' => 'Both "property" and "to" are required'], 422);
+		}
+
+		$properties = ($schema->getProperties() ?? []);
+		$definition = ($properties[$property] ?? null);
+		if (is_array($definition) === false) {
+			return new JSONResponse(
+				['error' => sprintf('The schema has no property "%s"', $property)],
+				404
+			);
+		}
+
+		$current = trim((string)($definition['type'] ?? 'string'));
+
+		if ($this->conversions->isSupported(from: $current, to: $target) === false) {
+			return new JSONResponse(
+				[
+					'error' => $this->conversions->refusalReason(from: $current, to: $target),
+					'property' => $property,
+					'from' => $current,
+					'to' => $target,
+					'supported' => false,
+				],
+				422
+			);
+		}
+
+		$values = $this->storedValues(schemaId: $id, property: $property);
+		$preview = $this->conversions->preview(values: $values, from: $current, to: $target);
+		$preview['property'] = $property;
+		$preview['from'] = $current;
+		$preview['to'] = $target;
+
+		return new JSONResponse($preview);
+	}//end previewConversion()
+
+	/**
+	 * Every stored value of one property, across the schema's objects.
+	 *
+	 * @param integer $schemaId The schema id.
+	 * @param string $property The property name.
+	 *
+	 * @return array<int,mixed> The stored values, one per object.
+	 */
+	private function storedValues(int $schemaId, string $property): array {
+		$registerId = $this->resolveRegisterId(schemaId: $schemaId);
+		if ($registerId === null) {
+			return [];
+		}
+
+		try {
+			$objects = $this->objects->searchObjects(
+				query: [
+					'@self' => ['register' => $registerId, 'schema' => $schemaId],
+					'_limit' => self::CONVERSION_SCAN_LIMIT,
+				],
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $unreadable) {
+			return [];
+		}
+
+		if (is_array($objects) === false) {
+			return [];
+		}
+
+		$values = [];
+		foreach ($objects as $object) {
+			$data = $object->getObject();
+			if (is_array($data) === false) {
+				continue;
+			}
+
+			$values[] = ($data[$property] ?? null);
+		}
+
+		return $values;
+	}//end storedValues()
 
 	/**
 	 * Get a schema's classified changelog, newest-first.
