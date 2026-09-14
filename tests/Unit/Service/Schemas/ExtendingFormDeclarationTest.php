@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Schemas;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
@@ -240,6 +241,35 @@ class ExtendingFormDeclarationTest extends TestCase {
 				'properties/caseType/x-openregister-extends-form',
 			],
 			actual: array_keys($found)
+		);
+	}
+
+	/**
+	 * A declaration stored on the schema configuration survives the save.
+	 *
+	 * `setConfiguration()` DROPS any `x-openregister-*` key outside
+	 * `Schema::ANNOTATION_VOCABULARY`, silently. An annotation whose whole
+	 * purpose is to make a narrowing visible, dropped on the way in, would be
+	 * invisible again and every read of it would answer an empty list. The
+	 * entity's own comments record that same bug four times, so this test
+	 * round-trips through the entity rather than reading the list.
+	 *
+	 * @return void
+	 */
+	public function testTheDeclarationSurvivesTheSchemaSave(): void {
+		$schema = new Schema();
+		$schema->setConfiguration([ExtendingFormDeclaration::ANNOTATION => $this->eightKeyForm()]);
+
+		$stored = ($schema->getConfiguration() ?? []);
+
+		$this->assertArrayHasKey(
+			key: ExtendingFormDeclaration::ANNOTATION,
+			array: $stored,
+			message: 'the declaration was dropped on save, so the narrowing it states is invisible'
+		);
+		$this->assertSame(
+			expected: 8,
+			actual: count($this->declarations->forwards(annotation: $stored[ExtendingFormDeclaration::ANNOTATION]))
 		);
 	}
 
