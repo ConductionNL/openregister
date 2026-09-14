@@ -219,4 +219,71 @@ class ContactLinkMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByUserId()
+
+	/**
+	 * Every link that names a party, newest first.
+	 *
+	 * This is the read behind "an indicator reaches every case of that
+	 * party": the objects are found from the party's side, so setting an
+	 * indicator writes the party and nothing else.
+	 *
+	 * @param string $partyUuid The party object's uuid.
+	 *
+	 * @return ContactLink[] The links.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	public function findByPartyUuid(string $partyUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('party_uuid', $qb->createNamedParameter($partyUuid)))
+			->orderBy('linked_at', 'DESC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByPartyUuid()
+
+	/**
+	 * Every party link on an object, oldest first.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return ContactLink[] The links naming a party.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function findPartiesForObject(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNotNull('party_uuid'))
+			->orderBy('linked_at', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findPartiesForObject()
+
+	/**
+	 * The link marking the party the object is filed against, or null.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return ContactLink|null The primary party's link.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function findPrimaryParty(string $objectUuid): ?ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('primary_party', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+			->setMaxResults(1);
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findPrimaryParty()
 }//end class
