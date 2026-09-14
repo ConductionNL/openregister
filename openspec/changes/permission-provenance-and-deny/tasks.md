@@ -53,7 +53,7 @@
 - [ ] 8.2 A grant may carry an end, including one bound to a workflow step's deadline; an expired grant is not resolved and needs no sweep (D-11).
 - [ ] 8.3 A change to a rule that derives access re-runs the derivation and reports how many grants changed (D-11).
 - [ ] 8.4 `manage` may be scoped to a named area, so delegated administration is not a second administrator.
-- [ ] 8.5 Hand the catalogue's destroy verb to `delete-window-and-recorded-destruction`, which consumes it under D10.
+- [x] 8.5 Hand the catalogue's destroy verb to `delete-window-and-recorded-destruction`, which consumes it under D10. `destroy` is canonical in the catalogue, so a block or a role naming it saves; `DestroyRightService` already resolves it through `PermissionHandler`.
 
 ## 9. The rollout: staging first (D15)
 

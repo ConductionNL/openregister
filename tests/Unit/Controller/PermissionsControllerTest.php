@@ -122,7 +122,7 @@ class PermissionsControllerTest extends TestCase {
 	}//end schemaWith()
 
 	/**
-	 * The catalogue publishes the six canonical verbs with their descriptions.
+	 * The catalogue publishes the seven canonical verbs with their descriptions.
 	 *
 	 * @return void
 	 */
@@ -137,7 +137,7 @@ class PermissionsControllerTest extends TestCase {
 		$this->assertSame(DenyEnforcementMode::MODE_STAGING, $body['denyEnforcement']);
 
 		$verbs = array_column($body['permissions'], 'verb');
-		$this->assertSame(['read', 'create', 'update', 'delete', 'list', 'manage'], $verbs);
+		$this->assertSame(['read', 'create', 'update', 'delete', 'destroy', 'list', 'manage'], $verbs);
 
 		foreach ($body['permissions'] as $entry) {
 			foreach (['verb', 'app', 'description', 'levels', 'canonical'] as $key) {

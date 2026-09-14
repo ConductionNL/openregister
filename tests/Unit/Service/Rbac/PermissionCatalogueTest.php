@@ -55,7 +55,7 @@ class PermissionCatalogueTest extends TestCase {
 	}//end catalogueWith()
 
 	/**
-	 * The six canonical verbs are always offered, declared or not.
+	 * The seven canonical verbs are always offered, declared or not.
 	 *
 	 * @return void
 	 */
@@ -63,7 +63,7 @@ class PermissionCatalogueTest extends TestCase {
 		$catalogue = $this->catalogueWith();
 
 		$this->assertSame(
-			['read', 'create', 'update', 'delete', 'list', 'manage'],
+			['read', 'create', 'update', 'delete', 'destroy', 'list', 'manage'],
 			$catalogue->verbs()
 		);
 		foreach ($catalogue->all() as $entry) {
@@ -146,6 +146,42 @@ class PermissionCatalogueTest extends TestCase {
 
 		$this->assertTrue(true, 'A block of declared verbs did not throw.');
 	}//end testABlockOfCanonicalVerbsIsStorable()
+
+	/**
+	 * 🔴 The verb the delete window already enforces is grantable.
+	 *
+	 * `destroy` is canonical in PermissionHandler and resolved on every
+	 * destruction by DestroyRightService, so a catalogue that omitted it refused
+	 * a block naming a verb this instance enforces anyway. The two lists have to
+	 * agree in this direction: a verb the engine decides and the catalogue does
+	 * not know is a verb an administrator cannot write down (task 8.5, D10).
+	 *
+	 * @return void
+	 */
+	public function testTheDestroyVerbTheDeleteWindowEnforcesIsGrantable(): void {
+		$catalogue = $this->catalogueWith();
+
+		$this->assertTrue($catalogue->isGrantable('destroy'));
+		$this->assertSame(
+			PermissionCatalogue::CORE_APP,
+			$catalogue->declarationFor('destroy')['app']
+		);
+
+		$catalogue->assertGrantable(
+			[
+				'delete' => ['behandelaars'],
+				'destroy' => ['archivarissen'],
+				'deny' => ['destroy' => ['behandelaars']],
+			],
+			[['name' => 'archivaris', 'actions' => ['read', 'delete', 'destroy']]],
+			'the register "zaken"'
+		);
+
+		$this->assertSame(
+			[],
+			$catalogue->unknownActionsInRoles([['name' => 'archivaris', 'actions' => ['destroy']]])
+		);
+	}//end testTheDestroyVerbTheDeleteWindowEnforcesIsGrantable()
 
 	/**
 	 * A denied verb is checked too, because a deny uses the same grammar.
@@ -281,7 +317,7 @@ class PermissionCatalogueTest extends TestCase {
 		$dispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('listener exploded'));
 		$catalogue = new PermissionCatalogue($dispatcher);
 
-		$this->assertSame(['read', 'create', 'update', 'delete', 'list', 'manage'], $catalogue->verbs());
+		$this->assertSame(['read', 'create', 'update', 'delete', 'destroy', 'list', 'manage'], $catalogue->verbs());
 		$this->assertArrayHasKey('*', $catalogue->rejectedDeclarations());
 	}//end testAFailedDeclarationRoundLeavesTheCanonicalVerbs()
 
