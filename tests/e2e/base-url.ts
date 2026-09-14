@@ -30,10 +30,14 @@
  * every app in the fleet needs the identical resolver.
  */
 
+import { assertInstancePermitted } from './shared-instance.ts'
+
 /**
  * Resolve the base URL of the Nextcloud instance under test.
  *
- * @throws {Error} When none of the accepted environment variables is set.
+ * @throws {Error} When none of the accepted environment variables is set, or
+ * when the resolved URL is the shared development instance and the run did not
+ * name it in the opt-in variable.
  * @return {string} The base URL, without a trailing slash.
  */
 export function resolveBaseUrl(): string {
@@ -51,7 +55,9 @@ export function resolveBaseUrl(): string {
 		)
 	}
 
-	return url.replace(/\/+$/, '')
+	// One place a target enters this suite, so one place the shared-instance
+	// opt-in is checked. See tests/e2e/shared-instance.ts.
+	return assertInstancePermitted(url.replace(/\/+$/, ''))
 }
 
 /** The shared dev container these suites run against by default. */

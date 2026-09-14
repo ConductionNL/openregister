@@ -20,7 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -37,6 +39,33 @@ class ContactLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_contact_links', entityClass: ContactLink::class);
 	}//end __construct()
+
+	/**
+	 * One link by its row id.
+	 *
+	 * QBMapper has no `find()`, and ContactService::unlinkContact(),
+	 * updateRole() and the controller's legacy id path all call one: every
+	 * unlink of a contact answered 500 with "Call to undefined method
+	 * ContactLinkMapper::find()". The service's own tests did not catch it
+	 * because the mapper double declared the method with `addMethods(['find'])`
+	 * — a double that adds a method the real class lacks can only pass.
+	 *
+	 * @param int $id The row id.
+	 *
+	 * @return ContactLink The link.
+	 *
+	 * @throws DoesNotExistException When no link has that id.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
+	 */
+	public function find(int $id): ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+		return $this->findEntity(query: $qb);
+	}//end find()
 
 	/**
 	 * Find contact links by object UUID.
@@ -135,4 +164,59 @@ class ContactLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndContact()
+
+	/**
+	 * The link of one person on one object in one role, or null.
+	 *
+	 * The upsert key since people-on-objects: a person may hold several
+	 * roles on an object, one row each.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $contactUid The contact uid, `user:<uid>` for a user.
+	 * @param string|null $role The role, null for a link without one.
+	 *
+	 * @return ContactLink|null The link.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
+			->setMaxResults(1);
+		if ($role === null || $role === '') {
+			$qb->andWhere($qb->expr()->isNull('role'));
+		}
+
+		if ($role !== null && $role !== '') {
+			$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));
+		}
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByObjectContactAndRole()
+
+	/**
+	 * Every link that names a Nextcloud user, newest first.
+	 *
+	 * @param string $userId The user id.
+	 *
+	 * @return ContactLink[] The links.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function findByUserId(string $userId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
+			->orderBy('linked_at', 'DESC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByUserId()
 }//end class

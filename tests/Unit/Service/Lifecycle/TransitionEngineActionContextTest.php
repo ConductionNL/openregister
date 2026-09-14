@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -100,7 +101,8 @@ class TransitionEngineActionContextTest extends TestCase {
 			$this->createMock(RegisterMapper::class),
 			$appConfig,
 			$this->createMock(LoggerInterface::class),
-			new LifecycleWriteBoundary($this->context)
+			new LifecycleWriteBoundary($this->context),
+			$this->createMock(LifecycleActionProviderRegistry::class)
 		);
 	}//end setUp()
 

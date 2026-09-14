@@ -7,6 +7,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -159,5 +160,191 @@ class DateTimeNormalizerTest extends TestCase {
 		$this->logger->expects($this->once())->method('debug');
 		$this->assertNull($this->normalizer->formatForIso8601('not-a-date'));
 	}//end testFormatForIso8601OnGarbledReturnsNull()
+
+	// ------------------------------------------------------------------
+	// WOO-567 — a date-time with a non-UTC offset must keep its INSTANT
+	// across the database round-trip. `format()` renders in whatever
+	// timezone the instance carries, so rendering `…T00:00:00+02:00`
+	// straight to `Y-m-d H:i:s` dropped the offset instead of applying
+	// it, and the offset-less column value was then read back as UTC —
+	// moving a WMEBV objection deadline two hours forward.
+	// ------------------------------------------------------------------
+
+	/**
+	 * @dataProvider offsetToUtcProvider
+	 */
+	public function testFormatForDatabaseConvertsOffsetToUtc(string $input, string $expected): void {
+		$this->assertSame($expected, $this->normalizer->formatForDatabase($input));
+	}//end testFormatForDatabaseConvertsOffsetToUtc()
+
+	public static function offsetToUtcProvider(): array {
+		return [
+			// The reported case: a +02:00 deadline must move BACK two hours in
+			// the column, not keep its clock time.
+			'positive offset' => ['2026-10-20T00:00:00+02:00', '2026-10-19 22:00:00'],
+			'positive offset midday' => ['2026-09-08T10:46:00+02:00', '2026-09-08 08:46:00'],
+			// A negative offset must move forward, proving the conversion is
+			// signed and not a hardcoded European shift.
+			'negative offset' => ['2026-10-20T00:00:00-05:00', '2026-10-20 05:00:00'],
+			// Already UTC, in both spellings: unchanged.
+			'explicit utc offset' => ['2026-10-20T00:00:00+00:00', '2026-10-20 00:00:00'],
+			'zulu' => ['2026-10-20T00:00:00Z', '2026-10-20 00:00:00'],
+			// A naive value carries no offset, so it is taken as already being
+			// in the column's timezone and is not shifted.
+			'naive datetime' => ['2026-10-20 00:00:00', '2026-10-20 00:00:00'],
+			'date only' => ['2026-10-20', '2026-10-20 00:00:00'],
+		];
+	}//end offsetToUtcProvider()
+
+	public function testFormatForDatabaseConvertsDateTimeObjectToUtc(): void {
+		$value = new DateTimeImmutable('2026-10-20T00:00:00+02:00');
+		$this->assertSame('2026-10-19 22:00:00', $this->normalizer->formatForDatabase($value));
+
+		$mutable = new DateTime('2026-10-20T00:00:00-05:00');
+		$this->assertSame('2026-10-20 05:00:00', $this->normalizer->formatForDatabase($mutable));
+	}//end testFormatForDatabaseConvertsDateTimeObjectToUtc()
+
+	public function testFormatDatabaseValueForIso8601ReadsNaiveColumnAsUtc(): void {
+		$this->assertSame(
+			'2026-10-19T22:00:00+00:00',
+			$this->normalizer->formatDatabaseValueForIso8601('2026-10-19 22:00:00')
+		);
+	}//end testFormatDatabaseValueForIso8601ReadsNaiveColumnAsUtc()
+
+	public function testFormatDatabaseValueForIso8601OnEmptyReturnsNull(): void {
+		$this->assertNull($this->normalizer->formatDatabaseValueForIso8601(''));
+		$this->assertNull($this->normalizer->formatDatabaseValueForIso8601(null));
+		$this->assertNull($this->normalizer->formatDatabaseValueForIso8601('   '));
+	}//end testFormatDatabaseValueForIso8601OnEmptyReturnsNull()
+
+	/**
+	 * The end-to-end contract: write then read must land on the same instant.
+	 *
+	 * @dataProvider roundTripProvider
+	 */
+	public function testWriteThenReadPreservesTheInstant(string $input): void {
+		$stored = $this->normalizer->formatForDatabase($input);
+		$this->assertIsString($stored);
+
+		$readBack = $this->normalizer->formatDatabaseValueForIso8601($stored);
+		$this->assertIsString($readBack);
+
+		$this->assertSame(
+			(new DateTimeImmutable($input))->getTimestamp(),
+			(new DateTimeImmutable($readBack))->getTimestamp(),
+			'The round-trip moved the instant for input ' . $input
+		);
+	}//end testWriteThenReadPreservesTheInstant()
+
+	public static function roundTripProvider(): array {
+		return [
+			'positive offset' => ['2026-10-20T00:00:00+02:00'],
+			'negative offset' => ['2026-10-20T00:00:00-05:00'],
+			'half-hour offset' => ['2026-10-20T00:00:00+05:30'],
+			'zulu' => ['2026-10-20T00:00:00Z'],
+			'winter time' => ['2026-01-15T09:30:00+01:00'],
+		];
+	}//end roundTripProvider()
+
+	/**
+	 * The round-trip must not depend on the server's `date.timezone`: the
+	 * column carries no offset, so both directions have to agree on UTC
+	 * rather than on whatever PHP happens to default to.
+	 *
+	 * @dataProvider serverTimezoneProvider
+	 */
+	public function testRoundTripIsIndependentOfServerTimezone(string $serverTimezone): void {
+		$original = date_default_timezone_get();
+		date_default_timezone_set($serverTimezone);
+
+		try {
+			$stored = $this->normalizer->formatForDatabase('2026-10-20T00:00:00+02:00');
+			$this->assertSame('2026-10-19 22:00:00', $stored);
+
+			$this->assertSame(
+				'2026-10-19T22:00:00+00:00',
+				$this->normalizer->formatDatabaseValueForIso8601($stored)
+			);
+		} finally {
+			date_default_timezone_set($original);
+		}
+	}//end testRoundTripIsIndependentOfServerTimezone()
+
+	public static function serverTimezoneProvider(): array {
+		return [
+			'utc' => ['UTC'],
+			'amsterdam' => ['Europe/Amsterdam'],
+			'new york' => ['America/New_York'],
+			'kathmandu' => ['Asia/Kathmandu'],
+		];
+	}//end serverTimezoneProvider()
+
+	public function testNormalizeAppliesAssumedTimezoneOnlyToNaiveStrings(): void {
+		$utc = new DateTimeZone('UTC');
+
+		// Naive: the assumed timezone is applied.
+		$naive = $this->normalizer->normalize('2026-10-20 00:00:00', $utc);
+		$this->assertInstanceOf(DateTimeImmutable::class, $naive);
+		$this->assertSame('+00:00', $naive->format('P'));
+
+		// Offset-bearing: the string's own offset wins, and the instant is
+		// whatever the caller sent.
+		$explicit = $this->normalizer->normalize('2026-10-20T00:00:00+02:00', $utc);
+		$this->assertInstanceOf(DateTimeImmutable::class, $explicit);
+		$this->assertSame('+02:00', $explicit->format('P'));
+		$this->assertSame(
+			(new DateTimeImmutable('2026-10-19T22:00:00Z'))->getTimestamp(),
+			$explicit->getTimestamp()
+		);
+	}//end testNormalizeAppliesAssumedTimezoneOnlyToNaiveStrings()
+
+	/**
+	 * A `format: date` value names a calendar DAY, so the UTC conversion the
+	 * date-time path needs must NOT be applied to it. Converting moves the day
+	 * in both directions — `2026-10-20T00:00:00+02:00` would store the 19th and
+	 * `2026-10-20T23:30:00-05:00` the 21st — which would silently move a due
+	 * date for any client that sends an offset.
+	 *
+	 * @dataProvider calendarDateProvider
+	 */
+	public function testACalendarDateKeepsItsDayWhateverOffsetItArrivesWith(
+		string $input,
+		string $expectedDay
+	): void {
+		$formatted = $this->normalizer->formatDateForDatabase($input);
+
+		$this->assertNotNull($formatted);
+		$this->assertSame(
+			$expectedDay,
+			substr($formatted, 0, 10),
+			sprintf('`%s` must still be stored on %s', $input, $expectedDay)
+		);
+	}//end testACalendarDateKeepsItsDayWhateverOffsetItArrivesWith()
+
+	public static function calendarDateProvider(): array {
+		return [
+			'bare date' => ['2026-10-20', '2026-10-20'],
+			'midnight with a positive offset' => ['2026-10-20T00:00:00+02:00', '2026-10-20'],
+			'late evening with a negative offset' => ['2026-10-20T23:30:00-05:00', '2026-10-20'],
+			'explicit utc' => ['2026-10-20T00:00:00Z', '2026-10-20'],
+		];
+	}//end calendarDateProvider()
+
+	/**
+	 * The contrast that makes the split meaningful: the SAME input, read as a
+	 * date-time, does move — because a date-time names an instant and the
+	 * offset has to be applied for that instant to survive the offset-less
+	 * column.
+	 */
+	public function testTheSameInputAsADateTimeIsConvertedNotPreserved(): void {
+		$this->assertSame(
+			'2026-10-19 22:00:00',
+			$this->normalizer->formatForDatabase('2026-10-20T00:00:00+02:00')
+		);
+		$this->assertSame(
+			'2026-10-20 00:00:00',
+			$this->normalizer->formatDateForDatabase('2026-10-20T00:00:00+02:00')
+		);
+	}//end testTheSameInputAsADateTimeIsConvertedNotPreserved()
 
 }//end class

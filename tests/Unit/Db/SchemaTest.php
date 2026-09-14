@@ -483,6 +483,73 @@ class SchemaTest extends TestCase {
 		$this->assertTrue($result['allowFiles']);
 	}
 
+	/**
+	 * people-on-objects: the role vocabulary round-trips, a bare string
+	 * reads as key and label, and getLinkRoles() normalises both.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	public function testLinkRolesRoundTripAndNormalise(): void {
+		$this->schema->setConfiguration(
+			[
+				'linkRoles' => [
+					['key' => 'initiator', 'label' => 'Initiator', 'description' => 'Who asked for it'],
+					['key' => 'handler'],
+					'advisor',
+				],
+			]
+		);
+
+		$roles = $this->schema->getLinkRoles();
+
+		$this->assertSame(['initiator', 'handler', 'advisor'], array_column($roles, 'key'));
+		$this->assertSame('Initiator', $roles[0]['label']);
+		$this->assertSame('Who asked for it', $roles[0]['description']);
+		// A key with no label labels itself, and neither gains a description.
+		$this->assertSame('handler', $roles[1]['label']);
+		$this->assertArrayNotHasKey('description', $roles[1]);
+		$this->assertSame(['key' => 'advisor', 'label' => 'advisor'], $roles[2]);
+	}//end testLinkRolesRoundTripAndNormalise()
+
+	/**
+	 * people-on-objects: a schema that declares no roles has no vocabulary.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	public function testNoLinkRolesIsAnEmptyVocabulary(): void {
+		$this->schema->setConfiguration(['allowFiles' => true]);
+
+		$this->assertSame([], $this->schema->getLinkRoles());
+	}//end testNoLinkRolesIsAnEmptyVocabulary()
+
+	/**
+	 * people-on-objects: a duplicate key, an empty key and a non-list are
+	 * refused, and per-key isolation drops only linkRoles.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	public function testInvalidLinkRolesAreDroppedWithoutLosingTheRest(): void {
+		foreach ([
+			[['key' => 'handler'], ['key' => 'handler']],
+			[['key' => '']],
+			[['key' => str_repeat('x', 65)]],
+			'not-a-list',
+		] as $bad) {
+			$this->schema->setConfiguration(['allowFiles' => true, 'linkRoles' => $bad]);
+			$configuration = $this->schema->getConfiguration();
+
+			$this->assertArrayNotHasKey('linkRoles', $configuration);
+			$this->assertTrue($configuration['allowFiles']);
+			$this->assertSame([], $this->schema->getLinkRoles());
+		}
+	}//end testInvalidLinkRolesAreDroppedWithoutLosingTheRest()
+
 	public function testSetConfigurationFallbackJsonString(): void {
 		$this->schema->setConfiguration('{"allowFiles":true}');
 		$result = $this->schema->getConfiguration();

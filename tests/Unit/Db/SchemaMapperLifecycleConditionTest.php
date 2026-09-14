@@ -242,4 +242,59 @@ class SchemaMapperLifecycleConditionTest extends TestCase {
 			)
 		);
 	}//end testAValidConditionSavesSilently()
+
+	/**
+	 * A mistyped provider tag refuses the save.
+	 *
+	 * Stored advisory, it would fail nowhere until a client asked what the
+	 * object can do, on a GET, and got a 502 for a schema whose author was
+	 * told the save succeeded.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyProviderRefusesTheSave(): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/^Invalid .*lifecycle-provider-invalid/');
+
+		$this->validate(['field' => 'status', 'provider' => '']);
+	}//end testAnEmptyProviderRefusesTheSave()
+
+	/**
+	 * Two lifecycle modes on one field refuse the save, for the same reason
+	 * the validator refuses them: the mode the engine drops would read as
+	 * declared and never run.
+	 *
+	 * @return void
+	 */
+	public function testTwoModesOnOneFieldRefuseTheSave(): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/^Invalid .*lifecycle-provider-mode-conflict/');
+
+		$this->validate(
+			[
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				'transitions' => ['beslissen' => ['from' => ['open'], 'to' => 'besloten']],
+			]
+		);
+	}//end testTwoModesOnOneFieldRefuseTheSave()
+
+	/**
+	 * A well-formed provider declaration saves silently: no refusal, and no
+	 * advisory warning either, so the relaxed enum rule is real rather than
+	 * downgraded to a log line.
+	 *
+	 * @return void
+	 */
+	public function testAValidProviderSavesSilently(): void {
+		$this->logger->expects($this->never())->method('warning');
+
+		$this->validate(
+			[
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			]
+		);
+	}//end testAValidProviderSavesSilently()
 }//end class

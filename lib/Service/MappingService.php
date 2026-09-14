@@ -173,6 +173,21 @@ class MappingService {
 				'b64enc',
 				'b64dec',
 				'json_decode',
+				// Twig core's own filter, and the counterpart to the
+				// `json_decode` above it. It was missing, so a stored mapping
+				// that encodes a value to JSON failed at RENDER with a Twig
+				// SecurityError naming a filter, nowhere near the mapping the
+				// operator was looking at. dossiq stores several ZGW
+				// properties as JSON text and encodes them in twelve of its
+				// default mappings; two of those sit in the setUp of the VNG
+				// ZGW contract collections, so the zaaktype create 400ed and
+				// took every later request in the collection with it.
+				// See #3663.
+				//
+				// It is a pure value transform. The policy already denies
+				// every method and property, so this widens nothing an
+				// attacker can reach.
+				'json_encode',
 				'zgw_enum',
 				'zgw_enum_reverse',
 				'zgw_extract_uuid',

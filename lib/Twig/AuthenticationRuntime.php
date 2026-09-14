@@ -18,7 +18,6 @@
 
 namespace OCA\OpenRegister\Twig;
 
-use Adbar\Dot;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Service\AuthenticationService;
 use Twig\Extension\RuntimeExtensionInterface;
@@ -54,8 +53,14 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function oauthToken(Source $source): string {
-		$configuration = new Dot($source->getConfiguration(), true);
-		$authConfig = $configuration->get('authentication');
+		// Read getAuthConfig(), not getConfiguration(): Source has no
+		// `configuration` property, column or serialized field — only a
+		// leftover @method docblock — so the old call threw "configuration is
+		// not a valid attribute" out of Entity::__call and every templated
+		// token answered 500. The credential map that the auth service reads
+		// (grant_type, tokenUrl and friends) is authConfig, flat, which is the
+		// shape every other reader in the app already uses.
+		$authConfig = ($source->getAuthConfig() ?? []);
 
 		return $this->authService->fetchOAuthTokens($authConfig);
 	}//end oauthToken()
@@ -72,8 +77,14 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function decosToken(Source $source): string {
-		$configuration = new Dot($source->getConfiguration(), true);
-		$authConfig = $configuration->get('authentication');
+		// Read getAuthConfig(), not getConfiguration(): Source has no
+		// `configuration` property, column or serialized field — only a
+		// leftover @method docblock — so the old call threw "configuration is
+		// not a valid attribute" out of Entity::__call and every templated
+		// token answered 500. The credential map that the auth service reads
+		// (grant_type, tokenUrl and friends) is authConfig, flat, which is the
+		// shape every other reader in the app already uses.
+		$authConfig = ($source->getAuthConfig() ?? []);
 
 		return $this->authService->fetchDecosToken($authConfig);
 	}//end decosToken()
@@ -88,8 +99,14 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function jwtToken(Source $source): string {
-		$configuration = new Dot($source->getConfiguration(), true);
-		$authConfig = $configuration->get('authentication');
+		// Read getAuthConfig(), not getConfiguration(): Source has no
+		// `configuration` property, column or serialized field — only a
+		// leftover @method docblock — so the old call threw "configuration is
+		// not a valid attribute" out of Entity::__call and every templated
+		// token answered 500. The credential map that the auth service reads
+		// (grant_type, tokenUrl and friends) is authConfig, flat, which is the
+		// shape every other reader in the app already uses.
+		$authConfig = ($source->getAuthConfig() ?? []);
 
 		return $this->authService->fetchJWTToken($authConfig);
 	}//end jwtToken()

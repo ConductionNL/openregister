@@ -27,8 +27,7 @@ class DeckCardServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->deckLinkMapper = $this->getMockBuilder(DeckLinkMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findByObjectUuid', 'findByBoardId', 'findByObjectAndCard', 'deleteByObjectUuid', 'insert', 'delete'])
-			->addMethods(['find'])
+			->onlyMethods(['find', 'findByObjectUuid', 'findByBoardId', 'findByObjectAndCard', 'deleteByObjectUuid', 'insert', 'delete'])
 			->getMock();
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->userSession = $this->createMock(IUserSession::class);

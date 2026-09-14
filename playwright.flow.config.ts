@@ -11,6 +11,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  */
 import { defineConfig } from '@playwright/test'
+import { resolveBaseUrl } from './tests/e2e/base-url.ts'
 
 export default defineConfig({
 	testDir: './tests/e2e/api-direct',
@@ -19,7 +20,12 @@ export default defineConfig({
 	reporter: [['list']],
 	timeout: 120_000,
 	use: {
-		baseURL: process.env.NEXTCLOUD_URL || 'http://localhost:8080',
+		// Routed through the shared resolver so this config is not a second
+		// entrance for the base URL. The `|| 'http://localhost:8080'` that
+		// stood here aimed at the shared dev instance whenever NEXTCLOUD_URL
+		// was unset, which is the accident tests/e2e/shared-instance.ts exists
+		// to refuse. NEXTCLOUD_URL is still accepted: the resolver reads it.
+		baseURL: resolveBaseUrl(),
 		httpCredentials: {
 			username: process.env.NEXTCLOUD_ADMIN_USER || 'admin',
 			password: process.env.NEXTCLOUD_ADMIN_PASSWORD || 'admin',
