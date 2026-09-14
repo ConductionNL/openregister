@@ -46,3 +46,59 @@ number), humaniq (employee number), pipelinq (quote number), keepiq (ticket).
   `ObjectCreatingEvent` beside the lifecycle initial-state listener, the
   update guard, import handling.
 - Backwards compatible: a schema without the annotation is unchanged.
+
+## Discovery cluster 41 extension (2026-09-14)
+
+The round 4 discovery sweep in ConductionNL/market-intelligence,
+`procest/_round4/discovery/build-plan.md`, puts cluster 41, "Case
+numbering, sequences and second identifiers", on openregister's identifier
+allocation, which is this change. Size M, five candidates: C-case-core-20,
+-28, -30, -39 and C-configuration-61. Two are `must` and one is a matrix
+hole: C-case-core-30. Passers: 5, all five driven. Proving system
+osticket. dossiq rates `partial` on one and `no` on four. The cluster
+carries no decision of its own and enters under D6.
+
+Ledger row the candidate notes name: 2.1, which this change already
+closes for the sequence and the format.
+
+- **Each record type has its own number format and sequence, or a
+  non-sequential one** (C-case-core-30, `must`, a hole): osticket,
+  "Per-case-type number sequence (include/class.sequence.php:5, :43 next()
+  under a lock, :214 RandomSequence)", and znuny. dossiq: "complaints
+  only, and the format is a mask".
+- **The identifier the sending system used is kept beside the one this
+  system allocated, and finds the record** (C-case-core-39, `must`):
+  kanboard, "Task, 26 detail fields including a reference". A zaak arrives
+  over ZGW or StUF with the sender's own id and we have nowhere to put it,
+  so correlation is a text search. dossiq: "case.identifier is free text
+  and reads a dash on 5 of 7 demo rows".
+- **A second, human number with an administered prefix beside the system
+  one** (C-case-core-20): xxllnc-zaken, "Configuratie > Zaken". The number
+  the citizen was given in a letter is often not the system's.
+- **Changing the identifier scheme rewrites the identifiers already
+  issued, and reports that migration's progress** (C-case-core-28):
+  openproject, "Administration, /admin/settings/work_packages_identifier
+  with get :status and confirm_dialog".
+- **Identifiers are reserved so nothing else can claim them**
+  (C-configuration-61, `could`): openproject, "resources
+  :project_reserved_identifiers".
+
+**What the extension adds.**
+
+- **A non-sequential sequence kind.** Beside the counter, a random
+  identifier of a declared length and alphabet, allocated under the same
+  uniqueness guarantee. A municipality that does not want its case volume
+  readable from a case number needs this and nothing else.
+- **A foreign identifier is a first-class value.** An object may carry
+  identifiers allocated elsewhere, each naming the system that issued it.
+  They are indexed and resolvable, so a ZGW or StUF message finds its
+  object by the sender's own id without a text search.
+- **A second, human identifier beside the system one.** Generated from its
+  own sequence and format, kept in step with the first, and the one that
+  goes in a letter.
+- **Reserved identifiers.** A value or a pattern may be reserved so no
+  sequence issues it.
+- **A scheme change is a migration with progress.** Changing the format of
+  an already-issued identifier runs as a background job, reports progress,
+  keeps the old value as a foreign identifier of this system, and is
+  refused while another migration of the same sequence runs.
