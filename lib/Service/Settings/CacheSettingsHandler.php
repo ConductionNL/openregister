@@ -501,9 +501,18 @@ class CacheSettingsHandler {
 			$objectCacheService->clearCache();
 			$afterStats = $objectCacheService->getStats();
 
+			// `getStats()` reports the object cache count as `cache_size`; it
+			// has never had an `entries` key. Reading one raised two PHP
+			// warnings per call and made `cleared` the difference of two
+			// nulls, so the admin panel reported 0 cleared however many
+			// entries went. Surfaced by ControllersIntegrationTest once it
+			// could construct its controllers again (dark-suite wave 4).
+			$before = ($beforeStats['entries'] ?? $beforeStats['cache_size'] ?? 0);
+			$after = ($afterStats['entries'] ?? $afterStats['cache_size'] ?? 0);
+
 			return [
 				'service' => 'object',
-				'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+				'cleared' => ($before - $after),
 				'before' => $beforeStats,
 				'after' => $afterStats,
 				'success' => true,
