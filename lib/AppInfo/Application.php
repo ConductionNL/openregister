@@ -3043,6 +3043,14 @@ class Application extends App implements IBootstrap {
 		// - queue-mode drain triggers: schema save + app enable (a provider may
 		// have appeared); the fallback HandoffQueueDrainJob catches the rest.
 		$context->registerEventListener(ObjectTransitionedEvent::class, HandoffLifecycleListener::class);
+
+		// Nomination at closure: a record reaching a state its schema declares
+		// final gets its archiefnominatie and archiefactiedatum derived and
+		// written, with the rule that produced each.
+		$context->registerEventListener(
+			ObjectTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\ArchivalNominationListener::class
+		);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
