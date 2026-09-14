@@ -74,7 +74,12 @@ across tables. `referential-integrity` carries `inversedBy` and
 `writeBack` and the `uses` and `used` traversal.
 `relation-types-with-inverses` is open for the inverse label.
 `admin-list-views` and `saved-search-views` carry list surfaces.
-`geo-metadata-kaart` carries geographic metadata. So the links exist and
+`geo-metadata-kaart` carries geographic metadata, and carries an inherited
+defect with it: its main spec holds a `## ADDED Requirements` delta header
+at line 14, which truncates the parsed `## Requirements` section and makes
+`openspec archive` refuse any delta against it. The geographic requirement
+here targets `linked-entity-types` instead, and the defect is reported
+rather than fixed, because it is on a line this change does not touch. So the links exist and
 can be traversed, and a list surface exists. What is missing is the
 reading: no surface treats an object as the root and its referencing
 records as its history, no property renders a referenced value without
@@ -129,9 +134,8 @@ copying it, and no geographic feature says which relation it came from.
 
 ## Impact
 
-- Extends: `linked-entity-types` (the reverse view, the lens and the list
-  declaration) and `geo-metadata-kaart` (inherited features with
-  provenance).
+- Extends: `linked-entity-types` with the reverse view, the lens, the list
+  declaration and the inherited geographic features.
 - Affected code: the reverse lookup service, the read-time enrichment
   path, the schema validator, the list surface's column resolution, the
   geographic collector.

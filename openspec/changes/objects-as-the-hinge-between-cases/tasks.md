@@ -34,3 +34,4 @@
 
 - [ ] 6.1 Hand the reverse view and the lens to the dossiq lane, which declares the object types a case type may reference, with the seven candidate ids.
 - [ ] 6.2 Tell the buildiq lane that CT-6, the layout per case type, renders these and is not specified here.
+- [ ] 6.3 Report the inherited defect in `specs/geo-metadata-kaart/spec.md`: a `## ADDED Requirements` header in a main spec, which hides eight requirements from validate, list and archive. It belongs to the debt sweep, not to this change.
