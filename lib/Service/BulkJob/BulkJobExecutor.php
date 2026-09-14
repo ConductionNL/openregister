@@ -155,13 +155,18 @@ class BulkJobExecutor {
 			$object = ($objects[$uuid] ?? null);
 			$result = $this->rehearse(object: $object, action: $action, job: $job, actor: $actor);
 
+			$version = null;
+			if ($object !== null) {
+				$version = $this->schemaVersionOf(object: $object);
+			}
+
 			$this->memberMapper->createFromArray(
 				[
 					'jobId' => $job->getId(),
 					'objectUuid' => $uuid,
 					'outcome' => $result->getOutcome(),
 					'reason' => $result->getReason(),
-					'schemaVersion' => ($object === null ? null : $this->schemaVersionOf(object: $object)),
+					'schemaVersion' => $version,
 					'addedAtCommit' => $addedAtCommit,
 				]
 			);
@@ -464,11 +469,7 @@ class BulkJobExecutor {
 	 * @return string|null The schema version.
 	 */
 	private function schemaVersionOf(ObjectEntity $object): ?string {
-		try {
-			$version = $object->getSchemaVersion();
-		} catch (\Throwable $exception) {
-			return null;
-		}
+		$version = ($object->jsonSerialize()['schemaVersion'] ?? null);
 
 		if (is_string($version) === false || $version === '') {
 			return null;

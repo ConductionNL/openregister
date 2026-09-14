@@ -180,7 +180,7 @@ class BulkJobsController extends Controller {
 		$action = (string)$this->request->getParam('action', '');
 		$parameters = $this->arrayParam(name: 'parameters');
 		$selection = $this->arrayParam(name: 'selection');
-		$justification = $this->request->getParam('justification');
+		$justification = $this->nullableString(value: $this->request->getParam('justification'));
 		$register = $this->nullableInt(value: $this->request->getParam('register'));
 		$schema = $this->nullableInt(value: $this->request->getParam('schema'));
 
@@ -189,7 +189,7 @@ class BulkJobsController extends Controller {
 				actionId: $action,
 				parameters: $parameters,
 				selection: $selection,
-				justification: ($justification === null ? null : (string)$justification),
+				justification: $justification,
 				actorUid: $uid,
 				registerId: $register,
 				schemaId: $schema
@@ -230,13 +230,10 @@ class BulkJobsController extends Controller {
 			);
 		}
 
-		$justification = $this->request->getParam('justification');
+		$justification = $this->nullableString(value: $this->request->getParam('justification'));
 
 		try {
-			$committed = $this->service->commit(
-				job: $job,
-				justification: ($justification === null ? null : (string)$justification)
-			);
+			$committed = $this->service->commit(job: $job, justification: $justification);
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);
 		} catch (InvalidArgumentException $exception) {
@@ -310,13 +307,13 @@ class BulkJobsController extends Controller {
 			return $job;
 		}
 
-		$outcome = $this->request->getParam('outcome');
+		$outcome = $this->nullableString(value: $this->request->getParam('outcome'));
 		$limit = $this->boundedInt(value: $this->request->getParam('limit'), fallback: 100);
 		$offset = $this->boundedInt(value: $this->request->getParam('offset'), fallback: 0);
 
 		$members = $this->service->members(
 			job: $job,
-			outcome: ($outcome === null ? null : (string)$outcome),
+			outcome: $outcome,
 			limit: $limit,
 			offset: $offset
 		);
@@ -354,6 +351,11 @@ class BulkJobsController extends Controller {
 			$page = $this->service->members(job: $job, limit: self::MAX_PAGE, offset: $offset);
 
 			foreach ($page as $member) {
+				$grown = 'no';
+				if ($member->getAddedAtCommit() === true) {
+					$grown = 'yes';
+				}
+
 				$rows[] = implode(
 					',',
 					[
@@ -361,7 +363,7 @@ class BulkJobsController extends Controller {
 						$this->csvCell(value: $member->getOutcome()),
 						$this->csvCell(value: $member->getReason()),
 						$this->csvCell(value: $member->getSchemaVersion()),
-						$this->csvCell(value: ($member->getAddedAtCommit() === true ? 'yes' : 'no')),
+						$this->csvCell(value: $grown),
 					]
 				);
 			}
@@ -494,6 +496,21 @@ class BulkJobsController extends Controller {
 
 		return (int)max(0, min(self::MAX_PAGE, (int)$value));
 	}//end boundedInt()
+
+	/**
+	 * Read an optional string parameter.
+	 *
+	 * @param mixed $value The raw parameter.
+	 *
+	 * @return string|null The value, or null when none was sent.
+	 */
+	private function nullableString(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end nullableString()
 
 	/**
 	 * Read an optional numeric parameter.

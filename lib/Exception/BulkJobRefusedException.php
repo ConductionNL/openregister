@@ -48,7 +48,7 @@ class BulkJobRefusedException extends RuntimeException {
 		private readonly string $reason = 'refused',
 		private readonly array $details = [],
 	) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 	}//end __construct()
 
 	/**

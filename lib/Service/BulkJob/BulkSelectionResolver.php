@@ -174,10 +174,6 @@ class BulkSelectionResolver {
 	 * @return array<int, string> The matching uuids.
 	 */
 	private function resolveQuery(array $query, ?int $registerId, ?int $schemaId, int $ceiling): array {
-		if (is_array($query) === false) {
-			return [];
-		}
-
 		$scoped = $this->scopedQuery(query: $query, registerId: $registerId, schemaId: $schemaId);
 		$scoped['_limit'] = ($ceiling + 1);
 
