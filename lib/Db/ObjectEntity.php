@@ -1675,6 +1675,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @throws Exception If no user is logged in
 	 *
 	 * @return static Returns the entity
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
 		$currentUser = $userSession->getUser();
