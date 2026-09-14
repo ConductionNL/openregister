@@ -157,7 +157,11 @@ class AnonymisationBackendService {
 	 *
 	 * @param string $method One of BackendState::METHODS.
 	 *
+	 * An OpenAnonymiser test also tells integriq's connection registry what it found.
+	 *
 	 * @return ProbeResult The fresh probe result.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function testConnection(string $method): ProbeResult {
 		$result = $this->freshProbe(method: $method);
