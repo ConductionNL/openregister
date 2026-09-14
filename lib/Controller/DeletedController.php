@@ -33,7 +33,15 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
+use OCA\OpenRegister\Service\Deletion\DestroyRightService;
+use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
+use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
+use OCA\OpenRegister\Service\Deletion\DestructionScope;
+use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
+use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -67,6 +75,12 @@ class DeletedController extends Controller {
 	 * @param IUserSession $userSession The user session
 	 * @param IGroupManager $groupManager The group manager for admin checks
 	 * @param PermissionHandler $permissionHandler Handler for per-schema RBAC checks
+	 * @param DeletionWindowService $deletionWindowService Publishes the recovery window
+	 * @param DestroyRightService $destroyRightService Decides whether the caller may destroy
+	 * @param DestructionScopeService $destructionScopeService Previews and carries out the declared scope
+	 * @param DestructionRecorder $destructionRecorder Writes the record that survives the object
+	 * @param RetentionClockService $retentionClockService Reads the AVG and Archiefwet clocks
+	 * @param AuditTrailMapper $auditTrailMapper Reads back a destruction record and records a restore
 	 *
 	 * @return void
 	 */
@@ -79,6 +93,12 @@ class DeletedController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionHandler $permissionHandler,
+		private readonly DeletionWindowService $deletionWindowService,
+		private readonly DestroyRightService $destroyRightService,
+		private readonly DestructionScopeService $destructionScopeService,
+		private readonly DestructionRecorder $destructionRecorder,
+		private readonly RetentionClockService $retentionClockService,
+		private readonly AuditTrailMapper $auditTrailMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -299,6 +319,40 @@ class DeletedController extends Controller {
 	}//end extractRequestParameters()
 
 	/**
+	 * Attach the published recovery window to every row of a trash listing.
+	 *
+	 * A window that lives only as a `purgeDate` inside the deletion blob is
+	 * one nobody reads. Each row is returned as its serialised form plus a
+	 * `deletionWindow` naming the destroyable-from date, the days remaining
+	 * and the rule that set the retention.
+	 *
+	 * @param array<int, ObjectEntity> $objects The soft-deleted rows.
+	 *
+	 * @return array<int, array<string, mixed>> The rows with their window.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	private function withWindows(array $objects): array {
+		$rows = [];
+		foreach ($objects as $object) {
+			$row = $object->jsonSerialize();
+			$window = $this->deletionWindowService->windowFor(
+				object: $object,
+				schema: $this->resolveSchema(object: $object)
+			);
+
+			$row['deletionWindow'] = null;
+			if ($window !== null) {
+				$row['deletionWindow'] = $window->toArray();
+			}
+
+			$rows[] = $row;
+		}
+
+		return $rows;
+	}//end withWindows()
+
+	/**
 	 * Get all soft deleted objects
 	 *
 	 * @return JSONResponse JSON response containing deleted objects
@@ -337,7 +391,7 @@ class DeletedController extends Controller {
 
 			return new JSONResponse(
 				data: [
-					'results' => array_values($deletedObjects),
+					'results' => $this->withWindows(objects: array_values($deletedObjects)),
 					'total' => $total,
 					'page' => $params['page'] ?? 1,
 					'pages' => $pages,
@@ -462,8 +516,16 @@ class DeletedController extends Controller {
 	 * @return JSONResponse JSON response with restore result
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	public function restore(string $id): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(
+				data: ['error' => 'Not authenticated'],
+				statusCode: 401
+			);
+		}
+
 		try {
 			$object = $this->objectEntityMapper->find($id, null, null, true);
 
@@ -476,18 +538,42 @@ class DeletedController extends Controller {
 				);
 			}
 
+			// Restoring is a write. `restoreMultiple()` has gated on `update`
+			// since the wave-3 C4 finding; the single-object endpoint beside it
+			// never did, so the bulk door was locked and the single door was
+			// open.
+			if ($this->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
+				return new JSONResponse(
+					data: ['error' => 'User does not have permission to restore this object'],
+					statusCode: 403
+				);
+			}
+
+			$window = $this->deletionWindowService->windowFor(
+				object: $object,
+				schema: $this->resolveSchema(object: $object)
+			);
+
 			// Restore via MagicMapper: objects live in per-register/schema magic
 			// tables, NOT the legacy generic `openregister_objects` table. The
 			// old direct `UPDATE openregister_objects` matched zero rows, so the
 			// call reported success but never un-deleted the object.
 			$this->objectEntityMapper->restoreObject(uuid: $id);
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Object restored successfully',
-				]
-			);
+			// A restore is one act, and it is recorded with its actor. Without
+			// this the trail shows an object deleted and then, without
+			// explanation, present again.
+			$this->recordRestore(object: $object, window: $window);
+
+			$data = [
+				'success' => true,
+				'message' => 'Object restored successfully',
+			];
+			if ($window !== null) {
+				$data['restoredWithin'] = $window->toArray();
+			}
+
+			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: [
@@ -497,6 +583,53 @@ class DeletedController extends Controller {
 			);
 		}//end try
 	}//end restore()
+
+	/**
+	 * Record a restore with the actor who made it.
+	 *
+	 * Failure is logged into the response path rather than thrown: a restore
+	 * that succeeded must not be reported as failed because its record could
+	 * not be written. That is the opposite trade-off to a DESTRUCTION, which
+	 * refuses when unrecordable, and the difference is that a restore is
+	 * reversible and a destruction is not.
+	 *
+	 * @param ObjectEntity $object The object restored.
+	 * @param \OCA\OpenRegister\Service\Deletion\DeletionWindow|null $window The window it was restored inside.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	private function recordRestore(ObjectEntity $object, mixed $window): void {
+		$user = $this->userSession->getUser();
+		$actor = 'system';
+		$actorName = 'System';
+		if ($user !== null) {
+			$actor = $user->getUID();
+			$actorName = $user->getDisplayName();
+		}
+
+		$context = [
+			'restoredBy' => $actor,
+			'restoredAt' => (new DateTime())->format(DateTime::ATOM),
+			'objectUuid' => (string)$object->getUuid(),
+		];
+		if ($window !== null) {
+			$context['restoredWithin'] = $window->toArray();
+		}
+
+		try {
+			$this->auditTrailMapper->createAuditTrailEntry(
+				object: $object,
+				action: 'object.restored',
+				context: $context,
+				actorId: $actor,
+				actorName: $actorName
+			);
+		} catch (\Throwable $e) {
+			// Swallowed on purpose, see the docblock.
+		}
+	}//end recordRestore()
 
 	/**
 	 * Restore multiple deleted objects
@@ -657,24 +790,78 @@ class DeletedController extends Controller {
 				);
 			}
 
-			// Per-object RBAC gate: caller must have `delete` permission on
-			// the resolved schema (admins bypass). Cross-tenant destructive
-			// deletes are refused with 403 — no silent fail since this is a
-			// single-object endpoint.
-			if ($this->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
+			$schema = $this->resolveSchema(object: $object);
+
+			// DESTROYING IS A RIGHT, NOT AN ADMIN CHECK. The refusal names the
+			// rule that refused, because "Forbidden" with no rule leaves an
+			// operator guessing about a destructive act.
+			$refusal = $this->destroyRightService->refusalFor(object: $object, schema: $schema);
+			if ($refusal !== null) {
 				return new JSONResponse(
-					data: ['error' => 'User does not have permission to permanently delete this object'],
-					statusCode: 403
+					data: $refusal->toResponseBody(),
+					statusCode: $refusal->getStatusCode()
 				);
 			}
 
-			// Permanently delete the object.
+			// A HOLD OUTRANKS BOTH CLOCKS, and two clocks that disagree refuse
+			// rather than pick a winner in silence.
+			$clockRefusal = $this->retentionClockService->refusalFor(object: $object);
+			if ($clockRefusal !== null) {
+				return new JSONResponse(
+					data: $clockRefusal->toResponseBody(),
+					statusCode: $clockRefusal->getStatusCode()
+				);
+			}
+
+			// THE WINDOW IS A REFUSAL, NOT DECORATION. Inside it the object can
+			// still come back, so destroying it needs the window waived
+			// explicitly, and the refusal says how long is left.
+			$window = $this->deletionWindowService->windowFor(object: $object, schema: $schema);
+			$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
+			if ($window !== null && $window->hasLapsed() === false && $force === false) {
+				return new JSONResponse(
+					data: [
+						'error' => 'DESTRUCTION_REFUSED',
+						'rule' => 'recovery-window-open',
+						'message' => 'This object can still be restored until '
+							. $window->destroyableFrom()->format('Y-m-d') . '. Destroying it before then '
+							. 'requires the window to be waived explicitly.',
+						'deletionWindow' => $window->toArray(),
+					],
+					statusCode: 409
+				);
+			}
+
+			// The scope is previewed, then destroyed, then reported. An
+			// unclear scope refuses before anything is touched.
+			try {
+				$scopeReport = $this->destructionScopeService->destroy(object: $object, schema: $schema);
+				$record = $this->destructionRecorder->record(
+					object: $object,
+					scope: $scopeReport,
+					rule: 'destroy-right-granted',
+					context: [
+						'deletionWindow' => $window?->toArray(),
+						'windowWaived' => ($force === true),
+					]
+				);
+			} catch (DestructionRefusedException $e) {
+				return new JSONResponse(
+					data: $e->toResponseBody(),
+					statusCode: $e->getStatusCode()
+				);
+			}
+
+			// Permanently delete the object. The record above is already
+			// written, so a crash here leaves an over-recorded destruction
+			// rather than an unrecorded one.
 			$this->objectEntityMapper->delete($object);
 
 			return new JSONResponse(
 				data: [
 					'success' => true,
 					'message' => 'Object permanently deleted',
+					'destruction' => $record,
 				]
 			);
 		} catch (\Exception $e) {
@@ -686,6 +873,113 @@ class DeletedController extends Controller {
 			);
 		}//end try
 	}//end destroy()
+
+	/**
+	 * Preview what a destruction would take with the object.
+	 *
+	 * Answers before the act, with a count per declared scope member, so
+	 * nobody has to infer destruction from a foreign key. A scope naming a
+	 * member this instance cannot honour comes back `destroyable: false` with
+	 * the member named, which is the same answer the act itself gives.
+	 *
+	 * @param string $id The ID or UUID of the soft-deleted object.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The preview, the window and both clocks.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function destructionPreview(string $id): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(
+				data: ['error' => 'Not authenticated'],
+				statusCode: 401
+			);
+		}
+
+		try {
+			$object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
+			$schema = $this->resolveSchema(object: $object);
+
+			$refusal = $this->destroyRightService->refusalFor(object: $object, schema: $schema);
+			if ($refusal !== null) {
+				return new JSONResponse(
+					data: $refusal->toResponseBody(),
+					statusCode: $refusal->getStatusCode()
+				);
+			}
+
+			$window = $this->deletionWindowService->windowFor(object: $object, schema: $schema);
+
+			return new JSONResponse(
+				data: [
+					'objectUuid' => (string)$object->getUuid(),
+					'preview' => $this->destructionScopeService->preview(object: $object, schema: $schema),
+					'deletionWindow' => $window?->toArray(),
+					'clocks' => $this->retentionClockService->clocksFor(object: $object),
+				]
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to preview the destruction: ' . $e->getMessage()],
+				statusCode: 500
+			);
+		}//end try
+	}//end destructionPreview()
+
+	/**
+	 * Read the destruction records of an object, including one whose object is
+	 * already gone.
+	 *
+	 * Keyed on the UUID rather than the register/schema path the audit-trail
+	 * endpoint uses, because that path resolves through the object row and a
+	 * destroyed object has none. A destruction record with no object is the
+	 * point, so it needs a door that does not go through the object.
+	 *
+	 * @param string $id The UUID of the destroyed object.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The destruction records, newest first.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function destructionRecord(string $id): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(
+				data: ['error' => 'Not authenticated'],
+				statusCode: 401
+			);
+		}
+
+		try {
+			$records = $this->auditTrailMapper->findForObjectByAction(
+				objectUuid: $id,
+				actions: [DestructionScope::DESTRUCTION_ACTION]
+			);
+
+			return new JSONResponse(
+				data: [
+					'objectUuid' => $id,
+					'total' => count($records),
+					'results' => array_map(
+						static fn (mixed $record): mixed => $record->jsonSerialize(),
+						$records
+					),
+				]
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to read the destruction record: ' . $e->getMessage()],
+				statusCode: 500
+			);
+		}//end try
+	}//end destructionRecord()
 
 	/**
 	 * Permanently delete multiple objects

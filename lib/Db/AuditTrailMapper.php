@@ -1941,6 +1941,139 @@ class AuditTrailMapper extends QBMapper {
 	}//end clearLogs()
 
 	/**
+	 * Count the audit rows that belong to one object, excluding the evidence
+	 * of its own destruction.
+	 *
+	 * Already-tombstoned rows are excluded: their payload is gone, so there is
+	 * nothing left to destroy and counting them would make a preview promise
+	 * work it will not do.
+	 *
+	 * @param string $objectUuid The object's UUID.
+	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
+	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 *
+	 * @return int The number of rows that would be tombstoned.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function countForObject(
+		string $objectUuid,
+		?array $onlyActions = null,
+		array $excludeActions = [],
+	): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'row_count'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNull('purged_at'));
+
+		if ($onlyActions !== null && $onlyActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		if ($excludeActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countForObject()
+
+	/**
+	 * Read the audit rows of one object, by action, newest first.
+	 *
+	 * Keyed on `object_uuid` rather than the numeric `object` id, because the
+	 * caller this exists for reads a destruction record AFTER the object row
+	 * is gone and the numeric id resolves to nothing.
+	 *
+	 * @param string $objectUuid The object's UUID.
+	 * @param array<int, string> $actions Actions to return; every action when empty.
+	 * @param int $limit Maximum rows.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, newest first.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function findForObjectByAction(string $objectUuid, array $actions = [], int $limit = 50): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('created', 'DESC')
+			->setMaxResults($limit);
+
+		if ($actions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($actions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		return $this->findEntities($qb);
+	}//end findForObjectByAction()
+
+	/**
+	 * Tombstone the audit rows that belong to one object.
+	 *
+	 * ⚠️ Tombstones rather than deletes, for the same reason {@see clearLogs()}
+	 * does: the table carries a SHA-256 chain and physically removing a row
+	 * mid-chain is indistinguishable from tampering (or#2265). The payload and
+	 * the personal identifiers go; the row, its `created` and its hash pair
+	 * stay, so the destruction stays provable.
+	 *
+	 * Rows whose action is listed in `$excludeActions` are never touched. That
+	 * is how the evidence of a destruction survives the destruction it
+	 * describes.
+	 *
+	 * @param string $objectUuid The object's UUID.
+	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
+	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 *
+	 * @return int The number of rows tombstoned.
+	 *
+	 * @throws \Exception When the statement fails.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function tombstoneForObject(
+		string $objectUuid,
+		?array $onlyActions = null,
+		array $excludeActions = [],
+	): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update('openregister_audit_trails')
+			->set('purged_at', $qb->createFunction('NOW()'))
+			->set('changed', $qb->createNamedParameter('{}'))
+			->set('user', $qb->createNamedParameter(''))
+			->set('user_name', $qb->createNamedParameter(null))
+			->set('session', $qb->createNamedParameter(null))
+			->set('request', $qb->createNamedParameter(null))
+			->set('ip_address', $qb->createNamedParameter(null))
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNull('purged_at'));
+
+		if ($onlyActions !== null && $onlyActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		if ($excludeActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		return (int)$qb->executeStatement();
+	}//end tombstoneForObject()
+
+	/**
 	 * Clear all audit trail logs (not just expired ones)
 	 *
 	 * This method deletes all audit trail logs from the database

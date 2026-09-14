@@ -965,6 +965,8 @@ return [
         ['name' => 'deleted#topDeleters', 'url' => '/api/deleted/top-deleters', 'verb' => 'GET'],
         ['name' => 'deleted#restore', 'url' => '/api/deleted/{id}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#restoreMultiple', 'url' => '/api/deleted/restore', 'verb' => 'POST'],
+        ['name' => 'deleted#destructionPreview', 'url' => '/api/deleted/{id}/destruction-preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deleted#destructionRecord', 'url' => '/api/deleted/{id}/destruction', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroy', 'url' => '/api/deleted/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroyMultiple', 'url' => '/api/deleted', 'verb' => 'DELETE'],
         // Revert.

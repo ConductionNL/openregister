@@ -306,6 +306,27 @@ class NoteService {
 	}//end deleteNote()
 
 	/**
+	 * Count the notes on an object.
+	 *
+	 * Counted at the source rather than by taking the length of a paged read:
+	 * {@see getNotesForObject()} returns at most its `$limit`, so counting
+	 * through it would report 50 for an object with 400 notes and a
+	 * destruction preview would promise the wrong number.
+	 *
+	 * @param string $objectUuid The UUID of the OpenRegister object.
+	 *
+	 * @return int The number of notes.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function countNotesForObject(string $objectUuid): int {
+		return $this->commentsManager->getNumberOfCommentsForObject(
+			self::OBJECT_TYPE,
+			$objectUuid
+		);
+	}//end countNotesForObject()
+
+	/**
 	 * Delete all notes for an OpenRegister object.
 	 *
 	 * Used for cleanup when an object is deleted.
