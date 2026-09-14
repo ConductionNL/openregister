@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
@@ -150,14 +151,19 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * untouched so the wave-5.3 carve-out (NC Activity's single string
 	 * `subject` column as the marker target) stays canonical.
 	 *
+	 * Every row carries `visibility`, and it is always `internal`: an NC
+	 * Activity row records what a handler did, so it never belongs on a
+	 * citizen's side of the counter. A `visibility=public` filter therefore
+	 * empties this source rather than narrowing it.
+	 *
 	 * @param string $register Register slug for the parent object.
 	 * @param string $schema Schema slug for the parent object.
 	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array $filters Optional filters: `type`, `actor`, `after` (Unix ts).
+	 * @param array $filters Optional filters: `type`, `actor`, `after` (Unix ts), `visibility`.
 	 *
 	 * @return array<int,array<string,mixed>> List of registry leaf rows.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-3
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		if ($this->isEnabled() === false) {
@@ -176,6 +182,10 @@ class ActivityProvider extends AbstractIntegrationProvider {
 
 		$rows = $this->applyFilters(rows: $rows, filters: $filters);
 
+		if ($this->wantsPublicOnly(filters: $filters) === true) {
+			return [];
+		}
+
 		return array_map(
 			static function (array $row): array {
 				// Flatten the activity event so CnActivityTab can read
@@ -192,12 +202,36 @@ class ActivityProvider extends AbstractIntegrationProvider {
 					'actor_id' => (string)($row['affecteduser'] ?? ''),
 					'object_id' => (string)($row['object_id'] ?? ''),
 					'url' => '/index.php/apps/activity/' . (string)($row['activity_id'] ?? ''),
+					// An NC Activity row is always internal: it is written by
+					// core about what a handler did, never about what a citizen
+					// may read.
+					'visibility' => TimelineVisibilityService::INTERNAL,
 					'data' => $row,
 				];
 			},
 			$rows
 		);
 	}//end list()
+
+	/**
+	 * Whether the caller asked for the public view only.
+	 *
+	 * Every row of this source is internal, so a public-only read has nothing
+	 * to return. Anything other than `public` — including an absent or
+	 * misspelled value — leaves the rows alone, which is the same default
+	 * TimelineVisibilityService applies everywhere else.
+	 *
+	 * @param array $filters The filters the caller passed.
+	 *
+	 * @return bool True when the read asked for public rows only.
+	 */
+	private function wantsPublicOnly(array $filters): bool {
+		if (isset($filters['visibility']) === false || is_string($filters['visibility']) === false) {
+			return false;
+		}
+
+		return strtolower(trim($filters['visibility'])) === TimelineVisibilityService::PUBLIC_ENTRY;
+	}//end wantsPublicOnly()
 
 	/**
 	 * Apply Tier-2 type/actor/after filters over marker-matched rows.

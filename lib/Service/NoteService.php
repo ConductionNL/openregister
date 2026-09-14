@@ -77,12 +77,24 @@ class NoteService {
 	private const OBJECT_TYPE = 'openregister';
 
 	/**
+	 * The key the visibility flag is stored under in the comment's metadata.
+	 *
+	 * A note is a Nextcloud comment, and a comment carries its own metadata
+	 * array, so the flag needs no second table and no join. Other keys in that
+	 * array are preserved on every write.
+	 *
+	 * @var string
+	 */
+	private const VISIBILITY_KEY = 'visibility';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ICommentsManager $commentsManager Comments manager for CRUD operations
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IUserManager $userManager User manager for display name resolution
 	 * @param LoggerInterface $logger Logger for error reporting
+	 * @param TimelineVisibilityService $visibility Normalises the internal/public flag
 	 *
 	 * @return void
 	 */
@@ -91,6 +103,7 @@ class NoteService {
 		IUserSession $userSession,
 		IUserManager $userManager,
 		LoggerInterface $logger,
+		private readonly TimelineVisibilityService $visibility,
 	) {
 		$this->commentsManager = $commentsManager;
 		$this->userSession = $userSession;
@@ -104,12 +117,18 @@ class NoteService {
 	 * @param string $objectUuid The UUID of the OpenRegister object
 	 * @param int $limit Maximum number of notes to return (default 50)
 	 * @param int $offset Number of notes to skip (default 0)
+	 * @param string|null $visibility Keep only notes carrying this flag; null returns every note
 	 *
 	 * @return array Array of note arrays in JSON-friendly format
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function getNotesForObject(string $objectUuid, int $limit = 50, int $offset = 0): array {
+	public function getNotesForObject(
+		string $objectUuid,
+		int $limit = 50,
+		int $offset = 0,
+		?string $visibility = null,
+	): array {
 		$comments = $this->commentsManager->getForObject(
 			self::OBJECT_TYPE,
 			$objectUuid,
@@ -122,22 +141,47 @@ class NoteService {
 			$notes[] = $this->commentToArray(comment: $comment);
 		}
 
-		return $notes;
+		return $this->visibility->filterRows(rows: $notes, filter: $visibility);
 	}//end getNotesForObject()
+
+	/**
+	 * Read one note by its id.
+	 *
+	 * The caller needs the value a note carries BEFORE it writes a new one, so
+	 * the audit entry can name both sides of the move.
+	 *
+	 * @param int $noteId The ID of the note
+	 *
+	 * @return array The note in JSON-friendly format
+	 *
+	 * @throws Exception If the note is not found
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
+	 */
+	public function getNote(int $noteId): array {
+		try {
+			$comment = $this->commentsManager->get((string)$noteId);
+		} catch (CommentsNotFoundException $e) {
+			throw new Exception('Note not found');
+		}
+
+		return $this->commentToArray(comment: $comment);
+	}//end getNote()
 
 	/**
 	 * Create a new note on an OpenRegister object.
 	 *
 	 * @param string $objectUuid The UUID of the OpenRegister object
 	 * @param string $message The note message content
+	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
 	 *
 	 * @return array The created note in JSON-friendly format
 	 *
 	 * @throws Exception If no user is logged in
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function createNote(string $objectUuid, string $message): array {
+	public function createNote(string $objectUuid, string $message, ?string $visibility = null): array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -152,6 +196,7 @@ class NoteService {
 
 		$comment->setMessage($message);
 		$comment->setVerb('comment');
+		$this->applyVisibility(comment: $comment, visibility: $visibility);
 		$this->commentsManager->save($comment);
 
 		return $this->commentToArray(comment: $comment);
@@ -160,16 +205,21 @@ class NoteService {
 	/**
 	 * Update an existing note's message.
 	 *
+	 * Editing the message stays the author's own right. Moving the note across
+	 * the counter is not: it is authorised on the object by the caller, which
+	 * is why a visibility-only write does not ask who wrote the note.
+	 *
 	 * @param int $noteId The ID of the note to update
-	 * @param string $message The new message content
+	 * @param string|null $message The new message content, or null to leave it alone
+	 * @param string|null $visibility The new flag, or null to leave it alone
 	 *
 	 * @return array The updated note in JSON-friendly format
 	 *
-	 * @throws Exception If the note is not found or user is not the author
+	 * @throws Exception If the note is not found or the author edits someone else's message
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function updateNote(int $noteId, string $message): array {
+	public function updateNote(int $noteId, ?string $message = null, ?string $visibility = null): array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -181,15 +231,59 @@ class NoteService {
 			throw new Exception('Note not found');
 		}
 
-		if ($comment->getActorId() !== $user->getUID()) {
-			throw new Exception('You can only edit your own notes');
+		if ($message !== null) {
+			if ($comment->getActorId() !== $user->getUID()) {
+				throw new Exception('You can only edit your own notes');
+			}
+
+			$comment->setMessage($message);
 		}
 
-		$comment->setMessage($message);
+		if ($visibility !== null) {
+			$this->applyVisibility(comment: $comment, visibility: $visibility);
+		}
+
 		$this->commentsManager->save($comment);
 
 		return $this->commentToArray(comment: $comment);
 	}//end updateNote()
+
+	/**
+	 * Write the flag onto a comment, leaving the rest of its metadata alone.
+	 *
+	 * @param IComment $comment The comment being written
+	 * @param string|null $visibility The requested value; anything unknown lands as internal
+	 *
+	 * @return void
+	 */
+	private function applyVisibility(IComment $comment, ?string $visibility): void {
+		$metaData = $comment->getMetaData();
+		if (is_array($metaData) === false) {
+			$metaData = [];
+		}
+
+		$metaData[self::VISIBILITY_KEY] = $this->visibility->normalise(value: $visibility);
+		$comment->setMetaData($metaData);
+	}//end applyVisibility()
+
+	/**
+	 * Read the flag off a comment, defaulting to internal.
+	 *
+	 * @param IComment $comment The comment being read
+	 *
+	 * @return string Either `internal` or `public`
+	 */
+	private function readVisibility(IComment $comment): string {
+		$metaData = $comment->getMetaData();
+		$stored = null;
+		if (is_array($metaData) === true && isset($metaData[self::VISIBILITY_KEY]) === true
+			&& is_string($metaData[self::VISIBILITY_KEY]) === true
+		) {
+			$stored = $metaData[self::VISIBILITY_KEY];
+		}
+
+		return $this->visibility->normalise(value: $stored);
+	}//end readVisibility()
 
 	/**
 	 * Delete a note by its ID.
@@ -261,6 +355,7 @@ class NoteService {
 			'actorDisplayName' => $actorDisplayName,
 			'createdAt' => $comment->getCreationDateTime()->format('c'),
 			'isCurrentUser' => $isCurrentUser,
+			'visibility' => $this->readVisibility(comment: $comment),
 		];
 	}//end commentToArray()
 }//end class

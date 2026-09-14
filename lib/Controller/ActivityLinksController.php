@@ -36,6 +36,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ActivityFilterService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -55,12 +56,14 @@ class ActivityLinksController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param ActivityFilterService $filterService Backing service.
 	 * @param ObjectService $objectService OR object resolver.
+	 * @param TimelineVisibilityService $visibility Internal/public filter for the feed.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ActivityFilterService $filterService,
 		private readonly ObjectService $objectService,
+		private readonly TimelineVisibilityService $visibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -68,7 +71,12 @@ class ActivityLinksController extends Controller {
 	/**
 	 * List filtered + paginated activity entries for an object.
 	 *
-	 * Query params: `type`, `actor`, `after` (Unix ts), `limit`, `cursor`.
+	 * Query params: `type`, `actor`, `after` (Unix ts), `limit`, `cursor`,
+	 * `visibility`.
+	 *
+	 * A caller without `update` on the object is served the public view
+	 * whatever it asks for, so the flag cannot be stepped around by leaving
+	 * the parameter off.
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
@@ -79,7 +87,7 @@ class ActivityLinksController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		if ($this->filterService->isActivityAvailable() === false) {
@@ -92,13 +100,20 @@ class ActivityLinksController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			$mayManage = $this->visibility->mayManage(object: $object);
+			$filter = $this->visibility->effectiveFilter(
+				object: $object,
+				requested: $this->nullableString(name: 'visibility')
+			);
+
 			$result = $this->filterService->getActivityEntries(
 				objectUuid: $object->getUuid(),
 				type: $this->nullableString(name: 'type'),
 				actor: $this->nullableString(name: 'actor'),
 				after: $this->nullableInt(name: 'after'),
 				limit: (int)$this->request->getParam('limit', 100),
-				cursor: $this->nullableInt(name: 'cursor')
+				cursor: $this->nullableInt(name: 'cursor'),
+				visibility: $filter
 			);
 
 			return new JSONResponse(
@@ -106,6 +121,8 @@ class ActivityLinksController extends Controller {
 					'results' => $result['results'],
 					'total' => $result['total'],
 					'nextCursor' => $result['nextCursor'],
+					'visibility' => $filter,
+					'canSetVisibility' => $mayManage,
 				]
 			);
 		} catch (DoesNotExistException $e) {
