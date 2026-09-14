@@ -108,7 +108,7 @@ class ObjectPermissionsResolver {
 			}
 
 			foreach ($this->grantsIn(block: $block, level: $level, roleDefinitions: $roleDefinitions) as $grant) {
-				$this->fold(into: $holders, entry: $grant);
+				$holders = $this->fold(into: $holders, entry: $grant);
 			}
 
 			$deny = $this->denyResolver->denyBlock(authorization: $block);
@@ -361,13 +361,17 @@ class ObjectPermissionsResolver {
 	/**
 	 * Fold one rule into the principal it names.
 	 *
-	 * @param array<string, array<string, mixed>> $into  The map being built, keyed by principal.
-	 * @param array<string, mixed>                $entry The rule.
+	 * Returns the map rather than taking it by reference: a by-ref parameter
+	 * carries a type the caller has to keep true by hand, and the analyser was
+	 * right that the caller's array had drifted from it.
 	 *
-	 * @return void
+	 * @param array<string, mixed> $into  The map being built, keyed by principal.
+	 * @param array<string, mixed> $entry The rule.
+	 *
+	 * @return array<string, mixed> The map, with this rule folded in.
 	 */
-	private function fold(array &$into, array $entry): void {
-		$principal = $entry['principal'];
+	private function fold(array $into, array $entry): array {
+		$principal = (string)$entry['principal'];
 		if (isset($into[$principal]) === false) {
 			$into[$principal] = ['principal' => $principal, 'verbs' => [], 'rules' => []];
 		}
@@ -377,6 +381,8 @@ class ObjectPermissionsResolver {
 		}
 
 		$into[$principal]['rules'][] = $entry;
+
+		return $into;
 	}//end fold()
 
 	/**
