@@ -1400,9 +1400,9 @@ class SchemaMapper extends QBMapper {
 
 		$keys = implode(', ', array_map(static fn (array $error): string => $error['key'], $errors));
 		throw new PropertyVocabularyException(
-			'Invalid ' . ExtendingFormDeclaration::ANNOTATION . " declaration: '{$keys}'. "
+			message: 'Invalid ' . ExtendingFormDeclaration::ANNOTATION . " declaration: '{$keys}'. "
 			. 'Read /api/schemas/property-vocabulary for the keys a form may forward.',
-			$errors
+			errors: $errors
 		);
 	}//end validateExtendingFormAnnotation()
 

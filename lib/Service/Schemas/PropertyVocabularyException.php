@@ -56,6 +56,8 @@ class PropertyVocabularyException extends Exception {
 	 * The individual refusals, so a client can tell which value refused.
 	 *
 	 * @return array<int, array{code: string, key: string, path: string, message: string}> The per-value errors.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function getErrors(): array {
 		return $this->errors;

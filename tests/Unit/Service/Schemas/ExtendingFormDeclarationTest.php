@@ -203,7 +203,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 			annotation: $declaration,
 			formValues: ['propertyType' => 'sting', 'label' => 'Naam']
 		);
-		$this->expectExceptionMessage('sting');
+		$this->expectExceptionMessage(message: 'sting');
 		$validator->validateProperty(property: $bad, path: '/naam');
 	}
 

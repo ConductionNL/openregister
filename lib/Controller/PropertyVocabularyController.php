@@ -35,6 +35,8 @@ use OCP\IRequest;
 
 /**
  * Discovery for the property vocabulary.
+ *
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 class PropertyVocabularyController extends Controller {
 

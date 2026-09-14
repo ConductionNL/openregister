@@ -88,8 +88,8 @@ class PropertyVocabularyTest extends TestCase {
 	 * @return void
 	 */
 	public function testATypeTheVocabularyDoesNotPublishIsRefused(): void {
-		$this->expectException(PropertyVocabularyException::class);
-		$this->expectExceptionMessage('sting');
+		$this->expectException(exception: PropertyVocabularyException::class);
+		$this->expectExceptionMessage(message: 'sting');
 
 		$this->validator->validateProperty(property: ['type' => 'sting'], path: '/probe');
 	}
@@ -154,8 +154,8 @@ class PropertyVocabularyTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFormatTheVocabularyDoesNotPublishIsRefused(): void {
-		$this->expectException(PropertyVocabularyException::class);
-		$this->expectExceptionMessage('burgerservicenummertje');
+		$this->expectException(exception: PropertyVocabularyException::class);
+		$this->expectExceptionMessage(message: 'burgerservicenummertje');
 
 		$this->validator->validateProperty(
 			property: ['type' => 'string', 'format' => 'burgerservicenummertje'],
@@ -178,7 +178,10 @@ class PropertyVocabularyTest extends TestCase {
 		}
 
 		$this->assertArrayHasKey(key: 'format', array: $rows);
-		$this->assertTrue(condition: $rows['format']['breaking'], message: 'adding a format to a populated property is breaking and the vocabulary has to say so');
+		$this->assertTrue(
+			condition: $rows['format']['breaking'],
+			message: 'adding a format to a populated property is breaking and the vocabulary has to say so'
+		);
 		$this->assertSame(expected: ['string'], actual: $rows['format']['appliesTo']);
 	}
 

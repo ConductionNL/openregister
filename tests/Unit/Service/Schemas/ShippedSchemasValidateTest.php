@@ -67,10 +67,17 @@ class ShippedSchemasValidateTest extends TestCase {
 	private function shippedDescriptors(): array {
 		$settings = $this->repositoryRoot() . '/lib/Settings';
 
-		return array_merge(
-			(glob($settings . '/*.json') ?: []),
-			(glob($settings . '/register.d/*/*.json') ?: [])
-		);
+		$top = glob($settings . '/*.json');
+		if ($top === false) {
+			$top = [];
+		}
+
+		$nested = glob($settings . '/register.d/*/*.json');
+		if ($nested === false) {
+			$nested = [];
+		}
+
+		return array_merge($top, $nested);
 	}
 
 	/**
