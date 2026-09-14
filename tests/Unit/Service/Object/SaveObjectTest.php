@@ -2706,16 +2706,26 @@ class SaveObjectTest extends TestCase {
 		$entity->setUuid('11111111-1111-4111-8111-111111111111');
 		$entity->setRelations(['org' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
 
-		$schema = $this->createMockSchema(1, 'person', [], ['org' => ['type' => 'string', '$ref' => $ref]]);
-		$register = $this->createMockRegister(1, 'test');
+		$schema = $this->createMockSchema(
+			id: 1,
+			slug: 'person',
+			configuration: [],
+			properties: ['org' => ['type' => 'string', '$ref' => $ref]]
+		);
+		$register = $this->createMockRegister(id: 1, slug: 'test');
 
 		return [$entity, $schema, $register];
 	}
 
+	/**
+	 * A bare schema slug in `$ref` resolves, and the inverse relation is written.
+	 *
+	 * @return void
+	 */
 	public function testUpdateInverseRelationsResolvesABareSchemaSlug(): void {
-		[$entity, $schema, $register] = $this->inverseRelationFixture('organisation');
+		[$entity, $schema, $register] = $this->inverseRelationFixture(ref: 'organisation');
 
-		$target = $this->createMockSchema(2, 'organisation');
+		$target = $this->createMockSchema(id: 2, slug: 'organisation');
 		$this->schemaMapper->expects($this->once())
 			->method('find')
 			->with('organisation')
@@ -2729,18 +2739,23 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->expects($this->once())->method('update')->with($related);
 		$this->logger->expects($this->never())->method('warning');
 
-		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+		$this->invokePrivateMethod(methodName: 'updateInverseRelations', args: [$entity, $register, $schema]);
 
-		$this->assertSame(['11111111-1111-4111-8111-111111111111'], $related->getRelations());
+		$this->assertSame(expected: ['11111111-1111-4111-8111-111111111111'], actual: $related->getRelations());
 	}
 
+	/**
+	 * The pointer form keeps resolving: the control for the bare-slug case.
+	 *
+	 * @return void
+	 */
 	public function testUpdateInverseRelationsStillResolvesThePointerForm(): void {
-		[$entity, $schema, $register] = $this->inverseRelationFixture('#/components/schemas/organisation');
+		[$entity, $schema, $register] = $this->inverseRelationFixture(ref: '#/components/schemas/organisation');
 
 		$this->schemaMapper->expects($this->once())
 			->method('find')
 			->with('organisation')
-			->willReturn($this->createMockSchema(2, 'organisation'));
+			->willReturn($this->createMockSchema(id: 2, slug: 'organisation'));
 
 		$related = new ObjectEntity();
 		$related->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
@@ -2749,36 +2764,46 @@ class SaveObjectTest extends TestCase {
 
 		$this->objectEntityMapper->expects($this->once())->method('update')->with($related);
 
-		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+		$this->invokePrivateMethod(methodName: 'updateInverseRelations', args: [$entity, $register, $schema]);
 	}
 
+	/**
+	 * A property without `$ref` is not a relation, and is skipped without a warning.
+	 *
+	 * @return void
+	 */
 	public function testUpdateInverseRelationsSkipsAPropertyWithoutRefSilently(): void {
-		[$entity, $schema, $register] = $this->inverseRelationFixture('');
+		[$entity, $schema, $register] = $this->inverseRelationFixture(ref: '');
 
 		$this->schemaMapper->expects($this->never())->method('find');
 		$this->objectEntityMapper->expects($this->never())->method('update');
 		$this->logger->expects($this->never())->method('warning');
 
-		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+		$this->invokePrivateMethod(methodName: 'updateInverseRelations', args: [$entity, $register, $schema]);
 	}
 
+	/**
+	 * A `$ref` that is neither form is reported as a warning naming the ref.
+	 *
+	 * @return void
+	 */
 	public function testUpdateInverseRelationsWarnsOnAnUnreadableRef(): void {
-		[$entity, $schema, $register] = $this->inverseRelationFixture('https://example.com/schemas/organisation');
+		[$entity, $schema, $register] = $this->inverseRelationFixture(ref: 'https://example.com/schemas/organisation');
 
 		$this->schemaMapper->expects($this->never())->method('find');
 		$this->objectEntityMapper->expects($this->never())->method('update');
 		$this->logger->expects($this->once())
 			->method('warning')
 			->with(
-				$this->stringContains('Relation skipped'),
+				$this->stringContains(string: 'Relation skipped'),
 				$this->callback(
-					static fn (array $context): bool => $context['ref'] === 'https://example.com/schemas/organisation'
+					callback: static fn (array $context): bool => $context['ref'] === 'https://example.com/schemas/organisation'
 						&& $context['property'] === 'org'
 						&& $context['schema'] === 'person'
 				)
 			);
 
-		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+		$this->invokePrivateMethod(methodName: 'updateInverseRelations', args: [$entity, $register, $schema]);
 	}
 
 	public function testUpdateInverseRelationsSkipsNullRelations(): void {
