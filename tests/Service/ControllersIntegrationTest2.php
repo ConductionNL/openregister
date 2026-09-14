@@ -1996,7 +1996,8 @@ class ControllersIntegrationTest2 extends TestCase {
 			\OC::$server->get(ContainerInterface::class),
 			\OC::$server->get(SettingsService::class),
 			\OC::$server->get(VectorizationService::class),
-			$this->logger
+			$this->logger,
+			\OC::$server->get(\OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 	}//end buildLlmSettingsController()
 
@@ -2027,7 +2028,9 @@ class ControllersIntegrationTest2 extends TestCase {
 			$this->request,
 			$this->appConfig,
 			\OC::$server->get(SettingsService::class),
-			$this->logger
+			\OC::$server->get(\OCP\Http\Client\IClientService::class),
+			$this->logger,
+			\OC::$server->get(\OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 	}//end buildApiTokenSettingsController()
 

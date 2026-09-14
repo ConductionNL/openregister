@@ -82,7 +82,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			$this->cacheFactory,
 			$this->clientService,
 			$this->fileSettingsHandler,
-			$this->logger
+			$this->logger,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 	}
 
@@ -285,7 +286,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			$cacheFactory,
 			$this->clientService,
 			$this->fileSettingsHandler,
-			$this->logger
+			$this->logger,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 
 		$probe = $service->probe(BackendState::METHOD_OPENANONYMISER);
@@ -311,7 +313,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			$cacheFactory,
 			$this->clientService,
 			$this->fileSettingsHandler,
-			$this->logger
+			$this->logger,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 
 		$probe = $service->probe(BackendState::METHOD_OPENANONYMISER);
@@ -343,12 +346,97 @@ class AnonymisationBackendServiceTest extends TestCase {
 			$cacheFactory,
 			$this->clientService,
 			$this->fileSettingsHandler,
-			$this->logger
+			$this->logger,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 		);
 
 		$probe = $service->testConnection(BackendState::METHOD_OPENANONYMISER);
 
 		$this->assertTrue($probe->reachable);
 		$this->assertNull($probe->error);
+	}
+
+	/**
+	 * A service whose reporter records what it is told.
+	 *
+	 * @param array<int, array{0: string, 1: string, 2: string}> $reports Collects the reports.
+	 *
+	 * @return AnonymisationBackendService
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	private function serviceReportingTo(array &$reports): AnonymisationBackendService {
+		$reporter = $this->getMockBuilder(\OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['report'])
+			->getMock();
+		$reporter->method('report')->willReturnCallback(
+			static function (string $key, string $status, string $message = '') use (&$reports): bool {
+				$reports[] = [$key, $status, $message];
+				return true;
+			}
+		);
+
+		return new AnonymisationBackendService(
+			appManager: $this->appManager,
+			appConfig: $this->appConfig,
+			cacheFactory: $this->cacheFactory,
+			clientService: $this->clientService,
+			fileSettingsHandler: $this->fileSettingsHandler,
+			logger: $this->logger,
+			connectionReporter: $reporter,
+		);
+	}
+
+	/**
+	 * An OpenAnonymiser test that finds the ExApp reports configured.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	public function testAnOpenAnonymiserTestThatFindsTheExAppReportsConfigured(): void {
+		$this->withSettings();
+		$this->exAppEnabled();
+		$reports = [];
+
+		$this->serviceReportingTo(reports: $reports)->testConnection(method: BackendState::METHOD_OPENANONYMISER);
+
+		$this->assertCount(expectedCount: 1, haystack: $reports);
+		$this->assertSame(expected: ['anonymiser', 'configured'], actual: array_slice($reports[0], 0, 2));
+	}
+
+	/**
+	 * An OpenAnonymiser test without the ExApp reports unconfigured with the next step.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	public function testAnOpenAnonymiserTestWithoutTheExAppReportsUnconfigured(): void {
+		$this->withSettings();
+		$this->exAppEnabled(full: false, light: false);
+		$reports = [];
+
+		$this->serviceReportingTo(reports: $reports)->testConnection(method: BackendState::METHOD_OPENANONYMISER);
+
+		$this->assertSame(expected: ['anonymiser', 'unconfigured'], actual: array_slice($reports[0], 0, 2));
+		$this->assertStringContainsString(needle: 'ExApp', haystack: $reports[0][2]);
+	}
+
+	/**
+	 * A test of another backend, and a cached probe, report nothing.
+	 *
+	 * The cached probe runs on page loads; a report there would write integriq's row on every one.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	public function testOnlyTheOpenAnonymiserTestReports(): void {
+		$this->withSettings();
+		$this->exAppEnabled();
+		$reports = [];
+		$service = $this->serviceReportingTo(reports: $reports);
+
+		$service->testConnection(method: BackendState::METHOD_REGEX);
+		$service->probe(method: BackendState::METHOD_OPENANONYMISER);
+		$service->getState();
+
+		$this->assertSame(expected: [], actual: $reports);
 	}
 }

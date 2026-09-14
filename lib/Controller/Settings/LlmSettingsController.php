@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\AppFramework\Controller;
@@ -52,6 +53,7 @@ class LlmSettingsController extends Controller {
 	 * @param SettingsService $settingsService Settings service.
 	 * @param VectorizationService $vectorizationService Vectorization service.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ConnectionReporter $connectionReporter Reports the saved provider to integriq's connection registry.
 	 */
 	public function __construct(
 		$appName,
@@ -61,6 +63,7 @@ class LlmSettingsController extends Controller {
 		private readonly SettingsService $settingsService,
 		private readonly VectorizationService $vectorizationService,
 		private readonly LoggerInterface $logger,
+		private readonly ConnectionReporter $connectionReporter,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -139,6 +142,8 @@ class LlmSettingsController extends Controller {
 			}
 
 			$result = $this->settingsService->updateLLMSettingsOnly($data);
+			$this->reportSavedProviders(saved: $result);
+
 			return new JSONResponse(
 				data: [
 					'success' => true,
@@ -156,6 +161,78 @@ class LlmSettingsController extends Controller {
 			);
 		}//end try
 	}//end updateLLMSettings()
+
+	/**
+	 * Tell integriq which LLM providers the save left chosen.
+	 *
+	 * With no provider nothing answers: chat throws a 503. So an empty choice is
+	 * `unconfigured`, never `simulated`. One of the two is `limited`, both is
+	 * `configured`. A save tests nothing, and the message says so
+	 * (adopt-connection-registry design D2).
+	 *
+	 * @param array<string, mixed> $saved The LLM settings as saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	private function reportSavedProviders(array $saved): void {
+		$chat = $this->chosenProvider(value: ($saved['chatProvider'] ?? null));
+		$embedding = $this->chosenProvider(value: ($saved['embeddingProvider'] ?? null));
+
+		if ($chat === '' && $embedding === '') {
+			$this->connectionReporter->report(
+				key: 'llm',
+				status: 'unconfigured',
+				message: 'No chat or embedding provider is chosen. Chat answers 503 until one is.'
+			);
+			return;
+		}
+
+		if ($chat === '') {
+			$this->connectionReporter->report(
+				key: 'llm',
+				status: 'limited',
+				message: 'Embeddings use ' . $embedding . '. No chat provider is chosen, so chat answers 503. Saved, not tested.'
+			);
+			return;
+		}
+
+		if ($embedding === '') {
+			$this->connectionReporter->report(
+				key: 'llm',
+				status: 'limited',
+				message: 'Chat uses ' . $chat . '. No embedding provider is chosen. Saved, not tested.'
+			);
+			return;
+		}
+
+		$this->connectionReporter->report(
+			key: 'llm',
+			status: 'configured',
+			message: 'Chat uses ' . $chat . ' and embeddings use ' . $embedding . '. Saved, not tested.'
+		);
+	}//end reportSavedProviders()
+
+	/**
+	 * A provider id, or '' when nothing is chosen.
+	 *
+	 * @param mixed $value The stored provider value.
+	 *
+	 * @return string The provider id, or '' for null, empty or `none`.
+	 */
+	private function chosenProvider(mixed $value): string {
+		if (is_string($value) === false) {
+			return '';
+		}
+
+		$value = trim($value);
+		if (strtolower($value) === 'none') {
+			return '';
+		}
+
+		return $value;
+	}//end chosenProvider()
 
 	/**
 	 * Patch LLM settings (partial update)
