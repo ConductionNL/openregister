@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -123,6 +124,7 @@ class MagicRbacHandler {
 	 *                                                      a fatal at existing construction sites.
 	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the same reason.
 	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
+	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -135,6 +137,7 @@ class MagicRbacHandler {
 		private readonly ?ObjectScopeResolver $objectScopeResolver = null,
 		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
 		private readonly ?DenyResolver $denyResolver = null,
+		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
 	) {
 	}//end __construct()
 
@@ -153,6 +156,26 @@ class MagicRbacHandler {
 	private function denyResolver(): DenyResolver {
 		return ($this->denyResolver ?? new DenyResolver());
 	}//end denyResolver()
+
+	/**
+	 * The deny enforcement switch.
+	 *
+	 * Read here and in {@see \OCA\OpenRegister\Service\Object\PermissionHandler},
+	 * and nowhere else, so the list query and the per-object read cannot end up
+	 * in different modes inside one request. Nullable-with-default and
+	 * equivalent when freshly built, like the resolvers above: it reads the same
+	 * app-config key either way.
+	 *
+	 * @return DenyEnforcementMode The one reader of `openregister.deny_enforcement`.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function denyEnforcementMode(): DenyEnforcementMode {
+		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
+			appConfig: $this->appConfig,
+			logger: $this->logger
+		));
+	}//end denyEnforcementMode()
 
 	/**
 	 * The shared object-scope resolver.
@@ -319,15 +342,25 @@ class MagicRbacHandler {
 	 *
 	 * THREE ANSWERS, and the middle one is the point:
 	 *
-	 *   - `false` — a denial reaches this caller for this action whatever the
+	 *   - `null` the instance is not enforcing denies yet, so the query carries
+	 *     no deny predicate at all. See the staging note below.
+	 *   - `false` a denial reaches this caller for this action whatever the
 	 *     row says, so the query returns nothing. A schema-level deny, or a
 	 *     conditional one this emitter could not compile.
-	 *   - a predicate — the row-level test, plus the negation of every
+	 *   - a predicate, the row-level test plus the negation of every
 	 *     conditional denial that could be compiled.
 	 *
 	 * A conditional denial that will not compile denies everything rather than
 	 * nothing. That over-denies, which is visible the moment somebody looks for
 	 * a row; the other direction leaks, which is not.
+	 *
+	 * STAGING (D15). The deny does not ship enforcing. Below `enforcing` this
+	 * emitter adds no predicate, because a staged deny that still removed rows
+	 * from a list would be enforcement wearing a different label, and because
+	 * the total and the facet counts are exactly what it would change. The
+	 * recording happens on the read path in
+	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandler}, where there is
+	 * a row to name; a list has none yet at the point the SQL is built.
 	 *
 	 * @param array|null  $authorization The schema/register block (no object).
 	 * @param string      $action        The verb being filtered.
@@ -335,7 +368,8 @@ class MagicRbacHandler {
 	 * @param string[]    $userGroups    The caller's group IDs.
 	 * @param string      $columnName    The `_authorization` column as this emitter references it.
 	 *
-	 * @return string|false The predicate, or false when the caller is denied outright.
+	 * @return string|false|null The predicate, false when the caller is denied
+	 *                           outright, or null when nothing is enforced yet.
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
@@ -345,7 +379,11 @@ class MagicRbacHandler {
 		?string $userId,
 		array $userGroups,
 		string $columnName,
-	): string|false {
+	): string|false|null {
+		if ($this->denyEnforcementMode()->enforces() === false) {
+			return null;
+		}
+
 		$resolver = $this->denyResolver();
 		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
 
@@ -498,7 +536,12 @@ class MagicRbacHandler {
 			return;
 		}
 
-		$qb->andWhere($qb->createFunction($denyTerm));
+		// Null means the instance is not enforcing denies yet (D15). No
+		// predicate is added at all, rather than a predicate that is always
+		// true: a staged deny must cost the list nothing, the plan included.
+		if ($denyTerm !== null) {
+			$qb->andWhere($qb->createFunction($denyTerm));
+		}
 
 		// The "not private" row predicate. Resolved once here and used by every
 		// branch below, so the scope cannot be honoured on one exit path and
@@ -1394,6 +1437,14 @@ class MagicRbacHandler {
 		array $userGroups,
 		?array $objectData,
 	): bool {
+		// Staging (D15). The mode is read here as well as in the two emitters,
+		// through the same switch, because this is the third of the four
+		// enforcement paths and a path that kept enforcing while the others
+		// staged is the drift the single switch exists to prevent.
+		if ($this->denyEnforcementMode()->enforces() === false) {
+			return false;
+		}
+
 		$resolver = $this->denyResolver();
 
 		$merged = $resolver->mergeDeny(
@@ -1565,14 +1616,20 @@ class MagicRbacHandler {
 	 * invert its meaning exactly: a denied row would be admitted by the term
 	 * that was supposed to exclude it.
 	 *
-	 * @param string[] $conditions The OR-ed conditions.
-	 * @param string   $denyTerm   The predicate every row must satisfy.
+	 * @param string[]    $conditions The OR-ed conditions.
+	 * @param string|null $denyTerm   The predicate every row must satisfy, or
+	 *                                null when the instance is not enforcing
+	 *                                denies yet (D15).
 	 *
 	 * @return string[] The same conditions, each narrowed by the deny term.
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
-	private function withDenyTerm(array $conditions, string $denyTerm): array {
+	private function withDenyTerm(array $conditions, ?string $denyTerm): array {
+		if ($denyTerm === null) {
+			return $conditions;
+		}
+
 		$narrowed = [];
 		foreach ($conditions as $condition) {
 			$narrowed[] = "({$condition} AND {$denyTerm})";

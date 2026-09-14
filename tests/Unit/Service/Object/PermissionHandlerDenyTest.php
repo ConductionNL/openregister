@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -48,6 +49,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -87,6 +89,31 @@ class PermissionHandlerDenyTest extends TestCase {
 	 * @return PermissionHandler The handler under test.
 	 */
 	private function handlerFor(?string $userId, array $groups): PermissionHandler {
+		return $this->handlerInMode(userId: $userId, groups: $groups, mode: DenyEnforcementMode::MODE_ENFORCING);
+	}//end handlerFor()
+
+	/**
+	 * Build a handler for one caller, in one deny enforcement mode.
+	 *
+	 * Every case reached through {@see handlerFor()} runs `enforcing`, because
+	 * those cases test what a deny DOES and the instance default is `staging`
+	 * (D15). The staging cases call this directly.
+	 *
+	 * @param string|null $userId The caller, or null when anonymous.
+	 * @param string[]    $groups The caller's group IDs.
+	 * @param string               $mode   One of DenyEnforcementMode::MODES.
+	 * @param LoggerInterface|null $logger Where the staging record lands; a
+	 *                                     NullLogger when the case does not read it.
+	 *
+	 * @return PermissionHandler The handler under test.
+	 */
+	private function handlerInMode(
+		?string $userId,
+		array $groups,
+		string $mode,
+		?LoggerInterface $logger = null,
+	): PermissionHandler {
+		$logger = ($logger ?? new NullLogger());
 		$userSession = $this->createMock(IUserSession::class);
 		$userManager = $this->createMock(IUserManager::class);
 		$groupManager = $this->createMock(IGroupManager::class);
@@ -104,6 +131,7 @@ class PermissionHandlerDenyTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(false);
+		$appConfig->method('getValueString')->willReturn($mode);
 
 		return new PermissionHandler(
 			$userSession,
@@ -113,14 +141,15 @@ class PermissionHandlerDenyTest extends TestCase {
 			$this->createMock(MagicMapper::class),
 			$this->conditionMatcher,
 			$appConfig,
-			new NullLogger(),
+			$logger,
 			$this->createMock(ContainerInterface::class),
 			null,
 			null,
 			null,
-			new DenyResolver()
+			new DenyResolver(),
+			new DenyEnforcementMode($appConfig, $logger)
 		);
-	}//end handlerFor()
+	}//end handlerInMode()
 
 	/**
 	 * A schema carrying one authorization block.
@@ -424,4 +453,139 @@ class PermissionHandlerDenyTest extends TestCase {
 		$this->assertSame('read', $denial['action']);
 		$this->assertSame('waarnemers', $denial['rule']);
 	}//end testTheDenialNamesTheRuleThatRemovedTheVerb()
+
+	/**
+	 * Staging is the default, and in it the deny changes no answer.
+	 *
+	 * The same schema and the same caller as
+	 * {@see testADenyBeatsASchemaGrant()}, which refuses. The only difference is
+	 * the mode, which is the whole claim of D15.
+	 *
+	 * @return void
+	 */
+	public function testAStagedDenyLeavesTheGrantStanding(): void {
+		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_STAGING);
+		$schema = $this->schemaWith([
+			'read' => ['behandelaars'],
+			'deny' => ['read' => ['behandelaars']],
+		]);
+
+		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana'));
+	}//end testAStagedDenyLeavesTheGrantStanding()
+
+	/**
+	 * A staged deny is RECORDED, which is what separates a dry run from a
+	 * disabled feature.
+	 *
+	 * The assertion is on the log rather than on the verdict, because the
+	 * verdict is deliberately unchanged. A staging mode that skipped the
+	 * resolution would pass the case above and fail this one, which is exactly
+	 * the mistake worth catching.
+	 *
+	 * @return void
+	 */
+	public function testAStagedDenyIsRecordedWithTheRuleThatCarriesIt(): void {
+		$records = [];
+		$handler = $this->handlerInMode(
+			'ana',
+			['waarnemers'],
+			DenyEnforcementMode::MODE_STAGING,
+			$this->loggerRecordingWarningsInto($records)
+		);
+		$schema = $this->schemaWith([
+			'read' => ['waarnemers'],
+			'deny' => ['read' => ['waarnemers']],
+		]);
+
+		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana'));
+
+		$staged = $this->stagedRecordsIn($records);
+		$this->assertCount(1, $staged);
+		$this->assertSame('waarnemers', $staged[0]['context']['principal']);
+		$this->assertSame('waarnemers', $staged[0]['context']['rule']);
+		$this->assertSame('read', $staged[0]['context']['action']);
+		$this->assertSame('ana', $staged[0]['context']['userId']);
+	}//end testAStagedDenyIsRecordedWithTheRuleThatCarriesIt()
+
+	/**
+	 * `off` resolves nothing and therefore records nothing.
+	 *
+	 * The incident switch. An administrator reaching for it wants the deny to
+	 * stop costing anything, log lines included.
+	 *
+	 * @return void
+	 */
+	public function testTheOffModeNeitherRefusesNorRecords(): void {
+		$records = [];
+		$handler = $this->handlerInMode(
+			'ana',
+			['waarnemers'],
+			DenyEnforcementMode::MODE_OFF,
+			$this->loggerRecordingWarningsInto($records)
+		);
+		$schema = $this->schemaWith([
+			'read' => ['waarnemers'],
+			'deny' => ['read' => ['waarnemers']],
+		]);
+
+		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana'));
+		$this->assertCount(0, $this->stagedRecordsIn($records));
+	}//end testTheOffModeNeitherRefusesNorRecords()
+
+	/**
+	 * The pure resolution answers in every mode, because provenance asks it in
+	 * every mode.
+	 *
+	 * @return void
+	 */
+	public function testTheDenialIsStillResolvableWhileStaging(): void {
+		$handler = $this->handlerInMode('ana', ['waarnemers'], DenyEnforcementMode::MODE_STAGING);
+
+		$denial = $handler->denialFor(
+			['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]],
+			'read',
+			'ana'
+		);
+
+		$this->assertIsArray($denial);
+		$this->assertSame('waarnemers', $denial['principal']);
+	}//end testTheDenialIsStillResolvableWhileStaging()
+
+	/**
+	 * A logger that keeps every warning it is handed.
+	 *
+	 * The staging record IS the feature, so the assertion has to read the log
+	 * rather than the verdict: in staging the verdict is deliberately the same
+	 * one an instance with no deny at all would give.
+	 *
+	 * @param array<int, array{message: string, context: array}> $records Filled by reference.
+	 *
+	 * @return LoggerInterface The capturing logger.
+	 */
+	private function loggerRecordingWarningsInto(array &$records): LoggerInterface {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string|\Stringable $message, array $context = []) use (&$records): void {
+				$records[] = ['message' => (string)$message, 'context' => $context];
+			}
+		);
+
+		return $logger;
+	}//end loggerRecordingWarningsInto()
+
+	/**
+	 * The staged-denial lines among everything else the handler logged.
+	 *
+	 * @param array<int, array{message: string, context: array}> $records Every captured warning.
+	 *
+	 * @return array<int, array{message: string, context: array}> Only the staged denials.
+	 */
+	private function stagedRecordsIn(array $records): array {
+		return array_values(
+			array_filter(
+				$records,
+				static fn (array $record): bool => str_contains($record['message'], 'would refuse this action')
+			)
+		);
+	}//end stagedRecordsIn()
 }//end class

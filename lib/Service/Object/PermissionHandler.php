@@ -43,6 +43,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -251,6 +252,7 @@ class PermissionHandler {
 	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the
 	 *                                                      same reason.
 	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
+	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -268,6 +270,7 @@ class PermissionHandler {
 		private readonly ?ObjectScopeResolver $objectScopeResolver = null,
 		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
 		private readonly ?DenyResolver $denyResolver = null,
+		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
 	) {
 	}//end __construct()
 
@@ -676,11 +679,18 @@ class PermissionHandler {
 		//
 		// Costs nothing on an instance that declares no deny: the resolver
 		// answers null on an absent `deny` key without touching the session.
-		$denial = $this->denialFor(
+		//
+		// STAGING. The deny does not ship enforcing (D15). In `staging`, which
+		// is the default, the resolution below still runs and the denial is
+		// recorded, and then this method carries on as though no deny existed.
+		// The switch is read in {@see enforcedDenialFor()} so this call site and
+		// the list query in MagicRbacHandler cannot drift apart on it.
+		$denial = $this->enforcedDenialFor(
 			authorization: $authorization,
 			action: $action,
 			userId: $userId,
-			object: $object
+			object: $object,
+			context: ['schemaId' => $schema->getId(), 'path' => 'object']
 		);
 		if ($denial !== null) {
 			$this->logger->info(
@@ -877,7 +887,106 @@ class PermissionHandler {
 	}//end evaluatePermission()
 
 	/**
+	 * The deny rule that is allowed to change this answer, or null.
+	 *
+	 * The ENFORCED verdict, which is the pure resolution in
+	 * {@see denialFor()} read through the switch in
+	 * {@see \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode}. Every
+	 * enforcement point calls this one and none of them reads the switch itself,
+	 * so the object read and the list query cannot end up in different modes
+	 * inside one request.
+	 *
+	 * THE THREE MODES, in the order they cost anything:
+	 *
+	 *  - `off`       nothing is resolved and nothing is recorded.
+	 *  - `staging`   the denial is resolved, recorded and dropped. The default.
+	 *  - `enforcing` the denial is resolved and returned.
+	 *
+	 * The administrator exemption and the precedence rule live one method down,
+	 * in the resolution itself, because they are properties of the deny and not
+	 * of the rollout.
+	 *
+	 * @param array|null           $authorization The already-cascaded authorization block.
+	 * @param string               $action        The verb being decided.
+	 * @param string|null          $userId        The caller, or null to resolve from the session.
+	 * @param ObjectEntity|null    $object        The row under evaluation, when there is one.
+	 * @param array<string, mixed> $context       Where this happened, for the staging record.
+	 *
+	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
+	 *         The denial that decides it, or null when none reaches this caller
+	 *         or the instance is not enforcing yet.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	public function enforcedDenialFor(
+		?array $authorization,
+		string $action,
+		?string $userId = null,
+		?ObjectEntity $object = null,
+		array $context = [],
+	): ?array {
+		$mode = $this->denyEnforcementMode();
+
+		// `off`. The incident switch. Nothing is resolved and nothing is
+		// recorded, because the reason an administrator reaches for this value
+		// is that the deny is refusing people it should not.
+		if ($mode->resolves() === false) {
+			return null;
+		}
+
+		$denial = $this->denialFor(
+			authorization: $authorization,
+			action: $action,
+			userId: $userId,
+			object: $object
+		);
+		if ($denial === null) {
+			return null;
+		}
+
+		if ($mode->enforces() === true) {
+			return $denial;
+		}
+
+		// `staging`. The denial is real, and it is recorded, and it changes
+		// nothing. Returning null here rather than skipping the resolution above
+		// is the whole difference between a dry run and a disabled feature.
+		$mode->record(
+			denial: $denial,
+			action: $action,
+			userId: ($userId ?? $this->userSession->getUser()?->getUID()),
+			context: $context
+		);
+
+		return null;
+	}//end enforcedDenialFor()
+
+	/**
+	 * The deny enforcement switch.
+	 *
+	 * Nullable-with-default in the constructor for the same reason as the
+	 * resolvers above, and falling back to a fresh instance is equivalent
+	 * because it reads the same app-config key.
+	 *
+	 * @return DenyEnforcementMode The one reader of `openregister.deny_enforcement`.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function denyEnforcementMode(): DenyEnforcementMode {
+		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
+			appConfig: $this->appConfig,
+			logger: $this->logger
+		));
+	}//end denyEnforcementMode()
+
+	/**
 	 * The deny rule that removes this verb from this caller, or null.
+	 *
+	 * The PURE resolution, with no reference to the enforcement switch. It
+	 * answers "which rule denies this", which is the question provenance asks in
+	 * every mode, including `staging` where the answer is reported and not
+	 * applied. Callers that want the enforced verdict call
+	 * {@see enforcedDenialFor()} instead.
 	 *
 	 * This is the whole of the negative half of the model, and it is one method
 	 * so that the object read, the relation-path check and both list emitters
@@ -897,8 +1006,8 @@ class PermissionHandler {
 	 *
 	 * A CONDITIONAL DENY NEEDS A ROW. An entry carrying a `match` clause removes
 	 * the verb only for the objects the clause selects, so with no object in
-	 * hand it denies nothing — the caller is asking about the schema, not about
-	 * a row, and refusing there would turn a row-scoped rule into a blanket one.
+	 * hand it denies nothing: the caller is asking about the schema, not about a
+	 * row, and refusing there would turn a row-scoped rule into a blanket one.
 	 *
 	 * @param array|null        $authorization The already-cascaded authorization block.
 	 * @param string            $action        The verb being decided.

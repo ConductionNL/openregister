@@ -235,3 +235,47 @@ administer part of the instance without administering all of it.
 - **GIVEN** a user holding `manage` scoped to one register
 - **WHEN** they try to change the configuration of another register
 - **THEN** the write is refused naming the scope of their grant
+
+### Requirement: The deny is recorded before it refuses anything (REQ-PPD-009)
+
+The system SHALL carry a deny enforcement mode with three values: `off`,
+`staging` and `enforcing`. The default SHALL be `staging`, and a value the
+system does not recognise SHALL be read as `staging`. In `staging` a deny
+SHALL be resolved and recorded and SHALL NOT change any answer: the grant
+stands, no deny predicate enters the object query, and the recorded entry
+SHALL name the rule, the principal it names, the verb and the caller. In
+`off` no deny SHALL be resolved and none SHALL be recorded. In `enforcing`
+a deny SHALL apply as REQ-PPD-002 describes. Every enforcement path SHALL
+read the same mode, so an object read and a list cannot resolve in
+different modes within one request. The save-time refusals of REQ-PPD-002
+and REQ-PPD-003 SHALL apply in every mode.
+
+#### Scenario: a new deny refuses nobody on the day it is written
+
+- **GIVEN** an instance that has never set the deny enforcement mode
+- **AND** a deny of `read` for the group `waarnemers` on a schema they may read
+- **WHEN** a member of that group reads an object of the schema
+- **THEN** the read succeeds
+- **AND** the system records that the deny would have refused it, naming the rule
+- @e2e exclude {mode is instance configuration, covered by unit tests}
+
+#### Scenario: the list is unchanged while staging
+
+- **GIVEN** the same instance, the same deny and a schema holding 100 readable objects
+- **WHEN** the caller lists the schema
+- **THEN** the total is 100
+- @e2e exclude {SQL emitter, covered by unit tests}
+
+#### Scenario: the administrator turns it on
+
+- **GIVEN** the same instance with the deny enforcement mode set to `enforcing`
+- **WHEN** the same member reads the same object
+- **THEN** the read is refused
+- @e2e exclude {mode is instance configuration, covered by unit tests}
+
+#### Scenario: a contradiction is refused whatever the mode
+
+- **GIVEN** an instance in `staging`
+- **WHEN** an administrator saves a block granting and denying `delete` to one group at one level
+- **THEN** the save fails with HTTP 422
+- @e2e exclude {validator, covered by unit tests}

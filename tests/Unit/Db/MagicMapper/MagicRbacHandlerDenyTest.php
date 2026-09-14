@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -69,6 +70,23 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 * @return MagicRbacHandler The handler under test.
 	 */
 	private function handlerFor(?string $userId, array $groups): MagicRbacHandler {
+		return $this->handlerInMode(userId: $userId, groups: $groups, mode: DenyEnforcementMode::MODE_ENFORCING);
+	}//end handlerFor()
+
+	/**
+	 * A handler for one caller, in one deny enforcement mode.
+	 *
+	 * Every case above passes `enforcing` through {@see handlerFor()}, because
+	 * they are testing what a deny DOES and the instance default is `staging`
+	 * (D15). The staging cases call this directly.
+	 *
+	 * @param string|null $userId The caller, or null for anonymous.
+	 * @param string[]    $groups The caller's group IDs.
+	 * @param string      $mode   One of DenyEnforcementMode::MODES.
+	 *
+	 * @return MagicRbacHandler The handler under test.
+	 */
+	private function handlerInMode(?string $userId, array $groups, string $mode): MagicRbacHandler {
 		$userSession = $this->createMock(IUserSession::class);
 		$groupManager = $this->createMock(IGroupManager::class);
 
@@ -91,9 +109,24 @@ class MagicRbacHandlerDenyTest extends TestCase {
 			new NullLogger(),
 			null,
 			null,
-			new DenyResolver()
+			new DenyResolver(),
+			$this->modeFixedAt($mode)
 		);
-	}//end handlerFor()
+	}//end handlerInMode()
+
+	/**
+	 * A deny enforcement switch pinned to one mode.
+	 *
+	 * @param string $mode One of DenyEnforcementMode::MODES.
+	 *
+	 * @return DenyEnforcementMode The pinned switch.
+	 */
+	private function modeFixedAt(string $mode): DenyEnforcementMode {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn($mode);
+
+		return new DenyEnforcementMode($appConfig, new NullLogger());
+	}//end modeFixedAt()
 
 	/**
 	 * A schema carrying one authorization block.
@@ -342,6 +375,103 @@ class MagicRbacHandlerDenyTest extends TestCase {
 
 		$this->assertSame([], $result['conditions']);
 	}//end testAnUncompilableConditionalDenyDeniesTheWholeList()
+
+	/**
+	 * 🔴 A staged deny never reaches the WHERE clause.
+	 *
+	 * The deny does not ship enforcing (D15), and a staged deny that still
+	 * removed rows from a list would be enforcement wearing a different label.
+	 * The list is also where it would show first and hurt most: the total and
+	 * every facet count are computed over the predicate, so a staged deny in the
+	 * query moves numbers on a dashboard nobody warned anybody about.
+	 *
+	 * @return void
+	 */
+	public function testAStagedDenyEmitsNoPredicateAndKeepsTheRowsInTheList(): void {
+		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_STAGING);
+
+		$result = $handler->buildRbacConditionsSql(
+			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
+			'read'
+		);
+
+		// Enforcing, this exact fixture yields no conditions at all
+		// ({@see testADeniedCallerGetsNoConditionsAndTheControlStillDoes()}).
+		$this->assertNotEmpty($result['conditions']);
+		foreach ($result['conditions'] as $condition) {
+			$this->assertStringNotContainsString(
+				'$.deny.read',
+				$condition,
+				'A staged deny reached the WHERE clause; the total and the facet counts would already have moved.'
+			);
+		}
+	}//end testAStagedDenyEmitsNoPredicateAndKeepsTheRowsInTheList()
+
+	/**
+	 * `off` also emits no predicate, by the same switch.
+	 *
+	 * @return void
+	 */
+	public function testTheOffModeEmitsNoDenyPredicateEither(): void {
+		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_OFF);
+
+		$result = $handler->buildRbacConditionsSql(
+			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
+			'read'
+		);
+
+		$this->assertNotEmpty($result['conditions']);
+		foreach ($result['conditions'] as $condition) {
+			$this->assertStringNotContainsString('$.deny.read', $condition);
+		}
+	}//end testTheOffModeEmitsNoDenyPredicateEither()
+
+	/**
+	 * The object path stages too, so the four enforcement paths agree.
+	 *
+	 * A path that kept enforcing while the others staged is exactly the drift
+	 * the single switch exists to prevent, and it is invisible from any one of
+	 * them.
+	 *
+	 * @return void
+	 */
+	public function testTheObjectPathAlsoStagesRatherThanRefusing(): void {
+		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_STAGING);
+		$schema = $this->schemaWith(['read' => ['behandelaars']]);
+
+		$this->assertTrue(
+			$handler->hasPermission(
+				schema: $schema,
+				action: 'read',
+				objectOwner: 'ana',
+				objectData: ['title' => 'geheim'],
+				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
+				objectUuid: 'bbbbbbbb-0000-0000-0000-000000000001'
+			)
+		);
+	}//end testTheObjectPathAlsoStagesRatherThanRefusing()
+
+	/**
+	 * The same call enforcing, as the control that separates staging from a
+	 * fixture that never denied anything.
+	 *
+	 * @return void
+	 */
+	public function testTheSameObjectCallRefusesWhenEnforcing(): void {
+		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_ENFORCING);
+		$schema = $this->schemaWith(['read' => ['behandelaars']]);
+
+		$this->assertFalse(
+			$handler->hasPermission(
+				schema: $schema,
+				action: 'read',
+				objectOwner: 'ana',
+				objectData: ['title' => 'geheim'],
+				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
+				objectUuid: 'bbbbbbbb-0000-0000-0000-000000000002'
+			)
+		);
+	}//end testTheSameObjectCallRefusesWhenEnforcing()
 
 	/**
 	 * The entity the row predicate is written against still has the column.
