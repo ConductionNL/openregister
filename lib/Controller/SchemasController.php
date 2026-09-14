@@ -39,6 +39,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
@@ -599,7 +600,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<201, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 * @spec openspec/specs/json-ld-output/spec.md
@@ -740,6 +742,14 @@ class SchemasController extends Controller {
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
 			return new JSONResponse(data: $schema, statusCode: 201);
+		} catch (CalculationDeclarationException $e) {
+			// A calculation a property form forwarded is the caller's input and
+			// a person is waiting on the answer, so the refusal names the node
+			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
@@ -815,7 +825,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
@@ -949,6 +960,14 @@ class SchemasController extends Controller {
 			);
 
 			return new JSONResponse(data: $updatedSchema);
+		} catch (CalculationDeclarationException $e) {
+			// A calculation a property form forwarded is the caller's input and
+			// a person is waiting on the answer, so the refusal names the node
+			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -1021,7 +1040,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -1419,6 +1439,14 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schema);
+		} catch (CalculationDeclarationException $e) {
+			// A calculation a property form forwarded is the caller's input and
+			// a person is waiting on the answer, so the refusal names the node
+			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(
