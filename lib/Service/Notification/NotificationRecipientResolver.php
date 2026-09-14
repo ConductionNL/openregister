@@ -34,6 +34,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
 use OCP\IUserManager;
@@ -76,7 +78,9 @@ class NotificationRecipientResolver {
 	 * Resolve a recipients spec to a deduplicated list of verified uids.
 	 *
 	 * Supported kinds: `users`, `field`, `relation`, `object-acl`,
-	 * `expression`, `groups` — the dispatcher's set, unchanged.
+	 * `expression`, `groups` — the dispatcher's set — plus `watchers`, spelled
+	 * `{"watchers": true}`, which resolves to whoever follows the triggering
+	 * object at dispatch time.
 	 *
 	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
 	 * @param array<string, mixed> $data The object's stored data (or a flow item's json).
@@ -101,6 +105,24 @@ class NotificationRecipientResolver {
 			}
 
 			$kind = (string)($r['kind'] ?? '');
+
+			// `{"watchers": true}` carries no `kind`: it names a subscription
+			// list, not a value to look up. Normalised here so the branch below
+			// reads like every other kind.
+			if (($r['watchers'] ?? null) === true) {
+				$kind = 'watchers';
+			}
+
+			if ($kind === 'watchers') {
+				if ($object !== null) {
+					foreach ($this->resolveWatcherRecipients(object: $object) as $uid) {
+						$uids[] = $uid;
+					}
+				}
+
+				continue;
+			}
+
 			if ($kind === 'users') {
 				foreach ((array)($r['users'] ?? []) as $u) {
 					if (is_string($u) === true && $u !== '' && $this->userExists(uid: $u) === true) {
@@ -201,6 +223,77 @@ class NotificationRecipientResolver {
 
 		return array_values(array_unique($uids));
 	}//end resolve()
+
+	/**
+	 * Resolve the object's watchers, checking read at DISPATCH time.
+	 *
+	 * Two things happen here and both matter.
+	 *
+	 * The read check runs now, not when the person subscribed. Group membership
+	 * changes; a case becomes sensitive. Checking only at subscribe time would
+	 * leave a standing subscription that keeps delivering after the access that
+	 * justified it is gone, which is the exact leak this recipient kind would
+	 * otherwise introduce.
+	 *
+	 * And the list HEALS: a watcher who has lost read is not merely skipped, the
+	 * subscription is removed, so the object's audience stops carrying people
+	 * who are not in it. The removal is best-effort and never blocks a dispatch.
+	 *
+	 * An EMPTY readable-user list means "no targeted audience" — the schema's
+	 * read rule is open, or the authorization could not be resolved and the
+	 * evaluator failed closed by returning nothing. Neither is evidence that a
+	 * particular watcher lost access, so nothing is dropped in that case and
+	 * every watcher is kept.
+	 *
+	 * @param ObjectEntity $object The triggering object.
+	 *
+	 * @return array<int, string> The watching uids that may still read the object.
+	 *
+	 * @spec openspec/changes/object-watchers/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 */
+	private function resolveWatcherRecipients(ObjectEntity $object): array {
+		if ($this->serverContainer === null) {
+			return [];
+		}
+
+		try {
+			$watchers = $this->serverContainer->get(WatcherService::class);
+			$uids = $watchers->watcherUids(objectUuid: (string)$object->getUuid());
+			if ($uids === []) {
+				return [];
+			}
+
+			$readable = $this->serverContainer->get(PermissionHandler::class)
+				->getReadableByUsers(object: $object);
+			if ($readable === []) {
+				return $uids;
+			}
+
+			$kept = [];
+			$lost = [];
+			foreach ($uids as $uid) {
+				if (in_array($uid, $readable, true) === true) {
+					$kept[] = $uid;
+					continue;
+				}
+
+				$lost[] = $uid;
+			}
+
+			if ($lost !== []) {
+				$watchers->dropWatchers(objectUuid: (string)$object->getUuid(), userIds: $lost);
+			}
+
+			return $kept;
+		} catch (\Throwable $e) {
+			// Fail CLOSED: an unresolvable watcher list tells nobody rather than
+			// telling everybody.
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] watcher resolution failed: %s', $e->getMessage())
+			);
+			return [];
+		}//end try
+	}//end resolveWatcherRecipients()
 
 	/**
 	 * Verify that a uid corresponds to an actual Nextcloud user.

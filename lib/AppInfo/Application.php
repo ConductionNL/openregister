@@ -123,6 +123,7 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
+use OCA\OpenRegister\Listener\WatcherPruneListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
@@ -3025,6 +3026,11 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+
+		// Watcher pruning (`object-watchers`): a deleted object must not leave
+		// its audience behind, or a re-created uuid inherits followers who
+		// never chose to follow it.
+		$context->registerEventListener(ObjectDeletedEvent::class, WatcherPruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);

@@ -115,6 +115,7 @@ DOMAIN_ORDER=(
     "delegation"
     "register-descriptors"
     "working-calendars"
+    "object-watchers"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -170,6 +171,12 @@ declare -A DOMAIN_COLLECTIONS=(
     # tests is an API contract: a script pushing a municipal holiday list is
     # the consumer the gap register named, and it never opens a browser.
     [working-calendars]="$REPO_ROOT/tests/newman/openregister-working-calendars.postman_collection.json"
+    # Object watchers — following an object you do not own. Registered here
+    # because the capability is HTTP-shaped: routes, auth attributes and the
+    # 404-not-403 posture on an object the caller cannot resolve. A unit suite
+    # cannot see any of those, and a route missing from appinfo/routes.php is a
+    # 404 no PHPUnit test would notice.
+    [object-watchers]="$REPO_ROOT/tests/newman/openregister-object-watchers.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
