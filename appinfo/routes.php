@@ -910,6 +910,17 @@ return [
         ['name' => 'bulk#deleteSchemaObjects', 'url' => '/api/bulk/{register}/{schema}/delete-objects', 'verb' => 'POST'],
         ['name' => 'bulk#deleteRegister', 'url' => '/api/bulk/{register}/delete-register', 'verb' => 'POST'],
         ['name' => 'bulk#runSchemaValidation', 'url' => '/api/bulk/schema/{schema}/validate', 'verb' => 'POST'],
+        // Bulk action jobs — a bulk act as one previewed, cancellable job.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'bulkJobs#actions', 'url' => '/api/bulk-actions', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#index', 'url' => '/api/bulk-jobs', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#create', 'url' => '/api/bulk-jobs', 'verb' => 'POST'],
+        ['name' => 'bulkJobs#show', 'url' => '/api/bulk-jobs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#members', 'url' => '/api/bulk-jobs/{id}/members', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#download', 'url' => '/api/bulk-jobs/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
