@@ -125,9 +125,10 @@ class WebhooksControllerTest extends TestCase {
 	/**
 	 * Create a WebhookLog mock for retry() tests.
 	 *
-	 * The controller's retry() calls getWebhookId() which doesn't exist as
-	 * a real property on WebhookLog (the field is 'webhook'). We need a mock
-	 * with addMethods to stub this non-existent method.
+	 * The getters are Entity::__call magic over declared properties, so they
+	 * are added with addMethods(). Every name here must be backed by a real
+	 * property: this helper used to stub getWebhookId(), which no property
+	 * answers, and the green test hid a 500 on retry().
 	 *
 	 * @param array $config Method return value map
 	 *
@@ -135,7 +136,7 @@ class WebhooksControllerTest extends TestCase {
 	 */
 	private function createWebhookLogMockForRetry(array $config = []): WebhookLog&MockObject {
 		$defaults = [
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getSuccess' => false,
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getRequestBody' => null,
@@ -155,7 +156,7 @@ class WebhooksControllerTest extends TestCase {
 			->disableOriginalConstructor()
 			->onlyMethods(['getPayloadArray'])
 			->addMethods([
-				'getWebhookId', 'getSuccess', 'getEventClass',
+				'getWebhook', 'getSuccess', 'getEventClass',
 				'getRequestBody', 'getPayload', 'getAttempt',
 				'getErrorMessage', 'getStatusCode', 'getResponseBody',
 			])
@@ -1164,7 +1165,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetrySuccessWithRequestBody(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"data": {"key": "value"}}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 2,
@@ -1188,7 +1189,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetrySuccessWithPayloadArray(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => null,
 			'getPayload' => '{"key": "value"}',
 			'getPayloadArray' => ['key' => 'value'],
@@ -1212,7 +1213,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryReturns400WhenNoPayloadAvailable(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => null,
 			'getPayload' => null,
 			'getPayloadArray' => [],
@@ -1232,7 +1233,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryFailedDeliveryWithLogDetails(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"data": {"key": "value"}}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 1,
@@ -1265,7 +1266,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryFailedDeliveryWithNoLogDetails(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"data": {"key": "value"}}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 1,
@@ -1291,7 +1292,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryFailedDeliveryWithLogNoErrorMessage(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"data": {"key": "value"}}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 1,
@@ -1322,7 +1323,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryReturns500OnGenericException(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"data": {"key": "value"}}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 1,
@@ -1342,7 +1343,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryWithRequestBodyContainingInvalidJson(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => 'not valid json{{{',
 			'getPayload' => null,
 			'getPayloadArray' => [],
@@ -1363,7 +1364,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryUsesDataKeyFromPayload(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"data": {"id": 42, "name": "test"}, "event": "created"}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 3,
@@ -1392,7 +1393,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryWithPayloadWithoutDataKey(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"id": 42, "name": "test"}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 1,
@@ -1421,7 +1422,7 @@ class WebhooksControllerTest extends TestCase {
 	public function testRetryFailedWithLogErrorMessageAndStatusCode(): void {
 		$logMock = $this->createWebhookLogMockForRetry([
 			'getSuccess' => false,
-			'getWebhookId' => 1,
+			'getWebhook' => 1,
 			'getRequestBody' => '{"key": "value"}',
 			'getEventClass' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			'getAttempt' => 1,

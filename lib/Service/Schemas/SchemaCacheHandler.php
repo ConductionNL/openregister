@@ -722,13 +722,11 @@ class SchemaCacheHandler {
 	 *     version: null|string,
 	 *     description: null|string,
 	 *     summary: null|string,
-	 *     tags: mixed,
 	 *     required: array|null,
 	 *     properties: array|null,
 	 *     archive: array|null,
 	 *     configuration: array|null,
 	 *     source: null|string,
-	 *     register: mixed,
 	 *     organisation: null|string,
 	 *     owner: null|string,
 	 *     created: null|string,
@@ -736,6 +734,12 @@ class SchemaCacheHandler {
 	 * }
 	 */
 	private function serializeSchemaForCache(Schema $schema): array {
+		// Only fields Schema actually declares. `tags` and `register` used to
+		// be read here and neither is a property of Schema, so both calls fell
+		// through Entity::__call into "is not a valid attribute" and every
+		// cache write threw. The test could not see it: its Schema double
+		// declared both with addMethods(), which invents the accessor on the
+		// mock instead of consulting the class.
 		return [
 			'id' => $schema->getId(),
 			'uuid' => $schema->getUuid(),
@@ -743,13 +747,11 @@ class SchemaCacheHandler {
 			'version' => $schema->getVersion(),
 			'description' => $schema->getDescription(),
 			'summary' => $schema->getSummary(),
-			'tags' => $schema->getTags(),
 			'required' => $schema->getRequired(),
 			'properties' => $schema->getProperties(),
 			'archive' => $schema->getArchive(),
 			'configuration' => $schema->getConfiguration(),
 			'source' => $schema->getSource(),
-			'register' => $schema->getRegister(),
 			'organisation' => $schema->getOrganisation(),
 			'owner' => $schema->getOwner(),
 			'created' => $schema->getCreated()?->format('Y-m-d H:i:s'),
@@ -776,13 +778,11 @@ class SchemaCacheHandler {
 			$schema->setVersion($cachedData['version']);
 			$schema->setDescription($cachedData['description']);
 			$schema->setSummary($cachedData['summary']);
-			$schema->setTags($cachedData['tags']);
 			$schema->setRequired($cachedData['required']);
 			$schema->setProperties($cachedData['properties']);
 			$schema->setArchive($cachedData['archive']);
 			$schema->setConfiguration($cachedData['configuration']);
 			$schema->setSource($cachedData['source']);
-			$schema->setRegister($cachedData['register']);
 			$schema->setOrganisation($cachedData['organisation']);
 			$schema->setOwner($cachedData['owner']);
 

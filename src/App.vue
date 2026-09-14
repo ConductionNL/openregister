@@ -1,6 +1,7 @@
 <template>
 	<CnAppRoot
 		appId="openregister"
+		appDisplayName="Open Register"
 		:aiCompanion="true"
 		:manifest="manifest"
 		:registry="registry"

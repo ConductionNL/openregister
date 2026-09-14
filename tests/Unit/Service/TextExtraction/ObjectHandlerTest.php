@@ -120,19 +120,20 @@ class ObjectHandlerTest extends TestCase {
 	 * Build a Schema mock with addMethods.
 	 *
 	 * @param string|null $title Schema title.
-	 * @param string|null $name Schema name.
 	 * @param string|null $description Schema description.
 	 *
 	 * @return MockObject
 	 */
-	private function buildSchemaMock(?string $title = 'MySchema', ?string $name = null, ?string $description = null): MockObject {
+	private function buildSchemaMock(?string $title = 'MySchema', ?string $description = null): MockObject {
+		// getTitle and getDescription only. getName() used to be here too and
+		// Schema declares no `name` property, so the double invented an accessor
+		// the real entity answers with a BadFunctionCallException.
 		$schema = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
 			->disableOriginalConstructor()
-			->addMethods(['getTitle', 'getName', 'getDescription'])
+			->addMethods(['getTitle', 'getDescription'])
 			->getMock();
 
 		$schema->method('getTitle')->willReturn($title);
-		$schema->method('getName')->willReturn($name);
 		$schema->method('getDescription')->willReturn($description);
 
 		return $schema;
@@ -142,19 +143,20 @@ class ObjectHandlerTest extends TestCase {
 	 * Build a Register mock with addMethods.
 	 *
 	 * @param string|null $title Register title.
-	 * @param string|null $name Register name.
 	 * @param string|null $description Register description.
 	 *
 	 * @return MockObject
 	 */
-	private function buildRegisterMock(?string $title = 'MyRegister', ?string $name = null, ?string $description = null): MockObject {
+	private function buildRegisterMock(?string $title = 'MyRegister', ?string $description = null): MockObject {
+		// getTitle and getDescription only. getName() used to be here too and
+		// Register declares no `name` property, so the double invented an accessor
+		// the real entity answers with a BadFunctionCallException.
 		$register = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->disableOriginalConstructor()
-			->addMethods(['getTitle', 'getName', 'getDescription'])
+			->addMethods(['getTitle', 'getDescription'])
 			->getMock();
 
 		$register->method('getTitle')->willReturn($title);
-		$register->method('getName')->willReturn($name);
 		$register->method('getDescription')->willReturn($description);
 
 		return $register;
@@ -209,7 +211,7 @@ class ObjectHandlerTest extends TestCase {
 		$object = $this->buildObjectMock(['schema' => 5, 'object' => ['x' => 'y']]);
 		$this->objectMapper->method('find')->willReturn($object);
 
-		$schema = $this->buildSchemaMock('Title', null, 'A description of the schema');
+		$schema = $this->buildSchemaMock('Title', 'A description of the schema');
 		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$result = $this->handler->extractText(1, []);
@@ -246,7 +248,7 @@ class ObjectHandlerTest extends TestCase {
 		$object = $this->buildObjectMock(['register' => 3, 'object' => ['x' => 'y']]);
 		$this->objectMapper->method('find')->willReturn($object);
 
-		$register = $this->buildRegisterMock('Reg', null, 'Register description text');
+		$register = $this->buildRegisterMock('Reg', 'Register description text');
 		$this->registerMapper->method('find')->willReturn($register);
 
 		$result = $this->handler->extractText(1, []);

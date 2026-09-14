@@ -26,6 +26,8 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\TransitionController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
+use OCA\OpenRegister\Exception\LifecycleProviderException;
+use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Http;
@@ -141,6 +143,69 @@ class TransitionControllerTest extends TestCase {
 	}//end testTransitionReturns422OnRuntimeError()
 
 	/**
+	 * A provider that BROKE is not a move that was refused → 502, not 422.
+	 *
+	 * `LifecycleProviderException` extends `RuntimeException`, so this passes
+	 * only while it is caught ahead of the 422 branch. Reordering the
+	 * try/catch silently turns "the workflow template will not parse" into
+	 * "your move was declined", which a handler acts on by trying something
+	 * else instead of calling someone.
+	 *
+	 * @return void
+	 */
+	public function testTransitionReturns502WhenTheProviderCannotApplyTheMove(): void {
+		$this->stubParams(['action' => 'lc-start']);
+		$this->engine->method('transition')->willThrowException(
+			new LifecycleProviderException('Lifecycle provider "x" could not apply action "lc-start".')
+		);
+
+		$response = $this->controller->transition('obj-1');
+
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+	}//end testTransitionReturns502WhenTheProviderCannotApplyTheMove()
+
+	/**
+	 * A provider that REFUSED the move keeps the 422, with its own sentence.
+	 *
+	 * The pair with the 502 above: together they are what makes either status
+	 * readable. A refusal is the app answering in its own vocabulary, so the
+	 * message is the thing the user is shown.
+	 *
+	 * @return void
+	 */
+	public function testTransitionReturns422WhenTheProviderRefusesTheMove(): void {
+		$this->stubParams(['action' => 'lc-start']);
+		$this->engine->method('transition')->willThrowException(
+			new RuntimeException('De bezwaartermijn is verstreken.')
+		);
+
+		$response = $this->controller->transition('obj-1');
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertSame(
+			['error' => 'De bezwaartermijn is verstreken.'],
+			$response->getData()
+		);
+	}//end testTransitionReturns422WhenTheProviderRefusesTheMove()
+
+	/**
+	 * An object that is GONE is neither → 404, the status the read half of
+	 * this pair already answers for the same condition.
+	 *
+	 * @return void
+	 */
+	public function testTransitionReturns404OnMissingObject(): void {
+		$this->stubParams(['action' => 'lc-start']);
+		$this->engine->method('transition')->willThrowException(
+			new LifecycleSubjectNotFoundException('Object "obj-1" not found.')
+		);
+
+		$response = $this->controller->transition('obj-1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testTransitionReturns404OnMissingObject()
+
+	/**
 	 * The optional `data` body param is forwarded to the engine untouched.
 	 *
 	 * @return void
@@ -238,4 +303,29 @@ class TransitionControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 	}//end testAvailableActionsReturns404OnMissingObject()
+
+	/**
+	 * A provider-mode lifecycle that cannot be read answers 502, and the
+	 * status is what carries the meaning: a client reads 404 as "no
+	 * lifecycle" and an empty action list as "no moves from here", so
+	 * neither of those may stand in for "could not read". Distinct from the
+	 * 403 and 404 cases above, which are unchanged.
+	 *
+	 * @return void
+	 */
+	public function testAvailableActionsReturns502WhenTheProviderCannotAnswer(): void {
+		$this->engine->method('availableActions')->willThrowException(
+			new LifecycleProviderException(
+				'Lifecycle provider "OCA\\Dossiq\\Lifecycle\\CaseActionProvider" is not registered.'
+			)
+		);
+
+		$response = $this->controller->availableActions('obj-1');
+
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$body = $response->getData();
+		$this->assertIsArray($body);
+		$this->assertArrayNotHasKey('actions', $body);
+		$this->assertStringContainsString('is not registered', (string)($body['error'] ?? ''));
+	}//end testAvailableActionsReturns502WhenTheProviderCannotAnswer()
 }//end class

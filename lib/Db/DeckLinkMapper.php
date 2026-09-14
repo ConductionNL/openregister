@@ -41,6 +41,29 @@ class DeckLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
+	 * One link by its row id.
+	 *
+	 * QBMapper has no `find()`, and `DeckCardService::unlinkCard()` calls one:
+	 * without it unlinking a card answers 500 with "Call to undefined method",
+	 * the same defect the contact links carried. psalm's baseline had it
+	 * recorded as a suppressed UndefinedMethod rather than fixed.
+	 *
+	 * @param int $id The row id.
+	 *
+	 * @return DeckLink The link.
+	 *
+	 * @throws DoesNotExistException When no link has that id.
+	 */
+	public function find(int $id): DeckLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+		return $this->findEntity(query: $qb);
+	}//end find()
+
+	/**
 	 * Find deck links by object UUID.
 	 *
 	 * @param string $objectUuid The object UUID.

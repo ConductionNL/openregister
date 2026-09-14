@@ -305,8 +305,12 @@ class CalendarEventsController extends Controller {
 				return new JSONResponse(['error' => 'Event not found'], 404);
 			}
 
-			// Strip X-OR-* properties (legacy CalendarEventService behaviour).
-			$this->calendarEventService->unlinkEvent(calendarId: (string)$calendarId, eventUri: $eventId);
+			// Delete the event, which is what this endpoint says it does. It used
+			// to call unlinkEvent() here, which strips the X-OPENREGISTER-*
+			// properties and leaves the meeting on the calendar, so "Delete
+			// meeting" and "Unlink" were the same operation and both answered
+			// {"success": true}. Cancelling a hearing left the hearing in place.
+			$this->calendarEventService->deleteEvent(calendarId: (string)$calendarId, eventUri: $eventId);
 
 			// Also remove the link-table row, if any.
 			if ($eventUid !== null) {

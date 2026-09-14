@@ -40,22 +40,18 @@ class RestApiSourceFetcherTest extends TestCase {
 	}
 
 	private function makeSource(): Source&MockObject {
-		// Source's real setConfiguration()/getConfiguration() throw
-		// BadFunctionCallException — the entity has no `configuration`
-		// property/type registered despite the @method docblock (a
-		// pre-existing bug unrelated to this task). A mock sidesteps the
-		// magic __call() entirely so the fetcher's own logic can be
-		// exercised in isolation.
 		// Source's getters are magic (via Entity::__call), so createMock()
 		// can't auto-detect them as configurable methods — addMethods()
-		// registers them explicitly on the mock's generated class.
+		// registers them explicitly on the mock's generated class. Every name
+		// here must be backed by a real property: getConfiguration() used to
+		// be in this list and Source has no `configuration` property, so the
+		// double invented an accessor that threw in production.
 		$source = $this->getMockBuilder(Source::class)
-			->addMethods(['getDatabaseUrl', 'getAuthType', 'getAuthConfig', 'getConfiguration'])
+			->addMethods(['getDatabaseUrl', 'getAuthType', 'getAuthConfig'])
 			->getMock();
 		$source->method('getDatabaseUrl')->willReturn('https://example.test/api/records');
 		$source->method('getAuthType')->willReturn('none');
 		$source->method('getAuthConfig')->willReturn([]);
-		$source->method('getConfiguration')->willReturn([]);
 
 		return $source;
 	}
