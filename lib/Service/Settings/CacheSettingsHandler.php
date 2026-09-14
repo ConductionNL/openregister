@@ -501,18 +501,15 @@ class CacheSettingsHandler {
 			$objectCacheService->clearCache();
 			$afterStats = $objectCacheService->getStats();
 
-			// `getStats()` reports the object cache count as `cache_size`; it
-			// has never had an `entries` key. Reading one raised two PHP
-			// warnings per call and made `cleared` the difference of two
-			// nulls, so the admin panel reported 0 cleared however many
-			// entries went. Surfaced by ControllersIntegrationTest once it
-			// could construct its controllers again (dark-suite wave 4).
-			$before = ($beforeStats['entries'] ?? $beforeStats['cache_size'] ?? 0);
-			$after = ($afterStats['entries'] ?? $afterStats['cache_size'] ?? 0);
-
+			// CacheHandler::getStats() reports cache_size, query_cache_size and
+			// name_cache_size, and never an `entries` key. Reading `entries`
+			// produced two "Undefined array key" warnings per call and a cleared
+			// count of 0 - 0, so the admin action always reported clearing
+			// nothing. clearCache() empties all three in-memory caches, so all
+			// three are what it cleared.
 			return [
 				'service' => 'object',
-				'cleared' => ($before - $after),
+				'cleared' => ($this->countCacheEntries(stats: $beforeStats) - $this->countCacheEntries(stats: $afterStats)),
 				'before' => $beforeStats,
 				'after' => $afterStats,
 				'success' => true,
@@ -526,6 +523,21 @@ class CacheSettingsHandler {
 			];
 		}//end try
 	}//end clearObjectCache()
+
+	/**
+	 * Total in-memory entries a CacheHandler stats payload reports.
+	 *
+	 * @param array $stats A {@see \OCA\OpenRegister\Service\Object\CacheHandler::getStats()} payload.
+	 *
+	 * @return int The object, query and name cache sizes added together.
+	 *
+	 * @spec exclude Arithmetic over a stats payload; the behaviour it feeds is covered by clearObjectCache().
+	 */
+	private function countCacheEntries(array $stats): int {
+		return ((int)($stats['cache_size'] ?? 0)
+			+ (int)($stats['query_cache_size'] ?? 0)
+			+ (int)($stats['name_cache_size'] ?? 0));
+	}//end countCacheEntries()
 
 	/**
 	 * Clear object names cache specifically

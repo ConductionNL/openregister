@@ -605,10 +605,12 @@ class CacheSettingsHandlerTest extends TestCase {
 		$this->cacheHandler->method('getStats')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;
+				// CacheHandler::getStats() has no `entries` key; the object,
+				// query and name cache sizes are what clearCache() empties.
 				if ($callCount === 1) {
-					return ['entries' => 10];
+					return ['cache_size' => 6, 'query_cache_size' => 3, 'name_cache_size' => 1];
 				}
-				return ['entries' => 0];
+				return ['cache_size' => 0, 'query_cache_size' => 0, 'name_cache_size' => 0];
 			});
 		$this->cacheHandler->method('clearCache');
 
