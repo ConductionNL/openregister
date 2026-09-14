@@ -796,6 +796,14 @@ return [
         ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
         ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
 
+        // Code-list options for one schema property, as a flat list or as a
+        // tree, narrowed by the context in play and by each value's validity
+        // window. A retired value is absent here and still resolves through
+        // the three routes above, which is the whole point of retiring
+        // rather than deleting (REQ-CLH-001, REQ-CLH-002).
+        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+        ['name' => 'vocabulary#propertyOptions', 'url' => '/api/vocabulary/options', 'verb' => 'GET'],
+
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
         // only filters + cursor-paginates the entries linked to an OR

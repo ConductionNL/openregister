@@ -37,7 +37,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
+use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -101,9 +104,120 @@ class VocabularyController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly CodedOptionsBuilder $options,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
+
+	/**
+	 * GET /api/vocabulary/options?schema=...&property=...&context=...&tree=1
+	 *
+	 * The options a coded property offers, as a flat list or as a tree.
+	 *
+	 * A value outside its validity window is absent from this answer and
+	 * still resolves through the three routes above, which is what lets a
+	 * dossier from 2019 read correctly beside a picker that no longer offers
+	 * the value it holds (REQ-CLH-001).
+	 *
+	 * `context` narrows the option subset for a property bound to another
+	 * property's value or to a declared context key, so one `categorie` field
+	 * serves many case types (REQ-CLH-002). `tree=1` returns the hierarchy
+	 * rather than the flat list.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The options, or a 404 when the schema or property is unknown.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
+	public function propertyOptions(): JSONResponse {
+		$schemaRef = trim((string)$this->request->getParam('schema', ''));
+		$property = trim((string)$this->request->getParam('property', ''));
+		if ($schemaRef === '' || $property === '') {
+			return new JSONResponse(
+				['message' => 'Query parameters "schema" and "property" are both required.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$schema = $this->schemaMapper->find(id: $schemaRef);
+		} catch (Throwable $missing) {
+			return $this->notFound();
+		}
+
+		$properties = ($schema->getProperties() ?? []);
+		$declaration = CodedPropertyDeclaration::fromProperty(property: ($properties[$property] ?? null));
+		if ($declaration === null) {
+			return $this->notFound();
+		}
+
+		$language = $this->negotiatedLanguage();
+		$asTree = filter_var($this->request->getParam('tree', false), FILTER_VALIDATE_BOOLEAN);
+
+		if ($asTree === true) {
+			$tree = $this->options->tree(declaration: $declaration, language: $language);
+
+			return new JSONResponse(
+				[
+					'property' => $property,
+					'scheme' => $declaration->scheme,
+					'language' => $language,
+					'tree' => $tree,
+				]
+			);
+		}
+
+		$context = trim((string)$this->request->getParam('context', ''));
+		$options = $this->options->options(
+			declaration: $declaration,
+			language: $language,
+			context: ($context === '' ? null : $context)
+		);
+
+		return new JSONResponse(
+			[
+				'property' => $property,
+				'scheme' => $declaration->scheme,
+				'language' => $language,
+				'context' => ($context === '' ? null : $context),
+				'results' => $options,
+				'total' => count($options),
+			]
+		);
+	}//end propertyOptions()
+
+	/**
+	 * The language the caller asked for, defaulting to Dutch.
+	 *
+	 * Dutch is the default rather than English because `prefLabel.nl` is the
+	 * one label the concept schema requires, so it is the only tag guaranteed
+	 * to resolve to something a person can read.
+	 *
+	 * @return string The BCP-47 tag.
+	 */
+	private function negotiatedLanguage(): string {
+		$explicit = trim((string)$this->request->getParam('language', ''));
+		if ($explicit !== '') {
+			return $explicit;
+		}
+
+		$header = trim((string)$this->request->getHeader('Accept-Language'));
+		if ($header === '') {
+			return 'nl';
+		}
+
+		$first = trim((string)(explode(',', $header)[0] ?? ''));
+		$first = trim((string)(explode(';', $first)[0] ?? ''));
+
+		return ($first === '' ? 'nl' : $first);
+	}//end negotiatedLanguage()
 
 	/**
 	 * GET /api/vocabulary/concept?uri=...
