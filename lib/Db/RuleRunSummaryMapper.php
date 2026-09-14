@@ -189,13 +189,17 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @return bool True when the row should be written.
 	 *
+	 * PUBLIC so the throttle is testable on its own. It is a rule about which
+	 * writes may be dropped, and a rule about dropping writes that can only be
+	 * exercised through a live database is a rule nobody checks.
+	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag distinguishes the one case
 	 *   that always writes from the one that may be throttled; splitting it would be two
 	 *   methods with the same body and one line different.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
-	private function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $at, bool $isError): bool {
+	public function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $at, bool $isError): bool {
 		if ($summary->getId() === null || $isError === true) {
 			return true;
 		}
