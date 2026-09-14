@@ -122,6 +122,93 @@ class PermissionsControllerTest extends TestCase {
 	}//end schemaWith()
 
 	/**
+	 * 🔴 The scope audit names the rule behind every principal, not only the set.
+	 *
+	 * The audit answered per schema and per action before this: which groups
+	 * hold `read` on `zaak`. A reviewer who finds a group they did not expect
+	 * then has to discover WHERE it was granted, across four levels, and that
+	 * search is the expensive half of an access review.
+	 *
+	 * @return void
+	 */
+	public function testTheScopeAuditReportsThePrincipalsWithTheirRules(): void {
+		$register = $this->registerWith(
+			['read' => ['directie']],
+			['roles' => [['name' => 'behandelaar', 'actions' => ['read', 'update']]]]
+		);
+		$register->setSchemas([7]);
+
+		$schema = $this->schemaWith(
+			[
+				'roles' => ['behandelaar' => ['behandelaars']],
+				'deny' => ['update' => ['waarnemers']],
+			]
+		);
+
+		$response = $this->controllerFor(
+			mode: DenyEnforcementMode::MODE_STAGING,
+			registers: [$register],
+			schemas: [$schema]
+		)->scopeAudit();
+
+		$this->assertSame(200, $response->getStatus());
+		$body = $response->getData();
+
+		foreach (['denyEnforcement', 'schemaCount', 'scopes'] as $key) {
+			$this->assertArrayHasKey($key, $body, sprintf('the audit lost its "%s" key', $key));
+		}
+
+		$this->assertSame(1, $body['schemaCount']);
+		$row = $body['scopes'][0];
+		$this->assertSame('zaken', $row['register']);
+		$this->assertSame('zaak', $row['schema']);
+
+		// Per rule: the role grant names the role and the level it is written
+		// at, which is what the old per-action answer could not say.
+		$byPrincipal = [];
+		foreach ($row['holders'] as $holder) {
+			$byPrincipal[$holder['principal']] = $holder;
+		}
+
+		$this->assertSame(['behandelaars', 'directie'], array_keys($byPrincipal));
+		$this->assertSame('behandelaar', $byPrincipal['behandelaars']['rules'][0]['role']);
+		$this->assertSame('schema', $byPrincipal['behandelaars']['rules'][0]['level']);
+		$this->assertSame('register', $byPrincipal['directie']['rules'][0]['level']);
+
+		// Per schema and per action, still: the shape the audit answered in
+		// before, so nothing reading it has to change.
+		$this->assertSame(['behandelaars', 'directie'], $row['byAction']['read']);
+		$this->assertSame(['behandelaars'], $row['byAction']['update']);
+
+		// And the deny beside the grants, with the mode that says whether it
+		// is biting yet.
+		$this->assertSame('waarnemers', $row['denied'][0]['principal']);
+		$this->assertSame('update', $row['denied'][0]['action']);
+		$this->assertSame(DenyEnforcementMode::MODE_STAGING, $body['denyEnforcement']);
+	}//end testTheScopeAuditReportsThePrincipalsWithTheirRules()
+
+	/**
+	 * A schema that belongs to no register in the report is not reported.
+	 *
+	 * The control: without it, the case above could be passing because the
+	 * audit reports every schema it can see against every register it can see.
+	 *
+	 * @return void
+	 */
+	public function testTheAuditOnlyReportsSchemasOfTheRegisterItIsReading(): void {
+		$register = $this->registerWith(['read' => ['directie']]);
+		$register->setSchemas([99]);
+
+		$response = $this->controllerFor(
+			mode: DenyEnforcementMode::MODE_STAGING,
+			registers: [$register],
+			schemas: [$this->schemaWith(['read' => ['behandelaars']])]
+		)->scopeAudit();
+
+		$this->assertSame(0, $response->getData()['schemaCount']);
+	}//end testTheAuditOnlyReportsSchemasOfTheRegisterItIsReading()
+
+	/**
 	 * The catalogue publishes the seven canonical verbs with their descriptions.
 	 *
 	 * @return void

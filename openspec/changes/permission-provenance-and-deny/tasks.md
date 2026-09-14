@@ -21,7 +21,7 @@
 
 - [x] 3.1 `GET /api/scopes` reports, per action, the rule that granted it: register default, schema rule, role, per-object grant or the ancestor it came from. The `actions` list keeps its shape (D-5).
 - [x] 3.2 An action a broader rule would have granted and a deny removed is reported with that deny, so the absence has a reason.
-- [ ] 3.3 The scope audit reports per rule as well as per schema and action, and the denial log names the rule rather than only the decision.
+- [x] 3.3 The scope audit reports per rule as well as per schema and action, and the denial log names the rule rather than only the decision. `GET /api/permissions/scope-audit` reports per rule and keeps the per-action index beside it; every refusal logs the rule for the verb and why it did not answer.
 
 ## 4. Tests
 

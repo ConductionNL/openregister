@@ -358,6 +358,7 @@ return [
         ['name' => 'permissions#index',       'url' => '/api/permissions',              'verb' => 'GET'],
         ['name' => 'permissions#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
         ['name' => 'permissions#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
+        ['name' => 'permissions#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],

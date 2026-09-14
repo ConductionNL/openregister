@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -75,6 +76,7 @@ class PermissionsController extends Controller {
 	 * @param DenyResolver        $denyResolver   The one reader of the deny grammar.
 	 * @param RegisterMapper      $registerMapper Register lookup.
 	 * @param SchemaMapper        $schemaMapper   Schema lookup.
+	 * @param ObjectPermissionsResolver $accessSet Reads an access set out of the rules.
 	 */
 	public function __construct(
 		string $appName,
@@ -84,6 +86,7 @@ class PermissionsController extends Controller {
 		private readonly DenyResolver $denyResolver,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly ObjectPermissionsResolver $accessSet = new ObjectPermissionsResolver(),
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -180,6 +183,103 @@ class PermissionsController extends Controller {
 			]
 		);
 	}//end denyPreview()
+
+	/**
+	 * The scope audit, per rule as well as per schema and per action.
+	 *
+	 * The audit answered per schema and per action before this: which groups
+	 * hold `read` on `zaak`. That answer is a set of names with no rule behind
+	 * it, so the reviewer who finds a group they did not expect has to go and
+	 * discover WHERE it was granted, at four levels, and the finding is the
+	 * expensive half of an access review.
+	 *
+	 * Each entry names the level the rule is written at, the role when it came
+	 * through one, and whether the verb is in the catalogue at all. The denies
+	 * are reported beside the grants rather than subtracted from them, with the
+	 * enforcement mode, because below `enforcing` a deny has not started biting
+	 * and a report that had already subtracted it would show a reviewer somebody
+	 * as locked out while they are still working.
+	 *
+	 * @param string|null $register Optional register filter (id|uuid|slug).
+	 * @param string|null $schema   Optional schema filter (id|uuid|slug).
+	 *
+	 * @return JSONResponse The audit.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function scopeAudit(?string $register = null, ?string $schema = null): JSONResponse {
+		$registers = $this->registersFor(filter: $register);
+
+		$rows = [];
+		foreach ($registers as $reg) {
+			$roleDefinitions = null;
+			$configuration = $reg->getConfiguration();
+			if (is_array($configuration) === true) {
+				$roleDefinitions = ($configuration['roles'] ?? null);
+			}
+
+			$registerSchemaIds = ($reg->getSchemas() ?? []);
+			foreach ($this->schemasFor(filter: $schema) as $sch) {
+				if (in_array($sch->getId(), $registerSchemaIds, false) === false) {
+					continue;
+				}
+
+				$set = $this->accessSet->holders(
+					blocks: [
+						'schema' => $sch->getAuthorization(),
+						'register' => $reg->getAuthorization(),
+					],
+					roleDefinitions: $roleDefinitions
+				);
+
+				$rows[] = [
+					'register' => $reg->getSlug(),
+					'schema' => $sch->getSlug(),
+					'holders' => $set['holders'],
+					'denied' => $set['denied'],
+					'byAction' => $this->byAction(holders: $set['holders']),
+				];
+			}
+		}//end foreach
+
+		return new JSONResponse(
+			[
+				'denyEnforcement' => $this->enforcement->current(),
+				'schemaCount' => count($rows),
+				'scopes' => $rows,
+			]
+		);
+	}//end scopeAudit()
+
+	/**
+	 * The same rules, indexed by verb.
+	 *
+	 * The shape the old per-schema-per-action audit answered in, kept so a
+	 * reviewer who only wants "who holds `read` here" does not have to fold the
+	 * rules themselves, and so nothing that reads the audit today has to change.
+	 *
+	 * @param array<int, array<string, mixed>> $holders The principals and their rules.
+	 *
+	 * @return array<string, array<int, string>> Verb to the principals holding it.
+	 */
+	private function byAction(array $holders): array {
+		$byAction = [];
+		foreach ($holders as $holder) {
+			foreach ($holder['verbs'] as $verb) {
+				if (isset($byAction[$verb]) === false) {
+					$byAction[$verb] = [];
+				}
+
+				if (in_array($holder['principal'], $byAction[$verb], true) === false) {
+					$byAction[$verb][] = $holder['principal'];
+				}
+			}
+		}
+
+		return $byAction;
+	}//end byAction()
 
 	/**
 	 * Two roles side by side against the catalogue.
