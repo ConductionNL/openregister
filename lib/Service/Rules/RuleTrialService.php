@@ -294,6 +294,12 @@ final class RuleTrialService {
 			'transition' => ['action' => $rule->getKey(), 'from' => '', 'to' => ''],
 		];
 
+		// JSONLogic, deliberately, because that is what the save path evaluates a
+		// transition condition with today. A trial that understood a dialect the
+		// save path does not would answer "it fires" about a rule that refuses
+		// every transition in production, which is worse than not offering the
+		// dialect at all. Accepting the AST here is task 4.2 and lands with the
+		// same change to LifecycleConditionEvaluator, so the two stay in step.
 		$holds = FlowExpression::isTrue(logic: $rule->getCondition(), data: $document);
 		$verdict = ($holds === true ? RuleVocabulary::VERDICT_FIRED : RuleVocabulary::VERDICT_NO_MATCH);
 

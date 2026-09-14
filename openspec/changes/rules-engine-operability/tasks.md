@@ -41,6 +41,13 @@
 PR 1 (`feat/rules-engine-operability`) ships the rule record and the operator's
 reads: the inventory, the run log with its deciding operand, the switch, the
 dry run, the daily prune and the one evaluation point. Left for the next
-branch, in this order: 3.1 the ceiling, 3.3 the replay job, 4.3 the dependent
-value table, 4.4 the expression default, 5.3 the no-ceiling regression, 6.1 the
-hand-over, and the admin surface the reads exist for.
+branch, in this order: 3.1 the ceiling, 4.2 the AST as a condition dialect,
+4.3 the dependent value table, 4.4 the expression default, 3.3 the replay job,
+5.3 the no-ceiling regression, 6.1 the hand-over, and the admin surface the
+reads exist for.
+
+4.2 is named second on purpose. The dry run evaluates a transition condition
+with JSONLogic because that is what the save path evaluates it with, and the
+two have to move together: a trial that understood a dialect the save path does
+not would answer "it fires" about a rule that refuses every transition in
+production.
