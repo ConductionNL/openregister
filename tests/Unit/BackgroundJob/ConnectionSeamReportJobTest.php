@@ -106,7 +106,7 @@ class ConnectionSeamReportJobTest extends TestCase {
 			}
 		);
 
-		$reporter = $this->getMockBuilder(ConnectionReporter::class)
+		$reporter = $this->getMockBuilder(className: ConnectionReporter::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['report'])
 			->getMock();

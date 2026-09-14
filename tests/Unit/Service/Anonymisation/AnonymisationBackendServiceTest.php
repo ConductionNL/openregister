@@ -366,7 +366,7 @@ class AnonymisationBackendServiceTest extends TestCase {
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	private function serviceReportingTo(array &$reports): AnonymisationBackendService {
-		$reporter = $this->getMockBuilder(\OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+		$reporter = $this->getMockBuilder(className: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['report'])
 			->getMock();
@@ -391,6 +391,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 	/**
 	 * An OpenAnonymiser test that finds the ExApp reports configured.
 	 *
+	 * @return void
+	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function testAnOpenAnonymiserTestThatFindsTheExAppReportsConfigured(): void {
@@ -406,6 +408,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 
 	/**
 	 * An OpenAnonymiser test without the ExApp reports unconfigured with the next step.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
@@ -424,6 +428,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 	 * A test of another backend, and a cached probe, report nothing.
 	 *
 	 * The cached probe runs on page loads; a report there would write integriq's row on every one.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */

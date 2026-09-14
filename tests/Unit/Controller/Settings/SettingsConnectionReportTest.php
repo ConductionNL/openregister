@@ -96,7 +96,7 @@ class SettingsConnectionReportTest extends TestCase {
 		$this->reports = [];
 		$this->refreshes = [];
 		$this->request = $this->createMock(originalClassName: IRequest::class);
-		$this->reporter = $this->getMockBuilder(ConnectionReporter::class)
+		$this->reporter = $this->getMockBuilder(className: ConnectionReporter::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['report', 'refreshFromSave'])
 			->getMock();
@@ -132,14 +132,14 @@ class SettingsConnectionReportTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 
 		return new LlmSettingsController(
-			'openregister',
-			$this->request,
-			$this->createMock(originalClassName: IDBConnection::class),
-			$this->createMock(originalClassName: ContainerInterface::class),
-			$settings,
-			$this->createMock(originalClassName: VectorizationService::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->reporter
+			appName: 'openregister',
+			request: $this->request,
+			db: $this->createMock(originalClassName: IDBConnection::class),
+			container: $this->createMock(originalClassName: ContainerInterface::class),
+			settingsService: $settings,
+			vectorizationService: $this->createMock(originalClassName: VectorizationService::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			connectionReporter: $this->reporter
 		);
 	}//end llmController()
 
@@ -218,13 +218,13 @@ class SettingsConnectionReportTest extends TestCase {
 		}
 
 		return new ApiTokenSettingsController(
-			'openregister',
-			$this->request,
-			$config,
-			$this->createMock(originalClassName: SettingsService::class),
-			$clientService,
-			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->reporter
+			appName: 'openregister',
+			request: $this->request,
+			config: $config,
+			settingsService: $this->createMock(originalClassName: SettingsService::class),
+			clientService: $clientService,
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			connectionReporter: $this->reporter
 		);
 	}//end tokenController()
 
@@ -234,7 +234,13 @@ class SettingsConnectionReportTest extends TestCase {
 	 * @return void
 	 */
 	public function testATokenSaveRefreshesTheWrittenKeys(): void {
-		$this->request->method('getParams')->willReturn(['github_token' => 'ghp_new', 'gitlab_token' => 'glp***789', 'gitlab_url' => 'https://git.example/api/v4']);
+		$this->request->method('getParams')->willReturn(
+			[
+				'github_token' => 'ghp_new',
+				'gitlab_token' => 'glp***789',
+				'gitlab_url'   => 'https://git.example/api/v4',
+			]
+		);
 
 		$response = $this->tokenController(savedToken: '')->saveApiTokens();
 
@@ -315,15 +321,15 @@ class SettingsConnectionReportTest extends TestCase {
 		}
 
 		return new EdepotSettingsController(
-			'openregister',
-			$this->request,
-			$this->createMock(originalClassName: IAppConfig::class),
-			$transfer,
-			$this->createMock(originalClassName: SftpTransport::class),
-			$rest,
-			$this->createMock(originalClassName: OpenConnectorTransport::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->reporter
+			appName: 'openregister',
+			request: $this->request,
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
+			transferService: $transfer,
+			sftpTransport: $this->createMock(originalClassName: SftpTransport::class),
+			restTransport: $rest,
+			ocTransport: $this->createMock(originalClassName: OpenConnectorTransport::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			connectionReporter: $this->reporter
 		);
 	}//end edepotController()
 

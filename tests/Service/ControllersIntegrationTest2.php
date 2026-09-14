@@ -1997,7 +1997,10 @@ class ControllersIntegrationTest2 extends TestCase {
 			\OC::$server->get(SettingsService::class),
 			\OC::$server->get(VectorizationService::class),
 			$this->logger,
-			\OC::$server->get(\OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			new \OCA\OpenRegister\Service\Connection\ConnectionReporter(
+				eventDispatcher: $this->createMock(originalClassName: \OCP\EventDispatcher\IEventDispatcher::class),
+				logger: $this->logger
+			)
 		);
 	}//end buildLlmSettingsController()
 
@@ -2028,9 +2031,12 @@ class ControllersIntegrationTest2 extends TestCase {
 			$this->request,
 			$this->appConfig,
 			\OC::$server->get(SettingsService::class),
-			\OC::$server->get(\OCP\Http\Client\IClientService::class),
+			$this->createMock(originalClassName: \OCP\Http\Client\IClientService::class),
 			$this->logger,
-			\OC::$server->get(\OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			new \OCA\OpenRegister\Service\Connection\ConnectionReporter(
+				eventDispatcher: $this->createMock(originalClassName: \OCP\EventDispatcher\IEventDispatcher::class),
+				logger: $this->logger
+			)
 		);
 	}//end buildApiTokenSettingsController()
 
