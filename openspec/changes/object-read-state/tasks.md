@@ -65,4 +65,4 @@ surfaces, then the bell.
 - [x] 6.2 The mutation: the marker never advances, shown red.
 - [x] 6.3 Playwright under `tests/e2e/ci/`, one anchor per spec scenario that is
       not excluded.
-- [ ] 6.4 `docs/` note on the annotation.
+- [x] 6.4 `docs/` note on the annotation.
