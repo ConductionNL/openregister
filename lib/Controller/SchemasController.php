@@ -600,7 +600,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<201, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 * @spec openspec/specs/json-ld-output/spec.md
@@ -824,7 +825,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
@@ -1038,7 +1040,8 @@ class SchemasController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
-	 *     array<never, never>>
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *

@@ -50,7 +50,7 @@ final class CalculationDeclarationException extends Exception {
 			$errors
 		);
 
-		parent::__construct('Invalid calculation declaration: ' . implode(' ', $parts));
+		parent::__construct(message: 'Invalid calculation declaration: ' . implode(separator: ' ', array: $parts));
 	}//end __construct()
 
 	/**

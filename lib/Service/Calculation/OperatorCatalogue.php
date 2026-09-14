@@ -45,7 +45,8 @@ final class OperatorCatalogue {
 	/**
 	 * Every operator, in a shape an expression builder can render.
 	 *
-	 * @return array<int, array{op: string, category: string, arity: string, operands: array<int, string>, result: string, description: string}> The catalogue rows.
+	 * @return array<int, array{op: string, category: string, arity: string,
+	 *   operands: array<int, string>, result: string, description: string}> The catalogue rows.
 	 *
 	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
 	 */
