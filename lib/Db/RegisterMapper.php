@@ -27,6 +27,8 @@ use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -649,7 +651,38 @@ class RegisterMapper extends QBMapper {
 		if ($register->getSource() === null || $register->getSource() === '') {
 			$register->setSource('internal');
 		}
+
+		$this->validateAuthorizationDeny(register: $register);
 	}//end cleanObject()
+
+	/**
+	 * Refuse an authorization block whose deny contradicts its own grants.
+	 *
+	 * The register is where `manage` lives, so this is the level the
+	 * orphaned-administration refusal actually bites at: a register whose
+	 * `manage` verb has been denied to the last principal holding it can no
+	 * longer have its own access rules edited, and is recoverable only from the
+	 * database.
+	 *
+	 * @param Register $register Register to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function validateAuthorizationDeny(Register $register): void {
+		$authorization = $register->getAuthorization();
+		if (is_array($authorization) === false || $authorization === []) {
+			return;
+		}
+
+		(new AuthorizationDenyValidator(new DenyResolver()))->assertStorable(
+			authorization: $authorization,
+			subject: sprintf('the register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? ''))
+		);
+	}//end validateAuthorizationDeny()
 
 	/**
 	 * Create a new register from an array of data

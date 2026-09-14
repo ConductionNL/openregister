@@ -43,6 +43,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -249,6 +250,7 @@ class PermissionHandler {
 	 *                                                      not a fatal at existing construction sites.
 	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the
 	 *                                                      same reason.
+	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -265,8 +267,26 @@ class PermissionHandler {
 		private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher = null,
 		private readonly ?ObjectScopeResolver $objectScopeResolver = null,
 		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
+		private readonly ?DenyResolver $denyResolver = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The shared deny resolver.
+	 *
+	 * Nullable-with-default for the same reason as the scope resolver above: a
+	 * new required constructor argument is a fatal at every existing
+	 * construction site, and this class is built by hand in a dozen tests. The
+	 * resolver is a stateless value object, so a fresh instance is equivalent to
+	 * the injected one.
+	 *
+	 * @return DenyResolver The one reader of the deny grammar.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function denyResolver(): DenyResolver {
+		return ($this->denyResolver ?? new DenyResolver());
+	}//end denyResolver()
 
 	/**
 	 * The shared object-scope resolver.
@@ -644,6 +664,40 @@ class PermissionHandler {
 			return false;
 		}
 
+		// The DENY pass. Evaluated here — after the cascade has resolved and
+		// before the scope, the rules, the owner bypass and the custom-verb
+		// vote — because a deny is not a grant with a lower score. It removes
+		// the verb inside its scope and nothing puts it back, so it cannot sit
+		// anywhere that a later rule could return true past it.
+		//
+		// Administrators are the one exception, and they are exempt inside
+		// {@see denialFor()} rather than here: an access model that can deny
+		// its own administration away is recoverable only from the database.
+		//
+		// Costs nothing on an instance that declares no deny: the resolver
+		// answers null on an absent `deny` key without touching the session.
+		$denial = $this->denialFor(
+			authorization: $authorization,
+			action: $action,
+			userId: $userId,
+			object: $object
+		);
+		if ($denial !== null) {
+			$this->logger->info(
+				message: '[PermissionHandler] Action denied by an explicit deny rule',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schemaId' => $schema->getId(),
+					'action' => $action,
+					'userId' => $userId,
+					'principal' => $denial['principal'],
+					'rule' => $denial['rule'],
+				]
+			);
+			return false;
+		}
+
 		// The `private` scope. Evaluated here — after the cascade has resolved
 		// and before ANY rule is consulted — because that is what the scope
 		// means: a private object does not answer to the schema's rules at all.
@@ -821,6 +875,153 @@ class PermissionHandler {
 
 		return false;
 	}//end evaluatePermission()
+
+	/**
+	 * The deny rule that removes this verb from this caller, or null.
+	 *
+	 * This is the whole of the negative half of the model, and it is one method
+	 * so that the object read, the relation-path check and both list emitters
+	 * cannot honour different halves of it.
+	 *
+	 * PRECEDENCE. A deny is checked before every grant, including the owner
+	 * bypass and a grant inherited from an ancestor object. Deny wins; that is
+	 * the only rule that keeps the answer predictable, and letting a more
+	 * specific grant put the verb back is how a deny quietly stops working.
+	 *
+	 * THE ADMINISTRATOR IS EXEMPT, on purpose and in one place. A deny that
+	 * reached the `admin` group could remove the right to edit the rules that
+	 * removed it, and an instance in that state is recoverable only from the
+	 * database. The save-time refusal in {@see
+	 * \OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator} guards the
+	 * register's own `manage` verb; this guards the platform administrator.
+	 *
+	 * A CONDITIONAL DENY NEEDS A ROW. An entry carrying a `match` clause removes
+	 * the verb only for the objects the clause selects, so with no object in
+	 * hand it denies nothing — the caller is asking about the schema, not about
+	 * a row, and refusing there would turn a row-scoped rule into a blanket one.
+	 *
+	 * @param array|null        $authorization The already-cascaded authorization block.
+	 * @param string            $action        The verb being decided.
+	 * @param string|null       $userId        The caller, or null to resolve from the session.
+	 * @param ObjectEntity|null $object        The row under evaluation, when there is one.
+	 *
+	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
+	 *         The denial that decided it, or null when no deny reaches this caller.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	public function denialFor(
+		?array $authorization,
+		string $action,
+		?string $userId = null,
+		?ObjectEntity $object = null,
+	): ?array {
+		$resolver = $this->denyResolver();
+
+		// The cheap exit, and the backwards-compatibility promise made
+		// structural: a block with no `deny` key costs one array lookup and
+		// resolves exactly as it did before this capability existed.
+		if ($resolver->declaresAnyDeny(authorization: $authorization) === false) {
+			return null;
+		}
+
+		if ($userId === null) {
+			$userId = $this->userSession->getUser()?->getUID();
+		}
+
+		$userGroups = [];
+		if ($userId !== null) {
+			$userObj = $this->userManager->get($userId);
+			if ($userObj !== null) {
+				$userGroups = $this->groupManager->getUserGroupIds($userObj);
+			}
+		}
+
+		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
+			return null;
+		}
+
+		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
+
+		$unconditional = $resolver->unconditionalDenial(
+			authorization: $authorization,
+			action: $action,
+			principals: $principals
+		);
+		if ($unconditional !== null) {
+			return $unconditional;
+		}
+
+		if ($object === null) {
+			return null;
+		}
+
+		return $this->firstMatchingConditionalDenial(
+			resolver: $resolver,
+			authorization: $authorization,
+			action: $action,
+			principals: $principals,
+			object: $object
+		);
+	}//end denialFor()
+
+	/**
+	 * The first row-scoped denial whose `match` clause selects this row.
+	 *
+	 * The clause is evaluated through the shared {@see ConditionMatcher}, the
+	 * same evaluator the grants beside it use (ADR-011). A fourth match
+	 * evaluator here would be a second reading of the same grammar, and the two
+	 * would only meet when a denial failed to bite.
+	 *
+	 * @param DenyResolver $resolver      The deny-grammar reader.
+	 * @param array|null   $authorization The cascaded block.
+	 * @param string       $action        The verb being decided.
+	 * @param string[]     $principals    The caller's principal names.
+	 * @param ObjectEntity $object        The row under evaluation.
+	 *
+	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function firstMatchingConditionalDenial(
+		DenyResolver $resolver,
+		?array $authorization,
+		string $action,
+		array $principals,
+		ObjectEntity $object,
+	): ?array {
+		$conditional = $resolver->conditionalDenials(
+			authorization: $authorization,
+			action: $action,
+			principals: $principals
+		);
+		if ($conditional === []) {
+			return null;
+		}
+
+		$envelope = ($object->getObject() ?? []);
+		$organisation = $object->getOrganisation();
+		if ($organisation !== null) {
+			$envelope['@self'] = ((($envelope['@self'] ?? []) + ['organisation' => $organisation]));
+		}
+
+		foreach ($conditional as $denial) {
+			$rule = $denial['rule'];
+			if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
+				continue;
+			}
+
+			if ($this->conditionMatcher->objectMatchesConditions(
+				object: $envelope,
+				match: $rule['match']
+			) === true
+			) {
+				return $denial;
+			}
+		}
+
+		return null;
+	}//end firstMatchingConditionalDenial()
 
 	/**
 	 * Decide a private object, or decline to decide.
@@ -1977,7 +2178,24 @@ class PermissionHandler {
 			// base policy and let individual objects narrow or widen specific
 			// actions (e.g. seal an audited record by overriding `update` /
 			// `delete` to `["admin"]` only).
-			return array_replace($baseline, $expandedObjectAuth);
+			$merged = array_replace($baseline, $expandedObjectAuth);
+
+			// 🔴 The `deny` key is the ONE key that unions rather than
+			// replaces. Under `array_replace`, an object declaring its own deny
+			// would DROP the deny written on its schema — so writing a deny on
+			// the object would REMOVE one, and "a deny is not overridden by a
+			// narrower rule" would hold at every level except the one an author
+			// edits most. Unioning is what makes the precedence rule true of
+			// the whole cascade rather than of part of it.
+			$mergedDeny = $this->denyResolver()->mergeDeny(
+				baseline: $this->denyResolver()->denyBlock(authorization: $baseline),
+				override: $this->denyResolver()->denyBlock(authorization: $expandedObjectAuth)
+			);
+			if ($mergedDeny !== []) {
+				$merged[DenyResolver::DENY_KEY] = $mergedDeny;
+			}
+
+			return $merged;
 		}
 
 		return $baseline;
@@ -2040,6 +2258,15 @@ class PermissionHandler {
 			// runtime, and the mcp scope has no business editing them.
 			if (is_array($rules) === false) {
 				$stripped[$key] = $rules;
+				continue;
+			}
+
+			// The deny block is a block of rule lists, not one rule list.
+			// Handing it to the list stripper would ask "is this entry the mcp
+			// scope" of an entire action's list, which is always no, and would
+			// reindex the block's action keys on the way through.
+			if ($key === DenyResolver::DENY_KEY) {
+				$stripped[$key] = self::stripMcpScope(authorization: $rules);
 				continue;
 			}
 
@@ -2501,6 +2728,17 @@ class PermissionHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function expandRoles(array $authorization, Schema $schema): array {
+		// A deny block uses the SAME grammar as the grants beside it, `roles`
+		// included, so it is expanded through this same expander rather than a
+		// second one. The recursion is one level deep by construction: the
+		// nested call is given a block with its own `deny` key removed, so a
+		// `deny.deny` written by hand is dropped rather than descended into.
+		$deny = ($authorization[DenyResolver::DENY_KEY] ?? null);
+		if (is_array($deny) === true && $deny !== []) {
+			unset($deny[DenyResolver::DENY_KEY]);
+			$authorization[DenyResolver::DENY_KEY] = $this->expandRoles(authorization: $deny, schema: $schema);
+		}
+
 		if (isset($authorization['roles']) === false || is_array($authorization['roles']) === false) {
 			return $authorization;
 		}

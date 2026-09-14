@@ -8,10 +8,10 @@
 
 ## 2. Deny
 
-- [ ] 2.1 An authorization entry may name a verb as denied for a group, a role or an object; the schema of the block accepts it and the validator refuses a grant and a deny on the same principal at the same level, naming both (D-3).
-- [ ] 2.2 `PermissionHandler`: a deny removes the verb inside its scope and is not overridden by a broader grant, including a grant inherited from an ancestor object (D-3).
-- [ ] 2.3 `MagicRbacHandler`: the same deny term in the list filter, so a list and an object read agree (D-6).
-- [ ] 2.4 `manage` on a register cannot be denied to the last principal holding it; the refusal names what would be orphaned (D-4).
+- [x] 2.1 An authorization entry may name a verb as denied for a group, a role or an object; the schema of the block accepts it and the validator refuses a grant and a deny on the same principal at the same level, naming both (D-3).
+- [x] 2.2 `PermissionHandler`: a deny removes the verb inside its scope and is not overridden by a broader grant, including a grant inherited from an ancestor object (D-3).
+- [x] 2.3 `MagicRbacHandler`: the same deny term in the list filter, so a list and an object read agree (D-6).
+- [x] 2.4 `manage` on a register cannot be denied to the last principal holding it; the refusal names what would be orphaned (D-4).
 
 ## 3. Provenance
 
@@ -32,8 +32,8 @@
 
 ## 6. Discovery wave 1: access inside the query
 
-- [ ] 6.1 Grants, inheritance and denies are compiled into the object query as predicates; page, total and facet counts are computed over the permitted set (D-8).
-- [ ] 6.2 The same predicates are applied in the search index path, so search and list agree.
+- [x] 6.1 Grants, inheritance and denies are compiled into the object query as predicates; page, total and facet counts are computed over the permitted set (D-8).
+- [x] 6.2 The same predicates are applied in the search index path, so search and list agree.
 - [ ] 6.3 A performance test on a tree of depth 5 and 100,000 objects, proving the filter is in the query plan.
 
 ## 7. Discovery wave 1: what you may do, and who may do it
