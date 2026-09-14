@@ -37,11 +37,13 @@ round: when the redactor cannot establish that a line is clean, the line
 does not get written, and a counter records that it was dropped. A missing
 log line is an incident; a logged token is a breach.
 
-## D-6. The administration session is separate, the identity is not
+## D-6. The separate administration session is specified once, elsewhere
 
-Two accounts for one person is an access review problem. One identity with
-a second, expiring session is the control the corpus asks for, and it is
-what Plane ships: shared credentials, separate session.
+C-configuration-72 and cluster 4's C-access-and-privacy-38 ask the same
+question, and Plane's answer is the same for both: shared credentials,
+separate session. `instance-hardening-controls` REQ-IHC-002 carries it for
+the fleet. Writing a tenancy-flavoured copy here would give the fleet two
+elevated sessions that disagree.
 
 ## D-7. kind
 

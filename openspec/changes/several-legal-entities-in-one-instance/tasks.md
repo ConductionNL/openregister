@@ -21,13 +21,12 @@
 
 ## 4. The administration session
 
-- [ ] 4.1 A fresh authentication before the administration surface renders (D-6).
-- [ ] 4.2 An administered expiry on the elevated session, refusing writes after it lapses.
+- [ ] 4.1 Consume `instance-hardening-controls` REQ-IHC-002 for C-configuration-72; write no second elevated session (D-6).
 
 ## 5. Tests
 
 - [ ] 5.1 `tests/e2e/ci/shared-master-data.spec.ts`: two organisations, one code list, a refused write, an unchanged third organisation.
-- [ ] 5.2 Unit tests: the move preview and its three policies, the two-chain audit write, the redactor including the drop path, the elevated session expiry.
+- [ ] 5.2 Unit tests: the move preview and its three policies, the two-chain audit write, the redactor including the drop path.
 - [ ] 5.3 `openspec validate several-legal-entities-in-one-instance --strict`.
 
 ## 6. Re-rate and hand over

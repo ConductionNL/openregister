@@ -103,10 +103,11 @@ administration surface signs in exactly like the product.
   pseudonymous actor reference. A token, a password and a credential value
   are redacted before the line is written, and a redaction that fails
   drops the line rather than writing the value.
-- **The administration surface signs in separately.** Entering the
-  administration of an organisation requires a fresh authentication, and
-  that elevated session expires on its own. It is the same identity, a
-  different session.
+- **The administration surface signs in separately.** C-configuration-72
+  asks for this, and `instance-hardening-controls` REQ-IHC-002 specifies
+  it once for the whole fleet: a fresh authentication before the
+  administration surface renders, and an elevated session that expires.
+  This change consumes that rather than writing a second answer.
 
 ## Consumers
 
@@ -134,8 +135,7 @@ administration surface signs in exactly like the product.
 ## Impact
 
 - Extends: `saas-multi-tenant` (shared master data and the move) and
-  `tenant-isolation-audit` (the pseudonymous log line and the elevated
-  session).
+  `tenant-isolation-audit` (the pseudonymous log line).
 - Affected code: the organisation resolver and the tenant-scoped query
   handler, the transfer service, the logging context, the settings
   middleware.
@@ -149,5 +149,7 @@ administration surface signs in exactly like the product.
   `tenant-quotas` already carry.
 - Federating a case to another instance, which is a different act and
   stays with `organisation-as-federated-counterparty`.
-- The identity broker behind the second sign-in. D8 puts portal identity in
-  portaliq; this change asks only for a separate session.
+- The separate administration session, which
+  `instance-hardening-controls` REQ-IHC-002 owns for the fleet.
+- The identity broker behind a portal sign-in. D8 puts portal identity in
+  portaliq.
