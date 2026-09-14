@@ -146,6 +146,11 @@ class FakeCallLog {
  * remembers the source it was handed.
  */
 class FakeCallService {
+	/**
+	 * The source the router handed to call(), or null before any call.
+	 *
+	 * @var mixed
+	 */
 	public mixed $receivedSource = null;
 
 	public function __construct(
@@ -495,8 +500,8 @@ class ExternalIntegrationRouterTest extends TestCase {
 	}//end testCallHandsTheFoundSourceToTheCallService()
 
 	public function testCallUnwrapsTheIntegriqCallLogObject(): void {
-		// integriq returns the call log as an ObjectEntity; the upstream body
-		// sits under getObject()['response']['body'].
+		// The integriq CallService returns the call log as an ObjectEntity. The
+		// upstream body sits under getObject()['response']['body'].
 		$log = $this->integriqCallLog(
 			[
 				'statusCode' => 200,

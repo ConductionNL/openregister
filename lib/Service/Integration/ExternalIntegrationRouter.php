@@ -850,7 +850,7 @@ class ExternalIntegrationRouter {
 	/**
 	 * The response half of a CallService call log, or null when there is none.
 	 *
-	 * integriq's CallService returns the call log as an OpenRegister
+	 * The integriq CallService returns the call log as an OpenRegister
 	 * `ObjectEntity`. Its `getObject()` carries
 	 * `response: { statusCode, responseTime, headers, body, encoding, … }`, and
 	 * the returned entity keeps the body even when the stored row drops it. An

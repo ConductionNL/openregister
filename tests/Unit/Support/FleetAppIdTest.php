@@ -114,8 +114,8 @@ class FleetAppIdTest extends TestCase
      */
     public function testCandidatesListEverySpellingNewestFirst(): void
     {
-        $this->assertSame(['integriq', 'openconnector'], FleetAppId::candidates('integriq'));
-        $this->assertSame(['openregister'], FleetAppId::candidates('openregister'));
+        $this->assertSame(expected: ['integriq', 'openconnector'], actual: FleetAppId::candidates(canonical: 'integriq'));
+        $this->assertSame(expected: ['openregister'], actual: FleetAppId::candidates(canonical: 'openregister'));
 
     }//end testCandidatesListEverySpellingNewestFirst()
 
