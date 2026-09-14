@@ -724,6 +724,40 @@ class Schema extends Entity implements JsonSerializable {
 	public const WRITEONLY_PATHS_ANNOTATION = 'x-openregister-writeonly-paths';
 
 	/**
+	 * The lens annotation: properties that read a referenced record's field live.
+	 *
+	 * Keyed by the property name the lens renders as, each entry naming the
+	 * reference property to look through and the property to read there. A lens
+	 * holds the path, never the value, so two records can never disagree about
+	 * the same date.
+	 *
+	 * @var string
+	 */
+	public const LENS_ANNOTATION = 'x-openregister-lenses';
+
+	/**
+	 * The list-surface annotation: declared columns and search fields.
+	 *
+	 * A list page written per object type is a list page that drifts per object
+	 * type. The schema declares what to show and what to search; the generic
+	 * surface renders it.
+	 *
+	 * @var string
+	 */
+	public const LIST_ANNOTATION = 'x-openregister-list';
+
+	/**
+	 * The geographic-inheritance annotation: which references carry map features.
+	 *
+	 * A record may show the point its address holds. Every inherited feature
+	 * names the relation it arrived through, and a feature the record holds
+	 * itself outranks an inherited one.
+	 *
+	 * @var string
+	 */
+	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
+
+	/**
 	 * Whether the schema declares any nested write-only dot-paths.
 	 *
 	 * Companion to hasWriteOnlyProperties(): that one answers "does a declared
@@ -1917,6 +1951,207 @@ class Schema extends Entity implements JsonSerializable {
 	}//end getObjectSource()
 
 	/**
+	 * Get the lens declarations from the schema configuration.
+	 *
+	 * A lens is a property that shows a referenced record's own field, live: it
+	 * holds the path, never the value. Each entry is keyed by the property name
+	 * it renders as and declares `through` (a reference property on this schema)
+	 * and `property` (the property to read through it, dot paths allowed). An
+	 * entry missing either key is dropped rather than half-applied.
+	 *
+	 * @return array<string, array{through: string, property: string, label?: string}>
+	 *                                                                                The declared lenses, keyed by property name.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getLenses(): array {
+		$configuration = $this->getConfiguration();
+
+		if ($configuration === null) {
+			return [];
+		}
+
+		$lenses = ($configuration[self::LENS_ANNOTATION] ?? null);
+
+		if (is_array($lenses) === false) {
+			return [];
+		}
+
+		$declared = [];
+		foreach ($lenses as $name => $spec) {
+			if ((string)$name === '' || is_array($spec) === false) {
+				continue;
+			}
+
+			$through = ($spec['through'] ?? null);
+			$property = ($spec['property'] ?? null);
+			if (is_string($through) === false || $through === '') {
+				continue;
+			}
+
+			if (is_string($property) === false || $property === '') {
+				continue;
+			}
+
+			$entry = [
+				'through' => $through,
+				'property' => $property,
+			];
+
+			if (isset($spec['label']) === true && is_string($spec['label']) === true) {
+				$entry['label'] = $spec['label'];
+			}
+
+			$declared[(string)$name] = $entry;
+		}//end foreach
+
+		return $declared;
+	}//end getLenses()
+
+	/**
+	 * Get the list-surface declaration from the schema configuration.
+	 *
+	 * A schema may say which columns a list shows and which fields it searches
+	 * on, so the generic surface renders any object type without a list page of
+	 * its own. A schema declaring neither keeps whatever the surface defaults
+	 * to today.
+	 *
+	 * @return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
+	 *                                                                                                              The declared columns and search fields, each possibly empty.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getListPresentation(): array {
+		$configuration = $this->getConfiguration();
+		$empty = [
+			'columns' => [],
+			'searchFields' => [],
+		];
+
+		if ($configuration === null) {
+			return $empty;
+		}
+
+		$list = ($configuration[self::LIST_ANNOTATION] ?? null);
+
+		if (is_array($list) === false) {
+			return $empty;
+		}
+
+		$columns = [];
+		foreach (($list['columns'] ?? []) as $column) {
+			$entry = self::normaliseListColumn(column: $column);
+			if ($entry !== null) {
+				$columns[] = $entry;
+			}
+		}
+
+		$searchFields = [];
+		foreach (($list['searchFields'] ?? []) as $field) {
+			if (is_string($field) === true && $field !== '') {
+				$searchFields[] = $field;
+			}
+		}
+
+		return [
+			'columns' => $columns,
+			'searchFields' => array_values(array_unique($searchFields)),
+		];
+	}//end getListPresentation()
+
+	/**
+	 * Normalise one declared list column.
+	 *
+	 * A bare string is the property name; an array may add a label and a width.
+	 *
+	 * @param mixed $column The declared column.
+	 *
+	 * @return array{property: string, label?: string}|null The column, or null when it names no property.
+	 */
+	private static function normaliseListColumn(mixed $column): ?array {
+		if (is_string($column) === true) {
+			if ($column === '') {
+				return null;
+			}
+
+			return ['property' => $column];
+		}
+
+		if (is_array($column) === false) {
+			return null;
+		}
+
+		$property = ($column['property'] ?? null);
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		$entry = ['property' => $property];
+		if (isset($column['label']) === true && is_string($column['label']) === true) {
+			$entry['label'] = $column['label'];
+		}
+
+		return $entry;
+	}//end normaliseListColumn()
+
+	/**
+	 * Get the geographic-inheritance declaration from the schema configuration.
+	 *
+	 * A record may collect map features from the objects and parties it points
+	 * at. Each entry names the reference property to follow; the collector
+	 * stamps that name onto every feature it brings back, so a pin on a map can
+	 * always say where it came from.
+	 *
+	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getGeoInheritance(): array {
+		$configuration = $this->getConfiguration();
+
+		if ($configuration === null) {
+			return [];
+		}
+
+		$geo = ($configuration[self::GEO_INHERITANCE_ANNOTATION] ?? null);
+
+		if (is_array($geo) === false) {
+			return [];
+		}
+
+		$sources = ($geo['from'] ?? null);
+		if (is_array($sources) === false) {
+			return [];
+		}
+
+		$declared = [];
+		foreach ($sources as $source) {
+			if (is_string($source) === true && $source !== '') {
+				$declared[] = ['through' => $source];
+				continue;
+			}
+
+			if (is_array($source) === false) {
+				continue;
+			}
+
+			$through = ($source['through'] ?? null);
+			if (is_string($through) === false || $through === '') {
+				continue;
+			}
+
+			$entry = ['through' => $through];
+			if (isset($source['label']) === true && is_string($source['label']) === true) {
+				$entry['label'] = $source['label'];
+			}
+
+			$declared[] = $entry;
+		}//end foreach
+
+		return $declared;
+	}//end getGeoInheritance()
+
+	/**
 	 * Check whether this schema's objects are opted into Context Chat indexing.
 	 *
 	 * Reads the `x-openregister-contextchat` annotation (default OFF). Follows
@@ -2527,6 +2762,17 @@ class Schema extends Entity implements JsonSerializable {
 		// could never opt an object into a subscription — same
 		// or#460/#462-class trap as every entry above.
 		'x-openregister-registry',
+		// A property that shows a referenced record's own field, live. Read by
+		// LensResolver at render time; the value is never stored. Absent from
+		// this list, setConfiguration() would drop the block and every lens
+		// would render empty, which reads exactly like "there is no besluit".
+		self::LENS_ANNOTATION,
+		// The columns a list surface shows and the fields it searches on, so an
+		// object type is as usable as a case list with no page of its own.
+		self::LIST_ANNOTATION,
+		// The reference properties a record collects map features from, each
+		// feature naming the relation it arrived through.
+		self::GEO_INHERITANCE_ANNOTATION,
 	];
 
 	/**

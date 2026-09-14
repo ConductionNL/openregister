@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
@@ -230,6 +231,7 @@ class RenderObject {
 		private readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
 		private readonly ?ContainerInterface $container = null,
+		private readonly ?LensResolver $lensResolver = null,
 	) {
 	}//end __construct()
 
@@ -2066,6 +2068,19 @@ class RenderObject {
 				entity: $entity,
 				schema: $renderSchema,
 				data: $objectData
+			);
+		}
+
+		// A lens is not behind `_extend`. A field that shows the besluit's date
+		// only when the caller thought to ask for it is a field two readers
+		// disagree about, which is the whole defect the lens exists to close.
+		// A schema declaring no lens returns the data untouched, so this costs
+		// an array lookup on every other schema in the fleet.
+		if ($this->lensResolver !== null) {
+			$objectData = $this->lensResolver->apply(
+				schema: $renderSchema,
+				data: $objectData,
+				_rbac: $_rbac
 			);
 		}
 
