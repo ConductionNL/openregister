@@ -144,7 +144,6 @@ final class RuleInventoryService {
 			$row['lastVerdict'] = null;
 			$row['lastError'] = null;
 			$row['lastErrorAt'] = null;
-			$row['runs'] = 0;
 			// A rule that has never been evaluated has not run inside the
 			// window either. Saying "unknown" here would hide exactly the rule
 			// an administrator most wants to see: one that was written, saved
