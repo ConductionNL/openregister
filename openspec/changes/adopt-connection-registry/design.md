@@ -47,7 +47,9 @@ not read Simulated.
 
 The contract has no declaration that reads a JSON path and yields
 `unconfigured`. So the row carries no adapter block, and
-`LlmSettingsController::updateLLMSettings` reports what it saved:
+`LlmSettingsController::updateLLMSettings` reports what it saved, through
+`ConnectionReporter::reportLlmProviders` (kept out of the controller, whose
+class complexity sits at the PHPMD threshold):
 
 - no chat and no embedding provider: `unconfigured`, saying chat answers 503;
 - one of the two: `limited`, naming the one chosen and the one missing;
@@ -92,7 +94,7 @@ Callers:
 
 | Caller | Sends |
 |---|---|
-| `LlmSettingsController::updateLLMSettings` | report `llm` |
+| `LlmSettingsController::updateLLMSettings` | report `llm`, worded by `ConnectionReporter::reportLlmProviders` |
 | `ApiTokenSettingsController::saveApiTokens` | refresh `github`, `gitlab` |
 | `ApiTokenSettingsController::testGitHubToken` / `testGitLabToken` | report, only when the tested token is the saved one |
 | `EdepotSettingsController::testEdepotConnection` and a save with `testConnection` | report `edepot` |

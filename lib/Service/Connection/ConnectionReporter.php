@@ -178,6 +178,56 @@ class ConnectionReporter {
 	}//end report()
 
 	/**
+	 * Report which LLM providers a settings save left chosen.
+	 *
+	 * With no provider nothing answers: chat throws a 503. So an empty choice is
+	 * `unconfigured`, never `simulated`. One of the two is `limited`, both is
+	 * `configured`. A save tests nothing, and the message says so
+	 * (adopt-connection-registry design D2).
+	 *
+	 * @param mixed $chatProvider      The saved `chatProvider` value.
+	 * @param mixed $embeddingProvider The saved `embeddingProvider` value.
+	 *
+	 * @return bool True when the report was sent.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	public function reportLlmProviders(mixed $chatProvider, mixed $embeddingProvider): bool {
+		$chat = $this->chosenProvider(value: $chatProvider);
+		$embedding = $this->chosenProvider(value: $embeddingProvider);
+
+		if ($chat === '' && $embedding === '') {
+			return $this->report(
+				key: 'llm',
+				status: 'unconfigured',
+				message: 'No chat or embedding provider is chosen. Chat answers 503 until one is.'
+			);
+		}
+
+		if ($chat === '') {
+			return $this->report(
+				key: 'llm',
+				status: 'limited',
+				message: 'Embeddings use ' . $embedding . '. No chat provider is chosen, so chat answers 503. Saved, not tested.'
+			);
+		}
+
+		if ($embedding === '') {
+			return $this->report(
+				key: 'llm',
+				status: 'limited',
+				message: 'Chat uses ' . $chat . '. No embedding provider is chosen. Saved, not tested.'
+			);
+		}
+
+		return $this->report(
+			key: 'llm',
+			status: 'configured',
+			message: 'Chat uses ' . $chat . ' and embeddings use ' . $embedding . '. Saved, not tested.'
+		);
+	}//end reportLlmProviders()
+
+	/**
 	 * Ask integriq to resolve every connection whose config keys a save wrote.
 	 *
 	 * A save that names none of a connection's keys leaves that connection
@@ -233,6 +283,26 @@ class ConnectionReporter {
 
 		return $qualified;
 	}//end resolveEventClass()
+
+	/**
+	 * A provider id, or '' when nothing is chosen.
+	 *
+	 * @param mixed $value The stored provider value.
+	 *
+	 * @return string The provider id, or '' for null, empty or `none`.
+	 */
+	private function chosenProvider(mixed $value): string {
+		if (is_string($value) === false) {
+			return '';
+		}
+
+		$value = trim($value);
+		if (strtolower($value) === 'none') {
+			return '';
+		}
+
+		return $value;
+	}//end chosenProvider()
 
 	/**
 	 * Build and dispatch one event, swallowing anything a listener throws.
