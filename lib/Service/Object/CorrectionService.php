@@ -123,7 +123,7 @@ class CorrectionService {
 	public function correct(string $register, string $schema, string $id, array $values, ?string $reason): array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			throw new NotAuthorizedException('Sign in to correct a value.');
+			throw new NotAuthorizedException(message: 'Sign in to correct a value.');
 		}
 
 		// Named first, so a principal who does not hold it reads the right's
@@ -133,16 +133,16 @@ class CorrectionService {
 			$this->actionAuth->requireAction(user: $user, action: self::RIGHT);
 		} catch (Throwable $e) {
 			throw new NotAuthorizedException(
-				"Correcting a value needs the '" . self::RIGHT . "' right. " . $e->getMessage(),
-				403,
-				$e
+				message: "Correcting a value needs the '" . self::RIGHT . "' right. " . $e->getMessage(),
+				code: 403,
+				previous: $e
 			);
 		}
 
 		$reason = trim((string)$reason);
 		if ($reason === '') {
 			throw new CorrectionRefusedException(
-				'A correction needs a reason. Say why the recorded value is wrong.'
+				message: 'A correction needs a reason. Say why the recorded value is wrong.'
 			);
 		}
 
@@ -157,7 +157,7 @@ class CorrectionService {
 		);
 
 		if ($values === []) {
-			throw new CorrectionRefusedException('A correction needs at least one value to correct.');
+			throw new CorrectionRefusedException(message: 'A correction needs at least one value to correct.');
 		}
 
 		$this->objectService->setRegister(register: $register);

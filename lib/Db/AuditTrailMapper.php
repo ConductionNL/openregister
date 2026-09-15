@@ -490,7 +490,7 @@ class AuditTrailMapper extends QBMapper {
 				return null;
 			}
 
-			$aggregation = new AuditAggregationService($appConfig);
+			$aggregation = new AuditAggregationService(appConfig: $appConfig);
 			$window = $aggregation->windowSeconds();
 			if ($window === 0) {
 				return null;
@@ -514,7 +514,7 @@ class AuditTrailMapper extends QBMapper {
 				$aggregation->fold(previous: $previous->getChanged(), incoming: $candidate->getChanged())
 			);
 
-			return $this->update($previous);
+			return $this->update(entity: $previous);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[AuditTrailMapper] Could not fold an edit into the aggregation window',

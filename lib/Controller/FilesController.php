@@ -2253,7 +2253,7 @@ class FilesController extends Controller {
 				);
 			}
 
-			$handler = new \OCA\OpenRegister\Service\File\FileMetadataFormHandler($this->fileService);
+			$handler = new \OCA\OpenRegister\Service\File\FileMetadataFormHandler(fileService: $this->fileService);
 
 			return new JSONResponse(data: $handler->save(object: $object, entries: $entries));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {

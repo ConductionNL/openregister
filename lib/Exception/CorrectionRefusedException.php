@@ -58,6 +58,6 @@ class CorrectionRefusedException extends Exception {
 	 * @param Throwable|null $previous The exception that caused this one.
 	 */
 	public function __construct(string $message, int $code = 0, ?Throwable $previous = null) {
-		parent::__construct($message, $code, $previous);
+		parent::__construct(message: $message, code: $code, previous: $previous);
 	}//end __construct()
 }//end class
