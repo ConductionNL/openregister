@@ -2538,4 +2538,57 @@ class AuditTrailMapper extends QBMapper {
 			'total' => (int)($row['total_count'] ?? 0),
 		];
 	}//end findByActor()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a party query that
+	 * was refused for exceeding the administered cap.
+	 *
+	 * A refusal is the interesting event, not the search: proportionality is
+	 * the duty a functionaris gegevensbescherming asks about, and "who tried
+	 * to pull four hundred people out of the register" is the question the
+	 * trail has to answer. The entry carries no result, because there was
+	 * none — that is the point of a refusal rather than a truncation.
+	 *
+	 * The query text is recorded verbatim so the attempt can be read back.
+	 * It is a search term an authenticated caller typed, not a record about a
+	 * person, and the trail is already the instance's protected surface.
+	 *
+	 * @param string $query The query that was refused.
+	 * @param int $cap The administered maximum result count.
+	 * @param int $would How many parties the query would have matched.
+	 * @param int|null $schema Schema id searched, when the query named one.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 */
+	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('party.query-refused');
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary(
+			[
+				'query' => $query,
+				'cap' => $cap,
+				'wouldHaveMatched' => $would,
+				'returned' => 0,
+			]
+		);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createPartyQueryRefusalEntry()
 }//end class

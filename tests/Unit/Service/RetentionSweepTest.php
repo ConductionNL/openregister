@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -133,6 +134,7 @@ class RetentionSweepTest extends TestCase {
 				$this->logger
 			),
 			new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
+			$this->createMock(SelectielijstResolver::class),
 		);
 	}//end setUp()
 

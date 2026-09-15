@@ -1585,6 +1585,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$pdo->exec(
 			'CREATE TABLE "oc_register_1_commitment_line" (
                 "_deleted" TEXT,
+                "_archived" TEXT,
                 "_organisation" TEXT,
                 "programme" TEXT,
                 "cost_centre" TEXT,
@@ -1594,6 +1595,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$pdo->exec(
 			'CREATE TABLE "oc_register_1_commitment_budget" (
                 "_deleted" TEXT,
+                "_archived" TEXT,
                 "_organisation" TEXT,
                 "programme_code" TEXT,
                 "authorised_amount" INTEGER

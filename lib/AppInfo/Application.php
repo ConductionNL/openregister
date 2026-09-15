@@ -101,6 +101,7 @@ use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
+use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -132,6 +133,7 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
@@ -1165,6 +1167,10 @@ class Application extends App implements IBootstrap {
 		);
 
 		$context->registerSearchProvider(ObjectsProvider::class);
+		// The entries beside the objects. Two providers, because a Woo
+		// request asks for every mention of a subject and the answer is a
+		// list of entries, each naming the case it sits on.
+		$context->registerSearchProvider(\OCA\OpenRegister\Search\TimelineEntriesProvider::class);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 	}//end registerConfigurationServices()
@@ -2611,6 +2617,28 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
 		);
 
+		// The organisation tree guard. A party's parent is checked on the SAVE,
+		// not in whatever wrote the object: a check that lives in one caller is
+		// a check the next caller does not have, and a written cycle reaches
+		// every later reader as a parent chain with no end.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectCreatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectUpdatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+
+		// Party roles across a merge. `mdm-merge` owns the merge; the party
+		// vocabulary — the roles both parties held, their addresses, and
+		// putting both back on a reversal — is contributed here rather than
+		// written as a second merge that could disagree with the first.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectsMergedEvent::class,
+			\OCA\OpenRegister\Listener\PartyMergeListener::class
+		);
+
 		// Advertise the `openregister` OCM resource type in /ocm-provider discovery.
 		$context->registerEventListener(
 			\OCP\OCM\Events\ResourceTypeRegisterEvent::class,
@@ -2919,6 +2947,12 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
 
+		// The dependent value table (rules-engine-operability, REQ-REO-005).
+		// Subscribed to both write events, so the create and the update reach
+		// it identically and a write path added later cannot skip the table.
+		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
+
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.
@@ -3089,6 +3123,11 @@ class Application extends App implements IBootstrap {
 		// would otherwise sit unread for ever pointing at nothing.
 		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
+
+		// Favourites and view history (`favourites-and-recent`). Objects live in
+		// per-schema tables, so there is no single table for a foreign key to
+		// cascade from: a star and a view are cleared by a listener instead.
+		$context->registerEventListener(ObjectDeletedEvent::class, FavouritePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);

@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
-use OCA\OpenRegister\Service\Flow\FlowExpression;
 use Throwable;
 
 /**
@@ -89,6 +88,7 @@ final class RuleTrialService {
 	 * @param ConditionTracer $tracer Names the operand that decided.
 	 * @param RegisterMapper $registerMapper Register lookup for a named object.
 	 * @param MagicMapper $objectMapper Object lookup in the register and schema table.
+	 * @param ConditionDialect $dialect Decides and evaluates a condition in whichever dialect it is written.
 	 *
 	 * @return void
 	 */
@@ -98,6 +98,7 @@ final class RuleTrialService {
 		private readonly ConditionTracer $tracer,
 		private readonly RegisterMapper $registerMapper,
 		private readonly MagicMapper $objectMapper,
+		private readonly ConditionDialect $dialect,
 	) {
 	}//end __construct()
 
@@ -216,9 +217,6 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The trial result.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's stateless
-	 *   JSONLogic facade; calling it statically IS the reuse.
-	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	private function run(RuleDescriptor $rule, array $payload, ?string $objectUuid = null): array {
@@ -283,9 +281,6 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The trial result.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's stateless
-	 *   JSONLogic facade; calling it statically IS the reuse.
-	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	private function runCondition(RuleDescriptor $rule, array $payload, ?string $objectUuid): array {
@@ -299,13 +294,13 @@ final class RuleTrialService {
 			'transition' => ['action' => $rule->getKey(), 'from' => '', 'to' => ''],
 		];
 
-		// JSONLogic, deliberately, because that is what the save path evaluates a
-		// transition condition with today. A trial that understood a dialect the
-		// save path does not would answer "it fires" about a rule that refuses
-		// every transition in production, which is worse than not offering the
-		// dialect at all. Accepting the AST here is task 4.2 and lands with the
-		// same change to LifecycleConditionEvaluator, so the two stay in step.
-		$holds = FlowExpression::isTrue(logic: $rule->getCondition(), data: $document);
+		// THE SAME CLASS THE SAVE PATH ASKS. Task 4.2 moved
+		// LifecycleConditionEvaluator onto ConditionDialect and this with it, in
+		// one change, because a trial that understood a dialect the save path
+		// does not would answer "it fires" about a rule that refuses every
+		// transition in production. That is worse than not offering the dialect
+		// at all, and it is why the two are never moved separately.
+		$holds = $this->dialect->holds(node: $rule->getCondition(), document: $document);
 		$verdict = RuleVocabulary::VERDICT_NO_MATCH;
 		if ($holds === true) {
 			$verdict = RuleVocabulary::VERDICT_FIRED;

@@ -45,6 +45,8 @@ use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Hinge\LensResolver;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
@@ -200,6 +202,11 @@ class RenderObject {
 	 *        chains ObjectService -> RenderObject -> RegistrySubscriptionService -> ObjectService,
 	 *        a cycle Nextcloud's container refuses to construct eagerly. Same lazy-resolution
 	 *        pattern PermissionHandler already uses for the same reason.
+	 * @param LensResolver|null $lensResolver Resolves a schema's declared lenses at read time
+	 *        (objects-as-the-hinge-between-cases). Nullable-with-a-default because this class is
+	 *        constructed by hand in several tests, where a new required argument is a fatal; a
+	 *        null resolver leaves the data exactly as it was, which is what a schema declaring
+	 *        no lens gets anyway.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 *
@@ -230,6 +237,7 @@ class RenderObject {
 		private readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
 		private readonly ?ContainerInterface $container = null,
+		private readonly ?LensResolver $lensResolver = null,
 	) {
 	}//end __construct()
 
@@ -2069,6 +2077,19 @@ class RenderObject {
 			);
 		}
 
+		// A lens is not behind `_extend`. A field that shows the besluit's date
+		// only when the caller thought to ask for it is a field two readers
+		// disagree about, which is the whole defect the lens exists to close.
+		// A schema declaring no lens returns the data untouched, so this costs
+		// an array lookup on every other schema in the fleet.
+		if ($this->lensResolver !== null) {
+			$objectData = $this->lensResolver->apply(
+				schema: $renderSchema,
+				data: $objectData,
+				_rbac: $_rbac
+			);
+		}
+
 		$entity->setObject($objectData);
 
 		// Compute the RFC 8141 URN once per render. UrnService resolves
@@ -2144,6 +2165,11 @@ class RenderObject {
 		// and the same per-request memo, so a page of objects costs ONE query
 		// for the marker rather than one per rendered row.
 		$this->applyReadStateMarkers(entity: $entity);
+
+		// The reader's own star (`favourites-and-recent`). Same lazy posture and
+		// same per-request memo as the two markers above, so a page of objects
+		// costs ONE query for the star rather than one per rendered row.
+		$this->applyFavouriteMarker(entity: $entity);
 
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
@@ -2317,6 +2343,53 @@ class RenderObject {
 			);
 		}//end try
 	}//end applyReadStateMarkers()
+
+	/**
+	 * Attach `@self.favourite` for the reader.
+	 *
+	 * Resolved through the container rather than the constructor, for the same
+	 * reason as `applyReadStateMarkers()` above: the render layer does not
+	 * acquire a hard dependency on a primitive that resolves a session and
+	 * would otherwise close a construction cycle.
+	 *
+	 * Anonymous reads get no marker at all. A hard false would read as "you
+	 * have not starred this", which is a claim about a person who is not there.
+	 *
+	 * Failures are logged and swallowed: whether you have starred an object is
+	 * never worth failing the read of that object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	private function applyFavouriteMarker(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			$favourites = $this->container->get(FavouriteService::class);
+
+			if ($favourites->callerUid() === null) {
+				return;
+			}
+
+			$entity->setFavourite($favourites->isStarredByCaller(objectUuid: $uuid));
+		} catch (\Throwable $e) {
+			// A favourite lookup must never take out object rendering.
+			$this->logger->debug(
+				sprintf('[RenderObject] favourite marker skipped for %s: %s', $uuid, $e->getMessage())
+			);
+		}//end try
+
+	}//end applyFavouriteMarker()
 
 	/**
 	 * Attach the resolved `@self._retention` decision.
