@@ -111,15 +111,22 @@ Vrij en open source onder de EUPL-licentie.
              the Nextcloud version, so the PHP 8.3 requirement does not itself
              depend on this floor.
 
-             max-version is 35 as of 2026-09-15 for Nextcloud 35 readiness:
-             keepiq (and any other AppHost consumer) depends on OpenRegister,
-             so if keepiq advertises 35, OpenRegister must too — otherwise a
-             clean NC35 occ upgrade would disable OpenRegister and take keepiq's
-             admin surface down with it. openconnector already declares 35; the
-             rest of the fleet still trails at 34. Verified 2026-09-15 to
-             upgrade and enable on NC35 (PostgreSQL); the schema-introspection
-             migration needs a raised memory_limit (default 512M OOMs — see
-             openregister#3776). Full test suite still to be run. -->
+             max-version is 35 as of 2026-09-15 for Nextcloud 35 readiness.
+             OpenRegister has been run on Nextcloud 35 instances in practice for
+             months, and its upgrade/enable path was re-verified on NC35
+             (PostgreSQL) on 2026-09-15. OpenRegister is the AppHost dependency
+             every consumer app is built on, so it raises this ceiling first —
+             the rest of the fleet can then follow without a clean NC35 occ
+             upgrade disabling OpenRegister underneath them.
+
+             Trade-offs, recorded here because this file is the decision record:
+             - The CI matrix has no stable35 entry yet, so this ceiling is not
+               exercised in CI; it rests on the in-practice NC35 use above.
+             - openregister#3776 (the schema-introspection migration OOMs at the
+               default 512M memory_limit on NC35) is open and self-described
+               release-blocking; its fix is in progress (openregister#3779).
+               Raising the ceiling ahead of that fix is a deliberate ordering
+               choice, tracked in those issues. -->
         <nextcloud min-version="32" max-version="35"/>
     </dependencies>
 
