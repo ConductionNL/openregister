@@ -661,6 +661,12 @@ class PropertyValidatorHandler {
 		// that silently constrains nothing for as long as nobody counts.
 		$this->assertKeysAreInTheVocabulary(property: $property, path: $path);
 
+		// A generated identifier is checked where every other property key is.
+		// The refusal extends PropertyVocabularyException, so every schema-save
+		// path already answers it as a 422 naming the property, and no controller
+		// had to learn about this annotation to do it.
+		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
+
 		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {
 			return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');

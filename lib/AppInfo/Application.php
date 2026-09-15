@@ -106,6 +106,7 @@ use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\FlowNodePreflightListener;
+use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\GrantableRightsInvalidationListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
@@ -2865,6 +2866,15 @@ class Application extends App implements IBootstrap {
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
+
+		// The generated identifier (`generated-identifier`). Registered beside the
+		// lifecycle initial state and for the same reason: the value has to be in
+		// the object's body BEFORE it is written, or the object's first version is
+		// the one without a number. The same listener freezes it on update, because
+		// a frozen identifier that is not frozen fails in the quietest way there
+		// is: the number in the letter stops matching the record, and nothing errors.
+		$context->registerEventListener(ObjectCreatingEvent::class, GeneratedIdentifierListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, GeneratedIdentifierListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
