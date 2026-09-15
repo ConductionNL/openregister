@@ -102,6 +102,8 @@ class PartyDefinition {
 	 * @param array<string, mixed> $annotation The `x-openregister-party` value.
 	 *
 	 * @return self The declaration, every key defaulted.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public static function fromAnnotation(array $annotation): self {
 		$merge = ($annotation['merge'] ?? []);
@@ -133,6 +135,8 @@ class PartyDefinition {
 	 * The kind of party objects of this schema are.
 	 *
 	 * @return string The kind.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function kind(): string {
 		return $this->kind;
@@ -142,6 +146,8 @@ class PartyDefinition {
 	 * The property carrying the party's display name, null when undeclared.
 	 *
 	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function nameProperty(): ?string {
 		return $this->nameProperty;
@@ -151,6 +157,8 @@ class PartyDefinition {
 	 * The property carrying the party's addresses.
 	 *
 	 * @return string The property name.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function addressesProperty(): string {
 		return $this->addressesProperty;
@@ -160,6 +168,8 @@ class PartyDefinition {
 	 * The property carrying the party's indicators.
 	 *
 	 * @return string The property name.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function indicatorsProperty(): string {
 		return $this->indicatorsProperty;
@@ -169,6 +179,8 @@ class PartyDefinition {
 	 * The property naming the parent party, null when the kind does not nest.
 	 *
 	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function parentProperty(): ?string {
 		return $this->parentProperty;
@@ -178,6 +190,8 @@ class PartyDefinition {
 	 * How deep the parent chain may go.
 	 *
 	 * @return int The bound, at least one.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function maxDepth(): int {
 		return $this->maxDepth;
@@ -187,6 +201,8 @@ class PartyDefinition {
 	 * The properties a merge keeps from the surviving party.
 	 *
 	 * @return array<int, string> The property names, [] when the schema names none.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function survivingProperties(): array {
 		return $this->survivingProperties;
@@ -196,6 +212,8 @@ class PartyDefinition {
 	 * Whether a merge unions both parties' addresses onto the survivor.
 	 *
 	 * @return bool True when it does.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function unionAddresses(): bool {
 		return $this->unionAddresses;

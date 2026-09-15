@@ -115,11 +115,18 @@ class PartySearchService {
 		}
 
 		if ($total > $cap) {
+			// Only name a schema when the query ran over exactly one, so the
+			// trail never implies a scope the caller did not ask for.
+			$searched = null;
+			if (count($schemaIds) === 1) {
+				$searched = $schemaIds[0];
+			}
+
 			$this->audit->createPartyQueryRefusalEntry(
 				query: $term,
 				cap: $cap,
 				would: $total,
-				schema: (count($schemaIds) === 1 ? $schemaIds[0] : null)
+				schema: $searched
 			);
 
 			throw new Exception(

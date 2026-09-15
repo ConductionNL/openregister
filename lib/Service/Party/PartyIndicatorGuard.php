@@ -73,7 +73,8 @@ class PartyIndicatorGuard {
 	 *
 	 * @param string $objectUuid The object.
 	 *
-	 * @return array<int, array{party: string, partyKind: string|null, role: string|null, key: string, label: string, effect: string, note: string|null}> The indicators.
+	 * @return array<int, array<string, string|null>> One entry per indicator, each
+	 *         carrying `party`, `partyKind`, `role`, `key`, `label`, `effect` and `note`.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
@@ -121,87 +122,57 @@ class PartyIndicatorGuard {
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function assertPublicationAllowed(string $objectUuid): void {
-		$this->assertAllowed(
-			objectUuid: $objectUuid,
-			effect: self::EFFECT_REFUSE_PUBLICATION,
-			act: 'Publication'
-		);
-	}//end assertPublicationAllowed()
-
-	/**
-	 * Refuse an outbound message to an object's parties when one says so.
-	 *
-	 * @param string $objectUuid The object the message is about.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception 403 naming the indicator and the party.
-	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
-	 */
-	public function assertSendAllowed(string $objectUuid): void {
-		$this->assertAllowed(
-			objectUuid: $objectUuid,
-			effect: self::EFFECT_REFUSE_SEND,
-			act: 'Sending'
-		);
-	}//end assertSendAllowed()
-
-	/**
-	 * Whether a message may go to one party.
-	 *
-	 * @param string $partyUuid The party.
-	 *
-	 * @return bool False when the party carries a refuse-send indicator.
-	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
-	 */
-	public function mayReceive(string $partyUuid): bool {
-		$party = $this->parties->find(partyUuid: $partyUuid);
-		if ($party === null) {
-			return true;
-		}
-
-		foreach ($this->parties->indicators(party: $party) as $indicator) {
-			if ($indicator['effect'] === self::EFFECT_REFUSE_SEND) {
-				return false;
-			}
-		}
-
-		return true;
-	}//end mayReceive()
-
-	/**
-	 * Refuse the act when any party on the object carries that effect.
-	 *
-	 * @param string $objectUuid The object.
-	 * @param string $effect The effect that refuses.
-	 * @param string $act The act, for the message.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception 403 naming the indicator and the party.
-	 */
-	private function assertAllowed(string $objectUuid, string $effect, string $act): void {
 		foreach ($this->indicatorsForObject(objectUuid: $objectUuid) as $indicator) {
-			if ($indicator['effect'] !== $effect) {
+			if ($indicator['effect'] !== self::EFFECT_REFUSE_PUBLICATION) {
 				continue;
 			}
 
 			throw new Exception(
-				$act . ' is refused by the indicator "' . $indicator['label'] . '" on party "'
+				'Publication is refused by the indicator "' . $indicator['label'] . '" on party "'
 				. $indicator['party'] . '"',
 				403
 			);
 		}
-	}//end assertAllowed()
+	}//end assertPublicationAllowed()
+
+	/**
+	 * The label of the indicator refusing an outbound message to one party,
+	 * or null when nothing refuses it.
+	 *
+	 * The send refuses PER PARTY rather than per object: one protected party
+	 * on a case must not silence the letter to the other five. The caller
+	 * leaves that party out and says which indicator did it, because a
+	 * recipient list that is quietly shorter than the party list is a bug
+	 * nobody can see.
+	 *
+	 * @param string $partyUuid The party.
+	 *
+	 * @return string|null The refusing indicator's label.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	public function sendRefusalFor(string $partyUuid): ?string {
+		$party = $this->parties->find(partyUuid: $partyUuid);
+		if ($party === null) {
+			return null;
+		}
+
+		foreach ($this->parties->indicators(party: $party) as $indicator) {
+			if ($indicator['effect'] === self::EFFECT_REFUSE_SEND) {
+				return $indicator['label'];
+			}
+		}
+
+		return null;
+	}//end sendRefusalFor()
 
 	/**
 	 * The indicators behind one link, each stamped with its party and role.
 	 *
 	 * @param ContactLink $link The link.
 	 *
-	 * @return array<int, array{party: string, partyKind: string|null, role: string|null, key: string, label: string, effect: string, note: string|null}> The indicators.
+	 * @return array<int, array<string, string|null>> One entry per indicator, each
+	 *         carrying `party`, `partyKind`, `role`, `key`, `label`, `effect` and `note`.
 	 */
 	private function indicatorsOfLink(ContactLink $link): array {
 		$partyUuid = (string)($link->getPartyUuid() ?? '');

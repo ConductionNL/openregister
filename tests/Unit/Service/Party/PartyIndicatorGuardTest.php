@@ -119,7 +119,7 @@ class PartyIndicatorGuardTest extends TestCase {
 		);
 
 		$this->guard->assertPublicationAllowed(objectUuid: 'case-1');
-		$this->guard->assertSendAllowed(objectUuid: 'case-1');
+		$this->assertNull($this->guard->sendRefusalFor(partyUuid: 'party-a'));
 
 		$read = $this->guard->indicatorsForObject(objectUuid: 'case-1');
 		$this->assertCount(1, $read);
@@ -141,13 +141,13 @@ class PartyIndicatorGuardTest extends TestCase {
 			indicators: [['key' => 'geen-post', 'label' => 'Geen post', 'effect' => 'refuse-send', 'note' => null]]
 		);
 
+		// The publication is untouched: the effects are distinct, which is the
+		// whole point of declaring one rather than "this party is sensitive".
 		$this->guard->assertPublicationAllowed(objectUuid: 'case-1');
-		$this->assertFalse($this->guard->mayReceive(partyUuid: 'party-a'));
 
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Geen post');
-
-		$this->guard->assertSendAllowed(objectUuid: 'case-1');
+		// The send refuses PER PARTY and names the indicator, so the caller can
+		// leave that party out and say why.
+		$this->assertSame('Geen post', $this->guard->sendRefusalFor(partyUuid: 'party-a'));
 	}//end testARefuseSendIndicatorStopsOnlyTheSend()
 
 	/**

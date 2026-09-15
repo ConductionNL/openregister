@@ -50,11 +50,13 @@ class PartyNotificationService {
 	 *
 	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
 	 * @param PartyService $parties The party records and their addresses.
+	 * @param PartyIndicatorGuard $indicators The declared effects, which decide who may be reached.
 	 * @param EmailSender $email The email channel.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly PartyService $parties,
+		private readonly PartyIndicatorGuard $indicators,
 		private readonly EmailSender $email,
 	) {
 	}//end __construct()
@@ -69,7 +71,8 @@ class PartyNotificationService {
 	 * @param string $objectUuid The object.
 	 * @param string|null $role Only the parties in this role, or null for all of them.
 	 *
-	 * @return array<int, array{party: string, role: string|null, displayName: string|null, address: string|null, refusedBy: string|null}> The recipients.
+	 * @return array<int, array<string, string|null>> One entry per party, each
+	 *         carrying `party`, `role`, `displayName`, `address` and `refusedBy`.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
@@ -162,7 +165,7 @@ class PartyNotificationService {
 			'role' => $link->getRole(),
 			'displayName' => $link->getDisplayName(),
 			'address' => $this->outboundAddress(party: $party, definition: $definition),
-			'refusedBy' => $this->refusal(party: $party),
+			'refusedBy' => $this->indicators->sendRefusalFor(partyUuid: $partyUuid),
 		];
 	}//end recipientOf()
 
@@ -193,21 +196,4 @@ class PartyNotificationService {
 
 		return null;
 	}//end outboundAddress()
-
-	/**
-	 * The label of the indicator refusing a send to this party, or null.
-	 *
-	 * @param ObjectEntity $party The party.
-	 *
-	 * @return string|null The indicator's label.
-	 */
-	private function refusal(ObjectEntity $party): ?string {
-		foreach ($this->parties->indicators(party: $party) as $indicator) {
-			if ($indicator['effect'] === PartyIndicatorGuard::EFFECT_REFUSE_SEND) {
-				return $indicator['label'];
-			}
-		}
-
-		return null;
-	}//end refusal()
 }//end class

@@ -143,8 +143,13 @@ class EmailSender {
 		}
 
 		try {
+			$name = $to;
+			if ($displayName !== '') {
+				$name = $displayName;
+			}
+
 			$msg = $this->mailer->createMessage();
-			$msg->setTo([$to => ($displayName !== '' ? $displayName : $to)]);
+			$msg->setTo([$to => $name]);
 			$msg->setSubject($subject);
 			$msg->setPlainBody($body);
 			$this->mailer->send($msg);

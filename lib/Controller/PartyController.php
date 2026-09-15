@@ -158,11 +158,11 @@ class PartyController extends Controller {
 					return new JSONResponse(['error' => 'partyUuid is required'], 400);
 				}
 
-				$role = trim((string)$this->request->getParam('role', ''));
+				$role = self::textOrNull(value: $this->request->getParam('role', ''));
 				$link = $this->roles->replacePrimaryParty(
 					object: $object,
 					partyUuid: $partyUuid,
-					role: ($role !== '' ? $role : null)
+					role: $role
 				);
 
 				return new JSONResponse($link->jsonSerialize());
@@ -191,14 +191,12 @@ class PartyController extends Controller {
 			schema: $schema,
 			id: $id,
 			handler: function (ObjectEntity $object) use ($partyUuid): JSONResponse {
-				$role = trim((string)$this->request->getParam('role', ''));
-
 				return new JSONResponse(
 					[
 						'removed' => $this->roles->removeParty(
 							objectUuid: (string)$object->getUuid(),
 							partyUuid: $partyUuid,
-							role: ($role !== '' ? $role : null)
+							role: self::textOrNull(value: $this->request->getParam('role', ''))
 						),
 					]
 				);
@@ -217,6 +215,8 @@ class PartyController extends Controller {
 	 *
 	 * @return JSONResponse The party's roles and indicators.
 	 *
+	 * @throws Exception Never past the controller: a failure below becomes the JSON error response.
+	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
@@ -227,25 +227,29 @@ class PartyController extends Controller {
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function show(string $partyUuid): JSONResponse {
-		$party = $this->parties->find(partyUuid: $partyUuid);
-		if ($party === null) {
-			return new JSONResponse(['error' => 'Party not found'], 404);
-		}
+		try {
+			$party = $this->parties->find(partyUuid: $partyUuid);
+			if ($party === null) {
+				return new JSONResponse(['error' => 'Party not found'], 404);
+			}
 
-		$definition = $this->parties->definitionFor(party: $party);
-		if ($definition === null) {
-			return new JSONResponse(['error' => 'Object "' . $partyUuid . '" is not a party'], 400);
-		}
+			$definition = $this->parties->definitionFor(party: $party);
+			if ($definition === null) {
+				return new JSONResponse(['error' => 'Object "' . $partyUuid . '" is not a party'], 400);
+			}
 
-		return new JSONResponse(
-			[
-				'uuid' => $party->getUuid(),
-				'kind' => $definition->kind(),
-				'addresses' => $this->parties->addresses(party: $party, definition: $definition),
-				'indicators' => $this->parties->indicators(party: $party, definition: $definition),
-				'objects' => $this->indicators->objectsOfParty(partyUuid: $partyUuid),
-			]
-		);
+			return new JSONResponse(
+				[
+					'uuid' => $party->getUuid(),
+					'kind' => $definition->kind(),
+					'addresses' => $this->parties->addresses(party: $party, definition: $definition),
+					'indicators' => $this->parties->indicators(party: $party, definition: $definition),
+					'objects' => $this->indicators->objectsOfParty(partyUuid: $partyUuid),
+				]
+			);
+		} catch (Exception $e) {
+			return $this->errorResponse(exception: $e);
+		}
 	}//end show()
 
 	/**
@@ -264,12 +268,10 @@ class PartyController extends Controller {
 	 */
 	public function search(): JSONResponse {
 		try {
-			$schema = trim((string)$this->request->getParam('schema', ''));
-
 			return new JSONResponse(
 				$this->search->search(
 					query: (string)$this->request->getParam('q', ''),
-					schemaId: ($schema !== '' ? $schema : null)
+					schemaId: self::textOrNull(value: $this->request->getParam('schema', ''))
 				)
 			);
 		} catch (Exception $e) {
@@ -338,6 +340,22 @@ class PartyController extends Controller {
 			return $this->errorResponse(exception: $e);
 		}//end try
 	}//end withObject()
+
+	/**
+	 * A trimmed request parameter, or null when it carries nothing.
+	 *
+	 * @param mixed $value The raw parameter.
+	 *
+	 * @return string|null The text.
+	 */
+	private static function textOrNull(mixed $value): ?string {
+		$text = trim((string)($value ?? ''));
+		if ($text === '') {
+			return null;
+		}
+
+		return $text;
+	}//end textOrNull()
 
 	/**
 	 * An exception as a response, keeping the status it named.

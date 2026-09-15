@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -39,6 +40,13 @@ class PartyNotificationServiceTest extends TestCase {
 	 * @var PartyService&MockObject
 	 */
 	private $parties;
+
+	/**
+	 * The declared effects.
+	 *
+	 * @var PartyIndicatorGuard&MockObject
+	 */
+	private $indicators;
 
 	/**
 	 * The email channel.
@@ -74,6 +82,7 @@ class PartyNotificationServiceTest extends TestCase {
 			->onlyMethods(['findPartiesForObject'])
 			->getMock();
 		$this->parties = $this->createMock(PartyService::class);
+		$this->indicators = $this->createMock(PartyIndicatorGuard::class);
 		$this->email = $this->createMock(EmailSender::class);
 
 		$this->email->method('sendToAddress')->willReturnCallback(
@@ -84,7 +93,12 @@ class PartyNotificationServiceTest extends TestCase {
 			}
 		);
 
-		$this->service = new PartyNotificationService($this->links, $this->parties, $this->email);
+		$this->service = new PartyNotificationService(
+			$this->links,
+			$this->parties,
+			$this->indicators,
+			$this->email
+		);
 	}//end setUp()
 
 	/**
@@ -108,6 +122,15 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->parties->method('find')->willReturn($party);
 		$this->parties->method('definitionFor')->willReturn(new PartyDefinition());
 		$this->parties->method('indicators')->willReturn($indicators);
+
+		$refusal = null;
+		foreach ($indicators as $indicator) {
+			if (($indicator['effect'] ?? '') === PartyIndicatorGuard::EFFECT_REFUSE_SEND) {
+				$refusal = $indicator['label'];
+			}
+		}
+
+		$this->indicators->method('sendRefusalFor')->willReturn($refusal);
 		$this->parties->method('addressesOfKind')->willReturnCallback(
 			static fn (ObjectEntity $p, string $kind, ?PartyDefinition $d = null): array => array_values(
 				array_filter($addresses, static fn (array $a): bool => $a['kind'] === $kind)

@@ -82,7 +82,8 @@ class PartyRoleService {
 	 * @param string $objectUuid The object uuid.
 	 * @param int|string|null $schemaId The object's schema, for the vocabulary.
 	 *
-	 * @return array{results: array<int, array<string, mixed>>, total: int, byRole: array<string, array<int, array<string, mixed>>>, kinds: array<int, array<string, mixed>>, roles: array<int, array<string, mixed>>, primary: string|null} The listing.
+	 * @return array<string, mixed> The listing: `results`, `total`, `byRole`, the
+	 *         schema's `kinds` and `roles`, and the `primary` party's uuid.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
