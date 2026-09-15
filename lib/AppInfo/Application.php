@@ -1166,6 +1166,10 @@ class Application extends App implements IBootstrap {
 		);
 
 		$context->registerSearchProvider(ObjectsProvider::class);
+		// The entries beside the objects. Two providers, because a Woo
+		// request asks for every mention of a subject and the answer is a
+		// list of entries, each naming the case it sits on.
+		$context->registerSearchProvider(\OCA\OpenRegister\Search\TimelineEntriesProvider::class);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 	}//end registerConfigurationServices()
@@ -2610,6 +2614,28 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent::class,
 			\OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
+		);
+
+		// The organisation tree guard. A party's parent is checked on the SAVE,
+		// not in whatever wrote the object: a check that lives in one caller is
+		// a check the next caller does not have, and a written cycle reaches
+		// every later reader as a parent chain with no end.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectCreatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectUpdatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+
+		// Party roles across a merge. `mdm-merge` owns the merge; the party
+		// vocabulary — the roles both parties held, their addresses, and
+		// putting both back on a reversal — is contributed here rather than
+		// written as a second merge that could disagree with the first.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectsMergedEvent::class,
+			\OCA\OpenRegister\Listener\PartyMergeListener::class
 		);
 
 		// Advertise the `openregister` OCM resource type in /ocm-provider discovery.

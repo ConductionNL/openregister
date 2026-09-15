@@ -40,14 +40,20 @@ use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
+use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
+use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
+use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
+use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
+use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
@@ -1095,13 +1101,17 @@ class SchemaMapper extends QBMapper {
 		$this->buildRequiredFieldsArray(schema: $schema);
 		$this->autoPopulateConfigurationFields(schema: $schema);
 		$this->validateLifecycleAnnotation(schema: $schema);
+		$this->validateMdtoMappingAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
+		$this->validateRelationAnnotation(schema: $schema);
 		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
+		$this->validateHingeAnnotations(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
 		$this->validateMergeAnnotation(schema: $schema);
+		$this->validatePartyAnnotation(schema: $schema);
 		$this->validateNotificationsAnnotation(schema: $schema);
 		$this->validateWidgetsAnnotation(schema: $schema);
 		$this->validateArchivalAnnotation(schema: $schema);
@@ -1290,6 +1300,58 @@ class SchemaMapper extends QBMapper {
 	}//end validateLifecycleAnnotation()
 
 	/**
+	 * Validate the optional `x-openregister-mdto-mapping` annotation.
+	 *
+	 * 🔴 EVERY ERROR HERE REFUSES THE SAVE, unlike the lifecycle block above.
+	 * Two reasons. The key is new, so no register ships one and refusing breaks
+	 * no existing import, which is exactly the argument that made the lifecycle
+	 * condition codes blocking. And a mapping stored broken is worse than no
+	 * mapping: `MdtoPreconditions` refuses a transfer the moment a schema
+	 * declares a mapping that does not fill a mandatory element, so an
+	 * administrator who saved a typo would find out when a transfer they had
+	 * scheduled stopped, with the schema editor having reported success.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws Exception When the mapping names an element MDTO does not have, a
+	 *                   property the schema does not declare, no source, two
+	 *                   sources, or leaves a mandatory element unfilled.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	private function validateMdtoMappingAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$mapping = ($configuration[ElementMappingValidator::ANNOTATION_KEY] ?? null);
+		if (is_array($mapping) === false) {
+			return;
+		}
+
+		$validator = new ElementMappingValidator(catalogue: new MdtoElementCatalogue());
+		$errors = $validator->validate(
+			mapping: $mapping,
+			properties: ($schema->getProperties() ?? [])
+		);
+
+		if (count($errors) === 0) {
+			return;
+		}
+
+		// "Invalid" is load-bearing: SchemasController maps the exception to a
+		// 400 by matching that word, and the codes ride along so a client can
+		// tell which rule refused.
+		$details = array_map(
+			static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
+			$errors
+		);
+
+		throw new Exception(
+			'Invalid ' . ElementMappingValidator::ANNOTATION_KEY . ' declaration: ' . implode(' ', $details)
+		);
+	}//end validateMdtoMappingAnnotation()
+
+	/**
 	 * Validate the optional `x-openregister-aggregations` annotation.
 	 *
 	 * @param Schema $schema Schema to validate.
@@ -1405,6 +1467,47 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (calculation not evaluated): ' . implode(' ', $messages)
 		);
 	}//end validateCalculationsAnnotation()
+
+	/**
+	 * Validate the relation declarations on a schema's properties.
+	 *
+	 * Blocking, and deliberately so. Both keys are new, so no register carries
+	 * one and refusing breaks no existing import, which is the test the
+	 * advisory policy above sets. And both failures they catch are silent
+	 * ones: a symmetric relation that also names an inverse reads one way on
+	 * one side and the other way on the other, and a `type` naming a
+	 * vocabulary entry that does not exist renders as the generic "referenced
+	 * by" fallback forever while its author believes the link is typed.
+	 *
+	 * Validated here rather than in the controller because this is the one
+	 * choke point the create, update and file-upload paths all pass through.
+	 *
+	 * @param Schema $schema Schema being saved.
+	 *
+	 * @throws RelationDeclarationException When a relation declaration cannot be honoured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function validateRelationAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+		];
+
+		$vocabulary = ($configuration[RelationAnnotationValidator::VOCABULARY_ANNOTATION] ?? null);
+		if ($vocabulary !== null) {
+			$shape[RelationAnnotationValidator::VOCABULARY_ANNOTATION] = $vocabulary;
+		}
+
+		$errors = (new RelationAnnotationValidator())->validate($shape);
+		if ($errors === []) {
+			return;
+		}
+
+		throw new RelationDeclarationException(errors: $errors);
+	}//end validateRelationAnnotation()
 
 	/**
 	 * Validate the two property-level rule annotations this change adds.
@@ -1571,6 +1674,54 @@ class SchemaMapper extends QBMapper {
 	}//end validateDedupAnnotation()
 
 	/**
+	 * Validate the lens, list and geographic-inheritance annotations.
+	 *
+	 * All three are declarative reading instructions, not storage requirements:
+	 * a malformed one costs a surface, never an object. So this degrades to a
+	 * warning rather than aborting the import — but it does warn, because the
+	 * failure mode without it is a lens that renders empty forever and reads
+	 * exactly like a field nobody filled in.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	private function validateHingeAnnotations(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+		];
+
+		$declared = false;
+		foreach ([Schema::LENS_ANNOTATION, Schema::LIST_ANNOTATION, Schema::GEO_INHERITANCE_ANNOTATION] as $key) {
+			if (isset($configuration[$key]) === false) {
+				continue;
+			}
+
+			$shape[$key] = $configuration[$key];
+			$declared = true;
+		}
+
+		if ($declared === false) {
+			return;
+		}
+
+		$errors = (new HingeAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$this->logger->warning(
+			'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are '
+			. 'invalid and were ignored: ' . implode(' ', $messages)
+		);
+	}//end validateHingeAnnotations()
+
+	/**
 	 * Validate the optional `x-openregister-survivorship` annotation.
 	 *
 	 * @param Schema $schema Schema to validate.
@@ -1639,6 +1790,44 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (merge falls back to defaults): ' . implode(' ', $messages)
 		);
 	}//end validateMergeAnnotation()
+
+	/**
+	 * Validate the optional `x-openregister-party` annotation.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function validatePartyAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration['x-openregister-party'] ?? null);
+		if (is_array($annotation) === false) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			'x-openregister-party' => $annotation,
+		];
+
+		$errors = (new PartyAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		// A party declaration is ADVISORY metadata on top of a schema that
+		// stores objects perfectly well without it, so a malformed block must
+		// not abort the import. It is warned about rather than dropped: the
+		// failure a dropped declaration causes is a party schema that reads as
+		// an ordinary one, and the operator needs the field name to fix it.
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$this->logger->warning(
+			'x-openregister-party annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
+			. 'invalid and was ignored (the schema is not treated as a party schema): ' . implode(' ', $messages)
+		);
+	}//end validatePartyAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-notifications` annotation.

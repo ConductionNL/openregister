@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -1738,6 +1739,11 @@ class ObjectService implements ObjectServiceInterface
             // object exactly once so the check is data-driven, not metadata-only.
             $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
 
+            // A lens is resolved at read and never stored, so a value sent for
+            // one is refused on CREATE as well as UPDATE. Writing through a
+            // lens is writing to somebody else's record by accident (D-2).
+            $this->enforceLensesAreReadOnly(object: $object);
+
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
 
             // Ensure folder exists for the object.
@@ -2176,7 +2182,13 @@ class ObjectService implements ObjectServiceInterface
     }//end validateObjectIfRequired()
 
     /**
-     * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
+     * Enforce JSON-Schema `readOnly: true` and `immutable: true` on the
+     * UPDATE write path.
+     *
+     * Both rules need the same previously-stored record, so they share one
+     * load here. They are not the same rule: `readOnly` refuses every value
+     * that differs from what is stored, `immutable` accepts the first value
+     * and refuses every later change.
      *
      * No-op on CREATE (uuid === null). On UPDATE:
      *  1. Strip `@self` from the incoming payload (it is not a user-controllable
@@ -2205,38 +2217,13 @@ class ObjectService implements ObjectServiceInterface
             return;
         }
 
-        // Load the existing record. Anything that prevents load (not found,
-        // RBAC reject, multitenancy filter) means we're not in a true UPDATE
-        // and the engine's normal CREATE path will run — no readOnly check
-        // applies.
-        //
-        // Pass the already-resolved register/schema so find() takes the scoped
-        // register/schema-table path directly. Omitting them leaves find() to
-        // rely on the request's URL scope; under a stale scope it falls back to
-        // the deliberate cross-table search (see the resolution-cache note above,
-        // openregister#1520). We are on the save path with both already resolved,
-        // so there is no reason to risk that fallback here.
-        try {
-            $existing = $this->objectMapper->find(
-                $uuid,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _rbac: false,
-                _multitenancy: false
-            );
-        } catch (\Throwable $e) {
+        $existingData = $this->storedDataForWriteRules(object: $object, uuid: $uuid);
+        if ($existingData === null) {
             return;
         }
 
-        $existingData = $existing->getObject();
-        // Drop the synthesised `id` key getObject() prepends — readOnly applies
-        // to schema properties, not the engine-stamped identifier.
-        if (isset($existingData['id']) === true && isset($object['id']) === false) {
-            unset($existingData['id']);
-        }
-
-        // Strip @self from the incoming payload before comparing — readOnly
-        // is for business properties only.
+        // Strip @self from the incoming payload before comparing — the rules
+        // are for business properties only.
         $candidate = $object;
         unset($candidate['@self']);
 
@@ -2246,20 +2233,34 @@ class ObjectService implements ObjectServiceInterface
             schema: $this->currentSchema
         );
 
-        if ($violations === []) {
+        // `immutable: true` is checked here rather than in a second private
+        // method so it reuses the record this one already loaded. Two methods
+        // would mean two `find()` calls on every update, and the second would
+        // eventually be the one somebody forgot to call.
+        $immutableViolations = $this->validateHandler->validateImmutableConstraints(
+            incomingObject: $candidate,
+            existingObject: $existingData,
+            schema: $this->currentSchema
+        );
+
+        if ($violations === [] && $immutableViolations === []) {
             return;
         }
 
-        $properties = array_map(static fn (array $v): string => $v['property'], $violations);
-        $suffix     = 'ies';
-        if (count($violations) === 1) {
-            $suffix = 'y';
+        $parts = [];
+        if ($violations !== []) {
+            $parts[] = $this->describeViolations(violations: $violations, verb: 'modify readOnly');
         }
 
-        $message = 'Cannot modify readOnly propert'.$suffix.': '.implode(', ', $properties);
+        if ($immutableViolations !== []) {
+            $parts[]    = $this->describeViolations(violations: $immutableViolations, verb: 'change immutable');
+            $violations = array_merge($violations, $immutableViolations);
+        }
+
+        $message = implode('. ', $parts);
 
         $this->logger->info(
-            message: '[ObjectService] readOnly enforcement rejected UPDATE',
+            message: '[ObjectService] readOnly / immutable enforcement rejected UPDATE',
             context: [
                 'file'       => __FILE__,
                 'line'       => __LINE__,
@@ -2274,6 +2275,128 @@ class ObjectService implements ObjectServiceInterface
         // log entry carry the violation detail.
         throw new ValidationException(message: $message);
     }//end enforceReadOnlyOnUpdate()
+
+    /**
+     * Load the stored business data the write rules compare against.
+     *
+     * Returns null when this is not a true UPDATE. Anything that prevents the
+     * load (not found, RBAC reject, multitenancy filter) means the engine's
+     * normal CREATE path will run, and neither `readOnly` nor `immutable`
+     * applies to a record that does not exist yet.
+     *
+     * Passes the already-resolved register and schema so `find()` takes the
+     * scoped register/schema-table path directly. Omitting them leaves it to
+     * rely on the request's URL scope; under a stale scope it falls back to the
+     * deliberate cross-table search (openregister#1520). We are on the save
+     * path with both resolved, so there is no reason to risk that fallback.
+     *
+     * @param array       $object The incoming payload, read only for its `id` key.
+     * @param string      $uuid   The object being updated.
+     *
+     * @return array|null The stored business data, or null when this is not an update.
+     *
+     * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+     */
+    private function storedDataForWriteRules(array $object, string $uuid): ?array
+    {
+        try {
+            $existing = $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $existingData = $existing->getObject();
+
+        // Drop the synthesised `id` key getObject() prepends — the rules apply
+        // to schema properties, not to the engine-stamped identifier.
+        if (isset($existingData['id']) === true && isset($object['id']) === false) {
+            unset($existingData['id']);
+        }
+
+        return $existingData;
+    }//end storedDataForWriteRules()
+
+    /**
+     * Name the properties a write rule refused, in one sentence.
+     *
+     * Extracted so `enforceReadOnlyOnUpdate()` reads as two rules and a
+     * message rather than two rules and two copies of the same pluralisation.
+     * The copies were also what pushed that method's NPath complexity past the
+     * threshold when the second rule arrived.
+     *
+     * @param array $violations The violation rows, each carrying a `property`.
+     * @param string $verb What the caller tried to do, for the message.
+     *
+     * @return string The sentence.
+     *
+     * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+     */
+    private function describeViolations(array $violations, string $verb): string
+    {
+        $properties = array_map(static fn (array $v): string => $v['property'], $violations);
+
+        $suffix = 'ies';
+        if (count($violations) === 1) {
+            $suffix = 'y';
+        }
+
+        return 'Cannot '.$verb.' propert'.$suffix.': '.implode(', ', $properties);
+    }//end describeViolations()
+
+    /**
+     * Refuse a write that names a lens property.
+     *
+     * A lens holds the path, not the value: it is resolved on read against the
+     * referenced record and stored nowhere. Accepting a value for one would
+     * write a second copy of somebody else's field, which is the disagreement
+     * the lens exists to end. The refusal names the property, because a client
+     * that sent one cannot otherwise tell which of its fields is a lens.
+     *
+     * @param array $object Incoming object payload (top-level keys = property names).
+     *
+     * @return void
+     *
+     * @throws ValidationException When the payload names one or more lens properties.
+     *
+     * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+     */
+    private function enforceLensesAreReadOnly(array $object): void
+    {
+        if ($this->currentSchema === null) {
+            return;
+        }
+
+        $named = LensResolver::refusedLensWrites(schema: $this->currentSchema, object: $object);
+        if ($named === []) {
+            return;
+        }
+
+        $suffix = 'ies';
+        if (count($named) === 1) {
+            $suffix = 'y';
+        }
+
+        $message = 'Cannot write lens propert'.$suffix.': '.implode(', ', $named)
+            .'. A lens reads a referenced record and is never stored.';
+
+        $this->logger->info(
+            message: '[ObjectService] lens write refused',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'schemaId'   => $this->currentSchema->getId(),
+                'properties' => $named,
+            ]
+        );
+
+        throw new ValidationException(message: $message);
+    }//end enforceLensesAreReadOnly()
 
     /**
      * Normalize date values in object data before validation.

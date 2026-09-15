@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -100,7 +101,8 @@ class DestructionCertificateContentTest extends TestCase {
 			$userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(RetentionRowScanner::class),
-			$this->createMock(ArchiveActionDateCalculator::class)
+			$this->createMock(ArchiveActionDateCalculator::class),
+			$this->createMock(SelectielijstResolver::class)
 		);
 	}
 

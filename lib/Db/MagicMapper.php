@@ -2302,6 +2302,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 *     _validation: array{name: '_validation', type: 'json',
 	 *     nullable: true},
 	 *     _deleted: array{name: '_deleted', type: 'json', nullable: true},
+	 *     _archived: array{name: '_archived', type: 'json', nullable: true},
+	 *     _frozen: array{name: '_frozen', type: 'json', nullable: true},
 	 *     _geo: array{name: '_geo', type: 'json', nullable: true},
 	 *     _retention: array{name: '_retention', type: 'json', nullable: true},
 	 *     _groups: array{name: '_groups', type: 'json', nullable: true}}
@@ -2474,6 +2476,27 @@ class MagicMapper extends AbstractObjectMapper {
 			],
 			self::METADATA_PREFIX . 'deleted' => [
 				'name' => self::METADATA_PREFIX . 'deleted',
+				'type' => 'json',
+				'nullable' => true,
+			],
+			// The archive marker. A column rather than a key inside `_retention`
+			// because the default list query has to exclude archived rows in
+			// SQL, and a JSON member cannot carry the `IS NULL` the exclusion
+			// is built on. No migration accompanies it: syncTableForRegisterSchema()
+			// retrofits a missing metadata column onto every existing magic
+			// table through addMissingColumns(), which is how `_retention` and
+			// `_tmlo` arrived.
+			self::METADATA_PREFIX . 'archived' => [
+				'name' => self::METADATA_PREFIX . 'archived',
+				'type' => 'json',
+				'nullable' => true,
+			],
+			// The freeze marker. Separate from `_archived` because the two
+			// states differ in exactly the way that matters to a query: a
+			// frozen object stays in the working list, an archived one leaves
+			// it. Collapsing them would force every caller to pick a wrong half.
+			self::METADATA_PREFIX . 'frozen' => [
+				'name' => self::METADATA_PREFIX . 'frozen',
 				'type' => 'json',
 				'nullable' => true,
 			],
@@ -3703,6 +3726,17 @@ class MagicMapper extends AbstractObjectMapper {
 			'validation',
 			'quality',
 			'deleted',
+			// Listed, and therefore carried forward on every ordinary update,
+			// for the same reason `locked` is: the value reaching this loop
+			// comes from the ENTITY, and `setSelfMetadata()` never accepts
+			// either key from a client `@self` payload, so there is no write
+			// path by which a caller can archive or freeze an object without
+			// going through the endpoint. Omitting them here would be worse
+			// than useless: `updateObjectEntity()` would stop naming the
+			// column, and the dedicated archive write would then be the only
+			// write that could ever clear it.
+			'archived',
+			'frozen',
 			'geo',
 			'retention',
 			'groups',
@@ -3760,6 +3794,8 @@ class MagicMapper extends AbstractObjectMapper {
 				'validation',
 				'quality',
 				'deleted',
+				'archived',
+				'frozen',
 				'geo',
 				'retention',
 				'groups',
