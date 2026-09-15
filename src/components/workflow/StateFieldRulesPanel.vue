@@ -132,6 +132,7 @@ export default {
 		 *
 		 * @param {object} fields The declared fields block.
 		 * @return {Array} One entry per declared rule.
+		 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 		 */
 		rulesOf(fields) {
 			if (!fields || typeof fields !== 'object') {
@@ -179,6 +180,7 @@ export default {
 		 *
 		 * @param {string} kind One of hidden, readOnly, required.
 		 * @return {string} The translated label.
+		 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 		 */
 		kindLabel(kind) {
 			if (kind === 'hidden') {
