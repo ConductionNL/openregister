@@ -133,6 +133,7 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
@@ -2559,6 +2560,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
 		$context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+		// Access derived from what an identity provider asserted, once per
+		// sign-in. Costs one app-config read on an instance that declares no
+		// rule, and never fails a sign-in: see the listener.
+		$context->registerEventListener(
+			\OCP\User\Events\UserLoggedInEvent::class,
+			\OCA\OpenRegister\Listener\IdentityClaimsLoginListener::class
+		);
+
 		// Flow node discovery. OpenRegister contributes its own built-ins
 		// through the same event every consuming app uses, so the contribution
 		// path is exercised by its owner and cannot rot unnoticed.
@@ -2602,6 +2611,28 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent::class,
 			\OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
+		);
+
+		// The organisation tree guard. A party's parent is checked on the SAVE,
+		// not in whatever wrote the object: a check that lives in one caller is
+		// a check the next caller does not have, and a written cycle reaches
+		// every later reader as a parent chain with no end.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectCreatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectUpdatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+
+		// Party roles across a merge. `mdm-merge` owns the merge; the party
+		// vocabulary — the roles both parties held, their addresses, and
+		// putting both back on a reversal — is contributed here rather than
+		// written as a second merge that could disagree with the first.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectsMergedEvent::class,
+			\OCA\OpenRegister\Listener\PartyMergeListener::class
 		);
 
 		// Advertise the `openregister` OCM resource type in /ocm-provider discovery.
@@ -2923,6 +2954,12 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
 
+		// The dependent value table (rules-engine-operability, REQ-REO-005).
+		// Subscribed to both write events, so the create and the update reach
+		// it identically and a write path added later cannot skip the table.
+		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
+
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.
@@ -3062,6 +3099,14 @@ class Application extends App implements IBootstrap {
 		// - queue-mode drain triggers: schema save + app enable (a provider may
 		// have appeared); the fallback HandoffQueueDrainJob catches the rest.
 		$context->registerEventListener(ObjectTransitionedEvent::class, HandoffLifecycleListener::class);
+
+		// Nomination at closure: a record reaching a state its schema declares
+		// final gets its archiefnominatie and archiefactiedatum derived and
+		// written, with the rule that produced each.
+		$context->registerEventListener(
+			ObjectTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\ArchivalNominationListener::class
+		);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);

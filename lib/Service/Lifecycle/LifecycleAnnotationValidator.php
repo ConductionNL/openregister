@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Rules\ConditionDialect;
 
 /**
  * Pure validation logic for the `x-openregister-lifecycle` annotation.
@@ -660,10 +660,10 @@ final class LifecycleAnnotationValidator {
 	}//end validateTransitionAuthorization()
 
 	/**
-	 * Shape-check a transition's optional JSONLogic `condition`.
+	 * Shape-check a transition's optional `condition`, in either dialect.
 	 *
 	 * 🔴 A SCALAR IS REFUSED, AND THAT IS THE POINT OF THIS METHOD.
-	 * `FlowExpression::isValid()` answers TRUE for any non-array, because in a
+	 * An expression validator answers TRUE for any non-array, because in a
 	 * flow a scalar is a literal and a literal is always well-formed. Here the
 	 * expression decides whether a transition may proceed, and a truthy literal
 	 * authorises EVERY attempt — it fails OPEN, silently, in the one place that
@@ -681,18 +681,22 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @return array{code: string, message: string}|null Error, or null when well-formed.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
-	 * stateless expression facade; calling it statically IS the reuse.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ConditionDialect's dialect lookup reads one
+	 * constant table and holds no state; calling it statically IS the reuse, and it is
+	 * the SAME lookup the save path makes, which is what keeps the two from drifting.
 	 *
 	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
 	 */
 	private function validateTransitionCondition(mixed $condition, string $action): ?array {
 		if (is_array($condition) === false) {
 			return [
 				'code' => 'lifecycle-condition-malformed',
 				'message' => sprintf(
-					'Transition "%s" `condition` must be a JSONLogic rule object such as '
-					. '{"!!": {"var": "object.motivering"}}. A string or other scalar is refused: '
+					'Transition "%s" `condition` must be a rule object, in the JSON AST such as '
+					. '{"not": {"eq": [{"prop": "object.motivering"}, null]}} or in the legacy '
+					. 'JSONLogic such as {"!!": {"var": "object.motivering"}}. '
+					. 'A string or other scalar is refused: '
 					. 'it would evaluate as a literal and allow every attempt. The '
 					. '"@self.field == \'value\'" form belongs on an `actions[]` entry, not here.',
 					$action
@@ -707,11 +711,13 @@ final class LifecycleAnnotationValidator {
 			];
 		}
 
-		if (FlowExpression::isValid(logic: $condition) === false) {
+		if (ConditionDialect::isValidCondition(node: $condition) === false) {
 			return [
 				'code' => 'lifecycle-condition-malformed',
 				'message' => sprintf(
-					'Transition "%s" `condition` is not a valid JSONLogic expression.',
+					'Transition "%s" `condition` is neither a valid JSON-AST expression such as '
+					. '{"gt": [{"prop": "object.bedrag"}, 500]} nor a valid JSONLogic one such as '
+					. '{">": [{"var": "object.bedrag"}, 500]}.',
 					$action
 				),
 			];
@@ -796,19 +802,25 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * 🔴 A SCALAR IS REFUSED, AND THAT IS THE POINT OF THIS METHOD, for the
 	 * same reason {@see validateTransitionCondition()} refuses one: a scalar
-	 * handed to `FlowExpression::isValid()` is a literal and always valid. Here
-	 * a truthy literal does not merely fail open once, it fires the transition
+	 * handed to an expression validator is a literal and always valid. Here a
+	 * truthy literal does not merely fail open once, it fires the transition
 	 * again on every write.
+	 *
+	 * `autoWhen` is evaluated by {@see \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator::holds()},
+	 * the same method a `condition` goes through, so it accepts the same two
+	 * dialects. Accepting fewer here would refuse at save a rule the engine
+	 * would have run.
 	 *
 	 * @param mixed $autoWhen Raw value of the transition's `autoWhen` key.
 	 * @param string $action The transition name, for the error message.
 	 *
 	 * @return array{code: string, message: string}|null Error, or null when well-formed.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
-	 * stateless expression facade; calling it statically IS the reuse.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ConditionDialect's dialect lookup reads one
+	 * constant table and holds no state; calling it statically IS the reuse.
 	 *
 	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
 	 */
 	private function validateAutoWhenRule(mixed $autoWhen, string $action): ?array {
 		$code = 'lifecycle-autowhen-malformed';
@@ -817,8 +829,10 @@ final class LifecycleAnnotationValidator {
 			return [
 				'code' => $code,
 				'message' => sprintf(
-					'Transition "%s" `autoWhen` must be a JSONLogic rule object such as '
-					. '{"!!": {"var": "object.motivering"}}. A string or other scalar is refused: '
+					'Transition "%s" `autoWhen` must be a rule object, in the JSON AST such as '
+					. '{"not": {"eq": [{"prop": "object.motivering"}, null]}} or in the legacy '
+					. 'JSONLogic such as {"!!": {"var": "object.motivering"}}. '
+					. 'A string or other scalar is refused: '
 					. 'it would evaluate as a literal and fire the transition on every write from '
 					. 'its `from` state. The "@self.field == \'value\'" form belongs on an '
 					. '`actions[]` entry, not here.',
@@ -834,12 +848,13 @@ final class LifecycleAnnotationValidator {
 			];
 		}
 
-		if (FlowExpression::isValid(logic: $autoWhen) === false) {
+		if (ConditionDialect::isValidCondition(node: $autoWhen) === false) {
 			return [
 				'code' => $code,
 				'message' => sprintf(
-					'Transition "%s" `autoWhen` is not a valid JSONLogic expression. '
-					. 'Write it as a rule object, for example {"!!": {"var": "object.motivering"}}.',
+					'Transition "%s" `autoWhen` is neither a valid JSON-AST expression nor a valid '
+					. 'JSONLogic one. Write it as a rule object, for example '
+					. '{"not": {"eq": [{"prop": "object.motivering"}, null]}}.',
 					$action
 				),
 			];

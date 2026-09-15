@@ -56,7 +56,11 @@ class PermissionsControllerTest extends TestCase {
 	 *
 	 * @return PermissionsController The controller under test.
 	 */
-	private function controllerFor(string $mode, array $registers = [], array $schemas = []): PermissionsController {
+	private function controllerFor(
+		string $mode,
+		array $registers = [],
+		array $schemas = [],
+	): PermissionsController {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($mode);
 

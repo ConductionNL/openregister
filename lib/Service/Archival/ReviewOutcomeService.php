@@ -69,6 +69,7 @@ class ReviewOutcomeService {
 	 * @param string      $entryUuid The uuid of the record.
 	 * @param string      $reason    Why the reviewer answered this way, recorded on the record too.
 	 * @param string|null $newDate   The new archiefactiedatum, for a retention.
+	 * @param string|null $reviewer  Who answered, written onto the record's own outcome for a transfer.
 	 *
 	 * @return string|null The uuid of the transfer list a transfer created, null for the other answers.
 	 *
@@ -76,7 +77,13 @@ class ReviewOutcomeService {
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function apply(string $answer, string $entryUuid, string $reason, ?string $newDate = null): ?string {
+	public function apply(
+		string $answer,
+		string $entryUuid,
+		string $reason,
+		?string $newDate = null,
+		?string $reviewer = null,
+	): ?string {
 		if ($answer === DestructionReviewService::ANSWER_DESTROY) {
 			// Nothing to do to the record yet. It stays on the list, and the
 			// list's approval is what queues DestructionExecutionJob.
@@ -88,7 +95,7 @@ class ReviewOutcomeService {
 			return null;
 		}
 
-		return $this->transfer(entryUuid: $entryUuid);
+		return $this->transfer(entryUuid: $entryUuid, reason: $reason, reviewer: $reviewer);
 	}//end apply()
 
 	/**
@@ -152,13 +159,15 @@ class ReviewOutcomeService {
 	/**
 	 * Hand a record to the e-Depot transfer path.
 	 *
-	 * @param string $entryUuid The uuid of the record.
+	 * @param string      $entryUuid The uuid of the record.
+	 * @param string      $reason    Why the reviewer handed it over.
+	 * @param string|null $reviewer  Who decided, written onto the record's own outcome.
 	 *
 	 * @return string The uuid of the transfer list the record was put on.
 	 *
 	 * @throws RuntimeException When the record cannot be read or the list cannot be made.
 	 */
-	private function transfer(string $entryUuid): string {
+	private function transfer(string $entryUuid, string $reason, ?string $reviewer): string {
 		try {
 			$object = $this->objectMapper->find($entryUuid, null, null, false, false, false);
 		} catch (Throwable $e) {
@@ -179,6 +188,33 @@ class ReviewOutcomeService {
 		if (is_string($uuid) === false || $uuid === '') {
 			throw new RuntimeException(
 				sprintf('Cannot transfer %s: the transfer list came back without a uuid', $entryUuid)
+			);
+		}
+
+		// 🔴 THE RECORD SAYS WHAT HAPPENED TO IT, not only the list. A transfer
+		// recorded on the destruction list alone leaves the dossier itself
+		// unable to answer "were you handed over, and by whom", which is the
+		// question an auditor puts to the object and not to the worklist.
+		$retention = ($object->getRetention() ?? []);
+		if (is_array($retention) === false) {
+			$retention = [];
+		}
+
+		$retention['outcome'] = [
+			'kind' => 'transfer',
+			'at' => (new DateTimeImmutable())->format('c'),
+			'by' => $reviewer,
+			'reason' => $reason,
+			'transferListUuid' => $uuid,
+		];
+
+		$object->setRetention($retention);
+
+		try {
+			$this->objectMapper->update($object);
+		} catch (Throwable $e) {
+			throw new RuntimeException(
+				sprintf('Cannot transfer %s: the outcome could not be written (%s)', $entryUuid, $e->getMessage())
 			);
 		}
 
