@@ -5140,16 +5140,16 @@
         },
         {
             "name": "symfony/service-contracts",
-            "version": "v3.7.1",
+            "version": "v3.7.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/service-contracts.git",
-                "reference": "c0a284bab1ed8aa0417e3d69250ab437739563a0"
+                "reference": "15e6a07ec2a2c75ceb1b21dd98105ee8456d2257"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/service-contracts/zipball/c0a284bab1ed8aa0417e3d69250ab437739563a0",
-                "reference": "c0a284bab1ed8aa0417e3d69250ab437739563a0",
+                "url": "https://api.github.com/repos/symfony/service-contracts/zipball/15e6a07ec2a2c75ceb1b21dd98105ee8456d2257",
+                "reference": "15e6a07ec2a2c75ceb1b21dd98105ee8456d2257",
                 "shasum": ""
             },
             "require": {
@@ -5203,7 +5203,7 @@
                 "standards"
             ],
             "support": {
-                "source": "https://github.com/symfony/service-contracts/tree/v3.7.1"
+                "source": "https://github.com/symfony/service-contracts/tree/v3.7.3"
             },
             "funding": [
                 {
@@ -5223,7 +5223,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-16T09:55:08+00:00"
+            "time": "2026-07-27T15:39:01+00:00"
         },
         {
             "name": "symfony/string",
@@ -5794,16 +5794,16 @@
         },
         {
             "name": "theodo-group/llphant",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/LLPhant/LLPhant.git",
-                "reference": "0d90d8b8ba7983ee8c8b09acbb695239c3dc4b74"
+                "reference": "e0960be70ba716b9ee2f5ab8a59486b8be00b302"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/0d90d8b8ba7983ee8c8b09acbb695239c3dc4b74",
-                "reference": "0d90d8b8ba7983ee8c8b09acbb695239c3dc4b74",
+                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/e0960be70ba716b9ee2f5ab8a59486b8be00b302",
+                "reference": "e0960be70ba716b9ee2f5ab8a59486b8be00b302",
                 "shasum": ""
             },
             "require": {
@@ -5927,10 +5927,10 @@
                 "vectorstore"
             ],
             "support": {
-                "source": "https://github.com/LLPhant/LLPhant/tree/1.0.1",
+                "source": "https://github.com/LLPhant/LLPhant/tree/1.0.2",
                 "issues": "https://github.com/LLPhant/LLPhant/issues"
             },
-            "time": "2026-07-26T08:26:01+00:00"
+            "time": "2026-09-07T10:10:30+00:00"
         },
         {
             "name": "twig/twig",
