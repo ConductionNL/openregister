@@ -72,7 +72,11 @@ class ObjectFavouriteMapper extends QBMapper {
 	 * @param IDBConnection $db Database connection.
 	 */
 	public function __construct(IDBConnection $db) {
-		parent::__construct($db, self::TABLE, ObjectFavourite::class);
+		parent::__construct(
+			db: $db,
+			tableName: self::TABLE,
+			entityClass: ObjectFavourite::class
+		);
 
 	}//end __construct()
 

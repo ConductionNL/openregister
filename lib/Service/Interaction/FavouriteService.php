@@ -211,7 +211,13 @@ class FavouriteService {
 	 * Called after any write, because a memo that survives its own invalidation
 	 * is how a star renders as unstarred immediately after being placed.
 	 *
+	 * Public because the write path calls it, and because a leaf app that
+	 * stars through the service inside a request that already rendered a list
+	 * needs the same escape.
+	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
 	 */
 	public function forgetMemo(): void {
 		$this->starredByCallerMemo = null;

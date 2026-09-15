@@ -69,7 +69,11 @@ class ObjectViewMapper extends QBMapper {
 	 * @param IDBConnection $db Database connection.
 	 */
 	public function __construct(IDBConnection $db) {
-		parent::__construct($db, self::TABLE, ObjectView::class);
+		parent::__construct(
+			db: $db,
+			tableName: self::TABLE,
+			entityClass: ObjectView::class
+		);
 
 	}//end __construct()
 
