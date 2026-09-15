@@ -49,6 +49,7 @@ use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
@@ -60,6 +61,7 @@ use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
+use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\App\IAppManager;
@@ -1137,6 +1139,52 @@ class ObjectsController extends Controller {
 	}//end warnUnknownFilterKeys()
 
 	/**
+	 * Refuse a `_search` term the boolean parser cannot read.
+	 *
+	 * A term with an unbalanced bracket, a dangling operator or an unterminated
+	 * quote has one correct answer, and it is not "no results". Evaluating it as
+	 * a literal string returns zero rows, which on screen is indistinguishable
+	 * from a search that legitimately found nothing.
+	 *
+	 * @param array $params The raw request parameters.
+	 *
+	 * @phpstan-param array<string, mixed> $params
+	 *
+	 * @psalm-param array<string, mixed> $params
+	 *
+	 * @return JSONResponse|null A 400 naming the fault, or null when the term reads.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function refuseMalformedSearchTerm(array $params): ?JSONResponse {
+		$search = ($params['_search'] ?? null);
+		if (is_string($search) === false || trim($search) === '') {
+			return null;
+		}
+
+		$parser = new SearchTermParser();
+		$term = trim($search);
+		if ($parser->needsParsing(term: $term) === false) {
+			return null;
+		}
+
+		try {
+			$parser->parse(term: $term);
+		} catch (SearchTermSyntaxException $exception) {
+			return new JSONResponse(
+				data: [
+					'error' => $exception->getMessage(),
+					'position' => $exception->getPosition(),
+					'term' => $exception->getTerm(),
+				],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+	}//end refuseMalformedSearchTerm()
+
+	/**
 	 * Retrieves a list of all objects for a specific register and schema
 	 *
 	 * This method returns a paginated list of objects that match the specified register and schema.
@@ -1188,6 +1236,16 @@ class ObjectsController extends Controller {
 
 		// Check if multiple schemas are requested via query parameters.
 		$params = $this->request->getParams();
+
+		// A malformed boolean term is refused here, before any source is chosen.
+		// Deeper down the facet builders catch \Exception broadly, so a refusal
+		// raised in the mapper could be swallowed into an empty facet list and
+		// the caller would see the "found nothing" this change exists to remove.
+		$refusal = $this->refuseMalformedSearchTerm(params: $params);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		$schemasParam = $params['schemas'] ?? null;
 		$registersParam = $params['registers'] ?? null;
 
