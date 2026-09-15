@@ -385,6 +385,8 @@ class NotificationTemplateRegistry {
 	 * @param string $event The event name.
 	 *
 	 * @return boolean True when the event is in the inventory.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function knows(string $event): bool {
 		return array_key_exists($event, $this->events);
@@ -412,6 +414,8 @@ class NotificationTemplateRegistry {
 	 * @param string $event The event name.
 	 *
 	 * @return array<string, array{subject: string, body: string}>|null The per-locale template, or null when there is none.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function templateFor(string $event): ?array {
 		return ($this->editedTemplate(event: $event) ?? $this->shipped[$event] ?? null);

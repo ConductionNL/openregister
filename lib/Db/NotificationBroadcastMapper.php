@@ -20,8 +20,6 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
- *
- * @template-extends QBMapper<NotificationBroadcast>
  */
 
 declare(strict_types=1);
@@ -30,10 +28,22 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
+/**
+ * Class NotificationBroadcastMapper.
+ *
+ * @method NotificationBroadcast insert(Entity $entity)
+ * @method NotificationBroadcast update(Entity $entity)
+ * @method NotificationBroadcast delete(Entity $entity)
+ *
+ * @template-extends QBMapper<NotificationBroadcast>
+ *
+ * @psalm-suppress PossiblyUnusedMethod
+ */
 class NotificationBroadcastMapper extends QBMapper {
 	/**
 	 * Constructor.

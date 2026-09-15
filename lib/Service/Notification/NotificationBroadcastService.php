@@ -120,6 +120,8 @@ class NotificationBroadcastService {
 	 * @param DateTime|null $asOf The moment, defaulting to now.
 	 *
 	 * @return array<int, NotificationBroadcast> The rows, oldest first.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function activeFor(string $userId, ?DateTime $asOf = null): array {
 		return $this->broadcasts->findUnseenFor(userId: $userId, asOf: $asOf);
@@ -132,6 +134,8 @@ class NotificationBroadcastService {
 	 * @param string $userId The reader.
 	 *
 	 * @return boolean True when the broadcast exists and the receipt stands.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function acknowledge(string $broadcastUuid, string $userId): bool {
 		if ($this->broadcasts->findByUuid(uuid: $broadcastUuid) === null) {
@@ -152,6 +156,8 @@ class NotificationBroadcastService {
 	 * @param int|null $offset Result offset.
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function listAll(?int $limit = null, ?int $offset = null): array {
 		$rows = [];
@@ -170,6 +176,8 @@ class NotificationBroadcastService {
 	 * @param string $broadcastUuid The broadcast.
 	 *
 	 * @return boolean True when it was there and is now gone.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function withdraw(string $broadcastUuid): bool {
 		return $this->broadcasts->deleteByUuid(uuid: $broadcastUuid);

@@ -381,6 +381,8 @@ class NotificationPreferenceService {
 	 * @param string|null $scope The scope, or null for the user's global value.
 	 *
 	 * @return array<string, mixed>|null The decoded override, or null when none/invalid.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function getOverride(
 		string $userId,
@@ -428,6 +430,8 @@ class NotificationPreferenceService {
 	 * @param string|null $scope The scope, or null for the user's global value.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function setOverride(
 		string $userId,
@@ -715,6 +719,8 @@ class NotificationPreferenceService {
 	 * @param string $userId The user UID.
 	 *
 	 * @return array<int, array<string, mixed>> One entry per (schema, notification) pair.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function getEffectiveForUser(string $userId): array {
 		$entries = [];

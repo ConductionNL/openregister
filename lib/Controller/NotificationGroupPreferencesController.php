@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Group\ISubAdmin;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -52,8 +53,11 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param NotificationPreferenceService $preferenceService The three-layer preference resolver.
 	 * @param SchemaMapper $schemaMapper Mapper used to enumerate the notifications a group may hold defaults for.
-	 * @param IGroupManager $groupManager Group resolver, and the authority on who administers a group.
+	 * @param IGroupManager $groupManager Group resolver, and the authority on who is a Nextcloud administrator.
+	 * @param ISubAdmin $subAdmin The authority on who administers one particular group.
 	 * @param IUserSession $userSession Current-user session.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One dependency per authority the endpoint consults.
 	 */
 	public function __construct(
 		string $appName,
@@ -61,6 +65,7 @@ class NotificationGroupPreferencesController extends Controller {
 		private readonly NotificationPreferenceService $preferenceService,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IGroupManager $groupManager,
+		private readonly ISubAdmin $subAdmin,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -240,7 +245,7 @@ class NotificationGroupPreferencesController extends Controller {
 		}
 
 		try {
-			return $this->groupManager->getSubAdmin()->isSubAdminOfGroup($user, $group);
+			return $this->subAdmin->isSubAdminOfGroup($user, $group);
 		} catch (\Throwable $e) {
 			// Fail CLOSED: an unreadable sub-admin relation is not permission.
 			return false;

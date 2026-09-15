@@ -73,6 +73,13 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 *
+	 * @no-admin-idor-exempt The catalogue is the platform's own, identical for
+	 * every reader, and this method takes no caller-supplied identifier at all:
+	 * there is no object here to address somebody else's copy of. What it
+	 * returns is the text the platform sends and the variables each event
+	 * carries, which a schema author needs in order to write a rule. Editing it
+	 * is a different method and requires an administrator.
+	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */

@@ -1235,7 +1235,11 @@ final class NotificationAnnotationValidator {
 				continue;
 			}
 
-			if ($kind === 'outbound' && (string)($transport['handler'] ?? '') === '') {
+			// `outbound` is the only kind, so reaching here means it: the kind
+			// check above already refused everything else. Kept as one branch
+			// rather than two so adding a second kind adds its own guard here
+			// instead of silently inheriting this one.
+			if ((string)($transport['handler'] ?? '') === '') {
 				$errors[] = [
 					'code' => 'notification-transport-no-handler',
 					'message' => sprintf(
