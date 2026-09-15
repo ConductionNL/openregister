@@ -55,7 +55,7 @@ class Version1Date20260313130000Test extends TestCase {
 			->with($this->stringContains('No tables'));
 
 		$result = $this->migration->changeSchema($output, fn () => $schema, []);
-		$this->assertNull($result, 'Should return null when no changes needed');
+		$this->assertSame($schema, $result, 'Should hand the schema back so the migrateSchemaOnly() snapshot is reused');
 	}
 
 	/**
@@ -108,7 +108,7 @@ class Version1Date20260313130000Test extends TestCase {
 			->with($this->stringContains('No tables'));
 
 		$result = $this->migration->changeSchema($output, fn () => $schema, []);
-		$this->assertNull($result);
+		$this->assertSame($schema, $result);
 	}
 
 	/**
@@ -127,6 +127,6 @@ class Version1Date20260313130000Test extends TestCase {
 		$schema->method('hasTable')->with('openregister_objects')->willReturn(false);
 
 		$result = $this->migration->changeSchema($output, fn () => $schema, []);
-		$this->assertNull($result);
+		$this->assertSame($schema, $result);
 	}
 }

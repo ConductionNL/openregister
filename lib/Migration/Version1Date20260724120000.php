@@ -56,7 +56,7 @@ class Version1Date20260724120000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable('openregister_flow_runs') === true) {
 			$output->info(message: 'openregister_flow_runs already exists, skipping...');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_flow_runs');

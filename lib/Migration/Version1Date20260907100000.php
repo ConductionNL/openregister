@@ -104,7 +104,7 @@ class Version1Date20260907100000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: 'Added semantic version columns to flows and flow versions; the ordinal is unchanged.');

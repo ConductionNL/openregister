@@ -69,7 +69,7 @@ class Version1Date20260612000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_notification_dedupe') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_notification_dedupe');

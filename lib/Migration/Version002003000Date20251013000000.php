@@ -195,6 +195,6 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep {
 		}//end if
 
 		$output->info(message: 'Table openregister_vectors already exists');
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

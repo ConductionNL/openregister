@@ -237,6 +237,6 @@ class Version1Date20251101120000 extends SimpleMigrationStep {
 
 		$output->info(message: 'ℹ️  Applications table already exists, skipping...');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

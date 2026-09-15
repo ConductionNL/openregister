@@ -141,7 +141,7 @@ class Version1Date20260901120000Test extends TestCase {
 		$schema->method('getTable')->willReturn($present);
 
 		$migration = new Version1Date20260901120000($this->db);
-		$this->assertNull($migration->changeSchema($this->createMock(IOutput::class), static fn (): ISchemaWrapper => $schema, []));
+		$this->assertSame($schema, $migration->changeSchema($this->createMock(IOutput::class), static fn (): ISchemaWrapper => $schema, []));
 	}//end testChangeSchemaIsANoOpWhenEverythingExists()
 
 	public function testBackFillSeedsOneStreamPerMarkedPlaceAndStampsSteps(): void {

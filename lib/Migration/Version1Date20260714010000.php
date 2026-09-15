@@ -68,13 +68,13 @@ class Version1Date20260714010000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_approval_steps') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(tableName: 'openregister_approval_steps');
 
 		if ($table->hasColumn(name: 'requester_id') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

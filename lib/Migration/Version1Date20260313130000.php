@@ -149,7 +149,7 @@ class Version1Date20260313130000 extends SimpleMigrationStep {
 
 		if ($changed === false) {
 			$output->info('No tables with published/depublished columns found');
-			return null;
+			return $schema;
 		}
 
 		return $schema;
