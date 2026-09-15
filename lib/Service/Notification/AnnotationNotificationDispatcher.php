@@ -2204,38 +2204,6 @@ class AnnotationNotificationDispatcher {
 	}//end fieldChangeConditionMatches()
 
 	/**
-	 * Resolve a `recipients` block to a flat list of UIDs.
-	 *
-	 * @param array<int, array<string, mixed>> $recipientsSpec The declared recipients block.
-	 * @param array<string, mixed> $data Object payload (used by `field` resolvers).
-	 * @param ObjectEntity|null $object Optional owning object (needed for ACL/expression kinds).
-	 * @param array<string, mixed> $context Per-event context.
-	 *
-	 * @return array<int, string>
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) resolveRecipients() handles five recipient kinds
-	 * (users, groups, field, acl-read, acl-manage) plus expression evaluation, deduplication, and
-	 * exclusion; each kind requires its own resolution logic and must run in one pass to produce a
-	 * deduplicated uid list.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each recipient entry is dispatched by kind; within
-	 * each kind there are null-guards and type checks — all are required branches of the spec's
-	 * recipient model.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Combinations of recipient kinds, expression evaluation,
-	 * null-guards, and exclusion list produce many paths; each is required by the spec's
-	 * recipient-resolution contract.
-	 */
-	private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = []): array {
-		// The subsystem's ONE recipient resolver — the same class the flow
-		// messaging service expands its node recipients through.
-		return $this->recipientResolver()->resolve(
-			recipientsSpec: $recipientsSpec,
-			data: $data,
-			object: $object,
-			context: $context
-		);
-	}//end resolveRecipients()
-
-	/**
 	 * Read a schema's `authorization.roles` assignment as a role-to-groups map.
 	 *
 	 * The same map `PermissionHandler` expands for a lifecycle transition, read
