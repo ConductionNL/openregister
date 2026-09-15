@@ -61,9 +61,9 @@ final class Version1Date20260911060000 extends SimpleMigrationStep {
 	 * @param Closure(): ISchemaWrapper $schemaClosure The schema closure.
 	 * @param array<string, mixed> $options Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
+	 * @return ISchemaWrapper The changed schema.
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/* @var ISchemaWrapper $schema The schema wrapper. */
 		$schema = $schemaClosure();
 
