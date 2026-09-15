@@ -574,6 +574,96 @@ class PermissionHandlerDenyTest extends TestCase {
 	}//end loggerRecordingWarningsInto()
 
 	/**
+	 * A logger capturing the info lines, where the refusals are recorded.
+	 *
+	 * @param array<int, array{message: string, context: array}> $records Filled with every info line.
+	 *
+	 * @return LoggerInterface The recorder.
+	 */
+	private function loggerRecordingInfoInto(array &$records): LoggerInterface {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('info')->willReturnCallback(
+			function (string|\Stringable $message, array $context = []) use (&$records): void {
+				$records[] = ['message' => (string)$message, 'context' => $context];
+			}
+		);
+
+		return $logger;
+	}//end loggerRecordingInfoInto()
+
+	/**
+	 * 🔴 A refusal names the rule that produced it, not only the verdict.
+	 *
+	 * Task 3.3. A denial log carrying the verdict alone tells an administrator
+	 * that somebody was refused and leaves them to guess which of four levels
+	 * did it. The rule for the verb is the thing they open, so the rule is what
+	 * the line carries.
+	 *
+	 * @return void
+	 */
+	public function testARefusalWithoutADenyStillNamesTheRuleThatDecidedIt(): void {
+		$records = [];
+		$handler = $this->handlerInMode(
+			'ana',
+			['gasten'],
+			DenyEnforcementMode::MODE_ENFORCING,
+			$this->loggerRecordingInfoInto($records)
+		);
+
+		$this->assertFalse(
+			$handler->hasPermission($this->schemaWith(['update' => ['behandelaars']]), 'update', 'ana')
+		);
+
+		$refusals = array_values(
+			array_filter(
+				$records,
+				static fn (array $record): bool => str_contains($record['message'], 'Action refused')
+			)
+		);
+
+		$this->assertCount(1, $refusals);
+		$this->assertSame(['behandelaars'], $refusals[0]['context']['rule']);
+		$this->assertSame('update', $refusals[0]['context']['action']);
+		$this->assertSame('ana', $refusals[0]['context']['userId']);
+		$this->assertSame(['gasten'], $refusals[0]['context']['principals']);
+		$this->assertStringContainsString('does not name this caller', $refusals[0]['context']['reason']);
+	}//end testARefusalWithoutADenyStillNamesTheRuleThatDecidedIt()
+
+	/**
+	 * A verb no block mentions is refused for a different reason, and says so.
+	 *
+	 * "Nobody granted you this" and "the rule for this verb does not list you"
+	 * send an administrator to two different screens, so the line separates
+	 * them rather than reporting one refusal twice.
+	 *
+	 * @return void
+	 */
+	public function testARefusalSaysWhenNoRuleNamesTheVerbAtAll(): void {
+		$records = [];
+		$handler = $this->handlerInMode(
+			'ana',
+			['gasten'],
+			DenyEnforcementMode::MODE_ENFORCING,
+			$this->loggerRecordingInfoInto($records)
+		);
+
+		$this->assertFalse(
+			$handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'update', 'ana')
+		);
+
+		$refusals = array_values(
+			array_filter(
+				$records,
+				static fn (array $record): bool => str_contains($record['message'], 'Action refused')
+			)
+		);
+
+		$this->assertCount(1, $refusals);
+		$this->assertNull($refusals[0]['context']['rule']);
+		$this->assertStringContainsString('names this verb', $refusals[0]['context']['reason']);
+	}//end testARefusalSaysWhenNoRuleNamesTheVerbAtAll()
+
+	/**
 	 * The staged-denial lines among everything else the handler logged.
 	 *
 	 * @param array<int, array{message: string, context: array}> $records Every captured warning.
