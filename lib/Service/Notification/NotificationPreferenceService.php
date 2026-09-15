@@ -717,12 +717,13 @@ class NotificationPreferenceService {
 	 * for inaccessible schemas.
 	 *
 	 * @param string $userId The user UID.
+	 * @param array<int, string> $scopes Candidate scopes to answer for, narrowest first; empty for the global answer.
 	 *
 	 * @return array<int, array<string, mixed>> One entry per (schema, notification) pair.
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
-	public function getEffectiveForUser(string $userId): array {
+	public function getEffectiveForUser(string $userId, array $scopes = []): array {
 		$entries = [];
 
 		// Read once for the whole enumeration rather than once per rule: a
@@ -766,7 +767,7 @@ class NotificationPreferenceService {
 					userId: $userId,
 					schemaSlug: $schemaSlug,
 					notificationKey: (string)$key,
-					scopes: [],
+					scopes: $scopes,
 					groupIds: $groupIds
 				);
 

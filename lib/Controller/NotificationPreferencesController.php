@@ -10,6 +10,7 @@
  * `(schema, notification)` override in Nextcloud per-user app config.
  *
  *   GET /api/notification-preferences
+ *       optional query: ?scope=<scope>
  *       → every notification the current user's accessible schemas declare,
  *         merged over the three layers — schema default, group default, the
  *         user's own value — with `source` naming the layer that decided and
@@ -81,7 +82,17 @@ class NotificationPreferencesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		$items = $this->preferenceService->getEffectiveForUser(userId: $userId);
+		// An optional `scope` answers the same list AS IT APPLIES in one
+		// register, schema or declared domain, so a screen that is showing one
+		// case domain shows the preference that domain actually gets rather
+		// than the reader's global one.
+		$scopes = [];
+		$scope = $this->nonEmptyString(value: $this->request->getParam('scope'));
+		if ($scope !== null) {
+			$scopes[] = $scope;
+		}
+
+		$items = $this->preferenceService->getEffectiveForUser(userId: $userId, scopes: $scopes);
 		return new JSONResponse(data: ['results' => $items, 'total' => count($items)]);
 	}//end index()
 
