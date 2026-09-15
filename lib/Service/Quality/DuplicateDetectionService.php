@@ -44,9 +44,23 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Finds scored duplicate-candidate pairs in a register/schema.
+ * Finds scored duplicate-candidate pairs in a register/schema, and scores an
+ * unsaved candidate against the stored set through the same rules.
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-6
+ * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 61 against a threshold of 50,
+ *   and the eleven points are the price of the thing this class exists to
+ *   guarantee. It now has TWO entry points over ONE rule engine: a sweep over
+ *   stored pairs and a check of an unsaved candidate. Splitting them into two
+ *   services is the obvious way to get under the threshold and the wrong one:
+ *   the whole point is that a warning shown at intake and a duplicate found by
+ *   a later sweep agree on what a duplicate is, and they can only agree while
+ *   they share `resolveConfig()`, `blockingTokenFor()`, `resolvePath()` and
+ *   `scoreAgainstRules()`. Two classes would have two copies of that agreement
+ *   and no way to notice when they drifted. Same reasoning MergeService records
+ *   for the same rule.
  */
 class DuplicateDetectionService {
 	/**
@@ -62,6 +76,17 @@ class DuplicateDetectionService {
 	 * @var int
 	 */
 	private const MAX_CANDIDATES = 1000;
+
+	/**
+	 * Per-field similarity at or above which the field itself counts as matched.
+	 *
+	 * Named because two readers now depend on it: the pair list's `matchedOn`
+	 * and the check's `matchedRules`. A literal in two places is a literal
+	 * that drifts.
+	 *
+	 * @var float
+	 */
+	private const FIELD_MATCH_SIMILARITY = 0.9;
 
 	/**
 	 * The shared register-scoped schema resolver.
@@ -146,6 +171,136 @@ class DuplicateDetectionService {
 
 		return $pairs;
 	}//end findDuplicates()
+
+	/**
+	 * Score an UNSAVED candidate body against the stored objects of a
+	 * register/schema, using the same rules, the same normalisation and the
+	 * same cut-off {@see findDuplicates()} uses on stored pairs.
+	 *
+	 * Nothing is written. The candidate never becomes an object, is never
+	 * given a uuid, and is never handed to `ObjectService`: it is compared in
+	 * memory against what a read returns.
+	 *
+	 * BOUNDED like the sweep (design D-3): the same capped read, and then the
+	 * same blocking, so the two can never disagree about which objects were
+	 * even eligible to pair. The blocking runs HERE rather than as object
+	 * filters on the read, and that is deliberate: a blocking token is
+	 * NORMALISED ({@see SimilarityCalculator::blockingToken()}) while an
+	 * object filter matches the stored value exactly, so pushing the
+	 * candidate's raw value down as a filter would quietly drop every
+	 * duplicate whose casing or spacing differs — which is most of them, and
+	 * exactly the ones this exists to find.
+	 *
+	 * A candidate that cannot form a token (a blocking field it leaves empty)
+	 * has no bucket to sit in and therefore no match — the same treatment
+	 * {@see partition()} gives a stored object with an empty token.
+	 *
+	 * @param int|string $register Register id, uuid or slug — the boundary the schema resolves inside.
+	 * @param int|string $schema Schema id, uuid or slug.
+	 * @param array<string, mixed> $candidate The unsaved body.
+	 * @param array<int, mixed>|null $matchRules Optional caller-supplied rules; the annotation's when null.
+	 * @param float|null $threshold Optional cut-off; the annotation's, then {@see DEFAULT_THRESHOLD}, when null.
+	 *
+	 * @return array<int, array{
+	 *   uuid: string,
+	 *   score: float,
+	 *   matchedOn: array<int, string>,
+	 *   matchedRules: array<int, array{field: string, method: string, similarity: float}>
+	 * }> Matches, highest score first. Empty when the schema declares no usable rules.
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	public function checkCandidate($register, $schema, array $candidate, ?array $matchRules = null, ?float $threshold = null): array {
+		$config = $this->resolveConfig(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold);
+		if ($config === null) {
+			return [];
+		}
+
+		[$rules, $blockingKeys, $cutOff] = $config;
+
+		$candidateToken = '';
+		if (count($blockingKeys) > 0) {
+			$candidateToken = $this->blockingTokenFor(data: $candidate, keys: $blockingKeys);
+			if ($candidateToken === '') {
+				// The candidate leaves a blocking field empty, so it belongs to
+				// no bucket. Returning [] is the same judgement partition()
+				// makes about a stored object with an empty token.
+				return [];
+			}
+		}
+
+		$objects = $this->loadCandidates(register: $register, schema: $schema);
+
+		$matches = [];
+		foreach ($objects as $object) {
+			if ($candidateToken !== '') {
+				$storedToken = $this->blockingTokenFor(data: ($object->getObject() ?? []), keys: $blockingKeys);
+				if ($storedToken !== $candidateToken) {
+					continue;
+				}
+			}
+
+			$result = $this->scoreAgainstRules(
+				dataA: $candidate,
+				dataB: ($object->getObject() ?? []),
+				rules: $rules
+			);
+
+			if ($result['score'] < $cutOff) {
+				continue;
+			}
+
+			$matches[] = [
+				'uuid' => (string)$object->getUuid(),
+				'score' => $result['score'],
+				'matchedOn' => $result['matchedOn'],
+				'matchedRules' => $result['matchedRules'],
+			];
+		}
+
+		usort($matches, static fn (array $left, array $right) => $right['score'] <=> $left['score']);
+
+		return $matches;
+	}//end checkCandidate()
+
+	/**
+	 * The cut-off a register/schema applies, so a caller that needs to know
+	 * whether a match is "strong" asks the same question the scorer answered.
+	 *
+	 * @param int|string $register Register reference.
+	 * @param int|string $schema Schema reference.
+	 * @param float|null $threshold Caller override, when supplied.
+	 *
+	 * @return float The effective threshold.
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function effectiveThreshold($register, $schema, ?float $threshold = null): float {
+		$config = $this->resolveConfig(register: $register, schema: $schema, matchRules: null, threshold: $threshold);
+		if ($config === null) {
+			return self::DEFAULT_THRESHOLD;
+		}
+
+		return $config[2];
+	}//end effectiveThreshold()
+
+	/**
+	 * Read the `x-openregister-dedup` annotation of a register/schema pair.
+	 *
+	 * Public because the create policy needs the DECLARATION (`onCreate`,
+	 * `overrideGroups`) and not the scoring, and reading the schema a second
+	 * time in a second place is how two readers of one annotation drift apart.
+	 *
+	 * @param int|string $register Register reference — the boundary.
+	 * @param int|string $schema Schema reference.
+	 *
+	 * @return array<string, mixed> The annotation, empty when absent or unresolvable.
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function dedupAnnotation($register, $schema): array {
+		return $this->loadAnnotation(register: $register, schema: $schema);
+	}//end dedupAnnotation()
 
 	/**
 	 * Resolve effective rules, blocking keys and threshold.
@@ -269,7 +424,6 @@ class DuplicateDetectionService {
 	 *
 	 * @param int|string $register Register reference.
 	 * @param int|string $schema Schema reference.
-	 *
 	 * @return array<int, ObjectEntity>
 	 */
 	private function loadCandidates($register, $schema): array {
@@ -424,12 +578,47 @@ class DuplicateDetectionService {
 	 * @spec openspec/changes/mdm-dedup-nested-paths/tasks.md#task-2
 	 */
 	private function scorePair(ObjectEntity $a, ObjectEntity $b, array $rules): array {
-		$dataA = ($a->getObject() ?? []);
-		$dataB = ($b->getObject() ?? []);
+		$result = $this->scoreAgainstRules(
+			dataA: ($a->getObject() ?? []),
+			dataB: ($b->getObject() ?? []),
+			rules: $rules
+		);
 
+		return [
+			'objectA' => (string)$a->getUuid(),
+			'objectB' => (string)$b->getUuid(),
+			'score' => $result['score'],
+			'matchedOn' => $result['matchedOn'],
+		];
+	}//end scorePair()
+
+	/**
+	 * Score two PAYLOADS against the match rules.
+	 *
+	 * The one scorer both entry points run: {@see scorePair()} for two stored
+	 * objects, {@see checkCandidate()} for an unsaved body against a stored
+	 * one. Neither knows anything about the other's input, which is the point
+	 * — a warning shown at intake and a duplicate found by a later sweep have
+	 * to agree on what a duplicate is, and they can only agree if there is
+	 * one definition.
+	 *
+	 * @param array<string, mixed> $dataA First payload.
+	 * @param array<string, mixed> $dataB Second payload.
+	 * @param array<int, array<string, mixed>> $rules Match rules.
+	 *
+	 * @return array{
+	 *   score: float,
+	 *   matchedOn: array<int, string>,
+	 *   matchedRules: array<int, array{field: string, method: string, similarity: float}>
+	 * }
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	private function scoreAgainstRules(array $dataA, array $dataB, array $rules): array {
 		$weightedSum = 0.0;
 		$totalWeight = 0.0;
 		$matchedOn = [];
+		$matchedRules = [];
 
 		foreach ($rules as $rule) {
 			$field = (string)($rule['field'] ?? '');
@@ -452,8 +641,13 @@ class DuplicateDetectionService {
 			$weightedSum += ($sim * $weight);
 			$totalWeight += $weight;
 
-			if ($sim >= 0.9) {
+			if ($sim >= self::FIELD_MATCH_SIMILARITY) {
 				$matchedOn[] = $field;
+				$matchedRules[] = [
+					'field' => $field,
+					'method' => $method,
+					'similarity' => round($sim, 4),
+				];
 			}
 		}//end foreach
 
@@ -463,10 +657,9 @@ class DuplicateDetectionService {
 		}
 
 		return [
-			'objectA' => (string)$a->getUuid(),
-			'objectB' => (string)$b->getUuid(),
 			'score' => $score,
 			'matchedOn' => array_values(array_unique($matchedOn)),
+			'matchedRules' => $matchedRules,
 		];
-	}//end scorePair()
+	}//end scoreAgainstRules()
 }//end class

@@ -108,6 +108,13 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					<Cog :size="16" />
 					{{ t('openregister', 'Workflows') }}
 				</button>
+				<button
+					class="tabButton"
+					:class="[{ active: activeTab === 'rules' }]"
+					@click="activeTab = 'rules'">
+					<Gavel :size="16" />
+					{{ t('openregister', 'Rules') }}
+				</button>
 			</div>
 
 			<!-- Calendar Provider Tab -->
@@ -118,6 +125,11 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 			<!-- Workflows Tab — execution history, scheduled workflows, approval chains -->
 			<SchemaWorkflowTab
 				v-if="activeTab === 'workflows'"
+				:schema="schemaStore.schemaItem" />
+
+			<!-- Rules Tab: everything that runs on a save, in the order it runs -->
+			<SchemaRulesTab
+				v-if="activeTab === 'rules'"
 				:schema="schemaStore.schemaItem" />
 
 			<!-- Dashboard Tab (original content) -->
@@ -254,12 +266,14 @@ import ChartBox from 'vue-material-design-icons/ChartBox.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
+import Gavel from 'vue-material-design-icons/Gavel.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
+import SchemaRulesTab from './SchemaRulesTab.vue'
 
 export default {
 	name: 'SchemaDetails',
@@ -280,8 +294,10 @@ export default {
 		CalendarMonth,
 		ChartBox,
 		Cog,
+		Gavel,
 		CalendarProviderTab,
 		SchemaWorkflowTab,
+		SchemaRulesTab,
 	},
 
 	data() {

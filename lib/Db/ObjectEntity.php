@@ -637,6 +637,24 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $registryState = null;
 
 	/**
+	 * The lifecycle state's field rules for this object and reader
+	 * (`field-rules-by-state`).
+	 *
+	 * Transient property populated by the render layer from
+	 * `PropertyRbacHandler::stateFieldRulesFor()` — shape:
+	 *   `['state' => 'closed', 'hidden' => [...], 'readOnly' => [...],
+	 *      'required' => [...]]`.
+	 * Not persisted on this entity: the rules are declared on the SCHEMA and
+	 * re-resolved per read, because they depend on who is asking and on the
+	 * object's own values. Exposed in @self as `fieldRules`, and omitted
+	 * entirely for a schema that declares no `x-openregister-lifecycle.states`
+	 * block.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $fieldRules = null;
+
+	/**
 	 * Whether the current user follows this object (`object-watchers`).
 	 *
 	 * Transient property populated by the render layer from
@@ -686,6 +704,21 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var array<string, int>|null
 	 */
 	protected ?array $unreadCounts = null;
+
+	/**
+	 * Whether the current user has starred this object (`favourites-and-recent`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `FavouriteService::isStarredByCaller()`. Not persisted: a star is
+	 * per-user, per-object state living in `openregister_favourites`, which is
+	 * what keeps starring an object out of its own audit trail and versions.
+	 * Exposed in @self as `favourite`, and omitted for an anonymous read, where
+	 * there is no "you" to answer for and a hard false would read as "you have
+	 * not starred this", which is a different claim.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $favourite = null;
 
 	/**
 	 * AVG / GDPR Art 30 processing-activity override.
@@ -877,10 +910,36 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @param array<string, mixed>|null $state The subscription state mirror.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function setRegistryState(?array $state): void {
 		$this->registryState = $state;
 	}//end setRegistryState()
+
+	/**
+	 * Get the lifecycle state's field rules, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	public function getFieldRules(): ?array {
+		return $this->fieldRules;
+	}//end getFieldRules()
+
+	/**
+	 * Write the lifecycle state's field rules.
+	 *
+	 * Surfaced in the @self envelope as `fieldRules` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $rules The resolved hidden, read-only and required lists.
+	 *
+	 * @return void
+	 */
+	public function setFieldRules(?array $rules): void {
+		$this->fieldRules = $rules;
+	}//end setFieldRules()
 
 	/**
 	 * Write the current user's follow marker.
@@ -955,6 +1014,26 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setUnreadCounts(?array $counts): void {
 		$this->unreadCounts = $counts;
 	}//end setUnreadCounts()
+
+	/**
+	 * Write the current user's favourite marker.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `favourite` by getObjectArray().
+	 *
+	 * @param boolean|null $favourite Whether the current user has starred the object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	public function setFavourite(?bool $favourite): void {
+		$this->favourite = $favourite;
+	}//end setFavourite()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1378,11 +1457,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   into one date.
 		// - registry: the registry subscription state, absent for an object
 		//   that never requested one.
+		// - fieldRules: what the object's lifecycle state hides, freezes and
+		//   demands for this reader, absent when the schema declares none.
 		// - watching, watcherCount: the reader's own follow state and the size
 		//   of the audience (`object-watchers`).
 		// - unread: whether the reader has seen this object since it last
 		//   changed (`object-read-state`). Absent for an anonymous read, where
 		//   there is no "you" to answer for.
+		// - favourite: whether the reader has starred this object
+		//   (`favourites-and-recent`). Absent for an anonymous read, for the
+		//   same reason unread is.
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
@@ -1393,9 +1477,11 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'_retention'              => $this->archivalRetention,
 			'_clocks'                 => $this->retentionClocks,
 			'registry'                => $this->registryState,
+			'fieldRules'              => $this->fieldRules,
 			'watching'                => $this->watching,
 			'watcherCount'            => $this->watcherCount,
 			'unread'                  => $this->unread,
+			'favourite'               => $this->favourite,
 		];
 
 		foreach ($transient as $key => $value) {

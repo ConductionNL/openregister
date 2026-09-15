@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * Proves the save-side preserve rule is actually WIRED INTO the update path, not merely
@@ -51,6 +52,8 @@ use Twig\Loader\ArrayLoader;
  * catch and the isolated tests would not.
  */
 class SaveObjectWriteOnlyPreserveTest extends TestCase {
+	use BuildsStateFieldRuleResolver;
+
 	private SaveObject $handler;
 	private SchemaMapper $schemaMapper;
 
@@ -64,7 +67,8 @@ class SaveObjectWriteOnlyPreserveTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))
 		);
 
 		$this->handler = new SaveObject(

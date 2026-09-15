@@ -16,21 +16,20 @@ lists for the current user and state.
 - **GIVEN** a lifecycle whose state `closed` requires `outcome` and an open object without one
 - **WHEN** a user transitions it to `closed`
 - **THEN** the response is 422 naming `outcome` and the object stays `open`
-- @e2e exclude {proposal only; task 3.1 adds tests/e2e/ci/field-rules-by-state.spec.ts when the form reads the rules}
 
 #### Scenario: a closed object's decision is read only for handlers
 
 - **GIVEN** state `closed` marks `decision` read only for group `handlers` and a handler
 - **WHEN** the handler changes `decision` on a closed object
 - **THEN** the response is 422 naming `decision`, and `@self.fieldRules.readOnly` on the read contains `decision`
-- @e2e exclude {readOnly path, covered by SaveObject and RenderObject unit tests}
+- @e2e exclude {readOnly refusal asserted in tests/Unit/Listener/StateFieldRuleListenerTest.php::testAClosedObjectsDecisionIsReadOnlyForHandlers, the published hint in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testAGroupScopedRuleAppliesToAMember}
 
 #### Scenario: a hidden field is absent for the role and present for another
 
 - **GIVEN** state `intake` hides `internalNote` for group `frontdesk`
 - **WHEN** a front desk user and a handler read the same object
 - **THEN** the front desk user's response lacks `internalNote` and the handler's holds it
-- @e2e exclude {stripping, covered by PropertyRbacHandler unit tests}
+- @e2e exclude {stripping asserted in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testHiddenRulesAreScopedToTheirGroup and ::testAHandlerKeepsTheFieldTheFrontDeskLoses}
 
 ### Requirement: A field rule may be conditional on the object's own data
 
@@ -59,4 +58,4 @@ apply to this object as it stands, not the rules that could apply.
 - **GIVEN** a rule whose condition reads a property authored through an extending form
 - **WHEN** the object is saved
 - **THEN** the condition is evaluated against that property's value
-- @e2e exclude {evaluator, covered by unit tests}
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testAConditionReadsAPropertyTheLifecycleDoesNotDeclare}

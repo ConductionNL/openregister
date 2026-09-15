@@ -140,8 +140,58 @@ class DataSubjectRequestService {
 	 * @return array<int, array{object: array, gdprEntities: array}>
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function findSubjectData(
+		string $subjectId,
+		?string $type = null,
+		string $mode = 'exact',
+		bool $rbac = true,
+		bool $multitenancy = true,
+	): array {
+		$envelopes = [];
+		$hits = $this->findSubjectObjects(
+			subjectId: $subjectId,
+			type: $type,
+			mode: $mode,
+			rbac: $rbac,
+			multitenancy: $multitenancy
+		);
+
+		foreach ($hits as $hit) {
+			$envelopes[] = [
+				'object' => $hit['object']->jsonSerialize(),
+				'gdprEntities' => $hit['gdprEntities'],
+			];
+		}
+
+		return $envelopes;
+	}//end findSubjectData()
+
+	/**
+	 * The same cross-register discovery, handing back the loaded entities.
+	 *
+	 * {@see findSubjectData()} serialises every hit, which is what an HTTP
+	 * caller wants and exactly what a caller that has to ASK something of the
+	 * object cannot use: a hold, a schema and a destruction scope are all
+	 * questions of the ObjectEntity, not of its json. The erasure preview
+	 * needs those, so the discovery it shares with the export is exposed here
+	 * once rather than copied with the join.
+	 *
+	 * @param string $subjectId Subject identifier value (email, …).
+	 * @param string|null $type Optional GdprEntity type filter.
+	 * @param string $mode `exact` (default) or `ilike`.
+	 * @param bool $rbac Apply RBAC scoping (default true).
+	 * @param bool $multitenancy Apply tenant scoping (default true).
+	 *
+	 * @return array<int, array{object: ObjectEntity, gdprEntities: array}> The loaded hits.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function findSubjectObjects(
 		string $subjectId,
 		?string $type = null,
 		string $mode = 'exact',
@@ -155,21 +205,48 @@ class DataSubjectRequestService {
 
 		$grouped = $this->discover(subjectId: $subjectId, type: $type, mode: $mode);
 
-		$envelopes = [];
+		$hits = [];
 		foreach ($grouped as $entry) {
 			$object = $this->loadObject(entry: $entry, rbac: $rbac, multitenancy: $multitenancy);
 			if ($object === null) {
 				continue;
 			}
 
-			$envelopes[] = [
-				'object' => $object->jsonSerialize(),
+			$hits[] = [
+				'object' => $object,
 				'gdprEntities' => $entry['gdprEntities'],
 			];
 		}
 
-		return $envelopes;
-	}//end findSubjectData()
+		return $hits;
+	}//end findSubjectObjects()
+
+	/**
+	 * Pseudonymise one already-loaded object, through the audited write path.
+	 *
+	 * The per-object half of {@see erase()}, so a caller that has already
+	 * decided WHICH objects to pseudonymise — the erasure preview has, and it
+	 * decided per object rather than per request — does not have to re-run the
+	 * discovery and re-make the decision to reach the same write.
+	 *
+	 * @param ObjectEntity $object The object to scrub.
+	 * @param string $subjectId Subject identifier value.
+	 * @param array<int, array> $matched GdprEntity hits that triggered inclusion.
+	 *
+	 * @return array<string, mixed>|null The persisted envelope, or null on failure.
+	 *
+	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function pseudonymiseObject(ObjectEntity $object, string $subjectId, array $matched): ?array {
+		$this->pseudonymise(object: $object, subjectId: $subjectId, matched: $matched);
+		$this->attribute(object: $object);
+
+		return $this->persist(
+			object: $object,
+			op: 'erase',
+			identifier: (string)($object->getUuid() ?? '')
+		);
+	}//end pseudonymiseObject()
 
 	/**
 	 * Assemble a portable access export of the subject's data (art-15 / art-20).
