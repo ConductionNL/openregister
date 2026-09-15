@@ -25,13 +25,13 @@
 ## 5. The facts on the object, the mapping and the plan
 
 - [x] 5.1 The object read carries nomination, archiefactiedatum, selectielijst row, statutory basis, any hold and the destruction or transfer record.
-- [ ] 5.2 An administered MDTO and TMLO element mapping with a validator; a transfer with an unmapped mandatory element is refused naming the element (D-6).
-- [ ] 5.3 Import a selectielijst or classification plan from a file, versioned, with a diff against the version in use (D-7).
+- [x] 5.2 An administered MDTO and TMLO element mapping with a validator; a transfer with an unmapped mandatory element is refused naming the element (D-6).
+- [x] 5.3 Import a selectielijst or classification plan from a file, versioned, with a diff against the version in use (D-7).
 
 ## 6. Tests
 
 - [x] 6.1 `tests/e2e/ci/archiving-process.spec.ts`: assign, worklist, retain, transfer, one history, and now closing an object and reading its nomination, its date, its selectielijst row and its recomputation.
-- [~] 6.2 Unit tests: the unassigned list, the three answers, the reviewer guard, the reminder pass, the derivation and its rule, the unnominatable object and the facts on the read are written (61 tests). The preservation state waits on task 2 and the plan diff on task 5.3.
+- [~] 6.2 Unit tests: the unassigned list, the three answers, the reviewer guard, the reminder pass, the derivation and its rule, the unnominatable object, the facts on the read, the element mapping, the transfer refusal and the plan diff are written (92 tests). Only the preservation state is left, and it waits on task 2.
 - [x] 6.3 `openspec validate archiving-as-a-process-with-sign-off --strict`.
 
 ## 7. Hand over
@@ -55,6 +55,9 @@ What is left, and why:
   `x-openregister-archive` annotation anywhere in `lib/`, so a preservation
   state cannot be shown to be distinct from an archive state that does not
   exist. It goes in the same PR as `object-archive-state` or straight after it.
-- Task 5.2, the administered MDTO and TMLO element mapping with a validator,
-  and task 5.3, the selectielijst import with a version diff, are each their own
-  piece of work and belong in a third PR.
+- Tasks 5.2 and 5.3 shipped in the third PR: the element mapping with its
+  validator and the transfer refusal, and the versioned selectielijst import
+  with its diff.
+
+Only task 2 is left. The preservation regime needs an archive state to be
+distinct from, and `object-archive-state` is being built in its own lane.

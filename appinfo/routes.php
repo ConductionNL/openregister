@@ -149,6 +149,28 @@ return [
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
         ],
 
+        // Per-object favourite (`favourites-and-recent`). A star is a fact about
+        // a person, not about the object, so it is written here and never
+        // through the object: writing it into the object would change that
+        // object's audit trail and cut a version for every reader.
+        // There is no GET here on purpose. Every object read already carries
+        // `@self.favourite`, so a detail page renders the star from data it has
+        // and a list renders a column of them from one query.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectFavourite#star',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectFavourite#unstar',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
         // Per-object read state. Reading an object is per-user state that must
         // not be written through the object itself, which would put "alice
         // looked at this" in the object's audit trail and cut a version on every
@@ -1029,6 +1051,15 @@ return [
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Archive and freeze (object-archive-state). DELETE undoes POST on the
+        // same url, which is what makes restore the obvious opposite of
+        // archive; a second `/unarchive` url would read as a third state.
+        // Neither verb needs `delete` on the object — archiving is not a step
+        // towards deletion (openregister ADR-010).
+        ['name' => 'objectState#archive', 'url' => '/api/objects/{register}/{schema}/{id}/archive', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#unarchive', 'url' => '/api/objects/{register}/{schema}/{id}/archive', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#freeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#unfreeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         // Registry subscriptions (registry-subscriptions, finding B22).
         ['name' => 'registrySubscription#subscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registrySubscription#unsubscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
@@ -1649,6 +1680,12 @@ return [
 		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+		// The classification plan arrives as a file, versioned, and a new
+		// version is diffed against the one in use before it is switched to.
+		['name' => 'selectielijst#import', 'url' => '/api/archival/selectielijst/import', 'verb' => 'POST'],
+		['name' => 'selectielijst#versions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
+		['name' => 'selectielijst#diff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],

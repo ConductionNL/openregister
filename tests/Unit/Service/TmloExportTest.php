@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -80,7 +81,7 @@ class TmloExportTest extends TestCase {
 		$writer = new MdtoDocumentWriter();
 		$sourceReader = new MdtoSourceReader(values: new MdtoValueReader(), annotations: $this->objectAnnotations());
 		$bestandGenerator = new MdtoBestandGenerator($writer);
-		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
+		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class));
 		$generator = new MdtoXmlGenerator(
 			$appConfig,
 			$eventMapper,

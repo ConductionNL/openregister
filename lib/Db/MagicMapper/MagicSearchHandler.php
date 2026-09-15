@@ -43,7 +43,9 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectFavouriteMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
@@ -86,6 +88,28 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull'];
 
 	/**
+	 * The working set: archived rows are left out. The default.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_EXCLUDE = 'exclude';
+
+	/**
+	 * The archived lens: archived rows and nothing else.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_ONLY = 'only';
+
+	/**
+	 * Both lenses at once. The literal is the parameter value callers send
+	 * (`_archived=any`), so the two cannot drift apart.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_ANY = 'any';
+
+	/**
 	 * Metadata columns every magic table carries.
 	 *
 	 * Mirrors MagicMapper::getMetadataColumns(); kept as a literal here so a
@@ -116,6 +140,8 @@ class MagicSearchHandler {
 		'_updated',
 		'_expires',
 		'_deleted',
+		'_archived',
+		'_frozen',
 		'_locked',
 		'_files',
 		'_relations',
@@ -337,15 +363,13 @@ class MagicSearchHandler {
 
 		// Apply sorting BEFORE pagination so the query optimizer can use
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
-		if (empty($order) === false) {
-			$this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
-		} else {
-			// BUG-DB-4: without an explicit order, LIMIT/OFFSET pagination is
-			// non-deterministic (the database may return rows in any order),
-			// causing duplicates/gaps across pages. Add a stable default order
-			// on the monotonically increasing primary key.
-			$queryBuilder->addOrderBy('t._id', 'ASC');
-		}
+		$this->applyResultOrder(
+			qb: $queryBuilder,
+			order: $order,
+			schema: $schema,
+			searchTerm: $searchTerm,
+			recentFor: ($query['_recentFor'] ?? null)
+		);
 
 		$queryBuilder->setMaxResults($limit)
 			->setFirstResult($offset);
@@ -465,8 +489,12 @@ class MagicSearchHandler {
 		$queryBuilder = $this->db->getQueryBuilder();
 		$queryBuilder->from($tableName, 't');
 
-		// Apply basic filters (deleted, etc.).
-		$this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted);
+		// Apply basic filters (deleted, archived).
+		$this->applyBasicFilters(
+			qb: $queryBuilder,
+			includeDeleted: $includeDeleted,
+			archivedMode: $this->resolveArchivedMode(query: $query)
+		);
 
 		// Apply multi-tenancy and RBAC access control filters.
 		$this->applyAccessControlFilters(
@@ -495,6 +523,19 @@ class MagicSearchHandler {
 		// The unread lens, resolved IN the query so the page, the total and the
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $queryBuilder, userId: ($query['_unreadFor'] ?? null));
+
+		// The favourites and recent lenses, resolved in the query for the same
+		// reason, and each guarding itself so this method keeps its branch count.
+		$this->applyPersonalLensFilter(
+			qb: $queryBuilder,
+			table: ObjectFavouriteMapper::TABLE,
+			userId: ($query['_favouriteFor'] ?? null)
+		);
+		$this->applyPersonalLensFilter(
+			qb: $queryBuilder,
+			table: ObjectViewMapper::TABLE,
+			userId: ($query['_recentFor'] ?? null)
+		);
 
 		// Apply full-text search if provided.
 		// Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
@@ -598,6 +639,22 @@ class MagicSearchHandler {
 		// 1. Deleted filter.
 		if ($includeDeleted === false) {
 			$conditions[] = '_deleted IS NULL';
+		}
+
+		// 1b. Archive filter. Spelled here as well as in applyBasicFilters()
+		// because the two paths build the same WHERE by different means and a
+		// condition added to only one of them is exactly the drift the comment
+		// on step 3 below records: the UNION path silently returned MORE rows
+		// than the single-table path for the same query. Too many rows is the
+		// dangerous direction, and an archived record surfacing in a working
+		// list is that failure with a record attached.
+		$archivedMode = $this->resolveArchivedMode(query: $query);
+		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+			$conditions[] = '_archived IS NULL';
+		}
+
+		if ($archivedMode === self::ARCHIVED_ONLY) {
+			$conditions[] = '_archived IS NOT NULL';
 		}
 
 		// 2. RBAC filter (role-based access control).
@@ -1425,8 +1482,13 @@ class MagicSearchHandler {
 			'_ids',
 			'_unread',
 			'_unreadFor',
+			'_favourite',
+			'_favouriteFor',
+			'_recent',
+			'_recentFor',
 			'_count',
 			'_includeDeleted',
+			'_archived',
 			'_relations_contains',
 			'_multitenancy_explicit',
 			'_fuzzy',
@@ -1445,16 +1507,66 @@ class MagicSearchHandler {
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param bool $includeDeleted Whether to include deleted objects
+	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 *
 	 * @return void
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted): void {
+	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE): void {
 		// Handle deleted filter.
 		if ($includeDeleted === false) {
 			$qb->andWhere($qb->expr()->isNull('t._deleted'));
 		}
 
+		// Handle the archive filter. Exclusion is the DEFAULT rather than a
+		// filter the caller has to remember, so a caller who forgets the
+		// parameter gets the working set — the safe answer. Asking for both is
+		// the only way to see an archived row beside an open one.
+		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+			$qb->andWhere($qb->expr()->isNull('t._archived'));
+		}
+
+		if ($archivedMode === self::ARCHIVED_ONLY) {
+			$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+		}
+
 	}//end applyBasicFilters()
+
+	/**
+	 * Resolve the archive lens a query asks for.
+	 *
+	 * `_archived` absent or false is the working set, `_archived=true` is the
+	 * archived lens alone and `_archived=any` is both. Anything else reads as
+	 * the working set, because an unrecognised lens must never silently widen
+	 * what a list shows.
+	 *
+	 * ⚠️ `filter_var(..., FILTER_VALIDATE_BOOLEAN)` alone cannot do this. It
+	 * maps the string `"any"` to false, which is indistinguishable from
+	 * `_archived=false` — so the one parameter value that means "show me
+	 * everything" would have quietly meant "hide the archive".
+	 *
+	 * @param array $query The search query parameters.
+	 *
+	 * @return string One of the ARCHIVED_* constants.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function resolveArchivedMode(array $query): string {
+		if (array_key_exists('_archived', $query) === false) {
+			return self::ARCHIVED_EXCLUDE;
+		}
+
+		$raw = $query['_archived'];
+
+		if (is_string($raw) === true && strtolower(trim($raw)) === self::ARCHIVED_ANY) {
+			return self::ARCHIVED_ANY;
+		}
+
+		if (filter_var($raw, FILTER_VALIDATE_BOOLEAN) === true) {
+			return self::ARCHIVED_ONLY;
+		}
+
+		return self::ARCHIVED_EXCLUDE;
+	}//end resolveArchivedMode()
 
 	/**
 	 * Check if a mixed value represents an explicit boolean true
@@ -2115,6 +2227,135 @@ class MagicSearchHandler {
 
 		$qb->andWhere($qb->createFunction('NOT EXISTS (' . $sub->getSQL() . ')'));
 	}//end applyUnreadFilter()
+
+	/**
+	 * Narrow a query to the objects one user has starred, or has opened.
+	 *
+	 * The two lenses differ only in which table carries the (user, object) row,
+	 * so they share one `EXISTS` rather than two copies of it. That is also why
+	 * the table is a parameter: the shape of the question is identical, and a
+	 * second copy is a second place for the outer-parameter trap below to be got
+	 * wrong.
+	 *
+	 * The subquery is built on a SECOND query builder but its parameter is
+	 * created on the OUTER one, because only the outer builder's parameters are
+	 * bound at execution. Creating it on the inner builder produces SQL with a
+	 * placeholder nothing fills, which is a silent empty page, not an error.
+	 *
+	 * The lens is off unless a uid was named, so the guard lives here rather
+	 * than at the call site: `buildFilteredQuery()` already carries every other
+	 * filter's branch.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param string $table The table holding the (user, object) rows.
+	 * @param mixed $userId The user whose rows are read, or null when the lens was not asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyPersonalLensFilter(IQueryBuilder $qb, string $table, mixed $userId): void {
+		if (is_string($userId) === false || $userId === '') {
+			return;
+		}
+
+		$owner = $qb->createNamedParameter($userId);
+
+		$sub = $this->db->getQueryBuilder();
+		$sub->select('pl.object_uuid')
+			->from($table, 'pl')
+			->where($sub->expr()->eq('pl.user_id', $owner))
+			->andWhere($sub->expr()->eq('pl.object_uuid', 't._uuid'));
+
+		$qb->andWhere($qb->createFunction('EXISTS ('.$sub->getSQL().')'));
+
+	}//end applyPersonalLensFilter()
+
+	/**
+	 * Order a `_recent=true` page by when this user last opened each object.
+	 *
+	 * Ordering by a correlated subquery rather than a join, so the lens adds no
+	 * row to the result set and cannot change the total. Both databases accept
+	 * a scalar subquery in ORDER BY.
+	 *
+	 * This never overrides an explicit `_order`: the caller asking for
+	 * "recently opened, alphabetically" means it. It only replaces the default
+	 * `t._id ASC`, which for this lens would be arbitrary and, worse, look
+	 * deliberate.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param mixed $userId The user whose view times order the page, or null.
+	 *
+	 * @return boolean True when the recency order was applied.
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyRecencyOrder(IQueryBuilder $qb, mixed $userId): bool {
+		if (is_string($userId) === false || $userId === '') {
+			return false;
+		}
+
+		$viewer = $qb->createNamedParameter($userId);
+		$table = ObjectViewMapper::TABLE;
+
+		$qb->addOrderBy(
+			$qb->createFunction(
+				'(SELECT rv.viewed_at FROM '.$table.' rv'
+				.' WHERE rv.user_id = '.$viewer.' AND rv.object_uuid = t._uuid)'
+			),
+			'DESC'
+		);
+
+		// A stable tie-break, so two objects opened in the same second do not
+		// swap places between pages.
+		$qb->addOrderBy('t._id', 'ASC');
+
+		return true;
+
+	}//end applyRecencyOrder()
+
+	/**
+	 * Decide and apply the result order for one search.
+	 *
+	 * Three cases, in priority order: an explicit `_order` wins; then the
+	 * `_recent` lens's own recency order; then the stable default on the primary
+	 * key. They live in one method rather than a chain in `searchObjects()`
+	 * because that method is already at its complexity budget, and because the
+	 * priority is the interesting part and belongs in one place.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param array<int|string, mixed> $order The caller's requested order.
+	 * @param Schema|null $schema The schema being searched.
+	 * @param string|null $searchTerm The search term, for relevance ordering.
+	 * @param mixed $recentFor The user whose view times order a `_recent` page, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyResultOrder(
+		IQueryBuilder $qb,
+		array $order,
+		?Schema $schema,
+		?string $searchTerm,
+		mixed $recentFor
+	): void {
+		if (empty($order) === false) {
+			$this->applySorting(qb: $qb, order: $order, schema: $schema, searchTerm: $searchTerm);
+			return;
+		}
+
+		if ($this->applyRecencyOrder(qb: $qb, userId: $recentFor) === true) {
+			return;
+		}
+
+		// BUG-DB-4: without an explicit order, LIMIT/OFFSET pagination is
+		// non-deterministic (the database may return rows in any order),
+		// causing duplicates/gaps across pages. Add a stable default order
+		// on the monotonically increasing primary key.
+		$qb->addOrderBy('t._id', 'ASC');
+
+	}//end applyResultOrder()
 
 	/**
 	 * Apply ID-based filtering (UUID, slug, etc.)

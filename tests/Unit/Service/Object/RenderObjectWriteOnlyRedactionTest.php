@@ -38,11 +38,14 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  */
 class RenderObjectWriteOnlyRedactionTest extends TestCase {
+	use BuildsStateFieldRuleResolver;
+
 	/**
 	 * A schema whose `secret` and `apiKey` properties are write-only.
 	 *
@@ -117,11 +120,15 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 	 * @return \OCA\OpenRegister\Service\PropertyRbacHandler
 	 */
 	private function realPropertyRbacHandler(): \OCA\OpenRegister\Service\PropertyRbacHandler {
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$groupManager = $this->createMock(\OCP\IGroupManager::class);
+
 		return new \OCA\OpenRegister\Service\PropertyRbacHandler(
-			$this->createMock(\OCP\IUserSession::class),
-			$this->createMock(\OCP\IGroupManager::class),
+			$userSession,
+			$groupManager,
 			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(\Psr\Log\LoggerInterface::class)
+			$this->createMock(\Psr\Log\LoggerInterface::class),
+			self::stateFieldRuleResolver($userSession, $groupManager)
 		);
 	}
 
