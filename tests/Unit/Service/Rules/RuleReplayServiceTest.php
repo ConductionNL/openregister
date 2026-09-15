@@ -97,7 +97,12 @@ class RuleReplayServiceTest extends TestCase {
 	/**
 	 * The schema the rule is declared on.
 	 *
+	 * @param int|null $maxObjects The ceiling the calculation declares, or null for none.
+	 * @param bool $asCalculation False to declare a lifecycle condition instead.
+	 *
 	 * @return Schema The schema.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) A fixture switch, in a test.
 	 */
 	private function schema(?int $maxObjects = 100, bool $asCalculation = true): Schema {
 		$declaration = ['type' => 'date', 'expression' => ['prop' => 'ontvangstdatum']];

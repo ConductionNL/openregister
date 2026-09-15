@@ -271,7 +271,7 @@ final class DependentValueValidator {
 						'Property "%s": "%s" is not a value "%s" can take, so pairing it with "%s" '
 						. 'allows a value the property already refuses.',
 						$name,
-						(is_scalar($value) === true ? (string)$value : gettype($value)),
+						$this->render(value: $value),
 						$name,
 						$controllingValue
 					),
@@ -279,6 +279,24 @@ final class DependentValueValidator {
 			}
 		}//end foreach
 	}//end validatePairs()
+
+	/**
+	 * One listed value, rendered for the message that refuses it.
+	 *
+	 * A non-scalar is named by its type rather than serialised: the author
+	 * needs to know an array turned up where a value belongs, not to read it.
+	 *
+	 * @param mixed $value The listed value.
+	 *
+	 * @return string The rendering.
+	 */
+	private function render(mixed $value): string {
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		return gettype($value);
+	}//end render()
 
 	/**
 	 * A property's enum as a list of strings, or null when it declares none.

@@ -165,7 +165,7 @@ class DependentValueListener implements IEventListener {
 	 * Stop the write, naming both properties in every refusal.
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
-	 * @param array<int, array{property: string, controlledBy: string, value: string, controllingValue: string, message: string}> $violations The refusals.
+	 * @param array<int, array<string, string>> $violations The refusals, each naming both properties.
 	 *
 	 * @return void
 	 *

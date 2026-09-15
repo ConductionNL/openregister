@@ -365,7 +365,13 @@ class AutoTransitionSelectorTest extends TestCase {
 		// engine would refuse. A selector doing its own truthiness test would
 		// either fire on the string or refuse the double's answer; both show up
 		// here rather than as a quiet second code path.
-		$evaluator = new class ($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IL10N::class), $this->createMock(LoggerInterface::class), $this->realConditionDialect()) extends LifecycleConditionEvaluator {
+		$evaluator = new class (
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(IL10N::class),
+			$this->createMock(LoggerInterface::class),
+			$this->realConditionDialect()
+		) extends LifecycleConditionEvaluator {
 			/**
 			 * Rules this double was asked about.
 			 *
