@@ -238,7 +238,13 @@ class RelationGraphService {
 		// A walk that still had somewhere to go when the requested depth ran
 		// out is truncated by that depth, even when the request was within the
 		// administered maximum.
-		if ($truncatedBy === null && $frontier !== []) {
+		//
+		// "Somewhere to go" is an unvisited neighbour, not a non-empty
+		// frontier. The last level's nodes almost always sit in the frontier
+		// whether or not they lead anywhere, so marking on the frontier alone
+		// would make `truncated` true on nearly every complete answer, and a
+		// flag that is always true tells a reader nothing.
+		if ($truncatedBy === null && $this->hasMore(frontier: $frontier, visited: $visited, language: $language) === true) {
 			$truncatedBy = self::TRUNCATED_DEPTH;
 		}
 
@@ -253,6 +259,40 @@ class RelationGraphService {
 			'truncatedBy' => $truncatedBy,
 		];
 	}//end graph()
+
+	/**
+	 * Whether the level the walk stopped on leads anywhere it has not been.
+	 *
+	 * One extra edge read, deliberately, so `truncated` means "there is more
+	 * and you were not shown it" rather than "the walk ended", which is true
+	 * of every walk.
+	 *
+	 * @param array<int, string> $frontier The level the walk stopped on.
+	 * @param array<string, bool> $visited Every node already in the answer.
+	 * @param string $language The BCP-47 tag.
+	 *
+	 * @return boolean True when an unvisited neighbour exists.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function hasMore(array $frontier, array $visited, string $language): bool {
+		if ($frontier === []) {
+			return false;
+		}
+
+		foreach ($this->edgesFrom(uuids: $frontier, language: $language) as $edge) {
+			$other = $edge['to'];
+			if ($edge['direction'] === RelationTypeResolver::DIRECTION_INCOMING) {
+				$other = $edge['from'];
+			}
+
+			if ($other !== '' && isset($visited[$other]) === false) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasMore()
 
 	/**
 	 * The same graph as rows a spreadsheet can open.
