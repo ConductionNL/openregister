@@ -134,21 +134,37 @@ class LanguageDetector {
 		// A tie is no evidence either. Two languages sharing the same function
 		// words on a short text is exactly where a detector invents a verdict,
 		// so this one declines instead.
+		if ($this->runnerUp(scores: $scores, best: (string)$best) === $scores[$best]) {
+			return null;
+		}
+
+		return (string)$best;
+	}//end byFunctionWords()
+
+	/**
+	 * The highest score that is not the winner's own.
+	 *
+	 * The winner's entry is skipped ONCE, by key, so a second language holding
+	 * the same score is still seen: that equality is precisely the tie this
+	 * detector declines to break.
+	 *
+	 * @param array<string,int> $scores The score per language.
+	 * @param string            $best   The winning language code.
+	 *
+	 * @return integer The runner-up's score, or 0 when there is no other.
+	 */
+	private function runnerUp(array $scores, string $best): int {
 		$runnerUp = 0;
-		$seenBest = false;
+		$skipped = false;
 		foreach ($scores as $code => $score) {
-			if ($code === $best && $seenBest === false) {
-				$seenBest = true;
+			if ($code === $best && $skipped === false) {
+				$skipped = true;
 				continue;
 			}
 
 			$runnerUp = max($runnerUp, $score);
 		}
 
-		if ($runnerUp === $scores[$best]) {
-			return null;
-		}
-
-		return (string)$best;
-	}//end byFunctionWords()
+		return $runnerUp;
+	}//end runnerUp()
 }//end class

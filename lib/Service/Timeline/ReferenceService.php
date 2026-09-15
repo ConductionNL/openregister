@@ -52,6 +52,12 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Timeline
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ErrorControlOperator) The two `@preg_*` calls run an
+ * ADMINISTERED expression, which is input: an expression that does not compile
+ * is the expected case, not an exceptional one, and it is handled by the false
+ * return both calls already check. Without the operator PHP also emits a
+ * warning, which on a fleet instance means a log line per note written against
+ * a pattern somebody mistyped once.
  *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
@@ -93,6 +99,10 @@ class ReferenceService {
 	 *
 	 * @return array<int, ReferencePattern> The declarations.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Pass-through of the mapper's
+	 * narrowing flag; see ReferencePatternMapper::findAll() for why it is one
+	 * read and not two.
+	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function listPatterns(bool $enabledOnly = false): array {
@@ -109,6 +119,8 @@ class ReferenceService {
 	 * @throws TimelineValidationException When the slug is missing or the expression does not compile.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
 	 */
 	public function declarePattern(array $data): ReferencePattern {
 		$slug = strtolower(trim((string)($data['slug'] ?? '')));

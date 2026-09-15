@@ -49,6 +49,10 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Timeline
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One method per act on the
+ * record: write it, sync it, read it, list it, pin it, close its follow-up,
+ * read its source, tie its siblings, forget it. They share the visibility
+ * guard and the mapper, which is what keeps them one class.
  *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
@@ -93,6 +97,8 @@ class TimelineEntryService {
 	 * @throws TimelineValidationException When the kind is undeclared or a field does not fit.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
 	 */
 	public function record(ObjectEntity $object, array $data): TimelineEntry {
 		$kind = $this->readString(data: $data, key: 'kind');
@@ -264,16 +270,16 @@ class TimelineEntryService {
 			throw new TimelinePermissionException('You do not have permission to pin entries on this object');
 		}
 
-		$by = null;
-		$at = null;
+		$pinnedBy = null;
+		$pinnedAt = null;
 		if ($pinned === true) {
-			$by = $this->callerUid();
-			$at = new DateTime();
+			$pinnedBy = $this->callerUid();
+			$pinnedAt = new DateTime();
 		}
 
 		$entry->setPinned($pinned);
-		$entry->setPinnedBy($by);
-		$entry->setPinnedAt($at);
+		$entry->setPinnedBy($pinnedBy);
+		$entry->setPinnedAt($pinnedAt);
 		$entry->setUpdated(new DateTime());
 
 		return $this->entryMapper->update($entry);

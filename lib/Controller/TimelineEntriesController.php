@@ -55,6 +55,10 @@ use Throwable;
  * @package  OCA\OpenRegister\Controller
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Six routed actions on one
+ * sub-resource, each with its own refusal path, plus the three private
+ * resolvers they share. Splitting it would put the entry's read guard in one
+ * class and its write guard in another, which is how the two drift apart.
  *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
@@ -351,32 +355,24 @@ class TimelineEntriesController extends Controller {
 	#[NoAdminRequired]
 	public function searchEntries(): JSONResponse {
 		$params = $this->request->getParams();
-		$term = '';
-		if (isset($params['q']) === true && is_string($params['q']) === true) {
-			$term = $params['q'];
-		}
-
-		if (trim($term) === '') {
+		$term = $this->text(params: $params, key: 'q');
+		if ($term === null) {
 			return new JSONResponse(['message' => 'A search needs a term'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$visibility = null;
-		if (isset($params['visibility']) === true && is_string($params['visibility']) === true
-			&& $this->visibility->isKnownValue(value: $params['visibility']) === true
-		) {
-			$visibility = $params['visibility'];
-		}
-
-		$kind = null;
-		if (isset($params['kind']) === true && is_string($params['kind']) === true && trim($params['kind']) !== '') {
-			$kind = $params['kind'];
+		// An unknown visibility is DROPPED rather than refused. The parameter
+		// narrows a search; a caller that misspells it gets everything they
+		// are entitled to, which is the same answer as omitting it.
+		$visibility = $this->text(params: $params, key: 'visibility');
+		if ($visibility !== null && $this->visibility->isKnownValue(value: $visibility) === false) {
+			$visibility = null;
 		}
 
 		try {
 			$results = $this->search->searchAsArrays(
 				term: $term,
 				visibility: $visibility,
-				kind: $kind,
+				kind: $this->text(params: $params, key: 'kind'),
 				limit: (int)($params['limit'] ?? 25)
 			);
 		} catch (Throwable $e) {
@@ -385,6 +381,27 @@ class TimelineEntriesController extends Controller {
 
 		return new JSONResponse(['results' => $results, 'total' => count($results)]);
 	}//end searchEntries()
+
+	/**
+	 * Read one optional, non-empty string off the query.
+	 *
+	 * @param array<string,mixed> $params The request parameters.
+	 * @param string              $key    The key.
+	 *
+	 * @return string|null The value, or null when absent, empty or not a string.
+	 */
+	private function text(array $params, string $key): ?string {
+		if (isset($params[$key]) === false || is_string($params[$key]) === false) {
+			return null;
+		}
+
+		$value = trim($params[$key]);
+		if ($value === '') {
+			return null;
+		}
+
+		return $value;
+	}//end text()
 
 	/**
 	 * Whether a caller may read an entry carrying this visibility.

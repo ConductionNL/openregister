@@ -193,13 +193,13 @@ class Notifier implements INotifier {
 
 		$notification->setParsedSubject($l->t('You were named in a note'));
 
+		$notification->setParsedMessage(
+			$l->t('%1$s named you in a note on "%2$s". You now follow it, so you will hear about what happens next.', [$author, $objectTitle])
+		);
+
 		if ($author === '') {
 			$notification->setParsedMessage(
 				$l->t('A note on "%1$s" names you. You now follow it, so you will hear about what happens next.', [$objectTitle])
-			);
-		} else {
-			$notification->setParsedMessage(
-				$l->t('%1$s named you in a note on "%2$s". You now follow it, so you will hear about what happens next.', [$author, $objectTitle])
 			);
 		}
 

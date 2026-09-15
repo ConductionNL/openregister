@@ -87,6 +87,11 @@ class ReferencePatternMapper extends QBMapper {
 	 *
 	 * @return array<int, ReferencePattern> The declarations.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag narrows one query by
+	 * one column; it selects no second behaviour. The admin panel lists every
+	 * pattern including the switched-off ones, and the resolver lists only the
+	 * ones that are applied, and those are the same read.
+	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function findAll(bool $enabledOnly = false): array {

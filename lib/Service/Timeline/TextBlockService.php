@@ -97,6 +97,8 @@ class TextBlockService {
 	 * @throws TimelineValidationException When the slug or the body is missing.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
 	 */
 	public function declareBlock(array $data): TextBlock {
 		$slug = strtolower(trim((string)($data['slug'] ?? '')));

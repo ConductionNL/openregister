@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Timeline;
 
+use DateTime;
 use OCA\OpenRegister\Db\TimelineKind;
 use OCA\OpenRegister\Db\TimelineKindMapper;
 use Symfony\Component\Uid\Uuid;
@@ -119,14 +120,46 @@ class TimelineKindService {
 		}
 
 		$kind = $this->kindMapper->findBySlug(slug: $slug);
-		$isNew = ($kind === null);
-		if ($isNew === true) {
-			$kind = new TimelineKind();
-			$kind->setUuid((string)Uuid::v4());
-			$kind->setSlug($slug);
-			$kind->setCreated(new \DateTime());
+		if ($kind === null) {
+			return $this->kindMapper->insert(
+				$this->fill(kind: $this->blank(slug: $slug), data: $data, properties: $properties, required: $required)
+			);
 		}
 
+		return $this->kindMapper->update(
+			$this->fill(kind: $kind, data: $data, properties: $properties, required: $required)
+		);
+	}//end declareKind()
+
+	/**
+	 * A kind nobody has declared yet, with its stable id minted.
+	 *
+	 * @param string $slug The kind name.
+	 *
+	 * @return TimelineKind The new declaration.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
+	 */
+	private function blank(string $slug): TimelineKind {
+		$kind = new TimelineKind();
+		$kind->setUuid((string)Uuid::v4());
+		$kind->setSlug($slug);
+		$kind->setCreated(new DateTime());
+
+		return $kind;
+	}//end blank()
+
+	/**
+	 * Write a payload onto a declaration, new or existing.
+	 *
+	 * @param TimelineKind        $kind       The declaration.
+	 * @param array<string,mixed> $data       The payload.
+	 * @param array<string,mixed> $properties The validated properties map.
+	 * @param array<int,string>   $required   The required property names.
+	 *
+	 * @return TimelineKind The filled declaration, not yet written.
+	 */
+	private function fill(TimelineKind $kind, array $data, array $properties, array $required): TimelineKind {
 		$kind->setTitle($this->stringOrNull(data: $data, key: 'title'));
 		$kind->setDescription($this->stringOrNull(data: $data, key: 'description'));
 		$kind->setProperties($properties);
@@ -134,14 +167,10 @@ class TimelineKindService {
 		$kind->setFollowUp((bool)($data['followUp'] ?? false));
 		$kind->setRegister($this->stringOrNull(data: $data, key: 'register'));
 		$kind->setSchema($this->stringOrNull(data: $data, key: 'schema'));
-		$kind->setUpdated(new \DateTime());
+		$kind->setUpdated(new DateTime());
 
-		if ($isNew === true) {
-			return $this->kindMapper->insert($kind);
-		}
-
-		return $this->kindMapper->update($kind);
-	}//end declareKind()
+		return $kind;
+	}//end fill()
 
 	/**
 	 * Withdraw a declaration.
@@ -195,36 +224,30 @@ class TimelineKindService {
 			throw new TimelineValidationException(['kind' => 'No entry kind named '.$kindSlug.' is declared']);
 		}
 
-		$declared = ($kind->getProperties() ?? []);
-		$required = ($kind->getRequired() ?? []);
 		$accepted = [];
 		$errors = [];
 
-		foreach ($declared as $name => $declaration) {
+		foreach (($kind->getProperties() ?? []) as $name => $declaration) {
 			if (is_string($name) === false) {
 				continue;
 			}
 
-			if (array_key_exists($name, $fields) === false) {
-				if (in_array($name, $required, true) === true) {
-					$errors[$name] = 'This field is required by kind '.$kind->getSlug();
-				}
+			$verdict = $this->checkProperty(
+				name: $name,
+				declaration: $declaration,
+				fields: $fields,
+				required: ($kind->getRequired() ?? []),
+				slug: (string)$kind->getSlug()
+			);
 
+			if ($verdict !== null) {
+				$errors[$name] = $verdict;
 				continue;
 			}
 
-			$rules = [];
-			if (is_array($declaration) === true) {
-				$rules = $declaration;
+			if (array_key_exists($name, $fields) === true) {
+				$accepted[$name] = $fields[$name];
 			}
-
-			$problem = $this->checkValue(value: $fields[$name], declaration: $rules);
-			if ($problem !== null) {
-				$errors[$name] = $problem;
-				continue;
-			}
-
-			$accepted[$name] = $fields[$name];
 		}//end foreach
 
 		if ($errors !== []) {
@@ -233,6 +256,44 @@ class TimelineKindService {
 
 		return $accepted;
 	}//end validateFields()
+
+	/**
+	 * Judge one declared property against what the entry carries.
+	 *
+	 * Returns the reason it does not fit, or null when it does, which is also
+	 * the answer for a property the entry simply does not carry and the kind
+	 * does not require.
+	 *
+	 * @param string              $name        The property name.
+	 * @param mixed               $declaration Its declaration.
+	 * @param array<string,mixed> $fields      The values the entry carries.
+	 * @param array<int,string>   $required    The property names the kind requires.
+	 * @param string              $slug        The kind name, for the message.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function checkProperty(
+		string $name,
+		mixed $declaration,
+		array $fields,
+		array $required,
+		string $slug,
+	): ?string {
+		if (array_key_exists($name, $fields) === false) {
+			if (in_array($name, $required, true) === true) {
+				return 'This field is required by kind '.$slug;
+			}
+
+			return null;
+		}
+
+		$rules = [];
+		if (is_array($declaration) === true) {
+			$rules = $declaration;
+		}
+
+		return $this->checkValue(value: $fields[$name], declaration: $rules);
+	}//end checkProperty()
 
 	/**
 	 * Whether entries of a kind carry a follow-up state at all.

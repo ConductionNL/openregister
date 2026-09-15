@@ -89,6 +89,11 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
+ * @SuppressWarnings(PHPMD.TooManyFields) The fields ARE the record. Each one is
+ * a column this change exists to add, and splitting them across entities would
+ * mean a join per timeline row and a second place for the visibility flag to
+ * disagree with the first.
+ *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineEntry extends Entity implements JsonSerializable {
