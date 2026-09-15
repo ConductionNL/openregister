@@ -143,15 +143,72 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function update(): JSONResponse {
+		$params = $this->request->getParams();
+		$groupId = $this->nonEmptyString(value: ($params['group'] ?? null));
+		$schema = $this->nonEmptyString(value: ($params['schema'] ?? null));
+		$notification = $this->nonEmptyString(value: ($params['notification'] ?? null));
+
+		$refusal = $this->refuseWrite(groupId: $groupId, schema: $schema, notification: $notification);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$scope = $this->nonEmptyString(value: ($params['scope'] ?? null));
+		$default = null;
+		if (($params['reset'] ?? false) !== true && ($params['reset'] ?? null) !== 'true') {
+			$default = ['enabled' => (bool)($params['enabled'] ?? true)];
+			if (isset($params['channels']) === true && is_array($params['channels']) === true) {
+				$default['channels'] = $params['channels'];
+			}
+		}
+
+		$this->preferenceService->setGroupDefault(
+			groupId: (string)$groupId,
+			schemaSlug: (string)$schema,
+			notificationKey: (string)$notification,
+			default: $default,
+			scope: $scope
+		);
+
+		return new JSONResponse(
+			data: [
+				'group' => $groupId,
+				'schema' => $schema,
+				'notification' => $notification,
+				'scope' => ($scope ?? 'global'),
+				'default' => $this->preferenceService->getGroupDefault(
+					groupId: (string)$groupId,
+					schemaSlug: (string)$schema,
+					notificationKey: (string)$notification,
+					scope: $scope
+				),
+			]
+		);
+	}//end update()
+
+	/**
+	 * Refuse a write that is unauthenticated, incomplete, or not this caller's
+	 * to make.
+	 *
+	 * Lifted out of {@see update()} so the three refusals sit together: they are
+	 * one decision, "may this write happen at all", and reading them in one
+	 * place is what makes it obvious that administering the group is checked on
+	 * the WRITER and never inferred from membership.
+	 *
+	 * @param string|null $groupId The group named in the request, or null when absent.
+	 * @param string|null $schema The schema named in the request, or null when absent.
+	 * @param string|null $notification The notification named in the request, or null when absent.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the write may proceed.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	private function refuseWrite(?string $groupId, ?string $schema, ?string $notification): ?JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		$params = $this->request->getParams();
-		$groupId = $this->nonEmptyString(value: ($params['group'] ?? null));
-		$schema = $this->nonEmptyString(value: ($params['schema'] ?? null));
-		$notification = $this->nonEmptyString(value: ($params['notification'] ?? null));
 		if ($groupId === null || $schema === null || $notification === null) {
 			return new JSONResponse(
 				data: ['error' => 'A "group", a "schema" and a "notification" are required'],
@@ -169,55 +226,8 @@ class NotificationGroupPreferencesController extends Controller {
 			return new JSONResponse(data: ['error' => 'You do not administer that group'], statusCode: 403);
 		}
 
-		$scope = $this->nonEmptyString(value: ($params['scope'] ?? null));
-
-		if (($params['reset'] ?? false) === true || ($params['reset'] ?? null) === 'true') {
-			$this->preferenceService->setGroupDefault(
-				groupId: $groupId,
-				schemaSlug: $schema,
-				notificationKey: $notification,
-				default: null,
-				scope: $scope
-			);
-			return new JSONResponse(
-				data: [
-					'group' => $groupId,
-					'schema' => $schema,
-					'notification' => $notification,
-					'scope' => ($scope ?? 'global'),
-					'default' => null,
-				]
-			);
-		}
-
-		$default = ['enabled' => (bool)($params['enabled'] ?? true)];
-		if (isset($params['channels']) === true && is_array($params['channels']) === true) {
-			$default['channels'] = $params['channels'];
-		}
-
-		$this->preferenceService->setGroupDefault(
-			groupId: $groupId,
-			schemaSlug: $schema,
-			notificationKey: $notification,
-			default: $default,
-			scope: $scope
-		);
-
-		return new JSONResponse(
-			data: [
-				'group' => $groupId,
-				'schema' => $schema,
-				'notification' => $notification,
-				'scope' => ($scope ?? 'global'),
-				'default' => $this->preferenceService->getGroupDefault(
-					groupId: $groupId,
-					schemaSlug: $schema,
-					notificationKey: $notification,
-					scope: $scope
-				),
-			]
-		);
-	}//end update()
+		return null;
+	}//end refuseWrite()
 
 	/**
 	 * Whether this user may set defaults for this group.

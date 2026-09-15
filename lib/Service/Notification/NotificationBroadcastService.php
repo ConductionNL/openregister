@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Db\NotificationBroadcast;
 use OCA\OpenRegister\Db\NotificationBroadcastMapper;
@@ -68,7 +69,7 @@ class NotificationBroadcastService {
 	 *
 	 * @return NotificationBroadcast The recorded broadcast.
 	 *
-	 * @throws \InvalidArgumentException When the period ends before it starts, or the subject is empty.
+	 * @throws InvalidArgumentException When the period ends before it starts, or the subject is empty.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The broadcast's own fields.
 	 *
@@ -82,13 +83,13 @@ class NotificationBroadcastService {
 		DateTime $endsAt,
 	): NotificationBroadcast {
 		if (trim($subject) === '') {
-			throw new \InvalidArgumentException('A broadcast needs a subject.');
+			throw new InvalidArgumentException('A broadcast needs a subject.');
 		}
 
 		if ($endsAt < $startsAt) {
 			// A period that ends before it starts shows to nobody, which is the
 			// one outcome an administrator sending a broadcast cannot want.
-			throw new \InvalidArgumentException('A broadcast cannot end before it starts.');
+			throw new InvalidArgumentException('A broadcast cannot end before it starts.');
 		}
 
 		$broadcast = $this->broadcasts->record(

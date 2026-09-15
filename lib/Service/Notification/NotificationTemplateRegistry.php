@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use InvalidArgumentException;
 use OCP\IConfig;
 
 /**
@@ -469,13 +470,13 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return void
 	 *
-	 * @throws \InvalidArgumentException When the event is not one the platform raises.
+	 * @throws InvalidArgumentException When the event is not one the platform raises.
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function edit(string $event, ?array $template): void {
 		if ($this->knows(event: $event) === false) {
-			throw new \InvalidArgumentException(sprintf('"%s" is not an event the platform raises.', $event));
+			throw new InvalidArgumentException(sprintf('"%s" is not an event the platform raises.', $event));
 		}
 
 		$key = $this->configKey(event: $event);
@@ -497,7 +498,7 @@ class NotificationTemplateRegistry {
 		}
 
 		if ($clean === []) {
-			throw new \InvalidArgumentException('A template needs at least one locale with a subject and a body.');
+			throw new InvalidArgumentException('A template needs at least one locale with a subject and a body.');
 		}
 
 		$this->config->setAppValue(self::APP_NAME, $key, json_encode($clean));
