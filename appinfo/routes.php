@@ -1155,6 +1155,7 @@ return [
         ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
         ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
         ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        ['name' => 'rules#replay', 'url' => '/api/schemas/{schema}/rules/{ruleId}/replay', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
 
         // The property vocabulary: what a property may be, published so an
         // editor is generated from it instead of retyped per app. Literal

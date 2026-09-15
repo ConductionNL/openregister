@@ -29,11 +29,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -41,6 +44,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Throwable;
 
 /**
@@ -73,6 +77,8 @@ class RulesController extends Controller {
 	 * @param RuleTrialService $trials Evaluates a rule without committing.
 	 * @param RuleEnablementService $enablement Switches a rule off and on.
 	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
+	 * @param RuleReplayService $replays Previews a replay over existing objects.
+	 * @param IUserSession $userSession Names the actor a replay runs as.
 	 *
 	 * @return void
 	 */
@@ -85,6 +91,8 @@ class RulesController extends Controller {
 		private readonly RuleTrialService $trials,
 		private readonly RuleEnablementService $enablement,
 		private readonly RuleVocabulary $vocabulary,
+		private readonly RuleReplayService $replays,
+		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -237,6 +245,99 @@ class RulesController extends Controller {
 		return new JSONResponse($result, $this->statusFor(result: $result));
 
 	}//end evaluate()
+
+	/**
+	 * Preview a replay of one rule over the objects that already exist.
+	 *
+	 * Writes nothing. It counts the selection, refuses the whole run when the
+	 * count is above the ceiling the rule declares, and otherwise creates a
+	 * previewed `bulk-action-jobs` job with a per-object outcome. The operator
+	 * commits that job, or does not, through the bulk job surface: the replay
+	 * is an act with an actor, not a side effect of asking about it.
+	 *
+	 * @param string $schema Schema id, uuid or slug.
+	 * @param string $ruleId The derived rule id.
+	 *
+	 * @return JSONResponse The previewed job, or the refusal with the count behind it.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	public function replay(string $schema, string $ruleId): JSONResponse {
+		$entity = $this->resolveSchema(reference: $schema);
+		if ($entity === null) {
+			return $this->notFound(reference: $schema);
+		}
+
+		$actor = $this->userSession->getUser();
+		if ($actor === null) {
+			return new JSONResponse(
+				[
+					'ok' => false,
+					'error' => [
+						'code' => 'rule-replay-no-actor',
+						'message' => 'A replay is an act with an actor, and this request has none.',
+					],
+				],
+				422
+			);
+		}
+
+		$selection = $this->request->getParam('selection', []);
+		if (is_array($selection) === false) {
+			$selection = [];
+		}
+
+		$justification = $this->request->getParam('justification');
+		if (is_string($justification) === false) {
+			$justification = null;
+		}
+
+		$register = $this->request->getParam('registerId');
+		$registerId = null;
+		if (is_numeric($register) === true) {
+			$registerId = (int)$register;
+		}
+
+		try {
+			$result = $this->replays->preview(
+				schema: $entity,
+				ruleId: $ruleId,
+				selection: $selection,
+				actorUid: $actor->getUID(),
+				justification: $justification,
+				registerId: $registerId
+			);
+		} catch (RuleCeilingException $refusal) {
+			// 409, not 422. The request is well formed and the rule is sound;
+			// the instance's own data is what makes the run refuse, and a
+			// caller who reads 422 rewrites their request rather than their
+			// filter or their ceiling.
+			return new JSONResponse($refusal->toArray(), 409);
+		} catch (BulkJobRefusedException $refusal) {
+			return new JSONResponse(
+				[
+					'ok' => false,
+					'error' => array_merge(
+						['code' => $refusal->getReason(), 'message' => $refusal->getMessage()],
+						$refusal->getDetails()
+					),
+				],
+				409
+			);
+		} catch (Throwable $failure) {
+			return new JSONResponse(
+				[
+					'ok' => false,
+					'error' => ['code' => 'rule-replay-failed', 'message' => $failure->getMessage()],
+				],
+				422
+			);
+		}//end try
+
+		return new JSONResponse($result, $this->statusFor(result: $result));
+
+	}//end replay()
 
 	/**
 	 * One rule's run log, newest first, filtered by verdict and period.
