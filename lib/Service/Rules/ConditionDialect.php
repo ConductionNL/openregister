@@ -144,6 +144,13 @@ final class ConditionDialect {
 	 * `lit` is not descended into: its argument is a literal, and a literal
 	 * that happens to be a single-key map is data, not an expression.
 	 *
+	 * The operators whose catalogue arity is `dict` (`dateAdd`, `dateDiff`,
+	 * `sequence`) take a NAMED-KEY object rather than a list, so their argument
+	 * is walked value by value. Reading that object as a node instead would
+	 * refuse every one of them: a three-key map is not a single-key node. The
+	 * arity is read from the catalogue rather than listed here, so an operator
+	 * that joins them later needs no edit in this file.
+	 *
 	 * @param mixed $node The node to check.
 	 *
 	 * @return bool True when every operator in the tree is one the evaluator holds.
@@ -157,13 +164,7 @@ final class ConditionDialect {
 		}
 
 		if (array_is_list($node) === true) {
-			foreach ($node as $item) {
-				if (self::isWellFormedAst(node: $item) === false) {
-					return false;
-				}
-			}
-
-			return true;
+			return self::everyItemIsWellFormed(items: $node);
 		}
 
 		if (count($node) !== 1) {
@@ -179,8 +180,36 @@ final class ConditionDialect {
 			return true;
 		}
 
-		return self::isWellFormedAst(node: $node[$op]);
+		$args = $node[$op];
+		if (CalculationEvaluator::OPERATORS[$op]['arity'] === 'dict') {
+			if (is_array($args) === false) {
+				return false;
+			}
+
+			return self::everyItemIsWellFormed(items: array_values($args));
+		}
+
+		return self::isWellFormedAst(node: $args);
 	}//end isWellFormedAst()
+
+	/**
+	 * Whether every item of a list is a well-formed node or literal.
+	 *
+	 * @param array<int, mixed> $items The items.
+	 *
+	 * @return bool True when all of them are.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private static function everyItemIsWellFormed(array $items): bool {
+		foreach ($items as $item) {
+			if (self::isWellFormedAst(node: $item) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end everyItemIsWellFormed()
 
 	/**
 	 * Whether a condition is well formed in whichever dialect it is written.

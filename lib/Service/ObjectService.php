@@ -1697,6 +1697,18 @@ class ObjectService implements ObjectServiceInterface
                 data: $object
             );
 
+            // Evaluate expression defaults, CREATE only, before validation.
+            // A property that is both required and derived can never be created
+            // if its value arrives after the validator has looked. The refusal
+            // names the property, because "validation failed" about a value the
+            // caller never sent is the least actionable message there is.
+            if ($uuidWasNull === true) {
+                $object = $this->saveHandler->applyExpressionDefaults(
+                    schema: $this->currentSchema,
+                    data: $object
+                );
+            }
+
             // Normalize date values BEFORE validation.
             // Accepts datetime input (e.g. "2024-01-15T10:30:00+02:00") for date fields
             // and casts it to date-only (e.g. "2024-01-15") so Opis validation passes.
