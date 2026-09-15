@@ -132,6 +132,7 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
@@ -2918,6 +2919,12 @@ class Application extends App implements IBootstrap {
 		// already holds it keeps reading correctly.
 		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
+
+		// The dependent value table (rules-engine-operability, REQ-REO-005).
+		// Subscribed to both write events, so the create and the update reach
+		// it identically and a write path added later cannot skip the table.
+		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
 
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity

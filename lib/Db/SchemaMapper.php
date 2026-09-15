@@ -33,6 +33,9 @@ use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
+use OCA\OpenRegister\Service\Rules\DependentValueValidator;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
@@ -1097,6 +1100,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
 		$this->validateRelationAnnotation(schema: $schema);
+		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
@@ -1445,6 +1449,48 @@ class SchemaMapper extends QBMapper {
 
 		throw new RelationDeclarationException(errors: $errors);
 	}//end validateRelationAnnotation()
+
+	/**
+	 * Validate the two property-level rule annotations this change adds.
+	 *
+	 * REFUSES, it does not warn. A table naming a property the schema does not
+	 * declare, or a value the controlling property cannot take, does not fail
+	 * loudly at object save: it constrains nothing, and the object it was
+	 * written to guard saves cleanly. Storing it advisory would be storing a
+	 * rule its author believes is enforced.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * `x-openregister-default-expression` rides along for the same reason: an
+	 * expression the evaluator cannot dispatch does not fail at save, it fails
+	 * on the first create, one object at a time, for whoever happens to be
+	 * using the register that day.
+	 *
+	 * @throws DependentValueDeclarationException When a declaration is malformed or names nothing.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
+	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function validateDependentValueTables(Schema $schema): void {
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false || $properties === []) {
+			return;
+		}
+
+		$errors = array_merge(
+			(new DependentValueValidator())->validate(['properties' => $properties]),
+			ExpressionDefaultResolver::validateDeclarations(properties: $properties)
+		);
+		if ($errors === []) {
+			return;
+		}
+
+		throw new DependentValueDeclarationException(errors: $errors);
+	}//end validateDependentValueTables()
 
 	/**
 	 * Validate the optional `x-openregister-extends-form` annotation.

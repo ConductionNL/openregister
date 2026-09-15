@@ -1014,6 +1014,15 @@ return [
         ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        // Import preview and conflict policy — an import says what it would
+        // create, update, skip and refuse before it writes anything.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
+        ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
+        ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#commit', 'url' => '/api/import-previews/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
@@ -1171,6 +1180,12 @@ return [
         ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
         ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
         ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        [
+            'name' => 'rules#replay',
+            'url' => '/api/schemas/{schema}/rules/{ruleId}/replay',
+            'verb' => 'POST',
+            'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+'],
+        ],
 
         // The property vocabulary: what a property may be, published so an
         // editor is generated from it instead of retyped per app. Literal

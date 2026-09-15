@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\App\IAppManager;
@@ -2921,6 +2922,15 @@ class ObjectsController extends Controller {
 			// MUST be caught before generic \Exception to avoid being absorbed as a 403 with
 			// a non-structured body. See the `self-folder-access-control` capability spec.
 			return $this->folderAccessDeniedResponse(exception: $exception);
+		} catch (ExpressionDefaultException $exception) {
+			// MUST be caught before the generic \Exception below, which flattens
+			// everything to 403. A derived default that could not be derived is
+			// the caller's data, not their permissions, and the refusal names
+			// the property so they can see which derivation failed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $exception->getMessage(), 'errors' => [$exception->toArray()]],
+				statusCode: 422
+			);
 		} catch (\OCA\OpenRegister\Exception\ObjectExistsException $exception) {
 			// MUST be caught before the generic \Exception below, which flattens
 			// everything to 403. A losing claim reported as "forbidden" is
