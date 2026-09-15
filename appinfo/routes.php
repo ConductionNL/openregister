@@ -1205,6 +1205,10 @@ return [
 		// Description and category had NO surface before this: only labels did,
 		// which is why the gap was easy to miss. `file-actions` specifies all three.
 		['name' => 'files#updateMetadata', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/metadata', 'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		// The whole dossier's file metadata in one save. It cannot be mistaken
+		// for the per-file url above it: that one requires `fileId` to be
+		// digits, and `metadata` is not.
+		['name' => 'files#saveMetadataForm', 'url' => '/api/objects/{register}/{schema}/{id}/files/metadata', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
