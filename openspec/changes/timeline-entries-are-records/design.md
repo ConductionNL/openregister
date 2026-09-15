@@ -8,6 +8,28 @@ item carrying its object, its kind and its visibility, so a hit can say
 which entry on which case, and the visibility filter is a query condition
 rather than a post-filter.
 
+### D-1 as built: the visibility filter is in the query, the access check is not
+
+Built 2026-09-15, and this is a deviation worth naming rather than burying.
+The visibility predicate IS a condition in the statement, which is what D-1 was
+about: a portal reader asks for the public view and gets a real page of the
+right size. The OBJECT ACCESS check is not. It resolves per object, after the
+statement, through the same `ObjectService::find` read every other caller goes
+through, with a per-request memo so an object is resolved once however many of
+its entries matched.
+
+The reason is that the set of objects a handler may read is unbounded, and
+enumerating it to build an `IN` clause would be a bigger read than the search
+it was meant to narrow. The statement therefore over-fetches and the service
+drops what the caller may not see. What this costs: a page can come back short
+when many hits sit on cases the searcher cannot read, which is why the
+over-fetch factor exists and is named. What it does not cost is correctness of
+the refusal, which is the same refusal the object endpoint gives.
+
+The two are asserted separately in
+`TimelineEntrySearchServiceTest`, because a test that only counted results
+could pass with either one missing.
+
 ## D-2. A kind declares fields, so a contactmoment is not a second schema
 
 dossiq models a contact moment as its own object today, which splits the
