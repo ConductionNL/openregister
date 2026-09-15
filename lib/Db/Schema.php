@@ -2797,6 +2797,12 @@ class Schema extends Entity implements JsonSerializable {
 		// a schema whose author had just enabled it — the same or#460/#462-class
 		// loss the comments around this list record five times over.
 		self::ARCHIVE_ANNOTATION,
+		// Which object property fills which MDTO element. Absent from this list
+		// setConfiguration() would DROP it, so a schema editor would report a
+		// saved mapping, the annotation would not be there, and the transfer
+		// refusal it exists to drive would never fire. The three comments above
+		// record that same loss three times.
+		'x-openregister-mdto-mapping',
 		'x-openregister-object-source',
 		'x-openregister-quality',
 		'x-openregister-dedup',

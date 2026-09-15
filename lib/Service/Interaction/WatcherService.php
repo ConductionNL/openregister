@@ -226,6 +226,49 @@ class WatcherService {
 	}//end addWatcher()
 
 	/**
+	 * Subscribe a principal who was NAMED in a timeline entry.
+	 *
+	 * WHY THIS IS NOT `addWatcher()`. That method is an administrative act:
+	 * one person deciding that another will follow an object, which is why it
+	 * asks for `manage`. A mention is not that. The person doing it is a
+	 * handler who just wrote an entry on this object, and the authorisation
+	 * that matters is the MENTIONED principal's own: they are subscribed only
+	 * when they may already read the object, and that is decided by the caller
+	 * before this method runs (see EntryMentionService). Requiring `manage`
+	 * here would mean only an owner could ever name a colleague in a note,
+	 * which is the opposite of what a mention is for.
+	 *
+	 * Idempotent, like every other subscribe: naming somebody twice leaves one
+	 * row and writes nothing on the object.
+	 *
+	 * @param ObjectEntity $object The object the entry hangs on.
+	 * @param string $userId The principal who was named, already checked for read access.
+	 * @param string|null $register The register as the caller addressed it.
+	 * @param string|null $schema The schema as the caller addressed it.
+	 *
+	 * @return Watcher The subscription.
+	 *
+	 * @throws NotAuthorizedException When the object carries no uuid to hang the row on.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	public function subscribeMentioned(
+		ObjectEntity $object,
+		string $userId,
+		?string $register = null,
+		?string $schema = null,
+	): Watcher {
+		$this->forgetMemos();
+
+		return $this->mapper->subscribe(
+			userId: $userId,
+			objectUuid: $this->requireUuid(object: $object),
+			register: $register,
+			schema: $schema
+		);
+	}//end subscribeMentioned()
+
+	/**
 	 * Remove another user's subscription.
 	 *
 	 * A watcher removing THEMSELVES needs nothing beyond being that watcher;
