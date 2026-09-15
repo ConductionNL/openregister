@@ -100,6 +100,15 @@ return [
         ['name' => 'objectSharing#createLink',   'url' => '/api/objects/{register}/{schema}/{id}/links',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectSharing#inviteByEmail','url' => '/api/objects/{register}/{schema}/{id}/invitations',      'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 
+        // Who holds which right on one object, and how that set changed. The
+        // other direction of `/api/scopes`: that one answers a caller about
+        // themselves, these answer an auditor about everybody. Reading the
+        // object is not enough to read them — see the controller's guard.
+        // The history route precedes the index one so the longer path is
+        // matched first.
+        ['name' => 'objectPermissions#history', 'url' => '/api/objects/{register}/{schema}/{id}/permissions/history', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectPermissions#index',   'url' => '/api/objects/{register}/{schema}/{id}/permissions',         'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
         // Per-object watchers. Following an object is per-user state that must not
         // be written through the object itself — that would put a subscription in
         // the object's audit trail and cut a version on every follow — so it gets
@@ -377,6 +386,7 @@ return [
         ['name' => 'permissions#index',       'url' => '/api/permissions',              'verb' => 'GET'],
         ['name' => 'permissions#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
         ['name' => 'permissions#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
+        ['name' => 'permissions#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -823,6 +833,29 @@ return [
         // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-resolve-a-public-case-token-rbac-respecting
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
+        // Object dates as a calendar feed. The public endpoint carries no
+        // session, so it is reachable without one, but the calendar it answers
+        // is generated as the principal the token names and holds exactly what
+        // that principal may list. An unknown, revoked or expired token gets
+        // the same 404 as any other.
+        // @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+        ['name' => 'calendarFeed#feed', 'url' => '/api/public/calendar-feeds/{token}.ics', 'verb' => 'GET', 'requirements' => ['token' => '[^/.]+']],
+        ['name' => 'calendarFeed#index', 'url' => '/api/calendar-feeds', 'verb' => 'GET'],
+        ['name' => 'calendarFeed#mint', 'url' => '/api/calendar-feeds', 'verb' => 'POST'],
+        ['name' => 'calendarFeed#revoke', 'url' => '/api/calendar-feeds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        [
+            'name' => 'calendarFeed#attendeeResponses',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'calendarFeed#recordAttendeeResponse',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
         // (uri/scheme values are full URIs, unsafe as path segments). 404
@@ -954,6 +987,17 @@ return [
         ['name' => 'bulk#deleteSchemaObjects', 'url' => '/api/bulk/{register}/{schema}/delete-objects', 'verb' => 'POST'],
         ['name' => 'bulk#deleteRegister', 'url' => '/api/bulk/{register}/delete-register', 'verb' => 'POST'],
         ['name' => 'bulk#runSchemaValidation', 'url' => '/api/bulk/schema/{schema}/validate', 'verb' => 'POST'],
+        // Bulk action jobs — a bulk act as one previewed, cancellable job.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'bulkJobs#actions', 'url' => '/api/bulk-actions', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#index', 'url' => '/api/bulk-jobs', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#create', 'url' => '/api/bulk-jobs', 'verb' => 'POST'],
+        ['name' => 'bulkJobs#show', 'url' => '/api/bulk-jobs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#members', 'url' => '/api/bulk-jobs/{id}/members', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#download', 'url' => '/api/bulk-jobs/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
@@ -1099,6 +1143,27 @@ return [
         // RBAC- and tenancy-scoped, which is its per-object guard (ADR-005/016).
         ['name' => 'calculations#operators', 'url' => '/api/schemas/calculation-operators', 'verb' => 'GET'],
         ['name' => 'calculations#evaluate', 'url' => '/api/schemas/calculation-evaluate', 'verb' => 'POST'],
+        // The rules engine's operator surface (rules-engine-operability). The
+        // inventory is derived from the schema on every read, so it is a read
+        // of configuration and is admin-only; the vocabulary is a static table
+        // with nothing per-instance in it and is open to any signed-in caller,
+        // as the operator catalogue beside it already is. A derived rule id
+        // carries colons, which are legal unescaped in a path segment, so every
+        // `ruleId` requirement is `[^/]+`.
+        ['name' => 'rules#vocabulary', 'url' => '/api/rules/vocabulary', 'verb' => 'GET'],
+        ['name' => 'rules#runs', 'url' => '/api/rules/{ruleId}/runs', 'verb' => 'GET', 'requirements' => ['ruleId' => '[^/]+']],
+        ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
+        ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+
+        // The property vocabulary: what a property may be, published so an
+        // editor is generated from it instead of retyped per app. Literal
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the vocabulary reaches no data at
+        // all, and the narrowing read lists schemas through the RBAC- and
+        // tenancy-scoped mapper (ADR-005/016).
+        ['name' => 'propertyVocabulary#index', 'url' => '/api/schemas/property-vocabulary', 'verb' => 'GET'],
+        ['name' => 'propertyVocabulary#extendingForms', 'url' => '/api/schemas/extending-forms', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

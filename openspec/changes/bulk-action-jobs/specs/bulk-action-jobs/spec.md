@@ -34,7 +34,7 @@ ceiling.
 - **GIVEN** an instance ceiling of 1,000 and a selection of 4,000
 - **WHEN** the job is created
 - **THEN** the creation fails naming the ceiling and the count
-- @e2e exclude {validator, covered by unit tests}
+- @e2e exclude {a creation-time validator; asserted in tests/Unit/Service/BulkJob/BulkJobServiceTest.php}
 
 ### Requirement: A bulk action is previewed before it commits (REQ-BAJ-002)
 
@@ -65,7 +65,7 @@ SHALL re-resolve it and report the difference from the count at creation.
 - **GIVEN** a query-backed job created when the query matched 400 objects
 - **WHEN** it is committed and the query now matches 406
 - **THEN** the job reports the delta of 6 before applying
-- @e2e exclude {timing-dependent, covered by unit tests}
+- @e2e exclude {the query has to change between two calls, which HTTP cannot stage without a race; asserted in tests/Unit/Service/BulkJob/BulkJobServiceTest.php}
 
 ### Requirement: A bulk action reports progress, is cancellable and is safe to retry (REQ-BAJ-003)
 
@@ -84,6 +84,7 @@ version, naming the versions and their counts.
 - **WHEN** the actor cancels it
 - **THEN** the job stops before object 121, reports 120 applied
 - **AND** the 120 remain modified
+- @e2e exclude {needs the background worker to have walked part of the job, so an HTTP assertion would be a timing race; asserted in tests/Unit/Service/BulkJob/BulkJobExecutorTest.php}
 
 #### Scenario: a retry does not act twice
 
@@ -91,10 +92,11 @@ version, naming the versions and their counts.
 - **WHEN** it is retried
 - **THEN** the 300 applied members are skipped as already applied
 - **AND** the remaining 100 are processed
+- @e2e exclude {needs a job that already failed part way, which the worker produces and HTTP cannot; asserted in tests/Unit/Service/BulkJob/BulkJobServiceTest.php}
 
 #### Scenario: a mixed-version attribute write is refused
 
 - **GIVEN** an attribute write action declaring the homogeneity guard, and a selection spanning two schema versions
 - **WHEN** the job is previewed
 - **THEN** the job is refused naming both versions and their counts
-- @e2e exclude {guard behaviour, covered by unit tests}
+- @e2e exclude {needs two live schema versions over one population; asserted in tests/Unit/Service/BulkJob/BulkJobExecutorTest.php}
