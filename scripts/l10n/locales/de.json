@@ -84,6 +84,7 @@
 		"{property} - {other}": "Two placeholders and a separating dash; nothing translatable.",
 		"{title} in {register} / {schema}": "Only 'in' is translatable and it is the same preposition in German.",
 		"Details": "Same spelling and meaning in German (die Details).",
-		"Normal": "Same spelling and meaning in German (normal)."
+		"Normal": "Same spelling and meaning in German (normal).",
+		"Text": "The field-type name \"Text\" is identical in German; the only non-identical options narrow it (\"Freitext\" = free text) or shift to a technical term (\"Zeichenkette\" = string), so the honest label is the same word."
 	}
 }
