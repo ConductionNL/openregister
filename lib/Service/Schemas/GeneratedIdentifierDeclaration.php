@@ -141,7 +141,12 @@ final class GeneratedIdentifierDeclaration {
 	/**
 	 * The counter's name.
 	 *
+	 * Named rather than derived from the schema, because two schemas naming the
+	 * same counter is how they come to share one.
+	 *
 	 * @return string The sequence name.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-two-schemas-may-share-one-sequence
 	 */
 	public function sequence(): string {
 		return $this->sequence;
@@ -152,6 +157,8 @@ final class GeneratedIdentifierDeclaration {
 	 * The format, as declared.
 	 *
 	 * @return string The format string.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
 	public function format(): string {
 		return $this->format;
