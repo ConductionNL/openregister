@@ -2745,6 +2745,19 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-notifications',
 		'x-openregister-widgets',
 		'x-openregister-relations',
+		// The named relation vocabulary: a list of
+		// {key, label, inverseLabel, symmetric, inherits} that several `$ref`
+		// properties can point at by key, so an administrator edits "blocked
+		// by" in one place instead of on every property that means it. Read by
+		// RelationTypeResolver and refused by RelationAnnotationValidator.
+		//
+		// ⚠️ Absent from this list it is dropped by setConfiguration(), and the
+		// failure is the quiet one this list exists to prevent: every property
+		// naming a key would resolve to nothing, so a typed relation would
+		// render as the generic "referenced by" fallback forever while its
+		// author reads a 200 and believes it saved. The comments below record
+		// the same bug five times over.
+		'x-openregister-relation-types',
 		'x-openregister-processing-activity',
 		// Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
 		// dialect). Was absent from this list, so setConfiguration() silently

@@ -4053,7 +4053,7 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse JSON response with related objects
 	 *
 	 * @psalm-return JSONResponse<200,
-	 *     array{results: list<ObjectEntity>, total: int<0, max>,
+	 *     array{results: list<array<string, mixed>>, total: int<0, max>,
 	 *     limit: 30|mixed, offset: 0|mixed},
 	 *     array<never, never>>
 	 *
@@ -4101,9 +4101,14 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse JSON response with objects that use this object
 	 *
 	 * @psalm-return JSONResponse<200,
-	 *     array{results: array<never, never>, total: 0, limit: 30|mixed,
-	 *     offset: 0|mixed, message?: string},
+	 *     array{results: list<array<string, mixed>>, total: int<0, max>,
+	 *     limit: 30|mixed, offset: 0|mixed, message?: string},
 	 *     array<never, never>>
+	 *
+	 * The old annotation said `results: array<never, never>, total: 0` — read
+	 * off the stub this method used to be. Each row now carries a `relation`
+	 * block naming the referencing property and its inverse label
+	 * (openspec/changes/relation-types-with-inverses).
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
