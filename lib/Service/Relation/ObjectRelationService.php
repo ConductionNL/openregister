@@ -175,6 +175,10 @@ class ObjectRelationService {
 	 * @param ObjectEntity $child The created child.
 	 * @param string|null $relationType The vocabulary key naming the link.
 	 * @param array<string, mixed> $inherited What the child took, as recorded.
+	 * @param string|null $entry The entry of the parent it came out of, when it
+	 *                           came out of one. A derivation and a split are
+	 *                           the same act seen twice: a sub-case started
+	 *                           from a timeline entry is both.
 	 *
 	 * @return ObjectRelation The row.
 	 *
@@ -185,7 +189,13 @@ class ObjectRelationService {
 		ObjectEntity $child,
 		?string $relationType = null,
 		array $inherited = [],
+		?string $entry = null,
 	): ObjectRelation {
+		$record = null;
+		if ($inherited !== []) {
+			$record = $inherited;
+		}
+
 		return $this->mapper->createFromArray(
 			[
 				'sourceUuid' => (string)$child->getUuid(),
@@ -197,7 +207,8 @@ class ObjectRelationService {
 				'kind' => ObjectRelation::KIND_OBJECT,
 				'origin' => ObjectRelation::ORIGIN_DERIVE,
 				'relationType' => $relationType,
-				'inherited' => ($inherited === [] ? null : $inherited),
+				'sourceEntry' => $entry,
+				'inherited' => $record,
 				'createdBy' => $this->actor(),
 			]
 		);
@@ -239,13 +250,20 @@ class ObjectRelationService {
 			throw new InvalidArgumentException('An external relation needs a resolvable web address.');
 		}
 
+		// A title nobody gave falls back to the address, so the row is never
+		// nameless in a list.
+		$named = $url;
+		if ($title !== null && trim($title) !== '') {
+			$named = trim($title);
+		}
+
 		return $this->mapper->createFromArray(
 			[
 				'sourceUuid' => $sourceUuid,
 				'sourceRegister' => $register,
 				'sourceSchema' => $schema,
 				'targetUrl' => $url,
-				'targetTitle' => ($title === null || trim($title) === '' ? $url : trim($title)),
+				'targetTitle' => $named,
 				'kind' => ObjectRelation::KIND_EXTERNAL,
 				'origin' => ObjectRelation::ORIGIN_MANUAL,
 				'relationType' => $relationType,
@@ -492,14 +510,19 @@ class ObjectRelationService {
 	 * Resolve a row's labels: from the schema when it names a type, from the
 	 * row itself otherwise.
 	 *
+	 * A stored row ALWAYS resolves to a descriptor, never to null: a row that
+	 * names no type and carries no label still reads by its origin, because
+	 * "split from" is a better answer than an empty line, and because a caller
+	 * that has to handle null is a caller that will render nothing.
+	 *
 	 * @param ObjectRelation $row The stored row.
 	 * @param string $language The BCP-47 tag.
 	 *
-	 * @return array<string, mixed>|null The descriptor.
+	 * @return array<string, mixed> The descriptor.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function descriptorOf(ObjectRelation $row, string $language): ?array {
+	private function descriptorOf(ObjectRelation $row, string $language): array {
 		$type = $row->getRelationType();
 		$schemaId = $row->getSourceSchema();
 

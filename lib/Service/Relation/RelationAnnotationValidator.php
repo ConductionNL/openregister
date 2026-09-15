@@ -371,12 +371,17 @@ final class RelationAnnotationValidator {
 			}
 
 			if (is_string($role) === false || in_array($role, self::INHERITABLE, true) === false) {
+				$named = gettype($role);
+				if (is_string($role) === true) {
+					$named = $role;
+				}
+
 				$errors[] = [
 					'code' => 'relation-inherits-unknown',
 					'message' => sprintf(
 						'%s declares inheritance of "%s", which is not one of: %s.',
 						$subject,
-						is_string($role) === true ? $role : gettype($role),
+						$named,
 						implode(', ', self::INHERITABLE)
 					),
 				];

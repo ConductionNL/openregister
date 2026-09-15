@@ -34,7 +34,6 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -231,9 +230,14 @@ class ObjectRelationsController extends Controller {
 		// 200 rather than 201 when the mention was already there: saving the
 		// same text twice writes nothing, and answering 201 would tell the
 		// caller a row was created when none was.
+		$status = 201;
+		if ($rendered === []) {
+			$status = 200;
+		}
+
 		return new JSONResponse(
 			data: ['results' => $rendered, 'total' => count($rendered)],
-			statusCode: ($rendered === [] ? 200 : 201)
+			statusCode: $status
 		);
 	}//end addProseReference()
 
@@ -377,21 +381,27 @@ class ObjectRelationsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
-		$row = $this->relations->recordSplit(
-			source: $source,
-			created: $created,
-			entry: $entry,
-			relationType: $relationType
-		);
-
-		// A derive that inherited something is recorded as a derivation rather
-		// than as a plain split, and carries what it took. Both are the same
-		// row: the entry says where it came from, the inheritance says what it
-		// started with, and an act can be both.
+		// A derive that inherited something is a derivation; one that only
+		// names where it came from is a split. Writing the split row and then
+		// mutating it into a derivation was two writes for one act, and left
+		// recordDerivation() with no caller at all: a write capability nobody
+		// reaches is a capability nobody can exercise, which is the shape
+		// gate-orphaned-write-capability exists to catch.
 		if ($applied['inherited'] !== []) {
-			$row->setOrigin(ObjectRelation::ORIGIN_DERIVE);
-			$row->setInherited($applied['inherited']);
-			$row = $this->relations->saveRow(row: $row);
+			$row = $this->relations->recordDerivation(
+				parent: $source,
+				child: $created,
+				relationType: $relationType,
+				inherited: $applied['inherited'],
+				entry: $entry
+			);
+		} else {
+			$row = $this->relations->recordSplit(
+				source: $source,
+				created: $created,
+				entry: $entry,
+				relationType: $relationType
+			);
 		}
 
 		return new JSONResponse(

@@ -167,6 +167,45 @@ class ObjectRelationServiceTest extends TestCase {
 	}//end testAChildTakesTheParentsTriadAndTheRowRecordsIt()
 
 	/**
+	 * A derivation that came out of one entry keeps that entry too.
+	 *
+	 * A derivation and a split are the same act seen twice: a sub-case started
+	 * from a timeline entry is both, and losing the entry because the act also
+	 * inherited something would lose exactly the provenance the split exists
+	 * to keep.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function testADerivationKeepsTheEntryItCameOutOf(): void {
+		$row = $this->service->recordDerivation(
+			parent: $this->object('uuid-parent'),
+			child: $this->object('uuid-child'),
+			relationType: 'deelzaak',
+			inherited: ['classification' => ['property' => 'classificatie', 'value' => 'intern']],
+			entry: 'entry-9'
+		);
+
+		$this->assertSame('entry-9', $row->getSourceEntry());
+		$this->assertSame(ObjectRelation::ORIGIN_DERIVE, $row->getOrigin());
+		$this->assertSame('intern', $row->getInherited()['classification']['value']);
+	}//end testADerivationKeepsTheEntryItCameOutOf()
+
+	/**
+	 * A derivation that inherited nothing records nothing rather than an empty
+	 * map, so "took nothing" and "was never asked to take anything" read alike
+	 * and neither reads as "took a null".
+	 */
+	public function testADerivationThatInheritedNothingRecordsNothing(): void {
+		$row = $this->service->recordDerivation(
+			parent: $this->object('uuid-parent'),
+			child: $this->object('uuid-child')
+		);
+
+		$this->assertNull($row->getInherited());
+		$this->assertNull($row->getSourceEntry());
+	}//end testADerivationThatInheritedNothingRecordsNothing()
+
+	/**
 	 * Scenario: reclassifying the parent does not reclassify the child.
 	 *
 	 * Inheritance happens at creation and nowhere else, so the child's value

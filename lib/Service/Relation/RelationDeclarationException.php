@@ -53,7 +53,7 @@ final class RelationDeclarationException extends Exception {
 			$errors
 		);
 
-		parent::__construct('Invalid relation declaration: '.implode(' ', $messages));
+		parent::__construct(message: 'Invalid relation declaration: '.implode(' ', $messages));
 	}//end __construct()
 
 	/**

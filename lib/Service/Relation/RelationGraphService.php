@@ -224,6 +224,25 @@ class RelationGraphService {
 				}
 
 				$visited[$other] = true;
+
+				// An external address is a leaf, and it is not an object: it
+				// carries its own title on the row and loading it would fail.
+				// Passing it through node() would have thrown that title away
+				// and drawn an anonymous node, which is exactly what a graph
+				// of "what is this case linked to" must not do.
+				if (($edge['kind'] ?? null) === ObjectRelation::KIND_EXTERNAL) {
+					$nodes[$other] = [
+						'uuid' => $other,
+						'title' => ($edge['targetTitle'] ?? $other),
+						'register' => null,
+						'schema' => null,
+						'distance' => ($level + 1),
+						'resolved' => true,
+						'external' => true,
+					];
+					continue;
+				}
+
 				$nodes[$other] = $this->node(
 					uuid: $other,
 					object: $this->loadObject(uuid: $other),
@@ -403,9 +422,14 @@ class RelationGraphService {
 			}
 
 			$target = (string)($stored->getTargetUuid() ?? '');
+			$other = $target;
+			if ($target === '') {
+				$other = (string)$stored->getTargetUrl();
+			}
+
 			$edges[] = [
 				'from' => $source,
-				'to' => ($target === '' ? (string)$stored->getTargetUrl() : $target),
+				'to' => $other,
 				'direction' => $direction,
 				'label' => ($stored->getLabel() ?? $stored->getRelationType()),
 				'inverseLabel' => $stored->getInverseLabel(),
@@ -474,6 +498,7 @@ class RelationGraphService {
 				'schema' => null,
 				'distance' => $distance,
 				'resolved' => false,
+				'external' => false,
 			];
 		}
 
@@ -484,6 +509,7 @@ class RelationGraphService {
 			'schema' => $object->getSchema(),
 			'distance' => $distance,
 			'resolved' => true,
+			'external' => false,
 		];
 	}//end node()
 

@@ -24,6 +24,7 @@ namespace Unit\Service\Relation;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -48,7 +49,12 @@ class RelationGraphServiceTest extends TestCase {
 	 *
 	 * @return RelationGraphService The service.
 	 */
-	private function service(array $chain, int $maxDepth = 3, int $maxNodes = 250): RelationGraphService {
+	private function service(
+		array $chain,
+		int $maxDepth = 3,
+		int $maxNodes = 250,
+		array $stored = [],
+	): RelationGraphService {
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('find')->willReturnCallback(
 			function (mixed $identifier) use ($chain): ObjectEntity {
@@ -69,7 +75,20 @@ class RelationGraphServiceTest extends TestCase {
 		);
 
 		$relationMapper = $this->createMock(ObjectRelationMapper::class);
-		$relationMapper->method('findTouching')->willReturn([]);
+		$relationMapper->method('findTouching')->willReturnCallback(
+			static function (array $uuids) use ($stored): array {
+				return array_values(
+					array_filter(
+						$stored,
+						static fn (ObjectRelation $row): bool => in_array(
+							(string)$row->getSourceUuid(),
+							$uuids,
+							true
+						)
+					)
+				);
+			}
+		);
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnCallback(
@@ -200,6 +219,53 @@ class RelationGraphServiceTest extends TestCase {
 		$this->assertFalse($graph['nodes'][1]['resolved']);
 		$this->assertNull($graph['nodes'][1]['title']);
 	}//end testAnUnreadableNodeStillAppears()
+
+	/**
+	 * An external address is a graph node with the title it was given.
+	 *
+	 * It is not an object, so loading it fails, and passing it through the
+	 * object path would draw an anonymous node while the row was carrying a
+	 * perfectly good title. The distinction matters because "a node whose
+	 * object you may not read" and "a link to another system" are different
+	 * answers to "what is this case linked to".
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function testAnExternalAddressIsANamedGraphNode(): void {
+		$external = new ObjectRelation();
+		$external->hydrate(
+			[
+				'sourceUuid' => 'a',
+				'targetUrl' => 'https://example.org/stcrt-2026-1',
+				'targetTitle' => 'Publicatie in de Staatscourant',
+				'kind' => ObjectRelation::KIND_EXTERNAL,
+				'origin' => ObjectRelation::ORIGIN_MANUAL,
+				'label' => 'gepubliceerd in',
+			]
+		);
+
+		$graph = $this->service(['a' => []], stored: [$external])->graph(rootUuid: 'a', depth: 1);
+
+		$node = null;
+		foreach ($graph['nodes'] as $candidate) {
+			if ($candidate['uuid'] === 'https://example.org/stcrt-2026-1') {
+				$node = $candidate;
+			}
+		}
+
+		$this->assertNotNull($node, 'the external address is not a node in the graph');
+		$this->assertSame('Publicatie in de Staatscourant', $node['title']);
+		$this->assertTrue($node['external']);
+		$this->assertTrue($node['resolved']);
+
+		// And the object node beside it is still marked as not external, so
+		// the flag separates them rather than being decoration.
+		$this->assertFalse($graph['nodes'][0]['external']);
+
+		$edge = $graph['edges'][0];
+		$this->assertSame('gepubliceerd in', $edge['label']);
+		$this->assertSame(ObjectRelation::KIND_EXTERNAL, $edge['kind']);
+	}//end testAnExternalAddressIsANamedGraphNode()
 
 	/**
 	 * The export is an edge list with a header, and the truncation marker

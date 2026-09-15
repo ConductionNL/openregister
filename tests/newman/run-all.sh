@@ -185,7 +185,12 @@ declare -A DOMAIN_COLLECTIONS=(
     # run can stage. The 422 on a contradictory declaration is here for the
     # same reason a route is: a validator not wired into the save path is a
     # green unit suite and no refusal at all.
-    [relation-types]="$REPO_ROOT/tests/newman/openregister-relation-types.postman_collection.json"
+    # Under tests/integration, not tests/newman: gate-112 (newman-reach) reads
+    # newman-collection-path and reports every collection outside it as one CI
+    # never runs, and gate-25 (contract-coverage) only looks for a contract
+    # test there. A collection CI does not run is a collection that reports the
+    # same green as one that passed.
+    [relation-types]="$REPO_ROOT/tests/integration/openregister-relation-types.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

@@ -157,10 +157,15 @@ class RelationTypeResolver {
 	 */
 	public function row(?array $descriptor, string $direction, ?string $path = null): array {
 		if ($descriptor === null) {
+			$fallbackProperty = null;
+			if ($path !== null) {
+				$fallbackProperty = self::propertyNameOf(path: $path);
+			}
+
 			$descriptor = [
-				'property' => ($path === null ? null : self::propertyNameOf(path: $path)),
+				'property' => $fallbackProperty,
 				'type' => null,
-				'label' => ($path === null ? null : self::propertyNameOf(path: $path)),
+				'label' => $fallbackProperty,
 				'inverseLabel' => self::FALLBACK_INVERSE_LABEL,
 				'symmetric' => false,
 				'inherits' => [],
@@ -299,8 +304,9 @@ class RelationTypeResolver {
 				continue;
 			}
 
-			if (is_string($key) === true
-				&& is_string($value) === true
+			// $key is a string by elimination: the int branch above continues,
+			// and an array key is int or string.
+			if (is_string($value) === true
 				&& trim($value) !== ''
 				&& in_array($key, RelationAnnotationValidator::INHERITABLE, true) === true
 			) {
@@ -367,8 +373,11 @@ class RelationTypeResolver {
 	private function text(mixed $value, string $language): ?string {
 		if (is_string($value) === true) {
 			$value = trim($value);
+			if ($value === '') {
+				return null;
+			}
 
-			return ($value === '' ? null : $value);
+			return $value;
 		}
 
 		if (is_object($value) === true) {
