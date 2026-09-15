@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -66,6 +68,8 @@ class NotesController extends Controller {
 	 * @param NoteService $noteService Note service for comment operations
 	 * @param ObjectService $objectService Object service for object validation
 	 * @param TimelineVisibilityService $visibility Visibility guard, filter and audit
+	 * @param TimelineWriteService $timeline Projects a note into the entry record, so it is searchable
+	 * @param TimelineEntryService $entries Reads and forgets the record behind a note
 	 *
 	 * @return void
 	 */
@@ -75,6 +79,8 @@ class NotesController extends Controller {
 		NoteService $noteService,
 		ObjectService $objectService,
 		private readonly TimelineVisibilityService $visibility,
+		private readonly TimelineWriteService $timeline,
+		private readonly TimelineEntryService $entries,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -202,6 +208,21 @@ class NotesController extends Controller {
 				visibility: $visibility
 			);
 
+			// The one line this endpoint gains. A note written here still
+			// behaves exactly as it did — same payload, same shape, no kind
+			// and no fields — but it now also has a record, so the entry
+			// search can find it. Half a timeline that cannot be searched is
+			// worse than none. The projection never throws.
+			$entry = $this->timeline->projectNote(
+				object: $object,
+				note: $note,
+				register: $register,
+				schema: $schema
+			);
+			if ($entry !== null) {
+				$note['entryId'] = $entry->getUuid();
+			}
+
 			return new JSONResponse(data: $note, statusCode: 201);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
@@ -255,6 +276,16 @@ class NotesController extends Controller {
 				visibility: $write['visibility']
 			);
 
+			// Keep the record and its references in step with the text that
+			// was just rewritten: an index answering with yesterday's sentence
+			// is worse than no index, because it looks like a hit.
+			$this->timeline->rewrite(
+				object: $object,
+				commentId: (int)$noteId,
+				message: $write['message'],
+				visibility: $write['visibility']
+			);
+
 			if ($write['previous'] !== null) {
 				$this->visibility->auditVisibilityChange(
 					object: $object,
@@ -302,7 +333,17 @@ class NotesController extends Controller {
 				);
 			}
 
+			// Read the record BEFORE the note goes, so its references can be
+			// forgotten by id: after the delete there is nothing left to look
+			// the entry up by.
+			$entry = $this->entries->entryForNote(commentId: (int)$noteId);
+
 			$this->noteService->deleteNote((int)$noteId);
+
+			$this->timeline->forgetNote(
+				commentId: (int)$noteId,
+				entryUuid: $entry?->getUuid()
+			);
 
 			return new JSONResponse(data: ['success' => true]);
 		} catch (DoesNotExistException $e) {

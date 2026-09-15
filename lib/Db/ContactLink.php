@@ -67,6 +67,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setValidUntil(?DateTime $validUntil)
  * @method string|null getNote()
  * @method void setNote(?string $note)
+ * @method string|null getPartyUuid()
+ * @method void setPartyUuid(?string $partyUuid)
+ * @method string|null getPartyKind()
+ * @method void setPartyKind(?string $partyKind)
+ * @method bool|null getPrimaryParty()
+ * @method void setPrimaryParty(?bool $primaryParty)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -217,9 +223,40 @@ class ContactLink extends Entity implements JsonSerializable {
 	protected ?string $note = null;
 
 	/**
+	 * The uuid of the party object when the link names a party rather than
+	 * an account or a vCard (party-roles-beyond-the-requester). A party link
+	 * stores `party:<uuid>` as its contact uid, so every lookup keyed on that
+	 * column keeps working.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $partyUuid = null;
+
+	/**
+	 * The kind the party had when the role was given, so a listing and a
+	 * refusal read the kind without loading every party.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $partyKind = null;
+
+	/**
+	 * Whether this party is the one the object is filed against. At most one
+	 * link per object carries it; replacing it is an authorised act.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $primaryParty = null;
+
+	/**
 	 * The prefix of a user link's contact uid.
 	 */
 	public const USER_UID_PREFIX = 'user:';
+
+	/**
+	 * The prefix of a party link's contact uid.
+	 */
+	public const PARTY_UID_PREFIX = 'party:';
 
 	/**
 	 * Constructor.
@@ -244,6 +281,9 @@ class ContactLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'validFrom', type: 'datetime');
 		$this->addType(fieldName: 'validUntil', type: 'datetime');
 		$this->addType(fieldName: 'note', type: 'string');
+		$this->addType(fieldName: 'partyUuid', type: 'string');
+		$this->addType(fieldName: 'partyKind', type: 'string');
+		$this->addType(fieldName: 'primaryParty', type: 'boolean');
 	}//end __construct()
 
 	/**
@@ -256,6 +296,30 @@ class ContactLink extends Entity implements JsonSerializable {
 	public function isUserLink(): bool {
 		return $this->userId !== null && $this->userId !== '';
 	}//end isUserLink()
+
+	/**
+	 * Whether the link names a party record rather than an account or a vCard.
+	 *
+	 * @return bool True for a party link.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function isPartyLink(): bool {
+		return $this->partyUuid !== null && $this->partyUuid !== '';
+	}//end isPartyLink()
+
+	/**
+	 * The contact uid a party link is stored under.
+	 *
+	 * @param string $partyUuid The party object's uuid.
+	 *
+	 * @return string The uid, `party:<uuid>`.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public static function partyUid(string $partyUuid): string {
+		return self::PARTY_UID_PREFIX . $partyUuid;
+	}//end partyUid()
 
 	/**
 	 * Whether today lies inside the validity window; an unset bound is open.
@@ -333,15 +397,22 @@ class ContactLink extends Entity implements JsonSerializable {
 			'validUntil' => $this->validUntil?->format('Y-m-d'),
 			'note' => $this->note,
 			'active' => $this->isActiveOn(),
+			'partyUuid' => $this->partyUuid,
+			'partyKind' => $this->partyKind,
+			'primaryParty' => ($this->primaryParty === true),
 		];
 	}//end jsonSerialize()
 
 	/**
 	 * The kind of person the link names.
 	 *
-	 * @return string `user` or `contact`.
+	 * @return string `party`, `user` or `contact`.
 	 */
 	private function kind(): string {
+		if ($this->isPartyLink() === true) {
+			return 'party';
+		}
+
 		if ($this->isUserLink() === true) {
 			return 'user';
 		}

@@ -113,4 +113,53 @@ class EmailSender {
 
 		return self::OUTCOME_DISPATCHED;
 	}//end send()
+
+	/**
+	 * Send a transactional email to a bare address.
+	 *
+	 * Most melders never sign in. Making them Nextcloud users to hold a name
+	 * and an address is a permission surface nobody wants and an account
+	 * nobody uses, so a party without an account is reached over the
+	 * addresses it holds. The kill switch, the never-throws contract and the
+	 * outcome vocabulary are the account path's, unchanged.
+	 *
+	 * @param string $address The recipient address.
+	 * @param string $displayName The name to address it to, '' for none.
+	 * @param string $subject Email subject line.
+	 * @param string $body Email body text.
+	 *
+	 * @return string One of the OUTCOME_* constants.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function sendToAddress(string $address, string $displayName, string $subject, string $body): string {
+		if ($this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'email') === false) {
+			return self::OUTCOME_KILL_SWITCH;
+		}
+
+		$to = trim($address);
+		if ($to === '') {
+			return self::OUTCOME_NO_ADDRESS;
+		}
+
+		try {
+			$name = $to;
+			if ($displayName !== '') {
+				$name = $displayName;
+			}
+
+			$msg = $this->mailer->createMessage();
+			$msg->setTo([$to => $name]);
+			$msg->setSubject($subject);
+			$msg->setPlainBody($body);
+			$this->mailer->send($msg);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[EmailSender] email to the address of a party failed (%s)', $e->getMessage())
+			);
+			return self::OUTCOME_FAILED;
+		}
+
+		return self::OUTCOME_DISPATCHED;
+	}//end sendToAddress()
 }//end class
