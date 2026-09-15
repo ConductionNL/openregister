@@ -482,7 +482,15 @@ class AuditTrailMapper extends QBMapper {
 		}
 
 		try {
-			$aggregation = new AuditAggregationService($this->container->get(IAppConfig::class));
+			// Resolved here rather than injected: the constructor is mocked by a
+			// long tail of tests that build this mapper positionally, and the
+			// window is read once per audited write on instances that set one.
+			$appConfig = $this->container->get(IAppConfig::class);
+			if (($appConfig instanceof IAppConfig) === false) {
+				return null;
+			}
+
+			$aggregation = new AuditAggregationService($appConfig);
 			$window = $aggregation->windowSeconds();
 			if ($window === 0) {
 				return null;
