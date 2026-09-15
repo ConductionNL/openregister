@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -115,15 +116,21 @@ final class ArchiveHandlerTest extends TestCase {
 		// one assertion that the vocabulary entry works, and a double cannot
 		// make it.
 		$schema = new Schema();
+		$schema->setId(2);
+		$schema->setSlug('zaak');
 		$schema->setTitle('Zaak');
 		if ($archivingEnabled === true) {
 			$schema->setConfiguration([Schema::ARCHIVE_ANNOTATION => ['enabled' => true]]);
 		}
 
+		$register = new Register();
+		$register->setId(1);
+		$register->setSlug('zaken');
+
 		$this->magic->method('findAcrossAllSources')->willReturn(
 			[
 				'object' => $object,
-				'register' => $this->createMock(originalClassName: Register::class),
+				'register' => $register,
 				'schema' => $schema,
 			]
 		);
@@ -339,6 +346,69 @@ final class ArchiveHandlerTest extends TestCase {
 		// bezwaar from the list it has to stay on.
 		$this->assertFalse($object->isArchived());
 	}//end testFreezeWritesItsOwnMarkerAndNamesTheState()
+
+	/**
+	 * An object in another register cannot be archived through this one's url.
+	 *
+	 * `findAcrossAllSources()` resolves a uuid wherever it lives, which is
+	 * right for a lookup and wrong for an authorization boundary. Without the
+	 * scope check the `update` gate would be asked about the wrong schema, and
+	 * an object would be archivable from an address it is not at.
+	 *
+	 * @return void
+	 */
+	public function testAnObjectInAnotherRegisterIsNotFound(): void {
+		$object = $this->object();
+		$this->resolvesTo(object: $object);
+		$this->magic->expects($this->never())->method('updateObjectEntity');
+
+		$this->expectException(DoesNotExistException::class);
+
+		try {
+			$this->handler()->archive(identifier: self::OBJ, register: '99');
+		} finally {
+			$this->assertFalse($object->isArchived());
+		}
+	}//end testAnObjectInAnotherRegisterIsNotFound()
+
+	/**
+	 * The scope accepts both spellings the routes allow.
+	 *
+	 * The control for the test above: a check that refused everything would
+	 * pass it and break every real call. `/api/objects/1/2/...` and
+	 * `/api/objects/zaken/zaak/...` reach the same place, so both must pass.
+	 *
+	 * @param string $register The register as the url spells it.
+	 * @param string $schema The schema as the url spells it.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider routeSpellings
+	 */
+	public function testBothRouteSpellingsAreInScope(string $register, string $schema): void {
+		$this->resolvesTo(object: $this->object());
+		$this->persistsVerbatim();
+
+		$result = $this->handler()->archive(
+			identifier: self::OBJ,
+			register: $register,
+			schema: $schema
+		);
+
+		$this->assertSame('anna', $result['archived']['by']);
+	}//end testBothRouteSpellingsAreInScope()
+
+	/**
+	 * The two ways a route names a register and a schema.
+	 *
+	 * @return array<string, array{0: string, 1: string}> The cases.
+	 */
+	public static function routeSpellings(): array {
+		return [
+			'by id' => ['1', '2'],
+			'by slug' => ['zaken', 'zaak'],
+		];
+	}//end routeSpellings()
 
 	/**
 	 * Unfreezing clears the freeze and records it.

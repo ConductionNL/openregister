@@ -317,6 +317,7 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		$pdo->exec(
 			'CREATE TABLE "oc_register_1_schema_ap_tx" (
                 "_deleted" TEXT,
+                "_archived" TEXT,
                 "_organisation" TEXT,
                 "vendor_id" TEXT,
                 "due_date_bucket" TEXT,

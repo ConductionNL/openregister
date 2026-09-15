@@ -96,7 +96,9 @@ class ObjectStateController extends Controller {
 		try {
 			$result = $this->archiveHandler->archive(
 				identifier: $id,
-				reason: $this->reasonFromRequest()
+				reason: $this->reasonFromRequest(),
+				register: $register,
+				schema: $schema
 			);
 
 			return new JSONResponse(data: $result);
@@ -129,7 +131,9 @@ class ObjectStateController extends Controller {
 		try {
 			$result = $this->archiveHandler->unarchive(
 				identifier: $id,
-				reason: $this->reasonFromRequest()
+				reason: $this->reasonFromRequest(),
+				register: $register,
+				schema: $schema
 			);
 
 			return new JSONResponse(data: $result);
@@ -162,7 +166,9 @@ class ObjectStateController extends Controller {
 		try {
 			$result = $this->archiveHandler->freeze(
 				identifier: $id,
-				reason: $this->reasonFromRequest()
+				reason: $this->reasonFromRequest(),
+				register: $register,
+				schema: $schema
 			);
 
 			return new JSONResponse(data: $result);
@@ -195,7 +201,9 @@ class ObjectStateController extends Controller {
 		try {
 			$result = $this->archiveHandler->unfreeze(
 				identifier: $id,
-				reason: $this->reasonFromRequest()
+				reason: $this->reasonFromRequest(),
+				register: $register,
+				schema: $schema
 			);
 
 			return new JSONResponse(data: $result);

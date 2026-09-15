@@ -152,6 +152,14 @@ use OCP\IUserSession;
  * The class already sat at the threshold, so any accessor trips it; splitting
  * ObjectEntity is owned by the debt sweep, not by a feature that adds one field.
  *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) The state verbs live here for
+ * the same reason `delete()` and `isSoftDeleted()` do: a marker on the record
+ * is written and read through the record. `archive`/`unarchive`,
+ * `freeze`/`unfreeze` and the two predicates that go with them are six methods
+ * that took the class from seven to thirteen. Moving them to a helper would
+ * put the write next to neither the field it writes nor the guard that reads
+ * it, which is how `getDeleted() === null` became a guard that does not guard.
+ *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @SuppressWarnings(PHPMD.NPathComplexity)

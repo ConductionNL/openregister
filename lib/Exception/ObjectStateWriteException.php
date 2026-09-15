@@ -91,7 +91,7 @@ class ObjectStateWriteException extends Exception {
 	 *
 	 * @var string|null
 	 */
-	private ?string $at = null;
+	private ?string $occurredAt = null;
 
 	/**
 	 * Build the refusal for an archived object.
@@ -113,17 +113,17 @@ class ObjectStateWriteException extends Exception {
 	public static function archived(ObjectEntity $object): self {
 		$marker = ($object->getArchived() ?? []);
 		$actor = self::stringOrNull(value: ($marker['by'] ?? null));
-		$at = self::stringOrNull(value: ($marker['at'] ?? null));
+		$occurredAt = self::stringOrNull(value: ($marker['at'] ?? null));
 
 		$exception = new self(
 			message: 'Cannot write to this object: it was archived by '
-				. ($actor ?? 'an unknown user') . ' on ' . ($at ?? 'an unrecorded date')
+				. ($actor ?? 'an unknown user') . ' on ' . ($occurredAt ?? 'an unrecorded date')
 				. '. Restore it from the archive before changing it.'
 		);
 
 		$exception->state = 'archived';
 		$exception->actor = $actor;
-		$exception->at = $at;
+		$exception->occurredAt = $occurredAt;
 
 		return $exception;
 	}//end archived()
@@ -144,7 +144,7 @@ class ObjectStateWriteException extends Exception {
 	public static function frozen(ObjectEntity $object): self {
 		$marker = ($object->getFrozen() ?? []);
 		$actor = self::stringOrNull(value: ($marker['by'] ?? null));
-		$at = self::stringOrNull(value: ($marker['at'] ?? null));
+		$occurredAt = self::stringOrNull(value: ($marker['at'] ?? null));
 		$state = self::stringOrNull(value: ($marker['state'] ?? null));
 
 		$because = '';
@@ -154,13 +154,13 @@ class ObjectStateWriteException extends Exception {
 
 		$exception = new self(
 			message: 'Cannot write to this object: it was frozen by '
-				. ($actor ?? 'an unknown user') . ' on ' . ($at ?? 'an unrecorded date')
+				. ($actor ?? 'an unknown user') . ' on ' . ($occurredAt ?? 'an unrecorded date')
 				. $because . '. Unfreeze it before changing it.'
 		);
 
 		$exception->state = 'frozen';
 		$exception->actor = $actor;
-		$exception->at = $at;
+		$exception->occurredAt = $occurredAt;
 
 		return $exception;
 	}//end frozen()
@@ -195,7 +195,7 @@ class ObjectStateWriteException extends Exception {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function getAt(): ?string {
-		return $this->at;
+		return $this->occurredAt;
 	}//end getAt()
 
 	/**

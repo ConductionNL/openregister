@@ -2256,23 +2256,11 @@ class ObjectService implements ObjectServiceInterface
 
         $parts = [];
         if ($violations !== []) {
-            $properties = array_map(static fn (array $v): string => $v['property'], $violations);
-            $suffix     = 'ies';
-            if (count($violations) === 1) {
-                $suffix = 'y';
-            }
-
-            $parts[] = 'Cannot modify readOnly propert'.$suffix.': '.implode(', ', $properties);
+            $parts[] = $this->describeViolations(violations: $violations, verb: 'modify readOnly');
         }
 
         if ($immutableViolations !== []) {
-            $immutableNames = array_map(static fn (array $v): string => $v['property'], $immutableViolations);
-            $suffix         = 'ies';
-            if (count($immutableViolations) === 1) {
-                $suffix = 'y';
-            }
-
-            $parts[]    = 'Cannot change immutable propert'.$suffix.': '.implode(', ', $immutableNames);
+            $parts[]    = $this->describeViolations(violations: $immutableViolations, verb: 'change immutable');
             $violations = array_merge($violations, $immutableViolations);
         }
 
@@ -2294,6 +2282,33 @@ class ObjectService implements ObjectServiceInterface
         // log entry carry the violation detail.
         throw new ValidationException(message: $message);
     }//end enforceReadOnlyOnUpdate()
+
+    /**
+     * Name the properties a write rule refused, in one sentence.
+     *
+     * Extracted so `enforceReadOnlyOnUpdate()` reads as two rules and a
+     * message rather than two rules and two copies of the same pluralisation.
+     * The copies were also what pushed that method's NPath complexity past the
+     * threshold when the second rule arrived.
+     *
+     * @param array $violations The violation rows, each carrying a `property`.
+     * @param string $verb What the caller tried to do, for the message.
+     *
+     * @return string The sentence.
+     *
+     * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+     */
+    private function describeViolations(array $violations, string $verb): string
+    {
+        $properties = array_map(static fn (array $v): string => $v['property'], $violations);
+
+        $suffix = 'ies';
+        if (count($violations) === 1) {
+            $suffix = 'y';
+        }
+
+        return 'Cannot '.$verb.' propert'.$suffix.': '.implode(', ', $properties);
+    }//end describeViolations()
 
     /**
      * Normalize date values in object data before validation.

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -82,6 +83,9 @@ class ArchiveHandler {
 	 *
 	 * @param string $identifier Object id, uuid, slug or uri.
 	 * @param string|null $reason Why it is being archived.
+	 * @param string|null $register The register the url names, so an object in
+	 *                              another one is not reachable from this address.
+	 * @param string|null $schema The schema the url names, checked the same way.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -91,8 +95,13 @@ class ArchiveHandler {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function archive(string $identifier, ?string $reason = null): array {
-		$context = $this->resolveAndAuthorize(identifier: $identifier);
+	public function archive(
+		string $identifier,
+		?string $reason = null,
+		?string $register = null,
+		?string $schema = null,
+	): array {
+		$context = $this->resolveAndAuthorize(identifier: $identifier, register: $register, schema: $schema);
 		$object = $context['object'];
 
 		// Already archived is not an error. The caller wanted the object in the
@@ -122,6 +131,9 @@ class ArchiveHandler {
 	 *
 	 * @param string $identifier Object id, uuid, slug or uri.
 	 * @param string|null $reason Why it is being restored.
+	 * @param string|null $register The register the url names, so an object in
+	 *                              another one is not reachable from this address.
+	 * @param string|null $schema The schema the url names, checked the same way.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -131,14 +143,19 @@ class ArchiveHandler {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function unarchive(string $identifier, ?string $reason = null): array {
+	public function unarchive(
+		string $identifier,
+		?string $reason = null,
+		?string $register = null,
+		?string $schema = null,
+	): array {
 		// A read by identifier is deliberately unaffected by the archive: the
 		// exclusion is a property of the LIST, not of the record. That is what
 		// keeps a `$ref` into an archived contact resolving, and it is also
 		// what lets this endpoint find the object it exists to restore. Were
 		// the lookup filtered too, restore would answer 404 for every object it
 		// can act on — the state hiding the one verb that undoes it.
-		$context = $this->resolveAndAuthorize(identifier: $identifier);
+		$context = $this->resolveAndAuthorize(identifier: $identifier, register: $register, schema: $schema);
 		$object = $context['object'];
 
 		if ($object->isArchived() === false) {
@@ -171,6 +188,9 @@ class ArchiveHandler {
 	 * @param string $identifier Object id, uuid, slug or uri.
 	 * @param string|null $reason Why it is being frozen.
 	 * @param string|null $state The lifecycle state declaring the freeze, when one does.
+	 * @param string|null $register The register the url names, so an object in
+	 *                              another one is not reachable from this address.
+	 * @param string|null $schema The schema the url names, checked the same way.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -180,8 +200,14 @@ class ArchiveHandler {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function freeze(string $identifier, ?string $reason = null, ?string $state = null): array {
-		$context = $this->resolveAndAuthorize(identifier: $identifier);
+	public function freeze(
+		string $identifier,
+		?string $reason = null,
+		?string $state = null,
+		?string $register = null,
+		?string $schema = null,
+	): array {
+		$context = $this->resolveAndAuthorize(identifier: $identifier, register: $register, schema: $schema);
 		$object = $context['object'];
 
 		if ($object->isFrozen() === true) {
@@ -207,6 +233,9 @@ class ArchiveHandler {
 	 *
 	 * @param string $identifier Object id, uuid, slug or uri.
 	 * @param string|null $reason Why it is being unfrozen.
+	 * @param string|null $register The register the url names, so an object in
+	 *                              another one is not reachable from this address.
+	 * @param string|null $schema The schema the url names, checked the same way.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -216,10 +245,15 @@ class ArchiveHandler {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function unfreeze(string $identifier, ?string $reason = null): array {
+	public function unfreeze(
+		string $identifier,
+		?string $reason = null,
+		?string $register = null,
+		?string $schema = null,
+	): array {
 		// A frozen object never left the working views, so the ordinary lookup
 		// still finds it and no archive lens is needed here.
-		$context = $this->resolveAndAuthorize(identifier: $identifier);
+		$context = $this->resolveAndAuthorize(identifier: $identifier, register: $register, schema: $schema);
 		$object = $context['object'];
 
 		if ($object->isFrozen() === false) {
@@ -261,7 +295,11 @@ class ArchiveHandler {
 	 *
 	 * @return array{object: ObjectEntity, register: Register, schema: Schema} The resolved context.
 	 */
-	private function resolveAndAuthorize(string $identifier): array {
+	private function resolveAndAuthorize(
+		string $identifier,
+		?string $register = null,
+		?string $schema = null,
+	): array {
 		$result = $this->magicMapper->findAcrossAllSources(
 			identifier: $identifier,
 			includeDeleted: false,
@@ -270,22 +308,33 @@ class ArchiveHandler {
 		);
 
 		$object = $result['object'];
-		$register = $result['register'];
-		$schema = $result['schema'];
+		$registerEntity = $result['register'];
+		$schemaEntity = $result['schema'];
 
-		if ($schema instanceof Schema === false || $register instanceof Register === false) {
+		if ($schemaEntity instanceof Schema === false || $registerEntity instanceof Register === false) {
 			throw new ArchiveNotOfferedException(
 				message: 'Cannot archive this object: its register and schema could not be resolved.'
 			);
 		}
 
+		// The url names a register and a schema, so the object had better be in
+		// them. `findAcrossAllSources()` resolves a uuid wherever it lives, which
+		// is right for a lookup and wrong for an authorization boundary: without
+		// this, an identifier belonging to a register the caller is merely
+		// pointing at could be archived through another register's url, and the
+		// `update` check below would be asked about the WRONG schema. Answered
+		// as not-found rather than as a refusal, because from the caller's
+		// position that object is not at that address.
+		$this->assertInScope(entity: $registerEntity, named: $register, kind: 'register', identifier: $identifier);
+		$this->assertInScope(entity: $schemaEntity, named: $schema, kind: 'schema', identifier: $identifier);
+
 		// The schema decides whether the action exists at all (ADR-031). A
 		// schema with no finished state does not grow an action nobody uses,
 		// and a leaf app rendering an Archive button reads this rather than
 		// deciding for itself.
-		if ($schema->isArchivingEnabled() === false) {
+		if ($schemaEntity->isArchivingEnabled() === false) {
 			throw new ArchiveNotOfferedException(
-				message: 'Schema "' . (string)$schema->getTitle()
+				message: 'Schema "' . (string)$schemaEntity->getTitle()
 					. '" does not declare x-openregister-archive, so its objects cannot be archived.'
 			);
 		}
@@ -297,7 +346,7 @@ class ArchiveHandler {
 		}
 
 		$this->permissionHandler->checkPermission(
-			schema: $schema,
+			schema: $schemaEntity,
 			action: 'update',
 			userId: $userId,
 			objectOwner: $object->getOwner(),
@@ -307,10 +356,53 @@ class ArchiveHandler {
 
 		return [
 			'object' => $object,
-			'register' => $register,
-			'schema' => $schema,
+			'register' => $registerEntity,
+			'schema' => $schemaEntity,
 		];
 	}//end resolveAndAuthorize()
+
+	/**
+	 * Refuse an object that is not in the register or schema the url names.
+	 *
+	 * Accepts either spelling of the route value, because both are legal in
+	 * this API: `/api/objects/1/2/...` and `/api/objects/zaken/zaak/...` reach
+	 * the same place, so a check that understood only ids would refuse every
+	 * slug-shaped url and one that understood only slugs would refuse every
+	 * numeric one.
+	 *
+	 * A null `$named` means the caller did not scope the call, which is the
+	 * case for an internal caller holding a uuid and no url. Nothing to check.
+	 *
+	 * @param Register|Schema $entity The entity the object actually belongs to.
+	 * @param string|null $named The register or schema named in the url.
+	 * @param string $kind `register` or `schema`, for the message.
+	 * @param string $identifier The object identifier, for the message.
+	 *
+	 * @throws DoesNotExistException When the object is not in the named scope.
+	 *
+	 * @return void
+	 */
+	private function assertInScope(
+		Register|Schema $entity,
+		?string $named,
+		string $kind,
+		string $identifier,
+	): void {
+		if ($named === null || $named === '') {
+			return;
+		}
+
+		$id = (string)$entity->getId();
+		$slug = (string)$entity->getSlug();
+
+		if ($named === $id || $named === $slug) {
+			return;
+		}
+
+		throw new DoesNotExistException(
+			'Object "' . $identifier . '" is not in ' . $kind . ' "' . $named . '".'
+		);
+	}//end assertInScope()
 
 	/**
 	 * Write the changed marker and its audit entry.

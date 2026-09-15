@@ -112,8 +112,7 @@ class AddObjectStateColumns implements IRepairStep {
 				continue;
 			}
 
-			$reconciledForRegister = $this->reconcileRegister(register: $register, failed: $failed);
-			$reconciled += $reconciledForRegister;
+			$reconciled += $this->reconcileRegister(register: $register, failed: $failed);
 		}
 
 		$output->info(
