@@ -475,7 +475,7 @@ class PropertyValidatorHandler {
 		'readOnly' => ['value' => 'boolean', 'description' => 'Show the value, refuse a write.'],
 		'writeOnly' => ['value' => 'boolean', 'description' => 'Accept a write, never read it back.'],
 		'immutable' => ['value' => 'boolean', 'description' => 'Accept the first answer, refuse every change after it.'],
-		'repeatingGroup' => ['value' => 'boolean', 'description' => 'Author this list as rows a person adds, reorders and removes. Set items to the shape of one row.'],
+		'repeatingGroup' => ['value' => 'boolean', 'description' => 'Rows a person adds and removes. Set items to the shape of one row.'],
 		'groupOrdered' => ['value' => 'boolean', 'description' => 'Keep the order the rows were authored in. Needs repeatingGroup.'],
 		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],

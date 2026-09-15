@@ -28,10 +28,12 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -437,9 +439,126 @@ class AuditTrailMapper extends QBMapper {
 	): AuditTrail {
 		$auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
 
+		// Nothing merges unless an administrator set a window, so this is a
+		// no-op on every instance that did not ask for it.
+		$merged = $this->mergeIntoAggregationWindow(candidate: $auditTrail);
+		if ($merged !== null) {
+			return $merged;
+		}
+
 		// Insert the new AuditTrail, sealed into the hash chain, and return it.
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createAuditTrail()
+
+	/**
+	 * Fold an edit into the entry already written, when a window says to.
+	 *
+	 * Returns the amended entry, or null when the edit is its own entry. Null
+	 * is the answer in every case that is not unambiguously a merge: no window,
+	 * not an update, no previous entry, a different actor, a different object,
+	 * too long ago, or an entry that is already sealed.
+	 *
+	 * ⚠️ THE SEALED CHECK IS NOT A BELT-AND-BRACES GUARD, IT IS THE RULE.
+	 * Amending an unsealed row is ordinary writing, because `insertHashChained`
+	 * deliberately leaves sealing to `AuditSealJob` and an unsealed row is not
+	 * yet in the chain. Amending a SEALED row would change a row the chain
+	 * covers, which `verifyChain()` reports as tampering and which it would be.
+	 * So a sealed row ends the window early and the edit gets its own entry,
+	 * which is the conservative direction: more entries, never fewer.
+	 *
+	 * Fail-soft throughout. Aggregation is a convenience; recording the edit is
+	 * not. Anything that goes wrong here answers null and the ordinary insert
+	 * happens, so the worst case is an entry that was not merged.
+	 *
+	 * @param AuditTrail $candidate The entry that would otherwise be inserted.
+	 *
+	 * @return AuditTrail|null The amended entry, or null to insert normally.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 */
+	private function mergeIntoAggregationWindow(AuditTrail $candidate): ?AuditTrail {
+		if ($candidate->getAction() !== 'update' || $candidate->getObjectUuid() === null) {
+			return null;
+		}
+
+		try {
+			$aggregation = new AuditAggregationService($this->container->get(IAppConfig::class));
+			$window = $aggregation->windowSeconds();
+			if ($window === 0) {
+				return null;
+			}
+
+			$previous = $this->findMergeCandidate(candidate: $candidate);
+			if ($previous === null) {
+				return null;
+			}
+
+			$within = $aggregation->isWithinWindow(
+				previous: $previous->getCreated(),
+				now: ($candidate->getCreated() ?? new DateTime()),
+				window: $window
+			);
+			if ($within === false) {
+				return null;
+			}
+
+			$previous->setChanged(
+				$aggregation->fold(previous: $previous->getChanged(), incoming: $candidate->getChanged())
+			);
+
+			return $this->update($previous);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[AuditTrailMapper] Could not fold an edit into the aggregation window',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'objectUuid' => $candidate->getObjectUuid(),
+					'error' => $e->getMessage(),
+				]
+			);
+
+			return null;
+		}//end try
+	}//end mergeIntoAggregationWindow()
+
+	/**
+	 * The entry an edit would fold into, if one exists.
+	 *
+	 * Same object, same actor, still an update, and not yet sealed. Ordered by
+	 * id rather than by `created` because the chain is walked in id order and
+	 * two rows can share a second.
+	 *
+	 * @param AuditTrail $candidate The entry that would otherwise be inserted.
+	 *
+	 * @return AuditTrail|null The entry to amend, or null.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 */
+	private function findMergeCandidate(AuditTrail $candidate): ?AuditTrail {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($candidate->getObjectUuid())))
+			->andWhere($qb->expr()->eq('action', $qb->createNamedParameter('update')))
+			->andWhere($qb->expr()->isNull('hash'))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		$actor = $candidate->getUser();
+		if ($actor === null) {
+			$qb->andWhere($qb->expr()->isNull('user'));
+		} else {
+			$qb->andWhere($qb->expr()->eq('user', $qb->createNamedParameter($actor)));
+		}
+
+		$found = $this->findEntities(query: $qb);
+		if ($found === []) {
+			return null;
+		}
+
+		return $found[0];
+	}//end findMergeCandidate()
 
 	/**
 	 * Build (but do not persist) an audit trail entity for object changes.
