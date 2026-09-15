@@ -145,15 +145,18 @@ outside, and the second is the bug.
 - **GIVEN** the same schema, declaring a rule whose condition this record matches
 - **WHEN** the record is nominated
 - **THEN** the rule's retention is the period, not the default
+- @e2e exclude {derivation, covered by unit tests}
 
 #### Scenario: a filled-in archive block still wins
 
 - **GIVEN** a schema declaring both an enabled `archive` block and `x-openregister-archival`
 - **WHEN** an object of that schema is nominated
 - **THEN** the `archive` block decides the appraisal and the period
+- @e2e exclude {derivation, covered by unit tests}
 
 #### Scenario: a schema that asks for no archiving says so in full
 
 - **GIVEN** a schema with neither declaration
 - **WHEN** an object of that schema reaches a terminal state
 - **THEN** the answer is `not_applicable` with a reason naming both places
+- @e2e exclude {derivation, covered by unit tests}

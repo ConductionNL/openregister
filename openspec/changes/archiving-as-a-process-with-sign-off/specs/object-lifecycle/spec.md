@@ -60,6 +60,7 @@ requirement ends.
 - **GIVEN** the same schema
 - **WHEN** an object reaches a status whose row carries `isFinal: false`
 - **THEN** the state is not terminal and nothing is nominated
+- @e2e exclude {resolution against a referenced row, covered by unit tests}
 
 #### Scenario: a state nobody can resolve is reported, not treated as an end
 
@@ -67,6 +68,7 @@ requirement ends.
 - **WHEN** an object reaches a value that resolves to no row, or to a row in another schema
 - **THEN** the state is not terminal
 - **AND** the reason is written to the log naming the value and the declared schema
+- @e2e exclude {log assertion, covered by unit tests}
 
 #### Scenario: half a reference is refused at schema save
 
@@ -81,3 +83,4 @@ requirement ends.
 - **GIVEN** a schema declaring `final` as a list of state values
 - **WHEN** an object reaches one of them
 - **THEN** the state is terminal, and no row is read
+- @e2e exclude {resolution against a referenced row, covered by unit tests}
