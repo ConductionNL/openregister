@@ -176,9 +176,31 @@ class AccessLinkControllerTest extends TestCase {
 	public function testALinkWhoseSubjectIsGoneAnswers404(): void {
 		$this->links->method('resolve')->willReturn($this->link());
 		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn(null);
 		$this->reader->method('read')->willReturn(null);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->open(anchor: 'a')->getStatus());
+	}
+
+	/**
+	 * The subject is fetched once and threaded through, so the public read path
+	 * is one database fetch and the audit entry names the object the holder
+	 * actually got rather than a second, later read of it.
+	 */
+	public function testTheSubjectIsResolvedOnceAndHandedToBothTheReaderAndTheAudit(): void {
+		$object = $this->object();
+		$this->links->method('resolve')->willReturn($this->link());
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->expects($this->once())->method('subjectObject')->willReturn($object);
+		$this->reader->expects($this->once())
+			->method('read')
+			->with($this->anything(), $object)
+			->willReturn(['subject' => [], 'timeline' => []]);
+		$this->links->expects($this->once())
+			->method('recordUse')
+			->with($this->anything(), AccessLinkService::ACT_READ, $object, '198.51.100.7');
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->open(anchor: 'a')->getStatus());
 	}
 
 	public function testAForwardedLinkStillAsksForItsPassword(): void {

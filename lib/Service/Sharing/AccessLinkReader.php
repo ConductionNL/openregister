@@ -190,17 +190,21 @@ class AccessLinkReader {
 	 * What the link serves, filtered, or null when the subject is gone.
 	 *
 	 * @param AccessLink $link The link.
+	 * @param ObjectEntity|null $object The subject, when the caller already resolved it.
 	 *
 	 * @return array<string, mixed>|null The body, or null when there is nothing to serve.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
-	public function read(AccessLink $link): ?array {
+	public function read(AccessLink $link, ?ObjectEntity $object = null): ?array {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_VIEW) {
 			return $this->readView(link: $link);
 		}
 
-		$object = $this->subjectObject(link: $link);
+		// The caller usually resolved the object already, because it needs it to
+		// attribute the audit entry. Taking it as an argument keeps the public
+		// read path to ONE database fetch instead of two.
+		$object = ($object ?? $this->subjectObject(link: $link));
 		if ($object === null) {
 			return null;
 		}
