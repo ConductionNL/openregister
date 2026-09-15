@@ -91,7 +91,13 @@ class TimelineEntryServiceTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 
 		$this->visibility->method('normalise')->willReturnCallback(
-			static fn (?string $value): string => ($value === 'public') ? 'public' : 'internal'
+			static function (?string $value): string {
+				if ($value === 'public') {
+					return 'public';
+				}
+
+				return 'internal';
+			}
 		);
 
 		$this->service = new TimelineEntryService(

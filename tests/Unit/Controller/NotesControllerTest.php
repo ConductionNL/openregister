@@ -326,6 +326,8 @@ class NotesControllerTest extends TestCase {
 	 * renders. The record is an ADDITION beside it, carried under its own key,
 	 * so a consumer reading `id`, `message` and `visibility` sees nothing new.
 	 *
+	 * @return void
+	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function testAPlainNoteKeepsItsOwnShape(): void {
@@ -355,6 +357,8 @@ class NotesControllerTest extends TestCase {
 	 * endpoint projects. The projection never throws, and a note whose record
 	 * could not be written is still returned.
 	 *
+	 * @return void
+	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function testANoteWrittenTheOldWayIsProjectedIntoARecord(): void {
@@ -374,6 +378,8 @@ class NotesControllerTest extends TestCase {
 	 * Deleting a note reads its record first, so its references can be forgotten.
 	 *
 	 * After the delete there is nothing left to look the entry up by.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */

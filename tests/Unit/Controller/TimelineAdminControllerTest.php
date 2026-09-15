@@ -82,8 +82,13 @@ class TimelineAdminControllerTest extends TestCase {
 	}
 
 	private function signIn(bool $isAdmin): void {
+		$uid = 'handler';
+		if ($isAdmin === true) {
+			$uid = 'admin';
+		}
+
 		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn($isAdmin === true ? 'admin' : 'handler');
+		$user->method('getUID')->willReturn($uid);
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
 	}

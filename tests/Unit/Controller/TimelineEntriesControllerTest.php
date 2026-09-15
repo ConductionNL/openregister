@@ -74,7 +74,13 @@ class TimelineEntriesControllerTest extends TestCase {
 			static fn (?string $value): bool => in_array($value, ['internal', 'public'], true)
 		);
 		$this->visibility->method('normalise')->willReturnCallback(
-			static fn (?string $value): string => ($value === 'public' ? 'public' : 'internal')
+			static function (?string $value): string {
+				if ($value === 'public') {
+					return 'public';
+				}
+
+				return 'internal';
+			}
 		);
 
 		$this->controller = new TimelineEntriesController(
