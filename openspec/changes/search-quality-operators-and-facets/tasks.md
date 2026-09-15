@@ -141,7 +141,7 @@ around that in this app means reading the raw payload beside the normalised one
 and keeping the two in step, which is the drift the shared normaliser exists to
 prevent.
 
-Filed as a nextcloud-vue issue rather than patched here. `src/components/
+Filed as ConductionNL/nextcloud-vue#1176 rather than patched here. `src/components/
 FacetComponent.vue` is not the place either: it is dead code, imported nowhere,
 and it calls store methods that no longer exist.
 
