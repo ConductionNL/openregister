@@ -107,7 +107,7 @@ class FavouritePruneListenerTest extends TestCase {
 			->method('cleanupForObject')
 			->with('uuid-case-1');
 
-		$this->listener->handle($this->deletionOf('uuid-case-1'));
+		$this->listener->handle($this->deletionOf(uuid: 'uuid-case-1'));
 
 	}//end testADeletionClearsBothTables()
 
@@ -120,7 +120,7 @@ class FavouritePruneListenerTest extends TestCase {
 		$this->favourites->expects($this->never())->method('cleanupForObject');
 		$this->views->expects($this->never())->method('cleanupForObject');
 
-		$this->listener->handle($this->deletionOf(''));
+		$this->listener->handle($this->deletionOf(uuid: ''));
 
 	}//end testAnObjectWithoutAUuidClearsNothing()
 
@@ -149,9 +149,9 @@ class FavouritePruneListenerTest extends TestCase {
 		$this->favourites->method('cleanupForObject')
 			->willThrowException(new \RuntimeException('db down'));
 
-		$this->listener->handle($this->deletionOf('uuid-case-1'));
+		$this->listener->handle($this->deletionOf(uuid: 'uuid-case-1'));
 
-		$this->addToAssertionCount(1);
+		$this->addToAssertionCount(count: 1);
 
 	}//end testAFailingCleanupIsSwallowed()
 }//end class

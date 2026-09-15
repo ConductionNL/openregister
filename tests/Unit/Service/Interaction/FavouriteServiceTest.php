@@ -113,7 +113,7 @@ class FavouriteServiceTest extends TestCase {
 			->with('alice', 'uuid-case-1', 'cases', 'case')
 			->willReturn(new ObjectFavourite());
 
-		$this->serviceAs('alice')->star(
+		$this->serviceAs(uid: 'alice')->star(
 			object: $this->makeObject(),
 			register: 'cases',
 			schema: 'case'
@@ -129,8 +129,8 @@ class FavouriteServiceTest extends TestCase {
 	public function testAnonymousCannotStar(): void {
 		$this->mapper->expects($this->never())->method('star');
 
-		$this->expectException(NotAuthorizedException::class);
-		$this->serviceAs(null)->star(object: $this->makeObject());
+		$this->expectException(exception: NotAuthorizedException::class);
+		$this->serviceAs(uid: null)->star(object: $this->makeObject());
 
 	}//end testAnonymousCannotStar()
 
@@ -145,7 +145,7 @@ class FavouriteServiceTest extends TestCase {
 			->with('alice', 'uuid-case-1')
 			->willReturn(true);
 
-		$this->assertTrue(condition: $this->serviceAs('alice')->unstar(object: $this->makeObject()));
+		$this->assertTrue(condition: $this->serviceAs(uid: 'alice')->unstar(object: $this->makeObject()));
 
 	}//end testUnstarRemovesTheCallersOwnRow()
 
@@ -160,8 +160,8 @@ class FavouriteServiceTest extends TestCase {
 	public function testAskingAboutAnotherUserIsRefused(): void {
 		$this->mapper->expects($this->never())->method('findOne');
 
-		$this->expectException(NotAuthorizedException::class);
-		$this->serviceAs('alice')->favouriteFor(object: $this->makeObject(), userId: 'bob');
+		$this->expectException(exception: NotAuthorizedException::class);
+		$this->serviceAs(uid: 'alice')->favouriteFor(object: $this->makeObject(), userId: 'bob');
 
 	}//end testAskingAboutAnotherUserIsRefused()
 
@@ -180,7 +180,7 @@ class FavouriteServiceTest extends TestCase {
 			->willReturn(null);
 
 		$this->assertNull(
-			actual: $this->serviceAs('alice')->favouriteFor(object: $this->makeObject(), userId: 'alice')
+			actual: $this->serviceAs(uid: 'alice')->favouriteFor(object: $this->makeObject(), userId: 'alice')
 		);
 
 	}//end testNamingYourselfIsAllowed()
@@ -199,7 +199,7 @@ class FavouriteServiceTest extends TestCase {
 			->method('uuidsForUser')
 			->willReturn(['uuid-case-1', 'uuid-case-9']);
 
-		$service = $this->serviceAs('alice');
+		$service = $this->serviceAs(uid: 'alice');
 
 		$this->assertTrue(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-1'));
 		$this->assertTrue(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-9'));
@@ -213,12 +213,12 @@ class FavouriteServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWriteDropsTheMemo(): void {
-		$this->mapper->expects($this->exactly(2))
+		$this->mapper->expects($this->exactly(count: 2))
 			->method('uuidsForUser')
 			->willReturnOnConsecutiveCalls([], ['uuid-case-1']);
 		$this->mapper->method('star')->willReturn(new ObjectFavourite());
 
-		$service = $this->serviceAs('alice');
+		$service = $this->serviceAs(uid: 'alice');
 
 		$this->assertFalse(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-1'));
 		$service->star(object: $this->makeObject());
@@ -235,7 +235,7 @@ class FavouriteServiceTest extends TestCase {
 		$this->mapper->expects($this->never())->method('uuidsForUser');
 
 		$this->assertFalse(
-			condition: $this->serviceAs(null)->isStarredByCaller(objectUuid: 'uuid-case-1')
+			condition: $this->serviceAs(uid: null)->isStarredByCaller(objectUuid: 'uuid-case-1')
 		);
 
 	}//end testAnonymousIsStarredByNothing()
@@ -249,7 +249,7 @@ class FavouriteServiceTest extends TestCase {
 		$this->mapper->method('uuidsForUser')->willThrowException(new \RuntimeException('db down'));
 
 		$this->assertFalse(
-			condition: $this->serviceAs('alice')->isStarredByCaller(objectUuid: 'uuid-case-1')
+			condition: $this->serviceAs(uid: 'alice')->isStarredByCaller(objectUuid: 'uuid-case-1')
 		);
 
 	}//end testAFailedLookupDoesNotTakeOutTheRender()
@@ -270,7 +270,7 @@ class FavouriteServiceTest extends TestCase {
 
 		$this->assertSame(
 			expected: 3,
-			actual: $this->serviceAs('alice')->cleanupForObject(objectUuid: 'uuid-case-1')
+			actual: $this->serviceAs(uid: 'alice')->cleanupForObject(objectUuid: 'uuid-case-1')
 		);
 
 	}//end testTheCascadeRemovesEveryStarOnTheObject()
@@ -285,7 +285,7 @@ class FavouriteServiceTest extends TestCase {
 
 		$this->assertSame(
 			expected: 0,
-			actual: $this->serviceAs('alice')->cleanupForObject(objectUuid: '')
+			actual: $this->serviceAs(uid: 'alice')->cleanupForObject(objectUuid: '')
 		);
 
 	}//end testTheCascadeIgnoresAnEmptyUuid()

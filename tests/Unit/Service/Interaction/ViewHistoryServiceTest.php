@@ -128,7 +128,7 @@ class ViewHistoryServiceTest extends TestCase {
 			->willReturn(new ObjectView());
 
 		$this->assertNotNull(
-			actual: $this->serviceAs('alice')->recordView(
+			actual: $this->serviceAs(uid: 'alice')->recordView(
 				object: $this->makeObject(),
 				register: 'cases',
 				schema: 'case'
@@ -150,11 +150,11 @@ class ViewHistoryServiceTest extends TestCase {
 		$first = new DateTime('2026-09-15 10:00:00');
 		$tenSecondsLater = new DateTime('2026-09-15 10:00:10');
 
-		$this->mapper->method('findOne')->willReturn($this->storedView($first));
+		$this->mapper->method('findOne')->willReturn($this->storedView(seenAt: $first));
 		$this->mapper->expects($this->never())->method('record');
 
 		$this->assertNull(
-			actual: $this->serviceAs('alice')->recordView(
+			actual: $this->serviceAs(uid: 'alice')->recordView(
 				object: $this->makeObject(),
 				now: $tenSecondsLater
 			)
@@ -175,11 +175,11 @@ class ViewHistoryServiceTest extends TestCase {
 		$first = new DateTime('2026-09-15 10:00:00');
 		$twoMinutesLater = new DateTime('2026-09-15 10:02:00');
 
-		$this->mapper->method('findOne')->willReturn($this->storedView($first));
+		$this->mapper->method('findOne')->willReturn($this->storedView(seenAt: $first));
 		$this->mapper->expects($this->once())->method('record')->willReturn(new ObjectView());
 
 		$this->assertNotNull(
-			actual: $this->serviceAs('alice')->recordView(
+			actual: $this->serviceAs(uid: 'alice')->recordView(
 				object: $this->makeObject(),
 				now: $twoMinutesLater
 			)
@@ -200,10 +200,10 @@ class ViewHistoryServiceTest extends TestCase {
 		$first = new DateTime('2026-09-15 10:00:00');
 		$exactlyAMinuteLater = new DateTime('2026-09-15 10:01:00');
 
-		$this->mapper->method('findOne')->willReturn($this->storedView($first));
+		$this->mapper->method('findOne')->willReturn($this->storedView(seenAt: $first));
 		$this->mapper->expects($this->once())->method('record')->willReturn(new ObjectView());
 
-		$this->serviceAs('alice')->recordView(
+		$this->serviceAs(uid: 'alice')->recordView(
 			object: $this->makeObject(),
 			now: $exactlyAMinuteLater
 		);
@@ -219,7 +219,7 @@ class ViewHistoryServiceTest extends TestCase {
 		$this->mapper->expects($this->never())->method('findOne');
 		$this->mapper->expects($this->never())->method('record');
 
-		$this->assertNull(actual: $this->serviceAs(null)->recordView(object: $this->makeObject()));
+		$this->assertNull(actual: $this->serviceAs(uid: null)->recordView(object: $this->makeObject()));
 
 	}//end testAnAnonymousReadRecordsNothing()
 
@@ -232,7 +232,7 @@ class ViewHistoryServiceTest extends TestCase {
 		$this->mapper->method('findOne')->willReturn(null);
 		$this->mapper->method('record')->willThrowException(new \RuntimeException('db down'));
 
-		$this->assertNull(actual: $this->serviceAs('alice')->recordView(object: $this->makeObject()));
+		$this->assertNull(actual: $this->serviceAs(uid: 'alice')->recordView(object: $this->makeObject()));
 
 	}//end testAFailedWriteIsSwallowed()
 
@@ -249,7 +249,7 @@ class ViewHistoryServiceTest extends TestCase {
 
 		$this->assertSame(
 			expected: ['uuid-case-9', 'uuid-case-1'],
-			actual: $this->serviceAs('alice')->recentUuidsForCaller()
+			actual: $this->serviceAs(uid: 'alice')->recentUuidsForCaller()
 		);
 
 	}//end testTheRecentListIsTheCallersOwn()
@@ -262,7 +262,7 @@ class ViewHistoryServiceTest extends TestCase {
 	public function testAnonymousHasNoRecentList(): void {
 		$this->mapper->expects($this->never())->method('uuidsForUser');
 
-		$this->assertSame(expected: [], actual: $this->serviceAs(null)->recentUuidsForCaller());
+		$this->assertSame(expected: [], actual: $this->serviceAs(uid: null)->recentUuidsForCaller());
 
 	}//end testAnonymousHasNoRecentList()
 
@@ -279,7 +279,7 @@ class ViewHistoryServiceTest extends TestCase {
 
 		$this->assertSame(
 			expected: 7,
-			actual: $this->serviceAs('alice')->cleanupForObject(objectUuid: 'uuid-case-1')
+			actual: $this->serviceAs(uid: 'alice')->cleanupForObject(objectUuid: 'uuid-case-1')
 		);
 
 	}//end testTheCascadeRemovesEveryViewOfTheObject()
@@ -294,7 +294,7 @@ class ViewHistoryServiceTest extends TestCase {
 
 		$this->assertSame(
 			expected: 0,
-			actual: $this->serviceAs('alice')->cleanupForObject(objectUuid: '')
+			actual: $this->serviceAs(uid: 'alice')->cleanupForObject(objectUuid: '')
 		);
 
 	}//end testTheCascadeIgnoresAnEmptyUuid()
