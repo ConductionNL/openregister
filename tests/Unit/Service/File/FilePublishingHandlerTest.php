@@ -20,9 +20,11 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\NotFoundException;
+use OCP\IServerContainer;
 use OCP\IUser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -51,6 +53,17 @@ class FilePublishingHandlerTest extends TestCase {
 	/** @var FileService&MockObject */
 	private FileService $fileService;
 
+	/** @var IServerContainer&MockObject */
+	private IServerContainer $container;
+
+	/**
+	 * The party indicator guard the handler resolves before it publishes.
+	 * Permissive by default; one test makes it refuse.
+	 *
+	 * @var PartyIndicatorGuard&MockObject
+	 */
+	private PartyIndicatorGuard $partyIndicators;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -59,10 +72,18 @@ class FilePublishingHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->fileService = $this->createMock(FileService::class);
 
+		// The handler resolves the guard at the act rather than taking it in
+		// its constructor: a constructor dependency on the party model would
+		// close the cycle FileService is already set through a setter to avoid.
+		$this->partyIndicators = $this->createMock(PartyIndicatorGuard::class);
+		$this->container = $this->createMock(IServerContainer::class);
+		$this->container->method('get')->willReturn($this->partyIndicators);
+
 		$this->handler = new FilePublishingHandler(
 			$this->objectEntityMapper,
 			$this->fileMapper,
-			$this->logger
+			$this->logger,
+			$this->container
 		);
 
 		// Most tests need the file service
@@ -90,7 +111,8 @@ class FilePublishingHandlerTest extends TestCase {
 		$handler = new FilePublishingHandler(
 			$this->objectEntityMapper,
 			$this->fileMapper,
-			$this->logger
+			$this->logger,
+			$this->container
 		);
 
 		// Should not throw
@@ -135,6 +157,34 @@ class FilePublishingHandlerTest extends TestCase {
 
 		$this->assertInstanceOf(File::class, $result);
 		$this->assertEquals('document.pdf', $result->getName());
+	}
+
+	/**
+	 * An indicator on a party of the object refuses the publication, and the
+	 * share is never created. THE POINT: the guard runs before anything is
+	 * written, so a refusal cannot leave a half-published file behind.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	#[Test]
+	public function testPublishFileIsRefusedByAPartyIndicator(): void {
+		$object = $this->createObjectEntity(1, 'case-1');
+
+		$this->partyIndicators->expects($this->once())
+			->method('assertPublicationAllowed')
+			->with('case-1')
+			->willThrowException(
+				new Exception('Publication is refused by the indicator "Geheimhouding" on party "party-a"', 403)
+			);
+
+		$this->fileService->expects($this->never())->method('getFile');
+		$this->fileMapper->expects($this->never())->method('publishFile');
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(403);
+		$this->expectExceptionMessage('Geheimhouding');
+
+		$this->handler->publishFile($object, 42);
 	}
 
 	#[Test]

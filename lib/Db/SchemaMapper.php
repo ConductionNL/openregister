@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
+use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
@@ -1105,6 +1106,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateDedupAnnotation(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
 		$this->validateMergeAnnotation(schema: $schema);
+		$this->validatePartyAnnotation(schema: $schema);
 		$this->validateNotificationsAnnotation(schema: $schema);
 		$this->validateWidgetsAnnotation(schema: $schema);
 		$this->validateArchivalAnnotation(schema: $schema);
@@ -1683,6 +1685,44 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (merge falls back to defaults): ' . implode(' ', $messages)
 		);
 	}//end validateMergeAnnotation()
+
+	/**
+	 * Validate the optional `x-openregister-party` annotation.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function validatePartyAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration['x-openregister-party'] ?? null);
+		if (is_array($annotation) === false) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			'x-openregister-party' => $annotation,
+		];
+
+		$errors = (new PartyAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		// A party declaration is ADVISORY metadata on top of a schema that
+		// stores objects perfectly well without it, so a malformed block must
+		// not abort the import. It is warned about rather than dropped: the
+		// failure a dropped declaration causes is a party schema that reads as
+		// an ordinary one, and the operator needs the field name to fix it.
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$this->logger->warning(
+			'x-openregister-party annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
+			. 'invalid and was ignored (the schema is not treated as a party schema): ' . implode(' ', $messages)
+		);
+	}//end validatePartyAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-notifications` annotation.
