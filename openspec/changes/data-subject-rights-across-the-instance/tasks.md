@@ -35,5 +35,5 @@
 
 ## 7. Hand over
 
-- [ ] 7.1 Hand the preview and the revocation to the dossiq lane, with candidate ids C-access-and-privacy-19, -22, -57, -58, -61 and -74.
-- [ ] 7.2 Tell the D9 lane that C-access-and-privacy-57 is `platform-user-migrator` and not this change.
+- [x] 7.1 Hand the preview and the revocation to the dossiq lane, with candidate ids C-access-and-privacy-19, -22, -57, -58, -61 and -74. Handed over in the two PR bodies, which carry the request/answer contract for every surface.
+- [x] 7.2 Tell the D9 lane that C-access-and-privacy-57 is `platform-user-migrator` and not this change. Stated in the proposal's Out of scope and repeated in the part 2 PR body.
