@@ -2765,6 +2765,12 @@ class Schema extends Entity implements JsonSerializable {
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// Which object property fills which MDTO element. Absent from this list
+		// setConfiguration() would DROP it, so a schema editor would report a
+		// saved mapping, the annotation would not be there, and the transfer
+		// refusal it exists to drive would never fire. The three comments above
+		// record that same loss three times.
+		'x-openregister-mdto-mapping',
 		'x-openregister-object-source',
 		'x-openregister-quality',
 		'x-openregister-dedup',

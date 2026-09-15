@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -53,12 +54,14 @@ class MdtoPreconditions {
 	 * @param LoggerInterface $logger Logger for error and warning messages.
 	 * @param MdtoSourceReader $sourceReader Resolver for the declared archival values.
 	 * @param MdtoBestandGenerator $bestandGenerator Owner of the per-file input rules.
+	 * @param MdtoMappingResolver $mappingResolver Reads the schema's administered element mapping.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly MdtoSourceReader $sourceReader,
 		private readonly MdtoBestandGenerator $bestandGenerator,
+		private readonly MdtoMappingResolver $mappingResolver,
 	) {
 	}//end __construct()
 
@@ -90,6 +93,29 @@ class MdtoPreconditions {
 				'Cannot transfer object ' . $object->getUuid()
 				. ' to an e-Depot: it has no retention period. MDTO allows the element to be absent;'
 				. ' openregister refuses the transfer.'
+			);
+		}
+
+		// 🔴 THE UNMAPPED ELEMENT IS NAMED, AND NOTHING IS SENT. Discovering it
+		// at the e-Depot means a package has already left and an administrator
+		// has a rejection to interpret. Here the message says which element and
+		// which schema, before any bytes move. A schema that declares no
+		// mapping keeps today's behaviour; see MdtoMappingResolver.
+		$unfilled = $this->mappingResolver->unfilledMandatoryElements(object: $object);
+		if ($unfilled !== []) {
+			$lead = 'these mandatory elements: ';
+			$them = 'them';
+			if (count($unfilled) === 1) {
+				$lead = 'the mandatory element ';
+				$them = 'it';
+			}
+
+			throw new InvalidArgumentException(
+				'Cannot transfer object ' . $object->getUuid()
+				. ' to an e-Depot: its schema declares an MDTO mapping that does not fill '
+				. $lead . implode(', ', $unfilled)
+				. '. Map ' . $them
+				. ' in x-openregister-mdto-mapping, or the e-Depot will refuse the package.'
 			);
 		}
 	}//end assertTransferPreconditions()
