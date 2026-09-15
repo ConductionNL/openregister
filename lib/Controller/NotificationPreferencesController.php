@@ -68,10 +68,12 @@ class NotificationPreferencesController extends Controller {
 	}//end __construct()
 
 	/**
-	 * Return the effective notifications (schema default ⊕ user override)
-	 * for the current user.
+	 * Return the effective notifications for the current user, merged over the
+	 * three layers and tagged with the one that decided.
 	 *
 	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
