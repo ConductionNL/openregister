@@ -52,6 +52,8 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Timeline
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class ReferenceService {
 
@@ -132,12 +134,12 @@ class ReferenceService {
 			$pattern->setCreated(new DateTime());
 		}
 
-		$pattern->setTitle($this->stringOrNull($data, 'title'));
+		$pattern->setTitle($this->stringOrNull(data: $data, key: 'title'));
 		$pattern->setPattern($body);
-		$pattern->setRegister($this->stringOrNull($data, 'register'));
-		$pattern->setSchema($this->stringOrNull($data, 'schema'));
-		$pattern->setTargetProperty($this->stringOrNull($data, 'targetProperty'));
-		$pattern->setUrlTemplate($this->stringOrNull($data, 'urlTemplate'));
+		$pattern->setRegister($this->stringOrNull(data: $data, key: 'register'));
+		$pattern->setSchema($this->stringOrNull(data: $data, key: 'schema'));
+		$pattern->setTargetProperty($this->stringOrNull(data: $data, key: 'targetProperty'));
+		$pattern->setUrlTemplate($this->stringOrNull(data: $data, key: 'urlTemplate'));
 		$pattern->setEnabled(($data['enabled'] ?? true) !== false);
 		$pattern->setUpdated(new DateTime());
 
@@ -383,7 +385,10 @@ class ReferenceService {
 		}
 
 		$value = trim($data[$key]);
+		if ($value === '') {
+			return null;
+		}
 
-		return ($value === '') ? null : $value;
+		return $value;
 	}//end stringOrNull()
 }//end class

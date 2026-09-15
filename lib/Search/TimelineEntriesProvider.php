@@ -57,6 +57,8 @@ use OCP\Search\SearchResultEntry;
  *
  * @category Search
  * @package  OCA\OpenRegister\Search
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
  */
 class TimelineEntriesProvider implements IFilteringProvider {
 

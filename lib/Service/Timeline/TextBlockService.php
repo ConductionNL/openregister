@@ -41,6 +41,8 @@ use Symfony\Component\Uid\Uuid;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Timeline
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TextBlockService {
 
@@ -116,11 +118,11 @@ class TextBlockService {
 			$block->setCreated(new DateTime());
 		}
 
-		$block->setTitle($this->stringOrNull($data, 'title'));
+		$block->setTitle($this->stringOrNull(data: $data, key: 'title'));
 		$block->setBody($body);
-		$block->setRegister($this->stringOrNull($data, 'register'));
-		$block->setSchema($this->stringOrNull($data, 'schema'));
-		$block->setGroupId($this->stringOrNull($data, 'groupId'));
+		$block->setRegister($this->stringOrNull(data: $data, key: 'register'));
+		$block->setSchema($this->stringOrNull(data: $data, key: 'schema'));
+		$block->setGroupId($this->stringOrNull(data: $data, key: 'groupId'));
 		$block->setUpdated(new DateTime());
 
 		if ($isNew === true) {
@@ -235,7 +237,10 @@ class TextBlockService {
 		}
 
 		$value = trim($data[$key]);
+		if ($value === '') {
+			return null;
+		}
 
-		return ($value === '') ? null : $value;
+		return $value;
 	}//end stringOrNull()
 }//end class

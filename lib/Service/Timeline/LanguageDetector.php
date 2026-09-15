@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Service\Timeline;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Timeline
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class LanguageDetector {
 

@@ -37,6 +37,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<ReferencePattern>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class ReferencePatternMapper extends QBMapper {
 

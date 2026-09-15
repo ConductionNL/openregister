@@ -55,6 +55,8 @@ use Throwable;
  * @package  OCA\OpenRegister\Controller
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineEntriesController extends Controller {
 
@@ -332,6 +334,17 @@ class TimelineEntriesController extends Controller {
 	 * @return JSONResponse The hits.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Takes a TERM, never an object id, so there is no
+	 * caller-supplied id to scope. The per-object predicate is enforced two hops
+	 * out, which is why it is not visible in this body:
+	 * TimelineEntrySearchService::objectFor() resolves EVERY hit's object through
+	 * ObjectService::find() with `_rbac: true` and `_multitenancy: true` — the
+	 * same read every other caller of an object goes through — and drops the hit
+	 * when that read refuses or answers null. The entry's internal or public flag
+	 * is a second, independent narrowing applied as a condition in the statement.
+	 * Asserted in TimelineEntrySearchServiceTest::testAnEntryOnAnUnreadableObjectIsAbsent
+	 * and ::testAReadThatThrowsIsARefusalRatherThanAFailedSearch.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
 	 */

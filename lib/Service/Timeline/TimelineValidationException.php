@@ -30,6 +30,8 @@ use Exception;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Timeline
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineValidationException extends Exception {
 
@@ -50,13 +52,15 @@ class TimelineValidationException extends Exception {
 	public function __construct(array $errors) {
 		$this->errors = $errors;
 
-		parent::__construct(implode('; ', $errors));
+		parent::__construct(message: implode('; ', $errors));
 	}//end __construct()
 
 	/**
 	 * The reason per field.
 	 *
 	 * @return array<string,string> The errors.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function getErrors(): array {
 		return $this->errors;

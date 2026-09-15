@@ -54,6 +54,8 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Timeline
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
  */
 class TimelineEntrySearchService {
 
@@ -199,8 +201,11 @@ class TimelineEntrySearchService {
 
 		if (array_key_exists($objectUuid, $this->resolved) === true) {
 			$known = $this->resolved[$objectUuid];
+			if ($known === false) {
+				return null;
+			}
 
-			return ($known === false) ? null : $known;
+			return $known;
 		}
 
 		try {

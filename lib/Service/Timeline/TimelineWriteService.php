@@ -49,6 +49,8 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Timeline
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineWriteService {
 
@@ -92,7 +94,7 @@ class TimelineWriteService {
 		$note = $this->notes->createNote(
 			objectUuid: (string)$object->getUuid(),
 			message: $message,
-			visibility: $this->readString($data, 'visibility')
+			visibility: $this->readString(data: $data, key: 'visibility')
 		);
 
 		$entry = $this->entries->record(
@@ -272,8 +274,8 @@ class TimelineWriteService {
 				object: $object,
 				entryUuid: (string)$entry->getUuid(),
 				text: $message,
-				register: $this->readString($data, 'register'),
-				schema: $this->readString($data, 'schema')
+				register: $this->readString(data: $data, key: 'register'),
+				schema: $this->readString(data: $data, key: 'schema')
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -323,12 +325,12 @@ class TimelineWriteService {
 	 * @throws TimelineValidationException When neither is usable.
 	 */
 	private function resolveMessage(ObjectEntity $object, array $data): string {
-		$message = $this->readString($data, 'message');
+		$message = $this->readString(data: $data, key: 'message');
 		if ($message !== null) {
 			return $message;
 		}
 
-		$slug = $this->readString($data, 'textBlock');
+		$slug = $this->readString(data: $data, key: 'textBlock');
 		if ($slug === null) {
 			throw new TimelineValidationException(['message' => 'An entry needs a message or a text block']);
 		}
@@ -368,7 +370,10 @@ class TimelineWriteService {
 		}
 
 		$value = trim($data[$key]);
+		if ($value === '') {
+			return null;
+		}
 
-		return ($value === '') ? null : $value;
+		return $value;
 	}//end readString()
 }//end class

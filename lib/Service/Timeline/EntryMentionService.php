@@ -49,6 +49,8 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Timeline
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class EntryMentionService {
 
@@ -117,7 +119,7 @@ class EntryMentionService {
 		}
 
 		$uids = [];
-		foreach (($matches[1] ?? []) as $candidate) {
+		foreach ($matches[1] as $candidate) {
 			$uid = (string)$candidate;
 			if (in_array($uid, $uids, true) === true) {
 				continue;

@@ -45,8 +45,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Throwable;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Entry kinds, reference patterns and canned text blocks.
@@ -55,6 +55,8 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Controller
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineAdminController extends Controller {
 
@@ -92,6 +94,13 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
+	 * @no-admin-idor-exempt Takes no caller-supplied object id and reads no object.
+	 * It lists instance-wide CONFIGURATION: the names and declared properties of
+	 * entry kinds. There is nothing here to scope to a caller, and a handler
+	 * whose form cannot offer the kinds cannot write a contactmoment at all.
+	 * Declaring, rewriting and withdrawing a kind are admin-only and guarded by
+	 * requireAdmin() below.
+	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	#[NoAdminRequired]
@@ -103,8 +112,8 @@ class TimelineAdminController extends Controller {
 				'results' => array_map(
 					static fn ($kind) => $kind->jsonSerialize(),
 					$this->kinds->listKinds(
-						register: $this->optional($params, 'register'),
-						schema: $this->optional($params, 'schema')
+						register: $this->optional(params: $params, key: 'register'),
+						schema: $this->optional(params: $params, key: 'schema')
 					)
 				),
 			]
@@ -175,6 +184,13 @@ class TimelineAdminController extends Controller {
 	 * @return JSONResponse The declarations.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Takes no caller-supplied object id and reads no object.
+	 * It lists instance-wide CONFIGURATION: the declared short-code patterns and
+	 * where they resolve. The pattern is what renders a code as a link on a page
+	 * the caller is already reading, so a reader who cannot see the list cannot
+	 * render one. Declaring and withdrawing a pattern are admin-only and guarded
+	 * by requireAdmin() below.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
@@ -254,6 +270,13 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
+	 * @no-admin-idor-exempt Takes no caller-supplied object id and reads no object.
+	 * It IS scoped to the caller, one hop out rather than in this body:
+	 * TextBlockService::listBlocks() resolves the caller's own groups through
+	 * IGroupManager and TextBlockMapper::findInScope() narrows the query to the
+	 * unscoped blocks plus the ones administered for those groups, so a block
+	 * scoped to a group the caller is not in is never returned.
+	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	#[NoAdminRequired]
@@ -265,8 +288,8 @@ class TimelineAdminController extends Controller {
 				'results' => array_map(
 					static fn ($block) => $block->jsonSerialize(),
 					$this->blocks->listBlocks(
-						register: $this->optional($params, 'register'),
-						schema: $this->optional($params, 'schema')
+						register: $this->optional(params: $params, key: 'register'),
+						schema: $this->optional(params: $params, key: 'schema')
 					)
 				),
 			]
@@ -365,8 +388,11 @@ class TimelineAdminController extends Controller {
 		}
 
 		$value = trim($params[$key]);
+		if ($value === '') {
+			return null;
+		}
 
-		return ($value === '') ? null : $value;
+		return $value;
 	}//end optional()
 
 	/**

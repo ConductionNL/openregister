@@ -49,6 +49,8 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Timeline
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineEntryService {
 
@@ -93,7 +95,7 @@ class TimelineEntryService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function record(ObjectEntity $object, array $data): TimelineEntry {
-		$kind = $this->readString($data, 'kind');
+		$kind = $this->readString(data: $data, key: 'kind');
 		$fields = [];
 		if (isset($data['fields']) === true && is_array($data['fields']) === true) {
 			$fields = $data['fields'];
@@ -105,17 +107,17 @@ class TimelineEntryService {
 		$entry = new TimelineEntry();
 		$entry->setUuid((string)Uuid::v4());
 		$entry->setObjectUuid((string)$object->getUuid());
-		$entry->setRegister($this->readString($data, 'register'));
-		$entry->setSchema($this->readString($data, 'schema'));
-		$entry->setCommentId($this->readInt($data, 'commentId'));
+		$entry->setRegister($this->readString(data: $data, key: 'register'));
+		$entry->setSchema($this->readString(data: $data, key: 'schema'));
+		$entry->setCommentId($this->readInt(data: $data, key: 'commentId'));
 		$entry->setKind($kind);
 		$entry->setAuthor($this->callerUid());
-		$entry->setVisibility($this->visibility->normalise(value: $this->readString($data, 'visibility')));
+		$entry->setVisibility($this->visibility->normalise(value: $this->readString(data: $data, key: 'visibility')));
 		$entry->setMessage($message);
 		$entry->setFields($accepted);
 		$entry->setPinned(false);
 		$entry->setLanguage($this->languages->detect(text: $message));
-		$entry->setRawSource($this->readString($data, 'rawSource'));
+		$entry->setRawSource($this->readString(data: $data, key: 'rawSource'));
 		$entry->setCreated(new DateTime());
 		$entry->setUpdated(new DateTime());
 
@@ -262,9 +264,16 @@ class TimelineEntryService {
 			throw new TimelinePermissionException('You do not have permission to pin entries on this object');
 		}
 
+		$by = null;
+		$at = null;
+		if ($pinned === true) {
+			$by = $this->callerUid();
+			$at = new DateTime();
+		}
+
 		$entry->setPinned($pinned);
-		$entry->setPinnedBy(($pinned === true) ? $this->callerUid() : null);
-		$entry->setPinnedAt(($pinned === true) ? new DateTime() : null);
+		$entry->setPinnedBy($by);
+		$entry->setPinnedAt($at);
 		$entry->setUpdated(new DateTime());
 
 		return $this->entryMapper->update($entry);
@@ -444,8 +453,11 @@ class TimelineEntryService {
 		}
 
 		$value = trim($data[$key]);
+		if ($value === '') {
+			return null;
+		}
 
-		return ($value === '') ? null : $value;
+		return $value;
 	}//end readString()
 
 	/**

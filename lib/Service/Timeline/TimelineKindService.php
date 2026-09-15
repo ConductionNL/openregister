@@ -39,6 +39,8 @@ use Symfony\Component\Uid\Uuid;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Timeline
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineKindService {
 
@@ -125,13 +127,13 @@ class TimelineKindService {
 			$kind->setCreated(new \DateTime());
 		}
 
-		$kind->setTitle($this->stringOrNull($data, 'title'));
-		$kind->setDescription($this->stringOrNull($data, 'description'));
+		$kind->setTitle($this->stringOrNull(data: $data, key: 'title'));
+		$kind->setDescription($this->stringOrNull(data: $data, key: 'description'));
 		$kind->setProperties($properties);
 		$kind->setRequired($required);
 		$kind->setFollowUp((bool)($data['followUp'] ?? false));
-		$kind->setRegister($this->stringOrNull($data, 'register'));
-		$kind->setSchema($this->stringOrNull($data, 'schema'));
+		$kind->setRegister($this->stringOrNull(data: $data, key: 'register'));
+		$kind->setSchema($this->stringOrNull(data: $data, key: 'schema'));
 		$kind->setUpdated(new \DateTime());
 
 		if ($isNew === true) {
@@ -211,10 +213,12 @@ class TimelineKindService {
 				continue;
 			}
 
-			$problem = $this->checkValue(
-				value: $fields[$name],
-				declaration: (is_array($declaration) === true) ? $declaration : []
-			);
+			$rules = [];
+			if (is_array($declaration) === true) {
+				$rules = $declaration;
+			}
+
+			$problem = $this->checkValue(value: $fields[$name], declaration: $rules);
 			if ($problem !== null) {
 				$errors[$name] = $problem;
 				continue;
@@ -300,7 +304,10 @@ class TimelineKindService {
 		}
 
 		$value = trim($data[$key]);
+		if ($value === '') {
+			return null;
+		}
 
-		return ($value === '') ? null : $value;
+		return $value;
 	}//end stringOrNull()
 }//end class

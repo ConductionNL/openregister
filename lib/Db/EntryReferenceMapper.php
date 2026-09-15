@@ -40,6 +40,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<EntryReference>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class EntryReferenceMapper extends QBMapper {
 
