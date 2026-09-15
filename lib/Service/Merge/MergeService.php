@@ -175,8 +175,10 @@ class MergeService {
 	 * @return array<string, mixed> Preview payload.
 	 *
 	 * @throws RuntimeException When the uuids are equal or either object is unreadable.
+	 * @throws MergeNotFullyReadableException When either object carries a property the caller may not read.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function previewMerge(string $from, string $into): array {
 		if ($from === $into) {

@@ -537,8 +537,18 @@ return [
         // Dismissal surface: a pair a person reviewed and ruled NOT the same.
         // Under the literal /duplicates/ prefix, so unlike the check above these
         // cannot collide with the object routes at all.
-        ['name' => 'duplicate#dismiss', 'url' => '/api/objects/duplicates/{register}/{schema}/dismiss', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
-        ['name' => 'duplicate#undismiss', 'url' => '/api/objects/duplicates/{register}/{schema}/undismiss', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+        [
+            'name' => 'duplicate#dismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/dismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
+        [
+            'name' => 'duplicate#undismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/undismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
         // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
         ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
         ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
