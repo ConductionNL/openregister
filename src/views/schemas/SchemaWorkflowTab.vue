@@ -6,18 +6,24 @@
 			<section class="tab-section">
 				<TaskSequencePanel :schema="schema" />
 			</section>
+
+			<section class="tab-section">
+				<StateFieldRulesPanel :schema="schema" />
+			</section>
 		</NcAppContentDetails>
 	</div>
 </template>
 
 <script>
 import { NcAppContentDetails } from '@nextcloud/vue'
+import StateFieldRulesPanel from '../../components/workflow/StateFieldRulesPanel.vue'
 import TaskSequencePanel from '../../components/workflow/TaskSequencePanel.vue'
 
 export default {
 	name: 'SchemaWorkflowTab',
 	components: {
 		NcAppContentDetails,
+		StateFieldRulesPanel,
 		TaskSequencePanel,
 	},
 

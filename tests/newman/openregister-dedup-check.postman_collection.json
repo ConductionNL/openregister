@@ -1,0 +1,600 @@
+{
+  "info": {
+    "_postman_id": "or-dedup-check-2026-09-15",
+    "name": "OpenRegister Duplicate Check At Intake",
+    "description": "The create-time duplicate surface, asserted where CI can see it.\n\nWHAT IT ASSERTS, each paired with its control:\n  * dedup-check scores an unsaved body against what is stored and names the fields that matched\n  * the control before it: the same call on an empty register finds nothing, so a hit is a hit and not a fixture\n  * the control after it: the listing still holds one object, so the check wrote nothing\n  * a record that shares no declared field is not offered, so the scorer is discriminating\n  * a caller in the declared override group saves through a blocking match, and the override lands on the audit trail as dedup.overridden\n\nWHAT IT DOES NOT ASSERT. The 409 refusal itself needs a caller OUTSIDE the override groups, and this collection runs as one user. That path is covered by DedupCreatePolicyTest.\n\nSELF-CLEANING. It creates its own register, schema and objects and removes all of them, so a re-run starts from the same state.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "registerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schemaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "firstUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "secondUuid",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "setUp: a register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"dedup newman register\", \"description\": \"dedup-check collection fixture\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the register is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: a schema declaring dedup rules that block at create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"dedup newman schema\", \"description\": \"dedup-check collection fixture\", \"properties\": {\"requester\": {\"type\": \"string\", \"title\": \"Requester\", \"maxLength\": 255}, \"subject\": {\"type\": \"string\", \"title\": \"Subject\", \"maxLength\": 255}}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}, \"configuration\": {\"x-openregister-dedup\": {\"matchRules\": [{\"field\": \"requester\", \"method\": \"exact\", \"weight\": 0.5}, {\"field\": \"subject\", \"method\": \"normalized\", \"weight\": 0.5}], \"threshold\": 0.85, \"onCreate\": \"block\", \"overrideGroups\": [\"admin\"]}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the schema is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('schemaId', String(pm.response.json().id));",
+              "pm.test('the dedup declaration persisted', () => {",
+              "  const cfg = pm.response.json().configuration || {};",
+              "  pm.expect(cfg['x-openregister-dedup']).to.be.an('object');",
+              "  pm.expect(cfg['x-openregister-dedup'].onCreate).to.eql('block');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: the register carries the schema",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"schemas\": [\"{{schemaId}}\"]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the schema is attached', () => pm.expect(pm.response.code).to.be.below(300));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CONTROL: dedup-check on an empty register finds nothing",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"requester\": \"bsn:123\", \"subject\": \"Kapvergunning Eikenlaan\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the check answers 200', () => pm.response.to.have.status(200));",
+              "pm.test('nothing is stored yet, so nothing matches', () => pm.expect(pm.response.json().total).to.eql(0));",
+              "pm.test('the schema threshold is reported', () => pm.expect(pm.response.json().threshold).to.eql(0.85));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: the first record",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"requester\": \"bsn:123\", \"subject\": \"Kapvergunning Eikenlaan\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the first record is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('firstUuid', String((b['@self'] && b['@self'].id) || b.id || b.uuid));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "dedup-check -> the stored record is returned with the fields that matched",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"requester\": \"bsn:123\", \"subject\": \"kapvergunning  eikenlaan\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the check answers 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('one match', () => pm.expect(b.total).to.eql(1));",
+              "pm.test('it is the record we stored', () => pm.expect(b.matches[0].uuid).to.eql(pm.collectionVariables.get('firstUuid')));",
+              "pm.test('both declared fields are named', () => {",
+              "  pm.expect(b.matches[0].matchedOn).to.include('requester');",
+              "  pm.expect(b.matches[0].matchedOn).to.include('subject');",
+              "});",
+              "pm.test('the matched rules name their method', () => pm.expect(b.matches[0].matchedRules.map(r => r.field)).to.include('subject'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CONTROL: the check saved nothing",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the listing answers 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "const n = (b.results && b.results.length) || (b.items && b.items.length) || 0;",
+              "pm.test('still exactly one object, so no check became a record', () => pm.expect(n).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CONTROL: a different record is not a match",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"requester\": \"bsn:999\", \"subject\": \"Iets heel anders\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the check answers 200', () => pm.response.to.have.status(200));",
+              "pm.test('nothing matches', () => pm.expect(pm.response.json().total).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST a duplicate with the override -> saved, because admin is in the override group",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"requester\": \"bsn:123\", \"subject\": \"kapvergunning eikenlaan\", \"_dedupOverride\": true}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the override saves', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('secondUuid', String((b['@self'] && b['@self'].id) || b.id || b.uuid));",
+              "pm.test('the override flag is not stored as data', () => pm.expect(b._dedupOverride).to.eql(undefined));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the audit trail -> the override is on record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}/audit-trails"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the audit trail answers 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "const rows = b.results || b.items || b || [];",
+              "const actions = rows.map(r => r.action);",
+              "pm.test('a dedup.overridden entry is there', () => pm.expect(actions).to.include('dedup.overridden'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the second object",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the first object",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{firstUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the schema",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the register",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
