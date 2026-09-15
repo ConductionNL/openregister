@@ -114,6 +114,13 @@ class LifecycleConditionEvaluator {
 			return null;
 		}
 
+		// A condition switched off from the rule inventory refuses nothing. The
+		// switch bites HERE, at the one place a transition condition is
+		// evaluated, so that the inventory reports a state it actually causes.
+		if (($spec['enabled'] ?? true) === false) {
+			return null;
+		}
+
 		$condition = $spec['condition'];
 
 		if (
@@ -242,6 +249,11 @@ class LifecycleConditionEvaluator {
 	 * `user` is empty under `occ`, which has no session. A condition reading
 	 * `user.uid` therefore refuses on the CLI unless it allows for that.
 	 *
+	 * PUBLIC so that the rule run log can trace a refusal against the SAME
+	 * document the refusal was decided on. A tracer that rebuilt the document
+	 * itself would be a second opinion about what the condition read, and would
+	 * drift the first time this shape changes.
+	 *
 	 * @param array<string, mixed> $newData The object as it would be saved.
 	 * @param array<string, mixed> $oldData The object as currently stored.
 	 * @param string $action The matched transition's name.
@@ -249,8 +261,10 @@ class LifecycleConditionEvaluator {
 	 * @param string $to The lifecycle value being moved to.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
-	private function document(array $newData, array $oldData, string $action, string $from, string $to): array {
+	public function document(array $newData, array $oldData, string $action, string $from, string $to): array {
 		$user = $this->userSession->getUser();
 		$uid = '';
 		$groups = [];

@@ -2483,6 +2483,12 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-merge',
 		'x-openregister-handoff',
 		'x-openregister-mcp',
+		// The extending-form declaration: which property-vocabulary keys an
+		// app's own property form forwards. Absent from this list it would be
+		// silently DROPPED by setConfiguration(), and the narrowing the
+		// annotation exists to make visible would be invisible again, which is
+		// the exact failure the three comments below record.
+		'x-openregister-extends-form',
 		// The extensible action vocabulary: a map of action key →
 		// {name, description} that `validateAuthorizationRules()` reads to
 		// decide which non-CRUD actions an authorization block may name.

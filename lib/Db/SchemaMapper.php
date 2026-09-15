@@ -49,7 +49,9 @@ use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -1106,6 +1108,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateHandoffContractBinding(schema: $schema);
 		$this->validateMcpAnnotation(schema: $schema);
 		$this->validateRegistryAnnotation(schema: $schema);
+		$this->validateExtendingFormAnnotation(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
@@ -1442,6 +1445,58 @@ class SchemaMapper extends QBMapper {
 
 		throw new RelationDeclarationException(errors: $errors);
 	}//end validateRelationAnnotation()
+
+	/**
+	 * Validate the optional `x-openregister-extends-form` annotation.
+	 *
+	 * An app whose own form authors schema properties declares which
+	 * vocabulary keys that form forwards. A key nobody defines is refused
+	 * naming it, in both directions: a type the vocabulary does not hold fails
+	 * the property, and a forwarded key it does not hold fails the
+	 * declaration. Silence here is how an app ends up narrowing a platform
+	 * contract by ten capabilities and nobody can tell it was deliberate.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws PropertyVocabularyException When a declaration forwards a key the vocabulary does not hold.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 */
+	private function validateExtendingFormAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($configuration) === false) {
+			$configuration = [];
+		}
+
+		if (is_array($properties) === false) {
+			$properties = [];
+		}
+
+		$declarations = new ExtendingFormDeclaration();
+		$found = $declarations->fromSchema(configuration: $configuration, properties: $properties);
+		if ($found === []) {
+			return;
+		}
+
+		$errors = [];
+		foreach ($found as $path => $annotation) {
+			$errors = array_merge($errors, $declarations->validate(annotation: $annotation, path: $path));
+		}
+
+		if ($errors === []) {
+			return;
+		}
+
+		$keys = implode(', ', array_map(static fn (array $error): string => $error['key'], $errors));
+		throw new PropertyVocabularyException(
+			message: 'Invalid ' . ExtendingFormDeclaration::ANNOTATION . " declaration: '{$keys}'. "
+			. 'Read /api/schemas/property-vocabulary for the keys a form may forward.',
+			errors: $errors
+		);
+	}//end validateExtendingFormAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-quality` annotation.

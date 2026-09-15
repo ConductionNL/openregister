@@ -39,6 +39,10 @@ use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
+use OCA\OpenRegister\Service\Rules\RuleDescriptor;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -68,6 +72,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @param CalculationEvaluator $evaluator Expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param SequenceService $sequences Atomic running-number reservation service.
+	 * @param RuleRunRecorder $ruleRuns Records each calculation's verdict for the rule inventory.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
 	 * @return void
@@ -75,6 +80,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -82,6 +88,7 @@ class CalculationOnSaveListener implements IEventListener {
 		private readonly CalculationEvaluator $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly SequenceService $sequences,
+		private readonly RuleRunRecorder $ruleRuns,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -118,6 +125,8 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 * @SuppressWarnings(PHPMD.StaticAccess)        RuleTrace::fired and ::errored are named
+	 *   constructors on an immutable value object, not a collaborator to inject.
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method runs the linear save-time
 	 *   materialisation pipeline (inject @self, @ref, @aggregate, then evaluate each calc and
 	 *   strip the synthetic keys); the steps share one payload and must stay in order, so
@@ -156,8 +165,18 @@ class CalculationOnSaveListener implements IEventListener {
 			$sequenceContext = $this->buildSequenceContext(object: $object, schema: $schema);
 		}
 
+		$slug = (string)($schema->getSlug() ?? '');
+
 		foreach ($calcs as $name => $spec) {
 			if (is_array($spec) === false) {
+				continue;
+			}
+
+			// A calculation switched off from the rule inventory is not
+			// evaluated and writes nothing. The switch has to bite HERE, at the
+			// one place a materialised calculation is applied, or it is a
+			// control that reports a state it does not cause.
+			if (($spec['enabled'] ?? true) === false) {
 				continue;
 			}
 
@@ -189,8 +208,16 @@ class CalculationOnSaveListener implements IEventListener {
 						$e->getMessage()
 					)
 				);
+				$this->recordRun(
+					object: $object,
+					slug: $slug,
+					name: (string)$name,
+					trace: RuleTrace::errored(message: $e->getMessage())
+				);
 				continue;
 			}
+
+			$this->recordRun(object: $object, slug: $slug, name: (string)$name, trace: RuleTrace::fired());
 
 			$serialised = $this->serialise(value: $value);
 			if (($data[(string)$name] ?? null) !== $serialised) {
@@ -207,6 +234,45 @@ class CalculationOnSaveListener implements IEventListener {
 			$object->setObject($data);
 		}
 	}//end process()
+
+	/**
+	 * Record one calculation's verdict against the rule run log.
+	 *
+	 * A calculation has no condition, so it reaches only two of the four
+	 * verdicts: it evaluated, or it could not be evaluated. There is no
+	 * `no_match` to reach and inventing one would put a verdict in the log
+	 * that the engine can never mean.
+	 *
+	 * @param ObjectEntity $object The object being saved.
+	 * @param string $slug The schema's slug.
+	 * @param string $name The calculation's name.
+	 * @param RuleTrace $trace The verdict this evaluation reached.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDescriptor::idFor is the published
+	 *   derivation of a rule id; a descriptor built here would carry a declaration this
+	 *   path has no use for.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	private function recordRun(ObjectEntity $object, string $slug, string $name, RuleTrace $trace): void {
+		if ($slug === '') {
+			return;
+		}
+
+		$this->ruleRuns->record(
+			ruleId: RuleDescriptor::idFor(
+				kind: RuleVocabulary::KIND_CALCULATION,
+				schemaSlug: $slug,
+				key: $name
+			),
+			schemaSlug: $slug,
+			trace: $trace,
+			objectUuid: ($object->getUuid() ?? null),
+			registerSlug: ($object->getRegister() ?? null)
+		);
+	}//end recordRun()
 
 	/**
 	 * Build the per-create SequenceContext binding the object's register + schema scope.
