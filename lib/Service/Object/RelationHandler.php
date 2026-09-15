@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -51,6 +52,15 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex relationship resolution logic
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * Reason: the class was already 977 lines and 11 collaborators before the
+ * label enrichment added a resolver and three helpers
+ * (relation-types-with-inverses). It crosses both thresholds now, and the
+ * honest fix is to split the reverse-lookup half out of it, which is a change
+ * to a file three other lanes are also inside. Reported in the PR body as
+ * debt rather than done here.
  */
 class RelationHandler {
 	/**
@@ -62,8 +72,10 @@ class RelationHandler {
 	 * @param MagicRbacHandler $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param RegisterMapper $registerMapper Mapper for registers.
+	 * @param RelationTypeResolver|null $relationTypes Resolves what a relation is called from each side.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectEntityMapper,
@@ -72,6 +84,7 @@ class RelationHandler {
 		private readonly MagicRbacHandler $rbacHandler,
 		private readonly LoggerInterface $logger,
 		private readonly RegisterMapper $registerMapper,
+		private readonly ?RelationTypeResolver $relationTypes = null,
 	) {
 	}//end __construct()
 
@@ -556,9 +569,14 @@ class RelationHandler {
 	 * @param int|null $_registerId Register ID for magic table lookup.
 	 * @param int|null $_schemaId Schema ID for magic table lookup.
 	 *
-	 * @return array{results: ObjectEntity[], total: int, limit: int|mixed, offset: int|mixed}
+	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int|mixed, offset: int|mixed}
 	 *
-	 * @psalm-return array{results: list<ObjectEntity>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
+	 * Rows are serialised rather than entities, and each carries a `relation`
+	 * block naming the property the link came in through and what it is called
+	 * from each side. The change that introduced it is
+	 * openspec/changes/relation-types-with-inverses.
+	 *
+	 * @psalm-return array{results: list<array<string, mixed>>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
 	 *
@@ -740,8 +758,37 @@ class RelationHandler {
 
 			$relatedObjects = array_slice($relatedObjects, $offset, $limit);
 
+			// Name the link. The rows leave here serialised rather than as
+			// entities because the descriptor has nowhere to live on an
+			// entity, and ObjectsController::stampObjectUrls() already accepts
+			// either shape.
+			$sourceSchema = $schema;
+			if ($sourceSchema === null) {
+				$sourceSchema = $this->schemaOf(schemaId: $object->getSchema());
+			}
+
+			$rows = [];
+			foreach ($relatedObjects as $related) {
+				$row = $related;
+				if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
+					$row = $row->jsonSerialize();
+				}
+
+				if (is_array($row) === false) {
+					$rows[] = $related;
+					continue;
+				}
+
+				$rows[] = $this->withRelation(
+					row: $row,
+					schema: $sourceSchema,
+					path: $this->pathHolding(relations: $relations, uuid: (string)$related->getUuid()),
+					direction: RelationTypeResolver::DIRECTION_OUTGOING
+				);
+			}
+
 			return [
-				'results' => $relatedObjects,
+				'results' => $rows,
 				'total' => $total,
 				'limit' => $limit,
 				'offset' => $offset,
@@ -833,6 +880,119 @@ class RelationHandler {
 
 		return $filtered;
 	}//end filterByRbac()
+
+	/**
+	 * The stored relation path that holds a given uuid, if any.
+	 *
+	 * Relations are stored as a map of property path to reference value:
+	 * `['blocks.0' => 'uuid-b', 'owner' => 'https://…/uuid-o']`. That map
+	 * already records which property a reference came in through, so neither
+	 * direction has to walk the schema's `$ref` properties guessing which one
+	 * holds the value. The walk stays as the fallback for rows written before
+	 * the map carried paths.
+	 *
+	 * @param array<mixed, mixed> $relations The object's stored relation map.
+	 * @param string $uuid The uuid to find.
+	 *
+	 * @return string|null The path, or null when the map does not name it.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function pathHolding(array $relations, string $uuid): ?string {
+		if ($uuid === '') {
+			return null;
+		}
+
+		foreach ($relations as $path => $value) {
+			if (is_string($path) === false) {
+				continue;
+			}
+
+			if (is_string($value) === true && ($value === $uuid || str_contains($value, $uuid) === true)) {
+				return $path;
+			}
+
+			if (is_array($value) === false) {
+				continue;
+			}
+
+			foreach ($value as $index => $sub) {
+				if (is_string($sub) === true && ($sub === $uuid || str_contains($sub, $uuid) === true)) {
+					return $path.'.'.((string)$index);
+				}
+			}
+		}
+
+		return null;
+	}//end pathHolding()
+
+	/**
+	 * The schema an object belongs to, loaded without RBAC.
+	 *
+	 * Reading a label is not reading the schema's data, and the objects the
+	 * labels describe have already been filtered by {@see self::filterByRbac()}.
+	 * A label that silently disappears because the reader may not read the
+	 * schema row would leave the far side saying "referenced by" with no way
+	 * to tell that apart from a schema that declares nothing.
+	 *
+	 * @param mixed $schemaId The object's schema id.
+	 *
+	 * @return Schema|null The schema, or null when it cannot be loaded.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function schemaOf(mixed $schemaId): ?Schema {
+		if (is_numeric($schemaId) === false) {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find((int)$schemaId, _rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[RelationHandler] Could not load a schema to resolve relation labels',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId],
+			);
+
+			return null;
+		}
+	}//end schemaOf()
+
+	/**
+	 * Attach the relation descriptor to one serialised row.
+	 *
+	 * Every row gets a `relation` block, annotated or not. A caller that has
+	 * to ask "did this one come with labels" is a caller that will forget to
+	 * on the path that matters, and the fallback the spec names — the
+	 * property's title, and "referenced by" — is a perfectly good answer.
+	 *
+	 * @param array<string, mixed> $row The serialised object.
+	 * @param Schema|null $schema The schema that declares the property.
+	 * @param string|null $path The stored relation path.
+	 * @param string $direction One of RelationTypeResolver::DIRECTION_*.
+	 *
+	 * @return array<string, mixed> The row, with `relation` attached.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function withRelation(array $row, ?Schema $schema, ?string $path, string $direction): array {
+		if ($this->relationTypes === null) {
+			return $row;
+		}
+
+		$descriptor = null;
+		if ($path !== null) {
+			$descriptor = $this->relationTypes->descriptorFor(schema: $schema, property: $path);
+		}
+
+		$row['relation'] = $this->relationTypes->row(
+			descriptor: $descriptor,
+			direction: $direction,
+			path: $path
+		);
+
+		return $row;
+	}//end withRelation()
 
 	/**
 	 * Get objects that use this object (incoming relations).
@@ -932,7 +1092,22 @@ class RelationHandler {
 							continue;
 						}
 
-						$results[] = $resultObject->jsonSerialize();
+						// The referencing object's own relation map says which
+						// of ITS properties holds this uuid, and that property
+						// lives on ITS schema — which is why the descriptor is
+						// resolved from $tableSchema and not from the schema of
+						// the object being read. Resolution is memoised per
+						// schema, so a reverse lookup over four hundred rows
+						// from three schemas resolves three descriptor sets.
+						$results[] = $this->withRelation(
+							row: $resultObject->jsonSerialize(),
+							schema: $tableSchema,
+							path: $this->pathHolding(
+								relations: ($resultObject->getRelations() ?? []),
+								uuid: (string)$targetUuid
+							),
+							direction: RelationTypeResolver::DIRECTION_INCOMING
+						);
 					}
 
 					$totalResults += count($searchResults);
