@@ -394,19 +394,6 @@ class ObjectRelationService {
 	}//end remove()
 
 	/**
-	 * Persist a row whose caller adjusted it after it was written.
-	 *
-	 * @param ObjectRelation $row The row.
-	 *
-	 * @return ObjectRelation The persisted row.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	public function saveRow(ObjectRelation $row): ObjectRelation {
-		return $this->mapper->save(relation: $row);
-	}//end saveRow()
-
-	/**
 	 * The relation declaration one property of one schema carries.
 	 *
 	 * The caller asking is a controller that holds a schema id and a property
