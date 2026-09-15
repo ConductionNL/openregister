@@ -79,6 +79,7 @@ test.describe('access by link rather than by account', () => {
 	let registerId: string
 	let schemaId: string
 	let objectUuid: string
+	let viewUuid: string
 
 	test.beforeAll(async () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
@@ -119,12 +120,30 @@ test.describe('access by link rather than by account', () => {
 		const body = await obj.json()
 		objectUuid = String(body['@self']?.id ?? body.id ?? body.uuid)
 		expect(objectUuid, 'no uuid came back from the object create').toBeTruthy()
+
+		// The besluitenlijst: a saved view over this schema, which is what
+		// actieve openbaarmaking publishes rather than a retyped web page.
+		const view = await admin.post(`${API}/views`, {
+			data: {
+				name: `e2e besluitenlijst ${RUN}`,
+				description: 'e2e',
+				query: { '@self': { register: registerId, schema: schemaId } },
+			},
+		})
+		expect(view.ok(), `view create failed: ${await view.text()}`).toBeTruthy()
+		const viewBody = await view.json()
+		viewUuid = String(viewBody.uuid ?? viewBody.id)
+		expect(viewUuid, 'no uuid came back from the view create').toBeTruthy()
 	})
 
 	test.afterAll(async () => {
 		if (objectUuid) {
 			await admin.delete(`${API}/objects/${registerId}/${schemaId}/${objectUuid}`)
 			await admin.delete(`${API}/deleted/${objectUuid}`)
+		}
+
+		if (viewUuid) {
+			await admin.delete(`${API}/views/${viewUuid}`)
 		}
 
 		if (schemaId) {
@@ -180,6 +199,36 @@ test.describe('access by link rather than by account', () => {
 				body.subject['@self'][forbidden],
 				`a link must not publish @self.${forbidden}`,
 			).toBeUndefined()
+		}
+
+		await admin.delete(`${API}/access-links/${link.id}`)
+	})
+
+	test('a besluitenlijst is published from the record, as a saved view', async () => {
+		const mint = await admin.post(`${API}/access-links`, {
+			data: {
+				subjectType: 'view',
+				subjectId: viewUuid,
+				expiresAt: inSevenDays(),
+				label: `Besluitenlijst ${RUN}`,
+			},
+		})
+		expect(mint.ok(), `view mint failed: ${await mint.text()}`).toBeTruthy()
+		const link = await mint.json()
+
+		const opened = await anon.get(`${API}/public/links/${link.anchor}`)
+		expect(opened.ok(), `an anonymous view open failed: ${await opened.text()}`).toBeTruthy()
+
+		const body = await opened.json()
+		expect(body.link.subjectType).toBe('view')
+		expect(Array.isArray(body.results), 'a view link answers a list').toBeTruthy()
+		expect(body.total, 'the published view should carry the record').toBeGreaterThan(0)
+
+		// Every row is filtered the same way a single object is.
+		for (const row of body.results as Array<Record<string, unknown>>) {
+			expect(row.bsn, 'a hidden property must stay hidden in a published view').toBeUndefined()
+			const self = (row['@self'] ?? {}) as Record<string, unknown>
+			expect(self.owner, 'a published view must not carry @self.owner').toBeUndefined()
 		}
 
 		await admin.delete(`${API}/access-links/${link.id}`)
