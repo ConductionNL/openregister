@@ -44,9 +44,23 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Finds scored duplicate-candidate pairs in a register/schema.
+ * Finds scored duplicate-candidate pairs in a register/schema, and scores an
+ * unsaved candidate against the stored set through the same rules.
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-6
+ * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 61 against a threshold of 50,
+ *   and the eleven points are the price of the thing this class exists to
+ *   guarantee. It now has TWO entry points over ONE rule engine: a sweep over
+ *   stored pairs and a check of an unsaved candidate. Splitting them into two
+ *   services is the obvious way to get under the threshold and the wrong one:
+ *   the whole point is that a warning shown at intake and a duplicate found by
+ *   a later sweep agree on what a duplicate is, and they can only agree while
+ *   they share `resolveConfig()`, `blockingTokenFor()`, `resolvePath()` and
+ *   `scoreAgainstRules()`. Two classes would have two copies of that agreement
+ *   and no way to notice when they drifted. Same reasoning MergeService records
+ *   for the same rule.
  */
 class DuplicateDetectionService {
 	/**
