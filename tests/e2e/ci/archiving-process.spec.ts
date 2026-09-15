@@ -315,3 +315,167 @@ test.describe('archiving-process', () => {
 		expect(refused.status(), 'a record that is not on this list cannot be answered').toBe(404)
 	})
 })
+
+/*
+ * NOMINATION AT CLOSURE, AND THE FACTS ON THE OBJECT.
+ *
+ * A separate describe because it needs its own world: a selectielijst register
+ * with a row in it, and a schema that both declares an archive block pointing
+ * at that row and a lifecycle whose last state is declared final. The unit
+ * tests cover the derivation; what they cannot see is whether closing an object
+ * through the real transition endpoint reaches the listener at all.
+ */
+test.describe('archiving-nomination', () => {
+	test.use({ storageState: STORAGE_STATE })
+
+	let lijstRegister: { id: number; slug: string; title: string } | null = null
+	let lijstSchema: { id: number; slug: string; title: string } | null = null
+	let zaakRegister: { id: number; slug: string; title: string } | null = null
+	let zaakSchema: { id: number; slug: string; title: string } | null = null
+	let zaakId: string | null = null
+	let previousArchival: Record<string, unknown> | null = null
+
+	const CATEGORY = `${RUN}-11.1.2`
+
+	test.beforeAll(async ({ request }) => {
+		lijstRegister = await createRegister(request, `${RUN}-sel`)
+		lijstSchema = await createSchema(request, RUN, 'selectielijst', {
+			categorie: { type: 'string', title: 'Categorie' },
+			archiefnominatie: { type: 'string', title: 'Archiefnominatie' },
+			bewaartermijn: { type: 'string', title: 'Bewaartermijn' },
+			bron: { type: 'string', title: 'Bron' },
+		})
+		await linkSchemaToRegister(request, lijstRegister, [lijstSchema.id])
+
+		await createObject(request, lijstRegister.id, lijstSchema.id, {
+			categorie: CATEGORY,
+			archiefnominatie: 'vernietigen',
+			bewaartermijn: 'P7Y',
+			bron: 'Selectielijst gemeenten 2020',
+		})
+
+		zaakRegister = await createRegister(request, `${RUN}-zaak`)
+		zaakSchema = await createSchema(
+			request,
+			RUN,
+			'zaak',
+			{
+				title: { type: 'string', title: 'Title' },
+				status: {
+					type: 'string',
+					title: 'Status',
+					enum: ['in_behandeling', 'afgehandeld'],
+				},
+			},
+			{
+				archive: {
+					enabled: true,
+					classification: CATEGORY,
+				},
+				configuration: {
+					'x-openregister-lifecycle': {
+						field: 'status',
+						initial: 'in_behandeling',
+						final: ['afgehandeld'],
+						transitions: {
+							afhandelen: { from: ['in_behandeling'], to: 'afgehandeld' },
+						},
+					},
+				},
+			},
+		)
+		await linkSchemaToRegister(request, zaakRegister, [zaakSchema.id])
+
+		const before = await request.get(`${API}/settings/archival`)
+		previousArchival = await before.json()
+		await request.patch(`${API}/settings/archival`, {
+			headers: { 'Content-Type': 'application/json' },
+			data: {
+				...previousArchival,
+				selectielijstRegister: lijstRegister.id,
+				selectielijstSchema: lijstSchema.id,
+			},
+		})
+
+		const zaak = await createObject(request, zaakRegister.id, zaakSchema.id, {
+			title: 'Bezwaar 2026/1',
+			status: 'in_behandeling',
+		})
+		zaakId = zaak.id
+	})
+
+	test.afterAll(async ({ request }) => {
+		if (previousArchival !== null) {
+			await request
+				.patch(`${API}/settings/archival`, {
+					headers: { 'Content-Type': 'application/json' },
+					data: previousArchival,
+				})
+				.catch(() => {})
+		}
+
+		for (const schema of [zaakSchema, lijstSchema]) {
+			if (schema !== null) {
+				await deleteSchema(request, schema.id)
+			}
+		}
+
+		for (const register of [zaakRegister, lijstRegister]) {
+			if (register !== null) {
+				await deleteRegister(request, register.id)
+			}
+		}
+	})
+
+	// @e2e retention-management::closing-an-object-writes-its-archival-future
+	// @e2e retention-management::a-handler-answering-a-woo-request-sees-the-basis
+	test('closing a case writes its nomination, its date and the row they came from', async ({ request }) => {
+		const closed = await request.post(`${API}/objects/${zaakId}/transition`, {
+			headers: { 'Content-Type': 'application/json' },
+			data: { action: 'afhandelen' },
+		})
+		expect(closed.status(), 'close the case through the declared transition').toBeLessThan(300)
+
+		const read = await request.get(
+			`${API}/objects/${zaakRegister!.id}/${zaakSchema!.id}/${zaakId}`,
+		)
+		expect(read.status(), 'read the closed case back').toBe(200)
+		const retention = (await read.json())?.['@self']?._retention ?? {}
+
+		// The nomination, the date and WHICH ROW decided, all on the object.
+		expect(retention.appraisal, 'the selectielijst row decided the appraisal').toBe('destroy')
+		expect(retention.disposalDate, 'a disposal date was derived').toBeTruthy()
+		expect(retention.selectionListRow, 'the row that decided is named').toBe(CATEGORY)
+		expect(retention.source, 'and which list it came from').toBe('Selectielijst gemeenten 2020')
+		expect(retention.basis, 'the basis is the selection list, not a schema guess').toBe('selection_list')
+		expect(retention.nomination?.status, 'the nomination reports itself').toBe('nominated')
+		expect(retention.nomination?.trigger, 'and says the closure caused it').toBe('closure')
+	})
+
+	test('recomputing a nomination is refused without a reason and recorded with one', async ({ request }) => {
+		const refused = await request.post(
+			`${API}/archival/objects/${zaakId}/nomination/recompute`,
+			{ headers: { 'Content-Type': 'application/json' }, data: {} },
+		)
+		expect(refused.status(), 'a recomputation with no reason is refused').toBe(400)
+
+		const done = await request.post(
+			`${API}/archival/objects/${zaakId}/nomination/recompute`,
+			{
+				headers: { 'Content-Type': 'application/json' },
+				data: { reason: 'Selectielijst 2026 replaced the 2020 list' },
+			},
+		)
+		expect(done.status(), 'a recomputation with a reason is recorded').toBe(200)
+		const recomputed = await done.json()
+		expect(recomputed.nomination?.trigger, 'the act names itself').toBe('recompute')
+
+		const read = await request.get(
+			`${API}/objects/${zaakRegister!.id}/${zaakSchema!.id}/${zaakId}`,
+		)
+		const retention = (await read.json())?.['@self']?._retention ?? {}
+		expect(retention.nomination?.reason, 'the reason is on the record').toBe(
+			'Selectielijst 2026 replaced the 2020 list',
+		)
+	})
+})

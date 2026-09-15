@@ -1155,6 +1155,27 @@ return [
         // RBAC- and tenancy-scoped, which is its per-object guard (ADR-005/016).
         ['name' => 'calculations#operators', 'url' => '/api/schemas/calculation-operators', 'verb' => 'GET'],
         ['name' => 'calculations#evaluate', 'url' => '/api/schemas/calculation-evaluate', 'verb' => 'POST'],
+        // The rules engine's operator surface (rules-engine-operability). The
+        // inventory is derived from the schema on every read, so it is a read
+        // of configuration and is admin-only; the vocabulary is a static table
+        // with nothing per-instance in it and is open to any signed-in caller,
+        // as the operator catalogue beside it already is. A derived rule id
+        // carries colons, which are legal unescaped in a path segment, so every
+        // `ruleId` requirement is `[^/]+`.
+        ['name' => 'rules#vocabulary', 'url' => '/api/rules/vocabulary', 'verb' => 'GET'],
+        ['name' => 'rules#runs', 'url' => '/api/rules/{ruleId}/runs', 'verb' => 'GET', 'requirements' => ['ruleId' => '[^/]+']],
+        ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
+        ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+
+        // The property vocabulary: what a property may be, published so an
+        // editor is generated from it instead of retyped per app. Literal
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the vocabulary reaches no data at
+        // all, and the narrowing read lists schemas through the RBAC- and
+        // tenancy-scoped mapper (ADR-005/016).
+        ['name' => 'propertyVocabulary#index', 'url' => '/api/schemas/property-vocabulary', 'verb' => 'GET'],
+        ['name' => 'propertyVocabulary#extendingForms', 'url' => '/api/schemas/extending-forms', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -1500,6 +1521,7 @@ return [
 		['name' => 'archival#assignReviewer', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/reviewer', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
 		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
+		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],

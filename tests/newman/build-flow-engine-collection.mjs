@@ -27,6 +27,17 @@ const here = dirname(fileURLToPath(import.meta.url))
 /** Every state a run can settle in. `failed` counts: it ends the poll. */
 const TERMINALS = [...TERMINAL_OK, 'failed']
 
+/**
+ * Where integriq's sources and synchronizations live as OpenRegister objects.
+ *
+ * The register slug is `integriq` since integriq renamed it from
+ * `openconnector` (integriq 47cd6b57, 2026-08-23). The old path answers 404, so
+ * every source fixture failed and each case reading `{{extSource}}` ran
+ * against an empty reference. Node TYPES stay `openconnector.*`: those are
+ * frozen in stored flow documents, the register slug is not.
+ */
+const SOURCE_OBJECTS = '/apps/openregister/api/objects/integriq'
+
 /** Shared auth + JSON headers for every request. */
 const HEADERS = [
 	{ key: 'Content-Type', value: 'application/json' },
@@ -82,13 +93,71 @@ function req(name, method, path, body, test, pre) {
 	}
 }
 
+/**
+ * Script lines that publish a just-created flow from inside a test script.
+ *
+ * Since flow definition versioning a flow is created as a DRAFT and a draft
+ * backs no run. These lines were first added to the generated JSON by hand,
+ * which meant regenerating the collection silently dropped them; they live
+ * here so the generator and the committed file agree.
+ *
+ * @param idVar    Name of the script-local variable to declare for the id.
+ * @param idExpr   Expression that yields the flow uuid.
+ * @param testName The pm.test name for the publish assertion.
+ * @param comment  Comment lines explaining why this flow must be published.
+ *
+ * @return The script lines.
+ */
+function publishLines(idVar, idExpr, testName, comment) {
+	return [
+		'',
+		...comment,
+		`const ${idVar} = ${idExpr}`,
+		`if (${idVar}) {`,
+		'    pm.sendRequest({',
+		`        url: pm.collectionVariables.get('baseUrl') + '/apps/openregister/api/flows/' + ${idVar} + '/publish',`,
+		"        method: 'POST',",
+		'        header: {',
+		"            'OCS-APIRequest': 'true',",
+		"            'Authorization': pm.request.headers.get('Authorization') || '',",
+		"            'Content-Type': 'application/json'",
+		'        },',
+		"        body: { mode: 'raw', raw: '{}' }",
+		'    }, (err, res) => {',
+		`        pm.test('${testName}', () => {`,
+		'            pm.expect(err, String(err)).to.be.null',
+		'            pm.expect(res.code, res.text().slice(0, 300)).to.eql(200)',
+		'        })',
+		'    })',
+		'}',
+	]
+}
+
+/** Why a sub-flow is published as well as the flows that are run directly. */
+const SUBFLOW_PUBLISH_COMMENT = [
+	'// 🔴 A SUB-FLOW MUST BE PUBLISHED TOO. SubFlowNode QUEUES the child run, and a',
+	"// queue resolves the CHILD's own published version at call time — an",
+	"// unpublished child fails the step, not the parent's graph.",
+]
+
+/** Why every case flow is published before it is run. */
+const FLOW_PUBLISH_COMMENT = [
+	'// 🔴 PUBLISH BEFORE RUNNING. Since flow definition versioning a flow is created',
+	'// as a DRAFT, and a draft backs no run — the run step below would answer 409',
+	'// no-published-version. Publishing here is exactly what an author does in the',
+	'// editor, so the case still describes the same journey it always did.',
+]
+
 // ---------------------------------------------------------------- setup ----
 
 const setup = {
 	name: '00 — setup',
 	item: [
 		req('bootstrap variables', 'GET', '/status.php', undefined, [
-			"const stamp = 'fe' + Date.now().toString(36)",
+			'// `stampPrefix` lets a run on a shared instance name its fixtures so any',
+			'// leftovers can be traced to it. Every name still starts `flow-engine-`,',
+			'// so the leak check in run-flow-engine.sh keeps matching them.',
+			"const stamp = (pm.variables.get('stampPrefix') || 'fe') + Date.now().toString(36)",
 			"pm.collectionVariables.set('stamp', stamp)",
 			"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'))",
 			"pm.test('instance is up', () => pm.response.to.have.status(200))",
@@ -128,6 +197,12 @@ const setup = {
 					externalId: { type: 'integer' },
 					status: { type: 'string' },
 					note: { type: 'string' },
+					// Only the synchronization case writes `email`: it maps the source
+					// record's fields straight across, while every other case sets an
+					// explicit field list that has never included one. That makes an
+					// email-bearing row an unambiguous fingerprint of the sync having
+					// run, which a shared `status` value could not be.
+					email: { type: 'string' },
 				},
 			},
 			[
@@ -177,7 +252,7 @@ const setup = {
 		req(
 			'create external source',
 			'POST',
-			'/apps/openregister/api/objects/openconnector/source',
+			`${SOURCE_OBJECTS}/source`,
 			{
 				name: 'flow-engine-ext-{{stamp}}',
 				location: 'https://jsonplaceholder.typicode.com',
@@ -191,6 +266,44 @@ const setup = {
 				"pm.test('external source created', () => pm.expect(pm.collectionVariables.get('extSource')).to.be.a('string'))",
 			],
 		),
+		// Synchronizations are OpenRegister OBJECTS, like sources: there is no
+		// /apps/integriq/api/synchronizations route to post to.
+		//
+		// AFTER the external source, because it references it. Created before it,
+		// `{{extSource}}` is still the empty string, the object persists happily
+		// with a blank sourceId, and the failure surfaces two folders later as
+		// "sourceId of synchronization cannot be empty" from inside the run.
+		req(
+			'create synchronization',
+			'POST',
+			`${SOURCE_OBJECTS}/synchronization`,
+			{
+				name: 'flow-engine-sync-{{stamp}}',
+				sourceId: '{{extSource}}',
+				sourceType: 'api',
+				// resultsPosition '_root' means "the body IS the array". /users
+				// returns a bare array, and without it every run dies on "Cannot
+				// determine the position of objects in the return body."
+				//
+				// usesPagination false, because pagination is ON by default and
+				// jsonplaceholder ignores the page parameter. Left on, the sync read the
+				// same ten users on every page until its page ceiling: measured
+				// 2026-09-14, found 500, created 500, and 500 contracts for ten rows.
+				sourceConfig: {
+					endpoint: '/users',
+					resultsPosition: '_root',
+					usesPagination: false,
+				},
+				targetType: 'register/schema',
+				targetId: '{{register}}/{{schema}}',
+			},
+			[
+				'const b = pm.response.json()',
+				"pm.collectionVariables.set('synchronization', (b['@self'] && b['@self'].id) || b.id || '')",
+				"pm.test('synchronization created', () => pm.expect(pm.collectionVariables.get('synchronization'), JSON.stringify(b).slice(0, 200)).to.be.a('string').and.not.eql(''))",
+				"pm.test('synchronization carries its source', () => pm.expect(String(b.sourceId || ''), 'a blank sourceId persists fine and only fails at run time').to.not.eql(''))",
+			],
+		),
 		// Auth goes in `configuration.headers`, NOT in the source's top-level
 		// `headers` and NOT in `auth`/`username`/`password`. Both of those
 		// persist happily and are then ignored by the call path, so the source
@@ -199,7 +312,7 @@ const setup = {
 		req(
 			'create nextcloud source',
 			'POST',
-			'/apps/openregister/api/objects/openconnector/source',
+			`${SOURCE_OBJECTS}/source`,
 			{
 				name: 'flow-engine-nc-{{stamp}}',
 				location: 'http://localhost',
@@ -261,6 +374,12 @@ const setup = {
 			[
 				"pm.collectionVariables.set('pagerFlow', pm.response.json().uuid || '')",
 				"pm.test('pager sub-flow created', () => pm.expect(pm.collectionVariables.get('pagerFlow')).to.be.a('string'))",
+				...publishLines(
+					'_subId',
+					"pm.collectionVariables.get('pagerFlow') || ''",
+					'pager sub-flow published',
+					SUBFLOW_PUBLISH_COMMENT,
+				),
 			],
 		),
 		req(
@@ -303,6 +422,12 @@ const setup = {
 			[
 				"pm.collectionVariables.set('syncFlow', pm.response.json().uuid || '')",
 				"pm.test('sync sub-flow created', () => pm.expect(pm.collectionVariables.get('syncFlow')).to.be.a('string'))",
+				...publishLines(
+					'_subId',
+					"pm.collectionVariables.get('syncFlow') || ''",
+					'sync sub-flow published',
+					SUBFLOW_PUBLISH_COMMENT,
+				),
 			],
 		),
 		req(
@@ -372,6 +497,12 @@ function caseFolder(c) {
 					`pm.collectionVariables.set('${v}_uuid', b.uuid || '')`,
 					`pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))`,
 					`pm.test('${c.key}: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))`,
+					...publishLines(
+						'_publishId',
+						"b.uuid || ''",
+						'flow published',
+						FLOW_PUBLISH_COMMENT,
+					),
 				],
 				guard,
 			),
@@ -458,6 +589,14 @@ function caseFolder(c) {
 								`pm.test('${c.key}: ${c.expect.text.name} holds the TRANSFORMED value', () => {`,
 								"    pm.expect(bearing.length, 'nothing to check the value on').to.be.above(0)",
 								`    pm.expect(String(bearing[0][${JSON.stringify(c.expect.text.name)}])).to.eql(${JSON.stringify(c.expect.text.equals)})`,
+								'})',
+							]
+						: []),
+					...(c.expect.present !== undefined
+						? [
+								`const bearingField = objects.filter((o) => String(o[${JSON.stringify(c.expect.present.name)}] || '') !== '')`,
+								`pm.test('${c.key}: at least ${c.expect.present.atLeast} row(s) carry ${c.expect.present.name}', () => {`,
+								`    pm.expect(bearingField.length, 'the run was green but imported nothing').to.be.at.least(${c.expect.present.atLeast})`,
 								'})',
 							]
 						: []),
@@ -629,6 +768,57 @@ const teardown = {
 				"pm.test('register deleted', () => pm.expect([200, 204, 404], JSON.stringify(pm.response.json())).to.include(pm.response.code))",
 			],
 		),
+		// A synchronization's contracts are objects of their own and deleting the
+		// synchronization does not take them along: measured 2026-09-14, the first
+		// run of the synchronization case left all of its contracts behind. Its
+		// synchronization LOG stays by design, because that schema is append-only.
+		//
+		// Every listed contract is checked against THIS run's synchronization
+		// before it is queued. A filter the endpoint silently dropped would
+		// otherwise hand back every contract on the instance, and this loop would
+		// delete other people's data.
+		req(
+			'list synchronization contracts to purge',
+			'GET',
+			`${SOURCE_OBJECTS}/synchronization_contract?synchronizationId={{synchronization}}&_limit=500`,
+			undefined,
+			[
+				"const sync = pm.collectionVariables.get('synchronization')",
+				'const body = pm.response.json()',
+				'const listed = body.results || []',
+				"const ids = sync ? listed.filter((c) => c.synchronizationId === sync).map((c) => (c['@self'] && c['@self'].id) || c.id).filter(Boolean) : []",
+				"pm.test('every listed contract belongs to this run', () => pm.expect(ids.length, 'the synchronizationId filter was not applied').to.eql(sync ? listed.length : ids.length))",
+				"pm.collectionVariables.set('contractQueue', JSON.stringify(ids))",
+				"pm.collectionVariables.set('contractHead', ids.length ? ids[0] : '')",
+				"console.log('purging ' + ids.length + ' synchronization contract(s)')",
+				"if (!ids.length) { pm.execution.setNextRequest('delete synchronization') }",
+			],
+		),
+		req(
+			'delete one synchronization contract',
+			'DELETE',
+			`${SOURCE_OBJECTS}/synchronization_contract/{{contractHead}}`,
+			undefined,
+			[
+				"pm.test('synchronization contract purged', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
+				"const queue = JSON.parse(pm.collectionVariables.get('contractQueue') || '[]')",
+				'queue.shift()',
+				"pm.collectionVariables.set('contractQueue', JSON.stringify(queue))",
+				'if (queue.length) {',
+				"    pm.collectionVariables.set('contractHead', queue[0])",
+				"    pm.execution.setNextRequest('delete one synchronization contract')",
+				'}',
+			],
+		),
+		req(
+			'delete synchronization',
+			'DELETE',
+			`${SOURCE_OBJECTS}/synchronization/{{synchronization}}`,
+			undefined,
+			[
+				"pm.test('synchronization deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
+			],
+		),
 		req(
 			'delete mapping',
 			'DELETE',
@@ -641,7 +831,7 @@ const teardown = {
 		req(
 			'delete external source',
 			'DELETE',
-			'/apps/openregister/api/objects/openconnector/source/{{extSource}}',
+			`${SOURCE_OBJECTS}/source/{{extSource}}`,
 			undefined,
 			[
 				"pm.test('external source deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
@@ -650,7 +840,7 @@ const teardown = {
 		req(
 			'delete nextcloud source',
 			'DELETE',
-			'/apps/openregister/api/objects/openconnector/source/{{ncSource}}',
+			`${SOURCE_OBJECTS}/source/{{ncSource}}`,
 			undefined,
 			[
 				"pm.test('nextcloud source deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
@@ -702,6 +892,9 @@ const collection = {
 		{ key: 'agent', value: '' },
 		{ key: 'mappingId', value: '' },
 		{ key: 'mappingUuid', value: '' },
+		{ key: 'synchronization', value: '' },
+		{ key: 'contractQueue', value: '[]' },
+		{ key: 'contractHead', value: '' },
 		{ key: 'flows', value: '' },
 		{ key: 'deleteQueue', value: '[]' },
 		{ key: 'deleteHead', value: '' },

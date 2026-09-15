@@ -36,6 +36,7 @@ use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -121,6 +122,7 @@ class CalculationOnSaveListenerSequenceTest extends TestCase {
 			new CalculationEvaluator(new PlaceholderResolver($userSession)),
 			$this->payloadBuilder,
 			$this->sequences,
+			$this->createMock(originalClassName: RuleRunRecorder::class),
 			$this->createMock(LoggerInterface::class)
 		);
 
