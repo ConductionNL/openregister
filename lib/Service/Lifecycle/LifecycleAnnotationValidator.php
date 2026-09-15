@@ -168,8 +168,13 @@ final class LifecycleAnnotationValidator {
 			];
 		}
 
-		// Final values (if declared) must be in the enum.
-		if (is_array($final) === true) {
+		// Final values (if declared) must be in the enum, UNLESS `final` takes
+		// the reference form `{ from, field }`, in which case the ends are rows
+		// in another schema and this schema has no enum that could list them.
+		$finalError = $this->validateFinalForm(final: $final);
+		if ($finalError !== null) {
+			$errors[] = $finalError;
+		} elseif (LifecycleFinalStateResolver::isReferenceForm($final) === false && is_array($final) === true) {
 			foreach ($final as $finalState) {
 				if (isset($enumSet[(string)$finalState]) === false) {
 					$errors[] = [
@@ -382,6 +387,15 @@ final class LifecycleAnnotationValidator {
 			}
 		}
 
+		// `final` (optional): shape-checked, never enum-checked. In provider
+		// mode the app owns the state vocabulary, so there is no enum to check
+		// against, and the reference form is the only one that can name an end
+		// when the states are rows.
+		$finalError = $this->validateFinalForm(final: ($annotation['final'] ?? null));
+		if ($finalError !== null) {
+			$errors[] = $finalError;
+		}
+
 		return array_merge($errors, $this->validateProviderModeConflicts(annotation: $annotation));
 	}//end validateProviderMode()
 
@@ -510,6 +524,14 @@ final class LifecycleAnnotationValidator {
 			}
 		}
 
+		// `final` (optional): shape-checked, never enum-checked. A graph-mode
+		// lifecycle field is a `$ref` with no enum, so the reference form is
+		// the only one that can name an end.
+		$finalError = $this->validateFinalForm(final: ($annotation['final'] ?? null));
+		if ($finalError !== null) {
+			$errors[] = $finalError;
+		}
+
 		// Graph block: required non-empty string keys.
 		$graph = $annotation['graph'];
 		foreach (['schema', 'parentField', 'parentFrom', 'orderField', 'finalField'] as $key) {
@@ -612,6 +634,64 @@ final class LifecycleAnnotationValidator {
 			'message' => 'x-openregister-lifecycle.initial must be a string or an object with "from" and "field".',
 		];
 	}//end validateInitialForm()
+
+	/**
+	 * Shape-check the `final` value in its two accepted forms.
+	 *
+	 * Valid: a list of state values (the static form, checked against the
+	 * field's enum by the caller), or the reference form
+	 * `{ "from": "<schema>", "field": "<property>" }` with both keys non-empty
+	 * strings. The reference form exists because a lifecycle field that is a
+	 * `$ref` carries the uuid of a row, and a schema cannot list uuids that
+	 * every tenant creates for itself; see {@see LifecycleFinalStateResolver}.
+	 *
+	 * The refusal names the shape rather than the value, because an author who
+	 * wrote `{ "from": "statusType" }` has not written a list with a bad entry,
+	 * they have written half a reference, and saying "not in the field's enum"
+	 * would send them to the enum instead of to the missing key.
+	 *
+	 * ⚠️ `from` here names a SCHEMA, not a reference declared in
+	 * `x-openregister-references`, which is what `initial.from` names. The
+	 * lifecycle value already IS the row's identifier, so nothing has to be
+	 * followed to find the row; the schema is named so a uuid that happens to
+	 * match an unrelated row cannot answer for a status.
+	 *
+	 * @param mixed $final The raw `final` value off the annotation.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when valid.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
+	 */
+	private function validateFinalForm(mixed $final): ?array {
+		if ($final === null) {
+			return null;
+		}
+
+		$malformed = [
+			'code' => 'lifecycle-final-malformed',
+			'message' => 'x-openregister-lifecycle.final must be a list of states, or an object '
+				. 'with non-empty "from" (the schema the lifecycle field references) and "field" '
+				. '(the property on that row saying whether it is an end) strings.',
+		];
+
+		if (is_array($final) === false) {
+			return $malformed;
+		}
+
+		if (LifecycleFinalStateResolver::isReferenceForm($final) === false) {
+			return null;
+		}
+
+		$from = ($final['from'] ?? null);
+		$field = ($final['field'] ?? null);
+		if (is_string($from) === false || trim($from) === ''
+			|| is_string($field) === false || trim($field) === ''
+		) {
+			return $malformed;
+		}
+
+		return null;
+	}//end validateFinalForm()
 
 	/**
 	 * Shape-check a transition's optional `authorization` list.

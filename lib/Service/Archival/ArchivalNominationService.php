@@ -45,8 +45,10 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\RetentionService;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Derives, writes and recomputes an object's archival nomination.
@@ -86,24 +88,60 @@ class ArchivalNominationService {
 	public const RULE_LOCAL_OVERRIDE = 'local_override';
 
 	/**
+	 * The schema's `x-openregister-archival` retention block decided it.
+	 *
+	 * A schema that declares retention the vocabulary way has said what happens
+	 * to its rows when their term runs out, and that is a nomination whether or
+	 * not anybody also filled in the `archive` column.
+	 */
+	public const RULE_ARCHIVAL_ANNOTATION = 'archival_annotation';
+
+	/**
+	 * Why a record on a schema that asks for no archiving is not nominated.
+	 *
+	 * Written out rather than left implicit, because "not applicable" and "we
+	 * looked in one of the two places" read identically from the outside, and
+	 * the second is the bug this reason exists to make visible.
+	 */
+	public const NOTHING_DECLARES_ARCHIVING = 'this schema declares neither an `archive` block with '
+		. '`enabled: true` nor an `x-openregister-archival` retention block, so nothing says what '
+		. 'happens to its records when their business use ends';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param RetentionService $retentionService Owns the selectielijst lookup and the date arithmetic.
-	 * @param LoggerInterface  $logger           Where an unnominatable record is reported.
+	 * The retention evaluator is defaulted rather than required because it is a
+	 * pure function of the annotation and the row; the parameter exists so a
+	 * test can substitute one.
+	 *
+	 * @param RetentionService             $retentionService   Owns the selectielijst lookup and the date arithmetic.
+	 * @param LoggerInterface              $logger             Where an unnominatable record is reported.
+	 * @param LifecycleFinalStateResolver  $finalStates        Answers whether a referenced state row is an end.
+	 * @param RetentionEvaluator           $retentionEvaluator Picks the retention an `x-openregister-archival` block gives this row.
 	 */
 	public function __construct(
 		private readonly RetentionService $retentionService,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleFinalStateResolver $finalStates,
+		private readonly RetentionEvaluator $retentionEvaluator = new RetentionEvaluator(),
 	) {
 	}//end __construct()
 
 	/**
 	 * Is this lifecycle value one the schema declares as an end?
 	 *
-	 * The vocabulary is `x-openregister-lifecycle.final`, the same list the
-	 * transition engine locks moves out of. Reading it here rather than keeping
-	 * a second list is the point: a state that stops being an end stops
+	 * The vocabulary is `x-openregister-lifecycle.final`, the same declaration
+	 * the transition engine locks moves out of. Reading it here rather than
+	 * keeping a second list is the point: a state that stops being an end stops
 	 * nominating on the same day.
+	 *
+	 * 🔴 A LIST OF STATE STRINGS CANNOT DESCRIBE A LIFECYCLE WHOSE STATES ARE
+	 * ROWS. When the lifecycle field is a `$ref`, the value reaching here is the
+	 * uuid of a row every tenant creates for itself, so a list written in the
+	 * schema names nothing and NOTHING IS EVER TERMINAL: no error, no log, no
+	 * nomination, and a closed dossier with no archival future. So `final` also
+	 * takes `{ from: <schema>, field: <property> }`, resolved against the
+	 * referenced row; see {@see LifecycleFinalStateResolver}.
 	 *
 	 * @param Schema $schema The object's schema.
 	 * @param string $state  The lifecycle value the object just reached.
@@ -111,6 +149,7 @@ class ArchivalNominationService {
 	 * @return bool True when the schema calls this state an end.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
 	 */
 	public function isTerminalState(Schema $schema, string $state): bool {
 		if (trim($state) === '') {
@@ -126,6 +165,10 @@ class ArchivalNominationService {
 		$final = ($annotation['final'] ?? []);
 		if (is_array($final) === false) {
 			return false;
+		}
+
+		if (LifecycleFinalStateResolver::isReferenceForm($final) === true) {
+			return $this->finalStates->isFinalByReference(declaration: $final, state: $state);
 		}
 
 		return in_array($state, $final, true);
@@ -158,9 +201,12 @@ class ArchivalNominationService {
 		?string $actor = null,
 		?string $reason = null,
 	): array {
-		$archive = $schema->getArchive();
-		if ($archive === [] || ($archive['enabled'] ?? false) === false) {
-			return ['status' => self::STATUS_NOT_APPLICABLE];
+		$archive = $this->archivalDeclaration(object: $object, schema: $schema);
+		if ($archive === []) {
+			return [
+				'status' => self::STATUS_NOT_APPLICABLE,
+				'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING,
+			];
 		}
 
 		$derived = $this->derive(object: $object, schema: $schema, archive: $archive);
@@ -237,7 +283,10 @@ class ArchivalNominationService {
 			$appraisal = $this->text(value: ($archive['defaultNominatie'] ?? null));
 			$period = $this->text(value: ($archive['defaultBewaartermijn'] ?? null));
 			if ($appraisal !== null) {
-				$rule = self::RULE_SCHEMA_DEFAULT;
+				// A translated `x-openregister-archival` block says so itself,
+				// so the nomination names the declaration it actually came from
+				// rather than crediting an `archive` column nobody filled in.
+				$rule = ($archive['defaultRule'] ?? self::RULE_SCHEMA_DEFAULT);
 			}
 		}
 
@@ -288,19 +337,143 @@ class ArchivalNominationService {
 	}//end derive()
 
 	/**
+	 * The archival declaration that applies to this record, wherever it lives.
+	 *
+	 * 🔴 TWO PLACES DECLARE ARCHIVING AND THEY NEVER MET. The `archive` column
+	 * is openregister's own block, filled in through the schema editor. The
+	 * `x-openregister-archival` annotation is the vocabulary openregister
+	 * publishes and its consumers write, shaped `{retention: {default, rules}}`
+	 * and carried in `configuration`. A schema that declared retention the
+	 * documented way answered `not_applicable` here, because this read only the
+	 * column. Reading both is the whole fix; the column still wins when it is
+	 * filled in, because it is the more specific statement.
+	 *
+	 * @param ObjectEntity $object The record, whose data the retention rules are matched against.
+	 * @param Schema       $schema Its schema.
+	 *
+	 * @return array<string, mixed> An archive block, or an empty array when nothing asks for archiving.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	private function archivalDeclaration(ObjectEntity $object, Schema $schema): array {
+		$archive = $schema->getArchive();
+		if ($archive !== [] && ($archive['enabled'] ?? false) === true) {
+			return $archive;
+		}
+
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration['x-openregister-archival'] ?? null);
+		if (is_array($annotation) === false) {
+			return [];
+		}
+
+		return $this->translateAnnotation(object: $object, annotation: $annotation);
+	}//end archivalDeclaration()
+
+	/**
+	 * Read an `x-openregister-archival` block as an archive block.
+	 *
+	 * The retention the annotation gives THIS row is the period, matched rules
+	 * and all, which is why the object is needed and a schema-wide translation
+	 * would be wrong. The appraisal is destruction unless the schema names
+	 * another one, because that is what the annotation means: rows leave when
+	 * their term runs out, and `ArchivalRetentionTask` is the thing that
+	 * removes them. A record that ought to be transferred instead is not lost
+	 * by that: the nomination is a proposal, and transfer is one of the three
+	 * answers a reviewer may give it.
+	 *
+	 * @param ObjectEntity         $object     The record.
+	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
+	 *
+	 * @return array<string, mixed> An archive block, or an empty array when the annotation decides nothing.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function translateAnnotation(ObjectEntity $object, array $annotation): array {
+		$data = ($object->getObject() ?? []);
+		if (is_array($data) === false) {
+			$data = [];
+		}
+
+		try {
+			$evaluation = $this->retentionEvaluator->evaluate(
+				annotation: $annotation,
+				row: $data,
+				createdAt: ($object->getCreated() ?? new DateTimeImmutable())
+			);
+		} catch (Throwable $error) {
+			$this->logger->warning(
+				'[ArchivalNominationService] ' . (string)$object->getUuid()
+				. ' carries an x-openregister-archival block that decides no retention: '
+				. $error->getMessage()
+			);
+
+			return [];
+		}
+
+		$period = $this->text(value: ($evaluation['effectiveRetention'] ?? null));
+		if ($period === null) {
+			return [];
+		}
+
+		$block = [
+			'enabled' => true,
+			'defaultNominatie' => $this->declaredAppraisal(annotation: $annotation),
+			'defaultBewaartermijn' => $period,
+			'defaultRule' => self::RULE_ARCHIVAL_ANNOTATION,
+		];
+
+		$classification = $this->text(value: ($annotation['category'] ?? null));
+		if ($classification !== null) {
+			$block['classification'] = $classification;
+		}
+
+		return $block;
+	}//end translateAnnotation()
+
+	/**
+	 * The appraisal an annotation names, or destruction when it names none.
+	 *
+	 * `category` and `action` are keys the vocabulary validator reports as
+	 * unknown-but-harmless rather than refusing, and several apps already ship
+	 * them. Honouring a spelling that is already stored costs nothing; ignoring
+	 * it would nominate a record for destruction that its own schema says to
+	 * keep.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
+	 *
+	 * @return string The canonical appraisal.
+	 */
+	private function declaredAppraisal(array $annotation): string {
+		$declared = $this->text(value: ($annotation['action'] ?? null));
+		if ($declared === null) {
+			return Appraisal::DESTROY;
+		}
+
+		return (Appraisal::CANONICAL[strtolower($declared)] ?? Appraisal::DESTROY);
+	}//end declaredAppraisal()
+
+	/**
 	 * Say which source was missing, rather than that one was.
+	 *
+	 * Both places a default can live are named, because "the schema declares no
+	 * default nomination" reads as a finished sentence and sent a reader to the
+	 * `archive` block alone, which is exactly the half-look that made a schema
+	 * declaring retention the vocabulary way unnominatable in silence.
 	 *
 	 * @param string|null $classification The classification the schema declared, if any.
 	 *
 	 * @return string The reason.
 	 */
 	private function missingSourceReason(?string $classification): string {
+		$where = ', and neither the schema\'s `archive` block nor its '
+			. '`x-openregister-archival` retention block names a default nomination';
+
 		if ($classification !== null) {
-			return 'no selectielijst row matches category ' . $classification
-				. ', and the schema declares no default nomination';
+			return 'no selectielijst row matches category ' . $classification . $where;
 		}
 
-		return 'the schema names no selectielijst category and declares no default nomination';
+		return 'the schema names no selectielijst category' . $where;
 	}//end missingSourceReason()
 
 	/**

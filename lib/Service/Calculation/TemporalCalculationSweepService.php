@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -382,8 +383,13 @@ class TemporalCalculationSweepService {
 			return [null, []];
 		}
 
+		// `final` also takes the reference form `{ from, field }`, whose ends are
+		// rows in another schema. This sweep compares stored strings, so it has
+		// nothing to compare them with and says so by naming no terminals,
+		// rather than stringifying the declaration into two states no object
+		// will ever be in. See LifecycleFinalStateResolver.
 		$final = ($lifecycle['final'] ?? []);
-		if (is_array($final) === false) {
+		if (is_array($final) === false || LifecycleFinalStateResolver::isReferenceForm($final) === true) {
 			$final = [];
 		}
 
