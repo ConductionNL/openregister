@@ -49,6 +49,10 @@ use OCA\OpenRegister\Exception\SearchTermSyntaxException;
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)           The parser builds nodes through
+ * SearchTermNode's named constructors, which exist because the node's own
+ * constructor is private. Injecting a factory for four calls to `all`, `any`,
+ * `not` and `term` would add a seam nothing else would ever use.
  */
 final class SearchTermParser {
 	/**
@@ -190,6 +194,9 @@ final class SearchTermParser {
 	 * @param bool   $trailing Whether a trailing wildcard was present.
 	 *
 	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool} The token.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Both flags describe the token the
+	 * tokenizer just read, not a behaviour it should switch on.
 	 */
 	private function makeToken(
 		string $type,

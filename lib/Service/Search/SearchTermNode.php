@@ -86,6 +86,10 @@ final class SearchTermNode {
 	 * @return self The term node.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two flags are the term's own
+	 * shape, not a mode switch: `*foo*` sets both and `foo` sets neither, and
+	 * splitting them into four constructors would say less, not more.
 	 */
 	public static function term(
 		string $value,

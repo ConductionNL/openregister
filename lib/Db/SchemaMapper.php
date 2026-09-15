@@ -33,14 +33,19 @@ use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
+use OCA\OpenRegister\Service\Rules\DependentValueValidator;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
+use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
+use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
@@ -1094,10 +1099,13 @@ class SchemaMapper extends QBMapper {
 		$this->validateLifecycleAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
+		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
+		$this->validateHingeAnnotations(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
 		$this->validateMergeAnnotation(schema: $schema);
+		$this->validatePartyAnnotation(schema: $schema);
 		$this->validateNotificationsAnnotation(schema: $schema);
 		$this->validateWidgetsAnnotation(schema: $schema);
 		$this->validateArchivalAnnotation(schema: $schema);
@@ -1403,6 +1411,48 @@ class SchemaMapper extends QBMapper {
 	}//end validateCalculationsAnnotation()
 
 	/**
+	 * Validate the two property-level rule annotations this change adds.
+	 *
+	 * REFUSES, it does not warn. A table naming a property the schema does not
+	 * declare, or a value the controlling property cannot take, does not fail
+	 * loudly at object save: it constrains nothing, and the object it was
+	 * written to guard saves cleanly. Storing it advisory would be storing a
+	 * rule its author believes is enforced.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * `x-openregister-default-expression` rides along for the same reason: an
+	 * expression the evaluator cannot dispatch does not fail at save, it fails
+	 * on the first create, one object at a time, for whoever happens to be
+	 * using the register that day.
+	 *
+	 * @throws DependentValueDeclarationException When a declaration is malformed or names nothing.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
+	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function validateDependentValueTables(Schema $schema): void {
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false || $properties === []) {
+			return;
+		}
+
+		$errors = array_merge(
+			(new DependentValueValidator())->validate(['properties' => $properties]),
+			ExpressionDefaultResolver::validateDeclarations(properties: $properties)
+		);
+		if ($errors === []) {
+			return;
+		}
+
+		throw new DependentValueDeclarationException(errors: $errors);
+	}//end validateDependentValueTables()
+
+	/**
 	 * Validate the optional `x-openregister-extends-form` annotation.
 	 *
 	 * An app whose own form authors schema properties declares which
@@ -1525,6 +1575,54 @@ class SchemaMapper extends QBMapper {
 	}//end validateDedupAnnotation()
 
 	/**
+	 * Validate the lens, list and geographic-inheritance annotations.
+	 *
+	 * All three are declarative reading instructions, not storage requirements:
+	 * a malformed one costs a surface, never an object. So this degrades to a
+	 * warning rather than aborting the import — but it does warn, because the
+	 * failure mode without it is a lens that renders empty forever and reads
+	 * exactly like a field nobody filled in.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	private function validateHingeAnnotations(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+		];
+
+		$declared = false;
+		foreach ([Schema::LENS_ANNOTATION, Schema::LIST_ANNOTATION, Schema::GEO_INHERITANCE_ANNOTATION] as $key) {
+			if (isset($configuration[$key]) === false) {
+				continue;
+			}
+
+			$shape[$key] = $configuration[$key];
+			$declared = true;
+		}
+
+		if ($declared === false) {
+			return;
+		}
+
+		$errors = (new HingeAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$this->logger->warning(
+			'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are '
+			. 'invalid and were ignored: ' . implode(' ', $messages)
+		);
+	}//end validateHingeAnnotations()
+
+	/**
 	 * Validate the optional `x-openregister-survivorship` annotation.
 	 *
 	 * @param Schema $schema Schema to validate.
@@ -1593,6 +1691,44 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (merge falls back to defaults): ' . implode(' ', $messages)
 		);
 	}//end validateMergeAnnotation()
+
+	/**
+	 * Validate the optional `x-openregister-party` annotation.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function validatePartyAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration['x-openregister-party'] ?? null);
+		if (is_array($annotation) === false) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			'x-openregister-party' => $annotation,
+		];
+
+		$errors = (new PartyAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		// A party declaration is ADVISORY metadata on top of a schema that
+		// stores objects perfectly well without it, so a malformed block must
+		// not abort the import. It is warned about rather than dropped: the
+		// failure a dropped declaration causes is a party schema that reads as
+		// an ordinary one, and the operator needs the field name to fix it.
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$this->logger->warning(
+			'x-openregister-party annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
+			. 'invalid and was ignored (the schema is not treated as a party schema): ' . implode(' ', $messages)
+		);
+	}//end validatePartyAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-notifications` annotation.

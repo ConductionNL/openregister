@@ -1708,10 +1708,17 @@ class ImportService {
 	 *
 	 * @psalm-return array{'@self': array<string, int|mixed|string>,...}
 	 *
+	 * Public because the previewed import maps its rows through this exact
+	 * method. A preview produced by a second transform would be a preview of
+	 * something other than what the write does, which is the failure D-1
+	 * exists to prevent.
+	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Row transformation requires many type-specific branches
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple column types and transformations create execution paths
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	private function transformCsvRowToObject(
+	public function transformCsvRowToObject(
 		array $rowData,
 		Register $register,
 		Schema $schema,

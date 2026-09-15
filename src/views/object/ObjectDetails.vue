@@ -224,6 +224,22 @@
 							</div>
 							<div v-else class="tabPanel">No relations found</div>
 						</AppTab>
+						<!--
+							The reverse view (objects-as-the-hinge-between-cases):
+							the records that point at this object, grouped by
+							schema, each with its status and when it last changed.
+							The Used by tab above lists them flat and ungrouped;
+							this one is what makes an address readable as a
+							history rather than a list of uuids.
+						-->
+						<AppTab
+							v-if="relationContext"
+							:title="t('openregister', 'Referenced by')">
+							<ReferencedByTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:objectId="relationContext.id" />
+						</AppTab>
 						<AppTab :title="t('openregister', 'Files')">
 							<NcButton
 								@click="openFolder(objectStore.objectItem.folder)">
@@ -527,6 +543,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
+import ReferencedByTab from '../../components/object-relations/ReferencedByTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
@@ -562,6 +579,7 @@ export default {
 		ContactsTab,
 		DeckTab,
 		RelationsTab,
+		ReferencedByTab,
 		CnIntegrationWidget,
 		CnObjectAccessTab,
 		CnObjectMetadataWidget,
