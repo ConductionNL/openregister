@@ -240,15 +240,16 @@ class DuplicateControllerTest extends TestCase {
 
 	/**
 	 * A caller-supplied threshold reaches the scorer and is not mistaken for
-	 * a candidate field.
+	 * a candidate field. It is `_threshold` rather than `threshold` so that a
+	 * schema declaring a property of that name is not silently robbed of it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCheckPassesThresholdThroughAndKeepsItOutOfTheCandidate(): void {
-		$this->request->method('getParams')->willReturn(['threshold' => '0.9', 'requester' => 'bsn:123']);
-		$this->request->method('getParam')->willReturnMap([['threshold', null, '0.9']]);
+		$this->request->method('getParams')->willReturn(['_threshold' => '0.9', 'requester' => 'bsn:123']);
+		$this->request->method('getParam')->willReturnMap([['_threshold', null, '0.9']]);
 
 		$this->duplicates->expects($this->once())
 			->method('checkCandidate')
@@ -261,6 +262,29 @@ class DuplicateControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(0, $response->getData()['total']);
 	}//end testCheckPassesThresholdThroughAndKeepsItOutOfTheCandidate()
+
+	/**
+	 * CONTROL for the rename above: a schema property that happens to be
+	 * called `threshold` reaches the scorer as data. If the control key were
+	 * `threshold`, this value would vanish from the comparison and the
+	 * endpoint would answer confidently about a body it never fully read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	public function testAPropertyNamedThresholdIsStillCandidateData(): void {
+		$this->request->method('getParams')->willReturn(['threshold' => '30 dagen', 'requester' => 'bsn:123']);
+		$this->request->method('getParam')->willReturnArgument(1);
+
+		$this->duplicates->expects($this->once())
+			->method('checkCandidate')
+			->with('reg', 'sch', ['threshold' => '30 dagen', 'requester' => 'bsn:123'], null, null)
+			->willReturn([]);
+		$this->duplicates->method('effectiveThreshold')->willReturn(0.85);
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->check('reg', 'sch')->getStatus());
+	}//end testAPropertyNamedThresholdIsStillCandidateData()
 
 	/**
 	 * A refusal to read is a 403, and an unresolvable register/schema a 404,
