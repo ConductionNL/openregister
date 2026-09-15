@@ -114,7 +114,7 @@ class ObjectViewMapper extends QBMapper {
 	 * @param string $objectUuid The object's uuid.
 	 * @param string|null $register The object's register, as the caller addressed it.
 	 * @param string|null $schema The object's schema, as the caller addressed it.
-	 * @param DateTime|null $at The moment to record, defaulting to now.
+	 * @param DateTime|null $moment The moment to record, defaulting to now.
 	 *
 	 * @return ObjectView The stored row.
 	 *
@@ -125,9 +125,9 @@ class ObjectViewMapper extends QBMapper {
 		string $objectUuid,
 		?string $register = null,
 		?string $schema = null,
-		?DateTime $at = null
+		?DateTime $moment = null
 	): ObjectView {
-		$now = ($at ?? new DateTime());
+		$now = ($moment ?? new DateTime());
 		$existing = $this->findOne(userId: $userId, objectUuid: $objectUuid);
 
 		if ($existing !== null) {

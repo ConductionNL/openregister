@@ -116,7 +116,7 @@ class ObjectFavouriteMapper extends QBMapper {
 	 * @param string $objectUuid The object's uuid.
 	 * @param string|null $register The object's register, as the caller addressed it.
 	 * @param string|null $schema The object's schema, as the caller addressed it.
-	 * @param DateTime|null $at The moment to record, defaulting to now.
+	 * @param DateTime|null $moment The moment to record, defaulting to now.
 	 *
 	 * @return ObjectFavourite The stored row.
 	 *
@@ -127,7 +127,7 @@ class ObjectFavouriteMapper extends QBMapper {
 		string $objectUuid,
 		?string $register = null,
 		?string $schema = null,
-		?DateTime $at = null
+		?DateTime $moment = null
 	): ObjectFavourite {
 		$existing = $this->findOne(userId: $userId, objectUuid: $objectUuid);
 		if ($existing !== null) {
@@ -139,7 +139,7 @@ class ObjectFavouriteMapper extends QBMapper {
 		$row->setObjectUuid($objectUuid);
 		$row->setRegister($register);
 		$row->setSchema($schema);
-		$row->setCreated(($at ?? new DateTime()));
+		$row->setCreated(($moment ?? new DateTime()));
 
 		try {
 			return $this->insert(entity: $row);

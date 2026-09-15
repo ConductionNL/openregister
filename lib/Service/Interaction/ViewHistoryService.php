@@ -110,10 +110,10 @@ class ViewHistoryService {
 			return null;
 		}
 
-		$at = ($now ?? new DateTime());
+		$moment = ($now ?? new DateTime());
 
 		try {
-			if ($this->isThrottled(userId: $uid, objectUuid: $uuid, now: $at) === true) {
+			if ($this->isThrottled(userId: $uid, objectUuid: $uuid, now: $moment) === true) {
 				return null;
 			}
 
@@ -122,7 +122,7 @@ class ViewHistoryService {
 				objectUuid: $uuid,
 				register: $register,
 				schema: $schema,
-				at: $at
+				moment: $moment
 			);
 		} catch (\Throwable $e) {
 			// Recording that you looked at something must never take out the
