@@ -39,6 +39,29 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 
+	/**
+	 * The real condition dialect, not a double.
+	 *
+	 * Which dialect a condition is written in is part of what the save path
+	 * decides, so a test that stubbed it would be asserting about a decision
+	 * the engine no longer makes.
+	 *
+	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
+		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+				)
+			)
+		);
+
+	}//end realConditionDialect()
+
+
 	private LoggerInterface&MockObject $logger;
 
 	private IUserSession&MockObject $userSession;
@@ -69,7 +92,8 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 			$this->userSession,
 			$groupManager,
 			$l10n,
-			$this->logger
+			$this->logger,
+			$this->realConditionDialect()
 		);
 	}//end setUp()
 
@@ -99,11 +123,11 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAScalarRuleDoesNotHoldAndWarns(): void {
-		// 🔴 The fail-open case FlowExpression cannot catch: a scalar is a
-		// literal there, and a truthy literal would fire on every write.
+		// 🔴 The fail-open case neither dialect catches: a scalar is a literal
+		// in both, and a truthy literal would fire on every write.
 		$this->logger->expects($this->once())
 			->method('warning')
-			->with($this->stringContains('not a JSONLogic rule object'));
+			->with($this->stringContains('not a rule object'));
 
 		$this->assertFalse($this->holds(true));
 	}//end testAScalarRuleDoesNotHoldAndWarns()

@@ -39,6 +39,29 @@ use Psr\Log\LoggerInterface;
  */
 class AutoTransitionSelectorTest extends TestCase {
 
+	/**
+	 * The real condition dialect, not a double.
+	 *
+	 * Which dialect a condition is written in is part of what the save path
+	 * decides, so a test that stubbed it would be asserting about a decision
+	 * the engine no longer makes.
+	 *
+	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
+		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+				)
+			)
+		);
+
+	}//end realConditionDialect()
+
+
 	private const HOLDS = ['!!' => ['var' => 'object.motivering']];
 
 	private LoggerInterface&MockObject $logger;
@@ -68,7 +91,8 @@ class AutoTransitionSelectorTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$groupManager,
 			$l10n,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->realConditionDialect()
 		);
 	}//end realEvaluator()
 
@@ -341,7 +365,7 @@ class AutoTransitionSelectorTest extends TestCase {
 		// engine would refuse. A selector doing its own truthiness test would
 		// either fire on the string or refuse the double's answer; both show up
 		// here rather than as a quiet second code path.
-		$evaluator = new class ($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)) extends LifecycleConditionEvaluator {
+		$evaluator = new class ($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IL10N::class), $this->createMock(LoggerInterface::class), $this->realConditionDialect()) extends LifecycleConditionEvaluator {
 			/**
 			 * Rules this double was asked about.
 			 *

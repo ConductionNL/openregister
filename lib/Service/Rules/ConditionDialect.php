@@ -112,7 +112,101 @@ final class ConditionDialect {
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function isAst(string $op): bool {
+		return self::isAstOperator(op: $op);
+	}//end isAst()
+
+	/**
+	 * Whether an operator key belongs to the JSON AST rather than to JSONLogic.
+	 *
+	 * Static because it reads one constant table and nothing else, and because
+	 * the schema save path validates a condition where no container is
+	 * available to build a dialect from.
+	 *
+	 * @param string $op The operator key.
+	 *
+	 * @return bool True when the AST evaluator owns the key.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	public static function isAstOperator(string $op): bool {
 		return (in_array($op, self::SHARED_SPELLINGS, true) === false
 			&& array_key_exists($op, CalculationEvaluator::OPERATORS) === true);
-	}//end isAst()
+	}//end isAstOperator()
+
+	/**
+	 * Whether a node is a well-formed JSON-AST expression.
+	 *
+	 * The operator set is read from {@see CalculationEvaluator::OPERATORS},
+	 * the same table the evaluator's `match` dispatches on, so an operator
+	 * added to the evaluator is accepted here in the same edit and a condition
+	 * can never be refused for an operator the engine would have run.
+	 *
+	 * `lit` is not descended into: its argument is a literal, and a literal
+	 * that happens to be a single-key map is data, not an expression.
+	 *
+	 * @param mixed $node The node to check.
+	 *
+	 * @return bool True when every operator in the tree is one the evaluator holds.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	public static function isWellFormedAst(mixed $node): bool {
+		if (is_array($node) === false) {
+			// A bare scalar is a literal operand, which is well formed.
+			return true;
+		}
+
+		if (array_is_list($node) === true) {
+			foreach ($node as $item) {
+				if (self::isWellFormedAst(node: $item) === false) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		if (count($node) !== 1) {
+			return false;
+		}
+
+		$op = (string)array_key_first($node);
+		if (array_key_exists($op, CalculationEvaluator::OPERATORS) === false) {
+			return false;
+		}
+
+		if ($op === 'lit') {
+			return true;
+		}
+
+		return self::isWellFormedAst(node: $node[$op]);
+	}//end isWellFormedAst()
+
+	/**
+	 * Whether a condition is well formed in whichever dialect it is written.
+	 *
+	 * The dialect is decided by the SAME lookup {@see self::holds()} makes, so
+	 * the schema save can never accept a condition the save path would then
+	 * hand to the other dialect's evaluator.
+	 *
+	 * @param mixed $node The condition node.
+	 *
+	 * @return bool True when the condition is a well-formed rule object.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's stateless
+	 *   JSONLogic facade; calling it statically IS the reuse.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 */
+	public static function isValidCondition(mixed $node): bool {
+		if (is_array($node) === false || $node === []) {
+			return false;
+		}
+
+		if (self::isAstOperator(op: (string)array_key_first($node)) === false) {
+			return FlowExpression::isValid(logic: $node);
+		}
+
+		return self::isWellFormedAst(node: $node);
+	}//end isValidCondition()
 }//end class
