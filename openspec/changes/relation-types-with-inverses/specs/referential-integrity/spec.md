@@ -88,7 +88,7 @@ sides, and removing the text SHALL remove the row.
 - **GIVEN** a declared reference pattern and a note naming another object
 - **WHEN** the note is saved
 - **THEN** both objects hold a typed relation, and deleting the text removes it
-- @e2e exclude {the pattern resolution that triggers this is owned by timeline-entries-are-records; this change owns only recordProseReference/withdrawProseReferences, asserted in tests/Unit/Service/Relation/ObjectRelationServiceTest.php}
+- @e2e exclude {the pattern resolution that turns a note into a reference is owned by timeline-entries-are-records; this change owns the row, driven over HTTP in tests/newman/openregister-relation-types.postman_collection.json and asserted in tests/Unit/Service/Relation/ObjectRelationServiceTest.php}
 
 ### Requirement: The relation graph is readable and exportable within a bounded depth (REQ-RTI-005)
 

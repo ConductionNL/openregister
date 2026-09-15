@@ -35,7 +35,11 @@ change owns the row that results: `ObjectRelationService::recordProseReference()
 writes one row per direction under one anchor, and
 `withdrawProseReferences()` takes both away when the text goes. Both sides
 writing rows would double every mention, so the timeline lane calls these two
-methods rather than reaching for the mapper.
+methods rather than reaching for the mapper. The same seam is on the API
+(`POST .../relation-rows` with a `target` and an `anchor`, and
+`DELETE .../relation-references/{anchor}`), because a service with no reachable
+caller is a capability nobody can exercise and nobody can test, which looks
+exactly like one that was never built.
 
 **The reverse-view SURFACE is not here either.**
 `objects-as-the-hinge-between-cases` owns the grouped, summarised view of

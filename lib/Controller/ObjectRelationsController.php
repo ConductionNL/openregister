@@ -107,13 +107,23 @@ class ObjectRelationsController extends Controller {
 	}//end index()
 
 	/**
-	 * Add an address outside the product as a relation on an object.
+	 * Add a relation row to an object: an external address, or a reference
+	 * somebody wrote in prose.
+	 *
+	 * A body with a `url` names an address outside the product. A body with a
+	 * `target` and an `anchor` names another object, and writes the row on both
+	 * sides so the mention is a link from either end.
+	 *
+	 * The prose branch is the seam the timeline change writes through in
+	 * process. It is on the API too, deliberately: a service with no reachable
+	 * caller is a capability nobody can exercise and nobody can test, which is
+	 * indistinguishable from one that was never built.
 	 *
 	 * @param string $register The register slug or id.
 	 * @param string $schema The schema slug or id.
 	 * @param string $id The object's uuid.
 	 *
-	 * @return JSONResponse The row, or the refusal.
+	 * @return JSONResponse The row or rows, or the refusal.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
@@ -122,6 +132,18 @@ class ObjectRelationsController extends Controller {
 		$object = $this->readable(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
 			return $this->notReadable();
+		}
+
+		$target = $this->stringParam(name: 'target');
+		$anchor = $this->stringParam(name: 'anchor');
+		if ($target !== null) {
+			return $this->addProseReference(
+				source: $object,
+				register: $register,
+				schema: $schema,
+				target: $target,
+				anchor: $anchor
+			);
 		}
 
 		try {
@@ -147,6 +169,102 @@ class ObjectRelationsController extends Controller {
 			statusCode: 201
 		);
 	}//end addLink()
+
+	/**
+	 * Record a reference written in prose, on both sides.
+	 *
+	 * The target has to be readable by this caller too. A mention writes a row
+	 * on the far object, and writing onto an object somebody may not see would
+	 * let a reference leak the existence of one they may.
+	 *
+	 * @param ObjectEntity $source The object the text belongs to.
+	 * @param string $register The register slug or id.
+	 * @param string $schema The schema slug or id.
+	 * @param string $target The object the text names.
+	 * @param string|null $anchor What identifies the text, so it can be withdrawn.
+	 *
+	 * @return JSONResponse The rows, or the refusal.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function addProseReference(
+		ObjectEntity $source,
+		string $register,
+		string $schema,
+		string $target,
+		?string $anchor,
+	): JSONResponse {
+		if ($anchor === null) {
+			return new JSONResponse(
+				data: ['error' => 'A reference recorded from text needs an "anchor", or nothing can withdraw it'],
+				statusCode: 422
+			);
+		}
+
+		$far = $this->readable(register: $register, schema: $schema, id: $target);
+		if ($far === null) {
+			return $this->notReadable();
+		}
+
+		$rows = $this->relations->recordProseReference(
+			sourceUuid: (string)$source->getUuid(),
+			targetUuid: (string)$far->getUuid(),
+			anchor: $anchor,
+			relationType: $this->stringParam(name: 'type'),
+			scope: [
+				'sourceRegister' => $this->asInt(value: $source->getRegister()),
+				'sourceSchema' => $this->asInt(value: $source->getSchema()),
+				'targetRegister' => $this->asInt(value: $far->getRegister()),
+				'targetSchema' => $this->asInt(value: $far->getSchema()),
+			]
+		);
+
+		$rendered = [];
+		foreach ($rows as $row) {
+			$rendered[] = $this->relations->render(
+				row: $row,
+				direction: RelationTypeResolver::DIRECTION_OUTGOING,
+				language: $this->language()
+			);
+		}
+
+		// 200 rather than 201 when the mention was already there: saving the
+		// same text twice writes nothing, and answering 201 would tell the
+		// caller a row was created when none was.
+		return new JSONResponse(
+			data: ['results' => $rendered, 'total' => count($rendered)],
+			statusCode: ($rendered === [] ? 200 : 201)
+		);
+	}//end addProseReference()
+
+	/**
+	 * Withdraw every relation row one piece of text wrote, on both sides.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema The schema slug or id.
+	 * @param string $id The object the text belongs to.
+	 * @param string $anchor The anchor.
+	 *
+	 * @return JSONResponse How many rows went.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	#[NoAdminRequired]
+	public function removeReferences(string $register, string $schema, string $id, string $anchor): JSONResponse {
+		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		if ($object === null) {
+			return $this->notReadable();
+		}
+
+		return new JSONResponse(
+			data: [
+				'removed' => $this->relations->withdrawProseReferences(
+					sourceUuid: (string)$object->getUuid(),
+					anchor: $anchor
+				),
+			]
+		);
+	}//end removeReferences()
 
 	/**
 	 * Remove one stored relation row.

@@ -971,6 +971,7 @@ return [
         ['name' => 'objectRelations#index',       'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#addLink',     'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#removeLink',  'url' => '/api/objects/{register}/{schema}/{id}/relation-rows/{relationId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'relationId' => '[^/]+']],
+        ['name' => 'objectRelations#removeReferences', 'url' => '/api/objects/{register}/{schema}/{id}/relation-references/{anchor}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'anchor' => '[^/]+']],
         ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],

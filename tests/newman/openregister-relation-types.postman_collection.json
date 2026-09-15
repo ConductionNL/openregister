@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "or-relation-types-2026-09-15",
     "name": "OpenRegister Relation Types With Inverses API",
-    "description": "Typed relations with declared inverses, asserted where CI can see them.\n\nWHAT IT ASSERTS, each paired with its control:\n  * the relation vocabulary survives the schema save rather than being dropped on a 200\n  * a symmetric relation that also names an inverse is refused with 422, naming the property,\n    while an ordinary schema saved in the request before it proves the 422 is about the relation\n  * a type naming a vocabulary entry nobody declared is refused, naming the key\n  * the SAME link reads 'blocks' from the near side and 'blocked by' from the far side\n  * a derive records the source object and the entry it came out of\n  * an external address is a relation row with a title, and something that is not an address is refused\n  * a relation row reached through an object that does not hold it answers 404, and the same row\n    through the object that does hold it is removed, so the 404 is the ownership check and not a broken route\n  * the graph answers with typed, directed edges, says whether it was bounded, and exports as CSV\n  * an object the caller cannot resolve answers 404, never 403\n\nSELF-CLEANING. It creates its own register, three schemas and its objects and removes all of them, so a re-run starts from the same state and no later collection inherits a fixture.",
+    "description": "Typed relations with declared inverses, asserted where CI can see them.\n\nWHAT IT ASSERTS, each paired with its control:\n  * the relation vocabulary survives the schema save rather than being dropped on a 200\n  * a symmetric relation that also names an inverse is refused with 422, naming the property,\n    while an ordinary schema saved in the request before it proves the 422 is about the relation\n  * a type naming a vocabulary entry nobody declared is refused, naming the key\n  * the SAME link reads 'blocks' from the near side and 'blocked by' from the far side\n  * a derive records the source object and the entry it came out of\n  * an external address is a relation row with a title, and something that is not an address is refused\n  * a relation row reached through an object that does not hold it answers 404, and the same row\n    through the object that does hold it is removed, so the 404 is the ownership check and not a broken route\n  * a reference written in prose writes one row per direction under one anchor, the same text saved\n    twice writes nothing, and withdrawing the text leaves no half of the link behind on either side\n  * the graph answers with typed, directed edges, says whether it was bounded, and exports as CSV\n  * an object the caller cannot resolve answers 404, never 403\n\nSELF-CLEANING. It creates its own register, three schemas and its objects and removes all of them, so a re-run starts from the same state and no later collection inherits a fixture.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -774,6 +774,238 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('existence is not leaked', () => pm.expect(pm.response.code).to.eql(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST .../relation-rows with a target -> a mention is a row on both sides",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"target\": \"{{blockedUuid}}\", \"anchor\": \"note-1\", \"type\": \"noemt\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the mention is recorded', () => pm.expect(pm.response.code).to.eql(201));",
+              "const rows = pm.response.json().results || [];",
+              "pm.test('one row per direction', () => pm.expect(rows.length).to.eql(2));",
+              "pm.test('the near row points at the mentioned object', () => pm.expect(rows[0].targetUuid).to.eql(pm.collectionVariables.get('blockedUuid')));",
+              "pm.test('and the far row points back', () => pm.expect(rows[1].targetUuid).to.eql(pm.collectionVariables.get('blockerUuid')));",
+              "pm.test('both carry the anchor that can withdraw them', () => pm.expect(rows.every(r => r.anchor === 'note-1')).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST the same mention again -> nothing is written twice",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"target\": \"{{blockedUuid}}\", \"anchor\": \"note-1\", \"type\": \"noemt\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 200 and no rows, not 201: answering 201 would tell the caller a",
+              "// row was created when none was.",
+              "pm.test('saving the same text twice writes nothing', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.test('and says so', () => pm.expect((pm.response.json().results || []).length).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST a mention with no anchor -> 422, because nothing could withdraw it",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"target\": \"{{blockedUuid}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('a reference nothing can withdraw is refused', () => pm.expect(pm.response.code).to.eql(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the far object's rows -> the mention is there from that side too",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the rows answer', () => pm.expect(pm.response.code).to.eql(200));",
+              "const rows = pm.response.json().results || [];",
+              "const prose = rows.filter(r => r.origin === 'prose');",
+              "pm.test('the mentioned object holds the mention too', () => pm.expect(prose.length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE .../relation-references/{anchor} -> the text goes and both rows go",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-references/note-1"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the withdrawal answers', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.test('both sides went', () => pm.expect(pm.response.json().removed).to.eql(2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the far object's rows again -> the mention is gone from that side too",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The control for the request above: without this, 'removed: 2'",
+              "// would be a number the endpoint reported about itself.",
+              "pm.test('the rows answer', () => pm.expect(pm.response.code).to.eql(200));",
+              "const prose = (pm.response.json().results || []).filter(r => r.origin === 'prose');",
+              "pm.test('no half of the link is left behind', () => pm.expect(prose.length).to.eql(0));"
             ]
           }
         }
