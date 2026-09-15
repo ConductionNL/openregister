@@ -1317,7 +1317,8 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		$errors = (new ElementMappingValidator(new MdtoElementCatalogue()))->validate(
+		$validator = new ElementMappingValidator(catalogue: new MdtoElementCatalogue());
+		$errors = $validator->validate(
 			mapping: $mapping,
 			properties: ($schema->getProperties() ?? [])
 		);

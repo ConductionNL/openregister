@@ -103,12 +103,18 @@ class MdtoPreconditions {
 		// mapping keeps today's behaviour; see MdtoMappingResolver.
 		$unfilled = $this->mappingResolver->unfilledMandatoryElements(object: $object);
 		if ($unfilled !== []) {
+			$lead = 'these mandatory elements: ';
+			$them = 'them';
+			if (count($unfilled) === 1) {
+				$lead = 'the mandatory element ';
+				$them = 'it';
+			}
+
 			throw new InvalidArgumentException(
 				'Cannot transfer object ' . $object->getUuid()
 				. ' to an e-Depot: its schema declares an MDTO mapping that does not fill '
-				. (count($unfilled) === 1 ? 'the mandatory element ' : 'these mandatory elements: ')
-				. implode(', ', $unfilled)
-				. '. Map ' . (count($unfilled) === 1 ? 'it' : 'them')
+				. $lead . implode(', ', $unfilled)
+				. '. Map ' . $them
 				. ' in x-openregister-mdto-mapping, or the e-Depot will refuse the package.'
 			);
 		}

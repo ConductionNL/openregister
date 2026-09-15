@@ -381,6 +381,8 @@ class SelectielijstImportService {
 	 * @param string $version The version.
 	 *
 	 * @return array<string, array<string, mixed>> Category mapped to the row.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function rowsOf(string $version): array {
 		$rows = [];
