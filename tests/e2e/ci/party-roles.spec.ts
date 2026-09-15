@@ -103,6 +103,12 @@ test.describe('parties on an object over HTTP', () => {
 					naam: { type: 'string', title: 'Naam', maxLength: 255 },
 					adressen: { type: 'array', title: 'Adressen' },
 					indicatoren: { type: 'array', title: 'Indicatoren' },
+					// The three fields the merge primitive writes. Without them
+					// the store drops the writes and the merge reports a success
+					// that changed nothing.
+					status: { type: 'string', title: 'Status', maxLength: 32 },
+					goldenRecord: { type: 'object', title: 'Golden record' },
+					attributeProvenance: { type: 'object', title: 'Provenance' },
 				},
 				authorization: {
 					read: ['authenticated'],
@@ -412,5 +418,51 @@ test.describe('parties on an object over HTTP', () => {
 		const body = await found.json()
 		expect(body.cap).toBeGreaterThan(0)
 		expect(Array.isArray(body.results)).toBeTruthy()
+	})
+
+	/*
+	 * THE ONE THING NO UNIT TEST CAN PROVE. The carry-over is a listener on
+	 * ObjectsMergedEvent, and a listener that was never registered in
+	 * Application.php behaves in a unit test exactly like one that was. Only a
+	 * real merge through the real dispatcher tells them apart.
+	 *
+	 * It runs last: it merges party B away, and the tests above need B alive.
+	 */
+	test('merging two parties keeps both case histories on the survivor', async () => {
+		const before = await admin.get(
+			`${API}/objects/${registerId}/${caseSchemaId}/${caseOne}/parties`,
+		)
+		const partiesBefore = (await before.json()).results
+		expect(
+			partiesBefore.some((l: { partyUuid: string }) => l.partyUuid === partyB),
+			'party B should hold a role on the first case before the merge',
+		).toBeTruthy()
+
+		const merged = await admin.post(`${API}/objects/merge/execute`, {
+			data: {
+				from: partyB,
+				into: partyA,
+				reason: 'e2e: two registrations of one person',
+			},
+		})
+		expect(merged.ok(), `the merge failed: ${await merged.text()}`).toBeTruthy()
+
+		const after = await admin.get(
+			`${API}/objects/${registerId}/${caseSchemaId}/${caseOne}/parties`,
+		)
+		const partiesAfter = (await after.json()).results
+
+		// Every role B held is now A's, and nothing still names B.
+		expect(
+			partiesAfter.some((l: { partyUuid: string }) => l.partyUuid === partyB),
+			'no link may still name the merged-away party',
+		).toBeFalsy()
+		expect(
+			partiesAfter.some(
+				(l: { partyUuid: string, role: string }) =>
+					l.partyUuid === partyA && l.role === 'aanvrager',
+			),
+			'the survivor must hold the role the merged-away party held',
+		).toBeTruthy()
 	})
 })
