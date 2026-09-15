@@ -101,6 +101,7 @@ use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
+use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -123,6 +124,7 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\WatcherPruneListener;
@@ -2866,6 +2868,17 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
+		// Per-state field rules — see x-openregister-lifecycle.states.<state>.fields.
+		// Registered AFTER LifecycleInitialStateListener, which stamps the
+		// initial state onto a create: reading the state before that listener
+		// has run would resolve a create against no state at all and let a
+		// required field through. On an update it runs after
+		// LifecycleValidationListener for the same reason the approval gate
+		// does — a transition nobody declared is not worth asking field
+		// questions about.
+		$context->registerEventListener(ObjectCreatingEvent::class, StateFieldRuleListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, StateFieldRuleListener::class);
+
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
 		// a task template on demand and blocks any lifecycle transition it
@@ -3122,6 +3135,11 @@ class Application extends App implements IBootstrap {
 		// would otherwise sit unread for ever pointing at nothing.
 		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
+
+		// Favourites and view history (`favourites-and-recent`). Objects live in
+		// per-schema tables, so there is no single table for a foreign key to
+		// cascade from: a star and a view are cleared by a listener instead.
+		$context->registerEventListener(ObjectDeletedEvent::class, FavouritePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);

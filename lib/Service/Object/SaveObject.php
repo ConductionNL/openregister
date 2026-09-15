@@ -44,8 +44,9 @@ use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
 use OCA\OpenRegister\Exception\LockedException;
-use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
@@ -56,6 +57,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
@@ -2889,11 +2891,14 @@ class SaveObject {
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
 	 * @param bool $failIfExists Insert-only: throw ObjectExistsException rather than update when taken (default: false).
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
+	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
 	 * @throws Exception If there is an error during save.
 	 * @throws ObjectExistsException When $failIfExists is true and the identifier is already taken.
+	 * @throws DuplicateBlockedException When the schema declares `onCreate: "block"`, the candidate
+	 *         strongly matches a stored object, and the caller may not override.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
@@ -2915,6 +2920,7 @@ class SaveObject {
 		?IUser $currentUser = null,
 		bool $failIfExists = false,
 		bool $_unowned = false,
+		bool $_dedupOverride = false,
 	): ObjectEntity {
 		// Extract UUID and @self metadata from data.
 		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -2922,6 +2928,33 @@ class SaveObject {
 			uuid: $uuid,
 			uploadedFiles: $uploadedFiles
 		);
+
+		// Take the duplicate-override flag off the body BEFORE anything reads
+		// it as data: it is an instruction about this write, not a property,
+		// and leaving it in would fail schema validation on every schema that
+		// never declared it. The policy it belongs to is enforced on the
+		// create branch further down.
+		// TWO WAYS IN, and both are needed.
+		//
+		// The PARAMETER is how the HTTP path gets here. `ObjectsController`
+		// strips every `_`-prefixed key from the body before it reaches this
+		// method — that is the convention for control parameters that must not
+		// be persisted onto the object — so a flag sent only in the body would
+		// have been silently gone by now, and an override by somebody entitled
+		// to make it would have been refused with no clue why. `_failIfExists`
+		// is threaded through for exactly this reason and is the precedent.
+		//
+		// The BODY KEY is how a service-layer caller gets here: an import, a
+		// migration or a background job hands `saveObject()` an array and has
+		// no request to read a parameter from.
+		$dedupOverrideRequested = $_dedupOverride;
+		if (array_key_exists(DedupCreatePolicy::OVERRIDE_KEY, $data) === true) {
+			if (filter_var($data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
+				$dedupOverrideRequested = true;
+			}
+
+			unset($data[DedupCreatePolicy::OVERRIDE_KEY]);
+		}
 
 		// Resolve schema and register to entity objects.
 		[$schema, $schemaId, $register, $registerId] = $this->resolveSchemaAndRegister(
@@ -3126,6 +3159,36 @@ class SaveObject {
 			);
 		}//end if
 
+		// CREATE-TIME DUPLICATE POLICY (dedup-check-before-create).
+		//
+		// Everything above this line is either an update branch that returned,
+		// or a create, so this is the one place the policy can sit and see
+		// exactly the creates. It runs on the SAVE path and not only in the
+		// check endpoint on purpose: a client that never calls the endpoint —
+		// an import, a script, an integration — is stopped here all the same.
+		//
+		// NOT gated on $_rbac, and that is deliberate. $_rbac === false means
+		// "skip the permission checks" and the controller sets it for every
+		// ADMINISTRATOR, so gating on it would turn the declaration off for the
+		// one caller most likely to be doing a bulk create. This is a policy
+		// about the data, not about the caller's rights: an administrator is
+		// no more entitled to a second copy of a record than anyone else, which
+		// is the same reason `overrideGroups` has no implicit admin bypass.
+		//
+		// The opt-in that bounds the blast radius is the DECLARATION: nothing
+		// happens at all unless the schema asked for `onCreate: "block"`.
+		$dedupOverriddenMatches = [];
+		$dedupPolicy = $this->resolveDedupCreatePolicy();
+
+		if ($dedupPolicy !== null) {
+			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
+				register: $registerId,
+				schema: $schemaId,
+				data: $data,
+				overrideRequested: $dedupOverrideRequested
+			);
+		}
+
 		// Push the in-flight save onto the call stack so cascade
 		// descendants can detect cycles via `validateReferences()`.
 		// Popped in finally regardless of success/failure.
@@ -3141,7 +3204,7 @@ class SaveObject {
 		);
 		try {
 			// Create new object if no existing object found.
-			return $this->handleObjectCreation(
+			$created = $this->handleObjectCreation(
 				registerId: $registerId,
 				schemaId: $schemaId,
 				register: $register,
@@ -3157,10 +3220,54 @@ class SaveObject {
 				failIfExists: $failIfExists,
 				_unowned: $_unowned
 			);
+
+			// An override is only on record once the object it overrode for
+			// exists, so this runs after the write and never before it.
+			if ($dedupPolicy !== null && count($dedupOverriddenMatches) > 0 && $persist === true) {
+				$dedupPolicy->recordOverride(object: $created, matches: $dedupOverriddenMatches);
+			}
+
+			return $created;
 		} finally {
 			$this->popSaveCallFrame(key: $frameKey);
 		}
 	}//end saveObject()
+
+	/**
+	 * Resolve the create-time duplicate policy from the app container, or null
+	 * when there is none.
+	 *
+	 * Lazily resolved for the same reason {@see resolveRetentionService()} is:
+	 * the policy reuses `DuplicateDetectionService`, which reads candidates
+	 * through `ObjectService`, which owns this very handler. Constructor
+	 * injection would close that loop and Nextcloud's container would refuse
+	 * to build either end of it. Going through the INJECTED app container
+	 * rather than the global server is what keeps the lookup bounded — the
+	 * global container knows nothing of this app's registrations and would
+	 * autowire the cycle instead of failing.
+	 *
+	 * @return DedupCreatePolicy|null The policy, or null when unavailable.
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	private function resolveDedupCreatePolicy(): ?DedupCreatePolicy {
+		if ($this->container === null) {
+			return null;
+		}
+
+		try {
+			$policy = $this->container->get(DedupCreatePolicy::class);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] DedupCreatePolicy not available: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($policy instanceof DedupCreatePolicy) {
+			return $policy;
+		}
+
+		return null;
+	}//end resolveDedupCreatePolicy()
 
 	/**
 	 * Extract UUID and @self metadata from data.
