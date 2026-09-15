@@ -109,3 +109,51 @@ version in use.
 - **WHEN** the two versions are compared
 - **THEN** the changed rows are listed with what they would change
 - @e2e exclude {import path, covered by unit tests}
+
+### Requirement: Archiving is read from both places a schema can declare it (REQ-APS-008)
+
+Nomination SHALL read the schema's `archive` block and, when that block
+is absent or not enabled, the `x-openregister-archival` annotation in the
+schema's configuration. The annotation's `retention` block SHALL decide
+the retention period for the record being nominated, matched rules
+included, and the nomination SHALL name `archival_annotation` as the rule
+that produced it. A filled-in `archive` block SHALL still win, because it
+is the more specific statement.
+
+The appraisal SHALL be destruction unless the annotation names another
+one, because a retention block says rows leave when their term runs out
+and the retention sweep is what removes them. A record that ought to be
+transferred instead is not lost by that: the nomination is a proposal,
+and transfer is one of the three answers a reviewer may give it.
+
+A record that cannot be nominated SHALL name both places a declaration
+could have lived. A schema that declares neither SHALL answer
+`not_applicable` with that reason written out, because "not applicable"
+and "we looked in one of the two places" read identically from the
+outside, and the second is the bug.
+
+#### Scenario: a schema declaring retention the vocabulary way is nominated
+
+- **GIVEN** a schema with no `archive` block that declares `x-openregister-archival.retention.default`
+- **WHEN** an object of that schema reaches a terminal state
+- **THEN** the object is nominated, with the annotation's retention as its period
+- **AND** the nomination names `archival_annotation` as its rule
+- @e2e exclude {derivation, covered by unit tests}
+
+#### Scenario: a matched retention rule gives this record its own period
+
+- **GIVEN** the same schema, declaring a rule whose condition this record matches
+- **WHEN** the record is nominated
+- **THEN** the rule's retention is the period, not the default
+
+#### Scenario: a filled-in archive block still wins
+
+- **GIVEN** a schema declaring both an enabled `archive` block and `x-openregister-archival`
+- **WHEN** an object of that schema is nominated
+- **THEN** the `archive` block decides the appraisal and the period
+
+#### Scenario: a schema that asks for no archiving says so in full
+
+- **GIVEN** a schema with neither declaration
+- **WHEN** an object of that schema reaches a terminal state
+- **THEN** the answer is `not_applicable` with a reason naming both places
