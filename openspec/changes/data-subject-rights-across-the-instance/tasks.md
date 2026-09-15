@@ -24,8 +24,8 @@
 
 ## 5. External grants
 
-- [ ] 5.1 An end date required on a grant to an external principal, refused without one (D-6).
-- [ ] 5.2 A warning before it lapses, and contributions that stay attributed after it does.
+- [x] 5.1 An end date required on a grant to an external principal, refused without one (D-6).
+- [x] 5.2 A warning before it lapses, and contributions that stay attributed after it does.
 
 ## 6. Tests
 
