@@ -647,9 +647,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				v-model="codedConfig.scheme"
 				:disabled="loading"
 				:label="t('openregister', 'Concept scheme URI')"
-				:placeholder="
-					t('openregister', 'https://identifier.overheid.nl/tooi/…')
-				" />
+				:placeholder="'https://identifier.overheid.nl/tooi/…'" />
 			<div class="helper-text">
 				{{
 					t(
@@ -699,7 +697,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					v-model="codedConfig.contextProperty"
 					:disabled="loading"
 					:label="t('openregister', 'Narrow the list by property')"
-					:placeholder="t('openregister', 'zaaktype')" />
+					:placeholder="t('openregister', 'case type')" />
 				<div class="helper-text">
 					{{
 						t(
