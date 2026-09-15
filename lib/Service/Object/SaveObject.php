@@ -2842,6 +2842,7 @@ class SaveObject {
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
 	 * @param bool $failIfExists Insert-only: throw ObjectExistsException rather than update when taken (default: false).
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
+	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
@@ -2870,6 +2871,7 @@ class SaveObject {
 		?IUser $currentUser = null,
 		bool $failIfExists = false,
 		bool $_unowned = false,
+		bool $_dedupOverride = false,
 	): ObjectEntity {
 		// Extract UUID and @self metadata from data.
 		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -2883,9 +2885,25 @@ class SaveObject {
 		// and leaving it in would fail schema validation on every schema that
 		// never declared it. The policy it belongs to is enforced on the
 		// create branch further down.
-		$dedupOverrideRequested = false;
+		// TWO WAYS IN, and both are needed.
+		//
+		// The PARAMETER is how the HTTP path gets here. `ObjectsController`
+		// strips every `_`-prefixed key from the body before it reaches this
+		// method — that is the convention for control parameters that must not
+		// be persisted onto the object — so a flag sent only in the body would
+		// have been silently gone by now, and an override by somebody entitled
+		// to make it would have been refused with no clue why. `_failIfExists`
+		// is threaded through for exactly this reason and is the precedent.
+		//
+		// The BODY KEY is how a service-layer caller gets here: an import, a
+		// migration or a background job hands `saveObject()` an array and has
+		// no request to read a parameter from.
+		$dedupOverrideRequested = $_dedupOverride;
 		if (array_key_exists(DedupCreatePolicy::OVERRIDE_KEY, $data) === true) {
-			$dedupOverrideRequested = filter_var($data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN);
+			if (filter_var($data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
+				$dedupOverrideRequested = true;
+			}
+
 			unset($data[DedupCreatePolicy::OVERRIDE_KEY]);
 		}
 

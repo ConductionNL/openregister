@@ -2858,6 +2858,17 @@ class ObjectsController extends Controller {
 			FILTER_VALIDATE_BOOLEAN
 		);
 
+		// DUPLICATE OVERRIDE, read from the RAW request for the same reason
+		// `_failIfExists` above is: the body filter a few lines up strips every
+		// `_`-prefixed key, so a control left in `$object` is gone by the time
+		// the save path could act on it. Read here, it is a request the save
+		// path evaluates against the schema's declared `overrideGroups`; asking
+		// is never the same as being allowed.
+		$dedupOverride = filter_var(
+			$this->request->getParam('_dedupOverride', false),
+			FILTER_VALIDATE_BOOLEAN
+		);
+
 		// Determine RBAC and multitenancy settings based on admin status.
 		$isAdmin = $this->isCurrentUserAdmin();
 		$rbac = !$isAdmin;
@@ -2885,7 +2896,8 @@ class ObjectsController extends Controller {
 				_multitenancy: true,
 				uuid: null,
 				uploadedFiles: $uploadedFilesValue,
-				failIfExists: $failIfExists
+				failIfExists: $failIfExists,
+				_dedupOverride: $dedupOverride
 			);
 
 			// TODO: Unlock the object after saving using LockingHandler through ObjectService.

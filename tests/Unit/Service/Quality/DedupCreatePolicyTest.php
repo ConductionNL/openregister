@@ -270,6 +270,46 @@ class DedupCreatePolicyTest extends TestCase {
 	}//end testBlockWithoutOverrideGroupsAdmitsNobody()
 
 	/**
+	 * THE CONTROL FOR THE PLUMBING, not for the policy.
+	 *
+	 * `ObjectsController` strips every `_`-prefixed key from a create body
+	 * before the save path sees it, which is the convention for control
+	 * parameters that must not be persisted. So the override cannot travel in
+	 * the body on the HTTP path: it is read from the raw request and threaded
+	 * through `ObjectService::saveObject()` and `SaveObject::saveObject()` as
+	 * `$_dedupOverride`, exactly as `_failIfExists` is.
+	 *
+	 * This test pins the whole chain by reflection, because the failure it
+	 * guards against is silent: an override that never arrives looks identical
+	 * to an override that was refused, and the user is told "this duplicates
+	 * an existing record" with no way to tell which happened.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody(): void {
+		foreach (
+			[
+				\OCA\OpenRegister\Service\ObjectService::class,
+				\OCA\OpenRegister\Service\Object\SaveObject::class,
+			] as $class
+		) {
+			$method = new \ReflectionMethod($class, 'saveObject');
+			$names = array_map(
+				static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
+				$method->getParameters()
+			);
+
+			$this->assertContains(
+				'_dedupOverride',
+				$names,
+				$class . '::saveObject() must carry the override as a parameter: the controller strips it from the body.'
+			);
+		}
+	}//end testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody()
+
+	/**
 	 * An exercised override lands on the created object's audit trail as
 	 * `dedup.overridden`, naming what it was created over.
 	 *
