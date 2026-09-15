@@ -47,7 +47,18 @@ use Psr\Log\LoggerInterface;
 
 final class SchemasControllerListPresentationTest extends TestCase {
 
+	/**
+	 * The controller under test.
+	 *
+	 * @var SchemasController
+	 */
 	private SchemasController $controller;
+
+	/**
+	 * Schema lookup, the only collaborator the endpoint reads through.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
 	private SchemaMapper&MockObject $schemaMapper;
 
 	protected function setUp(): void {

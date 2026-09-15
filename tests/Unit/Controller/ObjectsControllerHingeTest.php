@@ -52,11 +52,46 @@ use Psr\Log\LoggerInterface;
 
 final class ObjectsControllerHingeTest extends TestCase {
 
+	/**
+	 * The controller under test.
+	 *
+	 * @var ObjectsController
+	 */
 	private ObjectsController $controller;
+
+	/**
+	 * The request the controller reads its query parameters from.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+
+	/**
+	 * The object read both endpoints resolve their subject through.
+	 *
+	 * @var ObjectService&MockObject
+	 */
 	private ObjectService&MockObject $objectService;
+
+	/**
+	 * Schema lookup, which the feature endpoint tolerates failing.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
 	private SchemaMapper&MockObject $schemaMapper;
+
+	/**
+	 * The caller, whose group membership decides the access flag.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
+
+	/**
+	 * Group membership, which is how the controller tells an admin apart.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
 	private IGroupManager&MockObject $groupManager;
 
 	protected function setUp(): void {
