@@ -46,6 +46,11 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The party role reuses the
  *   link rows, the party records, the schema vocabulary, the audit trail and
  *   the person-link events rather than growing a second copy of any of them.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One class owns the whole
+ *   party-on-an-object contract: list, add, remove, replace the primary party,
+ *   and the accepted-kind refusal that every one of those must clear. Splitting
+ *   it would scatter a single refusal rule across four services, which is
+ *   exactly how an unchecked write path appears.
  *
  * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
  */

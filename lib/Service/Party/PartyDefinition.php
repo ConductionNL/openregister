@@ -35,6 +35,14 @@ use OCA\OpenRegister\Db\Schema;
  * The party declaration of one schema.
  *
  * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) An immutable value object with one
+ *   reader per declared field. The count IS the annotation's field count, and
+ *   collapsing them into a `get(string $key)` would trade a typed reader for a
+ *   string nobody can check.
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   `unionAddresses` is a value the
+ *   schema declares, not a mode the caller picks. It is read off the annotation
+ *   and carried; no call site passes a literal.
  */
 class PartyDefinition {
 

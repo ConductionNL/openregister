@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use DateTime;
+use JsonException;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
@@ -50,6 +52,11 @@ use Throwable;
  * @template-implements IEventListener<ObjectsMergedEvent>
  *
  * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) `ContactLink::partyUid()` is the entity's
+ *   named constructor for the uid a party link is stored under. Spelling
+ *   `'party:' . $uuid` by hand in four places is the duplication the constant
+ *   exists to prevent, and a mistyped prefix is a link nothing ever finds.
  */
 class PartyMergeListener implements IEventListener {
 
@@ -343,7 +350,7 @@ class PartyMergeListener implements IEventListener {
 		$restored->setNote(self::textOrNull(value: ($absorbed['note'] ?? null)));
 		$restored->setPrimaryParty((($absorbed['primaryParty'] ?? false) === true));
 		$restored->setLinkedBy((string)($absorbed['linkedBy'] ?? ''));
-		$restored->setLinkedAt(new \DateTime());
+		$restored->setLinkedAt(new DateTime());
 		$restored->setValidFrom(self::dateOrNull(value: ($absorbed['validFrom'] ?? null)));
 		$restored->setValidUntil(self::dateOrNull(value: ($absorbed['validUntil'] ?? null)));
 		$this->links->insert($restored);
@@ -415,7 +422,7 @@ class PartyMergeListener implements IEventListener {
 
 		try {
 			$decoded = json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
-		} catch (\JsonException) {
+		} catch (JsonException) {
 			return [];
 		}
 
@@ -466,16 +473,16 @@ class PartyMergeListener implements IEventListener {
 	 *
 	 * @param mixed $value A `Y-m-d` string.
 	 *
-	 * @return \DateTime|null The date.
+	 * @return DateTime|null The date.
 	 */
-	private static function dateOrNull(mixed $value): ?\DateTime {
+	private static function dateOrNull(mixed $value): ?DateTime {
 		$text = self::textOrNull(value: $value);
 		if ($text === null) {
 			return null;
 		}
 
 		try {
-			return new \DateTime($text);
+			return new DateTime($text);
 		} catch (Throwable) {
 			return null;
 		}

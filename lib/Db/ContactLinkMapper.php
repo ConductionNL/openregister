@@ -29,6 +29,13 @@ use OCP\IDBConnection;
  * Class ContactLinkMapper
  *
  * @template-extends QBMapper<ContactLink>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One named query per lookup the
+ *   link table answers, and the party model added four: every object a party
+ *   holds a role on, the party links of one object, the primary party, and the
+ *   rows a merge moved. Collapsing them into a generic finder would move the
+ *   query builder into every caller, where the next one gets the predicate
+ *   subtly wrong and nothing says so.
  */
 class ContactLinkMapper extends QBMapper {
 	/**

@@ -38,6 +38,10 @@ use OCP\IUserSession;
  * Writes one party link row.
  *
  * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) `ContactLink::partyUid()` is the entity's
+ *   named constructor for a party link's uid, the same idiom as the
+ *   `USER_UID_PREFIX` the account writer beside this one uses.
  */
 class PartyLinkWriter {
 

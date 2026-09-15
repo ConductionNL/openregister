@@ -38,6 +38,14 @@ use Throwable;
  * Reads a party record and the things that hang off it.
  *
  * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One class answers everything
+ *   a party record is asked: its declaration, its addresses, its indicators,
+ *   its place in the tree, and which party an inbound address belongs to. Each
+ *   reads the same declaration, so splitting them would mean four classes
+ *   resolving it four times and able to disagree.
+ * @SuppressWarnings(PHPMD.StaticAccess) `PartyDefinition::fromSchema()` is the
+ *   value object's named constructor; there is no instance to call it on.
  */
 class PartyService {
 
@@ -313,28 +321,49 @@ class PartyService {
 			}
 
 			$seen[$cursor] = true;
-			$ancestor = $this->find(partyUuid: $cursor);
-			if ($ancestor === null) {
-				return;
-			}
-
-			$definition = $this->definitionFor(party: $ancestor);
-			if ($definition === null || $definition->parentProperty() === null) {
-				return;
-			}
-
-			if ($depth >= $definition->maxDepth()) {
-				throw new Exception(
-					'Party "' . $partyUuid . '" would sit deeper than the declared maximum of '
-					. $definition->maxDepth(),
-					400
-				);
-			}
-
-			$cursor = self::text(value: ($ancestor->getObject()[$definition->parentProperty()] ?? null));
+			$cursor = $this->parentOf(cursor: $cursor, partyUuid: $partyUuid, depth: $depth);
 			$depth++;
 		}//end while
 	}//end assertParentAllowed()
+
+	/**
+	 * One step up the parent chain, or null when the walk ends here.
+	 *
+	 * The walk ends at a party the caller cannot read and at a party whose
+	 * schema declares no parent: both mean there is no further edge this
+	 * instance can follow, and neither is a cycle.
+	 *
+	 * @param string $cursor The party being stepped over.
+	 * @param string $partyUuid The party the walk started from, for the message.
+	 * @param int $depth How many steps have been taken.
+	 *
+	 * @return string|null The next parent, or null when the chain ends.
+	 *
+	 * @throws Exception 400 when the chain is longer than the schema allows.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function parentOf(string $cursor, string $partyUuid, int $depth): ?string {
+		$ancestor = $this->find(partyUuid: $cursor);
+		if ($ancestor === null) {
+			return null;
+		}
+
+		$definition = $this->definitionFor(party: $ancestor);
+		if ($definition === null || $definition->parentProperty() === null) {
+			return null;
+		}
+
+		if ($depth >= $definition->maxDepth()) {
+			throw new Exception(
+				'Party "' . $partyUuid . '" would sit deeper than the declared maximum of '
+				. $definition->maxDepth(),
+				400
+			);
+		}
+
+		return self::text(value: ($ancestor->getObject()[$definition->parentProperty()] ?? null));
+	}//end parentOf()
 
 	/**
 	 * Whether a party holds that exact address.
