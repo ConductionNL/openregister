@@ -15,6 +15,7 @@ hold cannot be resolved SHALL be counted as protected and named.
 - **GIVEN** a data subject present on twelve objects, four of them under retention
 - **WHEN** the erasure is previewed
 - **THEN** eight are reported as erasable, four as protected, and nothing is written
+- @e2e exclude {the PII index has no HTTP write door for objects, so an API spec would assert against an empty index; asserted in tests/Unit/Service/Gdpr/Erasure/ErasurePreviewServiceTest.php::testTheGemeenteCanAnswerTheSubjectHonestly}
 
 #### Scenario: an unresolvable hold is protected, not erased
 
@@ -35,6 +36,7 @@ The audit of the erasure SHALL survive the erasure.
 - **GIVEN** an approved erasure preview
 - **WHEN** it runs
 - **THEN** each destroyed item has a destruction record naming the request
+- @e2e exclude {the destruction needs a subject in the PII index, which has no HTTP write door for objects; asserted in tests/Unit/Service/Gdpr/Erasure/ErasureRunnerTest.php::testOneDestructionPathOneRecord}
 
 #### Scenario: an unapproved erasure does not run
 
