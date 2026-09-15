@@ -149,6 +149,28 @@ return [
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
         ],
 
+        // Per-object favourite (`favourites-and-recent`). A star is a fact about
+        // a person, not about the object, so it is written here and never
+        // through the object: writing it into the object would change that
+        // object's audit trail and cut a version for every reader.
+        // There is no GET here on purpose. Every object read already carries
+        // `@self.favourite`, so a detail page renders the star from data it has
+        // and a list renders a column of them from one query.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectFavourite#star',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectFavourite#unstar',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
         // Per-object read state. Reading an object is per-user state that must
         // not be written through the object itself, which would put "alice
         // looked at this" in the object's audit trail and cut a version on every

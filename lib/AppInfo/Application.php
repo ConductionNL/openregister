@@ -101,6 +101,7 @@ use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
+use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -3122,6 +3123,11 @@ class Application extends App implements IBootstrap {
 		// would otherwise sit unread for ever pointing at nothing.
 		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
+
+		// Favourites and view history (`favourites-and-recent`). Objects live in
+		// per-schema tables, so there is no single table for a foreign key to
+		// cascade from: a star and a view are cleared by a listener instead.
+		$context->registerEventListener(ObjectDeletedEvent::class, FavouritePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);

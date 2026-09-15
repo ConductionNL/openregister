@@ -688,6 +688,21 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $unreadCounts = null;
 
 	/**
+	 * Whether the current user has starred this object (`favourites-and-recent`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `FavouriteService::isStarredByCaller()`. Not persisted: a star is
+	 * per-user, per-object state living in `openregister_favourites`, which is
+	 * what keeps starring an object out of its own audit trail and versions.
+	 * Exposed in @self as `favourite`, and omitted for an anonymous read, where
+	 * there is no "you" to answer for and a hard false would read as "you have
+	 * not starred this", which is a different claim.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $favourite = null;
+
+	/**
 	 * AVG / GDPR Art 30 processing-activity override.
 	 *
 	 * Transient field — set by callers that want to tag an upcoming
@@ -955,6 +970,26 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setUnreadCounts(?array $counts): void {
 		$this->unreadCounts = $counts;
 	}//end setUnreadCounts()
+
+	/**
+	 * Write the current user's favourite marker.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `favourite` by getObjectArray().
+	 *
+	 * @param boolean|null $favourite Whether the current user has starred the object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	public function setFavourite(?bool $favourite): void {
+		$this->favourite = $favourite;
+	}//end setFavourite()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1383,6 +1418,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// - unread: whether the reader has seen this object since it last
 		//   changed (`object-read-state`). Absent for an anonymous read, where
 		//   there is no "you" to answer for.
+		// - favourite: whether the reader has starred this object
+		//   (`favourites-and-recent`). Absent for an anonymous read, for the
+		//   same reason unread is.
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
@@ -1396,6 +1434,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watching'                => $this->watching,
 			'watcherCount'            => $this->watcherCount,
 			'unread'                  => $this->unread,
+			'favourite'               => $this->favourite,
 		];
 
 		foreach ($transient as $key => $value) {

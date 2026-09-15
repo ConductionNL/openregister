@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ViewHistoryService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
@@ -2636,6 +2637,17 @@ class ObjectsController extends Controller {
 			// Only include when explicitly requested via _extend parameter.
 			// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
 			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
+			// Opening an object's detail is what records a view
+			// (`favourites-and-recent`). It happens HERE and nowhere else,
+			// because this is the read path a person is behind: a list read, an
+			// export and a webhook all render objects too, and none of them is
+			// somebody looking at one thing.
+			$this->recordObjectView(
+				object: $objectEntity,
+				register: $register,
+				schema: $schema
+			);
+
 			$renderedData = $renderedObject;
 			if (isset($renderedData['@self']) === true) {
 				// The tab badges (`object-read-state`). Attached HERE and
@@ -5420,6 +5432,41 @@ class ObjectsController extends Controller {
 		return $self;
 
 	}//end withUnreadCounts()
+
+	/**
+	 * Record that the caller opened this object.
+	 *
+	 * Throttled inside `ViewHistoryService` to one record per user, object and
+	 * minute, so a detail page that reads its object several times while it
+	 * renders leaves one row carrying the moment of the first read.
+	 *
+	 * Resolved through the container rather than the constructor, the same lazy
+	 * posture the render layer uses for the sibling primitives: recording that
+	 * somebody looked at an object must never be able to take out the read of
+	 * that object, and an anonymous read records nothing at all.
+	 *
+	 * @param ObjectEntity $object The object being read.
+	 * @param string $register The register as the caller addressed it.
+	 * @param string $schema The schema as the caller addressed it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 */
+	private function recordObjectView(ObjectEntity $object, string $register, string $schema): void {
+		try {
+			$this->container->get(ViewHistoryService::class)->recordView(
+				object: $object,
+				register: $register,
+				schema: $schema
+			);
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				sprintf('[ObjectsController] view not recorded: %s', $e->getMessage())
+			);
+		}//end try
+
+	}//end recordObjectView()
 
 	/**
 	 * Read the records that reference this object, grouped by schema.
