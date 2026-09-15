@@ -58,14 +58,50 @@ a boolean column into every `_search` the moment a boolean auto-detects as
 
 ## 4. The index under administration
 
-- [ ] 4.1 A rebuild that builds beside the current index and swaps on completion (D-4).
-- [ ] 4.2 Progress and failure reported to the operations console; a failure leaves the current index in place.
-- [ ] 4.3 A snapshot written as a file, and a restore from one.
+- [x] 4.1 A rebuild that builds beside the current index and swaps on completion (D-4).
+- [x] 4.2 Progress and failure reported to the operations console; a failure leaves the current index in place.
+- [x] 4.3 A snapshot written as a file, and a restore from one.
+
+`REINDEX INDEX CONCURRENTLY` is the primitive that builds beside and swaps, so
+the rebuild is that and nothing else. MySQL and MariaDB have no equivalent, and
+there the rebuild REFUSES and says why rather than dropping and recreating.
+Dropping would be the outage this task exists to prevent, and it would be an
+outage nobody asked for.
+
+A failed rebuild leaves its index answering: PostgreSQL either completes and
+swaps or leaves the original in place. The invalid `_ccnew` leftover is dropped
+so the next run does not fail again for a different reason, and the failure is
+named per index.
+
+There is no operations console in this app, which is worth saying plainly
+rather than quietly picking a surface. The two places the report is readable
+are `occ openregister:tables:search-index status` and
+`GET /api/settings/search-index`, which is admin-only and also lists the index
+inventory per table and whether this platform can rebuild at all. A section in
+`src/views/settings/sections/` is where it should be rendered; that is a
+follow-up, not a blocker on the endpoint.
 
 ## 5. The query language in the active language
 
-- [ ] 5.1 Field names resolve through the property's label in the active language (D-5).
-- [ ] 5.2 An ambiguous label is refused, naming both properties.
+- [ ] 5.1 Field names resolve through the property's label in the active language (D-5). **BLOCKED.**
+- [ ] 5.2 An ambiguous label is refused, naming both properties. **BLOCKED on 5.1.**
+
+D-5 rests on a premise this codebase does not meet: "property labels are
+already translated". They are not. A property's label is
+`Schema::getProperties()[$name]['title']`, a plain string, identical for every
+reader. `Schema::addType('title', 'string')` is the whole of it, and nothing in
+the read path consults a language.
+
+`LanguageService` and `TranslationHandler` do resolve an active language, with a
+real fallback chain, but they govern translatable property VALUES, which are
+stored language-keyed. No label anywhere is. So 5.1 cannot resolve `behandelaar`
+to `assignee` until a translated label exists to resolve through, and inventing
+one inside this change would be a second vocabulary, which is exactly what D-5
+says it is avoiding.
+
+The honest next step is a change of its own: translate property labels the way
+property values are already translated, then 5.1 is small. Do not pick this up
+as a task inside this change.
 
 ## 6. Tests
 
@@ -78,9 +114,10 @@ terms, the operator-free terms that must not reach it, both search paths, and
 the missing bucket. The match type, the rebuild and the ambiguous label have no
 unit tests because they have no code yet.
 
-6.1 waits for the second PR on purpose. Three of the four scenarios it names
-belong to tasks 3 and 5, so writing it now would mean a spec file asserting
-behaviour that does not exist, which is the shape of a test that cannot fail.
+`tests/e2e/ci/search-quality.spec.ts` covers the missing bucket, the exclusion,
+the wildcard and the refusal. The Dutch field name scenario it also names is not
+in it, and will not be until task 5 is unblocked: a spec asserting behaviour
+that cannot exist is the shape of a test that cannot fail.
 
 ## 7. Hand over
 
@@ -89,6 +126,24 @@ behaviour that does not exist, which is the shape of a test that cannot fail.
 What the first PR hands over is the facet and operator grammar, C-search-2 and
 C-search-9. The declared match types, C-search-13, land with task 3 and are
 handed over then.
+
+## The facet chip, and why it is a nextcloud-vue issue
+
+The missing bucket is reachable by URL and by API. It is not yet a chip in
+openregister's own search sidebar, and the reason is one line in the shared
+library rather than anything here.
+
+`normalizeFacets()` in `@conduction/nextcloud-vue`
+(`src/utils/facets.js`) reads `facet.buckets || facet.data.buckets` and maps
+them to `{ values: [...] }`. It drops every other key on the facet, `missing`
+included, so `SearchSideBar.vue:getFacetOptions()` never sees it. Working
+around that in this app means reading the raw payload beside the normalised one
+and keeping the two in step, which is the drift the shared normaliser exists to
+prevent.
+
+Filed as a nextcloud-vue issue rather than patched here. `src/components/
+FacetComponent.vue` is not the place either: it is dead code, imported nowhere,
+and it calls store methods that no longer exist.
 
 ## Where the rest continues
 
