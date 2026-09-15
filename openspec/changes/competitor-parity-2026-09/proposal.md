@@ -1,0 +1,564 @@
+---
+kind: config
+---
+
+# Proposal: competitor-parity-2026-09
+
+## Summary
+
+The openregister half of the OpenSpec phase of the dossiq competitor parity
+programme. Input: the gap register in market-intelligence,
+`procest/_gaps/` (`README.md`, `gap-register.md`, `gap-register.json`,
+`ownership-rules.md`, written 2026-09-13). The register puts 70 gaps on
+openregister: 45 it marks covered by an existing spec or change, 25 it marks
+uncovered. This umbrella records what the coverage check found when each
+cited artefact was opened, indexes the changes opened for the uncovered
+rows, and sets the build order. Ruben's rule applied throughout: dossiq
+reaches 100% comparability, and logic that belongs to openregister is
+specified here and consumed by dossiq.
+
+Nothing in this change is implemented. Every change it indexes has its own
+`proposal.md`, `design.md`, `specs/` and `tasks.md`, validated with
+`openspec validate --strict`.
+
+## Coverage confirmation
+
+Every one of the 45 covered rows was opened. The verdict is on the artefact
+the register cites: "confirmed" means a requirement, a "What changes"
+bullet or a task in that artefact delivers what the row asks for.
+
+**34 confirmed, 11 not covered by the cited artefact.** Of the 11: four
+now have an openregister change in this programme, five are covered by a
+different openregister artefact the register did not cite while the dossiq
+half stays open, and two are deliberate no's to re-rate.
+
+| row | cited artefact | verdict | what proves it, or what is missing |
+|---|---|---|---|
+| 1.10 | changes/files-leaf-save-to-object | confirmed | "OpenRegister registers a Files action 'Add to object' on files and folders" |
+| 6.12 | changes/files-leaf-save-to-object | confirmed | "a Talk conversation action 'Save chat to object'" |
+| 2.1 | changes/generated-identifier | confirmed | "A string property may declare `x-openregister-generated`: a `sequence` name, a `format`" |
+| Q2.27 | changes/generated-identifier | confirmed | design: "`UPDATE ... SET value = value + 1 RETURNING value` on Postgres and a `SELECT ... FOR UPDATE` pair on MariaDB, inside the object create transaction" |
+| 2.19 | changes/favourites-and-recent | confirmed | "A per-user star on any object ... A per-user view history" |
+| 2.20 | dossiq specs/realtime-updates-ui | confirmed | "Store-rendered views MUST subscribe to live updates for their scope"; the case page is such a view. The register's own note stands: verify it is wired, re-rate |
+| 3.1 | changes/flow-bpmn-interchange | confirmed | "BPMN is an interchange FORMAT here, never an execution semantic: symfony/workflow remains the core (ADR-065 Decision 2)"; the convergence of other engines is `changes/flow-engine-unification`. No separate convergence change is needed |
+| 11.5 | changes/flow-bpmn-interchange | confirmed | "Add BPMN 2.0 XML import and export for flows. Export serialises ... with diagram interchange (BPMN DI)" |
+| 3.4 | changes/flow-task-forms | confirmed | "A `form` block on the `openregister.user-task` node ... inherits that transition's declared `inputs`" |
+| 3.17 | specs/computed-fields | confirmed | "Save-Time Evaluation" with `{{ ingangsdatum|date_modify('+1 year')|date('Y-m-d') }}` |
+| 4.17 | changes/unified-search-file-content | confirmed | "`ObjectsProvider::search()` passes `_content_search: true`" |
+| 9.6 | changes/content-search-index | confirmed | "one query over object data and over the extracted text of files ... The provider accepts scopes" |
+| Q4.25 | specs/text-extraction | confirmed | "each format (PDF, Word, spreadsheet, EML) and the chunking algorithm live in their own class" |
+| 12.15 | specs/search-index | not covered | every requirement targets Solr classes; Tika is absent. `openspec/architecture/adr-007` records that the external Solr and Elasticsearch backends were removed. Deliberate no for the engine half; the extraction half is `specs/text-extraction` (Q4.25). Re-rate |
+| 9.1 | changes/unified-search-index | confirmed | "Pair each searchable schema with its OWN owning register" |
+| 9.12 | changes/unified-search-index | confirmed | "Repoint/confirm `ObjectsProvider`" |
+| 5.4 | changes/contacts-leaf-cases-panel | confirmed | "a detail surface for one contact with a cases panel" |
+| 9.9 | changes/contacts-leaf-cases-panel | confirmed | "a name search: an index surface that finds a contact by (part of) a name" |
+| 5.6 | specs/row-field-level-security | not covered | the group half is delivered; the reveal audit is a named gap: "Audit logging of RLS/FLS decisions exists at debug level via `LoggerInterface` but is not integrated with Nextcloud's audit log". Now `sensitive-field-reveal-audit` |
+| 13.8 | specs/row-field-level-security | confirmed | "Schemas MUST support field-level security via property authorization blocks" |
+| 6.4 | changes/activity-leaf | confirmed | "merges five sources: the object's audit trail, file events, notes, mail linked to the object, and NC Activity rows" |
+| 10.8 | changes/activity-leaf | confirmed | "Export of the filtered feed as CSV or PDF" |
+| 9.2 | changes/query-related-schema-rows | confirmed | "The object query accepts a related-row filter: `_related[<schema>][<fk>]`" |
+| 10.5 | changes/audit-log-page | confirmed | "a paginated list over the whole instance's audit trail, with filters on actor, period, action, register, schema and object" |
+| 11.10 | specs/skos-concept-registers | not covered | the spec ships schemes, an importer and a resolution API; no requirement lets a property reference a scheme as its code list. Now `property-code-list-from-concept-scheme` |
+| 11.13 | specs/register-i18n | not covered | the spec is data-level content translation; "UI labels use IL10N" and property labels use `t()`. A runtime label translation UI is out by round 2 C05. Deliberate no; re-rate |
+| 11.19 | changes/rbac-department-role-matrix | confirmed | "An admin surface on the schema page edits the matrix as a grid" |
+| 13.6 | changes/rbac-department-role-matrix | confirmed | "a `matrix` declaration: a field of the object (`department`)" |
+| 13.16 | changes/rbac-department-role-matrix | confirmed | the same admin surface |
+| 13.2 | specs/rbac-scopes | confirmed | "conditional matching where access depends on both group membership AND runtime conditions evaluated against the object's data" |
+| 13.3 | changes/object-level-sharing-and-private-scope | confirmed | "An invitation names a user or a group on one object" |
+| 13.5 | changes/object-level-sharing-and-private-scope | confirmed | the primitive is schema-agnostic; a document object is an object |
+| 2.23 | specs/mdm-merge | confirmed | "`MergeService::executeMerge(from, into, reason, mergedBy)` ... entity-type-agnostic" |
+| 2.24 | specs/duplicate-detection | not covered | the rules and the scoring are there; no requirement scores an unsaved candidate at create time, which the intake warning needs. Now `dedup-check-before-create` |
+| 11.26 | specs/integration-xwiki | confirmed | "Permission Inheritance: `requiresPermission() === null`; XWiki's own ACLs govern" |
+| 2.27 | changes/run-scoped-object-locking | confirmed | "A person who tries to write to a locked object is refused with a message naming the run that holds it" |
+| 4.20 | dossiq specs/archief-edepot-handover | confirmed | "Dossiq SHALL delegate MDTO/TMLO metadata generation, SIP packaging, transfer batching ... to OpenRegister" |
+| 7.7 | dossiq specs/archief-edepot-handover | not covered | retention is declared per zaaktype (`x-openregister-archival`), not written from `resultType.archivalPeriod` at close. The openregister half is `specs/retention-management` ("calculate archiefactiedatum using configurable afleidingswijzen", destruction lists, legal holds). The result-type wiring is dossiq's: to the dossiq lane |
+| 8.7 | dossiq specs/archief-edepot-handover | not covered | as 7.7; the destruction date on the case is a dossiq surface over `retention-management` |
+| 13.10 | dossiq specs/archief-edepot-handover | not covered | as 7.7 |
+| 11.22 | dossiq changes/archive/2026-09-08-case-type-authoring-extras | not covered | its task reads "[blocked: openregister the verwerkingsregister as a referenceable schema] ... STILL BLOCKED, and the interim shipped: a plain string". The openregister half is the open change `changes/processing-activity-register`; dossiq's `$ref` waits on it |
+| 13.11 | same artefact | not covered | as 11.22 |
+| 8.12 | dossiq changes/termijnbewaking-op-engine-timers | not covered | dossiq's clocks move onto the engine; no admin surface anywhere, as the register itself notes. Now `working-calendar-admin` |
+| 9.4 | nextcloud-vue changes/saved-views-shared-by-role | confirmed for the control | "Share a view with a group ... a group multiselect and a read or write mode per selected group"; its proposal says the openregister half "is proposed in the OpenRegister repo" and no such change existed. Now `view-group-share` |
+| 10.10 | nextcloud-vue changes/dashboard-layout-per-user | confirmed | "A saved-view preset SHALL list the user's saved views and bind the chosen one to an `object-list` widget" |
+
+## Changes opened
+
+The register's 25 uncovered rows resolve to 22 openregister slugs; seven
+rows carry a slug the register marks `(dossiq)` and those are the dossiq
+lane's. The coverage check added four more openregister changes. One
+register slug, `objecten-api-facade`, is not opened here (see
+Disagreements).
+
+| change | rows | size | depends on | consumers |
+|---|---|---|---|---|
+| working-calendar-admin | 8.12, Q8.20 | M | flow-business-timers | dossiq, shillinq, integriq, humaniq |
+| end-date-roll-on-the-calendar | 8.11 | S | flow-business-timers | dossiq (Atw), shillinq, humaniq |
+| calendar-time-zone | Q8.19 | S | flow-business-timers | every business-timer app |
+| calendar-change-recomputes-timers | Q8.17 | M | working-calendar-admin | every business-timer app |
+| term-engine-diagnostic | Q8.18 | S | working-calendar-admin | dossiq |
+| object-watchers | 13.18 | S | favourites-and-recent | dossiq, zaakafhandelapp, decidiq, pipelinq, keepiq, humaniq |
+| timeline-entry-visibility | 6.15 | S | activity-leaf | dossiq, portaliq, zaakafhandelapp, pipelinq, decidiq |
+| object-presence | Q2.31 | S | complete-live-updates | every detail page |
+| note-edit-history | Q6.17 | S | notes-leaf-rich-text-lock-export | dossiq, humaniq, keepiq, zaakafhandelapp |
+| relation-types-with-inverses | 2.26 | S | none | dossiq, decidiq, stackiq, pipelinq, keepiq |
+| identity-survives-a-move | Q2.30 | S | generated-identifier | dossiq, pipelinq, stackiq, opencatalogi |
+| saved-view-count-alert | 9.13 | S | notification-scheduled-filter-grammar | dossiq, pipelinq, humaniq, keepiq |
+| view-group-share | 9.4 (openregister half) | S | none | dossiq, nextcloud-vue, every index page |
+| send-at-on-the-messaging-leaf | 6.9 | S | messaging-dispatch-leaf | dossiq, pipelinq, humaniq, portaliq |
+| reply-threading-by-headers | Q6.18 | M | send-at-on-the-messaging-leaf | dossiq, integriq, pipelinq, humaniq |
+| feature-toggle-surface | 11.15 | S | apphost-settings-plane | every app on the settings plane |
+| settings-change-audit | Q10.13 | S | apphost-settings-plane, audit-log-page | every app on the settings plane |
+| scoped-api-tokens | Q13.20 | M | none | dossiq, integriq, portaliq, stackiq, keepiq |
+| field-rules-by-state | 11.25 | M | none | dossiq, decidiq, humaniq, pipelinq, nextcloud-vue |
+| sensitive-field-reveal-audit | 5.6 (openregister half) | S | none | dossiq, humaniq, keepiq, zaakafhandelapp |
+| property-code-list-from-concept-scheme | 11.10 (openregister half) | S | none | dossiq, opencatalogi, stackiq, humaniq, pipelinq |
+| dedup-check-before-create | 2.24 (openregister half) | S | none | dossiq, pipelinq, opencatalogi, humaniq |
+| macro-flows-with-next-item | 3.20 | M | none | dossiq, nextcloud-vue, pipelinq, decidiq, humaniq |
+| migrate-run-between-versions | 3.16 | M | flow-definition-versioning | dossiq, decidiq, humaniq, shillinq |
+| external-register-view-leaf | 5.13 | M | object-source-providers | dossiq, integriq, pipelinq, humaniq, zaakafhandelapp |
+| object-archive-state | Q2.33 | M | none | dossiq, decidiq, pipelinq, keepiq, stackiq, opencatalogi |
+| rbac-inherits-to-children | Q13.23 | M | object-level-sharing-and-private-scope | dossiq, opencatalogi, stackiq, decidiq, buildiq |
+| permission-provenance-and-deny | Q13.25 | M | rbac-inherits-to-children | dossiq, keepiq, integriq, decidiq, humaniq, portaliq |
+
+Sizes: 17 S, 8 M. Rows closed on openregister: 26 register rows (22 slugs
+plus 5.6, 11.10, 2.24 and 9.4's openregister halves; 8.12 and Q8.20 share
+one change).
+
+Every proposal names the dossiq half from the register's `dossiq_half`
+column. Those halves are specified in dossiq by the dossiq lane; where the
+register already names a dossiq slug (`sensitive-fields-declared`,
+`code-lists-from-concepts`, `duplicate-warning-at-intake`,
+`edit-lock-on-the-case-page`, `case-merge`, `field-rules-declared`,
+`admin-inspect-entry`) the proposal uses it.
+
+The last two rows arrived with the regenerated register (2026-09-13,
+market-intelligence #123), which lists eight gaps with no change. Two of
+the eight are openregister's: Q2.33 `object-archive-state` and Q13.23
+`rbac-inherits-to-children`. Both are opened by the last sweep of the
+phase, with dossiq consumer changes named in each proposal.
+
+**Q13.25 arrived a day later**, with gap register v3
+(market-intelligence #128) and batch 12 of round 4. Where a role's
+permissions come from, and whether one can be taken away, is this layer's
+question: the grantable set is not published anywhere an administrator
+can read it, and nothing subtracts. It also reopens one line
+`rbac-inherits-to-children` wrote off, "no competitor in the register has
+one": Huly ships nine `Forbid` permissions beside its fifty-two, driven.
+`permission-provenance-and-deny` depends on that change and completes the
+rule from the other side.
+
+## Build order
+
+The calendar cluster first: statutory correctness, and the register's own
+"what to do next" ends on it. Then the two cheapest rows with the widest
+failure. Then the four small changes that unblock a dossiq half already
+planned. Then the rest, grouped by the spec they extend.
+
+1. `working-calendar-admin`
+2. `end-date-roll-on-the-calendar`
+3. `calendar-time-zone`
+4. `calendar-change-recomputes-timers`
+5. `term-engine-diagnostic`
+6. `object-watchers`
+7. `timeline-entry-visibility`
+8. `sensitive-field-reveal-audit`, `dedup-check-before-create`, `property-code-list-from-concept-scheme`, `view-group-share`
+9. `object-presence`, `note-edit-history`, `relation-types-with-inverses`, `identity-survives-a-move`
+10. `send-at-on-the-messaging-leaf`, then `reply-threading-by-headers`
+11. `feature-toggle-surface`, `settings-change-audit`
+12. `saved-view-count-alert`
+13. `field-rules-by-state`, `scoped-api-tokens`
+14. `macro-flows-with-next-item`, `migrate-run-between-versions`, `external-register-view-leaf`
+
+## Disagreements with the register
+
+- **12.3, `objecten-api-facade`, not opened here.** The register puts the
+  Objecten and Objecttypen API on openregister "where the other ZGW
+  mappings live". Two facts against it: openregister's `specs/zgw-api-mapping`
+  is a redirect stub whose only requirement is "Consult the canonical
+  zgw-api-mapping spec" in dossiq; and ADR-091 §6 says "ZGW, StUF, DSO,
+  Notificaties ... belong in OpenConnector, even where the endpoint happens
+  to be unauthenticated". openregister's half already exists: the Endpoint
+  system the ZGW routes ride, the objects API and schema export. The
+  façade is integriq's under ADR-091 §2, as endpoint configuration over
+  those. Recommendation: the integriq lane opens `objecten-api-facade`.
+- **12.15 is a deliberate no**, not a covered row: ADR-007 removed the
+  external backends. Re-rate the row to `specs/text-extraction`.
+- **11.13 is a deliberate no**: labels are compiled l10n by decision (round
+  2 C05); `register-i18n` is content, not labels.
+- **9.4's slug reads "none needed" and names openregister work in the same
+  breath.** The work is now `view-group-share`.
+- **7.7, 8.7, 13.10, 11.22, 13.11 cite the wrong artefact.** The
+  openregister half of each is covered elsewhere (`retention-management`,
+  `processing-activity-register`); the dossiq half is open and goes to the
+  dossiq lane.
+- **3.1 needs no "flow engine convergence" change**: `flow-bpmn-interchange`
+  and `flow-engine-unification` cover it, as the register's own slug says.
+- **The calendar cluster is one change per slug, not one change.** The
+  brief grouped 8.12, 8.11 and Q8.17 as one; the register's one-slug-per-row
+  rule and `depends_on` chaining keep each reviewable. `working-calendar-admin`
+  absorbs Q8.20 as the register says.
+- **6.9 needed e-mail as a channel of the dispatch leaf.** The leaf carried
+  SMS and WhatsApp only; `send-at-on-the-messaging-leaf` adds `email` over
+  a seeded SMTP source, because a scheduled e-mail with no e-mail channel
+  is nothing.
+- **`scoped-api-tokens` has prior art the register missed**: `auth-system`
+  already narrows an OAuth2 token to a subset of the user's groups (a
+  requirement the validator reports as invisible because it sits outside
+  the spec's `## Requirements` section, an inherited finding). The change
+  generalises it and says so.
+
+## ADRs cited across the programme
+
+Company: ADR-019, ADR-022, ADR-023, ADR-024, ADR-025, ADR-031, ADR-045,
+ADR-046, ADR-047, ADR-048, ADR-052, ADR-065, ADR-066, ADR-067, ADR-069,
+ADR-071, ADR-076, ADR-078, ADR-079, ADR-091, ADR-095, ADR-098, ADR-099,
+ADR-102, ADR-103, ADR-108. openregister: ADR-001, ADR-002, ADR-003,
+ADR-006, ADR-007, ADR-008, ADR-009, ADR-010.
+
+## Discovery wave 1 (2026-09-14)
+
+A second input arrived after this umbrella was written: the round 4
+discovery sweep in ConductionNL/market-intelligence,
+`procest/_round4/discovery/`. `build-plan.md` groups 631 consolidated
+candidates into 70 clusters plus nine from the case-type depth study
+`casetype-configurability.md`, and the ownership rule puts **263 of the
+631 candidates on openregister**, more than on any other app. `decisions.md`
+holds 22 decisions; Ruben took all 22 on 2026-09-14 and lifted the build
+hold.
+
+Wave 1 is the platform under everything else. These are its openregister
+clusters, one change each, except where the plan names an existing change
+as the vehicle and it is extended instead.
+
+| change | cluster | candidates | size | decision | dossiq consumer |
+|---|---|---|---|---|---|
+| `rules-engine-operability` | 19, the rules engine | 17 | L | D3 option 2 | `field-rules-declared` |
+| `object-dates-as-a-calendar-feed` | 9, the case and its term in the caseworker's calendar | 2 | M | D11 option 1, feed first, and D5 | `every-term-on-the-engine-calendar` |
+| `bulk-action-jobs` | 52, bulk action as a background job | 8 | L | none, kept under D6 | renders progress and skips |
+| `object-read-state` | 62, per-user unread state | 6 | M | none | unread badge on the case tabs |
+| `code-list-lifecycle-and-hierarchy` | 6, code lists, hierarchies and expiring values | 20 | M | none | `code-lists-from-concepts` |
+| `delete-window-and-recorded-destruction` | 39, delete, restore and destroy | 5 | M | D10 as taken, no new recycle state | `case-delete-guard`, unchanged |
+| `archiving-as-a-process-with-sign-off` | 43, the archiving process | 17 | L | D7 option 1, owner moved to openregister | declares the resultaattype |
+| `property-vocabulary-published` | CT-1, the schema half | 10 study rows | M | none | `property-definition-management` |
+| `computed-values-by-json-ast` | CT-3, computed values | study row B2 | S | D3, second half | `property-definition-management` |
+
+Three changes are extended rather than created, because the build plan
+names each as the vehicle for its cluster:
+
+| change extended | cluster | what the extension adds |
+|---|---|---|
+| `permission-provenance-and-deny` | 11, roles and provenance (23 candidates) and 54, access compiled into the query (1) | the filter compiled into the query, permitted actions on the record, provenance in both directions, derived, scoped and expiring grants. D22 names this change by name |
+| `field-rules-by-state` | CT-2, the rules engine behind the smart field | a condition over the object's own data, a rule that makes a field required, entry and exit conditions on a state. The two gaps D3 names |
+| `property-code-list-from-concept-scheme` | CT-4, code lists a property takes its values from | a choice property with no source of values is refused at schema save |
+
+**Four decisions differ from the recommendations the plan assumed, and all
+four land here.** D10 takes no new recycle state: the existing soft delete
+of `deletion-audit-trail` carries the stated window and the recorded
+destruction, beside `object-archive-state`. D7 puts the archiving process
+with sign-off in openregister rather than filinq, so the evidence stays
+with the objects. D5 brings all five revivals back, which keeps the
+calendar cluster in this wave. D6 makes the promotion bar relevance-led,
+which is why cluster 52 stays with three driven passers and five `must`
+candidates.
+
+**Build order inside the wave.** `property-vocabulary-published` first: it
+is the cheapest row per hour in the study and two other changes read it.
+Then `permission-provenance-and-deny` with its extension, because access
+inside the query is the foundation under six other candidates. Then
+`rules-engine-operability` with `computed-values-by-json-ast` and the
+`field-rules-by-state` extension, which are one engine in three parts.
+Then `code-list-lifecycle-and-hierarchy`, `object-read-state` and
+`bulk-action-jobs`. Then `delete-window-and-recorded-destruction` and
+`archiving-as-a-process-with-sign-off`, which depend on the first of those
+two. `object-dates-as-a-calendar-feed` runs beside them, after
+`working-calendar-admin`.
+
+**One finding to raise rather than build.** The case-type study names the
+wall between the two property vocabularies as
+`schemas.case.properties.caseType.x-openregister-extends-form.map`. That
+annotation sits in OpenRegister's `x-` namespace, and a code search of
+`ConductionNL/openregister` on 2026-09-14 returned zero hits for
+`extends-form`. A leaf app is carrying an annotation that reads as a
+platform contract and is not one. `property-vocabulary-published` makes it
+one.
+
+## Discovery wave 2 and 3 (2026-09-14)
+
+Wave 1 took the platform under everything else. These are the remaining
+openregister clusters of `procest/_round4/discovery/build-plan.md`: what a
+municipality sees, and the long ones behind it.
+
+**The arithmetic closes.** The ownership rule puts 263 of the 631
+candidates on openregister, spread over 29 clusters. Wave 1's openregister
+clusters carry 82 of them (6, 9, 11, 19, 39, 52, 54 and 62), plus cluster
+43 which D7 moved here from filinq and the case-type study rows. The
+twenty-one changes below carry the other 181. Every openregister candidate
+in the sweep now has a change, and no candidate is in two.
+
+Sixteen changes are created:
+
+| change | cluster | candidates | size | decisions | dossiq consumer |
+|---|---|---|---|---|---|
+| `admin-operations-console` | 1, the administrator's own screens | 19 | M | D6, D21 | a job monitor page over its fifteen background jobs |
+| `instance-hardening-controls` | 4, security hardening of the instance | 18 | M | D6, D21 | publishes the statement, declares the second-factor scope |
+| `api-as-a-versioned-surface` | 5, the API as a described, versioned surface | 14 | M | D6, D21 | declares the links out of a case per case type |
+| `import-preview-and-conflict-policy` | 8, migration in and migration out | 5 | L | D6, D10 | migrates running dossiers; integriq holds the adapters |
+| `notification-routing-per-group-and-scope` | 10, notification preferences | 9 | L | D6, D1 | ships the templates, declares the team defaults |
+| `timeline-entries-are-records` | 13, the timeline and the note | 15 | M | D6, D21, D1 | declares the contactmoment kind and renders the timeline |
+| `party-roles-beyond-the-requester` | 14, the party model beyond the requester | 16 | L | D6, D21, D1 | declares which party kinds a case type accepts |
+| `export-as-its-own-right` | 16, export as its own right | 10 | M | D6, D21 | `case-list-export-via-or-export-leaf` |
+| `configuration-as-a-deployment` | 20, configuration as code | 11 | L | D15, D6, D21 | `CaseTypePublishService` becomes the leaf half |
+| `audit-trail-shipped-and-purpose-bound` | 34, the audit trail and where it is shipped | 5 | M | D6, D21, D22 | declares the purposes its BRP and KvK lookups run under |
+| `data-subject-rights-across-the-instance` | 38, erasure and the data subject's rights | 6 | L | D10, D22, D6, D21, D1 | the erasure preview over a zaak's parties |
+| `objects-as-the-hinge-between-cases` | 47, the object register as the hinge | 7 | L | D6, D21 | declares the object types a case type may reference |
+| `repeating-groups-and-recorded-corrections` | 49, corrections and repeating groups | 4 | M | D6 | the case-type editor and the Beheeracties block |
+| `access-by-link-not-by-account` | 64, access by link rather than by account | 4 | M | D8, D6, D1 | `CaseSharingService` mints links with capabilities |
+| `search-quality-operators-and-facets` | 65, search quality | 7 | M | D21, D6 | declares which fields are facetable and their match type |
+| `several-legal-entities-in-one-instance` | 66, more than one legal entity | 4 | L | D21, D6 | `TenantAuthenticationService` reads shared master data |
+
+Five changes are extended rather than created, because the build plan
+names each of them as its cluster's vehicle:
+
+| change extended | cluster | candidates | what the extension adds |
+|---|---|---|---|
+| `object-archive-state` | 29, read-only, frozen and locked | 6 | a frozen state beside the archived one, a lifecycle-declared freeze, an immutable property, a closed record, a withdrawn entry and a locked note |
+| `scoped-api-tokens` | 40, tokens, service accounts and their expiry | 5 | a required end date, a team-owned service account, a per-token rate limit and an outbound allowlist |
+| `generated-identifier` | 41, case numbering and second identifiers | 5 | a random sequence kind, foreign identifiers naming their issuer, a second human identifier, reserved values and a scheme change as a migration |
+| `relation-types-with-inverses` | 61, relations, split, merge and the graph | 7 | a split that keeps its provenance, declared inheritance along a relation, an external address as a relation, prose references and a bounded graph |
+| `working-calendar-admin` | 67, working calendars per unit and person | 4 | calendars per record type and unit, a person's pattern read from humaniq under D19, blackout periods and the first week of the year |
+
+**Three clusters the build plan sizes differently from this umbrella.**
+Cluster 66 sits in the plan's "already specified" table with "re-rate" as
+what is left. Reading the tenancy specs confirms the isolation half and
+finds no sharing half at all: nothing lets two organisations read one code
+list, nothing moves a live object between them, nothing keeps a token out
+of a log line. The change is opened, and the re-rate is one of its tasks.
+Cluster 13 names two vehicles rather than one, so it is a change that
+depends on both rather than an extension that buries what each already
+says. Cluster 20 names `app-delta-override` as its vehicle, and a search
+of this repository's openspec tree on 2026-09-14 returns zero hits for it
+in `specs/` and in `changes/`: a capability is created here and the
+buildiq lane should say which artefact the plan meant.
+
+**Two inherited findings, reported and not fixed.**
+`specs/geo-metadata-kaart/spec.md` carries a `## ADDED Requirements`
+delta header in a main spec at line 14, which hides eight requirements
+from validate, list and archive and makes archive refuse any delta against
+it. `specs/auth-system/spec.md` carries a requirement header outside its
+`## Requirements` section at line 888, with the same effect, which the
+`scoped-api-tokens` proposal already noted from the other side. Both are
+on lines these changes do not touch, so both belong to the debt sweep.
+`objects-as-the-hinge-between-cases` targets `linked-entity-types` for its
+geographic requirement rather than waiting on the first of the two.
+
+**Build order.** Wave 2 first, in the order a municipality meets it:
+`party-roles-beyond-the-requester` and
+`repeating-groups-and-recorded-corrections`, which the case-type work
+reads; then `search-quality-operators-and-facets` and
+`timeline-entries-are-records`; then `admin-operations-console` and
+`instance-hardening-controls`, which every tender asks about; then
+`export-as-its-own-right` before `import-preview-and-conflict-policy`,
+which depends on it; then `notification-routing-per-group-and-scope`,
+`audit-trail-shipped-and-purpose-bound` and `access-by-link-not-by-account`;
+then the five extensions, each beside the change it extends. Wave 3 last
+and in any order: `api-as-a-versioned-surface`,
+`configuration-as-a-deployment`, `data-subject-rights-across-the-instance`,
+`objects-as-the-hinge-between-cases` and
+`several-legal-entities-in-one-instance`. Every one of those is L or
+depends on something that is, and none of them blocks a tender answer.
+
+## Discovery wave 4 (2026-09-14)
+
+One cluster of the sweep stayed open after wave 3: cluster 67, "The
+satisfaction survey as its own object". The gap register's cluster table
+recorded it as "no change opened; pipelinq `customer-satisfaction-closed-loop`
+carries ledger row 6.16, not the cluster". Row 6.16 is the campaign.
+The cluster is the object the campaign runs on, and it is openregister's.
+
+| change | cluster | candidates | size | decision | consumer |
+|---|---|---|---|---|---|
+| `survey-object` | 67, the satisfaction survey as its own object | C-reporting-8, C-reporting-31 | M | D5, D21 | pipelinq `customer-satisfaction-closed-loop` runs its campaign on it; dossiq fires an invitation per case type on closure and declares nothing else; portaliq renders it for a requester with no account |
+
+The cluster's mechanism line names all three: "new openregister change
+`survey-object` carrying the questions, the answers and the export; dossiq
+fires it per case type on closure and portaliq renders it for a requester
+with no account (D5)". Its stated dependency is cluster 51, the intake form
+as its own object, which is portaliq's.
+
+### A numbering correction to the wave 3 table above
+
+The extension table in wave 2 and 3 numbers two clusters wrong, and both
+numbers belong to other owners. `relation-types-with-inverses` is cluster
+**62**, "Relations, split, merge and the relation graph", not 61, which is
+integriq's outbound sender identity. `working-calendar-admin` is cluster
+**69**, "Working calendars, per instance, per unit and per person", not 67,
+which is this section's survey cluster. Both sources agree on 62 and 69:
+`build-plan.md` headings and the gap register's cluster table. The
+candidate lists in that table are correct, only the cluster numbers beside
+them were wrong, and they are left in place so the correction is visible.
+
+### What other apps owe wave 4
+
+- **pipelinq**: the campaign, the reminder schedule and the reporting over
+  time, under ledger row 6.16.
+- **dossiq**: one declaration, which case types fire a survey on closure.
+  Row 6.16 records the rest as a deliberate no.
+- **portaliq**: the rendering for a requester with no account, under D5,
+  and its cluster 51 dependency.
+
+## Platform integration programme (D9)
+
+Ten changes, one per Nextcloud interface, one programme. The input is not
+a cluster and not a matrix row: it is non-row finding 1 of
+`procest/_round4/discovery/candidates.json`, said by `nextcloud-deck.md`.
+Deck registers fifteen platform integration points in its Application
+class; dossiq registers dashboard widgets, a notifier and event listeners
+through the shared OpenRegister bootstrap. Ten are missing, and the lane
+states the consequence: "a zaak is invisible everywhere in Nextcloud
+except inside dossiq, so it does not appear in the search bar, a link to
+it does not render in Talk, it cannot be shared with a colleague at the
+omgevingsdienst, it is in nobody's calendar and it does not leave with the
+person who owned it".
+
+**D9, option 1, taken by Ruben on 2026-09-14**: one programme, ten
+interfaces, one change per interface, one PR series. The decision's own
+reasoning is why these ten read differently from every other change in
+this umbrella: "None of the ten is a feature to design: each is an
+interface the platform publishes and a class that implements it." It is
+the highest ratio of capability to design work in the file, and nothing
+blocks it.
+
+The lane is also explicit that this is not a matrix row and is not
+proposed as one, because both products are Nextcloud apps, so the
+comparison is available to no other system in the corpus.
+
+| change | interface | what openregister implements for any object | what dossiq declares |
+|---|---|---|---|
+| `platform-search-provider` | `OCP\Search\IProvider` | a provider identity per claiming app over the one query implementation | the claim, and the result title, subline and ordering date per schema |
+| `platform-reference-provider` | `OCP\Collaboration\Reference\IReferenceProvider` | one resolver for any object URL, access-aware, plus the smart picker | the card shape per schema |
+| `platform-comments-entity` | `OCP\Comments\ICommentsManager` entity | one entity collection per claiming app from the one listener | its claimed pairs, and nothing else |
+| `platform-collaboration-resources` | `OCP\Collaboration\Resources\IProvider` | any object as a resource, access answered through the object read path | which schemas may join a collection |
+| `platform-team-resource-provider` | `OCP\Teams\ITeamResourceProvider` | a paged listing of the objects a team owns, read from the owning-team property | which schemas appear, and the owning-team property |
+| `platform-share-provider` | `OCP\Share\IShareProvider` | a face on the existing object share model, with explicit permission mapping | which schemas are shareable |
+| `platform-user-migrator` | `OCP\User\Migration\IMigrator` | export and import of a user's own state, and never of objects | nothing |
+| `platform-cloud-federation-provider` | `OCP\Federation\ICloudFederationProvider` | the outbound half and the two-sided lifecycle around the existing inbound provider | which schemas may be federated and what crosses |
+| `platform-capability` | `OCP\Capabilities\ICapability` | one capability block with a nested block per claiming app, from the same source as the API answer | its claim |
+| `platform-caldav-backend` | `OCA\DAV\CalDAV\Integration\ICalendarProvider` | the declared date kinds as platform calendars, from the feed's own generator | which dates count, already declared for the feed |
+
+**`platform-caldav-backend` extends wave 1's
+`object-dates-as-a-calendar-feed`**, and depends on it. D11 took option 1
+delivering option 3 first: the subscribable feed ships before anything
+writes. This change is option 1 arriving behind it, rendering the same
+events through the platform's calendar plane from the same generator, so
+the two surfaces cannot disagree. It stays read-only for the reason the
+feed does: writing back waits on `calendar-change-recomputes-timers`.
+
+**Three of the ten are close to done and say so.**
+`unified-search-provider` already implements the search provider for every
+object, so that change adds an identity per app and a declared result
+shape rather than a provider. `object-interactions` already registers
+`openregister` as a comments entity, so that change adds a collection per
+app. `deep-link-registry` already *requires* `ICapability` exposure and
+its own status section lists it as not implemented, which is the same gap
+the Deck lane found from the other end. Four of the ten have no artefact
+at all in this repository: collaboration resources, the team resource
+provider, the share provider and the user migrator each return zero hits
+across `specs/` and `changes/`.
+
+**Build order.** `platform-capability` and `platform-search-provider`
+first: both are S, both are mostly declaration, and both are what a client
+reads before anything else. Then `platform-reference-provider` and
+`platform-comments-entity`, which make a link and a comment name the right
+app. Then `platform-collaboration-resources` and
+`platform-team-resource-provider`, the two new surfaces. Then
+`platform-share-provider`, and `platform-cloud-federation-provider` behind
+it, which depends on it. Then `platform-user-migrator`. Then
+`platform-caldav-backend`, after wave 1's feed has landed.
+
+## The pending proposals (wave 4, 2026-09-14)
+
+A third input: the 39 rows of the pending-proposals half of the parity
+programme that the ownership rules put on openregister, the largest share
+of the wave. Each row carries its ledger id, its capability text, its
+rating for dossiq, the `source` field, the ledger note and, for the 98 rows
+promoted under decision D1, the table row from the corpus batch file
+`procest/_round4/compare/proposed-rows-dossiq-2026-09-10.md` in
+ConductionNL/market-intelligence.
+
+**What the competitor evidence is, for all 39.** Every one of these rows is
+a D1 promotion, and the corpus says in as many words what its competitor
+columns hold: "Every competitor column is `unread`, and none of them is
+`no`. ... `no` is a reading of a product somebody opened, and filling these
+cells with it would fabricate thirty readings per row." No competitor claim
+is made in any of the thirteen proposals below. Q13.25 is the exception in
+this section: it is not a D1 row and it does carry a driven reading.
+
+**Ten rows are already carried, in substance, by artefacts in this
+repository.** Each was claimed only after its proposal and every file under
+its `specs/` was opened, and each claim names the requirement that carries
+the row.
+
+| row | artefact | the requirement that carries it |
+|---|---|---|
+| 1.18 | changes/dedup-check-before-create | "A schema declares what a strong match does at create": the matches are returned, `overrideGroups` may override, and the override is audited with the matched objects |
+| 6.26 | specs/notificatie-engine | "Trigger types `created` and `updated` MUST be supported", whose scenario declares `trigger: {type: "updated", only_if_changed: ["assignee"]}`, with recipients resolved from the object by the `recipients` block |
+| 11.37 | changes/field-rules-by-state | "A field rule may be conditional on the object's own data", scenario "a field becomes required because of a value", enforced on save and so on the API |
+| 11.38 | changes/rules-engine-operability | REQ-REO-004 "Every write path evaluates the declared rules", with `@self.fieldRules` from `field-rules-by-state` as the form's half |
+| 11.48 | changes/code-list-lifecycle-and-hierarchy | REQ-CLH-001, scenario "a retired value keeps working on old records": outside its window a concept is not offered and still resolves on read |
+| 11.49 | changes/rules-engine-operability | REQ-REO-002 "A rule evaluation records the operand that decided it", readable per rule with filters on verdict and period |
+| 11.52 | changes/code-list-lifecycle-and-hierarchy | REQ-CLH-001 scenario "a list item carries its own fields" (`bewaartermijn`, `grondslag`) with REQ-CLH-002's branch source and tree options |
+| 13.29 | changes/data-subject-rights-across-the-instance | REQ-DSR-001 and REQ-DSR-002: the preview reports erasable, pseudonymised and protected counts, and the run goes through the recorded destruction |
+| 13.31 | changes/archiving-as-a-process-with-sign-off | REQ-APS-002 "Every item on a destruction list has an accountable reviewer" and REQ-APS-003, beside specs/archival-destruction-workflow's "Two-step approval for sensitive schemas" |
+| 13.35 | specs/audit-hash-chain | "Every audit trail entry MUST include a SHA-256 hash chained to the previous entry" with the verification endpoint and tamper reporting |
+| Q13.25 | changes/permission-provenance-and-deny | REQ-PPD-001 "The set of grantable permissions is published", which refuses an undeclared verb at save, and REQ-PPD-002 "A rule may deny a verb, and a deny is not overridden" |
+
+**Twenty-nine rows have no artefact and get thirteen changes.**
+
+| change | rows | size | consumes from, or is consumed by |
+|---|---|---|---|
+| `duplicate-merge-and-dismissed-pairs` | 5.14, 5.15, 11.42 | M | extends mdm-merge and dedup-check-before-create; dossiq renders the merge screen |
+| `undo-a-bulk-action` | 2.41 | M | extends bulk-action-jobs; dossiq declares which of its bulk actions are reversible |
+| `relations-that-travel-and-what-they-expose` | 2.48, 5.16, 13.36 | L | extends relation-types-with-inverses and party-roles-beyond-the-requester; dossiq declares its relation types |
+| `a-conflicting-save-shows-the-other-value` | 2.50 | S | extends specs/objects-crud; dossiq renders the side-by-side choice |
+| `notification-kinds-an-administrator-forces` | 6.28 | S | extends notification-routing-per-group-and-scope; dossiq declares its internal and forced kinds |
+| `service-hours-and-repeating-reminders` | 8.26, 8.28 | M | extends working-calendar-admin and the scheduled trigger; dossiq declares its hours and its reminders |
+| `search-over-history-and-an-administered-dictionary` | 9.17, 9.18 | M | extends search-quality-operators-and-facets, which named both as out of scope; dossiq and portaliq consume |
+| `runs-recorded-and-causes-named` | 10.16, 10.19, 11.39 | L | extends enhanced-audit-trail, data-quality-scoring and import-preview-and-conflict-policy; integriq holds the adapters |
+| `local-changes-to-app-shipped-configuration` | 11.36 | M | extends specs/schema-import; dossiq's CaseTypePublishService is the leaf half |
+| `rules-compose-read-transitions-and-time` | 11.40, 11.44, 11.50, 11.53 | L | extends rules-engine-operability and field-rules-by-state; dossiq's `field-rules-declared` |
+| `fields-a-user-adds-and-choices-a-record-narrows` | 11.45, 11.47 | M | extends property-vocabulary-published; dossiq's `property-definition-management` |
+| `grants-that-follow-a-slot-a-relation-or-a-reason` | 13.27, 13.30, 13.34, 13.40, 13.41 | L | extends permission-provenance-and-deny and rbac-inherits-to-children; dossiq declares its role slots |
+| `anonymising-as-an-archival-outcome` | 13.32 | M | extends archiving-as-a-process-with-sign-off and gdpr-data-subject-rights; dossiq declares the profile per case type |
+
+**Build order.** `a-conflicting-save-shows-the-other-value` and
+`notification-kinds-an-administrator-forces` first, both S and both a
+declaration over something that already works. Then
+`duplicate-merge-and-dismissed-pairs`,
+`fields-a-user-adds-and-choices-a-record-narrows` and
+`local-changes-to-app-shipped-configuration`. Then
+`service-hours-and-repeating-reminders` behind `working-calendar-admin`,
+and `undo-a-bulk-action` behind `bulk-action-jobs`. Then
+`rules-compose-read-transitions-and-time` beside
+`rules-engine-operability`, which is one engine in two parts. Then
+`search-over-history-and-an-administered-dictionary` and
+`runs-recorded-and-causes-named`. Then
+`relations-that-travel-and-what-they-expose`, and
+`grants-that-follow-a-slot-a-relation-or-a-reason` behind it, which needs
+the party relationship it adds. `anonymising-as-an-archival-outcome` last,
+after the archiving process it extends.
+
+**Two departures from the grouping the lane was handed.** 11.53, an
+administrator's own validation with its own message, was grouped with the
+rules that run on every write; it sits better with rule composition,
+because a validation is a named condition with a message and the two share
+one evaluator. And 10.16, an audit entry naming its cause, was grouped with
+the tamper-evident log; it sits with the records of what ran, because a
+cause that is a run has to name one.
+
+**One finding to raise rather than build.** ADR-005 in this repository says
+repair steps "MUST be safe to run on every upgrade: match existing
+registers/schemas by slug, create-or-update, never duplicate", and
+`specs/schema-import` already specifies the guarded update, the preserved
+local additions and the reported conflicts for standards-imported schemas
+only. Read together, an app-shipped descriptor overwrites a municipality's
+local edit on the next `occ upgrade` and nothing records that the edit
+existed. That asymmetry, not a missing feature, is what row 11.36 found.

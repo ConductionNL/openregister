@@ -149,6 +149,52 @@ class LogServiceTest extends TestCase {
 		$this->assertSame(0, $result);
 	}
 
+	/**
+	 * A count taken without the caller's filters counts a different result set.
+	 *
+	 * The audit-trail endpoint asked for the page WITH the filters and the
+	 * total WITHOUT them, so `?action=update` on an object holding 1733 rows
+	 * returned 7 of them and reported a total of 1733 — 87 pages of nothing for
+	 * anything that pages on the number.
+	 */
+	public function testCountCountsUnderTheCallersFilters(): void {
+		$object = $this->createObjectEntity(42, '1', '2');
+		$object->setUuid('uuid-42');
+		$register = $this->createRegister(1);
+		$schema = $this->createSchema(2);
+
+		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$seenFilters = null;
+		$seenSearch = 'not-called';
+		$this->auditTrailMapper->expects($this->once())
+			->method('findAll')
+			->willReturnCallback(
+				function ($limit = null, $offset = null, $filters = [], $sort = null, $search = null) use (&$seenFilters, &$seenSearch) {
+					$seenFilters = $filters;
+					$seenSearch = $search;
+					return ['a', 'b'];
+				}
+			);
+
+		$result = $this->service->count(
+			'1',
+			'2',
+			'42',
+			['filters' => ['action' => 'update'], 'search' => 'needle']
+		);
+
+		$this->assertSame(2, $result);
+		$this->assertSame(
+			['action' => 'update', 'object_uuid' => 'uuid-42'],
+			$seenFilters,
+			'the count must narrow by the same filters the page was fetched with'
+		);
+		$this->assertSame('needle', $seenSearch);
+	}
+
 	public function testGetAllLogsWithDefaults(): void {
 		$this->auditTrailMapper->expects($this->once())
 			->method('findAll')

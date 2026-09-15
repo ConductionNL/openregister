@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -302,19 +303,29 @@ class ConfigurationService {
 	 * @spec exclude Facade plumbing: peer-app presence probe (installed-apps check + container resolve), no standalone behavioral contract.
 	 */
 	public function hasOpenConnector(): bool {
-		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
-			try {
-				// Attempt to get the OpenConnector service from the container.
-				$serviceName = 'OCA\OpenConnector\Service\ConfigurationService';
-				$this->openConnectorConfigurationService = $this->container->get($serviceName);
-				return true;
-			} catch (Exception $e) {
-				// If the service is not available, return false.
-				return false;
-			}
+		// Both halves resolve through FleetAppId: the app is `integriq` with
+		// namespace OCA\Integriq on development and `openconnector` with
+		// OCA\OpenConnector on beta/main. A membership test against the id an
+		// instance does not carry is simply false, and `$container->get()` on
+		// the wrong FQCN throws into the catch below — so a stale name here
+		// reported "no connector" instead of failing, and the connector half
+		// of every configuration export was quietly dropped.
+		if (FleetAppId::isInstalled($this->appManager, 'integriq') === false) {
+			return false;
 		}
 
-		return false;
+		$serviceName = FleetAppId::resolveClass('integriq', 'Service\\ConfigurationService');
+		if ($serviceName === null) {
+			return false;
+		}
+
+		try {
+			$this->openConnectorConfigurationService = $this->container->get($serviceName);
+			return true;
+		} catch (Exception $e) {
+			// If the service is not available, return false.
+			return false;
+		}
 	}//end hasOpenConnector()
 
 	/**

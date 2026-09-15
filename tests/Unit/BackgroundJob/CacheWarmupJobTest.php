@@ -21,6 +21,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -28,6 +29,8 @@ use ReflectionClass;
  * Test class for CacheWarmupJob
  */
 class CacheWarmupJobTest extends TestCase {
+	use RegistersContainerServices;
+
 	private IAppConfig&MockObject $appConfig;
 	private LoggerInterface&MockObject $logger;
 	private CacheHandler&MockObject $cacheHandler;
@@ -41,7 +44,7 @@ class CacheWarmupJobTest extends TestCase {
 	}
 
 	/**
-	 * Create the job, injecting the appConfig mock into \OC::$server so the
+	 * Create the job, injecting the appConfig mock into the injected container so the
 	 * constructor can call getValueString(). The CacheHandler mock is registered
 	 * for use in run().
 	 */
@@ -57,11 +60,11 @@ class CacheWarmupJobTest extends TestCase {
 
 		$timeFactory = $this->createMock(ITimeFactory::class);
 
-		\OC::$server->registerService(CacheHandler::class, function () {
+		$this->registerService(CacheHandler::class, function () {
 			return $this->cacheHandler;
 		});
 
-		return new CacheWarmupJob($timeFactory, $this->appConfig, $this->logger);
+		return new CacheWarmupJob($timeFactory, $this->containerMock(), $this->appConfig, $this->logger);
 	}
 
 	/**

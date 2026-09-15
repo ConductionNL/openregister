@@ -66,6 +66,7 @@ use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -74,7 +75,7 @@ use UnexpectedValueException;
 /**
  * Suspends the run until an external signal decides how it continues.
  */
-class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * Minutes between heartbeats when the flow does not choose.
@@ -449,4 +450,28 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 		return (new DateTime())->modify('+' . $minutes . ' minutes');
 	}//end heartbeatAt()
+
+	/**
+	 * What kind of step this is. Waits to be told. The machine half of an approval.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_RECEIVE_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_HUMAN;
+
+	}//end getCategory()
 }//end class

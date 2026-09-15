@@ -12,6 +12,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 class FileVersioningHandlerTest extends TestCase {
@@ -33,7 +34,8 @@ class FileVersioningHandlerTest extends TestCase {
 			$this->rootFolder,
 			$this->appManager,
 			$this->userSession,
-			$this->logger
+			$this->logger,
+			$this->createMock(ContainerInterface::class)
 		);
 	}
 

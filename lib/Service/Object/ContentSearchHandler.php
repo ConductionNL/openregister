@@ -80,6 +80,23 @@ class ContentSearchHandler {
 	private const CHUNK_CANDIDATE_LIMIT = 50;
 
 	/**
+	 * Request-scoped memo of the resolved chunk candidates, keyed by search
+	 * term and guard flags.
+	 *
+	 * The unified-search provider calls this handler once per schema chunk
+	 * of ONE search (26 calls at 1,272 schemas). The chunk-store query is
+	 * the same every time (it is unscoped; scope is applied to the resolved
+	 * owners), and so are the resolved owners, because the guard flags and
+	 * the acting user do not change within a request. Only the scope and
+	 * the dedupe against the metadata arm differ per call, and those stay
+	 * per call. Measured 2026-09-07 on the fleet dev instance: run per
+	 * chunk, the chunk-store query was 85% of a 55 s top-bar search.
+	 *
+	 * @var array<string, ObjectEntity[]>
+	 */
+	private array $candidateCache = [];
+
+	/**
 	 * Constructor for ContentSearchHandler.
 	 *
 	 * @param ChunkMapper $chunkMapper Chunk store mapper (keyword search over body text).
@@ -146,14 +163,8 @@ class ContentSearchHandler {
 			return ['results' => $results, 'total' => $total];
 		}
 
-		$chunkHits = $this->chunkMapper->searchByKeyword(
-			query: $searchTerm,
-			limit: self::CHUNK_CANDIDATE_LIMIT,
-			filters: [],
-			allowUnrankedFallback: true
-		);
-
-		if (empty($chunkHits) === true) {
+		$candidates = $this->resolveCandidates(term: $searchTerm, _rbac: $_rbac, _multitenancy: $_multitenancy);
+		if (empty($candidates) === true) {
 			return ['results' => $results, 'total' => $total];
 		}
 
@@ -195,15 +206,12 @@ class ContentSearchHandler {
 		$scope = $this->resolveScope(query: $query);
 
 		$resolved = [];
-		foreach ($chunkHits as $hit) {
-			$object = $this->resolveAndDedupeHit(
-				hit: $hit,
-				seenUuids: $seenUuids,
-				scope: $scope,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
-			);
-			if ($object === null) {
+		foreach ($candidates as $object) {
+			if (isset($seenUuids[$object->getUuid()]) === true) {
+				continue;
+			}
+
+			if ($this->matchesScope(object: $object, scope: $scope) === false) {
 				continue;
 			}
 
@@ -227,38 +235,62 @@ class ContentSearchHandler {
 	}//end augmentWithChunkMatches()
 
 	/**
-	 * Resolve one chunk hit and apply the dedupe/scope rules from ZKN-CONTENT-002,
-	 * returning the object to append or null when the hit should be skipped.
+	 * Fetch the chunk candidates for a term and resolve each to its owning
+	 * object, once per request.
 	 *
-	 * Skip reasons (all silent, per D3): already present via the metadata-match arm
-	 * (post-resolve dedup on UUID for both source types — chunk `entity_id` is a
-	 * numeric id, not a UUID, so the owning UUID is only known after resolve),
-	 * unresolvable owning object, or the object falls outside the caller's
-	 * register/schema scope.
+	 * Returns the resolved owners in chunk-hit order, deduplicated on UUID
+	 * (a chunk `entity_id` is a numeric id, not a UUID, so two hits on one
+	 * owner are only known to be one owner after the resolve). Hits that do
+	 * not resolve (not found, RBAC denial, cross-tenant, unresolvable
+	 * file->object join) are dropped silently, per D3. The dedupe against
+	 * the caller's metadata arm and the caller's register/schema scope are
+	 * NOT applied here: they differ per call and stay in the caller.
 	 *
-	 * @param array $hit One row from {@see ChunkMapper::searchByKeyword()}.
-	 * @param array $seenUuids Object UUIDs already present in the result set, keyed by uuid.
-	 * @param array $scope The caller's register/schema scope (see {@see resolveScope()}).
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param string $term The search term.
+	 * @param bool $_rbac Whether to apply RBAC checks when resolving.
+	 * @param bool $_multitenancy Whether to apply multitenancy filtering when resolving.
 	 *
-	 * @return ObjectEntity|null The object to append, or null to skip this hit.
+	 * @return ObjectEntity[] The resolved, UUID-deduplicated owners in hit order.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags mirror the
 	 *   established QueryHandler/MagicMapper API pattern.
 	 */
-	private function resolveAndDedupeHit(array $hit, array $seenUuids, array $scope, bool $_rbac, bool $_multitenancy): ?ObjectEntity {
-		$object = $this->resolveOwningObject(hit: $hit, _rbac: $_rbac, _multitenancy: $_multitenancy);
-		if ($object === null || $object->getUuid() === null || isset($seenUuids[$object->getUuid()]) === true) {
-			return null;
+	private function resolveCandidates(string $term, bool $_rbac, bool $_multitenancy): array {
+		$key = json_encode([$term, $_rbac, $_multitenancy]);
+		if (is_string($key) === true && array_key_exists($key, $this->candidateCache) === true) {
+			return $this->candidateCache[$key];
 		}
 
-		if ($this->matchesScope(object: $object, scope: $scope) === false) {
-			return null;
+		$chunkHits = $this->chunkMapper->searchByKeyword(
+			query: $term,
+			limit: self::CHUNK_CANDIDATE_LIMIT,
+			filters: [],
+			allowUnrankedFallback: true
+		);
+
+		$candidates = [];
+		$seen = [];
+		foreach ($chunkHits as $hit) {
+			$object = $this->resolveOwningObject(hit: $hit, _rbac: $_rbac, _multitenancy: $_multitenancy);
+			if ($object === null) {
+				continue;
+			}
+
+			$uuid = $object->getUuid();
+			if ($uuid === null || isset($seen[$uuid]) === true) {
+				continue;
+			}
+
+			$seen[$uuid] = true;
+			$candidates[] = $object;
 		}
 
-		return $object;
-	}//end resolveAndDedupeHit()
+		if (is_string($key) === true) {
+			$this->candidateCache[$key] = $candidates;
+		}
+
+		return $candidates;
+	}//end resolveCandidates()
 
 	/**
 	 * Resolve a single chunk hit to its owning {@see ObjectEntity}, per ZKN-CONTENT-002.
@@ -336,33 +368,45 @@ class ContentSearchHandler {
 		$schemaId = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 		$schemaIds = $query['@self']['schemas'] ?? $query['_schemas'] ?? null;
 
-		$registers = [];
-		if ($registerId !== null) {
-			$registers[] = (int)$registerId;
-		}
-
-		if (is_array($registerIds) === true) {
-			foreach ($registerIds as $id) {
-				$registers[] = (int)$id;
-			}
-		}
-
-		$schemas = [];
-		if ($schemaId !== null) {
-			$schemas[] = (int)$schemaId;
-		}
-
-		if (is_array($schemaIds) === true) {
-			foreach ($schemaIds as $id) {
-				$schemas[] = (int)$id;
-			}
-		}
+		// Every key may carry one id OR a list: the unified-search provider
+		// passes its searchable allow-list as `@self.schema`. That list used
+		// to be `(int)`-cast, which PHP answers with 1 for any non-empty
+		// array, so every content-search hit was silently scoped to schema
+		// id 1 and dropped (or, if schema 1 had opted out, let through).
+		$registers = array_merge($this->idsOf(value: $registerId), $this->idsOf(value: $registerIds));
+		$schemas = array_merge($this->idsOf(value: $schemaId), $this->idsOf(value: $schemaIds));
 
 		return [
 			'registers' => array_values(array_unique($registers)),
 			'schemas' => array_values(array_unique($schemas)),
 		];
 	}//end resolveScope()
+
+	/**
+	 * Normalise one scope value (a single id, a list of ids, or null) to ints.
+	 *
+	 * @param mixed $value The raw query value.
+	 *
+	 * @return int[] The ids; empty when the value is null or carries none.
+	 */
+	private function idsOf(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		if (is_array($value) === false) {
+			return [(int)$value];
+		}
+
+		$ids = [];
+		foreach ($value as $id) {
+			if (is_scalar($id) === true) {
+				$ids[] = (int)$id;
+			}
+		}
+
+		return $ids;
+	}//end idsOf()
 
 	/**
 	 * Check whether a resolved object falls within the caller's register/schema scope.

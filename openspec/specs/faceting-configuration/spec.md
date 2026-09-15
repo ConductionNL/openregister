@@ -223,7 +223,7 @@ The faceting system MUST operate transparently across database backends (Postgre
 - **AND** bucket counts from both tables MUST be merged into aggregated totals
 
 ### Requirement: Multi-layered facet caching
-The system MUST implement caching at three levels to minimize redundant computation. (1) **Response cache**: `FacetHandler` MUST cache complete facet responses in distributed/local memory (`ICacheFactory`) with 1-hour TTL, keyed by RBAC-aware hashes including user ID, organisation, filters, and facet config. (2) **Schema facet cache**: `FacetCacheHandler` MUST persistently cache facet configurations per schema in the `openregister_schema_facet_cache` database table with configurable TTL (default 30 minutes, max 8 hours). (3) **In-memory label cache**: `MagicFacetHandler` MUST cache UUID-to-label mappings per request and in a distributed label cache (`openregister_facet_labels`) with 24-hour TTL. Cache MUST be invalidated when schemas are updated via `FacetCacheHandler.invalidateForSchemaChange()`.
+The system MUST implement caching at three levels to minimize redundant computation. (1) **Response cache**: `FacetHandler` MUST cache complete facet responses in distributed/local memory (`ICacheFactory`) with 1-hour TTL, keyed by RBAC-aware hashes including user ID, organisation, filters, and facet config. (2) **Schema facet cache**: `FacetCacheHandler` MUST persistently cache facet configurations per schema in the `openregister_schema_facet_cache` database table with configurable TTL (default 30 minutes, max 8 hours). (3) **In-memory label cache**: `MagicFacetHandler` MUST cache UUID-to-label mappings per request and in a distributed label cache (`openregister_facet_labels`) with 24-hour TTL. Cache MUST be invalidated when schemas are updated via `FacetCacheHandler.invalidateForSchemaChange()`, and the response cache key MUST additionally carry the per-(register, schema) freshness token described under "An object write MUST invalidate the facet response derived from it", so the 1-hour TTL bounds staleness rather than defining it.
 
 #### Scenario: Response cache hit returns cached facets instantly
 - **GIVEN** a facet query was executed 5 minutes ago for the same user, organisation, and filters
@@ -622,6 +622,54 @@ collapse invalidation to one call per distinct affected bucket.
 - **WHEN** a bulk delete spans three schemas
 - **THEN** invalidation is issued once per affected schema bucket
 - **AND** the whole cache is not cleared three times
+
+### Requirement: An object write MUST invalidate the facet response derived from it
+
+The facet response cache SHALL carry a freshness token for the (register, schema)
+scopes the query reads from, and an object write SHALL move that token. A facet
+response computed before a write SHALL NOT be served after it.
+
+The invariant is narrower than the TTL and narrower than a count. A count may lag;
+a bucket list may not, because a bucket list is offered to the reader as a place to
+go. `CnFolderSidebar` builds an index page's folder pane from it and `CnFacetSidebar`
+builds the filter list from it, so a stale bucket hides a value that exists and
+offers one that does not.
+
+Invalidation SHALL remain scoped. A write to one schema SHALL leave every other
+scope's cached facet responses reachable, and SHALL NOT clear the facet cache.
+
+#### Scenario: A value created now has a bucket now
+
+- **GIVEN** a facet response for a register and schema is cached
+- **WHEN** an object is created in that register and schema carrying a new value
+  for a facetable field
+- **THEN** the next facet read for that register and schema reports a bucket for
+  that value
+- **AND** no administrator action and no TTL expiry is required first
+
+#### Scenario: An emptied value loses its bucket
+
+- **WHEN** the last object carrying a facetable value is deleted
+- **THEN** the next facet read no longer offers that value as a bucket
+
+#### Scenario: A write to another schema costs no recomputation
+
+- **GIVEN** facet responses for schema A and schema B are cached
+- **WHEN** an object in schema B is written
+- **THEN** the next facet read for schema A is still served from cache
+- **AND** the facet aggregation for schema A is not recomputed
+
+#### Scenario: Two requests differing only by sort order agree
+
+- **GIVEN** two facet requests over the same rows that differ only in `_order`
+- **WHEN** both are answered at the same instant
+- **THEN** both report the same bucket list
+
+#### Scenario: A facet computed across every schema follows any write
+
+- **GIVEN** a facet query that names neither a register nor a schema
+- **WHEN** an object is written in any register and schema
+- **THEN** the next read of that query recomputes
 
 ### Requirement: Schemas are cached by a single tier
 

@@ -139,9 +139,6 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturnCallback(
 			fn (): IQueryBuilder => $this->makeQueryBuilder()
 		);
-
-		\OC::$server->registerService(RegisterMapper::class, fn () => $this->registerMapper);
-		\OC::$server->registerService(SchemaMapper::class, fn () => $this->schemaMapper);
 	}//end setUp()
 
 	/*

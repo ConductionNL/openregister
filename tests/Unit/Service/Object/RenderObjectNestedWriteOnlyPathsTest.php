@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
@@ -48,6 +49,8 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Db\Schema
  */
 class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
+	use BuildsStateFieldRuleResolver;
+
 
 	/**
 	 * An OpenConnector-shaped `source` schema: `configuration` is an untyped object, and
@@ -147,11 +150,14 @@ class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 		$translation = $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class);
 		$translation->method('resolveTranslationsForRender')->willReturnCallback(fn (array $data) => $data);
 
+		$rbacSession = $this->createMock(\OCP\IUserSession::class);
+		$rbacGroups = $this->createMock(\OCP\IGroupManager::class);
 		$rbac = new \OCA\OpenRegister\Service\PropertyRbacHandler(
-			$this->createMock(\OCP\IUserSession::class),
-			$this->createMock(\OCP\IGroupManager::class),
+			$rbacSession,
+			$rbacGroups,
 			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(\Psr\Log\LoggerInterface::class)
+			$this->createMock(\Psr\Log\LoggerInterface::class),
+			self::stateFieldRuleResolver($rbacSession, $rbacGroups)
 		);
 
 		return new RenderObject(

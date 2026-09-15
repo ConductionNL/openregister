@@ -89,6 +89,53 @@ A filter value MAY also be the literal string `IS NULL` or `IS NOT NULL` (`?assi
 - **THEN** `MagicSearchHandler.applyObjectFilters()` MUST add `WHERE 1 = 0` to ensure zero results
 - **AND** the property name MUST be tracked in `ignoredFilters` for client feedback in the response
 
+### Requirement: Both filter spellings mean the same filter on object search and the aggregations
+
+A property filter MAY be written bare (`?origin=manual`) or bracketed (`?filter[origin]=manual`), and both spellings MUST mean the same filter on `GET /api/objects/{register}/{schema}` and on every `GET /api/objects/aggregations/{register}/{schema}/…` surface. Before this, each endpoint read one spelling and answered the other with a plausible wrong number: object search read `filter[origin]` as a filter on a property literally named `filter`, which no schema declares, so every such query returned the empty set, and the aggregations dropped a bare key and returned the figure for the whole schema. Neither failed loudly, and a caller that summed the empty set rendered a `0` indistinguishable from a real one.
+
+Reserved parameters are never filters, on either spelling: every underscore-prefixed parameter (`_limit`, `_order`, `_search`, …), the object-search context parameters (`register`, `schema`, `registers`, `schemas`, `extend`) and the system parameters `id`, `rbac`, `multi`, `deleted`, plus each aggregation action's own control parameters (`metric`, `field`, `metrics`, `groupBy`, `sort`, `limit`, `interval`, `from`, `to`, `metricField`, `cumulative`, and `name` on the declared-aggregation route). A property that shares one of those names can only be filtered with the bracket spelling. `filter[_limit]` is not a way to reach a control parameter either: the bracket spelling is lifted only for keys that could be bare filters.
+
+On the aggregations, a bare key joins the filter map ONLY when it names a property the schema declares. A bare parameter that names nothing keeps being ignored, because a cache-buster or a stray `v=2` must not start filtering and answer `0` where a widget used to read a total. A bracket key that names no property keeps matching no rows, as it already did.
+
+An unrecognised filter key MUST be logged once per request as a warning naming the keys, the endpoint and the schema, and MUST NOT be refused: every caller on the wrong spelling would break in the same minute. Refusing it with HTTP 400 is the follow-up once the logs show no caller depends on the old answer.
+
+The ad-hoc aggregation cache key MUST be derived from the NORMALISED filter map, so two spellings of one query share an entry and two different queries never do. Deriving it from the parameters the endpoint happened to recognise is what let `?origin=manual` and `?origin=nonsense` answer each other's cached figure.
+
+#### Scenario: The bracket spelling filters object search
+- **GIVEN** schema `TimeEntry` with property `origin` and 9 objects, 8 of them `origin = manual`
+- **WHEN** the client calls `GET /api/objects/humaniq/TimeEntry?filter[origin]=manual`
+- **THEN** the response MUST carry the same 8 results as `?origin=manual`
+- **AND** `filter` MUST NOT appear in `@self.ignoredFilters`
+- @e2e exclude Backend query-grammar normalisation on an HTTP read path; verified by PHPUnit unit tests over the query builder and the controller, no browser flow.
+
+#### Scenario: The bare spelling filters an aggregation
+- **GIVEN** the same schema and rows
+- **WHEN** the client calls `GET /api/objects/aggregations/humaniq/TimeEntry/value?metric=count&origin=manual`
+- **THEN** the value MUST be `8`, the same figure `filter[origin]=manual` returns
+- @e2e exclude Backend query-grammar normalisation on an HTTP read path; verified by PHPUnit unit tests over the controller and the aggregation query, no browser flow.
+
+#### Scenario: A control parameter is never read as a filter
+- **GIVEN** a schema that declares properties named `limit` and `name`
+- **WHEN** the client calls the grouped aggregation with `?groupBy=status&limit=5`
+- **THEN** `limit` MUST steer the top-N and MUST NOT become a filter on the `limit` property
+- **AND** only `filter[limit]=5` MUST filter on that property
+- @e2e exclude Backend parameter classification; verified by PHPUnit unit tests, no browser flow.
+
+#### Scenario: An unknown filter key warns and changes nothing
+- **GIVEN** schema `TimeEntry`, which declares no property `origni`
+- **WHEN** the client calls either endpoint with `?origni=manual`
+- **THEN** the endpoint MUST answer exactly what it answered before this requirement: no rows from object search, the unscoped figure from the aggregations
+- **AND** exactly one warning MUST be logged naming `origni`, the endpoint and the schema
+- **AND** the response MUST NOT be an HTTP 400
+- @e2e exclude Backend logging and result-preservation on an HTTP read path; verified by PHPUnit unit tests with a logger spy, no browser flow.
+
+#### Scenario: The aggregation cache key follows the normalised filter
+- **GIVEN** an ad-hoc aggregation over schema `TimeEntry`
+- **WHEN** one caller asks `?filter[origin]=manual` and another asks `?origin=manual`
+- **THEN** both MUST resolve to the same cache key
+- **AND** `?origin=manual` and `?origin=migration` MUST resolve to different cache keys
+- @e2e exclude Backend cache-key derivation; verified by PHPUnit unit tests over AggregationCache, no browser flow.
+
 ### Requirement: JSON array and object property filtering
 The system MUST support filtering on `type: array` (JSONB array columns) using PostgreSQL's `@>` containment operator, and on `type: object` properties using JSON path extraction. This enables filtering on multi-valued and nested structured properties.
 

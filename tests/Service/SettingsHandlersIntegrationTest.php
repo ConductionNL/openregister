@@ -259,18 +259,23 @@ class SettingsHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test clearCache with type 'all' triggers TypeError due to int+string bug
+	 * Clearing every cache counts what it can and does not throw.
 	 *
-	 * The distributed cache returns 'all' (string) for 'cleared' which causes
-	 * a TypeError when calculating totalCleared. This tests the known bug path.
+	 * This test used to PIN A BUG: the distributed cache reports 'all' rather
+	 * than a number for `cleared`, and summing that into an int threw a
+	 * TypeError, which the test asserted. The sum guards with is_int() now, so
+	 * the test asserts the repair instead. A test that fails when a bug is fixed
+	 * is worse than no test.
 	 *
 	 * @return void
 	 */
-	public function testClearCacheAllTriggersTypeError(): void {
-		// Known bug: distributed cache returns 'all' string for cleared count,
-		// causing TypeError when summing totalCleared.
-		$this->expectException(\TypeError::class);
-		$this->cacheHandler->clearCache('all');
+	public function testClearCacheAllCountsWhatItCanAndDoesNotThrow(): void {
+		$result = $this->cacheHandler->clearCache('all');
+
+		$this->assertSame('all', $result['type']);
+		$this->assertIsInt($result['totalCleared']);
+		$this->assertArrayHasKey('distributed', $result['results']);
+		$this->assertSame([], $result['errors']);
 	}
 
 	/**
@@ -300,17 +305,19 @@ class SettingsHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test clearCache with type 'distributed' triggers TypeError due to int+string bug
+	 * The distributed cache's non-numeric count is tolerated, not fatal.
 	 *
-	 * The distributed cache returns 'all' (string) for 'cleared' which causes
-	 * a TypeError when calculating totalCleared.
+	 * Same repair as above, from the other door: clearing only the distributed
+	 * cache is the case that produced the 'all' string in the first place.
 	 *
 	 * @return void
 	 */
-	public function testClearCacheDistributedTriggersTypeError(): void {
-		// Known bug: distributed cache returns 'all' string for cleared count.
-		$this->expectException(\TypeError::class);
-		$this->cacheHandler->clearCache('distributed');
+	public function testClearCacheDistributedToleratesANonNumericCount(): void {
+		$result = $this->cacheHandler->clearCache('distributed');
+
+		$this->assertSame('distributed', $result['type']);
+		$this->assertIsInt($result['totalCleared']);
+		$this->assertArrayHasKey('distributed', $result['results']);
 	}
 
 	/**

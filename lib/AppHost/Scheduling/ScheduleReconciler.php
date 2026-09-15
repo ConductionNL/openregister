@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use DateTime;
 use DateTimeInterface;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -56,9 +57,14 @@ use Throwable;
  */
 class ScheduleReconciler {
 	/**
-	 * OpenConnector register slug that owns the `job` schema.
+	 * The CANONICAL slug of the register that owns the `job` schema.
+	 *
+	 * Not the slug to read with. Integriq's repair step renames the register
+	 * from `openconnector` to `integriq` per instance, so both are live across
+	 * the estate at once and this constant is only the question. The answer
+	 * comes from {@see registerSlug()}, which asks what this instance carries.
 	 */
-	private const OC_REGISTER_SLUG = 'openconnector';
+	private const OC_REGISTER_CANONICAL = 'integriq';
 
 	/**
 	 * OpenConnector `job` schema slug.
@@ -73,9 +79,11 @@ class ScheduleReconciler {
 	private const SWEEP_LIMIT = 1000;
 
 	/**
-	 * OpenBuild register slug that owns virtual-app `application` objects.
+	 * The CANONICAL slug of the register that owns virtual-app `application`
+	 * objects. Buildiq's repair step renames it from `openbuild` to `buildiq`;
+	 * see {@see OC_REGISTER_CANONICAL}.
 	 */
-	private const OB_REGISTER_SLUG = 'openbuild';
+	private const OB_REGISTER_CANONICAL = 'buildiq';
 
 	/**
 	 * OpenBuild `application` schema slug.
@@ -104,6 +112,9 @@ class ScheduleReconciler {
 	 *                                           map.
 	 * @param IUserManager $userManager Resolves an owner UID to a live NC user.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param RegisterSlugResolverInterface $slugResolver Resolves a register by
+	 *                                                    whichever slug this
+	 *                                                    instance carries.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -112,8 +123,49 @@ class ScheduleReconciler {
 		private readonly ScheduleActionAllowList $allowList,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
+		private readonly RegisterSlugResolverInterface $slugResolver,
 	) {
 	}//end __construct()
+
+	/**
+	 * The slug to read a register with here, or null when it is not here.
+	 *
+	 * Every read below used to name a literal, and a literal the instance had
+	 * renamed did not fail: `ObjectService` found no register, matched no rows,
+	 * and returned an empty set. An empty set is what a healthy empty register
+	 * returns, so the reconciler enumerated nothing, upserted nothing and
+	 * garbage-collected nothing while reporting success. Every AppHost schedule
+	 * stopped firing and the only trace was an `info` line.
+	 *
+	 * The null return is the point: a caller cannot use it by accident, and the
+	 * absence it reports is a real absence under EVERY slug the register has
+	 * answered to rather than a guess about one.
+	 *
+	 * @param string $canonical The canonical register slug.
+	 *
+	 * @return string|null The slug this instance carries, or null.
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function registerSlug(string $canonical): ?string {
+		$resolution = $this->slugResolver->resolve(canonical: $canonical);
+		if ($resolution->isResolved() === false) {
+			return null;
+		}
+
+		if ($resolution->isAmbiguous() === true) {
+			// Two rows the rename should have collapsed into one. Reads go to
+			// the canonical row, so the sweep keeps working, but a sweep that
+			// silently picks one of two registers is a sweep whose results
+			// nobody can reproduce.
+			$this->logger->warning(
+				message: '[AppHost\\Scheduling] Reconciling against one of two registers carrying this app\'s slugs',
+				context: ['canonical' => $canonical, 'matched' => $resolution->matched]
+			);
+		}
+
+		return $resolution->slug;
+	}//end registerSlug()
 
 	/**
 	 * Reconcile every declared schedule into an OpenConnector job (never throws).
@@ -467,11 +519,20 @@ class ScheduleReconciler {
 	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
 	 */
 	protected function loadManagedJobs(): ?array {
+		$register = $this->registerSlug(canonical: self::OC_REGISTER_CANONICAL);
+		if ($register === null) {
+			$this->logger->info(
+				message: '[AppHost\\Scheduling] No job register under any known slug; scheduling inert',
+				context: ['canonical' => self::OC_REGISTER_CANONICAL]
+			);
+			return null;
+		}
+
 		try {
 			$rows = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => self::OC_REGISTER_SLUG,
+						'register' => $register,
 						'schema' => self::OC_JOB_SCHEMA_SLUG,
 					],
 					'limit' => self::SWEEP_LIMIT,
@@ -481,7 +542,7 @@ class ScheduleReconciler {
 		} catch (Throwable $e) {
 			$this->logger->info(
 				message: '[AppHost\\Scheduling] OpenConnector job register/schema unavailable; scheduling inert',
-				context: ['reason' => $e->getMessage()]
+				context: ['register' => $register, 'reason' => $e->getMessage()]
 			);
 			return null;
 		}
@@ -507,6 +568,15 @@ class ScheduleReconciler {
 	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
 	 */
 	protected function loadVirtualApplications(): array {
+		$register = $this->registerSlug(canonical: self::OB_REGISTER_CANONICAL);
+		if ($register === null) {
+			$this->logger->info(
+				message: '[AppHost\\Scheduling] No application register under any known slug; virtual apps skipped',
+				context: ['canonical' => self::OB_REGISTER_CANONICAL]
+			);
+			return [];
+		}
+
 		try {
 			// NOTE: pass ONLY `_rbac: false` (a system sweep must see apps
 			// regardless of owner). Do NOT also pass `_multitenancy: false`:
@@ -517,7 +587,7 @@ class ScheduleReconciler {
 			$rows = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => self::OB_REGISTER_SLUG,
+						'register' => $register,
 						'schema' => self::OB_APPLICATION_SCHEMA_SLUG,
 					],
 					'limit' => self::SWEEP_LIMIT,
@@ -526,8 +596,8 @@ class ScheduleReconciler {
 			);
 		} catch (Throwable $e) {
 			$this->logger->info(
-				message: '[AppHost\\Scheduling] openbuild application register/schema unavailable; virtual apps skipped',
-				context: ['reason' => $e->getMessage()]
+				message: '[AppHost\\Scheduling] Application register/schema unavailable; virtual apps skipped',
+				context: ['register' => $register, 'reason' => $e->getMessage()]
 			);
 			return [];
 		}//end try
@@ -596,10 +666,19 @@ class ScheduleReconciler {
 	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
 	 */
 	protected function saveJob(array $data, ?string $uuid): void {
+		$register = $this->registerSlug(canonical: self::OC_REGISTER_CANONICAL);
+		if ($register === null) {
+			$this->logger->error(
+				message: '[AppHost\\Scheduling] No job register under any known slug; job not persisted',
+				context: ['reference' => ($data['reference'] ?? ''), 'canonical' => self::OC_REGISTER_CANONICAL]
+			);
+			return;
+		}
+
 		try {
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::OC_REGISTER_SLUG,
+				register: $register,
 				schema: self::OC_JOB_SCHEMA_SLUG,
 				uuid: $uuid,
 				_rbac: false
@@ -666,10 +745,15 @@ class ScheduleReconciler {
 			return [];
 		}
 
+		$register = $this->registerSlug(canonical: self::OB_REGISTER_CANONICAL);
+		if ($register === null) {
+			return [];
+		}
+
 		try {
 			$version = $this->objectService->find(
 				id: $versionId,
-				register: self::OB_REGISTER_SLUG,
+				register: $register,
 				schema: self::OB_APPLICATION_VERSION_SCHEMA_SLUG,
 				_rbac: false
 			);

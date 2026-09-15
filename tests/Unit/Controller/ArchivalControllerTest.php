@@ -18,10 +18,16 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ArchivalController;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
+use OCA\OpenRegister\Service\Archival\DestructionListRepository;
+use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
+use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -42,6 +48,9 @@ class ArchivalControllerTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
 	private LoggerInterface&MockObject $logger;
+	private DestructionListRepository&MockObject $lists;
+	private ReviewOutcomeService&MockObject $outcomes;
+	private AuditTrailMapper&MockObject $auditMapper;
 	private ArchivalController $controller;
 
 	protected function setUp(): void {
@@ -63,6 +72,9 @@ class ArchivalControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->lists = $this->createMock(DestructionListRepository::class);
+		$this->outcomes = $this->createMock(ReviewOutcomeService::class);
+		$this->auditMapper = $this->createMock(AuditTrailMapper::class);
 
 		$this->controller = new ArchivalController(
 			'openregister',
@@ -72,7 +84,13 @@ class ArchivalControllerTest extends TestCase {
 			$this->objectMapper,
 			$this->userSession,
 			$this->groupManager,
-			$this->logger
+			$this->logger,
+			$this->lists,
+			new DestructionReviewService(),
+			$this->outcomes,
+			$this->auditMapper,
+			$this->createMock(ArchivalNominationService::class),
+			$this->createMock(SchemaMapper::class)
 		);
 	}
 
@@ -196,6 +214,8 @@ class ArchivalControllerTest extends TestCase {
 	public function testListDestructionListsOk(): void {
 		$this->setUpArchivist();
 		$this->request->method('getParam')->willReturn(null);
+		$this->lists->method('isConfigured')->willReturn(true);
+		$this->lists->method('findLists')->willReturn([]);
 
 		$response = $this->controller->listDestructionLists();
 
@@ -204,6 +224,22 @@ class ArchivalControllerTest extends TestCase {
 		$this->assertArrayHasKey('results', $data);
 		$this->assertArrayHasKey('total', $data);
 		$this->assertSame(0, $data['total']);
+		$this->assertTrue($data['configured']);
+	}
+
+	/**
+	 * An instance with no destruction list register says so, rather than
+	 * answering the way one with nothing to destroy answers.
+	 */
+	public function testListDestructionListsSaysWhenNothingIsConfigured(): void {
+		$this->setUpArchivist();
+		$this->lists->method('isConfigured')->willReturn(false);
+
+		$response = $this->controller->listDestructionLists();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertFalse($response->getData()['configured']);
+		$this->assertArrayHasKey('error', $response->getData());
 	}
 
 	/**
@@ -212,6 +248,8 @@ class ArchivalControllerTest extends TestCase {
 	public function testListDestructionListsWithStatusFilter(): void {
 		$this->setUpArchivist();
 		$this->request->method('getParam')->willReturn('approved');
+		$this->lists->method('isConfigured')->willReturn(true);
+		$this->lists->method('findLists')->willReturn([]);
 
 		$response = $this->controller->listDestructionLists();
 
@@ -231,8 +269,16 @@ class ArchivalControllerTest extends TestCase {
 
 		$object = $this->createObjectEntityMock();
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'dl-1', 'status' => 'in_review']);
+		$object->method('getObject')->willReturn(
+			[
+				'status' => 'in_review',
+				'objects' => [
+					['uuid' => 'obj-1', 'title' => 'Bezwaar 2019/114'],
+				],
+			]
+		);
 
-		$this->objectMapper
+		$this->lists
 			->method('find')
 			->with('dl-1')
 			->willReturn($object);
@@ -241,6 +287,7 @@ class ArchivalControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame('dl-1', $response->getData()['uuid']);
+		$this->assertSame(['obj-1'], array_column($response->getData()['unassignedEntries'], 'uuid'));
 	}
 
 	/**
@@ -249,9 +296,7 @@ class ArchivalControllerTest extends TestCase {
 	public function testGetDestructionListNotFound(): void {
 		$this->setUpArchivist();
 
-		$this->objectMapper
-			->method('find')
-			->willThrowException(new \Exception('Not found'));
+		$this->lists->method('find')->willReturn(null);
 
 		$response = $this->controller->getDestructionList('non-existent');
 

@@ -65,8 +65,53 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 	 */
 	private array $createdTables = [];
 
+	/**
+	 * The session user as it was before this file touched it.
+	 *
+	 * @var \OCP\IUser|null
+	 */
+	private ?\OCP\IUser $previousSessionUser = null;
+
+	/**
+	 * App config, for the admin-bypass flag this file has to turn off.
+	 *
+	 * @var \OCP\IAppConfig
+	 */
+	private \OCP\IAppConfig $appConfig;
+
+	/**
+	 * The admin-bypass value as it was found, restored in tearDown().
+	 *
+	 * @var string
+	 */
+	private string $previousBypass = 'true';
+
 	protected function setUp(): void {
 		parent::setUp();
+
+		// 🔴 THIS FILE WRITES OBJECTS, SO IT NEEDS A CALLER WHO MAY WRITE.
+		// It never logged anybody in, and passed anyway: ten other Service
+		// files left `admin` in the process-global session, and these tests
+		// were riding on it. With that leak closed they ran as Anonymous, the
+		// writes were refused, and an import reported `created: []`. A test
+		// that needs an authenticated caller establishes one itself.
+		$userSession = \OC::$server->get(\OCP\IUserSession::class);
+		$this->previousSessionUser = $userSession->getUser();
+		$admin = \OC::$server->get(\OCP\IUserManager::class)->get('admin');
+		if ($admin !== null) {
+			$userSession->setUser($admin);
+		}
+		// 🔴 AND THE CALLER MAY NOT BE WAVED THROUGH EITHER. Reference-existence
+		// validation has an operator escape hatch: an admin skips it entirely
+		// unless `reference_validation_admin_bypass` is off (SaveObject, default
+		// true), so with admin in the session the two rejection tests below saw
+		// their dangling references accepted. The flag goes off for this file and
+		// back to its previous value in tearDown, which is also what an operator
+		// who wants validation enforced for everybody does.
+		$this->appConfig = \OC::$server->get(\OCP\IAppConfig::class);
+		$this->previousBypass = $this->appConfig->getValueString('openregister', 'reference_validation_admin_bypass', 'true');
+		$this->appConfig->setValueString('openregister', 'reference_validation_admin_bypass', 'false');
+
 		$this->resolver = \OC::$server->get(GraphQLResolver::class);
 		$this->saveHandler = \OC::$server->get(SaveObject::class);
 		$this->objectService = \OC::$server->get(ObjectService::class);
@@ -80,7 +125,7 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, false, false);
+				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
 			} catch (\Throwable $e) {
 				// best effort
 			}
@@ -120,6 +165,11 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 				// best effort
 			}
 		}
+
+		// Put the bypass flag and the session back the way they were found, so
+		// the next test file starts from the state it expects.
+		$this->appConfig->setValueString('openregister', 'reference_validation_admin_bypass', $this->previousBypass);
+		\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
 
 		parent::tearDown();
 	}//end tearDown()

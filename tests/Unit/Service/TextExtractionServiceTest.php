@@ -2815,7 +2815,7 @@ class TextExtractionServiceTest extends TestCase {
 		// Create a minimal valid DOCX (ZIP with required files but no text).
 		$tmpZip = tempnam(sys_get_temp_dir(), 'docx');
 		$zip = new \ZipArchive();
-		$zip->open($tmpZip, \ZipArchive::CREATE);
+		$zip->open($tmpZip, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 		$zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
 			. '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
 			. '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
@@ -2850,7 +2850,7 @@ class TextExtractionServiceTest extends TestCase {
 		// Create a minimal valid DOCX with text content.
 		$tmpZip = tempnam(sys_get_temp_dir(), 'docx');
 		$zip = new \ZipArchive();
-		$zip->open($tmpZip, \ZipArchive::CREATE);
+		$zip->open($tmpZip, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 		$zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
 			. '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
 			. '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'

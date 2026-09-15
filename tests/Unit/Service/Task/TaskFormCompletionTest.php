@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
@@ -76,18 +77,27 @@ class TaskFormCompletionTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
+		$this->runContext = new FlowRunContext();
 		$this->completion = new TaskFormCompletion(
 			tasks: $this->tasks,
 			forms: $this->forms,
 			engine: $this->engine,
 			objects: $this->objects,
-			userSession: $session
+			userSession: $session,
+			runContext: $this->runContext
 		);
 	}//end setUp()
 
 	/**
 	 * An open task anchored to subject `obj-1`.
 	 */
+	/**
+	 * The ambient run scope the object-lock guard reads.
+	 *
+	 * @var FlowRunContext
+	 */
+	private FlowRunContext $runContext;
+
 	private function task(): Task {
 		$task = new Task();
 		$task->setId(7);
@@ -451,4 +461,48 @@ class TaskFormCompletionTest extends TestCase {
 
 		$this->completion->complete(uuid: 't-7', outcome: 'submitted', resultText: 'submission 41', comment: null, data: [], actor: 'alice');
 	}//end testAnExternalFormWritesNoObjectField()
+	/**
+	 * 🔴 THE FORM WRITE IS THE RUN'S WRITE, EVEN THOUGH A PERSON MADE THE REQUEST.
+	 *
+	 * The object-lock guard reads the acting run from an ambient context, so a
+	 * flow that locks its case at one step is not turned away by its own lock at
+	 * the next. That context is set while the ENGINE walks the graph and not
+	 * while a person answers over HTTP — so a run that locked its case and then
+	 * asked a form on it could never be answered: the completion came back 500
+	 * with "Object is locked by flow run …", naming the very run trying to
+	 * write. Measured live by the flow-subjects Newman collection.
+	 *
+	 * @return void
+	 */
+	public function testTheFormWriteActsAsTheRunThatRaisedTheTask(): void {
+		$task = $this->task();
+		$task->setRunUuid('run-9');
+		$this->openTask($task);
+		$this->forms->method('describe')->willReturn($this->nativeForm());
+		$this->engine->method('resolveTransitionInputs')->willReturn(['reason' => 'late']);
+
+		$subject = new ObjectEntity();
+		$subject->setUuid('obj-1');
+		$subject->setRegister('1');
+		$subject->setSchema('5');
+		$subject->setObject(['name' => 'Case 7', 'reason' => null]);
+		$this->objects->method('find')->with('obj-1')->willReturn($subject);
+
+		$seen = null;
+		$this->objects->method('saveObject')->willReturnCallback(
+            function () use ($subject, &$seen): ObjectEntity {
+				$seen = $this->runContext->currentRunUuid();
+
+				return $subject;
+			}
+		);
+
+		$this->completion->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, data: ['reason' => 'late'], actor: 'alice');
+
+		$this->assertSame('run-9', $seen, 'the write must act as the run that raised the task');
+		$this->assertNull(
+			$this->runContext->currentRunUuid(),
+			'and the scope must be left again, so the rest of the request is not a run'
+		);
+	}//end testTheFormWriteActsAsTheRunThatRaisedTheTask()
 }//end class

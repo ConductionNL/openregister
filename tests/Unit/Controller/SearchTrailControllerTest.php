@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SearchTrailController;
+use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -25,6 +26,7 @@ class SearchTrailControllerTest extends TestCase {
 	private SearchTrailController $controller;
 	private IRequest&MockObject $request;
 	private SearchTrailService&MockObject $searchTrailService;
+	private SearchTrailMapper&MockObject $searchTrailMapper;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
 
@@ -33,6 +35,7 @@ class SearchTrailControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->searchTrailService = $this->createMock(SearchTrailService::class);
+		$this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
@@ -48,6 +51,7 @@ class SearchTrailControllerTest extends TestCase {
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
+			$this->searchTrailMapper,
 			$this->userSession,
 			$this->groupManager
 		);
@@ -1038,17 +1042,29 @@ class SearchTrailControllerTest extends TestCase {
 
 	// ─── clearAll() tests ───
 
-	public function testClearAllCatchesServerError(): void {
-		// OC::$server->get() is not available in unit tests, so clearAll
-		// should hit the catch block.
-		try {
-			$result = $this->controller->clearAll();
-			// If somehow OC::$server is available, verify response.
-			$this->assertInstanceOf(JSONResponse::class, $result);
-		} catch (\Error $e) {
-			// OC::$server not available in unit tests - that's expected.
-			$this->assertTrue(true);
-		}
+	public function testClearAllReportsSuccessWhenTheMapperDeletedRows(): void {
+		$this->searchTrailMapper->expects($this->once())
+			->method('clearAllLogs')
+			->willReturn(true);
+
+		$result = $this->controller->clearAll();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertSame('All search trails cleared successfully', $data['message']);
+	}
+
+	public function testClearAllReturns500WhenTheMapperThrows(): void {
+		$this->searchTrailMapper->method('clearAllLogs')
+			->willThrowException(new \Exception('table locked'));
+
+		$result = $this->controller->clearAll();
+
+		$this->assertEquals(500, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertStringContainsString('table locked', $data['error']);
 	}
 
 	// ─── extractRequestParameters() tests (exercised via public methods) ───
@@ -1732,6 +1748,7 @@ class SearchTrailControllerTest extends TestCase {
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
+			$this->searchTrailMapper,
 			$session,
 			$groupMgr
 		);

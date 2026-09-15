@@ -295,6 +295,7 @@ class CospendProvider extends AbstractIntegrationProvider {
 			return $resolved;
 		}
 
+		// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Last-resort fallback for a provider constructed without a container; the injected one is tried first, just above.
 		return Server::get($serviceName);
 	}//end lookup()
 

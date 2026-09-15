@@ -229,13 +229,21 @@ class FlowNodeRegistryTest extends TestCase {
 		$registry = $this->registryWith([new TaggingNode()]);
 		$entry = $registry->palette()[0];
 
-		$this->assertSame(['id', 'displayName', 'description', 'icon', 'role', 'aliases'], array_keys($entry));
+		$this->assertSame(
+			['id', 'displayName', 'description', 'icon', 'role', 'kind', 'category', 'aliases'],
+			array_keys($entry)
+		);
 		$this->assertSame('Tag', $entry['displayName']);
 		$this->assertSame([], $entry['aliases'], 'a node that was never renamed carries no aliases');
 
 		// `role` is ALWAYS present, so an editor never has to infer it from the
 		// id. A node that marks itself neither trigger nor end is a step.
 		$this->assertSame('step', $entry['role']);
+
+		// `kind` and `category` are always present too, and a node that
+		// declares neither says so rather than being guessed at.
+		$this->assertSame('serviceTask', $entry['kind']);
+		$this->assertSame('other', $entry['category']);
 	}
 
 	public function testThePaletteReportsTheRoleTheNodeDeclaresRatherThanItsId(): void {

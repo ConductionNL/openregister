@@ -229,6 +229,15 @@ class ObjectsProviderTest extends TestCase {
 		$this->objectService->method('searchObjectsPaginated')
 			->willThrowException(new \RuntimeException('register broken'));
 
+		// Soft on the wire, loud in the log: a pipeline failure is an ERROR
+		// (a warning was swallowed into "no results" for a whole instance).
+		$this->logger->expects($this->once())
+			->method('error')
+			->with(
+				$this->stringContains('search failed'),
+				$this->callback(fn (array $ctx) => $ctx['error'] === 'register broken')
+			);
+
 		$result = $this->provider->search($user, $query);
 		$this->assertInstanceOf(SearchResult::class, $result);
 		$this->assertSame([], $result->jsonSerialize()['entries']);
@@ -337,7 +346,10 @@ class ObjectsProviderTest extends TestCase {
 	}
 
 	public function testDefaultSchemasRemainSearchable(): void {
-		// No opt-out: query carries no schema allow-list constraint.
+		// No opt-out: every searchable schema is queried. The allow-list is
+		// still passed, because it is what bounds the fan-out; left out, the
+		// pipeline unions every schema table in one statement (the query
+		// shape that exhausted the Postgres lock table at 1,272 schemas).
 		$user = $this->createMock(IUser::class);
 		$query = $this->mockQuery(['term' => 'x']);
 
@@ -345,7 +357,7 @@ class ObjectsProviderTest extends TestCase {
 			->method('searchObjectsPaginated')
 			->with(
 				$this->callback(function (array $q) {
-					return isset($q['@self']['schema']) === false;
+					return ($q['@self']['schema'] ?? null) === [1, 2, 3];
 				}),
 				$this->isTrue(),
 				$this->isTrue()
@@ -758,5 +770,186 @@ class ObjectsProviderTest extends TestCase {
 		);
 
 		$this->assertSame([], $result->jsonSerialize()['entries']);
+	}
+
+	// --- Many-schema instances: bounded chunks -----------------------------
+
+	/**
+	 * Build a provider over $count searchable schemas (ids 1..$count) and
+	 * an ObjectService double answering every chunk through $answer.
+	 *
+	 * @param int $count Number of searchable schemas.
+	 * @param callable $answer fn(array $query): array — the page for one chunk call.
+	 *
+	 * @return array{0: ObjectsProvider, 1: ObjectService&MockObject}
+	 */
+	private function buildManySchemaProvider(int $count, callable $answer): array {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findNonSearchableIds')->willReturn([]);
+		$schemaMapper->method('findSearchableIds')->willReturn(range(1, $count));
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('searchObjectsPaginated')->willReturnCallback(
+			fn (array $q, bool $rbac = true, bool $mt = true) => $answer($q, $rbac, $mt)
+		);
+
+		$this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+		$this->urlGenerator->method('linkToRoute')->willReturn('/objects/x');
+
+		return [$this->buildProvider($schemaMapper, $this->registerMapper, $objectService), $objectService];
+	}
+
+	/**
+	 * Titles of the entries of a search result, in order.
+	 *
+	 * @return string[]
+	 */
+	private function titlesOf(SearchResult $result): array {
+		return array_map(
+			fn ($entry) => $entry->jsonSerialize()['title'],
+			$result->jsonSerialize()['entries']
+		);
+	}
+
+	/**
+	 * A cross-schema search is one UNION over one table per schema, and the
+	 * database locks every table and index for the whole statement. 1,272
+	 * schemas exhausted Postgres's lock table and the section went blank.
+	 * The provider must never let one pipeline call span more than 50.
+	 */
+	public function testManySchemasAreSearchedInBoundedChunks(): void {
+		$calls = [];
+		[$provider] = $this->buildManySchemaProvider(120, function (array $q, bool $rbac, bool $mt) use (&$calls) {
+			$calls[] = ['schema' => $q['@self']['schema'], 'q' => $q, 'rbac' => $rbac, 'mt' => $mt];
+			return ['results' => [], 'total' => 0];
+		});
+
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'Dakkapel']));
+
+		$this->assertCount(3, $calls, '120 schemas at 50 per call is three calls');
+		$seen = [];
+		foreach ($calls as $call) {
+			$this->assertLessThanOrEqual(50, count($call['schema']), 'no call spans more than SCHEMA_CHUNK_SIZE schemas');
+			$this->assertTrue($call['rbac'], 'every chunk keeps RBAC on');
+			$this->assertTrue($call['mt'], 'every chunk keeps multitenancy on');
+			$this->assertTrue($call['q']['_content_search'], 'every chunk keeps content search on');
+			$this->assertSame('Dakkapel', $call['q']['_search']);
+			$this->assertSame(0, $call['q']['_offset'], 'a chunk answers from its own head');
+			$this->assertSame(25, $call['q']['_limit'], 'first page: the head is one page long');
+			$seen = array_merge($seen, $call['schema']);
+		}
+
+		sort($seen);
+		$this->assertSame(range(1, 120), $seen, 'the chunks cover every searchable schema exactly once');
+	}
+
+	/**
+	 * The pipeline orders a cross-schema page by `_search_score DESC,
+	 * _uuid ASC`. Chunks arrive in their own order; the merged page must
+	 * come out in that same order, then be cut to the page size.
+	 */
+	public function testChunkPagesAreMergedInPipelineOrderAndSliced(): void {
+		[$provider] = $this->buildManySchemaProvider(60, function (array $q) {
+			if (in_array(1, $q['@self']['schema'], true) === true) {
+				return [
+					'results' => [
+						['title' => 'c', '@self' => ['id' => 'c', 'register' => 1, 'schema' => 1]],
+						['title' => 'a', '@self' => ['id' => 'a', 'register' => 1, 'schema' => 1]],
+						['title' => 'z', '@self' => ['id' => 'z', 'register' => 1, 'schema' => 1, 'relevance' => 90.0]],
+					],
+					'total' => 3,
+				];
+			}
+
+			return [
+				'results' => [
+					['title' => 'b', '@self' => ['id' => 'b', 'register' => 1, 'schema' => 51]],
+					['title' => 'd', '@self' => ['id' => 'd', 'register' => 1, 'schema' => 51]],
+				],
+				'total' => 2,
+			];
+		});
+
+		$result = $provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x'], 3));
+		$serialised = $result->jsonSerialize();
+
+		$this->assertSame(['z', 'a', 'b'], $this->titlesOf($result), 'relevance first, then uuid, cut at the page size');
+		$this->assertTrue($serialised['isPaginated'], 'a full page implies more');
+		$this->assertSame(3, $serialised['cursor']);
+	}
+
+	/**
+	 * A later page only exists after the merge, so every chunk must answer
+	 * its whole head up to the end of the page, and the page is sliced from
+	 * the merged head; no uuid from the first page may reappear.
+	 */
+	public function testSecondPageAcrossChunksSlicesTheMergedHead(): void {
+		$calls = [];
+		[$provider] = $this->buildManySchemaProvider(60, function (array $q) use (&$calls) {
+			$calls[] = $q;
+			$prefix = 'q';
+			if (in_array(1, $q['@self']['schema'], true) === true) {
+				$prefix = 'p';
+			}
+
+			$rows = [];
+			for ($i = 0; $i < 30; $i++) {
+				$id = sprintf('%s%02d', $prefix, $i);
+				$rows[] = ['title' => $id, '@self' => ['id' => $id, 'register' => 1, 'schema' => 1]];
+			}
+
+			return ['results' => $rows, 'total' => 30];
+		});
+
+		$result = $provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x'], 25, '25'));
+
+		$this->assertCount(2, $calls);
+		foreach ($calls as $q) {
+			$this->assertSame(50, $q['_limit'], 'each chunk answers everything up to the end of page two');
+			$this->assertSame(0, $q['_offset']);
+		}
+
+		$titles = $this->titlesOf($result);
+		$this->assertCount(25, $titles);
+		$this->assertSame('p25', $titles[0], 'page two starts where page one (p00..p24) ended');
+		$this->assertSame('q19', $titles[24]);
+		$this->assertSame(50, $result->jsonSerialize()['cursor']);
+	}
+
+	/**
+	 * One chunk failing is an ERROR in the log and a gap in the page, not a
+	 * silent empty section: the other chunks still answer.
+	 */
+	public function testAFailedChunkIsLoggedAsAnErrorAndTheOthersStillAnswer(): void {
+		[$provider] = $this->buildManySchemaProvider(60, function (array $q) {
+			if (in_array(1, $q['@self']['schema'], true) === true) {
+				throw new \RuntimeException('SQLSTATE[53200]: out of shared memory');
+			}
+
+			return [
+				'results' => [['title' => 'survivor', '@self' => ['id' => 's', 'register' => 1, 'schema' => 51]]],
+				'total' => 1,
+			];
+		});
+
+		$this->logger->expects($this->once())
+			->method('error')
+			->with(
+				$this->stringContains('schema chunk'),
+				$this->callback(function (array $ctx) {
+					return $ctx['chunk'] === 1
+						&& $ctx['chunks'] === 2
+						&& $ctx['schemas'] === range(1, 50)
+						&& str_contains($ctx['error'], 'out of shared memory')
+						&& $ctx['exception'] instanceof \RuntimeException;
+				})
+			);
+
+		$result = $provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x']));
+
+		$this->assertSame(['survivor'], $this->titlesOf($result));
+		$this->assertFalse($result->jsonSerialize()['isPaginated']);
 	}
 }

@@ -20,5 +20,10 @@
  * @see ADR-019 — Pluggable Integration Registry
  */
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
+
+// Register nextcloud-vue's own catalogue before anything renders, so the
+// library's labels follow the reader's language on this page too.
+registerLibraryTranslations()
 
 ensureIntegrationRegistry()

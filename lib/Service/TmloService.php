@@ -34,7 +34,6 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use DOMDocument;
-use DOMElement;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -42,6 +41,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -73,6 +73,16 @@ class TmloService {
 	 * MDTO XML namespace
 	 */
 	public const MDTO_NAMESPACE = 'https://www.nationaalarchief.nl/mdto';
+
+	/**
+	 * Namespace of the batch envelope, which is openregister's, not MDTO's.
+	 */
+	public const EXPORT_NAMESPACE = 'https://www.openregister.app/mdto-export';
+
+	/**
+	 * Prefix of the batch envelope element.
+	 */
+	public const EXPORT_PREFIX = 'or';
 
 	/**
 	 * All valid archiefnominatie values
@@ -128,6 +138,7 @@ class TmloService {
 	 * @param RegisterMapper $registerMapper Register mapper for fetching registers
 	 * @param SchemaMapper $schemaMapper Schema mapper for fetching schemas
 	 * @param LoggerInterface $logger Logger interface
+	 * @param MdtoXmlGenerator $mdtoGenerator The one implementation of the MDTO format
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */
@@ -135,6 +146,7 @@ class TmloService {
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
+		private readonly MdtoXmlGenerator $mdtoGenerator,
 	) {
 	}//end __construct()
 
@@ -382,7 +394,25 @@ class TmloService {
 	}//end validateStatusTransition()
 
 	/**
-	 * Generate MDTO-compliant XML for a single object.
+	 * Generate the MDTO document for a single object.
+	 *
+	 * ## One implementation of the format, not two
+	 *
+	 * This used to build its own DOM, and the result did not validate: its
+	 * root was `mdto:informatieobject` where the XSD declares `MDTO`, and it
+	 * emitted `archiefactiedatum`, `archiefstatus` and `vernietigingsCategorie`,
+	 * none of which is an MDTO element. It now delegates to
+	 * {@see MdtoXmlGenerator}, which is held to the vendored XSD by a test, so
+	 * this endpoint and the e-Depot export cannot drift apart again.
+	 *
+	 * The TMLO facts are not lost. {@see \OCA\OpenRegister\Service\Edepot\MdtoSourceReader}
+	 * reads the `tmlo` block as well as the `retention` block, so
+	 * `bewaarTermijn` becomes `bewaartermijn/termijnLooptijd`,
+	 * `archiefactiedatum` becomes `bewaartermijn/termijnEinddatum`,
+	 * `vernietigingsCategorie` becomes `informatiecategorie` and
+	 * `classification` becomes `classificatie`. Only `archiefstatus` has no
+	 * MDTO element, and MDTO expresses that lifecycle through `event`
+	 * instead, which the generator derives from the audit trail.
 	 *
 	 * @param ObjectEntity $object The object to export
 	 *
@@ -390,7 +420,7 @@ class TmloService {
 	 *
 	 * @throws InvalidArgumentException If the object has no TMLO metadata
 	 *
-	 * @spec exclude Owned by tmlo-export spec REQ "MDTO-compliant XML export" (single object); not foundation behaviour.
+	 * @spec openspec/specs/tmlo-export/spec.md#requirement-mdto-compliant-xml-export
 	 */
 	public function generateMdtoXml(ObjectEntity $object): string {
 		$tmlo = $object->getTmlo();
@@ -400,30 +430,33 @@ class TmloService {
 			);
 		}
 
-		$dom = new DOMDocument('1.0', 'UTF-8');
-		$dom->formatOutput = true;
-
-		$root = $this->createMdtoObjectElement(dom: $dom, object: $object, tmlo: $tmlo);
-		$dom->appendChild($root);
-
-		return $dom->saveXML();
+		return $this->mdtoGenerator->generate($object);
 	}//end generateMdtoXml()
 
 	/**
-	 * Generate MDTO-compliant XML for multiple objects.
+	 * Generate MDTO documents for multiple objects, in one envelope.
+	 *
+	 * MDTO has no batch container: an `MDTO` document holds exactly one
+	 * informatieobject or one bestand. So the envelope element is openregister's
+	 * own, in openregister's own namespace, and every child of it is a
+	 * complete, valid MDTO document. Nothing here claims the envelope is MDTO,
+	 * which is the mistake the previous `mdto:informatieobjecten` wrapper made
+	 * by putting a made-up element in the MDTO namespace.
+	 *
+	 * An object without TMLO metadata is skipped rather than failing the batch.
 	 *
 	 * @param ObjectEntity[] $objects Array of objects to export
 	 *
-	 * @return string The MDTO XML string with multiple objects
+	 * @return string The envelope XML
 	 *
-	 * @spec exclude Owned by tmlo-export spec REQ "MDTO-compliant XML export" (batch); not foundation behaviour.
+	 * @spec openspec/specs/tmlo-export/spec.md#requirement-mdto-compliant-xml-export
 	 */
 	public function generateBatchMdtoXml(array $objects): string {
 		$dom = new DOMDocument('1.0', 'UTF-8');
 		$dom->formatOutput = true;
 
-		$collection = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:informatieobjecten');
-		$dom->appendChild($collection);
+		$envelope = $dom->createElementNS(self::EXPORT_NAMESPACE, self::EXPORT_PREFIX . ':mdtoExport');
+		$dom->appendChild($envelope);
 
 		foreach ($objects as $object) {
 			$tmlo = $object->getTmlo();
@@ -431,154 +464,14 @@ class TmloService {
 				continue;
 			}
 
-			$element = $this->createMdtoObjectElement(dom: $dom, object: $object, tmlo: $tmlo);
-			$collection->appendChild($element);
+			$document = new DOMDocument('1.0', 'UTF-8');
+			$document->loadXML($this->mdtoGenerator->generate($object));
+
+			$imported = $dom->importNode($document->documentElement, true);
+			$envelope->appendChild($imported);
 		}
 
-		return $dom->saveXML();
+		return (string)$dom->saveXML();
 	}//end generateBatchMdtoXml()
 
-	/**
-	 * Create a single MDTO object XML element.
-	 *
-	 * @param DOMDocument $dom The DOM document
-	 * @param ObjectEntity $object The object entity
-	 * @param array $tmlo The TMLO metadata array
-	 *
-	 * @return DOMElement The MDTO object element
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 */
-	private function createMdtoObjectElement(DOMDocument $dom, ObjectEntity $object, array $tmlo): DOMElement {
-		$root = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:informatieobject');
-
-		// Identificatie.
-		$idElement = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:identificatie');
-		$idReference = $dom->createElementNS(
-			self::MDTO_NAMESPACE,
-			'mdto:identificatieKenmerk',
-			$this->xmlEscape(value: $object->getUuid() ?? '')
-		);
-		$idSource = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:identificatieBron', 'OpenRegister');
-		$idElement->appendChild($idReference);
-		$idElement->appendChild($idSource);
-		$root->appendChild($idElement);
-
-		// Naam.
-		$name = $dom->createElementNS(
-			self::MDTO_NAMESPACE,
-			'mdto:naam',
-			$this->xmlEscape(value: $object->getName() ?? $object->getUuid() ?? '')
-		);
-		$root->appendChild($name);
-
-		// TMLO fields.
-		if (($tmlo['classification'] ?? null) !== null) {
-			$classEl = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:classificatie');
-			$classCode = $dom->createElementNS(
-				self::MDTO_NAMESPACE,
-				'mdto:classificatieCode',
-				$this->xmlEscape(value: $tmlo['classification'])
-			);
-			$classEl->appendChild($classCode);
-			$root->appendChild($classEl);
-		}
-
-		if (($tmlo['archiefnominatie'] ?? null) !== null) {
-			$root->appendChild(
-				$dom->createElementNS(
-					self::MDTO_NAMESPACE,
-					'mdto:waardering',
-					$this->mapArchiveNomination(nominatie: $tmlo['archiefnominatie'])
-				)
-			);
-		}
-
-		if (($tmlo['archiefactiedatum'] ?? null) !== null) {
-			$root->appendChild(
-				$dom->createElementNS(
-					self::MDTO_NAMESPACE,
-					'mdto:archiefactiedatum',
-					$this->xmlEscape(value: $tmlo['archiefactiedatum'])
-				)
-			);
-		}
-
-		if (($tmlo['archiefstatus'] ?? null) !== null) {
-			$root->appendChild(
-				$dom->createElementNS(
-					self::MDTO_NAMESPACE,
-					'mdto:archiefstatus',
-					$this->mapArchiefstatus(status: $tmlo['archiefstatus'])
-				)
-			);
-		}
-
-		if (($tmlo['bewaarTermijn'] ?? null) !== null) {
-			$root->appendChild(
-				$dom->createElementNS(
-					self::MDTO_NAMESPACE,
-					'mdto:bewaartermijn',
-					$this->xmlEscape(value: $tmlo['bewaarTermijn'])
-				)
-			);
-		}
-
-		if (($tmlo['vernietigingsCategorie'] ?? null) !== null) {
-			$root->appendChild(
-				$dom->createElementNS(
-					self::MDTO_NAMESPACE,
-					'mdto:vernietigingsCategorie',
-					$this->xmlEscape(value: $tmlo['vernietigingsCategorie'])
-				)
-			);
-		}
-
-		return $root;
-	}//end createMdtoObjectElement()
-
-	/**
-	 * Map TMLO archiefnominatie to MDTO waardering value.
-	 *
-	 * @param string $nominatie The TMLO archiefnominatie value
-	 *
-	 * @return string The MDTO waardering value
-	 */
-	private function mapArchiveNomination(string $nominatie): string {
-		$mapping = [
-			self::ARCHIEFNOMINATIE_BLIJVEND_BEWAREN => 'bewaren',
-			self::ARCHIEFNOMINATIE_VERNIETIGEN => 'vernietigen',
-		];
-
-		return ($mapping[$nominatie] ?? $nominatie);
-	}//end mapArchiefnominatie()
-
-	/**
-	 * Map TMLO archiefstatus to MDTO archiefstatus value.
-	 *
-	 * @param string $status The TMLO archiefstatus value
-	 *
-	 * @return string The MDTO archiefstatus value
-	 */
-	private function mapArchiefstatus(string $status): string {
-		$mapping = [
-			self::ARCHIEFSTATUS_ACTIEF => 'in bewerking',
-			self::ARCHIEFSTATUS_SEMI_STATISCH => 'afgesloten',
-			self::ARCHIEFSTATUS_OVERGEBRACHT => 'overgebracht',
-			self::ARCHIEFSTATUS_VERNIETIGD => 'vernietigd',
-		];
-
-		return ($mapping[$status] ?? $status);
-	}//end mapArchiefstatus()
-
-	/**
-	 * Escape a string for safe XML inclusion.
-	 *
-	 * @param string $value The value to escape
-	 *
-	 * @return string The escaped value
-	 */
-	private function xmlEscape(string $value): string {
-		return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-	}//end xmlEscape()
 }//end class

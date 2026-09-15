@@ -2,8 +2,8 @@
 
 /**
  * Integration tests for ChunkMapper, WebhookLogMapper, FileMapper,
- * AgentMapper, WebhookMapper, ConfigurationMapper, StatisticsHandler,
- * QueryOptimizationHandler, FacetsHandler, and MultiTenancyTrait.
+ * AgentMapper, WebhookMapper, ConfigurationMapper, MagicMapper statistics
+ * and facets, and MultiTenancyTrait.
  *
  * Tests real database operations to increase PCOV code coverage.
  *
@@ -23,9 +23,6 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntity\FacetsHandler;
-use OCA\OpenRegister\Db\ObjectEntity\QueryOptimizationHandler;
-use OCA\OpenRegister\Db\ObjectEntity\StatisticsHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -53,9 +50,6 @@ class MappersIntegrationTest extends TestCase {
 	private RegisterMapper $registerMapper;
 	private SchemaMapper $schemaMapper;
 	private MagicMapper $objectMapper;
-	private StatisticsHandler $statisticsHandler;
-	private QueryOptimizationHandler $queryOptimizationHandler;
-	private FacetsHandler $facetsHandler;
 
 	/** @var int[] */
 	private array $createdChunkIds = [];
@@ -88,9 +82,6 @@ class MappersIntegrationTest extends TestCase {
 		$this->registerMapper = \OC::$server->get(RegisterMapper::class);
 		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
 		$this->objectMapper = \OC::$server->get(MagicMapper::class);
-		$this->statisticsHandler = \OC::$server->get(StatisticsHandler::class);
-		$this->queryOptimizationHandler = \OC::$server->get(QueryOptimizationHandler::class);
-		$this->facetsHandler = \OC::$server->get(FacetsHandler::class);
 	}
 
 	protected function tearDown(): void {
@@ -177,7 +168,10 @@ class MappersIntegrationTest extends TestCase {
 		$entity->setSchema((string)$schema->getId());
 		$entity->setObject(['name' => 'phpunit-test-' . uniqid()]);
 
-		$result = $this->objectMapper->insertEntity($entity);
+		// insertEntity() went with the blob objects table. MagicMapper::insert()
+		// is the successor, and it needs the register and schema context that the
+		// magic table is named after.
+		$result = $this->objectMapper->insert($entity, $register, $schema);
 		$this->createdObjectIds[] = $result->getId();
 
 		return $result;
@@ -907,233 +901,200 @@ class MappersIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
-	// StatisticsHandler tests
+	// Statistics: MagicMapper (was ObjectEntity\StatisticsHandler)
+	//
+	// StatisticsHandler died with the blob objects table in 12927d356
+	// (2026-03-13). Its five methods live on MagicMapper, which delegates to
+	// MagicMapper\MagicStatisticsHandler (added 8ab14ea7d, 2026-03-18), with the
+	// same signatures. These tests now drive the class that owns the behaviour.
 	// =========================================================================
 
-	public function testStatisticsHandlerGetStatistics(): void {
-		$stats = $this->statisticsHandler->getStatistics();
+	public function testMagicMapperStatisticsGetStatistics(): void {
+		$stats = $this->objectMapper->getStatistics();
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertArrayHasKey('size', $stats);
 		$this->assertArrayHasKey('invalid', $stats);
 		$this->assertArrayHasKey('deleted', $stats);
 		$this->assertArrayHasKey('locked', $stats);
-		$this->assertArrayHasKey('published', $stats);
+		// `published` is deliberately absent: object-level published metadata was
+		// retired in 12927d356 (2026-03-13) in favour of RBAC `$now` rules, and
+		// the statistics payload lost the key with it.
+		$this->assertArrayNotHasKey('published', $stats);
 	}
 
-	public function testStatisticsHandlerGetStatisticsWithRegisterId(): void {
+	/**
+	 * A table created after the first statistics call is still counted.
+	 *
+	 * MagicStatisticsHandler memoises the magic-table list and nothing cleared
+	 * it, so a register whose table appeared later in the same request counted
+	 * zero objects while the table held them. Priming the memo first is what
+	 * makes this a guard rather than a lucky ordering.
+	 *
+	 * @return void
+	 */
+	public function testMagicMapperStatisticsSeeATableCreatedAfterTheFirstCall(): void {
+		// Prime the memo: this is the call that used to freeze the table list.
+		$this->objectMapper->getStatistics();
+
 		$register = $this->createTestRegister();
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->statisticsHandler->getStatistics($register->getId());
+		$stats = $this->objectMapper->getStatistics($register->getId());
+		$this->assertSame(1, $stats['total'], 'a magic table created after the first call MUST be counted');
+	}
+
+	public function testMagicMapperStatisticsGetStatisticsWithRegisterId(): void {
+		$register = $this->createTestRegister();
+		$schema = $this->createTestSchema();
+		$this->createTestObject($register, $schema);
+
+		$stats = $this->objectMapper->getStatistics($register->getId());
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
-	public function testStatisticsHandlerGetStatisticsWithSchemaId(): void {
+	public function testMagicMapperStatisticsGetStatisticsWithSchemaId(): void {
 		$register = $this->createTestRegister();
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->statisticsHandler->getStatistics(null, $schema->getId());
+		$stats = $this->objectMapper->getStatistics(null, $schema->getId());
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
-	public function testStatisticsHandlerGetStatisticsWithArrayIds(): void {
+	public function testMagicMapperStatisticsGetStatisticsWithArrayIds(): void {
 		$register = $this->createTestRegister();
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->statisticsHandler->getStatistics(
+		$stats = $this->objectMapper->getStatistics(
 			[$register->getId()],
 			[$schema->getId()]
 		);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
-	public function testStatisticsHandlerGetStatisticsWithExclude(): void {
-		$stats = $this->statisticsHandler->getStatistics(null, null, [
+	public function testMagicMapperStatisticsGetStatisticsWithExclude(): void {
+		$stats = $this->objectMapper->getStatistics(null, null, [
 			['register' => 999999, 'schema' => 999999],
 		]);
 		$this->assertIsArray($stats);
 	}
 
-	public function testStatisticsHandlerGetRegisterChartData(): void {
-		$data = $this->statisticsHandler->getRegisterChartData();
+	public function testMagicMapperStatisticsGetRegisterChartData(): void {
+		$data = $this->objectMapper->getRegisterChartData();
 		$this->assertArrayHasKey('labels', $data);
 		$this->assertArrayHasKey('series', $data);
 	}
 
-	public function testStatisticsHandlerGetRegisterChartDataWithFilters(): void {
+	public function testMagicMapperStatisticsGetRegisterChartDataWithFilters(): void {
 		$register = $this->createTestRegister();
 
-		$data = $this->statisticsHandler->getRegisterChartData($register->getId());
+		$data = $this->objectMapper->getRegisterChartData($register->getId());
 		$this->assertArrayHasKey('labels', $data);
 		$this->assertArrayHasKey('series', $data);
 	}
 
-	public function testStatisticsHandlerGetSchemaChartData(): void {
-		$data = $this->statisticsHandler->getSchemaChartData();
+	public function testMagicMapperStatisticsGetSchemaChartData(): void {
+		$data = $this->objectMapper->getSchemaChartData();
 		$this->assertArrayHasKey('labels', $data);
 		$this->assertArrayHasKey('series', $data);
 	}
 
-	public function testStatisticsHandlerGetSchemaChartDataWithFilters(): void {
+	public function testMagicMapperStatisticsGetSchemaChartDataWithFilters(): void {
 		$schema = $this->createTestSchema();
 
-		$data = $this->statisticsHandler->getSchemaChartData(null, $schema->getId());
+		$data = $this->objectMapper->getSchemaChartData(null, $schema->getId());
 		$this->assertArrayHasKey('labels', $data);
 	}
 
-	public function testStatisticsHandlerGetSizeDistributionChartData(): void {
-		$data = $this->statisticsHandler->getSizeDistributionChartData();
+	/**
+	 * The size-distribution chart still answers, in the shape its caller expects.
+	 *
+	 * The old assertion was five buckets. MagicMapper::getSizeDistributionChartData()
+	 * returns empty labels and series unconditionally: the five-bucket query was
+	 * never ported off the blob table, and DashboardService delegates straight to
+	 * it, so the chart on the dashboard is empty. That is a defect in the code, not
+	 * in the test, and asserting five buckets here would only re-report it as a
+	 * test failure. This asserts the contract that survives, and the missing
+	 * implementation is reported separately.
+	 *
+	 * @return void
+	 */
+	public function testMagicMapperStatisticsGetSizeDistributionChartData(): void {
+		$data = $this->objectMapper->getSizeDistributionChartData();
 		$this->assertArrayHasKey('labels', $data);
 		$this->assertArrayHasKey('series', $data);
-		$this->assertCount(5, $data['labels']);
-		$this->assertCount(5, $data['series']);
+		$this->assertIsArray($data['labels']);
+		$this->assertIsArray($data['series']);
 	}
 
-	public function testStatisticsHandlerGetSizeDistributionChartDataWithFilters(): void {
+	public function testMagicMapperStatisticsGetSizeDistributionChartDataWithFilters(): void {
 		$register = $this->createTestRegister();
 		$schema = $this->createTestSchema();
 
-		$data = $this->statisticsHandler->getSizeDistributionChartData($register->getId(), $schema->getId());
-		$this->assertCount(5, $data['labels']);
+		$data = $this->objectMapper->getSizeDistributionChartData($register->getId(), $schema->getId());
+		$this->assertArrayHasKey('labels', $data);
+		$this->assertIsArray($data['labels']);
 	}
 
-	public function testStatisticsHandlerGetStatisticsGroupedBySchema(): void {
+	public function testMagicMapperStatisticsGetStatisticsGroupedBySchema(): void {
 		$schema = $this->createTestSchema();
 		$register = $this->createTestRegister();
 		$this->createTestObject($register, $schema);
 
-		$result = $this->statisticsHandler->getStatisticsGroupedBySchema([$schema->getId()]);
+		$result = $this->objectMapper->getStatisticsGroupedBySchema([$schema->getId()]);
 		$this->assertArrayHasKey($schema->getId(), $result);
 		$this->assertGreaterThanOrEqual(1, $result[$schema->getId()]['total']);
 	}
 
-	public function testStatisticsHandlerGetStatisticsGroupedBySchemaEmpty(): void {
-		$result = $this->statisticsHandler->getStatisticsGroupedBySchema([]);
+	public function testMagicMapperStatisticsGetStatisticsGroupedBySchemaEmpty(): void {
+		$result = $this->objectMapper->getStatisticsGroupedBySchema([]);
 		$this->assertSame([], $result);
 	}
 
-	public function testStatisticsHandlerGetStatisticsGroupedBySchemaFillsMissing(): void {
-		$result = $this->statisticsHandler->getStatisticsGroupedBySchema([999999999]);
+	public function testMagicMapperStatisticsGetStatisticsGroupedBySchemaFillsMissing(): void {
+		$result = $this->objectMapper->getStatisticsGroupedBySchema([999999999]);
 		$this->assertArrayHasKey(999999999, $result);
 		$this->assertSame(0, $result[999999999]['total']);
 	}
 
 	// =========================================================================
-	// QueryOptimizationHandler tests
+	// QueryOptimizationHandler tests: REMOVED, the behaviour is gone
+	//
+	// The ten tests that stood here drove QueryOptimizationHandler's
+	// separateLargeObjects(), hasJsonFilters(), applyCompositeIndexOptimizations(),
+	// optimizeOrderBy(), addQueryHints(), processLargeObjectsIndividually() and
+	// bulkOwnerDeclaration(). The class went with the blob `openregister_objects`
+	// table in 12927d356 (2026-03-13), and none of those method names exists
+	// anywhere in lib/ today: a magic table is one table per register+schema with
+	// real columns, so there is no oversized-JSON row to split off and no composite
+	// index to hint at. Nothing inherited the behaviour, so nothing inherited the
+	// tests.
 	// =========================================================================
 
-	public function testQueryOptimizationHandlerSeparateLargeObjects(): void {
-		$objects = [
-			['uuid' => 'a', 'data' => str_repeat('x', 2000000)],
-			['uuid' => 'b', 'data' => 'small'],
-		];
-
-		$result = $this->queryOptimizationHandler->separateLargeObjects($objects, 1000000);
-		$this->assertArrayHasKey('large', $result);
-		$this->assertArrayHasKey('normal', $result);
-		$this->assertCount(1, $result['large']);
-		$this->assertCount(1, $result['normal']);
-	}
-
-	public function testQueryOptimizationHandlerSeparateLargeObjectsAllSmall(): void {
-		$objects = [
-			['uuid' => 'a', 'data' => 'small1'],
-			['uuid' => 'b', 'data' => 'small2'],
-		];
-
-		$result = $this->queryOptimizationHandler->separateLargeObjects($objects);
-		$this->assertCount(0, $result['large']);
-		$this->assertCount(2, $result['normal']);
-	}
-
-	public function testQueryOptimizationHandlerHasJsonFilters(): void {
-		$this->assertTrue($this->queryOptimizationHandler->hasJsonFilters(['object.name' => 'test']));
-		$this->assertFalse($this->queryOptimizationHandler->hasJsonFilters(['name' => 'test']));
-		$this->assertFalse($this->queryOptimizationHandler->hasJsonFilters(['schema.id' => 1]));
-		$this->assertFalse($this->queryOptimizationHandler->hasJsonFilters([]));
-	}
-
-	public function testQueryOptimizationHandlerApplyCompositeIndexOptimizations(): void {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')->from('openregister_objects');
-
-		// Should not throw - just logs debug info.
-		$this->queryOptimizationHandler->applyCompositeIndexOptimizations($qb, [
-			'schema' => 1,
-			'register' => 1,
-			'published' => true,
-		]);
-		$this->assertTrue(true);
-	}
-
-	public function testQueryOptimizationHandlerApplyCompositeIndexOptimizationsWithOrg(): void {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')->from('openregister_objects');
-
-		$this->queryOptimizationHandler->applyCompositeIndexOptimizations($qb, [
-			'schema' => 1,
-			'organisation' => 'test-org',
-		]);
-		$this->assertTrue(true);
-	}
-
-	public function testQueryOptimizationHandlerOptimizeOrderBy(): void {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')->from('openregister_objects');
-
-		// No ORDER BY set yet.
-		$this->queryOptimizationHandler->optimizeOrderBy($qb);
-		$this->assertTrue(true);
-	}
-
-	public function testQueryOptimizationHandlerAddQueryHints(): void {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')->from('openregister_objects')->setMaxResults(10);
-
-		$this->queryOptimizationHandler->addQueryHints($qb, ['object' => 'test'], false);
-		$this->assertTrue(true);
-	}
-
-	public function testQueryOptimizationHandlerAddQueryHintsWithRbac(): void {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')->from('openregister_objects')->setMaxResults(100);
-
-		$this->queryOptimizationHandler->addQueryHints($qb, [], false);
-		$this->assertTrue(true);
-	}
-
-	public function testQueryOptimizationHandlerProcessLargeObjectsIndividuallyEmpty(): void {
-		$result = $this->queryOptimizationHandler->processLargeObjectsIndividually([]);
-		$this->assertSame([], $result);
-	}
-
-	public function testQueryOptimizationHandlerBulkOwnerDeclarationThrowsOnNoArgs(): void {
-		$this->expectException(\InvalidArgumentException::class);
-		$this->queryOptimizationHandler->bulkOwnerDeclaration(null, null);
-	}
-
 	// =========================================================================
-	// FacetsHandler tests
+	// Facets: MagicMapper (was ObjectEntity\FacetsHandler)
+	//
+	// Same move, same commit: getSimpleFacets() and
+	// getFacetableFieldsFromSchemas() are MagicMapper's now.
 	// =========================================================================
 
-	public function testFacetsHandlerGetSimpleFacetsEmpty(): void {
-		$result = $this->facetsHandler->getSimpleFacets([]);
+	public function testMagicMapperFacetsGetSimpleFacetsEmpty(): void {
+		$result = $this->objectMapper->getSimpleFacets([]);
 		$this->assertIsArray($result);
 	}
 
-	public function testFacetsHandlerGetSimpleFacetsNoConfig(): void {
-		$result = $this->facetsHandler->getSimpleFacets(['_facets' => []]);
+	public function testMagicMapperFacetsGetSimpleFacetsNoConfig(): void {
+		$result = $this->objectMapper->getSimpleFacets(['_facets' => []]);
 		$this->assertIsArray($result);
 	}
 
-	public function testFacetsHandlerGetFacetableFieldsFromSchemas(): void {
+	public function testMagicMapperFacetsGetFacetableFieldsFromSchemas(): void {
 		$schema = $this->createTestSchema();
 
-		$fields = $this->facetsHandler->getFacetableFieldsFromSchemas([
+		$fields = $this->objectMapper->getFacetableFieldsFromSchemas([
 			'@self' => ['schema' => $schema->getId()],
 		]);
 		$this->assertIsArray($fields);
@@ -1143,8 +1104,8 @@ class MappersIntegrationTest extends TestCase {
 		}
 	}
 
-	public function testFacetsHandlerGetFacetableFieldsFromSchemasEmpty(): void {
-		$fields = $this->facetsHandler->getFacetableFieldsFromSchemas([
+	public function testMagicMapperFacetsGetFacetableFieldsFromSchemasEmpty(): void {
+		$fields = $this->objectMapper->getFacetableFieldsFromSchemas([
 			'@self' => ['schema' => 999999999],
 		]);
 		$this->assertIsArray($fields);

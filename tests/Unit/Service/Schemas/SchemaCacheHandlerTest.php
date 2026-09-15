@@ -110,13 +110,17 @@ class SchemaCacheHandlerTest extends TestCase {
 	}
 
 	/**
-	 * Create a mock Schema that supports getTags/getRegister (which are not real Entity attributes).
-	 * This is needed because serializeSchemaForCache calls these methods.
+	 * A real Schema, deliberately.
+	 *
+	 * This helper used to hand back a double declaring getTags() and
+	 * getRegister() through addMethods(), because the cache serializer called
+	 * both and Schema declares neither. The double invented them, so the test
+	 * stayed green while every real cache write threw out of Entity::__call.
+	 * The serializer no longer reads either field, so a real entity is enough
+	 * and the test now exercises the same call surface production does.
 	 */
-	private function createMockSchemaWithId(int $id): Schema|MockObject {
-		$schema = $this->getMockBuilder(Schema::class)
-			->addMethods(['getTags', 'getRegister'])
-			->getMock();
+	private function createMockSchemaWithId(int $id): Schema {
+		$schema = new Schema();
 
 		$schema->setId($id);
 		$schema->setUuid('test-uuid-' . $id);
@@ -134,9 +138,6 @@ class SchemaCacheHandlerTest extends TestCase {
 		$schema->setSource('test-source');
 		$schema->setOrganisation('test-org');
 		$schema->setOwner('admin');
-
-		$schema->method('getTags')->willReturn(null);
-		$schema->method('getRegister')->willReturn(null);
 
 		return $schema;
 	}
@@ -676,8 +677,11 @@ class SchemaCacheHandlerTest extends TestCase {
 		$this->assertSame(['name'], $result['required']);
 		$this->assertSame('2025-06-01 12:00:00', $result['created']);
 		$this->assertSame('2025-06-15 14:30:00', $result['updated']);
-		$this->assertNull($result['tags']);
-		$this->assertNull($result['register']);
+
+		// The row carries only fields Schema declares. `tags` and `register`
+		// are not among them, and reading them is what used to throw.
+		$this->assertArrayNotHasKey('tags', $result);
+		$this->assertArrayNotHasKey('register', $result);
 	}
 
 	public function testSerializeSchemaForCacheWithNullDates(): void {
@@ -695,13 +699,15 @@ class SchemaCacheHandlerTest extends TestCase {
 
 	// -----------------------------------------------------------------------
 	// reconstructSchemaFromCache() (private, tested via reflection)
-	// Note: reconstructSchemaFromCache calls setTags/setRegister which are
-	// invalid on the real Schema entity. These tests exercise the error path.
+	// These two used to assert that reconstruction ALWAYS failed, because the
+	// method called setTags()/setRegister() and Schema declares neither
+	// property. That is the bug, pinned as if it were the behaviour. The
+	// serializer and the reconstructor no longer touch either field, so a
+	// well-formed cache row now rebuilds, and the error path is reached by an
+	// input that is genuinely bad.
 	// -----------------------------------------------------------------------
 
-	public function testReconstructSchemaFromCacheReturnsNullDueToInvalidAttributes(): void {
-		// setTags() will throw BadFunctionCallException since 'tags' is not
-		// a valid attribute on the Schema entity. This triggers the catch block.
+	public function testReconstructSchemaFromCacheRebuildsTheEntity(): void {
 		$cachedData = [
 			'id' => 200,
 			'uuid' => 'uuid-200',
@@ -709,13 +715,11 @@ class SchemaCacheHandlerTest extends TestCase {
 			'version' => '2.0',
 			'description' => 'desc',
 			'summary' => 'sum',
-			'tags' => ['tag1'],
 			'required' => ['field1'],
 			'properties' => ['field1' => ['type' => 'string']],
 			'archive' => [],
 			'configuration' => ['key' => 'value'],
 			'source' => 'src',
-			'register' => 'reg1',
 			'organisation' => 'org',
 			'owner' => 'user1',
 			'created' => '2025-01-01 10:00:00',
@@ -726,12 +730,18 @@ class SchemaCacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('reconstructSchemaFromCache');
 		$method->setAccessible(true);
 
-		// This should trigger the catch block since setTags is invalid.
 		$result = $method->invoke($this->handler, $cachedData);
-		$this->assertNull($result);
+
+		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame(200, $result->getId());
+		$this->assertSame('Reconstructed', $result->getTitle());
+		$this->assertSame('uuid-200', $result->getUuid());
+		$this->assertSame('2025-01-01 10:00:00', $result->getCreated()->format('Y-m-d H:i:s'));
 	}
 
 	public function testReconstructSchemaFromCacheLogsErrorOnFailure(): void {
+		// An unparsable created stamp is a real failure: the DateTime
+		// constructor throws and the reconstructor logs and gives up.
 		$cachedData = [
 			'id' => 203,
 			'uuid' => 'test',
@@ -739,16 +749,14 @@ class SchemaCacheHandlerTest extends TestCase {
 			'version' => '1.0',
 			'description' => '',
 			'summary' => '',
-			'tags' => ['invalid-attr'],
 			'required' => [],
 			'properties' => [],
 			'archive' => [],
 			'configuration' => null,
 			'source' => null,
-			'register' => null,
 			'organisation' => null,
 			'owner' => null,
-			'created' => null,
+			'created' => 'not-a-date',
 			'updated' => null,
 		];
 
@@ -760,7 +768,7 @@ class SchemaCacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('reconstructSchemaFromCache');
 		$method->setAccessible(true);
 
-		$method->invoke($this->handler, $cachedData);
+		$this->assertNull($method->invoke($this->handler, $cachedData));
 	}
 
 	// -----------------------------------------------------------------------

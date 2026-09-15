@@ -27,7 +27,7 @@
  * consumer, `getLeaves()` returned it, gate-24 went green on both halves — and
  * the surface rendered NOTHING, on every consuming page, for as long as leaves
  * have shipped. `humaniq-hours` has been dark on dossiq case pages the whole
- * time. That is the failure shape ADR-113 is about: everything reports success
+ * time. That is the failure shape ADR-115 is about: everything reports success
  * and the feature is absent.
  *
  * WHAT IT LOADS, AND WHERE

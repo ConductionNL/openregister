@@ -162,6 +162,80 @@ class CalendarEventServiceTest extends TestCase {
 		$this->assertSame('Test Meeting', $result['summary']);
 	}
 
+	/**
+	 * A VEVENT is never written without DTSTART.
+	 *
+	 * The builder used to emit the property only when the caller supplied one,
+	 * and both controllers validated the summary alone. The resulting object is
+	 * not merely invalid: its firstoccurence is NULL so no calendar view can
+	 * show it, and Sabre's ITip plugin then answers 500 to both DELETE and PUT,
+	 * so no client can ever remove it. Only a SQL delete clears one.
+	 *
+	 * Refusing at write time is the last point where that is still fixable.
+	 */
+	public function testCreateEventRefusesAPayloadWithNoStart(): void {
+		$this->setupUser();
+		$this->setupCalendar();
+
+		$this->calDavBackend->expects($this->never())->method('createCalendarObject');
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessageMatches('/dtstart.*required/i');
+
+		$this->service->createEvent(5, 12, 'abc-123', 'Object Title', [
+			'summary' => 'Meeting with no start',
+		]);
+	}
+
+	/**
+	 * A start that cannot be read is refused too, rather than silently dropped.
+	 */
+	public function testCreateEventRefusesAnUnparseableStart(): void {
+		$this->setupUser();
+		$this->setupCalendar();
+
+		$this->calDavBackend->expects($this->never())->method('createCalendarObject');
+
+		$this->expectException(\Exception::class);
+
+		$this->service->createEvent(5, 12, 'abc-123', 'Object Title', [
+			'summary' => 'Meeting at half past banana',
+			'dtstart' => 'half past banana',
+		]);
+	}
+
+	/**
+	 * deleteEvent() removes the calendar object, which unlinkEvent() does not.
+	 *
+	 * The two are the difference between cancelling a hearing and merely
+	 * forgetting which case it belonged to.
+	 */
+	public function testDeleteEventRemovesTheCalendarObject(): void {
+		$this->setupUser();
+
+		$this->calDavBackend->method('getCalendarObject')
+			->with(1, 'event1.ics')
+			->willReturn(['calendardata' => "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:x\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"]);
+
+		$this->calDavBackend->expects($this->once())
+			->method('deleteCalendarObject')
+			->with(1, 'event1.ics');
+		$this->calDavBackend->expects($this->never())
+			->method('updateCalendarObject');
+
+		$this->service->deleteEvent('1', 'event1.ics');
+	}
+
+	public function testDeleteEventThrowsWhenNotFound(): void {
+		$this->setupUser();
+
+		$this->calDavBackend->method('getCalendarObject')->willReturn(null);
+		$this->calDavBackend->expects($this->never())->method('deleteCalendarObject');
+
+		$this->expectException(\Exception::class);
+		$this->service->deleteEvent('1', 'nonexistent.ics');
+	}
+
 	public function testUnlinkEventRemovesProperties(): void {
 		$veventData = $this->buildVevent('abc-123');
 
@@ -240,8 +314,11 @@ class CalendarEventServiceTest extends TestCase {
 				})
 			);
 
+		// dtstart is incidental to what this test asserts, but createEvent()
+		// now refuses to build a VEVENT without one, so it has to be here.
 		$this->service->createEvent(5, 12, 'abc-123', 'Object Title', [
 			'summary' => 'Pinned test',
+			'dtstart' => '2026-03-25T13:00:00Z',
 		]);
 
 		// Verify the pin was persisted to the user config.

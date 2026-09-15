@@ -195,6 +195,89 @@ export default defineConfig({
 		// trail fails loudly before this skip is ever reachable.
 		'workflows/object-lifecycle-workflows.spec.ts',
 
+		// Admitted 2026-09-11 with the change it covers (#3601, declarative
+		// lifecycle conditions). It is the only proof that a refused condition
+		// refuses on the REAL save path: every unit test drives the listener
+		// with a mocked schema mapper, and the defect this change found (a
+		// broken condition stored anyway, then evaluated as a truthy literal)
+		// was invisible to all of them.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds through `_fixtures.ts`. The one file it reads
+		//      from disk is lib/Settings/openregister_mock_register.json, which
+		//      ships in the repo; it needs no pre-seeded rows, occ or docker.
+		//   2. Self-cleaning: records every object it creates and, in afterAll,
+		//      soft-deletes then hard-deletes each via /api/deleted/{uuid}
+		//      before dropping its schema and register, the same shape as the
+		//      spec above.
+		//   3. No conditional asserts: every assertion is unconditional, and
+		//      each refusal is re-read so a 422 that wrote anyway still fails.
+		//   4. No test.skip at all.
+		'workflows/lifecycle-conditions.spec.ts',
+
+		// Admitted 2026-09-11 with the change it covers (lifecycle-auto-
+		// transitions, `autoWhen` / `executionMode`). It is the only proof that
+		// an automatic move is applied through the REAL write path before a
+		// response is produced: every PHPUnit test in this change drives
+		// `AutoTransitionPass`/`AutoTransitionRunner` directly or through a
+		// mocked schema mapper, so none of them can catch a regression in the
+		// HTTP round trip itself — e.g. a controller that stopped returning the
+		// pass-drained entity and started returning the pre-drain one instead.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds one register/schema through `_fixtures.ts`, with
+		//      the whole `x-openregister-lifecycle` annotation declared inline
+		//      in the file. No `occ`, no docker, no pre-seeded rows.
+		//   2. Self-cleaning: records every object it creates and, in afterAll,
+		//      soft-deletes then hard-deletes each via /api/deleted/{uuid}
+		//      before dropping its schema and register — the same shape as the
+		//      spec above.
+		//   3. No conditional asserts: every assertion is unconditional, and
+		//      each automatic move is re-read after the triggering response so
+		//      a response that lied about the state cannot pass.
+		//   4. No test.skip at all.
+		'workflows/lifecycle-auto-transitions.spec.ts',
+
+		// Admitted 2026-09-11 with the change it covers: the object detail
+		// view's Metadata tab, which is the only place openregister's own UI
+		// draws an object's resolved archival decision. It is the only proof
+		// that the decision reaches a screen: the API specs read `_retention`
+		// over HTTP, which was never the part that was missing.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds its own register, schema (with the
+		//      `x-openregister-archival` annotation inline) and object through
+		//      `_fixtures.ts`, and its own Dutch-language user through the OCS
+		//      provisioning API. No occ, no docker, no pre-seeded rows, and it
+		//      does not lean on seed.sh's accounts.
+		//   2. Self-cleaning, by the second branch. An archival object refuses
+		//      DELETE with 403, and that refusal is decided from the schema's
+		//      CURRENT annotation, so `afterAll` strips the annotation first and
+		//      then removes the object (soft, then hard via /api/deleted/{uuid}),
+		//      the schema, the register and the user. Verified on an isolated
+		//      instance: no row, schema, register or user survives a run.
+		//   3. No conditional asserts: every assertion is unconditional, and the
+		//      expected values come from the fixture and the row's `created`,
+		//      never from the `_retention` block under test.
+		//   4. No test.skip at all.
+		'object-metadata-archival.spec.ts',
+		// Admitted 2026-09-11 with the fix it covers: `@self._retention` now
+		// reads the same on create, update, patch and GET. Every unit test
+		// drives the resolver or the read path's strip on its own, and only an
+		// HTTP round trip can show two verbs answering in different shapes.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: seeds its own register and annotated schema through
+		//      the REST controllers. No occ, no docker, no pre-seeded rows.
+		//   2. Self-cleaning, even though its rows are archival. `afterAll`
+		//      first drops `x-openregister-archival` from the schema, which is
+		//      the way out the refusal's own hint names, then deletes each
+		//      object (soft, then hard via /api/deleted/{uuid}), the schema
+		//      and the register. Nothing is left in the registers list.
+		//   3. No conditional asserts: every assertion is unconditional.
+		//   4. No test.skip at all.
+		'workflows/archival-retention-shape.spec.ts',
+
 		// Admitted 2026-08-29. The ADR-111 demo-data step, which had no coverage
 		// here at all: this file shipped to development with the setup wizard and
 		// never ran, because nothing runs unless it is named in this list. It is
@@ -225,6 +308,39 @@ export default defineConfig({
 		// is a REAL import, measured at 42.8s on dossiq and 49.6s on shillinq,
 		// and it exceeded the 30s default on one run before the annotation.
 		'spec-coverage/demo-data-setup-step.spec.ts',
+
+		// Admitted 2026-09-11 with the archival e2e coverage it carries. Nothing
+		// here touched archival or retention: the resolved `@self._retention`
+		// decision, the record-state vocabulary and the Retention settings section
+		// were unit-tested only, and the one archival spec on disk
+		// (`workflows/archival-transfer-hardening.spec.ts`) skips all three of its
+		// tests unless `OR_EDEPOT_*_FIXTURE` names pre-existing rows, so it
+		// executes nothing on a fresh instance and is correctly NOT admitted.
+		//
+		// Checked per criterion:
+		//   1. Hermetic — seeds its own register, schemas and objects through the
+		//      documented REST controllers. No occ, no docker, no pre-seeded data.
+		//   3. No conditional-assert guards — zero `.catch(() => false)` in any
+		//      assertion. The only `.catch()` calls are inside `_fixtures.ts`
+		//      teardown helpers.
+		//   4. No `test.skip` at all, conditional or otherwise.
+		//
+		// ⚠️ CRITERION 2 IS THE ONE THAT NEEDS SAYING OUT LOUD, because this file
+		// CANNOT fully satisfy it and that is the behaviour under test, not an
+		// oversight. `DELETE /api/objects/...` on a schema declaring
+		// `x-openregister-archival` is refused with 403 for every HTTP caller —
+		// the sanctioned removal path is `occ openregister:objects:purge --apply
+		// --force`, which criterion 1 rightly forbids — so the seeded archival
+		// rows, and the schema and register holding them, stay behind. A spec that
+		// tore them down would be a spec proving the archival gate does not hold.
+		//
+		// This is admissible on the reasoning this config already sets out above:
+		// the CI instance is created and destroyed per run on its own runner with
+		// its own postgres service, so nothing outside the job can see what is
+		// left. Every entity carries the `e2e-<timestamp>` prefix, and the ONE
+		// piece of instance state the file writes — the `objectArchiveRetention`
+		// setting — is read first and written back at the end of the same test.
+		'archival-retention.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,

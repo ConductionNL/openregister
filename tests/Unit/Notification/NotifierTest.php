@@ -525,4 +525,110 @@ class NotifierTest extends TestCase {
 
 		$this->assertStringContainsString('alice', implode(' ', $seen));
 	}
+
+	/**
+	 * A SKIPPED HOLD THAT CANNOT RENDER IS A SKIP NOBODY IS TOLD ABOUT.
+	 * ArchivalRetentionTask sends this subject when a legal hold stopped a
+	 * retention delete; an unknown subject throws out of prepare(), so the
+	 * notification would never reach the archivist.
+	 */
+	public function testPrepareRetentionHoldsSkipped(): void {
+		$parsed = [];
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('retention_holds_skipped');
+		$notification->method('getSubjectParameters')->willReturn(
+			['schemaSlug' => 'case', 'skippedCount' => 3]
+		);
+		$notification->method('setParsedSubject')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setIcon')->willReturnSelf();
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$l10n->method('n')->willReturnCallback(
+			static function (string $one, string $other, int $count, array $args = []): string {
+				if ($count === 1) {
+					return vsprintf($one, $args);
+				}
+
+				return vsprintf($other, $args);
+			}
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+
+		$this->notifier->prepare($notification, 'en');
+
+		$joined = implode(' ', $parsed);
+		$this->assertStringContainsString('legal hold', $joined);
+		$this->assertStringContainsString('case', $joined);
+		$this->assertStringContainsString('3 records', $joined);
+	}
+
+	/**
+	 * The same for DestructionExecutionJob's own skipped-hold notification,
+	 * which has been sending an unrenderable subject since it was written.
+	 */
+	public function testPrepareDestructionHoldsSkipped(): void {
+		$parsed = [];
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('destruction_holds_skipped');
+		$notification->method('getSubjectParameters')->willReturn(
+			['listUuid' => 'list-42', 'skippedCount' => 1]
+		);
+		$notification->method('setParsedSubject')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setIcon')->willReturnSelf();
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$l10n->method('n')->willReturnCallback(
+			static function (string $one, string $other, int $count, array $args = []): string {
+				if ($count === 1) {
+					return vsprintf($one, $args);
+				}
+
+				return vsprintf($other, $args);
+			}
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+
+		$this->notifier->prepare($notification, 'en');
+
+		$joined = implode(' ', $parsed);
+		$this->assertStringContainsString('legal hold', $joined);
+		$this->assertStringContainsString('list-42', $joined);
+		$this->assertStringContainsString('1 record on destruction list', $joined);
+	}
 }

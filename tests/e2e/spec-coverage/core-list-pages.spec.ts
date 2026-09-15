@@ -16,9 +16,14 @@ import type { Page } from '@playwright/test'
  * console errors / >=500 responses fail the test; core Nextcloud noise
  * (user_status / heartbeat / activity) is filtered out.
  *
- * @e2e openspec/specs/entity-management-modals/spec.md
- * @e2e openspec/specs/no-code-app-builder/spec.md
- * @e2e openspec/specs/frontend-app-bootstrap/spec.md
+ * The entity-management-modals anchor that used to sit here is gone: this
+ * suite opens the Add Register CREATE modal and asserts it renders, while
+ * every scenario in that capability is about edit hydration, save and
+ * delete outcomes. None of them is exercised, and a fragmentless path
+ * resolved anyway.
+ *
+ * @e2e openspec/specs/no-code-app-builder/spec.md#scenario-deep-link-route-returns-the-spa-index-template
+ * @e2e openspec/specs/frontend-app-bootstrap/spec.md#scenario-templates-view-shows-real-data-or-an-explicit-empty-state
  */
 import { expect, test } from '@playwright/test'
 import * as path from 'path'

@@ -454,8 +454,15 @@ class AuditTrailController extends Controller {
 				config: $params
 			);
 
-			// Get total count for pagination.
-			$total = $this->logService->count(register: $register, schema: $schema, id: $id);
+			// Get total count for pagination — under the SAME parameters the
+			// page above was fetched with, so `total` and `pages` describe the
+			// list the caller is actually paging through.
+			$total = $this->logService->count(
+				register: $register,
+				schema: $schema,
+				id: $id,
+				config: $params
+			);
 
 			// Return paginated results.
 			return new JSONResponse(

@@ -68,6 +68,34 @@ When the schema declares a property as `type: string`, the converter SHALL retur
 - **WHEN** the schema property is `{ "type": "string" }` and the row contains the string `'[1,2,3]'`
 - **THEN** the returned property value is the array `[1, 2, 3]` (preserves historical behavior for schemas with mismatched type declarations)
 
+### Requirement: A decoded `string` property is restored before a write
+
+The decode above is only safe if it has an inverse. A read hands back an array for a `type: string` property, so any read-merge-save cycle feeds that array into validation, which refuses it. The converter SHALL therefore expose `restoreStringTypedValues()`, and every merging write path (`ObjectService::patchObject()`, `ObjectsController::patch()`, `ObjectsController::postPatch()`) SHALL call it after its merge and before its save.
+
+@e2e exclude backend write-path symmetry, covered by PHPUnit and by a live probe against both patch doors.
+
+The restore SHALL apply only to keys the caller did NOT supply, and only to declared types the converter routes through its string path. It MUST encode with `JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE`, so the stored bytes match what `JSON.stringify()` wrote. It MUST NOT descend below the top level, because the read decodes one column per declared property and nothing deeper. Where it cannot answer confidently it MUST return the data unchanged, leaving the validation refusal in place rather than guessing.
+
+#### Scenario: A patch that never mentions the property leaves it as stored
+
+- **WHEN** a `{ "type": "string" }` property holds `'[{"status":"open"}]'` and a caller patches only `title`
+- **THEN** the save receives that property as the string `'[{"status":"open"}]'`, byte-identical to what was stored
+
+#### Scenario: An array the caller supplied is refused, not rewritten
+
+- **WHEN** a caller patches a `{ "type": "string" }` property with an array value
+- **THEN** the array reaches validation unchanged and the write is refused with a type error
+
+#### Scenario: A property the schema really calls an array is untouched
+
+- **WHEN** a `{ "type": "array" }` property holds `["a", "b"]` and a caller patches only `title`
+- **THEN** the save receives that property as the array `["a", "b"]`
+
+#### Scenario: A union that admits arrays is untouched
+
+- **WHEN** a property declares `{ "type": ["string", "array"] }` and holds an array
+- **THEN** the value is left as an array, because the array form is valid there
+
 ### Requirement: `boolean` properties always return PHP `bool`
 
 When the schema declares a property as `type: boolean`, the converter SHALL return a PHP `bool` for any non-null value. The conversion SHALL accept:

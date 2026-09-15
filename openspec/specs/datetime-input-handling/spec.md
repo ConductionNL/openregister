@@ -39,6 +39,10 @@ then format as `Y-m-d H:i:s`, returning `null` for empty/invalid input.
 `formatForIso8601(mixed $value): ?string` MUST normalize then format as ISO 8601 with
 timezone offset (`DateTimeInterface::ATOM`), returning `null` for empty/invalid input.
 
+`normalize()` MUST accept an optional `?DateTimeZone $assumeTimezone`. It MUST be applied
+ONLY to a string that carries no offset or timezone name of its own; a string that carries
+one keeps it, and a `DateTimeInterface` is never re-zoned.
+
 #### Scenario: Empty and whitespace input normalizes to null
 - **GIVEN** the value `''`, a whitespace-only string, or `null`
 - **WHEN** `normalize()` is called
@@ -55,4 +59,43 @@ timezone offset (`DateTimeInterface::ATOM`), returning `null` for empty/invalid 
 - **WHEN** `normalize()` is called
 - **THEN** it MUST return `null`
 - **AND** a debug-level log entry MUST be written
+
+### Requirement: Database Datetime Columns Are UTC
+
+A `date` / `date-time` schema property is backed by a DATETIME column
+(`timestamp without time zone` on PostgreSQL) that stores a clock time and carries no
+offset. Both directions of the round-trip MUST therefore agree on ONE timezone for that
+clock time, and that timezone MUST be UTC — never the server's `date.timezone`, which
+differs per deployment.
+
+`formatForDatabase()` MUST convert the normalized value to UTC BEFORE rendering it as
+`Y-m-d H:i:s`, so that a non-UTC offset is APPLIED rather than discarded. Rendering
+directly is forbidden: `format()` renders in whatever timezone the instance carries, so
+`2026-10-20T00:00:00+02:00` produced `2026-10-20 00:00:00` and the read path then read
+that offset-less value back as UTC, moving the instant two hours forward.
+
+The system MUST provide `formatDatabaseValueForIso8601(mixed $value): ?string` as the read
+counterpart. It MUST interpret an offset-less column value as UTC and format it as ISO 8601
+with offset. Every read path that lifts a `date-time` property straight out of its column
+MUST use it rather than `formatForIso8601()`, whose naive-string behaviour depends on the
+server's configured timezone.
+
+#### Scenario: A non-UTC offset is converted, not dropped
+- **GIVEN** the `date-time` value `2026-10-20T00:00:00+02:00`
+- **WHEN** `formatForDatabase()` is called
+- **THEN** it MUST return `2026-10-19 22:00:00`
+- **AND** a negative offset MUST shift the other way: `2026-10-20T00:00:00-05:00` MUST
+  return `2026-10-20 05:00:00`
+
+#### Scenario: An offset-less column value is read back as UTC
+- **GIVEN** the column value `2026-10-19 22:00:00`
+- **WHEN** `formatDatabaseValueForIso8601()` is called
+- **THEN** it MUST return `2026-10-19T22:00:00+00:00`
+
+#### Scenario: The round-trip preserves the instant regardless of server timezone
+- **GIVEN** a `date-time` value with any offset
+- **AND** a server whose `date.timezone` is not UTC
+- **WHEN** the value is written with `formatForDatabase()` and read back with
+  `formatDatabaseValueForIso8601()`
+- **THEN** the result MUST denote the SAME INSTANT as the input
 

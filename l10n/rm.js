@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Butia",
         "Install registers, schemas and flows that other organisations have published.": "Installescha registers, schemas e process ch'autras organisaziuns han publitgà.",
         "No such run": "Nagina tala execuziun",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'execuziun n'exista betg, u Vus na dastgais betg la vesair. Sche Vus stizzais in flux, vegnan er sias execuziuns stizzadas."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'execuziun n'exista betg, u Vus na dastgais betg la vesair. Sche Vus stizzais in flux, vegnan er sias execuziuns stizzadas.",
+        "Configured": "Configurà",
+        "Limited": "Limità",
+        "Simulated": "Simulà",
+        "Not available": "Betg disponibel",
+        "Open settings": "Avrir ils parameters",
+        "Add integration": "Agiuntar ina integraziun",
+        "Last checked": "L'ultima controlla"
     },
     "nplurals=2; plural=(n != 1);"
 )

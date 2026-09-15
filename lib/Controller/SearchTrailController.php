@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -49,6 +50,7 @@ class SearchTrailController extends Controller {
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param SearchTrailService $searchTrailService The search trail service
+	 * @param SearchTrailMapper $searchTrailMapper Mapper the admin clear-all path deletes through
 	 * @param IUserSession $userSession Active user session for caller identity
 	 * @param IGroupManager $groupManager Group manager for admin / role checks
 	 */
@@ -56,6 +58,7 @@ class SearchTrailController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly SearchTrailService $searchTrailService,
+		private readonly SearchTrailMapper $searchTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {
@@ -995,15 +998,8 @@ class SearchTrailController extends Controller {
 		}
 
 		try {
-			/*
-			 * Get the search trail mapper from the container.
-			 * @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper
-			 */
-
-			$searchTrailMapper = \OC::$server->get(id: 'OCA\OpenRegister\Db\SearchTrailMapper');
-
 			// Use the clearAllLogs method from the mapper.
-			$result = $searchTrailMapper->clearAllLogs();
+			$result = $this->searchTrailMapper->clearAllLogs();
 
 			if ($result === true) {
 				return new JSONResponse(

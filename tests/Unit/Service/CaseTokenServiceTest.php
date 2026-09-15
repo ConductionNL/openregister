@@ -181,6 +181,7 @@ class CaseTokenServiceTest extends TestCase {
 			userSession: $this->buildUserSession('alice'),
 			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([]),
 		);
 
 		$result = $service->mint(objectUuid: 'obj-1', registerId: 3, schemaId: 9, label: 'Track your case', ttlSeconds: 3600);
@@ -204,6 +205,7 @@ class CaseTokenServiceTest extends TestCase {
 			userSession: $this->buildUserSession(null),
 			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([]),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -222,6 +224,7 @@ class CaseTokenServiceTest extends TestCase {
 			userSession: $this->buildUserSession('alice'),
 			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([]),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -392,6 +395,7 @@ class CaseTokenServiceTest extends TestCase {
 			userSession: $this->buildUserSession('alice'),
 			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([]),
 		);
 
 		$this->assertTrue($service->revoke('REVME'));
@@ -419,6 +423,7 @@ class CaseTokenServiceTest extends TestCase {
 			userSession: $this->buildUserSession('alice'),
 			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([]),
 		);
 
 		$this->assertFalse($service->revoke('DONE'));
@@ -447,6 +452,7 @@ class CaseTokenServiceTest extends TestCase {
 			userSession: $this->buildUserSession('alice'),
 			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([]),
 		);
 
 		$this->assertTrue($service->revoke('42'));

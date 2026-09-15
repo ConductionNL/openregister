@@ -59,6 +59,7 @@ use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -84,7 +85,11 @@ use Throwable;
  * it would misalign with upstream documentation.
  */
 class OpenProjectLinkService {
-	private const REQUIRED_APP = 'openconnector';
+	// The connector answers to `integriq` on development and `openconnector`
+	// on beta/main; FleetAppId holds both spellings, so this names the app
+	// rather than one spelling of it. Never compare it to an id directly —
+	// go through FleetAppId, or the comparison is false on half the fleet.
+	private const REQUIRED_APP = 'integriq';
 
 	private const STALE_AFTER = 86400;
 	// 24 hours in seconds.
@@ -116,7 +121,7 @@ class OpenProjectLinkService {
 	 * @return bool
 	 */
 	public function isOpenConnectorAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return FleetAppId::isEnabledForUser($this->appManager, self::REQUIRED_APP);
 	}//end isOpenConnectorAvailable()
 
 	/**

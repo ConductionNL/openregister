@@ -234,6 +234,116 @@ class ValidateObject {
 	}//end validateReadOnlyConstraints()
 
 	/**
+	 * Walk the schema's property definitions and find every property declared
+	 * `immutable: true` at the top level.
+	 *
+	 * Deliberately the same shallow walk {@see self::collectReadOnlyPropertyNames()}
+	 * does, for the same reason: nested immutability inside an object or array
+	 * sub-schema is a separate contract and enforcing half of it would be worse
+	 * than enforcing none.
+	 *
+	 * @param array $properties Raw schema properties (associative array; key = property name).
+	 *
+	 * @return array<int, string> Names of properties declared immutable.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	private function collectImmutablePropertyNames(array $properties): array {
+		$immutable = [];
+		foreach ($properties as $name => $definition) {
+			if (is_array($definition) === false) {
+				continue;
+			}
+
+			if (($definition[Schema::IMMUTABLE_PROPERTY_KEYWORD] ?? false) === true) {
+				$immutable[] = (string)$name;
+			}
+		}
+
+		return $immutable;
+	}//end collectImmutablePropertyNames()
+
+	/**
+	 * Enforce `immutable: true` on the UPDATE write path.
+	 *
+	 * ⚠️ NOT a synonym for `readOnly`, and the difference is the whole point.
+	 * `readOnly` refuses any value that differs from what is stored, including
+	 * the FIRST one, so a property that was never filled in can never be filled
+	 * in. `immutable` means "once set": while the stored value is absent or
+	 * null the property is freely writable, and from the first real value
+	 * onwards every change is refused.
+	 *
+	 * That is what a vastgesteld besluit and a final document actually ask for.
+	 * The rule holds whatever the object's state and whoever the actor is, so
+	 * it fires on an open object as readily as on a frozen one — which is why
+	 * it lives on the property rather than on the state.
+	 *
+	 * Returns the list of violations, empty when the update is compliant.
+	 * Callers MUST refuse the write when this returns a non-empty list.
+	 *
+	 * @param array $incomingObject The candidate object data.
+	 * @param array $existingObject The previously-stored object data. Pass `[]`
+	 *                              to opt out (CREATE / no existing record).
+	 * @param Schema $schema The schema whose declarations drive enforcement.
+	 *
+	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function validateImmutableConstraints(
+		array $incomingObject,
+		array $existingObject,
+		Schema $schema,
+	): array {
+		if ($existingObject === []) {
+			return [];
+		}
+
+		$properties = $schema->getProperties();
+		if (is_array($properties) === false || $properties === []) {
+			return [];
+		}
+
+		$immutableNames = $this->collectImmutablePropertyNames(properties: $properties);
+		if ($immutableNames === []) {
+			return [];
+		}
+
+		$violations = [];
+		foreach ($immutableNames as $name) {
+			// Omitted from the payload is not a mutation.
+			if (array_key_exists($name, $incomingObject) === false) {
+				continue;
+			}
+
+			$stored = $existingObject[$name] ?? null;
+
+			// Not set yet. The whole difference from `readOnly`: the first
+			// value is accepted, and only then does the property close.
+			if ($stored === null || $stored === '') {
+				continue;
+			}
+
+			$attempted = $incomingObject[$name];
+			if ($attempted === $stored) {
+				continue;
+			}
+
+			$violations[] = [
+				'property' => $name,
+				'attempted' => $attempted,
+				'stored' => $stored,
+				'message' => sprintf(
+					"Property '%s' is immutable once set and cannot be changed.",
+					$name
+				),
+			];
+		}//end foreach
+
+		return $violations;
+	}//end validateImmutableConstraints()
+
+	/**
 	 * Constructor for ValidateObject
 	 *
 	 * @param IAppConfig $config Configuration service.
@@ -1104,6 +1214,7 @@ class ValidateObject {
 			'indexes',
 			'options',
 			'computed',
+			'calculation',
 		];
 
 		foreach ($metadataProperties as $property) {
@@ -1171,6 +1282,7 @@ class ValidateObject {
 			'indexes',
 			'options',
 			'computed',
+			'calculation',
 		];
 
 		foreach ($metadataProperties as $property) {
@@ -1695,7 +1807,15 @@ class ValidateObject {
 		$computedProperties = [];
 		if (($schemaObject->properties ?? null) !== null) {
 			foreach ($schemaObject->properties as $propName => $propSchema) {
-				if (is_object($propSchema) === true && ($propSchema->computed ?? null) !== null) {
+				// Both derivation engines make a property system-generated: the
+				// Twig `computed` marker and the JSON-AST `calculation` key. A
+				// value the client sent for either is dropped before
+				// validation, and neither can be required from user input.
+				if (is_object($propSchema) === false) {
+					continue;
+				}
+
+				if (($propSchema->computed ?? null) !== null || ($propSchema->calculation ?? null) !== null) {
 					$computedProperties[] = $propName;
 				}
 			}

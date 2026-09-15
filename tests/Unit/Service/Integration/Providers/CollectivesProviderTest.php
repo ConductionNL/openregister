@@ -42,6 +42,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * CollectivesProviderTest.
@@ -90,6 +91,7 @@ class CollectivesProviderTest extends TestCase {
 			$this->buildAppManager($installed),
 			$this->buildL10n(),
 			$mapper,
+			$this->createMock(LoggerInterface::class),
 		);
 	}//end buildProvider()
 

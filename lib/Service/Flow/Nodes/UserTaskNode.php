@@ -65,15 +65,19 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -90,7 +94,7 @@ use RuntimeException;
  * stateless helper over a value; a factory to call it would add a dependency
  * to say the same thing.
  */
-class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * The configuration boundary: validation and templating.
@@ -100,6 +104,13 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	private readonly UserTaskConfig $config;
 
 	/**
+	 * Who the step asks, and what asking them costs.
+	 *
+	 * @var UserTaskPerformers
+	 */
+	private readonly UserTaskPerformers $performers;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowTaskBridge $bridge Creates and reads the node's task.
@@ -107,6 +118,15 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @param IURLGenerator $urls For the palette icon.
 	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
 	 * @param FlowTimerService $timers Arms the task's business timer.
+	 * @param PrincipalResolverRegistry|null $principals Passed to the config reader,
+	 *                             which refuses a performer whose type nothing on
+	 *                             this instance understands.
+	 * @param IEventDispatcher|null $events Where an agent performer's turn is
+	 *                             ASKED FOR. The node dispatches; it never
+	 *                             invokes a runtime, so the app that owns
+	 *                             agents stays unnamed here.
+	 * @param FlowRunSubjectRecorder|null $subjects Resolves `attachTo` to the
+	 *                             object the run declared under that role.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
 	 */
@@ -116,8 +136,19 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly IURLGenerator $urls,
 		TaskFormReader $forms,
 		private readonly FlowTimerService $timers,
+		private readonly ?PrincipalResolverRegistry $principals = null,
+		private readonly ?IEventDispatcher $events = null,
+		// Appended LAST and nullable: a new argument inserted anywhere else
+		// shifts every positional caller, and the resulting TypeError names the
+		// argument AFTER the one that moved.
+		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
 		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
+		$this->performers = new UserTaskPerformers(
+			config: $this->config,
+			principals: $principals,
+			events: $events
+		);
 
 	}//end __construct()
 
@@ -140,7 +171,11 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function getDisplayName(): string {
-		return $this->l10n->t('Ask a person');
+		// "or group" because that is what the step has always done and never
+		// said: the guard resolved a bare name as a uid OR a group, so half
+		// the fleet's approvals are addressed to a committee under a label
+		// that named one person.
+		return $this->l10n->t('Ask a person or group');
 	}//end getDisplayName()
 
 	/**
@@ -152,7 +187,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
-			'Ask a person or an agent to do something, and wait for their answer. For a system that will call back, use "Wait for an answer" instead.'
+			'Ask a person, a group or an agent to do something, and wait for the answer. For a system that will call back, use "Wait for an answer" instead.'
 		);
 	}//end getDescription()
 
@@ -192,6 +227,12 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			'title',
 			'description',
 			'assignee',
+			// One field expressing what three did, and able to mix types.
+			'candidates',
+			// WHAT an agent performer is asked, in place of a form. A person
+			// gets fields to fill in; an agent gets a prompt. Same step, same
+			// completion verbs, same audit.
+			'prompt',
 			'candidateUsers',
 			'candidateGroups',
 			'candidateRole',
@@ -214,6 +255,9 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			'calendar',
 			'ladder',
 			'escalationRules',
+			// WHICH declared subject of the run this task hangs on. Empty leaves
+			// the task anchored to the item it was raised from, as before.
+			'attachTo',
 			'purpose',
 			'legalEffect',
 			'onExpiry',
@@ -253,6 +297,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function validateConfig(array $config): void {
+		$this->performers->refuseUnknownTypes(config: $config, l10n: $this->l10n);
 		$this->config->validate(config: $config);
 
 	}//end validateConfig()
@@ -353,8 +398,33 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			throw new RuntimeException('openregister.user-task cannot create a task outside a persisted run: the task must carry the run uuid.');
 		}
 
+		$this->performers->refuseIfNobodyHoldsThem(config: $config);
+
+		$data = $this->config->taskData(
+			config: $config,
+			items: $items,
+			nodeId: $resume->nodeId(),
+			nodeType: $this->getId()
+		);
+
+		// 🔴 BEFORE THE TASK EXISTS, AND IT THROWS. `attachTo` naming a role the
+		// run never recorded fails the step and creates NOTHING: a task attached
+		// to nothing looks fine in every list and is exactly the task an author
+		// believed was attached to the case. The refusal names the roles the run
+		// does hold, which is what makes an unregistered role vocabulary
+		// workable.
+		//
+		// 🔑 IT OVERRIDES THE ITEM'S OWN ANCHOR, which is the point. Without
+		// `attachTo` the task hangs on whatever record the step was raised from;
+		// with it, the task hangs on the object the AUTHOR named, which may be
+		// one no item in this stream carries.
+		$data = array_merge(
+			$data,
+			($this->subjects?->anchorFor(context: $context, role: (string)($config['attachTo'] ?? '')) ?? [])
+		);
+
 		$task = $this->bridge->createTask(
-			data: $this->config->taskData(config: $config, items: $items, nodeId: $resume->nodeId(), nodeType: $this->getId()),
+			data: $data,
 			runUuid: $runUuid,
 			nodeId: $resume->nodeId(),
 			actor: $this->actingIdentity(context: $context)
@@ -369,6 +439,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		// (subjectType: 'task', subjectUuid) pair that
 		// FlowTimerSubjectTerminalListener already cancels on completion. Arm
 		// somewhere the uuid is not yet known and the two halves cannot meet.
+		$this->performers->askAnyAgent(config: $config, task: $task, context: $context);
+
 		$this->armDeadline(
 			config: $config,
 			taskUuid: (string)$task->getUuid(),
@@ -554,6 +626,16 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 					'The answers the flow will route on, comma separated, like "approved, rejected". Recorded on the task for the inbox to offer.'
 				),
 			],
+			[
+				'key' => 'attachTo',
+				'label' => $this->l10n->t('Hang this task on'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The name an earlier step recorded its object under, such as "case". The task then shows on that object. '
+					.'Leave it empty and the task stays with the item this step received. '
+					.'A name no earlier step recorded fails the step rather than making a task attached to nothing.'
+				),
+			],
 		];
 	}//end whatFields()
 
@@ -567,25 +649,41 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			[
 				'key' => 'assignee',
 				'label' => $this->l10n->t('Assign directly to'),
-				'type' => 'text',
-				'help' => $this->l10n->t('A user id. The task is created active for this person; leave empty to offer it to a pool instead.'),
+				// 🔑 `principal`, not `text`. The field always accepted a
+				// person OR a group and could only ever say one of them, so
+				// authors typed a committee's name into a box labelled for a
+				// user and nothing recorded which they meant.
+				'type' => 'principal',
+				'help' => $this->l10n->t('A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead.'),
+			],
+			[
+				'key' => 'candidates',
+				'label' => $this->l10n->t('Candidates'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Anybody who may claim the task. People and groups may be mixed.'),
+			],
+			[
+				'key' => 'prompt',
+				'label' => $this->l10n->t('Prompt for an agent'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t('What an agent performer is asked, in place of a form. Ignored when a person is asked.'),
 			],
 			[
 				'key' => 'candidateUsers',
 				'label' => $this->l10n->t('Candidate users'),
-				'type' => 'text',
-				'help' => $this->l10n->t('User ids, comma separated. Any of them may claim the task.'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any of them may claim the task.'),
 			],
 			[
 				'key' => 'candidateGroups',
 				'label' => $this->l10n->t('Candidate groups'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Group ids, comma separated. Any member may claim the task.'),
+				'type' => 'principal',
+				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any member may claim the task.'),
 			],
 			[
 				'key' => 'candidateRole',
 				'label' => $this->l10n->t('Candidate role'),
-				'type' => 'text',
+				'type' => 'principal',
 				'help' => $this->l10n->t('A role that resolves to a group of performers.'),
 			],
 			[
@@ -599,16 +697,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			[
 				'key' => 'routingFallback',
 				'label' => $this->l10n->t('Fallback performer'),
-				'type' => 'text',
+				'type' => 'principal',
 				'help' => $this->l10n->t('Who gets the task when the strategy finds nobody.'),
-			],
-			[
-				'key' => 'performerType',
-				'label' => $this->l10n->t('Kind of performer'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'user, group, agent or worker. Defaults to user. An agent completes a task through the same verbs a person does.'
-				),
 			],
 		];
 	}//end whoFields()
@@ -760,4 +850,28 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			],
 		];
 	}//end formFields()
+
+	/**
+	 * What kind of step this is. A person is asked, and the run waits.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_USER_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_HUMAN;
+
+	}//end getCategory()
 }//end class

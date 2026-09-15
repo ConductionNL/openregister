@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -45,7 +46,7 @@ use UnexpectedValueException;
 /**
  * Tags each item with the output branch it should go to.
  */
-class RouterNode implements IFlowNode, IFlowNodeConfigKeys {
+class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *
@@ -225,4 +226,28 @@ class RouterNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		return array_values(array_filter($rules, static fn ($rule): bool => is_array($rule) === true));
 	}//end rulesOf()
+
+	/**
+	 * What kind of step this is. Chooses which way out.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_GATEWAY;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
+
+	}//end getCategory()
 }//end class

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -164,7 +165,13 @@ class TenantUsageMapper extends QBMapper {
 	}//end upsertUsage()
 
 	/**
-	 * Delete usage records older than a given date.
+	 * Delete every organisation's usage records older than a given date.
+	 *
+	 * INSTALLATION-WIDE. This is a retention sweep across ALL organisations
+	 * and has no organisation parameter. Never use it to remove one
+	 * organisation's records: TenantPurgeJob once did, with a far-future date,
+	 * and every purge deleted the usage history of every tenant. Use
+	 * deleteByOrganisation() for that.
 	 *
 	 * @param DateTime $before Delete records before this date
 	 *
@@ -183,4 +190,38 @@ class TenantUsageMapper extends QBMapper {
 
 		return $qb->executeStatement();
 	}//end deleteOlderThan()
+
+	/**
+	 * Delete all usage records of one organisation, and nothing else.
+	 *
+	 * The WHERE clause is the organisation's uuid and only that, so the rows of
+	 * every other organisation are out of reach whatever their period. An empty
+	 * uuid is refused rather than run: it names no organisation, and a purge
+	 * that cannot say whose records it deletes must not delete any.
+	 *
+	 * @param string $organisationUuid The uuid of the organisation being purged
+	 *
+	 * @return int Number of deleted records
+	 *
+	 * @throws InvalidArgumentException When the uuid is empty
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
+	 */
+	public function deleteByOrganisation(string $organisationUuid): int {
+		if (trim($organisationUuid) === '') {
+			throw new InvalidArgumentException('Refusing to delete usage records without an organisation uuid');
+		}
+
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->delete($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'organisation_uuid',
+					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
+				)
+			);
+
+		return $qb->executeStatement();
+	}//end deleteByOrganisation()
 }//end class

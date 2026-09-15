@@ -142,26 +142,193 @@ class Notifier implements INotifier {
 
 		$l = $this->factory->get('openregister', $languageCode);
 
-		switch ($notification->getSubject()) {
-			case 'configuration_update_available':
-				return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
-			case 'handoff_drain_failed':
-				return $this->prepareHandoffDrainFailed(notification: $notification, l: $l);
-			case 'scheduled_report_delivered':
-				return $this->prepareScheduledReportDelivered(notification: $notification, l: $l);
-			case 'scheduled_report_failed':
-				return $this->prepareScheduledReportFailed(notification: $notification, l: $l);
-			case 'delegation_consent_requested':
-				return $this->prepareDelegationConsentRequested(notification: $notification, l: $l);
-			case 'credential_relink_needed':
-				return $this->prepareCredentialRelinkNeeded(notification: $notification, l: $l);
-			default:
-				// Unknown subject. Object-lifecycle subjects
-				// (object_created / object_updated / object_transitioned)
-				// are rendered by AnnotationNotifier, not here.
-				throw new UnknownNotificationException('Unknown subject');
-		}//end switch
+		// A DISPATCH TABLE RATHER THAN A SWITCH. One branch per subject made
+		// this method's complexity grow by one with every notification the app
+		// learned to send, and it hit the ceiling on the eighth. A lookup does
+		// not grow at all, and it puts the whole set of renderable subjects on
+		// one screen.
+		//
+		// Unknown subjects are not an error worth logging loudly: object
+		// lifecycle subjects (object_created / object_updated /
+		// object_transitioned) are rendered by AnnotationNotifier, not here.
+		$handler = match ($notification->getSubject()) {
+			'configuration_update_available' => $this->prepareConfigurationUpdate(...),
+			'handoff_drain_failed' => $this->prepareHandoffDrainFailed(...),
+			'scheduled_report_delivered' => $this->prepareScheduledReportDelivered(...),
+			'scheduled_report_failed' => $this->prepareScheduledReportFailed(...),
+			'delegation_consent_requested' => $this->prepareDelegationConsentRequested(...),
+			'credential_relink_needed' => $this->prepareCredentialRelinkNeeded(...),
+			'retention_holds_skipped' => $this->prepareRetentionHoldsSkipped(...),
+			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
+			'destruction_review_pending' => $this->prepareDestructionReviewPending(...),
+			'timeline_mention' => $this->prepareTimelineMention(...),
+			default => null,
+		};
+
+		if ($handler === null) {
+			throw new UnknownNotificationException('Unknown subject');
+		}
+
+		return $handler(notification: $notification, l: $l);
 	}//end prepare()
+
+	/**
+	 * Render "somebody named you in a note".
+	 *
+	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
+	 * throws out of prepare(), so the mention would subscribe the colleague
+	 * and tell them nothing.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	private function prepareTimelineMention(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$objectTitle = (string) ($parameters['objectTitle'] ?? '');
+		$author = (string) ($parameters['author'] ?? '');
+
+		$notification->setParsedSubject($l->t('You were named in a note'));
+
+		$notification->setParsedMessage(
+			$l->t('%1$s named you in a note on "%2$s". You now follow it, so you will hear about what happens next.', [$author, $objectTitle])
+		);
+
+		if ($author === '') {
+			$notification->setParsedMessage(
+				$l->t('A note on "%1$s" names you. You now follow it, so you will hear about what happens next.', [$objectTitle])
+			);
+		}
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareTimelineMention()
+
+	/**
+	 * Render "the retention sweep kept records that are under a legal hold".
+	 *
+	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS. An unknown subject
+	 * throws out of prepare(), so a job that sends one is telling nobody. The
+	 * destruction case below had exactly that problem since it was written.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function prepareRetentionHoldsSkipped(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$schemaSlug = (string)($parameters['schemaSlug'] ?? 'unknown');
+		$skippedCount = (int)($parameters['skippedCount'] ?? 0);
+
+		$notification->setParsedSubject(
+			$l->t('Retention sweep kept records that are under a legal hold')
+		);
+
+		$notification->setParsedMessage(
+			$l->n(
+				'The retention sweep on "%2$s" reached %1$d record past its retention period and left '
+				. 'it in place, because a legal hold is on it. Release the hold when the case it '
+				. 'belongs to is closed, and the next sweep will destroy it.',
+				'The retention sweep on "%2$s" reached %1$d records past their retention period and '
+				. 'left them in place, because a legal hold is on them. Release the holds when the '
+				. 'cases they belong to are closed, and the next sweep will destroy them.',
+				$skippedCount,
+				[$skippedCount, $schemaSlug]
+			)
+		);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareRetentionHoldsSkipped()
+
+	/**
+	 * Render "the destruction list skipped records that are under a legal hold".
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function prepareDestructionHoldsSkipped(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$listUuid = (string)($parameters['listUuid'] ?? 'unknown');
+		$skippedCount = (int)($parameters['skippedCount'] ?? 0);
+
+		$notification->setParsedSubject(
+			$l->t('Destruction list kept records that are under a legal hold')
+		);
+
+		$notification->setParsedMessage(
+			$l->n(
+				'%1$d record on destruction list %2$s was not destroyed, because a legal hold is on '
+				. 'it. Release the hold and run the list again, or take the record off the list.',
+				'%1$d records on destruction list %2$s were not destroyed, because a legal hold is on '
+				. 'them. Release the holds and run the list again, or take the records off the list.',
+				$skippedCount,
+				[$skippedCount, $listUuid]
+			)
+		);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareDestructionHoldsSkipped()
+
+	/**
+	 * Render "records are waiting on your decision".
+	 *
+	 * The reminder the review process rests on: a destruction list entry with a
+	 * named reviewer and nobody asking is an entry that waits forever.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	private function prepareDestructionReviewPending(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$pendingCount = (int)($parameters['pendingCount'] ?? 0);
+
+		$notification->setParsedSubject(
+			$l->t('Records are waiting on your archiving decision')
+		);
+
+		$notification->setParsedMessage(
+			$l->n(
+				'%n record on a destruction list is assigned to you and has not been answered yet. '
+				. 'Each one is destroyed, kept for longer, or transferred to an e-Depot, and the '
+				. 'answer is recorded against your name.',
+				'%n records on destruction lists are assigned to you and have not been answered yet. '
+				. 'Each one is destroyed, kept for longer, or transferred to an e-Depot, and the '
+				. 'answer is recorded against your name.',
+				$pendingCount
+			)
+		);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareDestructionReviewPending()
 
 	/**
 	 * Prepare configuration update notification.
@@ -278,7 +445,7 @@ class Notifier implements INotifier {
 	 * and did not would be worse than the sentence that names the page.
 	 *
 	 * @param INotification $notification The notification to prepare.
-	 * @param mixed         $l            The localization instance.
+	 * @param mixed $l The localization instance.
 	 *
 	 * @return INotification The prepared notification.
 	 *
@@ -329,7 +496,7 @@ class Notifier implements INotifier {
 	 * people dismiss, and dismissing is not deciding.
 	 *
 	 * @param INotification $notification The notification to prepare.
-	 * @param mixed         $l            The l10n factory.
+	 * @param mixed $l The l10n factory.
 	 *
 	 * @return INotification The prepared notification.
 	 *

@@ -714,6 +714,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 			 * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
 			 */
 			public function get(string $id): object {
+				// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- PSR-11 adapter shim: this IS the container being handed to a collaborator, so there is no container to inject into it.
 				return Server::get($id);
 			}//end get()
 
@@ -728,6 +729,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 			 */
 			public function has(string $id): bool {
 				try {
+					// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- PSR-11 adapter shim: this IS the container being handed to a collaborator, so there is no container to inject into it.
 					Server::get($id);
 					return true;
 				} catch (Throwable $e) {

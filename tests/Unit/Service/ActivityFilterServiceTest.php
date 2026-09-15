@@ -38,6 +38,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Tests for ActivityFilterService.
@@ -67,7 +68,7 @@ class ActivityFilterServiceTest extends TestCase {
 			);
 		}
 
-		return new ActivityFilterService(db: $db, appManager: $appManager);
+		return new ActivityFilterService(db: $db, appManager: $appManager, logger: $this->createMock(LoggerInterface::class));
 	}//end buildService()
 
 	/**
@@ -159,6 +160,59 @@ class ActivityFilterServiceTest extends TestCase {
 		// Limit not exceeded, so there is no further page.
 		self::assertNull($result['nextCursor']);
 	}//end testNormalisesAndReturnsRows()
+
+	/**
+	 * Every row of this source is internal, and says so.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
+	 */
+	public function testEveryRowCarriesInternalVisibility(): void {
+		$rows = [
+			['activity_id' => 5, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+		];
+		$service = $this->buildService(rows: $rows);
+
+		$result = $service->getActivityEntries(objectUuid: 'u', limit: 10);
+		self::assertSame('internal', $result['results'][0]['visibility']);
+	}//end testEveryRowCarriesInternalVisibility()
+
+	/**
+	 * A citizen's view of this source is empty, not the whole feed.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublicOnlyReadReturnsNothing(): void {
+		$rows = [
+			['activity_id' => 5, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+		];
+		$service = $this->buildService(rows: $rows);
+
+		$result = $service->getActivityEntries(objectUuid: 'u', limit: 10, visibility: 'public');
+		self::assertSame([], $result['results']);
+		self::assertSame(0, $result['total']);
+		self::assertNull($result['nextCursor']);
+	}//end testPublicOnlyReadReturnsNothing()
+
+	/**
+	 * An internal read is the read this source already served.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
+	 */
+	public function testInternalReadKeepsTheRows(): void {
+		$rows = [
+			['activity_id' => 5, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+		];
+		$service = $this->buildService(rows: $rows);
+
+		$result = $service->getActivityEntries(objectUuid: 'u', limit: 10, visibility: 'internal');
+		self::assertCount(1, $result['results']);
+	}//end testInternalReadKeepsTheRows()
 
 	public function testCursorPaginationSlicesAndSetsNextCursor(): void {
 		// Stage limit+1 (=3) rows for a limit of 2; service must slice to

@@ -79,7 +79,8 @@ class ApprovalChainGateListenerTest extends TestCase {
 			$this->sequenceService,
 			new ApprovalChainAnnotationInstaller(logger: $logger),
 			$this->userSession,
-			$logger
+			$logger,
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
 		);
 	}//end setUp()
 

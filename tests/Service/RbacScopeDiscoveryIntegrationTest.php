@@ -89,6 +89,17 @@ class RbacScopeDiscoveryIntegrationTest extends TestCase {
 		$password = bin2hex(random_bytes(12)) . 'Aa9!';
 		$this->testUser = $this->userManager->createUser($this->testUserId, $password);
 
+		// Create the fixture AS ADMIN. SchemaMapper::insert() stamps the active
+		// session's organisation on the row, and ScopesController::index()
+		// resolves schemas with multitenancy ON, deliberately. Built under
+		// whatever user the previous file happened to leave behind, the schemas
+		// landed in another tenant and the admin-bypass test saw an empty scope
+		// list: the tuples existed, the caller could not see them.
+		$admin = $this->userManager->get('admin');
+		if ($admin !== null) {
+			$this->userSession->setUser($admin);
+		}
+
 		$this->createTestFixture();
 
 	}//end setUp()

@@ -33,9 +33,13 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
+use OCA\OpenRegister\Support\FilterParams;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -56,6 +60,40 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SearchQueryHandler {
+
+	/**
+	 * The id a `_watching=true` query falls back to when the caller follows
+	 * nothing. It is deliberately not a uuid, so no object can ever carry it and
+	 * the lens cannot accidentally widen to the whole register.
+	 *
+	 * @var string
+	 */
+	private const NO_WATCHED_OBJECTS = '__no-watched-objects__';
+
+	/**
+	 * The id an `_unread=true` query falls back to when there is no caller.
+	 *
+	 * An anonymous reader has no read state, so a naive `NOT EXISTS` would be
+	 * true for every row and the lens would answer the WHOLE register instead of
+	 * nothing. That is the silent-widening failure the watchers lens guards
+	 * against too, and it is guarded the same way: a literal no object can
+	 * carry.
+	 *
+	 * @var string
+	 */
+	private const NO_UNREAD_READER = '__no-unread-reader__';
+
+	/**
+	 * The id a `_favourite=true` or `_recent=true` query falls back to when
+	 * there is no caller.
+	 *
+	 * Anonymous has starred nothing and opened nothing, so an unguarded lens
+	 * would drop its own restriction and answer the WHOLE register. Guarded the
+	 * same way as the two above: a literal no object can carry.
+	 *
+	 * @var string
+	 */
+	private const NO_PERSONAL_LENS_USER = '__no-personal-lens-user__';
 
 	/**
 	 * Memoized effective search-trail recording mode for this request.
@@ -99,6 +137,9 @@ class SearchQueryHandler {
 	 * @param LoggerInterface $logger Logger for performance monitoring.
 	 * @param IRequest $request Request object.
 	 * @param SearchTrailService $searchTrailService Service for recording search trails.
+	 * @param WatcherMapper|null $watcherMapper Subscriptions, for the `_watching=true` lens.
+	 * @param IUserSession|null $userSession Resolves the caller for that lens.
+	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
@@ -109,8 +150,196 @@ class SearchQueryHandler {
 		private readonly LoggerInterface $logger,
 		private readonly IRequest $request,
 		private readonly SearchTrailService $searchTrailService,
+		private readonly ?WatcherMapper $watcherMapper = null,
+		private readonly ?IUserSession $userSession = null,
+		// The branch-filter expander. Nullable with a null default so the many
+		// unit tests that build this handler positionally keep working; the
+		// container resolves the real instance by type in production.
+		private readonly ?CodedFilterExpander $codedFilters = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Narrow a query to the objects the calling user follows.
+	 *
+	 * `_watching=true` is a LENS, not a filter: it does not ask the object a
+	 * question, it restricts the id set to this user's subscriptions and lets
+	 * every other filter, the RBAC gate and the paging run over what is left.
+	 * That is why it lands on `_ids` and not in the filter grammar.
+	 *
+	 * Combining it with an explicit `_ids` intersects rather than replaces, so
+	 * "these five cases, of which I follow two" answers two. When the
+	 * intersection is empty — or the caller follows nothing, or is anonymous —
+	 * the id set becomes a literal no schema can match, so the answer is an
+	 * honest empty page rather than the whole register.
+	 *
+	 * The mapper is read directly rather than through WatcherService: the lens
+	 * needs one question ("what does this user follow"), the service would drag
+	 * the permission evaluator into the query builder's construction, and the
+	 * mapper is already the single definition of that query.
+	 *
+	 * @param array<string, mixed> $query The query built so far.
+	 *
+	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 */
+	private function applyWatchingLens(array $query): array {
+		if (array_key_exists('_watching', $query) === false) {
+			return $query;
+		}
+
+		$asked = filter_var($query['_watching'], FILTER_VALIDATE_BOOLEAN);
+		unset($query['_watching']);
+		if ($asked === false) {
+			return $query;
+		}
+
+		$watched = $this->subscriptionsOfCaller();
+
+		if (isset($query['_ids']) === true && is_array($query['_ids']) === true) {
+			$watched = array_values(array_intersect($query['_ids'], $watched));
+		}
+
+		if ($watched === []) {
+			// A literal no object can carry, so an empty subscription set reads
+			// as "nothing", never as "no restriction".
+			$watched = [self::NO_WATCHED_OBJECTS];
+		}
+
+		$query['_ids'] = $watched;
+
+		return $query;
+	}//end applyWatchingLens()
+
+	/**
+	 * The uuids the calling user follows, or an empty list.
+	 *
+	 * Empty covers three different situations on purpose — anonymous, no
+	 * subscriptions, and a failed lookup — because the caller treats all three
+	 * the same way: a lens over nothing answers nothing. Keeping them apart
+	 * here would only let one of them accidentally mean "no restriction".
+	 *
+	 * @return array<int, string> The followed object uuids.
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 */
+	private function subscriptionsOfCaller(): array {
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($this->watcherMapper === null || $uid === null || $uid === '') {
+			return [];
+		}
+
+		try {
+			return $this->watcherMapper->uuidsForUser(userId: $uid);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SearchQueryHandler] watching lens lookup failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+	}//end subscriptionsOfCaller()
+
+	/**
+	 * Resolve `_unread=true` into the uid whose read state the query reads.
+	 *
+	 * The lens is resolved INSIDE the query, not applied to a fetched page: the
+	 * mapper turns `_unreadFor` into a correlated `NOT EXISTS` against the
+	 * read-state table, so the page, the total and the facets all see the same
+	 * restriction. A post-filter would give a first page of 25 with a total of
+	 * 120 and a second page that skipped rows, which reads as a paging bug and
+	 * is not one.
+	 *
+	 * Identity is resolved HERE, at the edge, and never in the query builder:
+	 * ADR-005 wants the principal named where the request arrives, and it also
+	 * means the mapper can be tested with a uid rather than a session.
+	 *
+	 * @param array<string, mixed> $query The query built so far.
+	 *
+	 * @return array<string, mixed> The query, carrying the resolved reader.
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function applyUnreadLens(array $query): array {
+		if (array_key_exists('_unread', $query) === false) {
+			return $query;
+		}
+
+		$asked = filter_var($query['_unread'], FILTER_VALIDATE_BOOLEAN);
+		unset($query['_unread']);
+		if ($asked === false) {
+			return $query;
+		}
+
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($uid === null || $uid === '') {
+			// No reader, so nothing can be unread FOR them. An honest empty
+			// page, never the whole register.
+			$query['_ids'] = [self::NO_UNREAD_READER];
+			return $query;
+		}
+
+		$query['_unreadFor'] = $uid;
+
+		return $query;
+	}//end applyUnreadLens()
+
+	/**
+	 * Resolve `_favourite=true` and `_recent=true` into the uid they read.
+	 *
+	 * Both are resolved INSIDE the query rather than applied to a fetched page,
+	 * for the reason spelled out on the unread lens above: a post-filter gives a
+	 * first page of 25 against a total of 120 and a second page that skips rows,
+	 * which reads as a paging bug and is not one. The mapper turns `_favouriteFor`
+	 * into a correlated `EXISTS` and `_recentFor` into the same plus the ordering
+	 * by last view, so the page, the total and the facets see one restriction.
+	 *
+	 * Both are handled in ONE method, and the two names are a loop rather than
+	 * two copies of the same eight lines, because the difference between them is
+	 * entirely in the mapper: here they are the same question, "which user".
+	 *
+	 * Identity is resolved HERE, at the edge, never in the query builder:
+	 * ADR-005 wants the principal named where the request arrives, and it also
+	 * means the mapper can be tested with a uid rather than a session.
+	 *
+	 * @param array<string, mixed> $query The query built so far.
+	 *
+	 * @return array<string, mixed> The query, carrying the resolved user.
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyPersonalLenses(array $query): array {
+		// Asked-for flag to the key the mapper reads.
+		$lenses = [
+			'_favourite' => '_favouriteFor',
+			'_recent' => '_recentFor',
+		];
+
+		foreach ($lenses as $flag => $resolved) {
+			if (array_key_exists($flag, $query) === false) {
+				continue;
+			}
+
+			$asked = filter_var($query[$flag], FILTER_VALIDATE_BOOLEAN);
+			unset($query[$flag]);
+			if ($asked === false) {
+				continue;
+			}
+
+			$uid = $this->userSession?->getUser()?->getUID();
+			if ($uid === null || $uid === '') {
+				// No user, so nothing can be theirs. An honest empty page,
+				// never the whole register.
+				$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
+				continue;
+			}
+
+			$query[$resolved] = $uid;
+		}//end foreach
+
+		return $query;
+	}//end applyPersonalLenses()
 
 	/**
 	 * Whether the target schema is served by an external object-source (DBAL
@@ -149,6 +378,49 @@ class SearchQueryHandler {
 
 		return ($entity->getObjectSource() !== null);
 	}//end schemaHasObjectSource()
+
+	/**
+	 * Whether the target schema declares a property literally named `filter`.
+	 *
+	 * Only such a schema can mean `filter[x]=v` as a filter on its own `filter`
+	 * property, so only there is the bracket spelling left alone. A list of
+	 * schemas (cross-table search) counts when any one of them declares it. A
+	 * schema that cannot be resolved does not, so the lift applies.
+	 *
+	 * A SYSTEM-level structural lookup, like {@see schemaHasObjectSource()}: it
+	 * decides how the parameters are parsed and returns no schema data, so it
+	 * bypasses RBAC and multitenancy. The data read stays checked downstream.
+	 *
+	 * @param int|string|array|null $schema The schema id/slug, or a list of them.
+	 *
+	 * @return bool True when a target schema declares a `filter` property.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private function schemaDeclaresFilterProperty(int|string|array|null $schema): bool {
+		if ($schema === null) {
+			return false;
+		}
+
+		$schemaRefs = [$schema];
+		if (is_array($schema) === true) {
+			$schemaRefs = $schema;
+		}
+
+		foreach ($schemaRefs as $schemaRef) {
+			try {
+				$entity = $this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+			} catch (\Throwable $e) {
+				continue;
+			}
+
+			if (array_key_exists(FilterParams::FILTER_KEY, ($entity->getProperties() ?? [])) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end schemaDeclaresFilterProperty()
 
 	/**
 	 * Build search query from request parameters
@@ -249,15 +521,24 @@ class SearchQueryHandler {
 			$fixedParams[$key] = $value;
 		}//end foreach
 
+		// STEP 1b: the bracket spelling. `filter[x]=v` means `x=v` here, as it
+		// does on the aggregation endpoints (openregister#3611). Before this,
+		// `filter` was read as a property filter on a property literally named
+		// `filter`, which no schema has, so every such query returned the empty
+		// set. The one schema this must not touch is one that really declares a
+		// `filter` property: there the old meaning is the right one.
+		if (is_array($fixedParams[FilterParams::FILTER_KEY] ?? null) === true
+			&& $this->schemaDeclaresFilterProperty(schema: $schema) === false
+		) {
+			$fixedParams = FilterParams::liftBracketFilter(params: $fixedParams);
+		}
+
 		// STEP 2: Remove system parameters that shouldn't be used as filters.
 		$params = $fixedParams;
-		unset(
-			$params['id'],
-			$params['_route'],
-			$params['rbac'],
-			$params['multi'],
-			$params['deleted']
-		);
+		unset($params['_route']);
+		foreach (FilterParams::OBJECT_SYSTEM_PARAMS as $systemParam) {
+			unset($params[$systemParam]);
+		}
 
 		// Build the query structure for searchObjectsPaginated.
 		$query = [];
@@ -325,6 +606,15 @@ class SearchQueryHandler {
 			$objectFilters[$key] = $value;
 		}
 
+		// STEP 2b: expand a branch filter into the concepts it stands for.
+		// `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root
+		// plus every narrower concept under it), walked at query time and
+		// bounded by depth, so moving a concept in the scheme changes what the
+		// filter matches with no reindex anywhere.
+		if ($this->codedFilters !== null) {
+			$objectFilters = $this->codedFilters->expand(filters: $objectFilters, schemaRef: $schema);
+		}
+
 		// Add object field filters directly to query.
 		$query = array_merge($query, $objectFilters);
 
@@ -349,6 +639,19 @@ class SearchQueryHandler {
 		if (isset($query['_ids']) === true && is_string($query['_ids']) === true) {
 			$query['_ids'] = array_filter(array_map('trim', explode(',', $query['_ids'])));
 		}
+
+		// The `_watching=true` lens, applied AFTER `_ids` is normalised to an
+		// array so the two can intersect rather than fight.
+		$query = $this->applyWatchingLens(query: $query);
+
+		// The `_unread=true` lens, after the watching lens so that "unread among
+		// what I follow" narrows twice rather than one overwriting the other.
+		$query = $this->applyUnreadLens(query: $query);
+
+		// The `_favourite=true` and `_recent=true` lenses, last, so that every
+		// earlier lens has already narrowed `_ids` and these two compose with it
+		// rather than replacing it.
+		$query = $this->applyPersonalLenses(query: $query);
 
 		return $query;
 	}//end buildSearchQuery()

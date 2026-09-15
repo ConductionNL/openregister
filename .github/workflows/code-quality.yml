@@ -314,6 +314,35 @@ jobs:
       # already carry serious/critical axe violations, so switching it on in
       # the same change as the gates themselves would confuse "this repo has an
       # accessibility defect" with "Nextcloud core does". Separate change.
+      #
+      # Gate-46 blocks on `@e2e` anchors here, not just on `@spec`.
+      #
+      # This is the opt-in the gate itself invites — "set
+      # HYDRA_GATE_SPEC_ANCHOR_E2E_BLOCKING=1 for this repo once they are worked
+      # down" — and it is set only because the count reached zero first. It is
+      # NOT the fleet default and must not become one: #726 counted 194 dangling
+      # @e2e anchors fleet-wide, 154 of them in the four repos with the most
+      # end-to-end coverage, so blocking there would punish exactly the wrong
+      # thing.
+      #
+      # THE MEASUREMENT THAT LICENSES IT, taken with the gate's own resolver
+      # (scripts/lib/check_spec_anchors.py from ConductionNL/.github@main, not a
+      # vendored copy and not a reimplementation) over gate-46's full file scope
+      # of 3,713 files, after #3573 repointed the last 28 change-directory
+      # anchors: 0 unresolved findings across 9,948 @spec and 163 @e2e tags.
+      # The resolver was mutation-checked before the zero was believed — an
+      # invented capability and an invented fragment were both reported — because
+      # a checker that inspects nothing exits exactly like one that inspects
+      # everything and finds it clean.
+      #
+      # WHAT WILL MAKE THIS FAIL, and it is meant to: a new test whose @e2e
+      # anchor names a spec, requirement or scenario that does not exist. Three
+      # anchors still name the live change `mdm-views-route-scoping-e2e`; they
+      # resolve today through gate-46's capability index and will keep resolving
+      # after that change is archived, so they do not put this repo at risk. If
+      # this ever blocks a PR on inherited debt rather than on the PR's own
+      # anchors, revert this one line — that is why it is its own commit.
+      hydra-gates-e2e-anchor-blocking: true
       enable-sbom: true
 
       # ── Frontend Check legs ──────────────────────────────────────────────

@@ -26,8 +26,8 @@
  *
  * WHAT IT ASSERTS
  * ---------------
- *   1. the sidebar renders on a flow route, with its palette and actions
- *   2. a step can be added from the palette and reaches the canvas
+ *   1. the sidebar renders on a flow route, and the toolbar carries its actions
+ *   2. a step can be added from the toolbar's step picker and reaches the canvas
  *   3. Save persists — the route advances from `new` to the server's uuid
  *   4. Run now creates a run against that flow
  *
@@ -141,6 +141,79 @@ test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
  * @param locator The themed control to click.
  * @return {Promise<void>}
  */
+/**
+ * Open the sidebar's flow-actions menu, so its items can be clicked.
+ *
+ * WHY THIS TRIES SEVERAL TRIGGERS. The menu that holds Publish is an NcActions,
+ * and which one depends on how the sidebar is hosted: `<CnFlowSidebar />` with
+ * no `embedded` prop puts its items in NcAppSidebar's own menu, while the
+ * embedded variant brings its own `<NcActions aria-label="Flow actions">`. The
+ * two hosts label their trigger differently, and this test cannot see which
+ * rendered without opening one.
+ *
+ * So it tries each candidate and stops at the first that reveals the item. A
+ * failure then names every trigger it tried AND every button actually on the
+ * page, because the previous version of this assertion pointed at a library
+ * version and cost an afternoon.
+ *
+ * @param page The page under test.
+ * @param item The menu item that proves the right menu opened.
+ */
+async function openFlowActionsMenu(page: Page, item: Locator): Promise<void> {
+	if (await item.isVisible().catch(() => false)) {
+		return
+	}
+
+	// 🔴 THREE BUTTONS ON THIS PAGE ARE CALLED "Actions". The canvas has one,
+	// and NcAppSidebar renders one in its header. This used to take `.first()`
+	// of each candidate group, so it opened a menu that does not contain the
+	// flow actions, found no Publish, and moved on having tried ONE of the
+	// three — then waited out the test's whole 45s budget on a page that was
+	// working. The reported failure was the CLEANUP that ran afterwards, which
+	// names neither the menu nor the button.
+	//
+	// So: try every button each selector matches, not just the first, and put
+	// a BOUND on each click. An unbounded click on a control that never becomes
+	// actionable spends the budget that the remaining candidates need.
+	const groups = [
+		page.locator('.app-sidebar-header__menu button'),
+		page.getByRole('button', { name: 'Flow actions' }),
+		page.getByRole('button', {
+			name: /^(Actions|Open actions menu|More actions)$/i,
+		}),
+	]
+
+	for (const group of groups) {
+		const count = await group.count().catch(() => 0)
+		for (let i = 0; i < count; i++) {
+			await group
+				.nth(i)
+				.click({ timeout: 5_000 })
+				.catch(() => {})
+			if (await item.isVisible().catch(() => false)) {
+				return
+			}
+
+			// Close whatever DID open, so it cannot cover the next candidate.
+			await page.keyboard.press('Escape').catch(() => {})
+		}
+	}
+
+	const named = await page.getByRole('button').evaluateAll((nodes) =>
+		nodes
+			.map((n) => (n.getAttribute('aria-label') || n.textContent || '').trim())
+			.filter(Boolean)
+			.slice(0, 30),
+	)
+
+	throw new Error(
+		'could not open the flow-actions menu, so Publish was never reachable. '
+			+ 'Tried: "Flow actions", a generic actions label, and the sidebar '
+			+ 'header menu. Buttons present: '
+			+ JSON.stringify(named),
+	)
+}
+
 async function clickThemed(locator: Locator): Promise<void> {
 	await expect(locator).toBeVisible()
 	await expect(locator).toBeEnabled()
@@ -293,10 +366,27 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			'the flow sidebar did not render — the controls are unreachable again',
 		).toBeVisible()
 
-		const palette = page.locator('.cn-flow-sidebar__palette')
+		// 🔴 THE PALETTE IS NOT IN THE SIDEBAR ANY MORE, since nextcloud-vue
+		// 2.40.0. A live instance serves sixty-five step types, and a
+		// one-per-row list that long in a 300px column is a scroll rather than
+		// a chooser, so it became `CnFlowStepPickerModal`, opened from the
+		// toolbar, where the same entries render as a grid. With it went the
+		// Steps tab and the tab strip.
+		//
+		// `.cn-flow-sidebar__palette` survives ONLY as dead CSS in the sidebar,
+		// which is why the old assertion could never pass again and this job
+		// was red all day: the selector still matched a rule, so it read as a
+		// rendering failure rather than as a retired surface.
+		//
+		// The BUTTON is what belongs in this "the controls exist" block. The
+		// picker itself is opened where the step is added, further down: it is
+		// a modal, and holding one open across the toolbar assertions below
+		// would put a focus trap over every one of them.
+		const addStep = page.locator('[data-testid="flow-add-step"]')
 		await expect(
-			palette,
-			"the step palette did not render, so the empty state's own instruction cannot be followed",
+			addStep,
+			"the toolbar offers no way to add a step, so the empty state's own "
+				+ 'instruction cannot be followed',
 		).toBeVisible()
 
 		// Save and Run live on the canvas toolbar (flow-editor consolidation):
@@ -314,16 +404,6 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		await expect(toolbar).toBeVisible()
 		await expect(saveButton).toBeVisible()
 		await expect(runButton).toBeVisible()
-
-		// The palette is populated from /api/flow/node-catalog. An empty one
-		// renders the same container, so assert it has entries.
-		await expect
-			.poll(async () => await palette.locator('> *').count(), {
-				message:
-					'the palette rendered but is empty — the node catalog did not load',
-				timeout: 15_000,
-			})
-			.toBeGreaterThan(0)
 
 		// ── THE EDITOR IS INTERACTIVE BEFORE IT IS INITIALISED ──────────────
 		// This wait is the whole reason this spec used to fail 6 runs in 8.
@@ -380,8 +460,55 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// succession — terminal -> stop (4eac3a3), then stop -> end (7ba3c21) —
 		// and this locator was left on the middle spelling. That is the whole
 		// reason the job went red: `EndNode::getLabel()` returns `t('End')`, and
-		// the palette has carried no entry called "Stop" since that commit.
-		await clickThemed(palette.getByText('End', { exact: true }).first())
+		// the picker has carried no entry called "Stop" since that commit.
+		await clickThemed(addStep)
+
+		const picker = page.locator('[data-testid="flow-step-picker"]')
+		await expect(
+			picker,
+			"the step picker did not open, so the empty state's own instruction "
+				+ 'cannot be followed',
+		).toBeVisible()
+
+		// The picker is populated from /api/flow/node-catalog. An empty one
+		// renders the same dialog as a full one, so count the ITEMS rather than
+		// the container: without this, "no End step" reads as a catalogue entry
+		// that was removed when in fact nothing loaded at all.
+		await expect
+			.poll(
+				async () =>
+					await picker
+						.locator('[data-testid="flow-step-picker-item"]')
+						.count(),
+				{
+					message:
+						'the step picker opened but offers nothing — the node catalog did not load',
+					timeout: 15_000,
+				},
+			)
+			.toBeGreaterThan(0)
+
+		// MATCH THE NAME EXACTLY, NOT THE CARD LOOSELY. Each card carries the
+		// step's name, its role word, its description and its catalogue id, and
+		// `hasText` is a case-insensitive SUBSTRING match over all of that — so
+		// 'End' also matches "Send email" and any description containing the
+		// word. The first version of this fix used the loose filter, picked a
+		// different step, and failed at the canvas assertion below saying the
+		// step never arrived. It had arrived; it was the wrong one.
+		await clickThemed(
+			picker
+				.locator('[data-testid="flow-step-picker-item"]')
+				.filter({
+					has: page.locator('.cn-step-picker__name', {
+						hasText: /^End$/,
+					}),
+				})
+				.first(),
+		)
+		// Picking a step adds it and closes the dialog. Asserted rather than
+		// assumed: a dialog left open is a focus trap over every canvas and
+		// toolbar interaction below.
+		await expect(picker).toBeHidden()
 		const endCard = page.locator('.cn-flow-detail__node', {
 			hasText: 'End',
 		})
@@ -537,21 +664,78 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// lifecycle specs already give: a button that posts and silently fails
 		// looks exactly like one that worked, and the badge only reads
 		// "Published" once the store has re-read the flow from the server.
+		// ⚠️ PUBLISH IS A MENU ITEM, NOT A BUTTON, and the old failure here said
+		// otherwise. It read "Needs @conduction/nextcloud-vue >= 2.24.0" while
+		// the app was on 2.39.0, which sends anyone reading it after a release
+		// that shipped long ago.
+		//
+		// CnFlowSidebar pushes Publish into `flowActions` and renders it as an
+		// NcActionButton inside an NcActions menu — the `#secondary-actions`
+		// slot here, because this app mounts <CnFlowSidebar /> with no
+		// `embedded` prop and NcAppSidebar wraps that slot in its own menu.
+		// CnFlowLifecycleControls says so outright: "WHAT IS DELIBERATELY NOT
+		// HERE — THE VERBS. Publish, Create draft version and Deprecate live in
+		// the header's action menu." So the item cannot be visible until the
+		// menu is opened, and asserting on it directly can only ever time out.
 		const publishButton = page.locator('[data-testid="flow-publish"]')
+		await openFlowActionsMenu(page, publishButton)
+
+		// 🔴 CLICK THE BUTTON, NOT THE LIST ITEM. `data-testid` is a
+		// fallthrough attribute on `NcActionButton`, and that component's root
+		// is the `<li>` — the handler is bound to the `<button>` inside it.
+		// `clickThemed` dispatches the event straight at the element it is
+		// given, so aiming it at the `<li>` fires an event nothing listens for:
+		// the menu stayed open with "Publish" plainly in it, and the dialog
+		// never mounted.
+		//
+		// The accessibility tree names it, so drive it the way a screen reader
+		// would. Falls back to the testid's inner button if the role is ever
+		// renamed, and both are scoped to the open menu.
+		const publishItem = page
+			.getByRole('menuitem', { name: 'Publish', exact: true })
+			.first()
+		if (await publishItem.isVisible().catch(() => false)) {
+			await clickThemed(publishItem)
+		} else {
+			await clickThemed(publishButton.locator('button').first())
+		}
+
+		// 🔴 THE MENU ITEM OPENS A DIALOG; IT DOES NOT PUBLISH. Its handler is
+		// `run: () => { this.publishOpen = true }`, which mounts
+		// `CnFlowPublishDialog` — the confirmation that shows the next version,
+		// what the bump removes, and any refusal. Publishing is what its own
+		// primary button does.
+		//
+		// Without this the spec pressed the menu item, sent NO request at all,
+		// and reported "the POST was rejected or swallowed". The trace is
+		// unambiguous: the only calls in the whole test were the flow's own
+		// POST /api/flows and the cleanup DELETE. There was no publish request
+		// to reject.
+		const publishDialog = page.locator('[data-testid="flow-publish-dialog"]')
 		await expect(
-			publishButton,
-			'the editor offers no Publish control, so a flow built here can never '
-				+ 'be run: a draft backs no run, and publishing is the only thing '
-				+ 'that changes that. Needs @conduction/nextcloud-vue >= 2.24.0.',
+			publishDialog,
+			'pressing Publish did not open the publish confirmation',
 		).toBeVisible({ timeout: 10_000 })
 
-		await clickThemed(publishButton)
+		// A refusal is a legitimate answer and it renders IN the dialog, so
+		// read it out rather than letting the confirm below time out silently.
+		const refusal = publishDialog.locator('[data-testid="flow-publish-refusal"]')
+		if (await refusal.isVisible().catch(() => false)) {
+			throw new Error(
+				'the publish dialog refused the version bump: '
+					+ ((await refusal.textContent()) ?? '').trim(),
+			)
+		}
+
+		await clickThemed(
+			publishDialog.locator('[data-testid="flow-publish-confirm"]'),
+		)
 
 		await expect(
 			page.locator('[data-testid="flow-lifecycle"]'),
-			'Publish was pressed but the flow never became published — the store '
-				+ 'still shows the draft it started as, so the POST was rejected or '
-				+ 'swallowed',
+			'Publish was confirmed but the flow never became published — the '
+				+ 'store still shows the draft it started as, so the POST was '
+				+ 'rejected or swallowed',
 		).toHaveText('Published', { timeout: 10_000 })
 
 		// 5. RUN NOW CREATES A RUN. Asserted against the API rather than the

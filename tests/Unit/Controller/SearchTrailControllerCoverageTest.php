@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SearchTrailController;
+use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -20,6 +21,7 @@ class SearchTrailControllerCoverageTest extends TestCase {
 	private SearchTrailController $controller;
 	private IRequest&MockObject $request;
 	private SearchTrailService&MockObject $searchTrailService;
+	private SearchTrailMapper&MockObject $searchTrailMapper;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
 
@@ -28,6 +30,7 @@ class SearchTrailControllerCoverageTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->searchTrailService = $this->createMock(SearchTrailService::class);
+		$this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
@@ -40,23 +43,27 @@ class SearchTrailControllerCoverageTest extends TestCase {
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
+			$this->searchTrailMapper,
 			$this->userSession,
 			$this->groupManager
 		);
 	}
 
 	// =========================================================================
-	// clearAll — calls \OC::$server->get() then clearAllLogs() which doesn't
-	// exist on SearchTrailMapper. The undefined method throws \Error which is
-	// NOT caught by the controller's catch(\Exception). This exercises the
-	// try-block code path up to line 887.
+	// clearAll — deletes through the injected mapper.
 	// =========================================================================
 
-	public function testClearAllThrowsErrorDueToUndefinedMethod(): void {
-		$this->expectException(\Error::class);
-		$this->expectExceptionMessage('clearAllLogs');
+	public function testClearAllReportsNothingToClearWhenTheMapperDeletedNoRows(): void {
+		$this->searchTrailMapper->expects($this->once())
+			->method('clearAllLogs')
+			->willReturn(false);
 
-		$this->controller->clearAll();
+		$result = $this->controller->clearAll();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertSame(0, $data['deleted']);
 	}
 
 	// =========================================================================
@@ -145,6 +152,7 @@ class SearchTrailControllerCoverageTest extends TestCase {
 			'openregister',
 			$request,
 			$searchTrailService,
+			$this->createMock(SearchTrailMapper::class),
 			$userSession,
 			$groupManager
 		);

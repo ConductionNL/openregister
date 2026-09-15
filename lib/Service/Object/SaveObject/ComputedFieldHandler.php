@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
 use Psr\Log\LoggerInterface;
@@ -76,6 +77,7 @@ class ComputedFieldHandler {
 	 * @param MappingExtension $mappingExtension Twig extension with custom filters and functions.
 	 * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
+	 * @param CodedValueGuard|null $codedValues Rolls concept weights up into the declared score property.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -84,6 +86,10 @@ class ComputedFieldHandler {
 		private readonly MappingExtension $mappingExtension,
 		private readonly MappingRuntimeLoader $mappingRuntimeLoader,
 		private readonly LoggerInterface $logger,
+		// The rolled-up concept score. Nullable with a null default so the
+		// unit tests that build this handler positionally keep working; the
+		// container resolves the real instance by type in production.
+		private readonly ?CodedValueGuard $codedValues = null,
 	) {
 	}//end __construct()
 
@@ -207,8 +213,53 @@ class ComputedFieldHandler {
 			);
 		}//end foreach
 
-		return $data;
+		return $this->applyConceptScores(data: $data, schema: $schema);
 	}//end evaluateComputedFields()
+
+	/**
+	 * Write the rolled-up scores a schema's coded properties declare.
+	 *
+	 * A multi-valued coded property may declare `score.property`, and the
+	 * weights of the concepts it holds are summed into that property. It runs
+	 * beside the Twig computed fields rather than inside them because the
+	 * inputs are not in the object at all: they are the concepts' own weights,
+	 * which live in the vocabulary register.
+	 *
+	 * Both callers of this method matter. On SAVE the score is stored; on
+	 * RENDER it is recomputed, so changing a concept's weight changes every
+	 * score derived from it without rewriting a single object.
+	 *
+	 * @param array<string,mixed> $data The object data.
+	 * @param Schema $schema The schema being evaluated.
+	 *
+	 * @return array<string,mixed> The data with the scores written.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	private function applyConceptScores(array $data, Schema $schema): array {
+		if ($this->codedValues === null) {
+			return $data;
+		}
+
+		try {
+			$scores = $this->codedValues->rolledUpScores(object: $data, schema: $schema);
+		} catch (\Throwable $failure) {
+			// A vocabulary that cannot be read must not become the reason an
+			// object cannot be saved or rendered; the score is simply absent.
+			$this->logger->warning(
+				message: '[ComputedFieldHandler] Rolled-up concept score skipped: ' . $failure->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema->getId()]
+			);
+
+			return $data;
+		}
+
+		foreach ($scores as $property => $score) {
+			$data[$property] = $score;
+		}
+
+		return $data;
+	}//end applyConceptScores()
 
 	/**
 	 * Evaluate a single Twig expression with the given data context.

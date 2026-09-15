@@ -7,3 +7,4 @@ export { default as RebaseConfirmationModal } from './RebaseConfirmationModal.vu
 export { default as FileManagementModal } from './FileManagementModal.vue'
 export { default as ObjectManagementModal } from './ObjectManagementModal.vue'
 export { default as LLMConfigModal } from './LLMConfigModal.vue'
+export { default as EditWorkingCalendarModal } from './EditWorkingCalendarModal.vue'

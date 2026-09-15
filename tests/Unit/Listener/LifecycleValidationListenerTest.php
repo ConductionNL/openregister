@@ -37,8 +37,11 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IServerContainer;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -52,6 +55,29 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleValidationListenerTest extends TestCase {
 
+	/**
+	 * The real condition dialect, not a double.
+	 *
+	 * Which dialect a condition is written in is part of what the save path
+	 * decides, so a test that stubbed it would be asserting about a decision
+	 * the engine no longer makes.
+	 *
+	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
+		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+				)
+			)
+		);
+
+	}//end realConditionDialect()
+
+
 	private SchemaMapper&MockObject $schemaMapper;
 
 	private ContainerInterface&MockObject $guardContainer;
@@ -61,6 +87,12 @@ class LifecycleValidationListenerTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 
 	private PermissionHandler&MockObject $permissionHandler;
+
+	private IGroupManager&MockObject $groupManager;
+
+	private IL10N&MockObject $l10n;
+
+	private LoggerInterface&MockObject $logger;
 
 	private LifecycleValidationListener $listener;
 
@@ -72,6 +104,19 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 		$logger = $this->createMock(LoggerInterface::class);
+		$this->logger = $logger;
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+
+		// The engine's fallback message is the only translated string here; an
+		// author's own `message` must reach the refusal untouched, so a test
+		// that saw t() called for one could not tell the two apart. Echoing the
+		// key back keeps that distinction visible in assertions.
+		$this->l10n = $this->createMock(IL10N::class);
+		$this->l10n->method('getLanguageCode')->willReturn('en');
+		$this->l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $parameters = []): string => vsprintf($text, $parameters)
+		);
 
 		// LifecycleGuardRegistry is final and cannot be doubled; drive a real
 		// instance through a mocked container that returns the test guard.
@@ -89,7 +134,25 @@ class LifecycleValidationListenerTest extends TestCase {
 			$this->guardRegistry,
 			$this->userSession,
 			$this->permissionHandler,
-			$logger
+			$logger,
+			new LifecycleConditionEvaluator(
+				$this->userSession,
+				$this->groupManager,
+				$this->l10n,
+				$this->logger,
+				$this->realConditionDialect()
+			),
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+						placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+							userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+						)
+					)
+				)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 	}//end setUp()
 

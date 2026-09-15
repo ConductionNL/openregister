@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -94,10 +95,11 @@ class ChunkVectorizationJob extends TimedJob {
 	 * Constructor
 	 *
 	 * @param ITimeFactory $time Time factory for parent class
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 *
 	 * @spec openspec/changes/hybrid-document-search/tasks.md#5.2
 	 */
-	public function __construct(ITimeFactory $time) {
+	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL);
 	}//end __construct()
@@ -116,11 +118,11 @@ class ChunkVectorizationJob extends TimedJob {
 	protected function run($argument): void {
 		$startTime = microtime(true);
 
-		$logger = \OC::$server->get(LoggerInterface::class);
-		$appConfig = \OC::$server->get(IAppConfig::class);
-		$chunkMapper = \OC::$server->get(ChunkMapper::class);
-		$embeddings = \OC::$server->get(VectorEmbeddings::class);
-		$storageHandler = \OC::$server->get(VectorStorageHandler::class);
+		$logger = $this->container->get(LoggerInterface::class);
+		$appConfig = $this->container->get(IAppConfig::class);
+		$chunkMapper = $this->container->get(ChunkMapper::class);
+		$embeddings = $this->container->get(VectorEmbeddings::class);
+		$storageHandler = $this->container->get(VectorStorageHandler::class);
 
 		$logger->debug(
 			message: '[ChunkVectorizationJob] Starting chunk vectorization batch',

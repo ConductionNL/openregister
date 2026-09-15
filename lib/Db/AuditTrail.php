@@ -86,6 +86,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFlowNode(?string $flowNode)
  * @method integer|null getFlowStep()
  * @method void setFlowStep(?int $flowStep)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
  *
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class

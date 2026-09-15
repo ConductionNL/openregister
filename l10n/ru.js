@@ -2851,7 +2851,14 @@ OC.L10N.register(
         "Store": "Магазин",
         "Install registers, schemas and flows that other organisations have published.": "Установите реестры, схемы и потоки, опубликованные другими организациями.",
         "No such run": "Нет такого запуска",
-        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не существует, или у вас нет права его видеть. Удаление потока удаляет и его запуски."
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не существует, или у вас нет права его видеть. Удаление потока удаляет и его запуски.",
+        "Configured": "Настроено",
+        "Limited": "Ограничено",
+        "Simulated": "Имитируется",
+        "Not available": "Недоступно",
+        "Open settings": "Открыть настройки",
+        "Add integration": "Добавить интеграцию",
+        "Last checked": "Последняя проверка"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

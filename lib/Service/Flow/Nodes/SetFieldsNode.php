@@ -31,10 +31,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowFieldPath;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -43,7 +45,7 @@ use UnexpectedValueException;
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys {
+class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *
@@ -312,7 +314,7 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys {
 	 */
 	private function applySet(array &$json, array $set): void {
 		foreach ($set as $field => $value) {
-			self::assign(
+			FlowFieldPath::assign(
 				json: $json,
 				path: $this->renderPath(path: (string)$field, json: $json),
 				value: FlowValueTemplate::render(value: $value, json: $json)
@@ -344,7 +346,7 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys {
 		array $context,
 	): void {
 		foreach ($compute as $field => $logic) {
-			self::assign(
+			FlowFieldPath::assign(
 				json: $json,
 				path: $this->renderPath(path: (string)$field, json: $json),
 				value: FlowExpression::evaluate(
@@ -360,61 +362,6 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys {
 		}
 
 	}//end applyCompute()
-
-	/**
-	 * Write a value at a possibly-dotted path, creating the containers it needs.
-	 *
-	 * `{{dotted.path}}` has always READ through nested structures; writing one
-	 * did not, so `"entry.owner"` created a top-level key literally CALLED
-	 * `entry.owner` beside any real `entry`. Nothing failed — the flow ran, the
-	 * item came out, and the object the author meant to build was simply never
-	 * there. That is indistinguishable from success until something downstream
-	 * reads the shape and finds it empty.
-	 *
-	 * It matters because composing a NESTED record is the reason a flow sets
-	 * fields at all: hydra's run record is `cycles[].stages[]`, and without this
-	 * a flow can only ever produce a flat bag. `compute` is no help — JsonLogic
-	 * evaluates expressions and cannot construct an object.
-	 *
-	 * A segment whose current value is not an array is REPLACED by a container.
-	 * The alternative — merging into a scalar — has no meaning, and silently
-	 * skipping would reintroduce the same invisible no-op this fixes.
-	 *
-	 * The path reaching here is already rendered, and a rendered segment can
-	 * never contain a `.` (renderPath() refuses one), so splitting again is
-	 * safe: the nesting is exactly what the configuration spelled out.
-	 *
-	 * @param array $json The item's record, modified in place.
-	 * @param string $path The field name, optionally dotted.
-	 * @param mixed $value The value to write.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	private static function assign(array &$json, string $path, mixed $value): void {
-		if (str_contains($path, '.') === false) {
-			$json[$path] = $value;
-
-			return;
-		}
-
-		$segments = explode('.', $path);
-		$last = array_pop($segments);
-		$cursor = &$json;
-
-		foreach ($segments as $segment) {
-			if (isset($cursor[$segment]) === false || is_array($cursor[$segment]) === false) {
-				$cursor[$segment] = [];
-			}
-
-			$cursor = &$cursor[$segment];
-		}
-
-		$cursor[$last] = $value;
-		unset($cursor);
-
-	}//end assign()
 
 	/**
 	 * Render a configured path against the item, one segment at a time.
@@ -520,4 +467,28 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		return implode('.', $rendered);
 	}//end renderPath()
+
+	/**
+	 * What kind of step this is. Reshapes each item.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
+
+	}//end getCategory()
 }//end class

@@ -22,7 +22,9 @@ import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
  * filter for core-NC console noise, a page.on('console')/page.on('response')
  * >=500 tracker, navigate via the manifest shell, assert real DOM.
  *
- * @e2e openspec/specs/saved-search-views/spec.md
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-activating-a-view-re-applies-its-configuration-to-the-live-search
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-columns-from-an-enum-status
+ * @e2e openspec/specs/saved-search-views/spec.md#scenario-objects-appear-on-their-date
  */
 import { expect, test } from '@playwright/test'
 import * as path from 'path'

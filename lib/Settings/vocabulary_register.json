@@ -17,8 +17,8 @@
       "vocabulary": {
         "slug": "vocabulary",
         "title": "Vocabulary",
-        "version": "1.0.0",
-        "description": "Controlled-vocabulary register holding SKOS concept schemes and their concepts. Reads are public (vocabularies are public reference data); writes are admin-gated. Seeded on install with the Woo-critical TOOI value lists (informatiecategorieën, soortHandeling) via the SeedVocabularyRegister repair step.",
+        "version": "1.1.0",
+        "description": "Controlled-vocabulary register holding SKOS concept schemes and their concepts. Reads are public (vocabularies are public reference data); writes are admin-gated. Seeded on install with the Woo-critical TOOI value lists (informatiecategorieën, soortHandeling) via the SeedVocabularyRegister repair step. A concept carries its own fields, its validity window, its weight and its exclusive group, so a code list can be retired rather than deleted and can hold data of its own (code-list-lifecycle-and-hierarchy).",
         "published": "2026-07-23T00:00:00+00:00",
         "schemas": [
           "conceptScheme",
@@ -31,7 +31,7 @@
       "conceptScheme": {
         "slug": "conceptScheme",
         "title": "Concept Scheme",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "published": "2026-07-23T00:00:00+00:00",
         "x-schema-org": "schema:DefinedTermSet",
         "summary": "A SKOS concept scheme (controlled vocabulary / begrippenkader)",
@@ -85,6 +85,34 @@
             "description": "URI or identifier of the upstream source this scheme was imported from (e.g. a TOOI waardelijst identifier or a SKOS/JSON-LD export URL).",
             "maxLength": 500,
             "title": "Source"
+          },
+          "conceptShape": {
+            "type": "object",
+            "description": "The shape this scheme declares for its concepts' own fields, written as a JSON-Schema property map with an optional required list. A resultaattype scheme declares bewaartermijn and grondslag here, and every concept's fields object is then validated against it on import and on save. A scheme that declares no shape validates nothing, which is how every scheme written before this change keeps behaving.",
+            "properties": {
+              "properties": {
+                "type": "object",
+                "description": "The declared fields, keyed by field name, each with at least a type.",
+                "title": "Concept Field Definitions"
+              },
+              "required": {
+                "type": "array",
+                "description": "The names of the concept fields a concept of this scheme must carry.",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Required Concept Fields"
+              }
+            },
+            "title": "Concept Shape"
+          },
+          "exclusiveGroups": {
+            "type": "array",
+            "description": "The names of the mutually exclusive groups this scheme defines. An object may hold at most one concept of any one group; the group a concept belongs to is named on the concept itself.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Exclusive Groups"
           }
         },
         "searchable": true,
@@ -98,7 +126,7 @@
       "concept": {
         "slug": "concept",
         "title": "Concept",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "published": "2026-07-23T00:00:00+00:00",
         "x-schema-org": "schema:DefinedTerm",
         "summary": "A SKOS concept (a single controlled-vocabulary term)",
@@ -225,6 +253,55 @@
               "$ref": "concept"
             },
             "title": "Related Concepts"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first instant at which this value may be chosen. Before it the value is not offered as an option and still resolves on read, so records that already hold it stay readable. Empty means no lower bound.",
+            "facetable": true,
+            "title": "Valid From"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last instant at which this value may be chosen. After it the value is retired: it is no longer offered, a new write of it is refused, and every record that already holds it keeps resolving it with its label. This is how a code list is retired rather than deleted. Empty means no upper bound.",
+            "facetable": true,
+            "title": "Valid Until"
+          },
+          "weight": {
+            "type": "number",
+            "description": "The numeric weight this value contributes to a rolled-up score. A multi-valued coded property may declare a score derived from the weights of the concepts it holds, which is how a subsidie aanvraag is scored from its selected criteria. A concept with no weight contributes nothing.",
+            "facetable": true,
+            "title": "Weight"
+          },
+          "exclusiveGroup": {
+            "type": "string",
+            "description": "The mutually exclusive group this value belongs to. An object holding two concepts of one group is refused on save, which is how a label set such as spoed against regulier stays a choice of one.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Exclusive Group"
+          },
+          "systemDefined": {
+            "type": "boolean",
+            "description": "Whether this value is defined by the product rather than by the organisation. A system-defined value may be retired by closing its validity window; it may not be deleted, because the code that switches on it does not stop existing when the row does.",
+            "default": false,
+            "facetable": true,
+            "title": "System Defined"
+          },
+          "contexts": {
+            "type": "array",
+            "description": "The context values this concept serves, for a property whose option subset is bound to another property's value or to a declared context key. A concept that names no context serves every context, so one categorie field can serve many case types without forty near-identical fields.",
+            "items": {
+              "type": "string"
+            },
+            "facetable": true,
+            "title": "Contexts"
+          },
+          "fields": {
+            "type": "object",
+            "description": "This value's own fields, validated against the shape its scheme declares in conceptShape. A resultaattype holds its bewaartermijn and grondslag here, so a code list item is an object with typed, queryable fields rather than a label with data smuggled into its text.",
+            "additionalProperties": true,
+            "title": "Fields"
           }
         },
         "searchable": true,

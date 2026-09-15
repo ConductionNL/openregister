@@ -29,6 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
+use OCA\OpenRegister\Support\FleetAppId;
+use OCP\App\IAppManager;
+
 /**
  * Closed allow-list mapping action types to vetted job classes.
  *
@@ -36,17 +39,46 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
  */
 class ScheduleActionAllowList {
 	/**
-	 * The closed action-type → vetted `jobClass` map.
+	 * The closed action-type → vetted job class map.
 	 *
-	 * Kept as plain strings so referencing this map never autoloads the
-	 * cross-app job class (it is resolved lazily by OpenConnector's JobService
-	 * container at execution time, not by OpenRegister).
+	 * The KEY is manifest data: leaf apps write `action: 'openconnector:…'`
+	 * into their own `src/manifest.json`, so it is a published contract and
+	 * stays spelled as it is — renaming it would silently un-allow-list every
+	 * schedule already declared against it.
+	 *
+	 * The VALUE is a class path RELATIVE to the connector's namespace, because
+	 * that half did move: the class is `OCA\Integriq\Action\…` on
+	 * development and `OCA\OpenConnector\Action\…` on beta/main. It stays a
+	 * plain string so referencing this map never autoloads the cross-app class
+	 * (it is resolved lazily by the connector's JobService container at
+	 * execution time, not by OpenRegister) — which is why the namespace is
+	 * picked from the INSTALLED APP ID rather than by probing `class_exists`.
 	 *
 	 * @var array<string, string>
 	 */
 	private const MAP = [
-		'openconnector:synchronization' => 'OCA\\OpenConnector\\Action\\SynchronizationAction',
+		'openconnector:synchronization' => 'Action\\SynchronizationAction',
 	];
+
+	/**
+	 * Canonical (new) id of the connector app, for {@see FleetAppId}.
+	 *
+	 * @var string
+	 */
+	private const CONNECTOR_APP = 'integriq';
+
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppManager $appManager Resolves which connector id is installed.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly IAppManager $appManager,
+	) {
+	}//end __construct()
 
 	/**
 	 * Resolve an action type to its vetted `jobClass`, or null when not allow-listed.
@@ -58,7 +90,12 @@ class ScheduleActionAllowList {
 	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
 	 */
 	public function resolve(string $action): ?string {
-		return self::MAP[$action] ?? null;
+		$relativeClass = (self::MAP[$action] ?? null);
+		if ($relativeClass === null) {
+			return null;
+		}
+
+		return FleetAppId::className($this->appManager, self::CONNECTOR_APP, $relativeClass);
 	}//end resolve()
 
 	/**

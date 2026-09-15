@@ -63,6 +63,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
@@ -70,6 +71,7 @@ use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -85,7 +87,7 @@ use UnexpectedValueException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type this node answers to.
@@ -148,12 +150,14 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @param IUserManager $userManager Resolves the run's acting identity.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowRunSubjectRecorder|null $subjects Records the locked object under the declared role.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
+		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
 
 	}//end __construct()
@@ -223,7 +227,7 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
 	public function configKeys(): array {
-		return ['uuid', 'duration', 'waitSeconds', 'process'];
+		return ['uuid', 'duration', 'waitSeconds', 'process', 'subjectRole'];
 	}//end configKeys()
 
 	/**
@@ -258,6 +262,16 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'label' => $this->l10n->t('Reason'),
 				'type' => 'text',
 				'help' => $this->l10n->t('What the lock is for. Shown to anyone whose write is refused.'),
+			],
+			[
+				'key' => 'subjectRole',
+				'label' => $this->l10n->t('Record the locked object as'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Your own word for what this object is to this flow, such as "case" or "besluit". '
+					.'A later step can then attach its task to it by that name. '
+					.'Leave it empty and the step records nothing.'
+				),
 			],
 		];
 	}//end configForm()
@@ -373,11 +387,49 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			}//end try
 		}
 
-		// Every target is held. Returning normally clears the slot, so a later
-		// re-entry of this node starts a fresh budget, which is correct: it is
-		// a different wait.
+		// Every target is held. Only now, with the lock actually taken, is the
+		// object something the run can honestly say it is working on.
+		$this->recordSubject(targets: $targets, config: $config, context: $context);
+
+		// Returning normally clears the slot, so a later re-entry of this node
+		// starts a fresh budget, which is correct: it is a different wait.
 		return $items;
 	}//end execute()
+
+	/**
+	 * Record the locked object under the role its author named.
+	 *
+	 * 🔑 AFTER THE LOCK, NEVER BEFORE. A step that parks and retries reaches
+	 * this line only once every target is held, so the run never claims a
+	 * subject it failed to lock.
+	 *
+	 * 🔴 ONE OBJECT, OR NONE — the same rule as the write node. A role is a
+	 * singular name; a step that locked six objects has no single one to mean
+	 * by it, so it records nothing and says so once. The register and schema
+	 * are not recorded because this node never resolves them: it locks by uuid.
+	 * A task attaching to this role is anchored by uuid alone, which is what
+	 * the inbox and the sidebar match on.
+	 *
+	 * @param array<int, string>   $targets The uuids this step locked.
+	 * @param array<string, mixed> $config  The step configuration.
+	 * @param array<string, mixed> $context The run context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 */
+	private function recordSubject(array $targets, array $config, array $context): void {
+		// The empty role is NOT guarded here. Recording is opt-in and the
+		// recorder enforces that, so a second guard would be a second copy of
+		// one rule — and this class is at its complexity budget, which is the
+		// concrete cost of keeping the copy.
+		$this->subjects?->recordOne(
+			context: $context,
+			role: (string)($config['subjectRole'] ?? ''),
+			uuids: array_values(array_unique($targets))
+		);
+
+	}//end recordSubject()
 
 	/**
 	 * Park the run and retry, or fail because the budget is spent.
@@ -601,4 +653,28 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		return $user;
 	}//end resolveOwner()
+
+	/**
+	 * What kind of step this is. Calls the register to lock.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
+
+	}//end getCategory()
 }//end class

@@ -82,13 +82,6 @@ class DestructionService {
 	private MagicMapper $objectMapper;
 
 	/**
-	 * Legal hold service for checking holds.
-	 *
-	 * @var LegalHoldService
-	 */
-	private LegalHoldService $legalHoldService;
-
-	/**
 	 * App configuration.
 	 *
 	 * @var IAppConfig
@@ -120,7 +113,6 @@ class DestructionService {
 	 * Constructor.
 	 *
 	 * @param MagicMapper $objectMapper Object entity data mapper.
-	 * @param LegalHoldService $legalHoldService Legal hold checking service.
 	 * @param IAppConfig $appConfig App configuration.
 	 * @param IJobList $jobList Background job list.
 	 * @param IUserSession $userSession User session service.
@@ -128,105 +120,17 @@ class DestructionService {
 	 */
 	public function __construct(
 		MagicMapper $objectMapper,
-		LegalHoldService $legalHoldService,
 		IAppConfig $appConfig,
 		IJobList $jobList,
 		IUserSession $userSession,
 		LoggerInterface $logger,
 	) {
 		$this->objectMapper = $objectMapper;
-		$this->legalHoldService = $legalHoldService;
 		$this->appConfig = $appConfig;
 		$this->jobList = $jobList;
 		$this->userSession = $userSession;
 		$this->logger = $logger;
 	}//end __construct()
-
-	/**
-	 * Find objects eligible for destruction.
-	 *
-	 * Objects are eligible when:
-	 * - archiefactiedatum is in the past
-	 * - archiefnominatie is 'vernietigen'
-	 * - archiefstatus is 'nog_te_archiveren'
-	 * - No active legal hold
-	 * - Not already on an existing in_review destruction list
-	 *
-	 * @param array<string, int> $existingListObjectIds UUIDs of objects already on destruction lists.
-	 *
-	 * @return array<int, array<string, mixed>> Array of eligible object data.
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function findEligibleObjects(array $existingListObjectIds = []): array {
-		$today = (new DateTime())->format('Y-m-d');
-		$eligible = [];
-
-		// Query objects with retention.archiefactiedatum in the past.
-		// This uses MagicMapper's JSON field querying capability.
-		try {
-			$objects = $this->objectMapper->findAll(
-				filters: [
-					'retention.archiefnominatie' => 'vernietigen',
-					'retention.archiefstatus' => 'nog_te_archiveren',
-				],
-				includeDeleted: true
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[DestructionService] Failed to query eligible objects',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return [];
-		}
-
-		foreach ($objects as $object) {
-			$retention = $object->getRetention() ?? [];
-
-			// Check archiefactiedatum is in the past.
-			$actiedatum = $retention['archiefactiedatum'] ?? null;
-			if ($actiedatum === null || $actiedatum > $today) {
-				continue;
-			}
-
-			// Check no active legal hold.
-			if ($this->legalHoldService->hasActiveHold($object) === true) {
-				continue;
-			}
-
-			// Check not already on an existing destruction list.
-			$uuid = $object->getUuid();
-			if (in_array($uuid, $existingListObjectIds, true) === true) {
-				continue;
-			}
-
-			$eligible[] = [
-				'uuid' => $uuid,
-				'title' => $object->getTitle() ?? $uuid,
-				'schema' => $object->getSchema(),
-				'register' => $object->getRegister(),
-				'archiefactiedatum' => $actiedatum,
-				'classification' => $retention['classification'] ?? null,
-				'alreadySoftDeleted' => $object->isSoftDeleted(),
-			];
-		}//end foreach
-
-		$this->logger->info(
-			message: '[DestructionService] Found eligible objects for destruction',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'count' => count($eligible),
-			]
-		);
-
-		return $eligible;
-	}//end findEligibleObjects()
 
 	/**
 	 * Create a destruction list from eligible objects.

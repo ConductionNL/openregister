@@ -810,11 +810,21 @@ test.describe('the Flows page', () => {
 		).toBeVisible({ timeout: 15000 })
 		await expect(page.getByText('No steps yet')).toHaveCount(0)
 
-		// The palette offers the catalogue, and an in-flight catalogue is not
-		// reported as an unreadable one (the failure text used to show on
+		// The step picker offers the catalogue, and an in-flight catalogue is
+		// not reported as an unreadable one (the failure text used to show on
 		// every first paint of this route).
+		//
+		// It was `.cn-flow-sidebar__palette-item` until nextcloud-vue 2.40.0
+		// moved the palette out of the sidebar into `CnFlowStepPickerModal`,
+		// opened from the toolbar. This file is outside `tests/e2e/ci`, which
+		// is the only path CI runs, so the stale locator would have waited out
+		// its timeout for whoever ran it next rather than failing a job.
+		await page.locator('[data-testid="flow-add-step"]').click()
 		await expect(
-			page.locator('.cn-flow-sidebar__palette-item').first(),
+			page
+				.locator('[data-testid="flow-step-picker"]')
+				.locator('[data-testid="flow-step-picker-item"]')
+				.first(),
 		).toBeVisible({ timeout: 15000 })
 		await expect(page.getByText('could not be read')).toHaveCount(0)
 	})

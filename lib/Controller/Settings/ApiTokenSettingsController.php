@@ -20,9 +20,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -46,14 +48,18 @@ class ApiTokenSettingsController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IAppConfig $config App configuration.
 	 * @param SettingsService $settingsService Settings service.
+	 * @param IClientService $clientService HTTP client factory for the token probes.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ConnectionReporter $connectionReporter Tells integriq's connection registry about saves and token tests.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly IAppConfig $config,
 		private readonly SettingsService $settingsService,
+		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
+		private readonly ConnectionReporter $connectionReporter,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -117,11 +123,13 @@ class ApiTokenSettingsController extends Controller {
 	public function saveApiTokens(): JSONResponse {
 		try {
 			$data = $this->request->getParams();
+			$written = [];
 
 			if (($data['github_token'] ?? null) !== null) {
 				// Only save if not masked.
 				if (str_contains($data['github_token'], '***') === false) {
 					$this->config->setValueString('openregister', 'github_api_token', $data['github_token']);
+					$written[] = 'github_api_token';
 				}
 			}
 
@@ -129,12 +137,17 @@ class ApiTokenSettingsController extends Controller {
 				// Only save if not masked.
 				if (str_contains($data['gitlab_token'], '***') === false) {
 					$this->config->setValueString('openregister', 'gitlab_api_token', $data['gitlab_token']);
+					$written[] = 'gitlab_api_token';
 				}
 			}
 
 			if (($data['gitlab_url'] ?? null) !== null) {
 				$this->config->setValueString('openregister', 'gitlab_api_url', $data['gitlab_url']);
+				$written[] = 'gitlab_api_url';
 			}
+
+			// The GitHub and GitLab rows read these keys; integriq decides again.
+			$this->connectionReporter->refreshFromSave(savedKeys: $written);
 
 			return new JSONResponse(
 				data: [
@@ -164,7 +177,10 @@ class ApiTokenSettingsController extends Controller {
 	public function testGitHubToken(): JSONResponse {
 		try {
 			$data = $this->request->getParams();
-			$token = $data['token'] ?? $this->config->getValueString('openregister', 'github_api_token', '');
+			$savedToken = $this->config->getValueString('openregister', 'github_api_token', '');
+			$token = $data['token'] ?? $savedToken;
+			// Only a test of the saved token says anything about the saved connection.
+			$testsSavedToken = ($token !== '' && $token === $savedToken);
 
 			if (empty($token) === true) {
 				return new JSONResponse(
@@ -177,7 +193,7 @@ class ApiTokenSettingsController extends Controller {
 			}
 
 			// Test the token by making a simple API call.
-			$client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+			$client = $this->clientService->newClient();
 			$response = $client->get(
 				'https://api.github.com/user',
 				[
@@ -191,15 +207,31 @@ class ApiTokenSettingsController extends Controller {
 
 			$data = json_decode($response->getBody(), true);
 
+			if ($testsSavedToken === true) {
+				$this->connectionReporter->report(
+					key: 'github',
+					status: 'configured',
+					message: 'The saved token is valid for ' . ($data['login'] ?? 'an unknown account') . '.'
+				);
+			}
+
 			return new JSONResponse(
 				data: [
 					'success' => true,
 					'message' => 'GitHub token is valid',
 					'username' => $data['login'] ?? 'Unknown',
-					'scopes' => $response->getHeader('X-OAuth-Scopes') ?? [],
+					'scopes' => $response->getHeader('X-OAuth-Scopes'),
 				]
 			);
 		} catch (\Throwable $e) {
+			if (($testsSavedToken ?? false) === true) {
+				$this->connectionReporter->report(
+					key: 'github',
+					status: 'error',
+					message: 'GitHub refused the saved token: ' . $e->getMessage()
+				);
+			}
+
 			return new JSONResponse(
 				data: [
 					'success' => false,
@@ -222,9 +254,13 @@ class ApiTokenSettingsController extends Controller {
 	public function testGitLabToken(): JSONResponse {
 		try {
 			$data = $this->request->getParams();
-			$token = $data['token'] ?? $this->config->getValueString('openregister', 'gitlab_api_token', '');
+			$savedToken = $this->config->getValueString('openregister', 'gitlab_api_token', '');
+			$token = $data['token'] ?? $savedToken;
 			$defaultApiUrl = 'https://gitlab.com/api/v4';
-			$apiUrl = $data['url'] ?? $this->config->getValueString('openregister', 'gitlab_api_url', $defaultApiUrl);
+			$savedApiUrl = $this->config->getValueString('openregister', 'gitlab_api_url', $defaultApiUrl);
+			$apiUrl = $data['url'] ?? $savedApiUrl;
+			// Only a test of the saved token against the saved URL says anything about the saved connection.
+			$testsSavedToken = ($token !== '' && $token === $savedToken && $apiUrl === $savedApiUrl);
 
 			if (empty($token) === true) {
 				return new JSONResponse(
@@ -245,7 +281,7 @@ class ApiTokenSettingsController extends Controller {
 			}
 
 			// Test the token by making a simple API call.
-			$client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+			$client = $this->clientService->newClient();
 			$response = $client->get(
 				$apiUrl . '/user',
 				[
@@ -257,6 +293,14 @@ class ApiTokenSettingsController extends Controller {
 
 			$data = json_decode($response->getBody(), true);
 
+			if ($testsSavedToken === true) {
+				$this->connectionReporter->report(
+					key: 'gitlab',
+					status: 'configured',
+					message: 'The saved token is valid for ' . ($data['username'] ?? 'an unknown account') . ' on ' . $apiUrl . '.'
+				);
+			}
+
 			return new JSONResponse(
 				data: [
 					'success' => true,
@@ -266,6 +310,14 @@ class ApiTokenSettingsController extends Controller {
 				]
 			);
 		} catch (\Throwable $e) {
+			if (($testsSavedToken ?? false) === true) {
+				$this->connectionReporter->report(
+					key: 'gitlab',
+					status: 'error',
+					message: 'GitLab refused the saved token: ' . $e->getMessage()
+				);
+			}
+
 			return new JSONResponse(
 				data: [
 					'success' => false,

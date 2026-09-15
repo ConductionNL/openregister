@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -67,11 +68,13 @@ class CacheWarmupJob extends TimedJob {
 	 * Constructor
 	 *
 	 * @param ITimeFactory $time Time factory for parent class.
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 * @param IAppConfig $appConfig App configuration for interval setting.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
+		private readonly ContainerInterface $container,
 		IAppConfig $appConfig,
 		LoggerInterface $logger,
 	) {
@@ -136,7 +139,7 @@ class CacheWarmupJob extends TimedJob {
 
 		try {
 			// @var CacheHandler $cacheHandler
-			$cacheHandler = \OC::$server->get(CacheHandler::class);
+			$cacheHandler = $this->container->get(CacheHandler::class);
 
 			// Warm up the UUID-to-name cache.
 			$namesLoaded = $cacheHandler->warmupNameCache();

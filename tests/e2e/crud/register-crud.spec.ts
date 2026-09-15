@@ -31,6 +31,7 @@ import type { APIRequestContext } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import * as path from 'path'
 import { makeRunId } from '../_fixtures.ts'
+import { countListRowsByText, listRowByText } from '../_list-assertions.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 // HASH form — the router runs in hash mode (src/main.js); the path-form URL
@@ -133,15 +134,16 @@ test.describe('register-crud — full create→read→update→delete with persi
 	}) => {
 		test.skip(registerId === null, 'create step did not persist a register')
 		await page.goto(REGISTERS_ROUTE, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('[data-testid="cn-index-page"]')).toBeVisible({
-			timeout: 30_000,
-		})
 
-		// The register title must be rendered somewhere in the list (table row
-		// or card), NOT just an empty state.
-		await expect(
-			page.getByText(REG_TITLE, { exact: false }).first(),
-		).toBeVisible({ timeout: 20_000 })
+		// The register title must be rendered as a row in the list (table row or
+		// card), NOT just an empty state. Resolved through the shared helper: the
+		// list pages at 20 and does not sort, so the register created a moment
+		// ago is the one most likely to be on page two, and an unscoped locator
+		// would also match this app's own hidden "was updated" notification.
+		// See tests/e2e/_list-assertions.ts.
+		await expect(await listRowByText(page, REG_TITLE)).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 
 	test('UPDATE — edit the title and assert persistence + re-render', async ({
@@ -168,14 +170,11 @@ test.describe('register-crud — full create→read→update→delete with persi
 		expect(put.status(), 'PUT /api/registers/{id}').toBe(200)
 		expect((await put.json()).title).toBe(REG_TITLE_UPDATED)
 
-		// The list view must now show the updated title and no longer the old one.
+		// The list view must now show the updated title.
 		await page.goto(REGISTERS_ROUTE, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('[data-testid="cn-index-page"]')).toBeVisible({
-			timeout: 30_000,
+		await expect(await listRowByText(page, REG_TITLE_UPDATED)).toBeVisible({
+			timeout: 20_000,
 		})
-		await expect(
-			page.getByText(REG_TITLE_UPDATED, { exact: false }).first(),
-		).toBeVisible({ timeout: 20_000 })
 	})
 
 	test('DELETE — remove the register and assert it is gone from API and list', async ({
@@ -198,14 +197,17 @@ test.describe('register-crud — full create→read→update→delete with persi
 			'deleted register should not return 200',
 		).toBeGreaterThanOrEqual(400)
 
-		// UI: the (updated) title must no longer appear as a row.
+		// UI: the (updated) title must no longer appear as a row on ANY page.
+		// Counted across the pages rather than on page one, and scoped to the
+		// list, because the delete leaves a Nextcloud notification carrying the
+		// same title in the page header and an unscoped count reports 1.
 		await page.goto(REGISTERS_ROUTE, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('[data-testid="cn-index-page"]')).toBeVisible({
-			timeout: 30_000,
-		})
-		await expect(
-			page.getByText(REG_TITLE_UPDATED, { exact: false }),
-		).toHaveCount(0, { timeout: 20_000 })
+		await expect
+			.poll(async () => countListRowsByText(page, REG_TITLE_UPDATED), {
+				timeout: 20_000,
+				message: 'the deleted register must be gone from every page',
+			})
+			.toBe(0)
 
 		registerId = null
 	})

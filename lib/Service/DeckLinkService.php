@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\App\IAppManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -72,6 +73,7 @@ class DeckLinkService {
 	 * @param IUserSession $userSession Active session.
 	 * @param IUserManager $userManager User lookup for assignee displayName.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ContainerInterface $container App container Deck's services are resolved from.
 	 */
 	public function __construct(
 		private readonly DeckLinkMapper $deckLinkMapper,
@@ -79,6 +81,7 @@ class DeckLinkService {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
+		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 
@@ -479,7 +482,7 @@ class DeckLinkService {
 		}
 
 		try {
-			return \OC::$server->get('OCA\\Deck\\Service\\CardService');
+			return $this->container->get('OCA\\Deck\\Service\\CardService');
 		} catch (Throwable $e) {
 			$this->logger->debug('Deck CardService not resolvable: ' . $e->getMessage());
 			return null;
@@ -497,7 +500,7 @@ class DeckLinkService {
 		}
 
 		try {
-			return \OC::$server->get('OCA\\Deck\\Service\\BoardService');
+			return $this->container->get('OCA\\Deck\\Service\\BoardService');
 		} catch (Throwable $e) {
 			$this->logger->debug('Deck BoardService not resolvable: ' . $e->getMessage());
 			return null;
@@ -515,7 +518,7 @@ class DeckLinkService {
 		}
 
 		try {
-			return \OC::$server->get('OCA\\Deck\\Service\\StackService');
+			return $this->container->get('OCA\\Deck\\Service\\StackService');
 		} catch (Throwable $e) {
 			$this->logger->debug('Deck StackService not resolvable: ' . $e->getMessage());
 			return null;
@@ -537,7 +540,7 @@ class DeckLinkService {
 		}
 
 		try {
-			$cardMapper = \OC::$server->get('OCA\\Deck\\Db\\CardMapper');
+			$cardMapper = $this->container->get('OCA\\Deck\\Db\\CardMapper');
 			$boardId = $cardMapper->findBoardId($cardId);
 			if ($boardId !== null) {
 				return (int)$boardId;

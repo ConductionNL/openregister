@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -73,7 +74,7 @@ use OCP\WorkflowEngine\IManager;
  *   makes the lease safe to turn on — that every uncertain case resolves the same
  *   way, and it is possible to see which.
  */
-class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys {
+class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * Read one key into the item.
@@ -621,4 +622,28 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		return $json;
 	}//end doRelease()
+
+	/**
+	 * What kind of step this is. Writes the run its own state.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
+
+	}//end getCategory()
 }//end class

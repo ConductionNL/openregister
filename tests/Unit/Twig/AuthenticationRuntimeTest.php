@@ -19,18 +19,20 @@ class AuthenticationRuntimeTest extends TestCase {
 	}
 
 	/**
-	 * Create a Source mock with getConfiguration available via addMethods.
-	 * Source extends Entity which uses __call for getters/setters, so
-	 * getConfiguration() is not a real method and must be added explicitly.
+	 * A real Source carrying an auth config.
 	 *
-	 * @param array|null $configuration The configuration to return
-	 * @return Source&MockObject
+	 * This helper used to hand back a double declaring getConfiguration()
+	 * through addMethods(). Source has no `configuration` property, so the
+	 * double invented the accessor and the whole file stayed green while
+	 * every templated token threw "configuration is not a valid attribute".
+	 * authConfig is a real property, so a real entity answers it.
+	 *
+	 * @param array|null $authConfig The credentials to return
+	 * @return Source
 	 */
-	private function createSourceWithConfig(?array $configuration): Source&MockObject {
-		$source = $this->getMockBuilder(Source::class)
-			->addMethods(['getConfiguration'])
-			->getMock();
-		$source->method('getConfiguration')->willReturn($configuration);
+	private function createSourceWithConfig(?array $authConfig): Source {
+		$source = new Source();
+		$source->setAuthConfig($authConfig);
 		return $source;
 	}
 
@@ -39,92 +41,26 @@ class AuthenticationRuntimeTest extends TestCase {
 	}
 
 	// --- oauthToken() ---
+	//
+	// The fixtures below are flat credential maps, because that is what
+	// Source::authConfig holds and what AuthenticationService reads
+	// (grant_type, tokenUrl, api_key...). They used to be wrapped in an
+	// `authentication` key, the shape of a Source `configuration` field that
+	// does not exist on the entity, in the database or in the API.
 
 	public function testOauthTokenCallsAuthService(): void {
-		$source = $this->createSourceWithConfig([
-			'authentication' => ['grant_type' => 'client_credentials', 'client_id' => 'abc'],
-		]);
+		$source = $this->createSourceWithConfig(['grant_type' => 'client_credentials', 'client_id' => 'abc']);
 
 		$this->authService->expects($this->once())
 			->method('fetchOAuthTokens')
 			->with(['grant_type' => 'client_credentials', 'client_id' => 'abc'])
 			->willReturn('oauth-token-123');
 
-		$result = $this->runtime->oauthToken($source);
-		$this->assertSame('oauth-token-123', $result);
+		$this->assertSame('oauth-token-123', $this->runtime->oauthToken($source));
 	}
 
-	public function testOauthTokenWithNestedConfig(): void {
-		$source = $this->createSourceWithConfig([
-			'authentication' => ['token_url' => 'https://auth.example.com/token'],
-		]);
-
-		$this->authService->method('fetchOAuthTokens')->willReturn('token');
-
-		$this->assertSame('token', $this->runtime->oauthToken($source));
-	}
-
-	// --- decosToken() ---
-
-	public function testDecosTokenCallsAuthService(): void {
-		$source = $this->createSourceWithConfig([
-			'authentication' => ['api_key' => 'decos-key'],
-		]);
-
-		$this->authService->expects($this->once())
-			->method('fetchDecosToken')
-			->with(['api_key' => 'decos-key'])
-			->willReturn('decos-token-456');
-
-		$result = $this->runtime->decosToken($source);
-		$this->assertSame('decos-token-456', $result);
-	}
-
-	// --- jwtToken() ---
-
-	public function testJwtTokenCallsAuthService(): void {
-		$source = $this->createSourceWithConfig([
-			'authentication' => ['secret' => 'jwt-secret', 'issuer' => 'test'],
-		]);
-
-		$this->authService->expects($this->once())
-			->method('fetchJWTToken')
-			->with(['secret' => 'jwt-secret', 'issuer' => 'test'])
-			->willReturn('jwt-token-789');
-
-		$result = $this->runtime->jwtToken($source);
-		$this->assertSame('jwt-token-789', $result);
-	}
-
-	// --- Edge cases: missing authentication key causes TypeError ---
-
-	public function testOauthTokenWithMissingAuthenticationThrowsTypeError(): void {
-		$source = $this->createSourceWithConfig([]);
-
-		$this->expectException(\TypeError::class);
-		$this->runtime->oauthToken($source);
-	}
-
-	public function testDecosTokenWithMissingAuthenticationThrowsTypeError(): void {
-		$source = $this->createSourceWithConfig([]);
-
-		$this->expectException(\TypeError::class);
-		$this->runtime->decosToken($source);
-	}
-
-	public function testJwtTokenWithMissingAuthenticationThrowsTypeError(): void {
-		$source = $this->createSourceWithConfig([]);
-
-		$this->expectException(\TypeError::class);
-		$this->runtime->jwtToken($source);
-	}
-
-	// --- Edge cases: empty authentication array ---
-
-	public function testOauthTokenWithEmptyAuthentication(): void {
-		$source = $this->createSourceWithConfig([
-			'authentication' => [],
-		]);
+	public function testOauthTokenPassesAnEmptyMapWhenTheSourceHasNoCredentials(): void {
+		$source = $this->createSourceWithConfig(null);
 
 		$this->authService->expects($this->once())
 			->method('fetchOAuthTokens')
@@ -134,10 +70,21 @@ class AuthenticationRuntimeTest extends TestCase {
 		$this->assertSame('', $this->runtime->oauthToken($source));
 	}
 
-	public function testDecosTokenWithEmptyAuthentication(): void {
-		$source = $this->createSourceWithConfig([
-			'authentication' => [],
-		]);
+	// --- decosToken() ---
+
+	public function testDecosTokenCallsAuthService(): void {
+		$source = $this->createSourceWithConfig(['api_key' => 'decos-key']);
+
+		$this->authService->expects($this->once())
+			->method('fetchDecosToken')
+			->with(['api_key' => 'decos-key'])
+			->willReturn('decos-token-456');
+
+		$this->assertSame('decos-token-456', $this->runtime->decosToken($source));
+	}
+
+	public function testDecosTokenPassesAnEmptyMapWhenTheSourceHasNoCredentials(): void {
+		$source = $this->createSourceWithConfig([]);
 
 		$this->authService->expects($this->once())
 			->method('fetchDecosToken')
@@ -147,10 +94,21 @@ class AuthenticationRuntimeTest extends TestCase {
 		$this->assertSame('', $this->runtime->decosToken($source));
 	}
 
-	public function testJwtTokenWithEmptyAuthentication(): void {
-		$source = $this->createSourceWithConfig([
-			'authentication' => [],
-		]);
+	// --- jwtToken() ---
+
+	public function testJwtTokenCallsAuthService(): void {
+		$source = $this->createSourceWithConfig(['secret' => 'jwt-secret', 'issuer' => 'test']);
+
+		$this->authService->expects($this->once())
+			->method('fetchJWTToken')
+			->with(['secret' => 'jwt-secret', 'issuer' => 'test'])
+			->willReturn('jwt-token-789');
+
+		$this->assertSame('jwt-token-789', $this->runtime->jwtToken($source));
+	}
+
+	public function testJwtTokenPassesAnEmptyMapWhenTheSourceHasNoCredentials(): void {
+		$source = $this->createSourceWithConfig(null);
 
 		$this->authService->expects($this->once())
 			->method('fetchJWTToken')

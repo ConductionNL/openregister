@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -39,10 +40,11 @@ class BulkLegalHoldJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function __construct(ITimeFactory $time) {
+	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
 		parent::__construct(time: $time);
 	}//end __construct()
 
@@ -58,7 +60,7 @@ class BulkLegalHoldJob extends QueuedJob {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	protected function run($argument): void {
-		$logger = \OC::$server->get(LoggerInterface::class);
+		$logger = $this->container->get(LoggerInterface::class);
 
 		$schemaId = $argument['schemaId'] ?? null;
 		$reason = $argument['reason'] ?? '';
@@ -71,8 +73,8 @@ class BulkLegalHoldJob extends QueuedJob {
 		$logger->info('[BulkLegalHoldJob] Placing legal holds on schema: ' . $schemaId);
 
 		try {
-			$retentionService = \OC::$server->get(RetentionService::class);
-			$objectMapper = \OC::$server->get(MagicMapper::class);
+			$retentionService = $this->container->get(RetentionService::class);
+			$objectMapper = $this->container->get(MagicMapper::class);
 
 			$objects = $objectMapper->findAll(
 				filters: [],

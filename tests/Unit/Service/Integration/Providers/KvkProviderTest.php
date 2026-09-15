@@ -96,7 +96,11 @@ class KvkProviderTest extends TestCase {
 		$this->assertSame('KvK Company Register', $this->provider->getLabel());
 		$this->assertSame('OfficeBuilding', $this->provider->getIcon());
 		$this->assertSame('external', $this->provider->getGroup());
-		$this->assertSame('openconnector', $this->provider->getRequiredApp());
+		// The CANONICAL name: this fixture's app manager reports nothing
+		// installed, so FleetAppId finds neither spelling and falls back.
+		// The installed-id direction is asserted in
+		// LeafProvidersMetadataTest::testOpenProjectProviderMetadata*.
+		$this->assertSame('integriq', $this->provider->getRequiredApp());
 		$this->assertSame('external', $this->provider->getStorageStrategy());
 		$this->assertSame('kvk', $this->provider->getOpenConnectorSource());
 		$this->assertSame('kvk', KvkProvider::SOURCE_ID);
@@ -112,7 +116,9 @@ class KvkProviderTest extends TestCase {
 	}//end testAuthRequirementsAreExternalApiKeyViaOpenConnector()
 
 	public function testIsEnabledMirrorsOpenConnectorInstall(): void {
-		$this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
+		$this->appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => ($id === 'openconnector' && true === true)
+		);
 		$this->assertTrue($this->provider->isEnabled());
 	}//end testIsEnabledMirrorsOpenConnectorInstall()
 

@@ -195,4 +195,27 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'Whitespace-only stored date-time value must render as null'
 		);
 	}//end testWhitespaceOnlyDateTimePropertyRendersAsNull()
+
+	/**
+	 * The memoised magic-table list can be forgotten.
+	 *
+	 * The memo had no way to be cleared, so a magic table created after the
+	 * first statistics call of a request was invisible for the rest of it and
+	 * its register counted zero objects. MagicMapper now clears this memo
+	 * wherever it clears its own two.
+	 *
+	 * @return void
+	 */
+	public function testForgetMagicTableListClearsTheMemo(): void {
+		$memo = (new \ReflectionClass(MagicStatisticsHandler::class))->getProperty('magicTablesCache');
+		$memo->setAccessible(true);
+		$memo->setValue($this->handler, ['openregister_table_1_1']);
+
+		$this->handler->forgetMagicTableList();
+
+		$this->assertNull(
+			$memo->getValue($this->handler),
+			'forgetMagicTableList() MUST drop the memo so the next call re-reads the catalog'
+		);
+	}//end testForgetMagicTableListClearsTheMemo()
 }//end class

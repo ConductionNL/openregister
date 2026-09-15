@@ -177,6 +177,10 @@ class ContactService {
 					|| $link->getAvatarUrl() !== null
 				);
 
+				if ($link->isUserLink() === true) {
+					return $row;
+				}
+
 				if ($hasCachedValues === false || $isStale === true) {
 					$vfields = $this->extractVcardFields(
 						addressbookId: $link->getAddressbookId(),
@@ -683,9 +687,13 @@ class ContactService {
 			throw new Exception('Contact link not found', 404);
 		}
 
-		// Update vCard role property.
+		// Update vCard role property; a user link has no vCard.
 		try {
-			$card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
+			$card = false;
+			if ($link->isUserLink() === false) {
+				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+			}
+
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);
 				// Remove old role properties.
@@ -734,7 +742,11 @@ class ContactService {
 		// the link-row delete — orphan link rows would otherwise only
 		// be cleanable via direct DB DELETE.
 		try {
-			$card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
+			$card = false;
+			if ($link->isUserLink() === false) {
+				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+			}
+
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);
 				unset($vcard->{'X-OPENREGISTER-OBJECT'});
@@ -803,9 +815,10 @@ class ContactService {
 		// pass an arbitrary (enumerable CardDAV) contact UID and learn which
 		// OpenRegister objects reference contacts belonging to other users.
 		$allowedAddressbookIds = $this->currentUserAddressbookIds();
-		if ($allowedAddressbookIds === []) {
+		if ($this->userSession->getUser() === null) {
 			return [];
 		}
+
 
 		$links = $this->contactLinkMapper->findByContactUid($contactUid);
 
@@ -817,6 +830,10 @@ class ContactService {
 				array_filter(
 					$links,
 					static function (ContactLink $link) use ($allowedAddressbookIds): bool {
+						if ($link->isUserLink() === true) {
+							return true;
+						}
+
 						return in_array((int)$link->getAddressbookId(), $allowedAddressbookIds, true);
 					}
 				)
@@ -863,7 +880,12 @@ class ContactService {
 
 		foreach ($links as $link) {
 			try {
-				$card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
+				if ($link->isUserLink() === true) {
+					$this->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
+					continue;
+				}
+
+				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
 				if ($card !== false) {
 					$vcard = Reader::read($card['carddata']);
 					// Remove properties matching this object only.

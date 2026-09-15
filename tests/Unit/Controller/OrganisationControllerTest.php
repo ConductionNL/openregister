@@ -12,9 +12,11 @@ use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Http;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -2157,5 +2159,74 @@ class OrganisationControllerTest extends TestCase {
 		$result = $this->controller->search(' Search Term ');
 
 		$this->assertSame(Http::STATUS_OK, $result->getStatus());
+	}
+
+	/**
+	 * A controller wired to the REAL lifecycle service, so the retain endpoint
+	 * is tested through the actual state machine rather than a mock of it.
+	 */
+	private function controllerWithRealLifecycle(): OrganisationController {
+		$lifecycle = new TenantLifecycleService(
+			$this->organisationMapper,
+			$this->groupManager,
+			$this->createMock(IUserManager::class),
+			$this->createMock(IEventDispatcher::class),
+			$this->logger
+		);
+
+		return new OrganisationController(
+			'openregister',
+			$this->request,
+			$this->organisationService,
+			$this->organisationMapper,
+			$this->logger,
+			$lifecycle,
+			$this->createMock(TenantUsageMapper::class),
+			$this->userSession,
+			$this->groupManager
+		);
+	}
+
+	public function testRetainMovesAnActiveOrganisationToRetained(): void {
+		$org = new Organisation();
+		$org->setUuid('org-1');
+		$org->setStatus('active');
+
+		$this->organisationMapper->method('findByUuid')->with('org-1')->willReturn($org);
+		$this->organisationMapper->expects($this->once())->method('update')->willReturnCallback(fn ($entity) => $entity);
+
+		$result = $this->controllerWithRealLifecycle()->retain('org-1');
+
+		$this->assertSame(Http::STATUS_OK, $result->getStatus());
+		$this->assertSame('retained', $result->getData()->getStatus());
+		$this->assertNotNull($result->getData()->getRetainedAt());
+	}
+
+	public function testRetainRefusesAnArchivedOrganisationWithAConflict(): void {
+		$org = new Organisation();
+		$org->setUuid('org-1');
+		$org->setStatus('archived');
+
+		$this->organisationMapper->method('findByUuid')->with('org-1')->willReturn($org);
+		$this->organisationMapper->expects($this->never())->method('update');
+
+		$result = $this->controllerWithRealLifecycle()->retain('org-1');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $result->getStatus());
+		$this->assertSame('archived', $org->getStatus());
+	}
+
+	public function testActivateRefusesARetainedOrganisationWithAConflict(): void {
+		$org = new Organisation();
+		$org->setUuid('org-1');
+		$org->setStatus('retained');
+
+		$this->organisationMapper->method('findByUuid')->with('org-1')->willReturn($org);
+		$this->organisationMapper->expects($this->never())->method('update');
+
+		$result = $this->controllerWithRealLifecycle()->activate('org-1');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $result->getStatus());
+		$this->assertSame('retained', $org->getStatus());
 	}
 }

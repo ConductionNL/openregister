@@ -26,8 +26,7 @@ class ContactServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->contactLinkMapper = $this->getMockBuilder(ContactLinkMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findByObjectUuid', 'findByContactUid', 'findByObjectAndContact', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'update', 'delete'])
-			->addMethods(['find'])
+			->onlyMethods(['find', 'findByObjectUuid', 'findByContactUid', 'findByObjectAndContact', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'update', 'delete'])
 			->getMock();
 		$this->cardDavBackend = $this->createMock(CardDavBackend::class);
 		$this->userSession = $this->createMock(IUserSession::class);
@@ -507,4 +506,93 @@ class ContactServiceTest extends TestCase {
 
 		$this->service->deleteLinksForObject('abc-123');
 	}
+
+	/**
+	 * people-on-objects: a user link has no vCard, so listing one reads
+	 * CardDAV only for the contact beside it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-the-carddav-side-ignores-user-links
+	 */
+	public function testListingAUserLinkReadsNoVcard(): void {
+		$userLink = new ContactLink();
+		$userLink->setObjectUuid('abc-123');
+		$userLink->setContactUid('user:jan');
+		$userLink->setUserId('jan');
+		$userLink->setDisplayName('Jan de Vries');
+
+		$contactLink = new ContactLink();
+		$contactLink->setObjectUuid('abc-123');
+		$contactLink->setContactUid('piet-uid');
+		$contactLink->setAddressbookId(1);
+		$contactLink->setContactUri('piet.vcf');
+
+		$this->contactLinkMapper->method('findByObjectUuid')->willReturn([$userLink, $contactLink]);
+		$this->contactLinkMapper->method('countByObjectUuid')->willReturn(2);
+		// Exactly one read, for the contact link; the user link never reaches CardDAV.
+		$this->cardDavBackend->expects($this->once())
+			->method('getCard')
+			->with(1, 'piet.vcf')
+			->willReturn(false);
+
+		$result = $this->service->getContactsForObject('abc-123');
+
+		$this->assertCount(2, $result['results']);
+		$this->assertSame('user', $result['results'][0]['kind']);
+		$this->assertSame('Jan de Vries', $result['results'][0]['displayName']);
+		$this->assertSame('contact', $result['results'][1]['kind']);
+	}//end testListingAUserLinkReadsNoVcard()
+
+	/**
+	 * people-on-objects: reverse lookup shows a user link to any signed-in
+	 * caller, since it belongs to no address book.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-the-carddav-side-ignores-user-links
+	 */
+	public function testReverseLookupIncludesUserLinks(): void {
+		$this->setupUser();
+		$userLink = new ContactLink();
+		$userLink->setObjectUuid('abc-123');
+		$userLink->setContactUid('user:jan');
+		$userLink->setUserId('jan');
+
+		$foreign = new ContactLink();
+		$foreign->setObjectUuid('def-456');
+		$foreign->setContactUid('user:jan');
+		$foreign->setAddressbookId(99);
+
+		$this->cardDavBackend->method('getAddressBooksForUser')->willReturn([['id' => 1]]);
+		$this->contactLinkMapper->method('findByContactUid')->willReturn([$userLink, $foreign]);
+
+		$objects = $this->service->getObjectsForContact('user:jan');
+
+		// The user link is mine to see; the contact link in somebody else's
+		// address book is not.
+		$this->assertCount(1, $objects);
+		$this->assertSame('abc-123', $objects[0]['objectUuid']);
+	}//end testReverseLookupIncludesUserLinks()
+
+	/**
+	 * people-on-objects: unlinking a user link touches no vCard and still
+	 * deletes the row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-the-carddav-side-ignores-user-links
+	 */
+	public function testUnlinkingAUserLinkTouchesNoVcard(): void {
+		$link = new ContactLink();
+		$link->setContactUid('user:jan');
+		$link->setUserId('jan');
+		$this->contactLinkMapper->method('find')->willReturn($link);
+		$this->cardDavBackend->expects($this->never())->method('getCard');
+		$this->cardDavBackend->expects($this->never())->method('updateCard');
+		$this->contactLinkMapper->expects($this->once())->method('delete')->with($link);
+
+		$this->service->unlinkContact(7);
+	}//end testUnlinkingAUserLinkTouchesNoVcard()
+
 }
