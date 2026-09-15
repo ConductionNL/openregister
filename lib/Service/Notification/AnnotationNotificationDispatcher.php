@@ -446,6 +446,12 @@ class AnnotationNotificationDispatcher {
 				}
 			}
 
+			// The scopes a preference may be pinned to for THIS dispatch,
+			// narrowest first. A user or group with a value for this schema
+			// beats one for the domain, which beats one for the register,
+			// which beats their own global value.
+			$dispatchScopes = $this->dispatchScopes(spec: $spec, object: $object, schemaSlug: $schemaSlug);
+
 			// The event identifier for THIS firing. Every transport this rule
 			// runs — the in-app notice, the e-mail, the webhook, the outbound
 			// call — records its own outcome under it, so the notification and
@@ -685,7 +691,8 @@ class AnnotationNotificationDispatcher {
 						schemaDefault: $spec,
 						userId: $uid,
 						schemaSlug: $schemaSlug,
-						notificationKey: (string)$name
+						notificationKey: (string)$name,
+						scopes: $dispatchScopes
 					);
 					if ($pref['enabled'] === false) {
 						$this->recordHistoryAcrossChannels(
@@ -806,6 +813,45 @@ class AnnotationNotificationDispatcher {
 		}//end foreach
 
 	}//end dispatchWithSchema()
+
+	/**
+	 * The scopes this dispatch may match a pinned preference against.
+	 *
+	 * Narrowest first, because the first match wins: the schema the object
+	 * lives on, then the domain the rule (or the schema) declares, then the
+	 * register. A domain is a leaf app's own word for a slice of its work —
+	 * dossiq's "vergunningen" against its "meldingen" — and it is declared
+	 * rather than derived, so OpenRegister never has to guess what a leaf app
+	 * means by it.
+	 *
+	 * @param array<string, mixed> $spec The notification rule spec.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param string $schemaSlug The owning schema's slug.
+	 *
+	 * @return array<int, string> The candidate scopes, narrowest first.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	private function dispatchScopes(array $spec, ObjectEntity $object, string $schemaSlug): array {
+		$scopes = [];
+		if ($schemaSlug !== '') {
+			$scopes[] = 'schema:' . $schemaSlug;
+		}
+
+		$domain = ($spec['domain'] ?? null);
+		if (is_string($domain) === true && $domain !== '') {
+			$scopes[] = 'domain:' . $domain;
+		}
+
+		$register = $object->getRegister();
+		if (is_string($register) === true && $register !== '') {
+			$scopes[] = 'register:' . $register;
+		} elseif (is_int($register) === true) {
+			$scopes[] = 'register:' . (string)$register;
+		}
+
+		return $scopes;
+	}//end dispatchScopes()
 
 	/**
 	 * Run the rule's declared outbound transports, once per firing.

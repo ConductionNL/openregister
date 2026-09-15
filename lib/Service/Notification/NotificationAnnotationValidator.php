@@ -644,6 +644,18 @@ final class NotificationAnnotationValidator {
 				}
 			}
 
+			// Optional `domain` — the leaf app's own word for a slice of its
+			// work, which a preference may be scoped to. Only its shape is
+			// checked: the vocabulary belongs to the app, not to this engine.
+			if (array_key_exists('domain', $spec) === true
+				&& (is_string($spec['domain']) === false || $spec['domain'] === '')
+			) {
+				$errors[] = [
+					'code' => 'notification-domain-malformed',
+					'message' => sprintf('Notification "%s" domain must be a non-empty string.', $name),
+				];
+			}
+
 			// Optional `transports` — the outbound calls this rule runs in the
 			// same firing as its notices. Refused at save when malformed,
 			// because a transport that names no handler is an integration
