@@ -82,6 +82,8 @@ final class SearchTermParser {
 	 * @param string $term The raw search term.
 	 *
 	 * @return bool True when the term carries an operator, bracket, quote or wildcard.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function needsParsing(string $term): bool {
 		foreach (['(', ')', '"', '*'] as $marker) {
@@ -101,6 +103,8 @@ final class SearchTermParser {
 	 * @throws SearchTermSyntaxException When the term cannot be read.
 	 *
 	 * @return SearchTermNode The root node.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function parse(string $term): SearchTermNode {
 		$tokens = $this->tokenize(term: $term);

@@ -53,6 +53,8 @@ final class SearchTermSqlCompiler {
 	 * @psalm-param callable(string, string): string $leafBuilder
 	 *
 	 * @return string The SQL expression, already parenthesised.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function compile(SearchTermNode $node, callable $leafBuilder): string {
 		if ($node->type === SearchTermNode::TYPE_TERM) {

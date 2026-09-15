@@ -84,6 +84,8 @@ final class SearchTermNode {
 	 * @param bool   $trailingWildcard Whether the term ended with `*`.
 	 *
 	 * @return self The term node.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public static function term(
 		string $value,
@@ -109,6 +111,8 @@ final class SearchTermNode {
 	 * @psalm-param list<SearchTermNode> $children
 	 *
 	 * @return self The `and` node, or the single child when there is only one.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public static function all(array $children): self {
 		if (count($children) === 1) {
@@ -134,6 +138,8 @@ final class SearchTermNode {
 	 * @psalm-param list<SearchTermNode> $children
 	 *
 	 * @return self The `or` node, or the single child when there is only one.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public static function any(array $children): self {
 		if (count($children) === 1) {
@@ -155,6 +161,8 @@ final class SearchTermNode {
 	 * @param SearchTermNode $child The operand.
 	 *
 	 * @return self The `not` node.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public static function not(self $child): self {
 		return new self(
@@ -176,6 +184,8 @@ final class SearchTermNode {
 	 * the user typed matches itself instead of acting as a wildcard.
 	 *
 	 * @return string The LIKE pattern, lowercased.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function likePattern(): string {
 		$escaped = str_replace(
