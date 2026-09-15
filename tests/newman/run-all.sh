@@ -116,6 +116,7 @@ DOMAIN_ORDER=(
     "register-descriptors"
     "working-calendars"
     "object-watchers"
+    "dedup-check"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -177,6 +178,14 @@ declare -A DOMAIN_COLLECTIONS=(
     # cannot see any of those, and a route missing from appinfo/routes.php is a
     # 404 no PHPUnit test would notice.
     [object-watchers]="$REPO_ROOT/tests/newman/openregister-object-watchers.postman_collection.json"
+    # Duplicate check at intake — scoring an UNSAVED body against what is
+    # stored. Registered here rather than left to PHPUnit because the thing
+    # most likely to break is not the scoring: it is the route. The check
+    # sits at POST /api/objects/{register}/{schema}/dedup-check, one literal
+    # segment away from objects#postPatch, and if it ever loses its place in
+    # appinfo/routes.php the call silently becomes a patch of a non-existent
+    # object. No unit test can see that.
+    [dedup-check]="$REPO_ROOT/tests/newman/openregister-dedup-check.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
