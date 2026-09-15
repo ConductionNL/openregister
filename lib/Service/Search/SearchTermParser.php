@@ -163,7 +163,7 @@ final class SearchTermParser {
 			}
 
 			if ($character === '"') {
-				$tokens[] = $this->readPhrase(term: $term, index: $index, length: $length);
+				$tokens[] = $this->readPhrase(term: $term, index: $index);
 				// Skip past the closing quote; readPhrase() proved it exists.
 				$index = (mb_strpos($term, '"', ($index + 1)) + 1);
 				continue;
@@ -209,15 +209,14 @@ final class SearchTermParser {
 	 * A `*` inside quotes is a literal asterisk: the quotes are what the user
 	 * reaches for to say "this exact run of characters".
 	 *
-	 * @param string $term   The raw search term.
-	 * @param int    $index  Offset of the opening quote.
-	 * @param int    $length Length of the term.
+	 * @param string $term  The raw search term.
+	 * @param int    $index Offset of the opening quote.
 	 *
 	 * @throws SearchTermSyntaxException When the quote is never closed.
 	 *
 	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool} The phrase token.
 	 */
-	private function readPhrase(string $term, int $index, int $length): array {
+	private function readPhrase(string $term, int $index): array {
 		$closing = mb_strpos($term, '"', ($index + 1));
 		if ($closing === false) {
 			throw new SearchTermSyntaxException(
@@ -235,8 +234,6 @@ final class SearchTermParser {
 				term: $term
 			);
 		}
-
-		unset($length);
 
 		return $this->makeToken(type: self::TOKEN_TERM, value: $value, position: ($index + 1));
 	}//end readPhrase()
