@@ -92,7 +92,7 @@ class ApiVersionRefusedException extends Exception {
 		?string $successor = null,
 		array $acceptable = [],
 	) {
-		parent::__construct($message, $statusCode);
+		parent::__construct(message: $message, code: $statusCode);
 		$this->statusCode = $statusCode;
 		$this->requestedId = $requestedId;
 		$this->successor = $successor;
