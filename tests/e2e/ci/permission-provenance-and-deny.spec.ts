@@ -109,16 +109,20 @@ async function assertSeededUser(ctx: APIRequestContext, uid: string): Promise<vo
 /** The reported total of a list response, whichever envelope it came back in. */
 function totalOf(body: Record<string, unknown>): number {
 	const total = body.total ?? (body as { results?: unknown[] }).results?.length
-	expect(typeof total, `no total in the list envelope: ${JSON.stringify(body).slice(0, 400)}`).toBe(
-		'number',
-	)
+	expect(
+		typeof total,
+		`no total in the list envelope: ${JSON.stringify(body).slice(0, 400)}`,
+	).toBe('number')
 	return Number(total)
 }
 
 /** The rows of a list response. */
 function rowsOf(body: Record<string, unknown>): Array<Record<string, unknown>> {
 	const rows = (body.results ?? body.items ?? []) as Array<Record<string, unknown>>
-	expect(Array.isArray(rows), 'the list envelope carried no array of rows').toBeTruthy()
+	expect(
+		Array.isArray(rows),
+		'the list envelope carried no array of rows',
+	).toBeTruthy()
 	return rows
 }
 
@@ -159,7 +163,9 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			data: {
 				title: `e2e deny control schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					read: ['authenticated'],
 					create: ['authenticated'],
@@ -168,7 +174,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 				},
 			},
 		})
-		expect(open.ok(), `control schema create failed: ${await open.text()}`).toBeTruthy()
+		expect(
+			open.ok(),
+			`control schema create failed: ${await open.text()}`,
+		).toBeTruthy()
 		openSchemaId = String((await open.json()).id)
 
 		// The SUBJECT schema. The same grants, and `read` denied to the
@@ -180,7 +189,9 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			data: {
 				title: `e2e deny subject schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					read: ['authenticated'],
 					create: ['authenticated'],
@@ -190,7 +201,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 				},
 			},
 		})
-		expect(denied.ok(), `subject schema create failed: ${await denied.text()}`).toBeTruthy()
+		expect(
+			denied.ok(),
+			`subject schema create failed: ${await denied.text()}`,
+		).toBeTruthy()
 		deniedSchemaId = String((await denied.json()).id)
 
 		// Enforcement LAST, after every fixture is written. The save-time
@@ -207,7 +221,9 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 	})
 
 	test('the deny survives the schema save, and is read back as written', async () => {
-		const res = await admin.get(`/index.php/apps/openregister/api/schemas/${deniedSchemaId}`)
+		const res = await admin.get(
+			`/index.php/apps/openregister/api/schemas/${deniedSchemaId}`,
+		)
 		expect(res.ok(), `schema read failed: ${await res.text()}`).toBeTruthy()
 
 		const body = await res.json()
@@ -224,7 +240,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
 			{ data: { key: `deny-subject-${RUN}` } },
 		)
-		expect(created.ok(), `object create failed: ${await created.text()}`).toBeTruthy()
+		expect(
+			created.ok(),
+			`object create failed: ${await created.text()}`,
+		).toBeTruthy()
 		const uuid = uuidOf(await created.json())
 
 		const before = await other.get(
@@ -243,11 +262,16 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			{
 				data: {
 					key: `deny-subject-${RUN}`,
-					'@self': { authorization: { deny: { read: ['authenticated'] } } },
+					'@self': {
+						authorization: { deny: { read: ['authenticated'] } },
+					},
 				},
 			},
 		)
-		expect(denied.ok(), `writing the object deny failed: ${await denied.text()}`).toBeTruthy()
+		expect(
+			denied.ok(),
+			`writing the object deny failed: ${await denied.text()}`,
+		).toBeTruthy()
 
 		const after = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${uuid}`,
@@ -278,20 +302,31 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		const listBefore = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-list-${RUN}&limit=50`,
 		)
-		expect(listBefore.ok(), `list failed: ${await listBefore.text()}`).toBeTruthy()
+		expect(
+			listBefore.ok(),
+			`list failed: ${await listBefore.text()}`,
+		).toBeTruthy()
 		const totalBefore = totalOf(await listBefore.json())
-		expect(totalBefore, 'both fixtures should be listed before the deny').toBeGreaterThanOrEqual(2)
+		expect(
+			totalBefore,
+			'both fixtures should be listed before the deny',
+		).toBeGreaterThanOrEqual(2)
 
 		const denied = await owner.put(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hideUuid}`,
 			{
 				data: {
 					key: `deny-list-hide-${RUN}`,
-					'@self': { authorization: { deny: { read: ['authenticated'] } } },
+					'@self': {
+						authorization: { deny: { read: ['authenticated'] } },
+					},
 				},
 			},
 		)
-		expect(denied.ok(), `writing the object deny failed: ${await denied.text()}`).toBeTruthy()
+		expect(
+			denied.ok(),
+			`writing the object deny failed: ${await denied.text()}`,
+		).toBeTruthy()
 
 		const listAfter = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-list-${RUN}&limit=50`,
@@ -304,9 +339,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			return String(self.id ?? row.id ?? row.uuid ?? '')
 		})
 		expect(ids, 'the denied object is still in the list').not.toContain(hideUuid)
-		expect(ids, 'the control object disappeared too; the list is broken, not filtered').toContain(
-			keepUuid,
-		)
+		expect(
+			ids,
+			'the control object disappeared too; the list is broken, not filtered',
+		).toContain(keepUuid)
 
 		// 🔴 The count, which is the half a post-filter gets wrong. A page that
 		// omits the row while the total still counts it is the "correct page of
@@ -336,14 +372,20 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
 			{ data: { key: `provenance-keep-${RUN}` } },
 		)
-		expect(readable.ok(), `object create failed: ${await readable.text()}`).toBeTruthy()
+		expect(
+			readable.ok(),
+			`object create failed: ${await readable.text()}`,
+		).toBeTruthy()
 		const readableUuid = uuidOf(await readable.json())
 
 		const hidden = await owner.post(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
 			{ data: { key: `provenance-hide-${RUN}` } },
 		)
-		expect(hidden.ok(), `object create failed: ${await hidden.text()}`).toBeTruthy()
+		expect(
+			hidden.ok(),
+			`object create failed: ${await hidden.text()}`,
+		).toBeTruthy()
 		const hiddenUuid = uuidOf(await hidden.json())
 
 		const denied = await owner.put(
@@ -351,11 +393,16 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			{
 				data: {
 					key: `provenance-hide-${RUN}`,
-					'@self': { authorization: { deny: { read: ['authenticated'] } } },
+					'@self': {
+						authorization: { deny: { read: ['authenticated'] } },
+					},
 				},
 			},
 		)
-		expect(denied.ok(), `writing the object deny failed: ${await denied.text()}`).toBeTruthy()
+		expect(
+			denied.ok(),
+			`writing the object deny failed: ${await denied.text()}`,
+		).toBeTruthy()
 
 		// THE LIST. One row of the two, and the total says the same.
 		const list = await other.get(
@@ -366,9 +413,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			const self = (row['@self'] ?? {}) as Record<string, unknown>
 			return String(self.id ?? row.id ?? row.uuid ?? '')
 		})
-		expect(listed, 'the readable row is missing, so the list is broken rather than filtered').toContain(
-			readableUuid,
-		)
+		expect(
+			listed,
+			'the readable row is missing, so the list is broken rather than filtered',
+		).toContain(readableUuid)
 		expect(listed, 'the denied row is still listed').not.toContain(hiddenUuid)
 
 		// THE OBJECT, and the actions it carries. A record that says what its
@@ -377,7 +425,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		const read = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${readableUuid}`,
 		)
-		expect(read.ok(), `the readable object was refused: ${await read.text()}`).toBeTruthy()
+		expect(
+			read.ok(),
+			`the readable object was refused: ${await read.text()}`,
+		).toBeTruthy()
 		const record = await read.json()
 		expect(
 			record['@self']?.actions,
@@ -387,16 +438,27 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		const refused = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hiddenUuid}`,
 		)
-		expect(refused.status(), 'the denied object was readable').toBeGreaterThanOrEqual(400)
+		expect(
+			refused.status(),
+			'the denied object was readable',
+		).toBeGreaterThanOrEqual(400)
 
 		// THE PROVENANCE OF THE YES. The grant names the rule behind it.
 		const scopes = await other.get(
 			`/index.php/apps/openregister/api/scopes?register=${registerId}&schema=${openSchemaId}`,
 		)
-		expect(scopes.ok(), `scopes read failed: ${await scopes.text()}`).toBeTruthy()
+		expect(
+			scopes.ok(),
+			`scopes read failed: ${await scopes.text()}`,
+		).toBeTruthy()
 		const scope = ((await scopes.json()).scopes ?? [])[0]
-		expect(scope, 'the caller has no scope on a schema that grants them read').toBeTruthy()
-		expect(scope.actions, 'read is missing from the actions list').toContain('read')
+		expect(
+			scope,
+			'the caller has no scope on a schema that grants them read',
+		).toBeTruthy()
+		expect(scope.actions, 'read is missing from the actions list').toContain(
+			'read',
+		)
 		expect(
 			scope.provenance?.read?.source,
 			'the grant does not say where it came from',
@@ -408,20 +470,29 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		const holders = await owner.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hiddenUuid}/permissions`,
 		)
-		expect(holders.ok(), `the access set was refused: ${await holders.text()}`).toBeTruthy()
+		expect(
+			holders.ok(),
+			`the access set was refused: ${await holders.text()}`,
+		).toBeTruthy()
 		const set = await holders.json()
 		expect(
 			(set.denied ?? []).map((rule: Record<string, unknown>) => rule.action),
 			'the absence has no rule behind it, which is the whole thing this read exists for',
 		).toContain('read')
-		expect(set.denyEnforcement, 'the report does not say whether the deny is biting yet').toBeTruthy()
+		expect(
+			set.denyEnforcement,
+			'the report does not say whether the deny is biting yet',
+		).toBeTruthy()
 
 		// And the same caller reading the row nobody denied gets no denial,
 		// so the report is about this rule and not about every object.
 		const control = await owner.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${readableUuid}/permissions`,
 		)
-		expect(control.ok(), `the control access set was refused: ${await control.text()}`).toBeTruthy()
+		expect(
+			control.ok(),
+			`the control access set was refused: ${await control.text()}`,
+		).toBeTruthy()
 		expect(
 			(await control.json()).denied,
 			'a row nobody denied is reported as denied',
@@ -433,22 +504,38 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		// group nobody is in, so this caller's refusal must come from the grant
 		// chain rather than from the deny — and the control below proves the
 		// same caller can read a schema that does grant them.
-		const ungranted = await admin.post('/index.php/apps/openregister/api/schemas', {
-			data: {
-				title: `e2e deny ungranted schema ${RUN}`,
-				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
-				authorization: { read: ['admin'], create: ['admin'], update: ['admin'], delete: ['admin'] },
+		const ungranted = await admin.post(
+			'/index.php/apps/openregister/api/schemas',
+			{
+				data: {
+					title: `e2e deny ungranted schema ${RUN}`,
+					description: 'e2e',
+					properties: {
+						key: { type: 'string', title: 'Key', maxLength: 255 },
+					},
+					authorization: {
+						read: ['admin'],
+						create: ['admin'],
+						update: ['admin'],
+						delete: ['admin'],
+					},
+				},
 			},
-		})
-		expect(ungranted.ok(), `schema create failed: ${await ungranted.text()}`).toBeTruthy()
+		)
+		expect(
+			ungranted.ok(),
+			`schema create failed: ${await ungranted.text()}`,
+		).toBeTruthy()
 		const ungrantedSchemaId = String((await ungranted.json()).id)
 
 		const seeded = await admin.post(
 			`/index.php/apps/openregister/api/objects/${registerId}/${ungrantedSchemaId}`,
 			{ data: { key: `ungranted-${RUN}` } },
 		)
-		expect(seeded.ok(), `object create failed: ${await seeded.text()}`).toBeTruthy()
+		expect(
+			seeded.ok(),
+			`object create failed: ${await seeded.text()}`,
+		).toBeTruthy()
 
 		const res = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${ungrantedSchemaId}?limit=50`,
@@ -459,7 +546,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		// non-zero total beside an empty page.
 		if (res.ok() === true) {
 			const body = await res.json()
-			expect(rowsOf(body), 'a caller with no grant received rows').toHaveLength(0)
+			expect(
+				rowsOf(body),
+				'a caller with no grant received rows',
+			).toHaveLength(0)
 			expect(
 				totalOf(body),
 				'the page was empty but the total was not: the count leaked what the page hid',
@@ -473,7 +563,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		const control = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?limit=50`,
 		)
-		expect(control.ok(), `the control list failed: ${await control.text()}`).toBeTruthy()
+		expect(
+			control.ok(),
+			`the control list failed: ${await control.text()}`,
+		).toBeTruthy()
 		expect(
 			totalOf(await control.json()),
 			'the control list is empty too, so the probe measured a broken list rather than a refusal',
@@ -485,7 +578,9 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			data: {
 				title: `e2e deny collision schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					delete: ['behandelaars'],
 					deny: { delete: ['behandelaars'] },
@@ -497,7 +592,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			res.status(),
 			'a block that grants and denies one verb to one principal must not be storable',
 		).toBe(422)
-		expect(await res.text(), 'the refusal must name the rules it refused').toContain('behandelaars')
+		expect(
+			await res.text(),
+			'the refusal must name the rules it refused',
+		).toContain('behandelaars')
 	})
 
 	test('the last principal holding manage cannot be denied it', async () => {
@@ -516,7 +614,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			res.status(),
 			'a register whose administration is denied away cannot be edited again',
 		).toBe(422)
-		expect(await res.text(), 'the refusal must name what would be orphaned').toContain('manage')
+		expect(
+			await res.text(),
+			'the refusal must name what would be orphaned',
+		).toContain('manage')
 	})
 
 	/**
@@ -540,7 +641,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
 			{ data: { key: `deny-staged-${RUN}` } },
 		)
-		expect(created.ok(), `object create failed: ${await created.text()}`).toBeTruthy()
+		expect(
+			created.ok(),
+			`object create failed: ${await created.text()}`,
+		).toBeTruthy()
 		const uuid = uuidOf(await created.json())
 
 		const denied = await owner.put(
@@ -548,11 +652,16 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			{
 				data: {
 					key: `deny-staged-${RUN}`,
-					'@self': { authorization: { deny: { read: ['authenticated'] } } },
+					'@self': {
+						authorization: { deny: { read: ['authenticated'] } },
+					},
 				},
 			},
 		)
-		expect(denied.ok(), `writing the object deny failed: ${await denied.text()}`).toBeTruthy()
+		expect(
+			denied.ok(),
+			`writing the object deny failed: ${await denied.text()}`,
+		).toBeTruthy()
 
 		// THE CONTROL, enforcing: the caller cannot read it. Without this the
 		// case below would pass against a fixture whose deny never landed.
@@ -578,7 +687,10 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			const list = await other.get(
 				`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-staged-${RUN}&limit=50`,
 			)
-			expect(list.ok(), `list failed while staging: ${await list.text()}`).toBeTruthy()
+			expect(
+				list.ok(),
+				`list failed while staging: ${await list.text()}`,
+			).toBeTruthy()
 			const body = await list.json()
 			const ids = rowsOf(body).map((row) => {
 				const self = (row['@self'] ?? {}) as Record<string, unknown>
