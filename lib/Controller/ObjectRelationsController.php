@@ -266,24 +266,25 @@ class ObjectRelationsController extends Controller {
 			relationType: $relationType
 		);
 
+		// A derive that inherited something is recorded as a derivation rather
+		// than as a plain split, and carries what it took. Both are the same
+		// row: the entry says where it came from, the inheritance says what it
+		// started with, and an act can be both.
 		if ($applied['inherited'] !== []) {
 			$row->setOrigin(ObjectRelation::ORIGIN_DERIVE);
 			$row->setInherited($applied['inherited']);
-			$row = $this->relations->render(
-				row: $this->relations->saveRow(row: $row),
-				direction: RelationTypeResolver::DIRECTION_OUTGOING,
-				language: $this->language()
-			);
-		} else {
-			$row = $this->relations->render(
-				row: $row,
-				direction: RelationTypeResolver::DIRECTION_OUTGOING,
-				language: $this->language()
-			);
+			$row = $this->relations->saveRow(row: $row);
 		}
 
 		return new JSONResponse(
-			data: ['object' => $created->jsonSerialize(), 'relation' => $row],
+			data: [
+				'object' => $created->jsonSerialize(),
+				'relation' => $this->relations->render(
+					row: $row,
+					direction: RelationTypeResolver::DIRECTION_OUTGOING,
+					language: $this->language()
+				),
+			],
 			statusCode: 201
 		);
 	}//end derive()
