@@ -570,12 +570,19 @@ class PropertyRbacHandler {
 		array $incomingData,
 		bool $isCreate = false,
 	): array {
-		// The lifecycle state's own refusals come first and survive both
+		// A field the object's state HIDES is refused here and survives both
 		// short-circuits below, so GraphQL and every other caller of this
-		// method inherit them without a call-site change. They are not
-		// privilege checks: see stripStateHiddenProperties() for why admin is
-		// not exempt from a state rule.
-		$unauthorizedProps = $this->stateBlockedProperties(
+		// method inherit the refusal without a call-site change. It belongs on
+		// this path because a hidden field genuinely is one the caller may not
+		// touch, and "not authorized to modify" is the true sentence for it.
+		//
+		// `readOnly` deliberately does NOT come through here. It is not an
+		// authorization question, and this method's caller turns its answer
+		// into "you are not authorized to modify", which would be the wrong
+		// sentence for a field the user can see and normally edit.
+		// StateFieldRuleListener refuses that one with 422 naming the field and
+		// the state, which is what the requirement's scenario reads.
+		$unauthorizedProps = $this->stateHiddenWrites(
 			schema: $schema,
 			object: $object,
 			incomingData: $incomingData
@@ -684,34 +691,33 @@ class PropertyRbacHandler {
 	}//end stripStateHiddenProperties()
 
 	/**
-	 * The incoming properties the object's current lifecycle state refuses.
+	 * The incoming properties the object's current lifecycle state hides.
 	 *
-	 * Read only and hidden are the two kinds that refuse a write here;
-	 * `required` is not, because an empty required field is a refusal ABOUT the
-	 * write rather than about a property the caller may not touch, and it names
-	 * the state in its message. That one lives in StateFieldRuleListener.
+	 * Only `hidden` answers here. `readOnly` and `required` are refusals ABOUT
+	 * the write rather than about a property the caller may not touch, and both
+	 * name the state in their message, so both live in StateFieldRuleListener.
 	 *
 	 * @param Schema $schema Schema containing the lifecycle annotation
 	 * @param array $object Existing object data (empty array for creates)
 	 * @param array $incomingData Incoming data from client
 	 *
-	 * @return array Array of property names the state refuses
+	 * @return array Array of property names the state hides
 	 *
 	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
-	private function stateBlockedProperties(Schema $schema, array $object, array $incomingData): array {
+	private function stateHiddenWrites(Schema $schema, array $object, array $incomingData): array {
 		$source = $object;
 		if ($source === []) {
 			$source = $incomingData;
 		}
 
 		$rules = $this->stateFieldRules->resolve(schema: $schema, data: $source);
-		if ($rules->isEmpty() === true) {
+		if ($rules->getHidden() === []) {
 			return [];
 		}
 
 		$blocked = [];
-		foreach (array_merge($rules->getReadOnly(), $rules->getHidden()) as $property) {
+		foreach ($rules->getHidden() as $property) {
 			if (array_key_exists($property, $incomingData) === false) {
 				continue;
 			}
@@ -727,7 +733,7 @@ class PropertyRbacHandler {
 		}
 
 		return $blocked;
-	}//end stateBlockedProperties()
+	}//end stateHiddenWrites()
 
 	/**
 	 * Check if user has access to a property for a specific action

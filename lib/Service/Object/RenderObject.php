@@ -1690,6 +1690,16 @@ class RenderObject {
 		// Get the object data as an array for manipulation.
 		$objectData = $entity->getObject();
 
+		// The object BEFORE any caller-supplied projection. The lifecycle
+		// state's field rules are resolved against this, so `?fields=onderwerp`
+		// cannot change which rules apply by hiding the lifecycle field from
+		// the resolver: a form that projected would then be told a state
+		// demands nothing, and be refused on save anyway.
+		$unprojectedData = [];
+		if (is_array($objectData) === true) {
+			$unprojectedData = $objectData;
+		}
+
 		// Apply field filtering if specified.
 		if (empty($fields) === false) {
 			$fields[] = '@self';
@@ -2008,7 +2018,7 @@ class RenderObject {
 		// still refused on save by StateFieldRuleListener — the hint is a
 		// courtesy, never the enforcement.
 		if ($schema !== null) {
-			$this->attachFieldRules(entity: $entity, schema: $schema);
+			$this->attachFieldRules(entity: $entity, schema: $schema, stored: $unprojectedData);
 		}
 
 		// Decrypt properties flagged `x-openregister-encrypted: true` (field-level-
@@ -2196,18 +2206,14 @@ class RenderObject {
 	 *
 	 * @param ObjectEntity $entity The entity being rendered.
 	 * @param Schema $schema The entity's schema.
+	 * @param array<string, mixed> $stored The object before any projection or strip.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
-	private function attachFieldRules(ObjectEntity $entity, Schema $schema): void {
+	private function attachFieldRules(ObjectEntity $entity, Schema $schema, array $stored): void {
 		try {
-			$stored = ($entity->getObject() ?? []);
-			if (is_array($stored) === false) {
-				$stored = [];
-			}
-
 			$rules = $this->propertyRbacHandler->stateFieldRulesFor(schema: $schema, object: $stored);
 		} catch (\Throwable $e) {
 			// The hint is a courtesy on a read. Losing it must never cost the
