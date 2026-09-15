@@ -49,9 +49,14 @@ final class NotificationAnnotationValidator {
 
 	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
 
-	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression', 'watchers'];
+	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers'];
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
+
+	/**
+	 * Transport kinds a rule may declare beside its channels.
+	 */
+	private const VALID_TRANSPORT_KINDS = ['outbound'];
 
 	/**
 	 * Valid action `target.kind` values (foundation contract / ADR-031 dialect).
@@ -207,6 +212,18 @@ final class NotificationAnnotationValidator {
 		$propKeys = [];
 		if (is_array($properties) === true) {
 			$propKeys = array_keys($properties);
+		}
+
+		// The role names this schema assigns, read from the same
+		// `authorization.roles` map the permission handler expands. A rule may
+		// only address a role the schema actually assigns; when the schema
+		// carries no assignment at all the check stands down rather than
+		// refusing every role, because the assignment may live on a register
+		// this validator is not given.
+		$declaredRoles = [];
+		$authorization = ($schema['authorization'] ?? null);
+		if (is_array($authorization) === true && is_array(($authorization['roles'] ?? null)) === true) {
+			$declaredRoles = array_values(array_filter(array_keys($authorization['roles']), 'is_string'));
 		}
 
 		$errors = [];
@@ -627,6 +644,14 @@ final class NotificationAnnotationValidator {
 				}
 			}
 
+			// Optional `transports` — the outbound calls this rule runs in the
+			// same firing as its notices. Refused at save when malformed,
+			// because a transport that names no handler is an integration
+			// nobody will notice is missing.
+			if (array_key_exists('transports', $spec) === true) {
+				$errors = array_merge($errors, $this->validateTransports(transports: $spec['transports'], name: $name));
+			}
+
 			// Optional `critical` bypass flag and optional fixed-time
 			// `digest` schedule (notification-delivery-windows dialect
 			// additions). See "Users MUST be able to manage their
@@ -722,6 +747,34 @@ final class NotificationAnnotationValidator {
 								$name,
 								$i,
 								$perm
+							),
+						];
+					}
+				}
+
+				if ($kind === 'role') {
+					// A role entry that names no role addresses nobody. Refusing
+					// it at save is the same posture the dispatcher takes at
+					// midnight: a rule that reaches nobody says so, here first.
+					$role = (string)($recipient['role'] ?? '');
+					if ($role === '') {
+						$errors[] = [
+							'code' => 'notification-recipient-role-missing',
+							'message' => sprintf(
+								'Notification "%s" recipient[%d] kind=role requires a non-empty role name.',
+								$name,
+								$i
+							),
+						];
+					} elseif (in_array($role, $declaredRoles, true) === false && $declaredRoles !== []) {
+						$errors[] = [
+							'code' => 'notification-recipient-role-unknown',
+							'message' => sprintf(
+								'Notification "%s" recipient[%d] role "%s" is not assigned by the schema authorization; declared: [%s].',
+								$name,
+								$i,
+								$role,
+								implode(', ', $declaredRoles)
 							),
 						];
 					}
@@ -1121,14 +1174,75 @@ final class NotificationAnnotationValidator {
 	}//end validateMessage()
 
 	/**
-	 * Validate the optional `organisation` rule-level gate.
+	 * Validate the optional `transports` block.
 	 *
-	 * Accepts either a single non-empty string (one tenant) or an
-	 * array of non-empty strings (any-of). Returns an error envelope
-	 * for malformed shapes and null when the gate is well-formed.
+	 * Only `outbound` is a transport a rule declares here; the in-app notice,
+	 * the e-mail and the activity entry stay in `channels`, which is where
+	 * every existing rule already spells them. A handler is required because a
+	 * transport naming none is an integration that silently never runs.
+	 *
+	 * @param mixed $transports Raw value of the `transports` key.
+	 * @param string $name The notification name (for error messages).
+	 *
+	 * @return array<int, array{code: string, message: string}> One entry per fault.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 */
+	private function validateTransports(mixed $transports, string $name): array {
+		if (is_array($transports) === false) {
+			return [
+				[
+					'code' => 'notification-transports-malformed',
+					'message' => sprintf('Notification "%s" transports must be an array.', $name),
+				],
+			];
+		}
+
+		$errors = [];
+		foreach ($transports as $i => $transport) {
+			if (is_array($transport) === false) {
+				$errors[] = [
+					'code' => 'notification-transport-malformed',
+					'message' => sprintf('Notification "%s" transports[%s] must be an object.', $name, (string)$i),
+				];
+				continue;
+			}
+
+			$kind = (string)($transport['kind'] ?? '');
+			if (in_array($kind, self::VALID_TRANSPORT_KINDS, true) === false) {
+				$errors[] = [
+					'code' => 'notification-transport-bad-kind',
+					'message' => sprintf(
+						'Notification "%s" transports[%s] kind "%s" not in [%s].',
+						$name,
+						(string)$i,
+						$kind,
+						implode(', ', self::VALID_TRANSPORT_KINDS)
+					),
+				];
+				continue;
+			}
+
+			if ($kind === 'outbound' && (string)($transport['handler'] ?? '') === '') {
+				$errors[] = [
+					'code' => 'notification-transport-no-handler',
+					'message' => sprintf(
+						'Notification "%s" transports[%s] kind=outbound requires a handler (DI tag or FQCN).',
+						$name,
+						(string)$i
+					),
+				];
+			}
+		}//end foreach
+
+		return $errors;
+	}//end validateTransports()
+
+	/**
+	 * Validate the optional `organisation` gate.
 	 *
 	 * @param mixed $org Raw value of the `organisation` key.
-	 * @param string $name The notification name (for error messages).
+	 * @param string $name Notification name (for diagnostics).
 	 *
 	 * @return array{code: string, message: string}|null
 	 */
