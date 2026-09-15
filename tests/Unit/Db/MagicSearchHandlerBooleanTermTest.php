@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Support\FilterParams;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -321,48 +322,41 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 	}//end testAMalformedTermIsRefusedOnTheQueryBuilderPath()
 
 	/**
-	 * The missing-value bucket is advertised as selectable through the object
-	 * filter grammar this endpoint already speaks: a BARE property key carrying
-	 * the `isnull` operator, which is what `?resultType_isnull=true` becomes.
+	 * The missing-value bucket is selectable through the object-filter grammar
+	 * this endpoint already speaks, and BOTH spellings of it mean one thing.
 	 *
-	 * The second half of this test is the guard openregister#3611 earned: the
-	 * objects endpoint reads bare keys and does NOT read a `filter[...]` bag, so
-	 * spelling the same filter that way silently selects nothing. Pinned here so
-	 * the consumer never has to guess which of the two spellings this endpoint
-	 * takes.
+	 * This is the half of openregister#3611 that is already closed and must stay
+	 * closed. `SearchQueryHandler::buildSearchQuery()` lifts `filter[x]` into a
+	 * bare `x` before the mapper sees it, and its underscore reconstruction turns
+	 * `?resultType_isnull=true` into the same nested bag. So the consumer may
+	 * write either spelling and gets the same rows, and nothing here widens that.
 	 *
 	 * @return void
 	 */
-	public function testTheMissingBucketFilterUsesABareKeyNotAFilterBag(): void {
+	public function testTheMissingBucketFilterMeansTheSameInBothSpellings(): void {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn(['resultType' => ['type' => 'string']]);
 
+		// What both spellings become by the time the mapper reads them.
+		$nested = ['resultType' => ['isnull' => 'true']];
+
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
+		$method->invoke($this->handler, $this->makeQueryBuilder(), $nested, $schema);
 
-		$method->invoke(
-			$this->handler,
-			$this->makeQueryBuilder(),
-			['resultType' => ['isnull' => 'true']],
-			$schema
-		);
 		$this->assertContains(
 			'isNull(t.result_type)',
 			$this->captured,
-			'A bare property key with the isnull operator is the missing-bucket filter.'
+			'The missing bucket is selected by the isnull operator on the property.'
 		);
 
-		$this->captured = [];
-		$method->invoke(
-			$this->handler,
-			$this->makeQueryBuilder(),
-			['filter' => ['resultType' => ['isnull' => 'true']]],
-			$schema
+		// The bracket spelling lifts to exactly that bag, and leaves no `filter`
+		// key behind to be read as a property nothing declares.
+		$lifted = FilterParams::liftBracketFilter(
+			params: ['filter' => ['resultType' => ['isnull' => 'true']]]
 		);
-		$this->assertContains(
-			'1 = 0',
-			$this->captured,
-			'A filter[...] bag is not a property filter on this endpoint; it selects nothing.'
-		);
-	}//end testTheMissingBucketFilterUsesABareKeyNotAFilterBag()
+		$this->assertSame($nested, $lifted);
+		$this->assertArrayNotHasKey('filter', $lifted);
+	}//end testTheMissingBucketFilterMeansTheSameInBothSpellings()
+
 }//end class

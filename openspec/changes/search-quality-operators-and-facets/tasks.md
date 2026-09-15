@@ -20,9 +20,12 @@ separate mechanism: the facet query is the one `MagicSearchHandler
 applied, so the missing count is scoped exactly as every value bucket is.
 
 The filter that selects it is the object-filter grammar the endpoint already
-speaks: `?<property>_isnull=true`, a BARE property key. Not `filter[...]` —
-that spelling belongs to the aggregations endpoint and silently selects nothing
-here (openregister#3611). A test pins both halves.
+speaks: the `isnull` operator on the property, written either as
+`?<property>_isnull=true` or as `?filter[<property>][isnull]=true`. Both
+spellings reach the mapper as one nested bag, because `SearchQueryHandler
+::buildSearchQuery()` lifts the bracket form into a bare key. That is the half
+of openregister#3611 that is already closed, and a test pins it so this change
+cannot quietly reopen it.
 
 ## 2. The term parser
 
