@@ -1051,6 +1051,18 @@ return [
         // Notification Preferences — override-only, per-(schema, notification) user preferences.
         ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
+        // Notification Broadcasts — one administered message to every user.
+        // The active read and the acknowledge act on the caller's own receipt
+        // and are open to any signed-in user; the rest is administrators only.
+        ['name' => 'notificationBroadcast#index',   'url' => '/api/notification-broadcasts', 'verb' => 'GET'],
+        ['name' => 'notificationBroadcast#create',  'url' => '/api/notification-broadcasts', 'verb' => 'POST'],
+        ['name' => 'notificationBroadcast#active',  'url' => '/api/notification-broadcasts/active', 'verb' => 'GET'],
+        [
+            'name' => 'notificationBroadcast#acknowledge',
+            'url' => '/api/notification-broadcasts/{uuid}/acknowledge',
+            'verb' => 'POST',
+        ],
+        ['name' => 'notificationBroadcast#destroy', 'url' => '/api/notification-broadcasts/{uuid}', 'verb' => 'DELETE'],
         // Notification Group Preferences — the team's layer between the schema
         // default and each member's own value. Writing requires administering
         // the named group; reading is open to its members.
