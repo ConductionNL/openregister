@@ -2934,6 +2934,19 @@ class ObjectsController extends Controller {
 				],
 				statusCode: 409
 			);
+		} catch (\OCA\OpenRegister\Exception\DuplicateBlockedException $exception) {
+			// Also before the generic \Exception, and for the same reason: a
+			// create refused because the register already holds this record is
+			// not a permissions problem, and a 403 would send the user looking
+			// for the wrong fix. The matches travel with the refusal so the
+			// form can offer the existing object instead of a second one.
+			return new JSONResponse(
+				data: [
+					'error' => $exception->getMessage(),
+					'matches' => $exception->getMatches(),
+				],
+				statusCode: 409
+			);
 		} catch (\Exception $exception) {
 			// Handle all other exceptions (including RBAC permission errors).
 			// Sanitized external-write failures carry their own 4xx status
