@@ -724,6 +724,40 @@ class Schema extends Entity implements JsonSerializable {
 	public const WRITEONLY_PATHS_ANNOTATION = 'x-openregister-writeonly-paths';
 
 	/**
+	 * The lens annotation: properties that read a referenced record's field live.
+	 *
+	 * Keyed by the property name the lens renders as, each entry naming the
+	 * reference property to look through and the property to read there. A lens
+	 * holds the path, never the value, so two records can never disagree about
+	 * the same date.
+	 *
+	 * @var string
+	 */
+	public const LENS_ANNOTATION = 'x-openregister-lenses';
+
+	/**
+	 * The list-surface annotation: declared columns and search fields.
+	 *
+	 * A list page written per object type is a list page that drifts per object
+	 * type. The schema declares what to show and what to search; the generic
+	 * surface renders it.
+	 *
+	 * @var string
+	 */
+	public const LIST_ANNOTATION = 'x-openregister-list';
+
+	/**
+	 * The geographic-inheritance annotation: which references carry map features.
+	 *
+	 * A record may show the point its address holds. Every inherited feature
+	 * names the relation it arrived through, and a feature the record holds
+	 * itself outranks an inherited one.
+	 *
+	 * @var string
+	 */
+	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
+
+	/**
 	 * Whether the schema declares any nested write-only dot-paths.
 	 *
 	 * Companion to hasWriteOnlyProperties(): that one answers "does a declared
@@ -1917,6 +1951,257 @@ class Schema extends Entity implements JsonSerializable {
 	}//end getObjectSource()
 
 	/**
+	 * Get the lens declarations from the schema configuration.
+	 *
+	 * A lens is a property that shows a referenced record's own field, live: it
+	 * holds the path, never the value. Each entry is keyed by the property name
+	 * it renders as and declares `through` (a reference property on this schema)
+	 * and `property` (the property to read through it, dot paths allowed). An
+	 * entry missing either key is dropped rather than half-applied.
+	 *
+	 * @return array<string, array{through: string, property: string, label?: string}>
+	 *                                                                                The declared lenses, keyed by property name.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getLenses(): array {
+		$configuration = $this->getConfiguration();
+
+		if ($configuration === null) {
+			return [];
+		}
+
+		$lenses = ($configuration[self::LENS_ANNOTATION] ?? null);
+
+		if (is_array($lenses) === false) {
+			return [];
+		}
+
+		$declared = [];
+		foreach ($lenses as $name => $spec) {
+			$entry = self::normaliseLens(spec: $spec);
+			if ((string)$name === '' || $entry === null) {
+				continue;
+			}
+
+			$declared[(string)$name] = $entry;
+		}
+
+		return $declared;
+	}//end getLenses()
+
+	/**
+	 * Normalise one declared lens, or drop it.
+	 *
+	 * A lens is only half a lens without both halves: a `through` naming the
+	 * reference property and a `property` naming what to read there. Half of one
+	 * would render as empty on every read, which is indistinguishable from a
+	 * field nobody filled in, so it is dropped here and reported by
+	 * HingeAnnotationValidator at save time.
+	 *
+	 * @param mixed $spec The declared lens.
+	 *
+	 * @return array|null The lens, or null when either half is missing.
+	 *
+	 * @psalm-return array{through: string, property: string, label?: string}|null
+	 */
+	private static function normaliseLens(mixed $spec): ?array {
+		if (is_array($spec) === false) {
+			return null;
+		}
+
+		$through = ($spec['through'] ?? null);
+		$property = ($spec['property'] ?? null);
+
+		if (is_string($through) === false || $through === '') {
+			return null;
+		}
+
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		$entry = [
+			'through' => $through,
+			'property' => $property,
+		];
+
+		if (isset($spec['label']) === true && is_string($spec['label']) === true) {
+			$entry['label'] = $spec['label'];
+		}
+
+		return $entry;
+	}//end normaliseLens()
+
+	/**
+	 * Get the list-surface declaration from the schema configuration.
+	 *
+	 * A schema may say which columns a list shows and which fields it searches
+	 * on, so the generic surface renders any object type without a list page of
+	 * its own. A schema declaring neither keeps whatever the surface defaults
+	 * to today.
+	 *
+	 * @return array The declared columns and search fields, each possibly empty.
+	 *
+	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getListPresentation(): array {
+		$configuration = $this->getConfiguration();
+		$empty = [
+			'columns' => [],
+			'searchFields' => [],
+		];
+
+		if ($configuration === null) {
+			return $empty;
+		}
+
+		$list = ($configuration[self::LIST_ANNOTATION] ?? null);
+
+		if (is_array($list) === false) {
+			return $empty;
+		}
+
+		$columns = [];
+		foreach (($list['columns'] ?? []) as $column) {
+			$entry = self::normaliseListColumn(column: $column);
+			if ($entry !== null) {
+				$columns[] = $entry;
+			}
+		}
+
+		$searchFields = [];
+		foreach (($list['searchFields'] ?? []) as $field) {
+			if (is_string($field) === true && $field !== '') {
+				$searchFields[] = $field;
+			}
+		}
+
+		return [
+			'columns' => $columns,
+			'searchFields' => array_values(array_unique($searchFields)),
+		];
+	}//end getListPresentation()
+
+	/**
+	 * Normalise one declared list column.
+	 *
+	 * A bare string is the property name; an array may add a label and a width.
+	 *
+	 * @param mixed $column The declared column.
+	 *
+	 * @return array{property: string, label?: string}|null The column, or null when it names no property.
+	 */
+	private static function normaliseListColumn(mixed $column): ?array {
+		if (is_string($column) === true) {
+			if ($column === '') {
+				return null;
+			}
+
+			return ['property' => $column];
+		}
+
+		if (is_array($column) === false) {
+			return null;
+		}
+
+		$property = ($column['property'] ?? null);
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		$entry = ['property' => $property];
+		if (isset($column['label']) === true && is_string($column['label']) === true) {
+			$entry['label'] = $column['label'];
+		}
+
+		return $entry;
+	}//end normaliseListColumn()
+
+	/**
+	 * Get the geographic-inheritance declaration from the schema configuration.
+	 *
+	 * A record may collect map features from the objects and parties it points
+	 * at. Each entry names the reference property to follow; the collector
+	 * stamps that name onto every feature it brings back, so a pin on a map can
+	 * always say where it came from.
+	 *
+	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getGeoInheritance(): array {
+		$configuration = $this->getConfiguration();
+
+		if ($configuration === null) {
+			return [];
+		}
+
+		$geo = ($configuration[self::GEO_INHERITANCE_ANNOTATION] ?? null);
+
+		if (is_array($geo) === false) {
+			return [];
+		}
+
+		$sources = ($geo['from'] ?? null);
+		if (is_array($sources) === false) {
+			return [];
+		}
+
+		$declared = [];
+		foreach ($sources as $source) {
+			$entry = self::normaliseGeoSource(source: $source);
+			if ($entry === null) {
+				continue;
+			}
+
+			$declared[] = $entry;
+		}//end foreach
+
+		return $declared;
+	}//end getGeoInheritance()
+
+	/**
+	 * Normalise one declared geographic-inheritance source, or drop it.
+	 *
+	 * A bare string is the reference property to follow; an array may add the
+	 * label a map legend shows beside the features that arrived through it.
+	 *
+	 * @param mixed $source The declared source.
+	 *
+	 * @return array|null The source, or null when it names no reference property.
+	 *
+	 * @psalm-return array{through: string, label?: string}|null
+	 */
+	private static function normaliseGeoSource(mixed $source): ?array {
+		if (is_string($source) === true) {
+			if ($source === '') {
+				return null;
+			}
+
+			return ['through' => $source];
+		}
+
+		if (is_array($source) === false) {
+			return null;
+		}
+
+		$through = ($source['through'] ?? null);
+		if (is_string($through) === false || $through === '') {
+			return null;
+		}
+
+		$entry = ['through' => $through];
+		if (isset($source['label']) === true && is_string($source['label']) === true) {
+			$entry['label'] = $source['label'];
+		}
+
+		return $entry;
+	}//end normaliseGeoSource()
+
+	/**
 	 * Check whether this schema's objects are opted into Context Chat indexing.
 	 *
 	 * Reads the `x-openregister-contextchat` annotation (default OFF). Follows
@@ -2249,6 +2534,11 @@ class Schema extends Entity implements JsonSerializable {
 			return;
 		}
 
+		if ($key === 'partyKinds') {
+			$validatedConfig[$key] = $this->validatePartyKindsValue(value: $value);
+			return;
+		}
+
 		if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
 			$validatedConfig[$key] = $this->validateWriteOnlyPathsValue(value: $value);
 			return;
@@ -2455,6 +2745,19 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-notifications',
 		'x-openregister-widgets',
 		'x-openregister-relations',
+		// The named relation vocabulary: a list of
+		// {key, label, inverseLabel, symmetric, inherits} that several `$ref`
+		// properties can point at by key, so an administrator edits "blocked
+		// by" in one place instead of on every property that means it. Read by
+		// RelationTypeResolver and refused by RelationAnnotationValidator.
+		//
+		// ⚠️ Absent from this list it is dropped by setConfiguration(), and the
+		// failure is the quiet one this list exists to prevent: every property
+		// naming a key would resolve to nothing, so a typed relation would
+		// render as the generic "referenced by" fallback forever while its
+		// author reads a 200 and believes it saved. The comments below record
+		// the same bug five times over.
+		'x-openregister-relation-types',
 		'x-openregister-processing-activity',
 		// Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
 		// dialect). Was absent from this list, so setConfiguration() silently
@@ -2539,6 +2842,24 @@ class Schema extends Entity implements JsonSerializable {
 		// could never opt an object into a subscription — same
 		// or#460/#462-class trap as every entry above.
 		'x-openregister-registry',
+		// A property that shows a referenced record's own field, live. Read by
+		// LensResolver at render time; the value is never stored. Absent from
+		// this list, setConfiguration() would drop the block and every lens
+		// would render empty, which reads exactly like "there is no besluit".
+		self::LENS_ANNOTATION,
+		// The columns a list surface shows and the fields it searches on, so an
+		// object type is as usable as a case list with no page of its own.
+		self::LIST_ANNOTATION,
+		// The reference properties a record collects map features from, each
+		// feature naming the relation it arrived through.
+		self::GEO_INHERITANCE_ANNOTATION,
+		// Declares that objects of this schema ARE parties: which kind of
+		// party, and which of its properties carry the name, the addresses,
+		// the indicators and the parent. Absent from this list,
+		// setConfiguration() would DROP it and the party model would report
+		// "this schema is not a party schema" for a schema that says it is —
+		// the same silent no-op class as every entry above.
+		'x-openregister-party',
 	];
 
 	/**
@@ -2639,6 +2960,124 @@ class Schema extends Entity implements JsonSerializable {
 
 		return $entries;
 	}//end getLinkRoles()
+
+	/**
+	 * Validate and normalise `partyKinds`: the kinds of party an object of
+	 * this schema accepts, and per kind the roles it may hold.
+	 *
+	 * Each entry is `{key, label, description?, roles?}`; a bare string reads
+	 * as `{key: s, label: s}`. Keys are unique, non-empty and at most 64
+	 * characters, the width of the link table's `party_kind` column. `roles`
+	 * is an optional list of role keys: naming it binds those roles to that
+	 * kind, leaving it out lets the kind hold any role the schema declares.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The normalised entries.
+	 *
+	 * @throws InvalidArgumentException When the value is not a list of valid entries.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	private function validatePartyKindsValue(mixed $value): array {
+		if (is_array($value) === false || array_is_list($value) === false) {
+			throw new InvalidArgumentException("Configuration 'partyKinds' must be a list of party kinds");
+		}
+
+		$entries = [];
+		$seen = [];
+		foreach ($value as $entry) {
+			$normalised = self::normalisePartyKind(entry: $entry);
+			if ($normalised === null) {
+				throw new InvalidArgumentException("Each 'partyKinds' entry needs a non-empty key of at most 64 characters");
+			}
+
+			if (isset($seen[$normalised['key']]) === true) {
+				throw new InvalidArgumentException("'partyKinds' names the key '" . $normalised['key'] . "' twice");
+			}
+
+			$seen[$normalised['key']] = true;
+			$entries[] = $normalised;
+		}
+
+		return $entries;
+	}//end validatePartyKindsValue()
+
+	/**
+	 * One `partyKinds` entry as `{key, label, description?, roles?}`, or null when it has no usable key.
+	 *
+	 * @param mixed $entry A string or an array.
+	 *
+	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>}|null The entry.
+	 */
+	private static function normalisePartyKind(mixed $entry): ?array {
+		$normalised = self::normaliseLinkRole(entry: $entry);
+		if ($normalised === null) {
+			return null;
+		}
+
+		if (is_array($entry) === false || isset($entry['roles']) === false || is_array($entry['roles']) === false) {
+			return $normalised;
+		}
+
+		$roles = [];
+		foreach ($entry['roles'] as $role) {
+			$role = trim((string)$role);
+			if ($role !== '' && in_array($role, $roles, true) === false) {
+				$roles[] = $role;
+			}
+		}
+
+		if ($roles !== []) {
+			$normalised['roles'] = $roles;
+		}
+
+		return $normalised;
+	}//end normalisePartyKind()
+
+	/**
+	 * The kinds of party an object of this schema accepts, [] when it declares none.
+	 *
+	 * A schema that declares none keeps its reference properties and behaves
+	 * as it did before the party model: the picker offers everything and the
+	 * validator refuses nothing.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function getPartyKinds(): array {
+		$configured = $this->configuration['partyKinds'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($configured as $entry) {
+			$normalised = self::normalisePartyKind(entry: $entry);
+			if ($normalised !== null) {
+				$entries[] = $normalised;
+			}
+		}
+
+		return $entries;
+	}//end getPartyKinds()
+
+	/**
+	 * The `x-openregister-party` annotation, [] when the schema is not a party schema.
+	 *
+	 * @return array<string, mixed> The annotation as stored.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function getPartyAnnotation(): array {
+		$configured = $this->configuration['x-openregister-party'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		return $configured;
+	}//end getPartyAnnotation()
 
 	/**
 	 * Validate the linkedTypes configuration value.

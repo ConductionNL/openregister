@@ -538,6 +538,21 @@ return [
         ['name' => 'contacts#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
         ['name' => 'contacts#objects',   'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
 
+        // Parties — a party holds a typed role on an object for a period, and
+        // may have no Nextcloud account at all. The literal `/parties/primary`
+        // route comes BEFORE `/parties/{partyUuid}` on purpose: the wildcard
+        // would otherwise match the literal string "primary" and the replace
+        // would 404 on a route that exists.
+        ['name' => 'party#index',          'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#create',         'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#replacePrimary', 'url' => '/api/objects/{register}/{schema}/{id}/parties/primary',      'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#destroy',        'url' => '/api/objects/{register}/{schema}/{id}/parties/{partyUuid}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'partyUuid' => '[^/]+']],
+        // App-global party reads. `search` and `resolve` are literals and come
+        // before the `{partyUuid}` wildcard for the same reason.
+        ['name' => 'party#search',         'url' => '/api/parties/search',                                        'verb' => 'GET'],
+        ['name' => 'party#resolve',        'url' => '/api/parties/resolve',                                       'verb' => 'GET'],
+        ['name' => 'party#show',           'url' => '/api/parties/{partyUuid}',                                   'verb' => 'GET',    'requirements' => ['partyUuid' => '[^/]+']],
+
         // Calendar events — object↔CalDAV event links via DAV principal.
         ['name' => 'calendarEvents#index',     'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'calendarEvents#create',    'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -974,7 +989,36 @@ return [
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#uses',      'url' => '/api/objects/{register}/{schema}/{id}/uses',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#used',      'url' => '/api/objects/{register}/{schema}/{id}/used',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // The reverse view: which records reference this object, grouped by schema,
+        // each with its title, its status and when it last changed (REQ-OHC-001).
+        [
+            'name' => 'objects#referencedBy',
+            'url' => '/api/objects/{register}/{schema}/{id}/referenced-by',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        // The record's own map features plus the ones it inherits from what it
+        // references, each naming the relation it arrived through (REQ-OHC-006).
+        [
+            'name' => 'objects#geoFeatures',
+            'url' => '/api/objects/{register}/{schema}/{id}/geo-features',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
         ['name' => 'objects#logs',      'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Relation rows and the relation graph (relation-types-with-inverses).
+        // The stored rows are the links no $ref property can hold: a split's
+        // provenance, what a child inherited, an address outside the product,
+        // and a reference somebody wrote in prose. `uses` and `used` above
+        // still answer for the $ref relations; these answer for the rest, and
+        // the graph unions both.
+        ['name' => 'objectRelations#index',       'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#addLink',     'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#removeLink',  'url' => '/api/objects/{register}/{schema}/{id}/relation-rows/{relationId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'relationId' => '[^/]+']],
+        ['name' => 'objectRelations#removeReferences', 'url' => '/api/objects/{register}/{schema}/{id}/relation-references/{anchor}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'anchor' => '[^/]+']],
+        ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -1001,6 +1045,15 @@ return [
         ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        // Import preview and conflict policy — an import says what it would
+        // create, update, skip and refuse before it writes anything.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
+        ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
+        ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#commit', 'url' => '/api/import-previews/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
@@ -1127,6 +1180,68 @@ return [
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
+        // Timeline entries under objects: the entry as a record, with its
+        // kind, its fields, the pin, the follow-up and the raw inbound
+        // source. All #[NoAdminRequired] with a per-object RBAC guard in the
+        // method body (ADR-005/016/029); CSRF stays enabled on the writes.
+        [
+            'name' => 'timelineEntries#index',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#create',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#show',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#update',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}',
+            'verb' => 'PATCH',
+            'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#source',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}/source',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+'],
+        ],
+
+        // The cross-object entry search: the Woo path. Static, because it
+        // spans every object the caller may read rather than one of them.
+        ['name' => 'timelineEntries#searchEntries', 'url' => '/api/timeline/search', 'verb' => 'GET'],
+
+        // The three administered declarations behind the timeline. Reading
+        // them is open to any authenticated caller, because a handler writing
+        // an entry needs the list; declaring and withdrawing are admin-only.
+        ['name' => 'timelineAdmin#kinds', 'url' => '/api/timeline/kinds', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declareKind', 'url' => '/api/timeline/kinds', 'verb' => 'POST'],
+        ['name' => 'timelineAdmin#withdrawKind', 'url' => '/api/timeline/kinds/{slug}', 'verb' => 'DELETE', 'requirements' => ['slug' => '[^/]+']],
+        ['name' => 'timelineAdmin#patterns', 'url' => '/api/timeline/reference-patterns', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declarePattern', 'url' => '/api/timeline/reference-patterns', 'verb' => 'POST'],
+        [
+            'name' => 'timelineAdmin#withdrawPattern',
+            'url' => '/api/timeline/reference-patterns/{slug}',
+            'verb' => 'DELETE',
+            'requirements' => ['slug' => '[^/]+'],
+        ],
+        ['name' => 'timelineAdmin#textBlocks', 'url' => '/api/timeline/text-blocks', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declareTextBlock', 'url' => '/api/timeline/text-blocks', 'verb' => 'POST'],
+        [
+            'name' => 'timelineAdmin#withdrawTextBlock',
+            'url' => '/api/timeline/text-blocks/{slug}',
+            'verb' => 'DELETE',
+            'requirements' => ['slug' => '[^/]+'],
+        ],
+
         // Semantic-object handoff engine (ADR-051): availability + execute.
         // Both #[NoAdminRequired] with a per-object RBAC guard in the method
         // body (ADR-005/016/029); CSRF stays enabled on the POST.
@@ -1158,6 +1273,12 @@ return [
         ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
         ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
         ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        [
+            'name' => 'rules#replay',
+            'url' => '/api/schemas/{schema}/rules/{ruleId}/replay',
+            'verb' => 'POST',
+            'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+'],
+        ],
 
         // The property vocabulary: what a property may be, published so an
         // editor is generated from it instead of retyped per app. Literal
@@ -1171,6 +1292,14 @@ return [
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#related', 'url' => '/api/schemas/{id}/related', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // The list surface a schema declares: columns and search fields, so a
+        // generic surface renders any object type without a page of its own.
+        [
+            'name' => 'schemas#listPresentation',
+            'url' => '/api/schemas/{id}/list-presentation',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
