@@ -38,6 +38,23 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
  * map to HTTP 422 responses as schema-save failures.
  */
 final class LifecycleAnnotationValidator {
+
+	/**
+	 * Constructor.
+	 *
+	 * The state validator is defaulted rather than required so every existing
+	 * `new LifecycleAnnotationValidator()` keeps working; the parameter exists
+	 * so a test can substitute one.
+	 *
+	 * @param LifecycleStateValidator $states Validates the `states` block.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly LifecycleStateValidator $states = new LifecycleStateValidator(),
+	) {
+	}//end __construct()
+
 	/**
 	 * Validate the annotation block on a schema definition.
 	 *
@@ -73,7 +90,10 @@ final class LifecycleAnnotationValidator {
 		// message naming the real mistake, instead of being shape-checked as
 		// a graph block that happens to carry a stray key.
 		if (isset($annotation['provider']) === true) {
-			return $this->validateProviderMode(annotation: $annotation, schema: $schema);
+			return array_merge(
+				$this->validateProviderMode(annotation: $annotation, schema: $schema),
+				$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: null)
+			);
 		}
 
 		// Graph mode: when a non-empty `graph` block is declared, the lifecycle
@@ -84,7 +104,10 @@ final class LifecycleAnnotationValidator {
 			&& is_array($annotation['graph']) === true
 			&& $annotation['graph'] !== []
 		) {
-			return $this->validateGraphMode(annotation: $annotation, schema: $schema);
+			return array_merge(
+				$this->validateGraphMode(annotation: $annotation, schema: $schema),
+				$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: null)
+			);
 		}
 
 		// Required top-level fields.
@@ -292,8 +315,23 @@ final class LifecycleAnnotationValidator {
 			}
 		}//end foreach
 
+		// Per-state field rules and state conditions. Validated last so a
+		// malformed transition is reported as a transition problem rather than
+		// as a state one, and so the enum the states are checked against has
+		// already been established.
+		$errors = array_merge(
+			$errors,
+			$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: $enumSet)
+		);
+
+		$errors = array_merge(
+			$errors,
+			$this->states->validateInputsAgainstHiddenFields(annotation: $annotation, transitions: $transitions)
+		);
+
 		return $errors;
 	}//end validate()
+
 
 	/**
 	 * Validate a provider-mode annotation.

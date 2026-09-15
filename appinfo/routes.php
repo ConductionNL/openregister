@@ -439,6 +439,18 @@ return [
         ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
+        // Previewed erasure (data-subject-rights-across-the-instance): count
+        // first, approve, then erase through the recorded destruction. The
+        // one-call `dataSubjectRequest#erase` above stays for callers that had
+        // already decided; this is the surface for a request that has to be
+        // ANSWERED, protected records and all.
+        ['name' => 'erasurePreview#create', 'url' => '/api/gdpr/erasure-previews', 'verb' => 'POST'],
+        ['name' => 'erasurePreview#show', 'url' => '/api/gdpr/erasure-previews/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#approve', 'url' => '/api/gdpr/erasure-previews/{id}/approve',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#run', 'url' => '/api/gdpr/erasure-previews/{id}/run',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
@@ -521,6 +533,13 @@ return [
         ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
         // MDM read-only surface — duplicate-candidate listing.
         ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+        // Duplicate check at intake: score an UNSAVED body against what is stored.
+        //
+        // ORDER MATTERS. `objects#postPatch` is POST /api/objects/{register}/{schema}/{id}
+        // and would otherwise match this URL with `dedup-check` as the id, turning a
+        // read-only check into a patch of a non-existent object. It is registered far
+        // below (the objects block), so this entry must stay ABOVE it, here.
+        ['name' => 'duplicate#check', 'url' => '/api/objects/{register}/{schema}/dedup-check', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
         ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
         ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],

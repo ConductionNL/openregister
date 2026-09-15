@@ -13,8 +13,11 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 class PropertyRbacHandlerTest extends TestCase {
+	use BuildsStateFieldRuleResolver;
+
 	private PropertyRbacHandler $handler;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
@@ -31,7 +34,8 @@ class PropertyRbacHandlerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->conditionMatcher,
-			$this->logger
+			$this->logger,
+			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
 		);
 	}
 

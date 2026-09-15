@@ -1575,6 +1575,9 @@ class ObjectService implements ObjectServiceInterface
      *                                                Non-HTTP callers (cron, import pipelines, event listeners)
      *                                                MUST pass an explicit user to avoid the
      *                                                default-deny fall-through on every folder-bound save.
+     * @param bool                     $_dedupOverride Save through a blocking duplicate match, when the caller is
+     *                                                entitled to. Read from the RAW request by ObjectsController,
+     *                                                because the body filter there strips `_`-prefixed keys.
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1602,7 +1605,8 @@ class ObjectService implements ObjectServiceInterface
         ?array $uploadedFiles=null,
         ?IUser $currentUser=null,
         bool $failIfExists=false,
-        bool $_unowned=false
+        bool $_unowned=false,
+        bool $_dedupOverride=false
     ): ObjectEntity {
         // A SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         //
@@ -1801,7 +1805,8 @@ class ObjectService implements ObjectServiceInterface
                 uploadedFiles: $uploadedFiles,
                 currentUser: $currentUser,
                 failIfExists: $failIfExists,
-                _unowned: $_unowned
+                _unowned: $_unowned,
+                _dedupOverride: $_dedupOverride
             );
 
             // Invalidate contact matching cache for objects with email properties.

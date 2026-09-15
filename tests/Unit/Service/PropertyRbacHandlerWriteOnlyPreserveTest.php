@@ -21,6 +21,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * The save-side half of the writeOnly contract (openregister#463).
@@ -33,6 +34,8 @@ use Psr\Log\LoggerInterface;
  * same parent must still land.
  */
 class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
+	use BuildsStateFieldRuleResolver;
+
 	private PropertyRbacHandler $handler;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
@@ -51,7 +54,8 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->conditionMatcher,
-			$this->logger
+			$this->logger,
+			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
 		);
 	}
 
@@ -338,7 +342,8 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->conditionMatcher,
-			$logger
+			$logger,
+			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
 		);
 
 		$logger->expects($this->any())
