@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
+use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -107,6 +108,7 @@ class RetentionService {
 	 * @param LoggerInterface $logger Logger
 	 * @param RetentionRowScanner $rowScanner Walks every table a retention decision can live in
 	 * @param ArchiveActionDateCalculator $actionDateCalculator Calculates the archiefactiedatum
+	 * @param SelectielijstResolver $selectielijstResolver Decides which revision of a category applies
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
 	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
@@ -124,6 +126,7 @@ class RetentionService {
 		private readonly LoggerInterface $logger,
 		private readonly RetentionRowScanner $rowScanner,
 		private readonly ArchiveActionDateCalculator $actionDateCalculator,
+		private readonly SelectielijstResolver $selectielijstResolver,
 	) {
 	}//end __construct()
 
@@ -216,7 +219,7 @@ class RetentionService {
 		$classification = $archiveConfig['classification'] ?? null;
 		$entry = null;
 		if ($classification !== null) {
-			$entry = $this->findSelectielijstEntry(category: $classification);
+			$entry = $this->selectielijstResolver->entryFor(category: $classification);
 		}
 
 		if ($entry !== null) {
@@ -224,7 +227,7 @@ class RetentionService {
 			$applied['archiefnominatie'] = ($data['archiefnominatie'] ?? 'nog_niet_bepaald');
 			$applied['bewaartermijn'] = ($data['bewaartermijn'] ?? null);
 			$applied['selectielijstBron'] = ($data['bron'] ?? null);
-			$applied['provenance'] = $this->selectielijstProvenance(entry: $entry);
+			$applied['provenance'] = $this->selectielijstResolver->provenanceOf(entry: $entry);
 		}
 
 		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
@@ -359,6 +362,12 @@ class RetentionService {
 	/**
 	 * Look up a selectielijst entry by categorie code.
 	 *
+	 * Delegates to {@see \OCA\OpenRegister\Service\Archival\SelectielijstResolver},
+	 * which owns the whole question of WHICH revision of a category applies now
+	 * that a list is imported with a version. Kept here because callers and the
+	 * spec both name this method, the same arrangement
+	 * {@see calculateArchiveActionDate()} has with ArchiveActionDateCalculator.
+	 *
 	 * @param string $category The selectielijst category code (e.g., B1, A1)
 	 *
 	 * @return array|null The selectielijst entry data or null if not found
@@ -366,131 +375,9 @@ class RetentionService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function lookupSelectielijstEntry(string $category): ?array {
-		$entry = $this->findSelectielijstEntry(category: $category);
-
-		if ($entry === null) {
-			return null;
-		}
-
-		return $entry->getObject();
+		return $this->selectielijstResolver->lookupSelectielijstEntry(category: $category);
 	}//end lookupSelectielijstEntry()
 
-	/**
-	 * Find the selectielijst entry ENTITY for a categorie code.
-	 *
-	 * Split out from lookupSelectielijstEntry because `getObject()` drops the
-	 * `@self` envelope, and the envelope is where the row's own version and
-	 * update timestamp live. Gap B1 in openspec/changes/archival-conformance:
-	 * without them a disposal decision can say WHICH list it came from but not
-	 * WHICH VERSION OF THAT LIST, and the same category carries different
-	 * retention periods across selectielijst revisions. Five years on, that is
-	 * the difference between a decision you can justify and one you cannot.
-	 *
-	 * @param string $category The selectielijst category code (e.g., B1, A1)
-	 *
-	 * @return ObjectEntity|null The entry, or null when unconfigured or absent
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	private function findSelectielijstEntry(string $category): ?ObjectEntity {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
-
-		$registerId = $settings['selectielijstRegister'] ?? null;
-		$schemaId = $settings['selectielijstSchema'] ?? null;
-
-		if ($registerId === null || $schemaId === null) {
-			return null;
-		}
-
-		try {
-			$register = $this->registerMapper->find((int)$registerId);
-			$schema = $this->schemaMapper->find((int)$schemaId);
-
-			$results = $this->objectMapper->findAll(
-				limit: 1,
-				filters: ['object->categorie' => $category],
-				register: $register,
-				schema: $schema
-			);
-
-			if (empty($results) === true) {
-				return null;
-			}
-
-			return $results[0];
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'[RetentionService] Failed to lookup selectielijst entry for ' . $category,
-				['exception' => $e]
-			);
-			return null;
-		}//end try
-	}//end findSelectielijstEntry()
-
-	/**
-	 * Read the provenance of a selectielijst entry: which version, read when.
-	 *
-	 * Three sources, in the order an auditor would trust them:
-	 *
-	 *  1. a `versie` or `version` the row itself declares, which is the list
-	 *     publisher's own numbering and the only one that means anything
-	 *     outside this install;
-	 *  2. failing that, the entry object's own `@self.version`, which says
-	 *     which revision of the stored row was read even when the publisher
-	 *     numbered nothing;
-	 *  3. the moment it was read, always, because a version alone does not say
-	 *     whether the decision predates a later revision.
-	 *
-	 * Returns an empty array rather than nulls when nothing can be
-	 * established: an absent key is honest, and a key holding null reads as a
-	 * recorded answer of "no version".
-	 *
-	 * @param ObjectEntity $entry The selectielijst entry that was applied
-	 *
-	 * @return array<string, string> The provenance keys, possibly empty
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	private function selectielijstProvenance(ObjectEntity $entry): array {
-		$provenance = ['selectionListConsultedAt' => (new DateTime())->format('c')];
-
-		$data = $entry->getObject();
-		$declared = null;
-		if (is_array($data) === true) {
-			$declared = ($data['versie'] ?? ($data['version'] ?? null));
-		}
-
-		$version = $this->stringOrNull(value: $declared);
-		if ($version === null) {
-			$version = $this->stringOrNull(value: $entry->getVersion());
-		}
-
-		if ($version !== null) {
-			$provenance['selectionListVersion'] = $version;
-		}
-
-		return $provenance;
-	}//end selectielijstProvenance()
-
-	/**
-	 * A non-empty trimmed string, or null.
-	 *
-	 * @param mixed $value The candidate value
-	 *
-	 * @return string|null The string, or null when it says nothing
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false && is_int($value) === false) {
-			return null;
-		}
-
-		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
-		}
-
-		return $text;
-	}//end stringOrNull()
 
 	/**
 	 * Validate that an object is not in an immutable archival status.
