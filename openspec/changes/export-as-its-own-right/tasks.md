@@ -2,9 +2,9 @@
 
 ## 1. The verb
 
-- [ ] 1.1 An `export` verb in the authorization layer, evaluated beside read (D-1).
-- [ ] 1.2 Every export path checks it, the API included; the refusal names the verb.
-- [ ] 1.3 A migration granting export wherever read is granted, stated in the release note (D-2).
+- [x] 1.1 An `export` verb in the authorization layer, evaluated beside read (D-1).
+- [x] 1.2 Every export path checks it, the API included; the refusal names the verb.
+- [x] 1.3 A migration granting export wherever read is granted, stated in the release note (D-2).
 
 ## 2. The profile
 

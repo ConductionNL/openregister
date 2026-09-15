@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.27-unstable.20260915140000</version>
+    <version>2.1.27-unstable.20260915203000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -325,6 +325,14 @@ Vrij en open source onder de EUPL-licentie.
 			     re-syncs an already-materialised table on a read, so the sync
 			     has to be asked for, and an upgrade is when. Idempotent. -->
 			<step>OCA\OpenRegister\Repair\AddObjectStateColumns</step>
+			<!-- The export verb (export-as-its-own-right). Exporting is now a
+			     right of its own, and an instance that granted read granted an
+			     export with it. This step writes that grant down so an
+			     administrator can see the verb and narrow it; without it the
+			     verb would still work, invisibly, through the read fallback.
+			     Idempotent, and it never touches a schema that already names
+			     the export right. -->
+			<step>OCA\OpenRegister\Repair\GrantExportWhereReadIsGranted</step>
 			<!-- Intake sources (objects-as-the-hinge-between-cases): the
 			     intake-sources register with its intake-source schema, so a watched
 			     folder, a mailbox or an inbound endpoint is a row somebody can add

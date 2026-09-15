@@ -90,6 +90,13 @@ class PermissionCatalogue {
 	 * without it refused a block naming a verb this instance already enforces
 	 * (task 8.5, decision D10).
 	 *
+	 * `export` is here because reading a record and taking a dataset off the
+	 * instance are different acts, and the AVG treats them differently. It is
+	 * the verb `ExportRightService` resolves on every export path. While no
+	 * administrator has written it into a schema's block, it falls back to that
+	 * schema's `read` grant, so an upgraded instance keeps exporting; the
+	 * catalogue publishes it so the narrowing can be made at all.
+	 *
 	 * @var array<string, string>
 	 */
 	public const CANONICAL = [
@@ -99,6 +106,7 @@ class PermissionCatalogue {
 		'delete' => 'Remove an object.',
 		'destroy' => 'End a deleted object for good, before its recovery window closes.',
 		'list' => 'See the objects of a schema as a list, with totals and facets.',
+		'export' => 'Take the objects of a schema off this instance as a file.',
 		'manage' => 'Change the access rules themselves, including roles and grants.',
 	];
 
