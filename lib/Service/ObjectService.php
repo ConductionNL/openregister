@@ -3862,6 +3862,22 @@ class ObjectService implements ObjectServiceInterface
     }//end getDeleteHandler()
 
     /**
+     * Get the permission handler.
+     *
+     * Used by controllers that report on a decision rather than make one: the
+     * actions a reader may take on the record they just read, and the rules
+     * behind them. The verdict itself stays inside this service.
+     *
+     * @return PermissionHandler The permission handler.
+     *
+     * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+     */
+    public function getPermissionHandler(): PermissionHandler
+    {
+        return $this->permissionHandler;
+    }//end getPermissionHandler()
+
+    /**
      * Collect UUID-to-name mappings for all related objects in search results.
      *
      * This method extracts all UUIDs from the search results (relations, object properties)
