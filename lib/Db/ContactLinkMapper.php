@@ -29,6 +29,13 @@ use OCP\IDBConnection;
  * Class ContactLinkMapper
  *
  * @template-extends QBMapper<ContactLink>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One named query per lookup the
+ *   link table answers, and the party model added four: every object a party
+ *   holds a role on, the party links of one object, the primary party, and the
+ *   rows a merge moved. Collapsing them into a generic finder would move the
+ *   query builder into every caller, where the next one gets the predicate
+ *   subtly wrong and nothing says so.
  */
 class ContactLinkMapper extends QBMapper {
 	/**
@@ -219,4 +226,99 @@ class ContactLinkMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByUserId()
+
+	/**
+	 * Every link that names a party, newest first.
+	 *
+	 * This is the read behind "an indicator reaches every case of that
+	 * party": the objects are found from the party's side, so setting an
+	 * indicator writes the party and nothing else.
+	 *
+	 * @param string $partyUuid The party object's uuid.
+	 *
+	 * @return ContactLink[] The links.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	public function findByPartyUuid(string $partyUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('party_uuid', $qb->createNamedParameter($partyUuid)))
+			->orderBy('linked_at', 'DESC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByPartyUuid()
+
+	/**
+	 * Every party link on an object, oldest first.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return ContactLink[] The links naming a party.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function findPartiesForObject(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNotNull('party_uuid'))
+			->orderBy('linked_at', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findPartiesForObject()
+
+	/**
+	 * The link marking the party the object is filed against, or null.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return ContactLink|null The primary party's link.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function findPrimaryParty(string $objectUuid): ?ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('primary_party', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+			->setMaxResults(1);
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findPrimaryParty()
+
+	/**
+	 * Every link whose metadata records that a merge operation moved it.
+	 *
+	 * The memo lives on the row the merge changed, so reversing a merge is a
+	 * read of the rows themselves rather than surgery on the merge snapshot.
+	 * The LIKE narrows; the caller decodes the memo and decides, so a row
+	 * whose metadata merely contains the id as text is never acted on.
+	 *
+	 * @param string $operationId The merge operation's uuid.
+	 *
+	 * @return ContactLink[] The candidate links.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 */
+	public function findByOperationMemo(string $operationId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->like(
+					'metadata',
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($operationId) . '%')
+				)
+			);
+
+		return $this->findEntities(query: $qb);
+	}//end findByOperationMemo()
 }//end class

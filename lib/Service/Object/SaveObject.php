@@ -48,6 +48,7 @@ use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -56,6 +57,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
+use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -1515,6 +1519,50 @@ class SaveObject {
 
 		return $data;
 	}//end applyAlwaysDefaults()
+
+	/**
+	 * Evaluate the schema's expression defaults for an object being CREATED.
+	 *
+	 * Called from ObjectService beside {@see self::applyAlwaysDefaults()} and
+	 * for the same reason: a derived value has to exist before validation, or
+	 * a property that is both required and derived can never be created.
+	 *
+	 * CREATE ONLY. A default is what a value starts as. Re-deriving it on every
+	 * update would silently overwrite what a caseworker typed, which is a
+	 * calculation and is a different annotation.
+	 *
+	 * The resolver is built here from this handler's own session rather than
+	 * injected, because adding a constructor parameter to this class would
+	 * change the positional signature ten unit tests construct it by. It holds
+	 * no state between calls, so building it per create costs an object.
+	 *
+	 * @param Schema $schema The schema being written against.
+	 * @param array<string, mixed> $data The object being created.
+	 *
+	 * @return array<string, mixed> The object with the derived defaults written onto it.
+	 *
+	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	public function applyExpressionDefaults(Schema $schema, array $data): array {
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false || $properties === []) {
+			return $data;
+		}
+
+		$resolver = new ExpressionDefaultResolver(
+			evaluator: new CalculationEvaluator(
+				placeholders: new PlaceholderResolver(userSession: $this->userSession)
+			)
+		);
+
+		if ($resolver->declaresAny(properties: $properties) === false) {
+			return $data;
+		}
+
+		return $resolver->apply(properties: $properties, data: $data);
+	}//end applyExpressionDefaults()
 
 	/**
 	 * Auto-seed the lifecycle field from the parent on the CREATE path.

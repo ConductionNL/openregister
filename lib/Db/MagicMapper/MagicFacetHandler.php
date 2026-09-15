@@ -590,7 +590,7 @@ class MagicFacetHandler {
 		bool $isMetadata = false,
 	): array {
 		if (empty($tableConfigs) === true) {
-			return ['type' => 'terms', 'buckets' => []];
+			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
 		}
 
 		// BUG-DB-2: $field is interpolated raw into the SQL below (CAST/WHERE/GROUP BY).
@@ -605,7 +605,7 @@ class MagicFacetHandler {
 				message: '[MagicFacetHandler] Rejected unsafe terms-facet field name',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
 			);
-			return ['type' => 'terms', 'buckets' => []];
+			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
 		}
 
 		// Build UNION ALL query with simple GROUP BY.
@@ -635,7 +635,11 @@ class MagicFacetHandler {
 			}
 
 			// Simple SELECT with GROUP BY - no jsonb_array_elements_text complexity.
-			$subSql = "SELECT {$castField} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
+			// The NULL group is kept rather than filtered out: it is the missing-value
+			// bucket, and counting it here is what keeps it inside the same query and
+			// the same access scope as every value bucket (ADR-009). `WHERE 1=1` holds
+			// the place the appended filter conditions below expect.
+			$subSql = "SELECT {$castField} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE 1=1";
 
 			// Use shared method for all filter conditions (single source of truth).
 			if ($this->searchHandler !== null) {
@@ -659,22 +663,33 @@ class MagicFacetHandler {
 		}//end foreach
 
 		if (empty($unionParts) === true) {
-			return ['type' => 'terms', 'buckets' => []];
+			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
 		}
 
 		// Combine with UNION ALL and aggregate.
 		$unionSql = implode("\nUNION ALL\n", $unionParts);
 		$limit = self::MAX_FACET_BUCKETS;
 		$innerSql = "SELECT facet_value, SUM(cnt) as doc_count FROM (\n" . $unionSql . "\n) combined";
-		$sql = $innerSql . ' GROUP BY facet_value ORDER BY doc_count DESC LIMIT ' . $limit;
+		// The NULL group is pinned first so a wide facet's bucket cap can never
+		// truncate it. A missing bucket that silently reads zero is worse than
+		// no missing bucket at all.
+		$sql = $innerSql . ' GROUP BY facet_value'
+			. ' ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC'
+			. ' LIMIT ' . $limit;
 
 		try {
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute();
 
-			// Collect raw buckets from database.
+			// Collect raw buckets from database, peeling off the NULL group.
 			$rawBuckets = [];
+			$missingCount = 0;
 			while (($row = $stmt->fetch()) !== false) {
+				if ($row['facet_value'] === null) {
+					$missingCount = (int)$row['doc_count'];
+					continue;
+				}
+
 				$rawBuckets[] = [
 					'key' => $row['facet_value'],
 					'count' => (int)$row['doc_count'],
@@ -733,7 +748,11 @@ class MagicFacetHandler {
 				];
 			}//end foreach
 
-			return ['type' => 'terms', 'buckets' => $buckets];
+			return [
+				'type' => 'terms',
+				'buckets' => $buckets,
+				'missing' => ['results' => $missingCount],
+			];
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[MagicFacetHandler] UNION facet query failed',
@@ -745,7 +764,7 @@ class MagicFacetHandler {
 					'sql' => $sql,
 				]
 			);
-			return ['type' => 'terms', 'buckets' => []];
+			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
 		}//end try
 	}//end getTermsFacetUnion()
 
@@ -1176,6 +1195,7 @@ class MagicFacetHandler {
 			$result = [
 				'type' => 'terms',
 				'buckets' => [],
+				'missing' => ['results' => 0],
 			];
 			$this->facetCache[$cacheKey] = $result;
 			return $result;
@@ -1184,14 +1204,18 @@ class MagicFacetHandler {
 		// Use shared query builder from MagicSearchHandler (single source of truth for filters).
 		// Simple GROUP BY - array values will be post-processed in PHP.
 		// Fallback: Build query manually (legacy behavior).
+		//
+		// The NULL group is no longer excluded. Grouping over it is what makes
+		// the missing-value bucket cost nothing: it is counted by the same query
+		// and inside the same access scope as every value bucket, never by a
+		// second pass over the result set (ADR-009).
+		$columnRef = $field;
 		$queryBuilder = $this->db->getQueryBuilder();
 		$queryBuilder->selectAlias($field, 'facet_value')
 			->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
 			->from($tableName)
-			->where($queryBuilder->expr()->isNotNull($field))
-			->groupBy($field)
-			->orderBy('doc_count', 'DESC')
-			->setMaxResults(self::MAX_FACET_BUCKETS);
+			->groupBy($field);
+		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
 
 		// Apply base filters.
 		$this->applyBaseFilters(
@@ -1207,21 +1231,26 @@ class MagicFacetHandler {
 				schema: $schema,
 				tableName: $tableName
 			);
+			$columnRef = "t.{$field}";
 
 			// Add facet-specific SELECT and GROUP BY.
-			$queryBuilder->selectAlias("t.{$field}", 'facet_value')
+			$queryBuilder->selectAlias($columnRef, 'facet_value')
 				->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-				->andWhere($queryBuilder->expr()->isNotNull("t.{$field}"))
-				->groupBy("t.{$field}")
-				->orderBy('doc_count', 'DESC')
-				->setMaxResults(self::MAX_FACET_BUCKETS);
+				->groupBy($columnRef);
+			$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
 		}//end if
 
 		$result = $queryBuilder->executeQuery();
 
-		// Collect raw buckets from database.
+		// Collect raw buckets from database, peeling off the NULL group.
 		$rawBuckets = [];
+		$missingCount = 0;
 		while (($row = $result->fetch()) !== false) {
+			if ($row['facet_value'] === null) {
+				$missingCount = (int)$row['doc_count'];
+				continue;
+			}
+
 			$rawBuckets[] = [
 				'key' => $row['facet_value'],
 				'count' => (int)$row['doc_count'],
@@ -1281,6 +1310,7 @@ class MagicFacetHandler {
 		$result = [
 			'type' => 'terms',
 			'buckets' => $buckets,
+			'missing' => ['results' => $missingCount],
 		];
 
 		// Cache the result.
@@ -1288,6 +1318,29 @@ class MagicFacetHandler {
 
 		return $result;
 	}//end getTermsFacet()
+
+	/**
+	 * Order facet groups so the NULL group is always the first row.
+	 *
+	 * Buckets are capped at MAX_FACET_BUCKETS. Ordering by count alone would let
+	 * a small NULL group fall off the end of a wide facet, and a missing bucket
+	 * that silently reads zero is worse than no missing bucket at all. Pinning
+	 * it first costs the value buckets nothing: they keep their count order
+	 * among themselves.
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to order.
+	 * @param string        $columnRef    The faceted column, qualified as the query uses it.
+	 *
+	 * @return void
+	 */
+	private function orderFacetGroups(IQueryBuilder $queryBuilder, string $columnRef): void {
+		$queryBuilder->orderBy(
+			$queryBuilder->createFunction("CASE WHEN {$columnRef} IS NULL THEN 0 ELSE 1 END"),
+			'ASC'
+		)
+			->addOrderBy('doc_count', 'DESC')
+			->setMaxResults(self::MAX_FACET_BUCKETS);
+	}//end orderFacetGroups()
 
 	/**
 	 * Clean up JSON-encoded values.

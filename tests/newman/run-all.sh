@@ -102,6 +102,7 @@ DOMAIN_ORDER=(
     "register-resolver"
     "graphql"
     "relations"
+    "relation-types"
     "i18n-source-of-truth"
     "i18n-api-language-negotiation"
     "platform-annotations"
@@ -186,6 +187,19 @@ declare -A DOMAIN_COLLECTIONS=(
     # appinfo/routes.php the call silently becomes a patch of a non-existent
     # object. No unit test can see that.
     [dedup-check]="$REPO_ROOT/tests/newman/openregister-dedup-check.postman_collection.json"
+    # Typed relations with declared inverses. Registered here because the
+    # asymmetry IS the contract and it only exists over HTTP: the same link
+    # reads "blocks" on /uses and "blocked by" on /used, and the two handler
+    # methods that produce it reach for magic-table resolution that no unit
+    # run can stage. The 422 on a contradictory declaration is here for the
+    # same reason a route is: a validator not wired into the save path is a
+    # green unit suite and no refusal at all.
+    # Under tests/integration, not tests/newman: gate-112 (newman-reach) reads
+    # newman-collection-path and reports every collection outside it as one CI
+    # never runs, and gate-25 (contract-coverage) only looks for a contract
+    # test there. A collection CI does not run is a collection that reports the
+    # same green as one that passed.
+    [relation-types]="$REPO_ROOT/tests/integration/openregister-relation-types.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

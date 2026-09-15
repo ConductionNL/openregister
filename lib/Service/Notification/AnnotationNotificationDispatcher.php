@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -465,10 +466,10 @@ class AnnotationNotificationDispatcher {
 				);
 			}
 
-			if (count($recipients) === 0) {
-				continue;
-			}
-
+			// The zero-recipient bail moved BELOW the party dispatch. A rule
+			// addressed only to the parties on the object resolves zero uids,
+			// because a party without an account has none, and bailing here
+			// would silence it entirely.
 			$subjectTemplate = $spec['subject'] ?? (string)$name;
 			// The notification BODY template (distinct from the title).
 			// Absent when the rule declares no `message`; the per-recipient
@@ -488,6 +489,22 @@ class AnnotationNotificationDispatcher {
 				fallbackName: (string)$name
 			);
 			$channels = (array)($spec['channels'] ?? ['nc-notification']);
+
+			// A rule may address the PARTIES on the object rather than
+			// accounts. The recipient resolver answers in verified uids, and
+			// most melders have none, so this kind is dispatched here instead:
+			// over the addresses the party record itself holds.
+			$this->dispatchToParties(
+				recipientsSpec: (array)($spec['recipients'] ?? []),
+				object: $object,
+				channels: $channels,
+				ruleId: (string)$name,
+				subject: $broadcastSubject
+			);
+
+			if (count($recipients) === 0) {
+				continue;
+			}
 
 			$rateLimit = null;
 			if (is_array($spec['rateLimit'] ?? null) === true) {
@@ -2786,6 +2803,77 @@ class AnnotationNotificationDispatcher {
 			webPushActive: $webPushActive
 		);
 	}//end emitNotification()
+
+	/**
+	 * Send a rule addressed to the parties on an object, over their own addresses.
+	 *
+	 * A party without a Nextcloud account cannot be a resolved uid, so the
+	 * `parties` kind never reaches the per-recipient loop above. It is sent
+	 * here, through the one unit that knows how a party is reached: the
+	 * correspondence address it holds, and nothing at all when an indicator on
+	 * the party refuses the send.
+	 *
+	 * The service is resolved from the container rather than injected. It
+	 * reaches the object layer, which dispatches notifications, so a
+	 * constructor dependency would close that cycle.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param array<int, string> $channels The rule's channels.
+	 * @param string $ruleId The rule, for the history row.
+	 * @param string $subject The rule's subject, in the default locale.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function dispatchToParties(
+		array $recipientsSpec,
+		ObjectEntity $object,
+		array $channels,
+		string $ruleId,
+		string $subject,
+	): void {
+		if (in_array('email', $channels, true) === false) {
+			return;
+		}
+
+		$objectUuid = (string)($object->getUuid() ?? '');
+		if ($objectUuid === '') {
+			return;
+		}
+
+		foreach ($recipientsSpec as $recipient) {
+			if (is_array($recipient) === false || (string)($recipient['kind'] ?? '') !== 'parties') {
+				continue;
+			}
+
+			$role = trim((string)($recipient['role'] ?? ''));
+			$onlyRole = null;
+			if ($role !== '') {
+				$onlyRole = $role;
+			}
+
+			$sent = $this->serverContainer->get(PartyNotificationService::class)->notifyParties(
+				objectUuid: $objectUuid,
+				subject: $subject,
+				body: $subject,
+				role: $onlyRole
+			);
+
+			foreach ($sent as $outcome) {
+				$this->recordHistory(
+					ruleId: $ruleId,
+					channel: 'email',
+					recipient: 'party:' . $outcome['party'],
+					status: $outcome['outcome'],
+					object: $object,
+					subject: $subject,
+					locale: null
+				);
+			}
+		}//end foreach
+	}//end dispatchToParties()
 
 	/**
 	 * Send a transactional email to a Nextcloud user.

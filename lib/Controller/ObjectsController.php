@@ -49,14 +49,19 @@ use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
+use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
+use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\App\IAppManager;
@@ -1134,6 +1139,52 @@ class ObjectsController extends Controller {
 	}//end warnUnknownFilterKeys()
 
 	/**
+	 * Refuse a `_search` term the boolean parser cannot read.
+	 *
+	 * A term with an unbalanced bracket, a dangling operator or an unterminated
+	 * quote has one correct answer, and it is not "no results". Evaluating it as
+	 * a literal string returns zero rows, which on screen is indistinguishable
+	 * from a search that legitimately found nothing.
+	 *
+	 * @param array $params The raw request parameters.
+	 *
+	 * @phpstan-param array<string, mixed> $params
+	 *
+	 * @psalm-param array<string, mixed> $params
+	 *
+	 * @return JSONResponse|null A 400 naming the fault, or null when the term reads.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function refuseMalformedSearchTerm(array $params): ?JSONResponse {
+		$search = ($params['_search'] ?? null);
+		if (is_string($search) === false || trim($search) === '') {
+			return null;
+		}
+
+		$parser = new SearchTermParser();
+		$term = trim($search);
+		if ($parser->needsParsing(term: $term) === false) {
+			return null;
+		}
+
+		try {
+			$parser->parse(term: $term);
+		} catch (SearchTermSyntaxException $exception) {
+			return new JSONResponse(
+				data: [
+					'error' => $exception->getMessage(),
+					'position' => $exception->getPosition(),
+					'term' => $exception->getTerm(),
+				],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+	}//end refuseMalformedSearchTerm()
+
+	/**
 	 * Retrieves a list of all objects for a specific register and schema
 	 *
 	 * This method returns a paginated list of objects that match the specified register and schema.
@@ -1185,6 +1236,16 @@ class ObjectsController extends Controller {
 
 		// Check if multiple schemas are requested via query parameters.
 		$params = $this->request->getParams();
+
+		// A malformed boolean term is refused here, before any source is chosen.
+		// Deeper down the facet builders catch \Exception broadly, so a refusal
+		// raised in the mapper could be swallowed into an empty facet list and
+		// the caller would see the "found nothing" this change exists to remove.
+		$refusal = $this->refuseMalformedSearchTerm(params: $params);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		$schemasParam = $params['schemas'] ?? null;
 		$registersParam = $params['registers'] ?? null;
 
@@ -2933,6 +2994,15 @@ class ObjectsController extends Controller {
 			// MUST be caught before generic \Exception to avoid being absorbed as a 403 with
 			// a non-structured body. See the `self-folder-access-control` capability spec.
 			return $this->folderAccessDeniedResponse(exception: $exception);
+		} catch (ExpressionDefaultException $exception) {
+			// MUST be caught before the generic \Exception below, which flattens
+			// everything to 403. A derived default that could not be derived is
+			// the caller's data, not their permissions, and the refusal names
+			// the property so they can see which derivation failed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $exception->getMessage(), 'errors' => [$exception->toArray()]],
+				statusCode: 422
+			);
 		} catch (\OCA\OpenRegister\Exception\ObjectExistsException $exception) {
 			// MUST be caught before the generic \Exception below, which flattens
 			// everything to 403. A losing claim reported as "forbidden" is
@@ -4054,7 +4124,7 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse JSON response with related objects
 	 *
 	 * @psalm-return JSONResponse<200,
-	 *     array{results: list<ObjectEntity>, total: int<0, max>,
+	 *     array{results: list<array<string, mixed>>, total: int<0, max>,
 	 *     limit: 30|mixed, offset: 0|mixed},
 	 *     array<never, never>>
 	 *
@@ -4102,9 +4172,14 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse JSON response with objects that use this object
 	 *
 	 * @psalm-return JSONResponse<200,
-	 *     array{results: array<never, never>, total: 0, limit: 30|mixed,
-	 *     offset: 0|mixed, message?: string},
+	 *     array{results: list<array<string, mixed>>, total: int<0, max>,
+	 *     limit: 30|mixed, offset: 0|mixed, message?: string},
 	 *     array<never, never>>
+	 *
+	 * The old annotation said `results: array<never, never>, total: 0` — read
+	 * off the stub this method used to be. Each row now carries a `relation`
+	 * block naming the referencing property and its inverse label
+	 * (openspec/changes/relation-types-with-inverses).
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
@@ -5370,4 +5445,141 @@ class ObjectsController extends Controller {
 		return $self;
 
 	}//end withUnreadCounts()
+
+	/**
+	 * Read the records that reference this object, grouped by schema.
+	 *
+	 * The reverse of `uses`: an address, an asset or a licence read as the thing
+	 * several cases hinge on. Each group carries its own total and one page of
+	 * records, each with its title, its status and when it last changed. The
+	 * caller's access is applied inside the query, so a caller who may read one
+	 * of three gets one of three and a total of one.
+	 *
+	 * @param string              $id                 The object being read as the hinge.
+	 * @param string              $register           The register slug or identifier.
+	 * @param string              $schema             The schema slug or identifier.
+	 * @param ObjectService       $objectService      The object service.
+	 * @param ReferencedByService $referencedByService The reverse view.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The grouped reverse view, or 404 when the object is gone.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function referencedBy(
+		string $id,
+		string $register,
+		string $schema,
+		ObjectService $objectService,
+		ReferencedByService $referencedByService,
+	): JSONResponse {
+		$isAdmin = $this->isCurrentUserAdmin();
+		$rbac = ($isAdmin === false);
+
+		try {
+			$objectEntity = $objectService->find(
+				id: $id,
+				files: false,
+				register: $register,
+				schema: $schema,
+				_rbac: $rbac,
+				_multitenancy: $rbac,
+				_render: false
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		if ($objectEntity === null) {
+			return new JSONResponse(
+				data: ['error' => "Object with id {$id} not found"],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$query = $this->request->getParams();
+		unset($query['id'], $query['register'], $query['schema'], $query['_route']);
+
+		return new JSONResponse(
+			data: $referencedByService->getReferencingGroups(
+				object: $objectEntity,
+				query: $query,
+				_rbac: $rbac
+			)
+		);
+	}//end referencedBy()
+
+	/**
+	 * Read this object's map features, its own and the ones it inherits.
+	 *
+	 * Each inherited feature names the relation it arrived through, and a feature
+	 * the record holds itself outranks an inherited one for the same purpose. The
+	 * inherited one is still returned, marked superseded, because "where did the
+	 * other pin go" is a question worth an answer.
+	 *
+	 * @param string             $id            The object whose features are read.
+	 * @param string             $register      The register slug or identifier.
+	 * @param string             $schema        The schema slug or identifier.
+	 * @param ObjectService      $objectService The object service.
+	 * @param InheritedGeoCollector $collector  The feature collector.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse A GeoJSON FeatureCollection, or 404 when the object is gone.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function geoFeatures(
+		string $id,
+		string $register,
+		string $schema,
+		ObjectService $objectService,
+		InheritedGeoCollector $collector,
+	): JSONResponse {
+		$isAdmin = $this->isCurrentUserAdmin();
+		$rbac = ($isAdmin === false);
+
+		try {
+			$objectEntity = $objectService->find(
+				id: $id,
+				files: false,
+				register: $register,
+				schema: $schema,
+				_rbac: $rbac,
+				_multitenancy: $rbac,
+				_render: false
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		if ($objectEntity === null) {
+			return new JSONResponse(
+				data: ['error' => "Object with id {$id} not found"],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$schemaEntity = null;
+		try {
+			$schemaEntity = $this->schemaMapper->find(
+				id: $objectEntity->getSchema(),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				sprintf('[ObjectsController] geo features without a schema: %s', $e->getMessage())
+			);
+		}
+
+		return new JSONResponse(
+			data: $collector->collect(object: $objectEntity, schema: $schemaEntity, _rbac: $rbac)
+		);
+	}//end geoFeatures()
 }//end class
