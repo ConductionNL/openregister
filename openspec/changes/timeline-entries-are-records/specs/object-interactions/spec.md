@@ -74,6 +74,7 @@ reference.
 - **GIVEN** an instance declaring no pattern
 - **WHEN** a note holds a code-shaped string
 - **THEN** it renders as plain text
+- @e2e exclude {asserts the absence of instance-wide configuration, which a shared CI instance where other specs declare patterns cannot provide; covered by ReferenceServiceTest::testAnInstanceThatDeclaresNoPatternChangesNothing}
 
 ### Requirement: A note reaches related objects, and canned text is administered (REQ-TER-004)
 
