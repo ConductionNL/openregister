@@ -102,6 +102,20 @@ class NotificationPreferenceService {
 	private const MAX_KEY_LENGTH = 64;
 
 	/**
+	 * Per-request cache of each user's group ids.
+	 *
+	 * One dispatch evaluates every rule on a schema, and the same recipient
+	 * turns up in several of them. Without this, "which groups is Anna in" is
+	 * asked once per rule for the same answer (ADR-009). Only successful reads
+	 * are cached: a transient backend failure is not evidence that somebody has
+	 * no groups, and caching it would leave them with no team default for the
+	 * rest of the request.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private array $groupCache = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IConfig $config Nextcloud config for per-user values.
@@ -318,13 +332,18 @@ class NotificationPreferenceService {
 			return [];
 		}
 
+		if (isset($this->groupCache[$userId]) === true) {
+			return $this->groupCache[$userId];
+		}
+
 		try {
 			$user = $this->userManager->get($userId);
 			if ($user === null) {
 				return [];
 			}
 
-			return array_values($this->groupManager->getUserGroupIds($user));
+			$this->groupCache[$userId] = array_values($this->groupManager->getUserGroupIds($user));
+			return $this->groupCache[$userId];
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				'[NotificationPreferenceService] group membership read failed: ' . $e->getMessage()

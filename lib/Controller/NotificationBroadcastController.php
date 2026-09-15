@@ -44,7 +44,6 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Service\Notification\NotificationBroadcastService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -76,6 +75,8 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 *
+	 * @NoCSRFRequired
 	 */
 	public function index(): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -96,6 +97,8 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 *
+	 * @NoCSRFRequired
 	 */
 	public function create(): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -150,6 +153,8 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 *
+	 * @NoCSRFRequired
 	 */
 	public function destroy(string $uuid): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -170,8 +175,10 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
-	#[NoAdminRequired]
 	public function active(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -194,8 +201,10 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
-	#[NoAdminRequired]
 	public function acknowledge(string $uuid): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {

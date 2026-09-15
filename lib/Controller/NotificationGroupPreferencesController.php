@@ -39,7 +39,6 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -73,8 +72,10 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
-	#[NoAdminRequired]
 	public function index(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -132,8 +133,10 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
-	#[NoAdminRequired]
 	public function update(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {

@@ -41,7 +41,6 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -73,8 +72,10 @@ class NotificationTemplatesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
-	#[NoAdminRequired]
 	public function index(): JSONResponse {
 		if ($this->resolveUserId() === null) {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
@@ -99,8 +100,10 @@ class NotificationTemplatesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
-	#[NoAdminRequired]
 	public function gaps(): JSONResponse {
 		if ($this->resolveUserId() === null) {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
@@ -118,6 +121,8 @@ class NotificationTemplatesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 *
+	 * @NoCSRFRequired
 	 */
 	public function update(string $event): JSONResponse {
 		$userId = $this->resolveUserId();
