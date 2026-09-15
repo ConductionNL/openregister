@@ -39,6 +39,21 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Resolves per-property relation descriptors from a schema.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * Reason: resolution IS a fallback chain. A label may be inline or a
+ * vocabulary key, a string or a per-language map, and when none of those
+ * answers it falls back to the property's title and then to its name. Each
+ * branch is one of those cases, and removing any of them means a relation
+ * somewhere reads as nothing.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * Reason: RelationAnnotationValidator::declarationOf() and
+ * isReferenceProperty() are pure functions over the annotation shape, shared
+ * by the validator that refuses it and the resolver that reads it. Injecting
+ * the validator here would be an instance held for no state, and duplicating
+ * the two readers is how the refusal and the resolution drift apart.
+ *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
 class RelationTypeResolver {
@@ -223,13 +238,17 @@ class RelationTypeResolver {
 			$declaration = [];
 		}
 
-		$type = ($declaration['type'] ?? null);
+		// A `type` resolves only when the vocabulary actually holds it. One
+		// that does not is dropped rather than carried, so a property naming a
+		// key nobody declared reads as the fallback and never as a half-resolved
+		// entry. The save-time refusal keeps that case out of new schemas.
 		$entry = [];
-		if (is_string($type) === true && isset($vocabulary[trim($type)]) === true) {
-			$entry = $vocabulary[trim($type)];
-			$type = trim($type);
-		} else {
-			$type = null;
+		$declared = ($declaration['type'] ?? null);
+		$type = null;
+
+		if (is_string($declared) === true && isset($vocabulary[trim($declared)]) === true) {
+			$type = trim($declared);
+			$entry = $vocabulary[$type];
 		}
 
 		// The property's own declaration wins over the vocabulary entry it

@@ -46,6 +46,13 @@ use Psr\Log\LoggerInterface;
 /**
  * Walks the relation graph outward from one object.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * Reason: a breadth-first walk bounded twice, over two edge sources, with a
+ * node shape per source. The branches are the two bounds and the two sources,
+ * and every one of them is load-bearing: dropping a branch is dropping a
+ * bound or half the graph.
+ *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
 class RelationGraphService {

@@ -40,6 +40,15 @@ namespace OCA\OpenRegister\Service\Relation;
 /**
  * Reads and refuses relation declarations on a schema.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * Reason: a validator's complexity IS its refusal count. Every branch here is
+ * one way a declaration can be wrong, and each is named in its own message so
+ * the 422 tells the author which property and which mistake. Splitting the
+ * branches across helper classes to move the number under a threshold would
+ * scatter one contract over several files without removing a single decision.
+ *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
 final class RelationAnnotationValidator {

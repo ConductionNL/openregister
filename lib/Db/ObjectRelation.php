@@ -87,6 +87,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) One property per column of
+ * openregister_object_relations. Four kinds of row share the table (a split, a
+ * derivation, an external address and a prose reference), and each needs the
+ * columns the others do not: splitting them into four entities would put one
+ * relation behind four mappers and make the graph read a four-way union.
  */
 class ObjectRelation extends Entity implements JsonSerializable {
 	/**

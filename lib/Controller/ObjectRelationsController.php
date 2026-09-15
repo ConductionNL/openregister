@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -387,22 +388,13 @@ class ObjectRelationsController extends Controller {
 		// recordDerivation() with no caller at all: a write capability nobody
 		// reaches is a capability nobody can exercise, which is the shape
 		// gate-orphaned-write-capability exists to catch.
-		if ($applied['inherited'] !== []) {
-			$row = $this->relations->recordDerivation(
-				parent: $source,
-				child: $created,
-				relationType: $relationType,
-				inherited: $applied['inherited'],
-				entry: $entry
-			);
-		} else {
-			$row = $this->relations->recordSplit(
-				source: $source,
-				created: $created,
-				entry: $entry,
-				relationType: $relationType
-			);
-		}
+		$row = $this->recordProvenance(
+			source: $source,
+			created: $created,
+			entry: $entry,
+			relationType: $relationType,
+			inherited: $applied['inherited']
+		);
 
 		return new JSONResponse(
 			data: [
@@ -416,6 +408,49 @@ class ObjectRelationsController extends Controller {
 			statusCode: 201
 		);
 	}//end derive()
+
+	/**
+	 * Record where a newly created object came from: one row, not two.
+	 *
+	 * A derive that inherited something is a derivation; one that only names
+	 * where it came from is a split. Both carry the entry, because a
+	 * derivation and a split are the same act seen twice and a sub-case
+	 * started from a timeline entry is both.
+	 *
+	 * @param ObjectEntity $source The object it came out of.
+	 * @param ObjectEntity $created The new object.
+	 * @param string|null $entry The entry it came out of, when it came out of one.
+	 * @param string|null $relationType The vocabulary key naming the link.
+	 * @param array<string, mixed> $inherited What the child took at creation.
+	 *
+	 * @return ObjectRelation The provenance row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function recordProvenance(
+		ObjectEntity $source,
+		ObjectEntity $created,
+		?string $entry,
+		?string $relationType,
+		array $inherited,
+	): ObjectRelation {
+		if ($inherited !== []) {
+			return $this->relations->recordDerivation(
+				parent: $source,
+				child: $created,
+				relationType: $relationType,
+				inherited: $inherited,
+				entry: $entry
+			);
+		}
+
+		return $this->relations->recordSplit(
+			source: $source,
+			created: $created,
+			entry: $entry,
+			relationType: $relationType
+		);
+	}//end recordProvenance()
 
 	/**
 	 * What an object is linked to, within a bounded depth.
