@@ -2269,7 +2269,7 @@ OC.L10N.register(
     "Schemas" : "Schema's",
     "Scheme" : "Schema",
     "Score" : "Score",
-    "score" : "totaalscore",
+    "score" : "score",
     "Score histogram" : "Scorehistogram",
     "Sealed" : "Verzegeld",
     "Search" : "Zoeken",
