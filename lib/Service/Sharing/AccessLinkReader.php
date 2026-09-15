@@ -166,9 +166,15 @@ class AccessLinkReader {
 			return null;
 		}
 
-		if ($object->getDeleted() !== null) {
+		if ($object->isSoftDeleted() === true) {
 			// A deleted object is gone to a link too, which the caller turns
 			// into the same 404 as an unknown anchor.
+			//
+			// `isSoftDeleted()` and never `getDeleted() !== null`: the property
+			// defaults to `[]` and the hydrator leaves that default on a live
+			// row, so the null comparison is true for EVERY object and would
+			// refuse every read. ObjectEntity documents the trap on the
+			// accessor; the reader's own tests caught it here.
 			return null;
 		}
 
@@ -247,7 +253,7 @@ class AccessLinkReader {
 
 		$rows = [];
 		foreach ($results as $candidate) {
-			if ($candidate instanceof ObjectEntity === false || $candidate->getDeleted() !== null) {
+			if ($candidate instanceof ObjectEntity === false || $candidate->isSoftDeleted() === true) {
 				continue;
 			}
 
