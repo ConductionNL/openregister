@@ -7,34 +7,27 @@ import type { APIRequestContext } from '@playwright/test'
  * REPEATING GROUPS AND RECORDED CORRECTIONS — end to end, through the HTTP API
  * a real client uses.
  *
- * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/repeating-groups-and-recorded-corrections/specs/` is
- * archived into `openspec/specs/`:
- *
- * @e2e runtime-schema-api::two-gemachtigden-on-one-record
- * @e2e runtime-schema-api::a-violation-says-which-item
- * @e2e runtime-schema-api::the-maximum-is-enforced
- * @e2e runtime-schema-api::honest-incompleteness-beats-a-typed-onbekend
- * @e2e runtime-schema-api::not-supplied-is-not-empty
- * @e2e enhanced-audit-trail::a-mis-registered-case-is-corrected-not-edited
- * @e2e enhanced-audit-trail::no-reason-no-correction
- * @e2e enhanced-audit-trail::an-auditor-can-separate-corrections-from-updates
- *
  * WHAT THIS FILE CAN PROVE, AND WHY IT HAS TO BE THIS FILE.
  *
  * The unit tests pin the validators. What they cannot see is whether the
- * validators are actually ON the write path, whether the correction route is
- * registered, and whether the trail can be filtered back to corrections
- * through the endpoint a client calls. Each of those is a wiring claim about
- * three files agreeing, and a mocked mapper would be asserting the mock.
+ * validators are actually ON the write path, whether the routes are
+ * registered, whether the controller's body filter lets `@notSupplied`
+ * through, and whether the trail can be filtered back to corrections. Each of
+ * those is a wiring claim about several files agreeing, and a mocked mapper
+ * would be asserting the mock.
  *
- * THE FILTER ASSERTION IS THE POINT OF THE LAST TEST. A correction that is
- * recorded but indistinguishable from an update still returns 200 and still
+ * THE FILTER ASSERTION IS THE POINT OF THE CORRECTION TESTS. A correction that
+ * is recorded but indistinguishable from an update still returns 200 and still
  * changes the value. The only thing that tells the two apart is the trail
  * filtered to `action=correction` returning one row out of several.
  *
- * HERMETIC BY CONSTRUCTION. It creates its own register, schema and objects
- * and removes all three. It needs no `occ` and no docker.
+ * ⚠️ THE AGGREGATION TESTS WRITE AN INSTANCE-WIDE SETTING. They set the window
+ * and put it back to zero, which is the shipped default, in the test that set
+ * it and again in `afterAll`. The Playwright config pins one worker and no
+ * parallelism, so nothing else is mid-write while the window is up.
+ *
+ * HERMETIC BY CONSTRUCTION otherwise. It creates its own register, schema and
+ * objects and removes all three. It needs no `occ` and no docker.
  */
 import { expect, request as pwRequest, test } from '@playwright/test'
 import { resolveBaseUrl } from '../base-url.ts'
@@ -67,24 +60,6 @@ function uuidOf(body: Record<string, unknown>): string {
 	return String(self.id ?? body.id ?? body.uuid)
 }
 
-/** The audit rows on one object, optionally filtered to one action. */
-async function auditRows(
-	ctx: APIRequestContext,
-	registerId: string,
-	schemaId: string,
-	uuid: string,
-	action?: string,
-): Promise<Array<Record<string, unknown>>> {
-	const query = action ? `?action=${action}&limit=100` : '?limit=100'
-	const res = await ctx.get(`${API}/objects/${registerId}/${schemaId}/${uuid}/audit-trails${query}`)
-	expect(res.ok(), `audit trail read failed: ${await res.text()}`).toBeTruthy()
-	const body = await res.json()
-	const rows = body.results ?? body.data ?? body
-	expect(Array.isArray(rows), 'the audit trail did not come back as a list').toBeTruthy()
-
-	return rows as Array<Record<string, unknown>>
-}
-
 test.describe.configure({ mode: 'serial' })
 
 test.describe('repeating groups and recorded corrections over HTTP', () => {
@@ -92,6 +67,46 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 	let registerId: string
 	let schemaId: string
 	const created: string[] = []
+
+	/** The audit rows on one object, optionally filtered to one action. */
+	async function auditRows(
+		uuid: string,
+		action?: string,
+	): Promise<Array<Record<string, unknown>>> {
+		const query = action ? `?action=${action}&limit=100` : '?limit=100'
+		const res = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}/audit-trails${query}`,
+		)
+		expect(res.ok(), `audit trail read failed: ${await res.text()}`).toBeTruthy()
+		const body = await res.json()
+		const rows = body.results ?? body.data ?? body
+		expect(Array.isArray(rows), 'the audit trail did not come back as a list').toBeTruthy()
+
+		return rows as Array<Record<string, unknown>>
+	}
+
+	/** Create one object and remember it for teardown. */
+	async function createObject(data: Record<string, unknown>): Promise<string> {
+		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, { data })
+		expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
+		const uuid = uuidOf(await res.json())
+		created.push(uuid)
+
+		return uuid
+	}
+
+	/** Set the instance-wide aggregation window, in seconds. */
+	async function setWindow(seconds: number): Promise<void> {
+		const res = await admin.fetch(`${API}/settings/audit-aggregation`, {
+			method: 'PATCH',
+			data: { windowSeconds: seconds },
+		})
+		expect(res.ok(), `setting the aggregation window failed: ${await res.text()}`).toBeTruthy()
+		expect(
+			(await res.json()).windowSeconds,
+			'the answer has to say what was stored, not what was asked for',
+		).toBe(seconds)
+	}
 
 	test.beforeAll(async () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
@@ -107,6 +122,7 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 				title: `e2e repeating schema ${RUN}`,
 				description: 'e2e',
 				hardValidation: true,
+				required: ['bsn'],
 				properties: {
 					omschrijving: { type: 'string', title: 'Omschrijving', maxLength: 255 },
 					bsn: { type: 'string', title: 'Bsn', maxLength: 32 },
@@ -145,6 +161,12 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 	})
 
 	test.afterAll(async () => {
+		// The window is instance-wide. Put it back whatever happened above.
+		await admin.fetch(`${API}/settings/audit-aggregation`, {
+			method: 'PATCH',
+			data: { windowSeconds: 0 },
+		})
+
 		for (const uuid of created) {
 			if (!uuid) {
 				continue
@@ -163,7 +185,8 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		}
 	})
 
-	test('two gemachtigden are stored, in order', async () => {
+	// @e2e runtime-schema-api::two-gemachtigden-on-one-record
+	test('two gemachtigden are stored, in order, each validated', async () => {
 		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
 			data: {
 				omschrijving: 'Bezwaar',
@@ -187,10 +210,12 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		).toEqual(['De Vries', 'Yilmaz'])
 	})
 
+	// @e2e runtime-schema-api::a-violation-says-which-item
 	test('a violation says which row and which member', async () => {
 		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
 			data: {
 				omschrijving: 'Bezwaar',
+				bsn: '123456782',
 				gemachtigden: [{ naam: 'De Vries' }, { rol: 'partner' }],
 			},
 		})
@@ -202,10 +227,12 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		expect(message, 'the refusal has to name the member').toContain('naam')
 	})
 
+	// @e2e runtime-schema-api::the-maximum-is-enforced
 	test('a fourth row is refused, naming the maximum', async () => {
 		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
 			data: {
 				omschrijving: 'Bezwaar',
+				bsn: '123456782',
 				gemachtigden: [
 					{ naam: 'Een' },
 					{ naam: 'Twee' },
@@ -219,41 +246,66 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		expect(await res.text(), 'the refusal has to name the maximum').toContain('3')
 	})
 
-	test('a value can be recorded as not supplied, and reads back that way', async () => {
+	// @e2e runtime-schema-api::honest-incompleteness-beats-a-typed-onbekend
+	test('a required value can be recorded as not supplied, and reads back with its reason', async () => {
 		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
 			data: {
 				omschrijving: 'Aanvraag zonder bsn',
-				gemachtigden: [{ naam: 'De Vries' }],
 				'@notSupplied': { bsn: 'onbekend_bij_aanvrager' },
 			},
 		})
-		expect(res.ok(), `create with a not-supplied value failed: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`bsn is required, so this create proves not supplied satisfies the rule: ${await res.text()}`,
+		).toBeTruthy()
 
 		const uuid = uuidOf(await res.json())
 		created.push(uuid)
 
 		const read = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
 		expect(read.ok(), `read back failed: ${await read.text()}`).toBeTruthy()
-		const body = await read.json()
 
 		expect(
-			body['@notSupplied']?.bsn,
+			(await read.json())['@notSupplied']?.bsn,
 			'not supplied has to read back with its reason, or it is just an empty field',
 		).toBe('onbekend_bij_aanvrager')
 	})
 
-	test('an unadministered reason is refused', async () => {
+	// @e2e runtime-schema-api::not-supplied-is-not-empty
+	test('an empty value and a not-supplied one are distinguishable', async () => {
+		const empty = await createObject({ omschrijving: 'Leeg', bsn: '' })
+		const marked = await createObject({
+			omschrijving: 'Niet geleverd',
+			'@notSupplied': { bsn: 'onbekend_bij_aanvrager' },
+		})
+
+		const emptyBody = await (
+			await admin.get(`${API}/objects/${registerId}/${schemaId}/${empty}`)
+		).json()
+		const markedBody = await (
+			await admin.get(`${API}/objects/${registerId}/${schemaId}/${marked}`)
+		).json()
+
+		expect(
+			emptyBody['@notSupplied'],
+			'an empty field carries no record, because nobody decided anything',
+		).toBeFalsy()
+		expect(
+			markedBody['@notSupplied']?.bsn,
+			'a marked field carries the reason somebody chose',
+		).toBe('onbekend_bij_aanvrager')
+	})
+
+	test('a reason the schema does not administer is refused', async () => {
 		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
-			data: {
-				omschrijving: 'Aanvraag',
-				'@notSupplied': { bsn: 'geen_zin' },
-			},
+			data: { omschrijving: 'Aanvraag', '@notSupplied': { bsn: 'geen_zin' } },
 		})
 
 		expect(res.status(), 'a reason outside the schema list must be refused').toBe(400)
 	})
 
-	test('a correction with no reason is refused', async () => {
+	// @e2e enhanced-audit-trail::no-reason-no-correction
+	test('a correction with no reason is refused, naming the requirement', async () => {
 		const target = created[0]
 		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}/${target}/correct`, {
 			data: { values: { bsn: '111222333' } },
@@ -263,10 +315,13 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		expect(await res.text(), 'the refusal has to name what is missing').toContain('reason')
 	})
 
-	test('a mis-registered value is corrected, and the auditor can find it', async () => {
+	// @e2e enhanced-audit-trail::a-mis-registered-case-is-corrected-not-edited
+	// @e2e enhanced-audit-trail::an-auditor-can-separate-corrections-from-updates
+	test('a mis-registered value is corrected, and an auditor can find it', async () => {
+		await setWindow(0)
 		const target = created[0]
 
-		// Two ordinary updates first, so the filter below has something to
+		// Ordinary updates first, so the filter below has something to
 		// separate the correction from.
 		for (const omschrijving of ['Bezwaar, aangevuld', 'Bezwaar, tweede aanvulling']) {
 			const patch = await admin.fetch(
@@ -287,7 +342,7 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		const read = await admin.get(`${API}/objects/${registerId}/${schemaId}/${target}`)
 		expect((await read.json()).bsn, 'the corrected value has to be stored').toBe('111222333')
 
-		const corrections = await auditRows(admin, registerId, schemaId, target, 'correction')
+		const corrections = await auditRows(target, 'correction')
 		expect(
 			corrections,
 			'the trail filtered to corrections has to return exactly the correction',
@@ -301,11 +356,113 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 
 		const fields = (changed.correction?.fields ?? {}) as Record<string, Record<string, unknown>>
 		expect(fields.bsn?.new, 'the entry has to carry the corrected value').toBe('111222333')
-
-		const all = await auditRows(admin, registerId, schemaId, target)
 		expect(
-			all.length,
+			(await auditRows(target)).length,
 			'the correction replaces its update entry rather than adding a second one',
 		).toBeGreaterThan(corrections.length)
+	})
+
+	// @e2e enhanced-audit-trail::order-is-not-merged-away-by-default
+	test('two edits a moment apart are two entries when no window is set', async () => {
+		await setWindow(0)
+		const target = await createObject({ omschrijving: 'Ongemerged', bsn: '123456782' })
+
+		const before = (await auditRows(target, 'update')).length
+
+		for (const omschrijving of ['Eerste wijziging', 'Tweede wijziging']) {
+			const patch = await admin.fetch(
+				`${API}/objects/${registerId}/${schemaId}/${target}`,
+				{ method: 'PATCH', data: { omschrijving } },
+			)
+			expect(patch.ok(), `update failed: ${await patch.text()}`).toBeTruthy()
+		}
+
+		expect(
+			(await auditRows(target, 'update')).length - before,
+			'the shipped default records every edit separately, in order',
+		).toBe(2)
+	})
+
+	// @e2e enhanced-audit-trail::a-set-window-says-what-it-merged
+	test('three edits inside a set window are one entry, naming three', async () => {
+		const target = await createObject({ omschrijving: 'Gemerged', bsn: '123456782' })
+		const before = (await auditRows(target, 'update')).length
+
+		await setWindow(300)
+
+		try {
+			for (const omschrijving of ['Een', 'Twee', 'Drie']) {
+				const patch = await admin.fetch(
+					`${API}/objects/${registerId}/${schemaId}/${target}`,
+					{ method: 'PATCH', data: { omschrijving } },
+				)
+				expect(patch.ok(), `update failed: ${await patch.text()}`).toBeTruthy()
+			}
+
+			const updates = await auditRows(target, 'update')
+			expect(
+				updates.length - before,
+				'three edits inside the window are one entry, not three',
+			).toBe(1)
+
+			const changed = (updates[0].changed ?? {}) as Record<string, Record<string, unknown>>
+			expect(
+				changed.aggregation?.edits,
+				'a merged entry that does not say it merged is a lie of omission',
+			).toBe(3)
+		} finally {
+			await setWindow(0)
+		}
+	})
+
+	// @e2e enhanced-audit-trail::tidying-a-dossier-before-it-goes-out
+	// @e2e enhanced-audit-trail::nothing-changed-nothing-recorded
+	test('six files, three renamed together, three audit entries and no more', async () => {
+		const target = await createObject({ omschrijving: 'Dossier', bsn: '123456782' })
+
+		const fileIds: number[] = []
+		for (let i = 0; i < 6; i++) {
+			const res = await admin.post(`${API}/objects/${registerId}/${schemaId}/${target}/files`, {
+				data: { name: `scan000${i}.txt`, content: `bestand ${i}` },
+			})
+			expect(res.ok(), `file create failed: ${await res.text()}`).toBeTruthy()
+			fileIds.push(Number((await res.json()).id))
+		}
+
+		const form = [
+			{ fileId: fileIds[0], name: 'Aanvraag.txt' },
+			{ fileId: fileIds[1], name: 'Bijlage 1.txt' },
+			{ fileId: fileIds[2], name: 'Bijlage 2.txt' },
+			{ fileId: fileIds[3] },
+			{ fileId: fileIds[4] },
+			{ fileId: fileIds[5] },
+		]
+
+		const saved = await admin.fetch(
+			`${API}/objects/${registerId}/${schemaId}/${target}/files/metadata`,
+			{ method: 'PUT', data: { files: form } },
+		)
+		expect(saved.ok(), `the metadata form failed: ${await saved.text()}`).toBeTruthy()
+
+		const result = await saved.json()
+		expect(result.changed, 'three badly-named files were renamed').toHaveLength(3)
+		expect(result.unchanged, 'the three the form left alone changed nothing').toHaveLength(3)
+		expect(result.failed, 'nothing should have been refused').toHaveLength(0)
+
+		const entries = await auditRows(target, 'file.metadata_corrected')
+		expect(entries, 'one entry per file actually changed, and no more').toHaveLength(3)
+
+		// Nothing changed, nothing recorded: the same form saved again.
+		const again = await admin.fetch(
+			`${API}/objects/${registerId}/${schemaId}/${target}/files/metadata`,
+			{ method: 'PUT', data: { files: form } },
+		)
+		expect(again.ok(), `the second save failed: ${await again.text()}`).toBeTruthy()
+		expect((await again.json()).changed, 'a form saved with no edits changes nothing').toHaveLength(0)
+
+		expect(
+			(await auditRows(target, 'file.metadata_corrected')).length,
+			'saved without editing is not an event, so it writes no entry',
+		).toBe(3)
 	})
 })
