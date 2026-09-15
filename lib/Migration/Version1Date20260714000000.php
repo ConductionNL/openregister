@@ -72,7 +72,7 @@ class Version1Date20260714000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_scheduled_reports') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(tableName: 'openregister_scheduled_reports');
@@ -101,7 +101,7 @@ class Version1Date20260714000000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		$output->info('Added delivery_mode/recipients to openregister_scheduled_reports');

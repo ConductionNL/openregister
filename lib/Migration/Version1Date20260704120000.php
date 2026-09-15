@@ -58,13 +58,13 @@ class Version1Date20260704120000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_conversations') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_conversations');
 
 		if ($table->hasColumn('owner') === true) {
-			return null;
+			return $schema;
 		}
 
 		// Nullable string matching Conversation::$owner (?string). A Nextcloud

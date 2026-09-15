@@ -87,7 +87,7 @@ class Version1Date20260614000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_processing_log') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_processing_log');

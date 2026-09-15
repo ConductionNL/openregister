@@ -72,7 +72,7 @@ class Version1Date20260511130000Test extends TestCase {
 		$schema->method('getTable')->with('openregister_messages')->willReturn($table);
 
 		$result = $this->migration->changeSchema($output, fn () => $schema, []);
-		$this->assertNull($result);
+		$this->assertSame($schema, $result);
 	}//end testChangeSchemaIsIdempotentWhenColumnAlreadyExists()
 
 	public function testChangeSchemaIsNoOpWhenMessagesTableMissing(): void {
@@ -83,7 +83,7 @@ class Version1Date20260511130000Test extends TestCase {
 		$schema->expects($this->never())->method('getTable');
 
 		$result = $this->migration->changeSchema($output, fn () => $schema, []);
-		$this->assertNull($result);
+		$this->assertSame($schema, $result);
 	}//end testChangeSchemaIsNoOpWhenMessagesTableMissing()
 
 	public function testDownRemovesContextColumnWhenPresent(): void {

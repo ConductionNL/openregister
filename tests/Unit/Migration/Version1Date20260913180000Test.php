@@ -130,7 +130,7 @@ class Version1Date20260913180000Test extends TestCase {
 		$schema->method('getTable')->willReturn($table);
 
 		$step = new Version1Date20260913180000();
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
 	}//end testASecondRunChangesNothing()
 
 	/**
@@ -144,6 +144,6 @@ class Version1Date20260913180000Test extends TestCase {
 		$schema->expects($this->never())->method('getTable');
 
 		$step = new Version1Date20260913180000();
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
 	}//end testAMissingTableIsSkipped()
 }//end class

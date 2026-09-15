@@ -67,8 +67,8 @@ class Version1Date20260911050000Test extends TestCase {
 	}//end testTheColumnIsAddedNullableWithNoDefault()
 
 	/**
-	 * A column that already exists is left alone, and the run returns null so
-	 * Nextcloud records no schema change.
+	 * A column that already exists is left alone; the run still hands the schema
+	 * back so migrateSchemaOnly() reuses one snapshot and the diff is empty.
 	 *
 	 * @return void
 	 */
@@ -83,7 +83,7 @@ class Version1Date20260911050000Test extends TestCase {
 
 		$step = new Version1Date20260911050000();
 
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
 
 	}//end testAnExistingColumnIsLeftAlone()
 
@@ -99,7 +99,7 @@ class Version1Date20260911050000Test extends TestCase {
 
 		$step = new Version1Date20260911050000();
 
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
 
 	}//end testAMissingTableIsSkipped()
 

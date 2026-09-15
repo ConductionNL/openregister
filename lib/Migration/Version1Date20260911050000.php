@@ -71,12 +71,12 @@ final class Version1Date20260911050000 extends SimpleMigrationStep {
 		if ($schema->hasTable(self::TABLE) === false) {
 			$output->warning(message: 'openregister_organisations is absent; skipping the legal_name column');
 
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
 		if ($table->hasColumn(self::COLUMN) === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

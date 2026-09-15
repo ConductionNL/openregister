@@ -70,7 +70,7 @@ final class Version1Date20260901090000 extends SimpleMigrationStep {
 		if ($schema->hasTable(self::TABLE) === false) {
 			$output->warning(message: 'openregister_organisations is absent; skipping the chain-partner columns');
 
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
@@ -86,7 +86,7 @@ final class Version1Date20260901090000 extends SimpleMigrationStep {
 		}
 
 		if ($added === []) {
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: 'openregister_organisations: added ' . implode(', ', $added));
