@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Schema\ITable;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -235,13 +236,13 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	/**
 	 * The task table's indexes: one per query the inbox and propagation run.
 	 *
-	 * @param \Doctrine\DBAL\Schema\Table $table The task table.
+	 * @param ITable $table The task table.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	private function addTaskIndexes(\Doctrine\DBAL\Schema\Table $table): void {
+	private function addTaskIndexes(ITable $table): void {
 		$table->setPrimaryKey(['id']);
 		$table->addUniqueIndex(['uuid'], 'or_tasks_uuid');
 		// "My open work": the inbox's hot path.

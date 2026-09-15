@@ -33,8 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Doctrine\DBAL\Schema\Table;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Schema\ITable;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -90,11 +90,11 @@ class Version1Date20260524130000 extends SimpleMigrationStep {
 	 * The composite unique index in addIndexes() allows both shapes for the
 	 * same (object, form) pair.
 	 *
-	 * @param Table $table The table being created
+	 * @param ITable $table The table being created
 	 *
 	 * @return void
 	 */
-	private function addColumns(Table $table): void {
+	private function addColumns(ITable $table): void {
 		$columns = [
 			['id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]],
 			['object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]],
@@ -119,11 +119,11 @@ class Version1Date20260524130000 extends SimpleMigrationStep {
 	/**
 	 * Declare the primary key and every index of `openregister_form_links`.
 	 *
-	 * @param Table $table The table being created
+	 * @param ITable $table The table being created
 	 *
 	 * @return void
 	 */
-	private function addIndexes(Table $table): void {
+	private function addIndexes(ITable $table): void {
 		$table->setPrimaryKey(['id']);
 		$table->addIndex(['object_uuid'], 'or_form_links_object_idx');
 		$table->addIndex(['form_id'], 'or_form_links_form_idx');

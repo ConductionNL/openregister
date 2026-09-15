@@ -32,9 +32,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Schema\ITable;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -113,11 +113,11 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	/**
 	 * Add the four people-on-objects columns that are still missing.
 	 *
-	 * @param Table $table The link table.
+	 * @param ITable $table The link table.
 	 *
 	 * @return bool Whether anything was added.
 	 */
-	private function addColumns(Table $table): bool {
+	private function addColumns(ITable $table): bool {
 		$changed = false;
 		foreach (self::COLUMNS as $name => [$type, $options]) {
 			if ($table->hasColumn($name) === true) {
@@ -134,11 +134,11 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	/**
 	 * Make the contact-only columns nullable where they are not yet.
 	 *
-	 * @param Table $table The link table.
+	 * @param ITable $table The link table.
 	 *
 	 * @return bool Whether anything was relaxed.
 	 */
-	private function relaxColumns(Table $table): bool {
+	private function relaxColumns(ITable $table): bool {
 		$changed = false;
 		foreach (self::RELAXED as $name) {
 			if ($table->hasColumn($name) === false) {
@@ -160,11 +160,11 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	/**
 	 * Retire the (object, person) unique key for (object, person, role), and index the user id.
 	 *
-	 * @param Table $table The link table.
+	 * @param ITable $table The link table.
 	 *
 	 * @return bool Whether an index changed.
 	 */
-	private function moveIndexes(Table $table): bool {
+	private function moveIndexes(ITable $table): bool {
 		$changed = false;
 		if ($table->hasIndex(self::OLD_UNIQUE) === true) {
 			$table->dropIndex(self::OLD_UNIQUE);
