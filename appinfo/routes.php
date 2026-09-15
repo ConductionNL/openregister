@@ -538,6 +538,21 @@ return [
         ['name' => 'contacts#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
         ['name' => 'contacts#objects',   'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
 
+        // Parties — a party holds a typed role on an object for a period, and
+        // may have no Nextcloud account at all. The literal `/parties/primary`
+        // route comes BEFORE `/parties/{partyUuid}` on purpose: the wildcard
+        // would otherwise match the literal string "primary" and the replace
+        // would 404 on a route that exists.
+        ['name' => 'party#index',          'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#create',         'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#replacePrimary', 'url' => '/api/objects/{register}/{schema}/{id}/parties/primary',      'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#destroy',        'url' => '/api/objects/{register}/{schema}/{id}/parties/{partyUuid}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'partyUuid' => '[^/]+']],
+        // App-global party reads. `search` and `resolve` are literals and come
+        // before the `{partyUuid}` wildcard for the same reason.
+        ['name' => 'party#search',         'url' => '/api/parties/search',                                        'verb' => 'GET'],
+        ['name' => 'party#resolve',        'url' => '/api/parties/resolve',                                       'verb' => 'GET'],
+        ['name' => 'party#show',           'url' => '/api/parties/{partyUuid}',                                   'verb' => 'GET',    'requirements' => ['partyUuid' => '[^/]+']],
+
         // Calendar events — object↔CalDAV event links via DAV principal.
         ['name' => 'calendarEvents#index',     'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'calendarEvents#create',    'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -1001,6 +1016,15 @@ return [
         ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        // Import preview and conflict policy — an import says what it would
+        // create, update, skip and refuse before it writes anything.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
+        ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
+        ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#commit', 'url' => '/api/import-previews/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
@@ -1220,6 +1244,12 @@ return [
         ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
         ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
         ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        [
+            'name' => 'rules#replay',
+            'url' => '/api/schemas/{schema}/rules/{ruleId}/replay',
+            'verb' => 'POST',
+            'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+'],
+        ],
 
         // The property vocabulary: what a property may be, published so an
         // editor is generated from it instead of retyped per app. Literal
