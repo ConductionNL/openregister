@@ -387,6 +387,9 @@ return [
         ['name' => 'permissions#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
         ['name' => 'permissions#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
         ['name' => 'permissions#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
+        // Administrator only: the route carries no NoAdminRequired, so the
+        // framework refuses everybody else before the method runs.
+        ['name' => 'derivedGrants#reapply', 'url' => '/api/permissions/derived-grants/reapply', 'verb' => 'POST'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
