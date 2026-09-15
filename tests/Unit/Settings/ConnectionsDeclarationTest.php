@@ -143,7 +143,10 @@ class ConnectionsDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheFileNamesThisApp(): void {
-		$infoXml = simplexml_load_file($this->root() . '/appinfo/info.xml');
+		// Read and parse a string, not simplexml_load_file(): under Nextcloud a
+		// locked-down libxml external-entity resolver makes the path form return
+		// false on a well-formed file (same reason the production code reads first).
+		$infoXml = simplexml_load_string((string) file_get_contents($this->root() . '/appinfo/info.xml'));
 
 		$this->assertNotFalse(condition: $infoXml);
 		$this->assertSame(expected: (string)$infoXml->id, actual: $this->declaration()['app']);
