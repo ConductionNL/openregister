@@ -201,6 +201,11 @@ class RenderObject {
 	 *        chains ObjectService -> RenderObject -> RegistrySubscriptionService -> ObjectService,
 	 *        a cycle Nextcloud's container refuses to construct eagerly. Same lazy-resolution
 	 *        pattern PermissionHandler already uses for the same reason.
+	 * @param LensResolver|null $lensResolver Resolves a schema's declared lenses at read time
+	 *        (objects-as-the-hinge-between-cases). Nullable-with-a-default because this class is
+	 *        constructed by hand in several tests, where a new required argument is a fatal; a
+	 *        null resolver leaves the data exactly as it was, which is what a schema declaring
+	 *        no lens gets anyway.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 *
