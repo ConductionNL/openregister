@@ -155,7 +155,15 @@ class StateConditionEvaluator {
 			message: $message
 		);
 
-		$operand = $trace->getOperand();
+		// The tracer names the operand for a comparison and for the clauses of
+		// an `and`, but not for the single-argument `{"!!": {"var": "x"}}`
+		// idiom the lifecycle docs themselves use: its walk iterates a list of
+		// arguments, and that shape's argument is one object rather than a
+		// list, so the reference is never reached. Falling back to a local walk
+		// keeps the promise that a refusal names the clause that failed.
+		// Naming it here rather than widening ConditionTracer is deliberate:
+		// that file belongs to the rules engine and is owned by another lane.
+		$operand = ($trace->getOperand() ?? $this->decidingReference(node: $condition, document: $document));
 		$refusal = [
 			'code' => $code,
 			'field' => $this->resolver->fieldOf(annotation: $annotation),
@@ -206,6 +214,84 @@ class StateConditionEvaluator {
 
 		return [$declared, $message];
 	}//end declarationOf()
+
+	/**
+	 * The property the clause that failed reads, walked locally.
+	 *
+	 * Only consulted when {@see ConditionTracer} named nothing, which happens
+	 * for the single-argument `{"!!": {"var": "x"}}` idiom the lifecycle docs
+	 * themselves use: the tracer's walk iterates a LIST of arguments, and that
+	 * shape's argument is one object rather than a list.
+	 *
+	 * An `and` is descended into the first clause that does not hold, because
+	 * naming a clause that DID hold is worse than naming nothing: it sends the
+	 * reader to a field that is already filled in. An `or` failed in all of its
+	 * clauses, so the first one is as good an answer as any.
+	 *
+	 * @param mixed $node The condition node.
+	 * @param array<string, mixed> $document The evaluation document.
+	 *
+	 * @return string|null The reference path, or null when the condition reads nothing.
+	 */
+	private function decidingReference(mixed $node, array $document): ?string {
+		if (is_array($node) === false || count($node) !== 1) {
+			return self::firstReferenceOf(node: $node);
+		}
+
+		$op = (string)array_key_first($node);
+		$args = $node[$op];
+
+		if (($op === 'and' || $op === 'or') && is_array($args) === true) {
+			foreach ($args as $clause) {
+				if ($op === 'and' && $this->dialect->holds(node: $clause, document: $document) === true) {
+					continue;
+				}
+
+				return $this->decidingReference(node: $clause, document: $document);
+			}
+
+			return null;
+		}
+
+		return self::firstReferenceOf(node: $node);
+	}//end decidingReference()
+
+	/**
+	 * The first property a condition reads, by its declared path.
+	 *
+	 * Both dialects are walked: JSONLogic spells a reference `var`, the JSON
+	 * AST spells it `prop`.
+	 *
+	 * @param mixed $node The condition node.
+	 *
+	 * @return string|null The reference path, or null when the condition reads nothing.
+	 */
+	private static function firstReferenceOf(mixed $node): ?string {
+		if (is_array($node) === false) {
+			return null;
+		}
+
+		foreach ($node as $key => $value) {
+			if ($key === 'var' || $key === 'prop') {
+				if (is_string($value) === true && $value !== '') {
+					return $value;
+				}
+
+				if (is_array($value) === true && is_string(($value[0] ?? null)) === true && $value[0] !== '') {
+					return $value[0];
+				}
+
+				continue;
+			}
+
+			$nested = self::firstReferenceOf(node: $value);
+			if ($nested !== null) {
+				return $nested;
+			}
+		}
+
+		return null;
+	}//end firstReferenceOf()
 
 	/**
 	 * The sentence a refusal carries when the author declared none.
