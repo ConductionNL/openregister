@@ -80,46 +80,66 @@ class HingeAnnotationValidator {
 
 		$errors = [];
 		foreach ($lenses as $name => $spec) {
-			$name = (string)$name;
-			if (is_array($spec) === false) {
-				$errors[] = [
-					'code' => 'lens-malformed',
-					'message' => sprintf('Lens "%s" must be an object declaring through and property.', $name),
-				];
-				continue;
-			}
-
-			$through = ($spec['through'] ?? null);
-			if (is_string($through) === false || $through === '') {
-				$errors[] = [
-					'code' => 'lens-missing-through',
-					'message' => sprintf('Lens "%s" does not name the reference property to look through.', $name),
-				];
-			} elseif (in_array($through, $propertyNames, true) === false) {
-				$errors[] = [
-					'code' => 'lens-unknown-through',
-					'message' => sprintf('Lens "%s" looks through "%s", which this schema does not declare.', $name, $through),
-				];
-			}
-
-			$property = ($spec['property'] ?? null);
-			if (is_string($property) === false || $property === '') {
-				$errors[] = [
-					'code' => 'lens-missing-property',
-					'message' => sprintf('Lens "%s" does not name the property to read.', $name),
-				];
-			}
-
-			if (in_array($name, $propertyNames, true) === true) {
-				$errors[] = [
-					'code' => 'lens-shadows-property',
-					'message' => sprintf('Lens "%s" has the name of a stored property, which it would overwrite on every read.', $name),
-				];
-			}
-		}//end foreach
+			$errors = array_merge(
+				$errors,
+				$this->validateOneLens(name: (string)$name, spec: $spec, propertyNames: $propertyNames)
+			);
+		}
 
 		return $errors;
 	}//end validateLenses()
+
+	/**
+	 * Check one lens: its two halves, and that it does not shadow a stored property.
+	 *
+	 * @param string             $name          The property name the lens renders as.
+	 * @param mixed              $spec          The declared lens.
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings for this lens.
+	 */
+	private function validateOneLens(string $name, mixed $spec, array $propertyNames): array {
+		if (is_array($spec) === false) {
+			return [
+				[
+					'code' => 'lens-malformed',
+					'message' => sprintf('Lens "%s" must be an object declaring through and property.', $name),
+				],
+			];
+		}
+
+		$errors = [];
+
+		$through = ($spec['through'] ?? null);
+		if (is_string($through) === false || $through === '') {
+			$errors[] = [
+				'code' => 'lens-missing-through',
+				'message' => sprintf('Lens "%s" does not name the reference property to look through.', $name),
+			];
+		} elseif (in_array($through, $propertyNames, true) === false) {
+			$errors[] = [
+				'code' => 'lens-unknown-through',
+				'message' => sprintf('Lens "%s" looks through "%s", which this schema does not declare.', $name, $through),
+			];
+		}
+
+		$property = ($spec['property'] ?? null);
+		if (is_string($property) === false || $property === '') {
+			$errors[] = [
+				'code' => 'lens-missing-property',
+				'message' => sprintf('Lens "%s" does not name the property to read.', $name),
+			];
+		}
+
+		if (in_array($name, $propertyNames, true) === true) {
+			$errors[] = [
+				'code' => 'lens-shadows-property',
+				'message' => sprintf('Lens "%s" has the name of a stored property, which it would overwrite on every read.', $name),
+			];
+		}
+
+		return $errors;
+	}//end validateOneLens()
 
 	/**
 	 * Check the declared columns and search fields name properties that exist.
@@ -134,8 +154,27 @@ class HingeAnnotationValidator {
 			return [];
 		}
 
+		return array_merge(
+			$this->validateListColumns(columns: ($list['columns'] ?? []), propertyNames: $propertyNames),
+			$this->validateSearchFields(fields: ($list['searchFields'] ?? []), propertyNames: $propertyNames)
+		);
+	}//end validateList()
+
+	/**
+	 * Check every declared column names a property the schema has.
+	 *
+	 * @param mixed              $columns       The declared columns.
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function validateListColumns(mixed $columns, array $propertyNames): array {
+		if (is_array($columns) === false) {
+			return [];
+		}
+
 		$errors = [];
-		foreach (($list['columns'] ?? []) as $column) {
+		foreach ($columns as $column) {
 			$property = $column;
 			if (is_array($column) === true) {
 				$property = ($column['property'] ?? null);
@@ -157,7 +196,24 @@ class HingeAnnotationValidator {
 			}
 		}
 
-		foreach (($list['searchFields'] ?? []) as $field) {
+		return $errors;
+	}//end validateListColumns()
+
+	/**
+	 * Check every declared search field names a property the schema has.
+	 *
+	 * @param mixed              $fields        The declared search fields.
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function validateSearchFields(mixed $fields, array $propertyNames): array {
+		if (is_array($fields) === false) {
+			return [];
+		}
+
+		$errors = [];
+		foreach ($fields as $field) {
 			if (is_string($field) === false || $field === '') {
 				$errors[] = [
 					'code' => 'list-search-field-unnamed',
@@ -175,7 +231,7 @@ class HingeAnnotationValidator {
 		}
 
 		return $errors;
-	}//end validateList()
+	}//end validateSearchFields()
 
 	/**
 	 * Check every inherited-geography source names a reference property.

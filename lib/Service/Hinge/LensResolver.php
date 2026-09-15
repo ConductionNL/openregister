@@ -94,6 +94,11 @@ class LensResolver {
 	 *
 	 * @return array The data, with every declared lens resolved.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `_rbac` is the established
+	 *   access-flag convention across the object layer (MagicSearchHandler,
+	 *   PermissionHandler, ObjectService all take it); splitting this one method
+	 *   in two would make it the exception rather than the rule.
+	 *
 	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
 	 */
 	public function apply(?Schema $schema, array $data, bool $_rbac = true): array {

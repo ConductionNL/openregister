@@ -89,6 +89,11 @@ class ReferencedByService {
 	 * @return array{object: array, groups: array<int, array>, total: int}
 	 *                                                                    The grouped reverse view.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `_rbac` is the established
+	 *   access-flag convention across the object layer (MagicSearchHandler,
+	 *   PermissionHandler, ObjectService all take it); splitting this one method
+	 *   in two would make it the exception rather than the rule.
+	 *
 	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
 	 */
 	public function getReferencingGroups(ObjectEntity $object, array $query = [], bool $_rbac = true): array {

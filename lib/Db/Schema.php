@@ -1979,34 +1979,59 @@ class Schema extends Entity implements JsonSerializable {
 
 		$declared = [];
 		foreach ($lenses as $name => $spec) {
-			if ((string)$name === '' || is_array($spec) === false) {
+			$entry = self::normaliseLens(spec: $spec);
+			if ((string)$name === '' || $entry === null) {
 				continue;
-			}
-
-			$through = ($spec['through'] ?? null);
-			$property = ($spec['property'] ?? null);
-			if (is_string($through) === false || $through === '') {
-				continue;
-			}
-
-			if (is_string($property) === false || $property === '') {
-				continue;
-			}
-
-			$entry = [
-				'through' => $through,
-				'property' => $property,
-			];
-
-			if (isset($spec['label']) === true && is_string($spec['label']) === true) {
-				$entry['label'] = $spec['label'];
 			}
 
 			$declared[(string)$name] = $entry;
-		}//end foreach
+		}
 
 		return $declared;
 	}//end getLenses()
+
+	/**
+	 * Normalise one declared lens, or drop it.
+	 *
+	 * A lens is only half a lens without both halves: a `through` naming the
+	 * reference property and a `property` naming what to read there. Half of one
+	 * would render as empty on every read, which is indistinguishable from a
+	 * field nobody filled in, so it is dropped here and reported by
+	 * HingeAnnotationValidator at save time.
+	 *
+	 * @param mixed $spec The declared lens.
+	 *
+	 * @return array|null The lens, or null when either half is missing.
+	 *
+	 * @psalm-return array{through: string, property: string, label?: string}|null
+	 */
+	private static function normaliseLens(mixed $spec): ?array {
+		if (is_array($spec) === false) {
+			return null;
+		}
+
+		$through = ($spec['through'] ?? null);
+		$property = ($spec['property'] ?? null);
+
+		if (is_string($through) === false || $through === '') {
+			return null;
+		}
+
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		$entry = [
+			'through' => $through,
+			'property' => $property,
+		];
+
+		if (isset($spec['label']) === true && is_string($spec['label']) === true) {
+			$entry['label'] = $spec['label'];
+		}
+
+		return $entry;
+	}//end normaliseLens()
 
 	/**
 	 * Get the list-surface declaration from the schema configuration.
@@ -2127,23 +2152,9 @@ class Schema extends Entity implements JsonSerializable {
 
 		$declared = [];
 		foreach ($sources as $source) {
-			if (is_string($source) === true && $source !== '') {
-				$declared[] = ['through' => $source];
+			$entry = self::normaliseGeoSource(source: $source);
+			if ($entry === null) {
 				continue;
-			}
-
-			if (is_array($source) === false) {
-				continue;
-			}
-
-			$through = ($source['through'] ?? null);
-			if (is_string($through) === false || $through === '') {
-				continue;
-			}
-
-			$entry = ['through' => $through];
-			if (isset($source['label']) === true && is_string($source['label']) === true) {
-				$entry['label'] = $source['label'];
 			}
 
 			$declared[] = $entry;
@@ -2151,6 +2162,44 @@ class Schema extends Entity implements JsonSerializable {
 
 		return $declared;
 	}//end getGeoInheritance()
+
+	/**
+	 * Normalise one declared geographic-inheritance source, or drop it.
+	 *
+	 * A bare string is the reference property to follow; an array may add the
+	 * label a map legend shows beside the features that arrived through it.
+	 *
+	 * @param mixed $source The declared source.
+	 *
+	 * @return array|null The source, or null when it names no reference property.
+	 *
+	 * @psalm-return array{through: string, label?: string}|null
+	 */
+	private static function normaliseGeoSource(mixed $source): ?array {
+		if (is_string($source) === true) {
+			if ($source === '') {
+				return null;
+			}
+
+			return ['through' => $source];
+		}
+
+		if (is_array($source) === false) {
+			return null;
+		}
+
+		$through = ($source['through'] ?? null);
+		if (is_string($through) === false || $through === '') {
+			return null;
+		}
+
+		$entry = ['through' => $through];
+		if (isset($source['label']) === true && is_string($source['label']) === true) {
+			$entry['label'] = $source['label'];
+		}
+
+		return $entry;
+	}//end normaliseGeoSource()
 
 	/**
 	 * Check whether this schema's objects are opted into Context Chat indexing.

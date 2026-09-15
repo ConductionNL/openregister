@@ -84,6 +84,11 @@ class InheritedGeoCollector {
 	 *
 	 * @return array{type: string, features: array<int, array>} A GeoJSON FeatureCollection.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `_rbac` is the established
+	 *   access-flag convention across the object layer (MagicSearchHandler,
+	 *   PermissionHandler, ObjectService all take it); splitting this one method
+	 *   in two would make it the exception rather than the rule.
+	 *
 	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
 	 */
 	public function collect(ObjectEntity $object, ?Schema $schema, bool $_rbac = true): array {
@@ -240,17 +245,7 @@ class InheritedGeoCollector {
 		}
 
 		if ($type === 'Feature') {
-			$geometry = ($source['geometry'] ?? null);
-			if (is_array($geometry) === false) {
-				return [];
-			}
-
-			$properties = ($source['properties'] ?? []);
-			if (is_array($properties) === false) {
-				$properties = [];
-			}
-
-			return [$this->feature(geometry: $geometry, properties: $properties)];
+			return $this->featureOf(source: $source);
 		}
 
 		$candidates = ($source['features'] ?? null);
@@ -269,6 +264,30 @@ class InheritedGeoCollector {
 
 		return $features;
 	}//end featuresOf()
+
+	/**
+	 * Read one GeoJSON Feature, keeping the properties it already carries.
+	 *
+	 * A Feature without a geometry is not a pin on a map, so it contributes
+	 * nothing rather than an empty marker.
+	 *
+	 * @param array $source The Feature.
+	 *
+	 * @return array<int, array> The one feature, or nothing.
+	 */
+	private function featureOf(array $source): array {
+		$geometry = ($source['geometry'] ?? null);
+		if (is_array($geometry) === false) {
+			return [];
+		}
+
+		$properties = ($source['properties'] ?? []);
+		if (is_array($properties) === false) {
+			$properties = [];
+		}
+
+		return [$this->feature(geometry: $geometry, properties: $properties)];
+	}//end featureOf()
 
 	/**
 	 * Shape one feature and stamp the purpose precedence is decided on.
