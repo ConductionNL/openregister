@@ -411,6 +411,15 @@ return [
         ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
+        // Previewed erasure (data-subject-rights-across-the-instance): count
+        // first, approve, then erase through the recorded destruction. The
+        // one-call `dataSubjectRequest#erase` above stays for callers that had
+        // already decided; this is the surface for a request that has to be
+        // ANSWERED, protected records and all.
+        ['name' => 'erasurePreview#create',  'url' => '/api/gdpr/erasure-previews',              'verb' => 'POST'],
+        ['name' => 'erasurePreview#show',    'url' => '/api/gdpr/erasure-previews/{id}',         'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#approve', 'url' => '/api/gdpr/erasure-previews/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#run',     'url' => '/api/gdpr/erasure-previews/{id}/run',     'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
