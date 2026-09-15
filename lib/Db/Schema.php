@@ -748,6 +748,70 @@ class Schema extends Entity implements JsonSerializable {
 	public const IMMUTABLE_PROPERTY_KEYWORD = 'immutable';
 
 	/**
+	 * The property-level keyword that makes a list a repeating group.
+	 *
+	 * A property carrying `"repeatingGroup": true` is a group of fields that
+	 * repeats: meerdere gemachtigden, meerdere percelen, meerdere zienswijzen.
+	 * The members are the `items.properties` of the list and the count is
+	 * bounded by `minItems` and `maxItems`, so the shape stays an ordinary
+	 * array of objects. What the keyword adds is the declaration that an
+	 * editor may author rows against, and the promise that a refusal names
+	 * the row it refused.
+	 *
+	 * @var string
+	 */
+	public const REPEATING_GROUP_PROPERTY_KEYWORD = 'repeatingGroup';
+
+	/**
+	 * The property-level keyword that says the order of the rows is meaningful.
+	 *
+	 * Declared on a repeating group. `true` means the stored order is the
+	 * authored order and a reader may rely on it. It carries no enforcement of
+	 * its own: it tells the editor whether to offer a handle to drag a row.
+	 *
+	 * @var string
+	 */
+	public const GROUP_ORDERED_PROPERTY_KEYWORD = 'groupOrdered';
+
+	/**
+	 * The property-level keyword naming the member that labels a row.
+	 *
+	 * Declared on a repeating group, holding the name of one member property.
+	 * A row collapsed in a form shows that member's value, so a list of six
+	 * gemachtigden reads as six names instead of six copies of the word row.
+	 *
+	 * @var string
+	 */
+	public const GROUP_LABEL_PROPERTY_KEYWORD = 'groupLabel';
+
+	/**
+	 * The reserved body key that records which properties were not supplied.
+	 *
+	 * Shape: `{"<property>": "<reason code>"}`, sitting beside `@self` at the
+	 * top of the object body. A property named here was left out on purpose,
+	 * with a reason from the administered list, which is a different fact from
+	 * an empty field. It is stripped before the object meets the validator and
+	 * stored with the object, so it reads back with it.
+	 *
+	 * @var string
+	 */
+	public const NOT_SUPPLIED_KEY = '@notSupplied';
+
+	/**
+	 * The annotation holding the reasons a value may be recorded as not supplied.
+	 *
+	 * Shape: `{"<code>": "<label>"}`. A schema that administers no reasons
+	 * offers no not-supplied state, which is deliberate: "not supplied" without
+	 * a reason is the same empty field it replaces. The list lives on the
+	 * schema rather than in instance settings because the honest reasons for a
+	 * bouwvergunning are not the honest reasons for a personeelsdossier
+	 * (ADR-031).
+	 *
+	 * @var string
+	 */
+	public const NOT_SUPPLIED_REASONS_ANNOTATION = 'x-openregister-not-supplied-reasons';
+
+	/**
 	 * The lens annotation: properties that read a referenced record's field live.
 	 *
 	 * Keyed by the property name the lens renders as, each entry naming the
@@ -2892,6 +2956,12 @@ class Schema extends Entity implements JsonSerializable {
 		// "this schema is not a party schema" for a schema that says it is —
 		// the same silent no-op class as every entry above.
 		'x-openregister-party',
+		// The reasons a value may be recorded as not supplied, keyed by code.
+		// Absent from this list, setConfiguration() would DROP it, every
+		// not-supplied write would be refused as "no reasons administered",
+		// and the schema author would be reading a 200 on the list they had
+		// just saved. Same silent no-op class as every entry above.
+		self::NOT_SUPPLIED_REASONS_ANNOTATION,
 	];
 
 	/**
@@ -3408,6 +3478,42 @@ class Schema extends Entity implements JsonSerializable {
 
 		return ($annotation['enabled'] ?? false) === true;
 	}//end isArchivingEnabled()
+
+	/**
+	 * The reasons this schema accepts for a value that was not supplied.
+	 *
+	 * Returns a map of code to label, empty when the schema administers none.
+	 * The single definition of "which reasons may this schema use": no caller
+	 * re-reads the annotation, for the same reason nothing re-reads the
+	 * archiving one.
+	 *
+	 * @return array<string, string> Reason codes mapped to their labels.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	public function notSuppliedReasons(): array {
+		$configuration = ($this->getConfiguration() ?? []);
+		$annotation = ($configuration[self::NOT_SUPPLIED_REASONS_ANNOTATION] ?? null);
+
+		if (is_array($annotation) === false) {
+			return [];
+		}
+
+		$reasons = [];
+		foreach ($annotation as $code => $label) {
+			if (is_string($code) === false || $code === '') {
+				continue;
+			}
+
+			if (is_string($label) === false || $label === '') {
+				continue;
+			}
+
+			$reasons[$code] = $label;
+		}
+
+		return $reasons;
+	}//end notSuppliedReasons()
 
 	/**
 	 * String representation of the schema
