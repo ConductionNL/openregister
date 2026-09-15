@@ -69,19 +69,51 @@ class PartyTreeGuardListener implements IEventListener {
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function handle(Event $event): void {
-		$object = $this->objectOf(event: $event);
-		if ($object === null) {
+		// The two save events are handled separately rather than through one
+		// helper returning the object: the veto is a method on the concrete
+		// event, and a helper that hands back only the object loses the handle
+		// that can refuse the write.
+		if ($event instanceof ObjectCreatingEvent === true) {
+			$refusal = $this->refusalFor(object: $event->getObject());
+			if ($refusal !== null) {
+				$event->setErrors($refusal);
+				$event->stopPropagation();
+			}
+
 			return;
 		}
 
+		if ($event instanceof ObjectUpdatingEvent === true) {
+			$refusal = $this->refusalFor(object: $event->getNewObject());
+			if ($refusal !== null) {
+				$event->setErrors($refusal);
+				$event->stopPropagation();
+			}
+		}
+	}//end handle()
+
+	/**
+	 * Why this save must be refused, or null when there is no reason.
+	 *
+	 * Refusing rather than degrading is deliberate. A cycle that is written
+	 * reaches every later reader as a parent chain with no end, and nothing
+	 * downstream can tell it apart from a deep tree.
+	 *
+	 * @param ObjectEntity $object The object about to be written.
+	 *
+	 * @return array<string, mixed>|null The error the event carries, or null.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function refusalFor(ObjectEntity $object): ?array {
 		$definition = $this->parties->definitionFor(party: $object);
 		if ($definition === null || $definition->parentProperty() === null) {
-			return;
+			return null;
 		}
 
 		$parent = trim((string)($object->getObject()[$definition->parentProperty()] ?? ''));
 		if ($parent === '') {
-			return;
+			return null;
 		}
 
 		try {
@@ -90,30 +122,9 @@ class PartyTreeGuardListener implements IEventListener {
 				parentUuid: $parent
 			);
 		} catch (Exception $e) {
-			// Refuse the save rather than degrade. A cycle that is written
-			// reaches every later reader as a parent chain with no end, and
-			// nothing downstream can tell it apart from a deep tree.
-			$event->setErrors(['message' => $e->getMessage(), 'code' => $e->getCode()]);
-			$event->stopPropagation();
-		}
-	}//end handle()
-
-	/**
-	 * The object a save event carries, or null when the event is neither save.
-	 *
-	 * @param Event $event The event.
-	 *
-	 * @return ObjectEntity|null The object about to be written.
-	 */
-	private function objectOf(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectCreatingEvent === true) {
-			return $event->getObject();
-		}
-
-		if ($event instanceof ObjectUpdatingEvent === true) {
-			return $event->getNewObject();
+			return ['message' => $e->getMessage(), 'code' => $e->getCode()];
 		}
 
 		return null;
-	}//end objectOf()
+	}//end refusalFor()
 }//end class
