@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\RetentionService;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -547,7 +548,7 @@ class ErasurePreviewService {
 				->from('openregister_entities', 'e')
 				->innerJoin('e', 'openregister_entity_relations', 'r', $qb->expr()->eq('r.entity_id', 'e.id'))
 				->where($qb->expr()->eq('r.object_uuid', $qb->createNamedParameter($uuid)))
-				->andWhere($qb->expr()->in('e.type', $qb->createNamedParameter($types, $qb::PARAM_STR_ARRAY)));
+				->andWhere($qb->expr()->in('e.type', $qb->createNamedParameter($types, IQueryBuilder::PARAM_STR_ARRAY)));
 
 			$result = $qb->executeQuery();
 			$rows = $result->fetchAll();
