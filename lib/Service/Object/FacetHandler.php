@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -1298,6 +1299,12 @@ class FacetHandler {
 			'@self' => $this->getDefaultMetadataFacets(),
 			'object_fields' => [],
 			'non_aggregated_fields' => [],
+			// Every property a list surface can search, with the match type it
+			// asked for and the control it wants rendered. Separate from
+			// object_fields because a property can be searchable without being
+			// facetable, and a surface that has to infer the control from the
+			// value is the drift this declaration removes.
+			'searchable_fields' => [],
 		];
 
 		foreach ($schemas as $schema) {
@@ -1320,6 +1327,15 @@ class FacetHandler {
 						continue;
 					}
 
+					$matchType = PropertySearchProfile::matchTypeFor(property: $property);
+					$inputControl = PropertySearchProfile::inputControlFor(property: $property);
+					$facetableFields['searchable_fields'][$propertyKey] = [
+						'matchType' => $matchType,
+						'inputControl' => $inputControl,
+						'declared' => PropertySearchProfile::declaresMatchType(property: $property),
+						'title' => $property['title'] ?? null,
+					];
+
 					$facetConfig = $this->normalizeFacetConfig(facetable: $property['facetable'] ?? false);
 					if ($facetConfig === null) {
 						continue;
@@ -1336,6 +1352,8 @@ class FacetHandler {
 							'facetType' => $facetType,
 							'facetConfig' => $facetConfig,
 							'title' => $property['title'] ?? null,
+							'matchType' => $matchType,
+							'inputControl' => $inputControl,
 						];
 					}
 
@@ -1345,6 +1363,8 @@ class FacetHandler {
 							'type' => $facetType,
 							'title' => $property['title'] ?? null,
 							'facetConfig' => $facetConfig,
+							'matchType' => $matchType,
+							'inputControl' => $inputControl,
 						];
 					}
 				}//end foreach

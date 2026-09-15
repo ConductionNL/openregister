@@ -40,9 +40,21 @@ rather than a promise.
 
 ## 3. Match type and input control
 
-- [ ] 3.1 A property declares `exact`, `prefix`, `range`, `fuzzy` or `fulltext`, validated at schema save (D-3).
-- [ ] 3.2 A property declares the input control a list surface should render.
-- [ ] 3.3 Search applies the declared type; an undeclared property keeps the auto-detected one.
+- [x] 3.1 A property declares `exact`, `prefix`, `range`, `fuzzy` or `fulltext`, validated at schema save (D-3).
+- [x] 3.2 A property declares the input control a list surface should render.
+- [x] 3.3 Search applies the declared type; an undeclared property keeps the auto-detected one.
+
+`matchType` and `inputControl` are property vocabulary modifiers, so an unknown
+value is refused at schema save naming the property, and the published
+vocabulary lists them beside `facetable`. `_facetable=true` now answers with a
+`searchable_fields` map and adds both keys to every `object_fields` entry, which
+is where a list surface reads the control to render.
+
+The undeclared half is the expensive half. A property that declares nothing is
+judged by the rule the free-text scan has always used, a string whose format is
+not a date, not by its auto-detected match type. Phrasing it the other way pulls
+a boolean column into every `_search` the moment a boolean auto-detects as
+`exact`. Two tests fail on that mutation, one on the rule and one on the SQL.
 
 ## 4. The index under administration
 
@@ -80,7 +92,25 @@ handed over then.
 
 ## Where the rest continues
 
-Tasks 3, 4 and 5 continue on `feat/search-quality-match-type-and-index`, off
-the same change. `search-over-history-and-an-administered-dictionary` depends
-on this change and carries the history filter and the synonym dictionary; it is
-a separate change and not part of either PR here.
+Task 3 is done on `feat/search-quality-match-type-and-index`, pushed and not
+yet opened as a PR.
+
+Tasks 4 and 5 are not started, and task 5 is larger than it reads. It asks for
+a field name to resolve through the property's label in the active language. A
+property's `title` in this codebase is a plain string, identical for every
+reader: `Schema::getProperties()[$name]['title']`, no language key anywhere.
+`LanguageService` and `TranslationHandler` govern translatable property VALUES,
+which are stored language-keyed, and nothing translates a property's own label.
+So 5.1 needs a translated label to exist first. That is a change of its own, not
+a task inside this one, and it should be written up as such before anyone picks
+5 up.
+
+Task 4 has a clear home: `MagicMapper::createTableIndexes()` owns the 13 index
+definitions, `REINDEX INDEX CONCURRENTLY` is the Postgres primitive that builds
+beside and swaps, `BulkJob` is the existing record for state, progress and a
+fatal report, and `openregister:tables:reconcile` is the occ command family the
+three new commands belong in. There is no operations console; the admin
+settings page under `src/views/settings/sections/` is the surface that exists.
+
+`search-over-history-and-an-administered-dictionary` depends on this change and
+carries the history filter and the synonym dictionary; it is a separate change.
