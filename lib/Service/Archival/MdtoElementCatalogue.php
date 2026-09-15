@@ -172,7 +172,11 @@ class MdtoElementCatalogue {
 
 		$document = new DOMDocument();
 		$previous = libxml_use_internal_errors(true);
-		$loaded = $document->load($path);
+		// Read the file and parse the string, rather than $document->load($path):
+		// under Nextcloud a locked-down libxml external-entity resolver makes the
+		// path form resolve the file itself as an external entity and return false.
+		$source  = file_get_contents($path);
+		$loaded  = $source !== false && $document->loadXML($source);
 		libxml_clear_errors();
 		libxml_use_internal_errors($previous);
 
