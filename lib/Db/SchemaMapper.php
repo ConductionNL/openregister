@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
+use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
+use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
@@ -1092,6 +1094,7 @@ class SchemaMapper extends QBMapper {
 		$this->buildRequiredFieldsArray(schema: $schema);
 		$this->autoPopulateConfigurationFields(schema: $schema);
 		$this->validateLifecycleAnnotation(schema: $schema);
+		$this->validateMdtoMappingAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
@@ -1284,6 +1287,57 @@ class SchemaMapper extends QBMapper {
 			. implode(' ', $messages)
 		);
 	}//end validateLifecycleAnnotation()
+
+	/**
+	 * Validate the optional `x-openregister-mdto-mapping` annotation.
+	 *
+	 * 🔴 EVERY ERROR HERE REFUSES THE SAVE, unlike the lifecycle block above.
+	 * Two reasons. The key is new, so no register ships one and refusing breaks
+	 * no existing import, which is exactly the argument that made the lifecycle
+	 * condition codes blocking. And a mapping stored broken is worse than no
+	 * mapping: `MdtoPreconditions` refuses a transfer the moment a schema
+	 * declares a mapping that does not fill a mandatory element, so an
+	 * administrator who saved a typo would find out when a transfer they had
+	 * scheduled stopped, with the schema editor having reported success.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws Exception When the mapping names an element MDTO does not have, a
+	 *                   property the schema does not declare, no source, two
+	 *                   sources, or leaves a mandatory element unfilled.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	private function validateMdtoMappingAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$mapping = ($configuration[ElementMappingValidator::ANNOTATION_KEY] ?? null);
+		if (is_array($mapping) === false) {
+			return;
+		}
+
+		$errors = (new ElementMappingValidator(new MdtoElementCatalogue()))->validate(
+			mapping: $mapping,
+			properties: ($schema->getProperties() ?? [])
+		);
+
+		if (count($errors) === 0) {
+			return;
+		}
+
+		// "Invalid" is load-bearing: SchemasController maps the exception to a
+		// 400 by matching that word, and the codes ride along so a client can
+		// tell which rule refused.
+		$details = array_map(
+			static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
+			$errors
+		);
+
+		throw new Exception(
+			'Invalid ' . ElementMappingValidator::ANNOTATION_KEY . ' declaration: ' . implode(' ', $details)
+		);
+	}//end validateMdtoMappingAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-aggregations` annotation.
