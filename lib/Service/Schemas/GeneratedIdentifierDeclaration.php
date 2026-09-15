@@ -254,7 +254,12 @@ final class GeneratedIdentifierDeclaration {
 
 			// A padded sequence can also have grown past its padding, so the
 			// lower bound is the pad and there is no upper bound.
-			$pad = (int)($matches[2][$index][0] === '' ? 1 : $matches[2][$index][0]);
+			$declaredPad = $matches[2][$index][0];
+			$pad = 1;
+			if ($declaredPad !== '') {
+				$pad = (int)$declaredPad;
+			}
+
 			$pattern .= '(\d{'.$pad.',})';
 			$groups[] = 'seq';
 		}//end foreach

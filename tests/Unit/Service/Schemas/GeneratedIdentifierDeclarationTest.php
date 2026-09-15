@@ -123,7 +123,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	 */
 	public function testRenderingAndParsingAgree(): void {
 		$declaration = GeneratedIdentifierDeclaration::fromProperty(
-			property: $this->property(['format' => 'CASE/{year}/{month}/{seq:4}']),
+			property: $this->property(overrides: ['format' => 'CASE/{year}/{month}/{seq:4}']),
 			path: 'identifier'
 		);
 		$at = new DateTimeImmutable('2026-11-04 10:00:00');
@@ -183,7 +183,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	 */
 	public function testNeverResettingHasOnePeriod(): void {
 		$declaration = GeneratedIdentifierDeclaration::fromProperty(
-			property: $this->property(['format' => 'INV-{seq:6}', 'resetOn' => 'never']),
+			property: $this->property(overrides: ['format' => 'INV-{seq:6}', 'resetOn' => 'never']),
 			path: 'number'
 		);
 
@@ -231,7 +231,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	public function testAnUnknownPlaceholderIsRefused(): void {
 		$this->expectException(exception: GeneratedIdentifierException::class);
 		GeneratedIdentifierDeclaration::fromProperty(
-			property: $this->property(['format' => 'Z-{jaar}-{seq:5}']),
+			property: $this->property(overrides: ['format' => 'Z-{jaar}-{seq:5}']),
 			path: 'identifier'
 		);
 
@@ -245,7 +245,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	public function testAFormatWithoutASequenceIsRefused(): void {
 		$this->expectException(exception: GeneratedIdentifierException::class);
 		GeneratedIdentifierDeclaration::fromProperty(
-			property: $this->property(['format' => 'Z-{year}']),
+			property: $this->property(overrides: ['format' => 'Z-{year}']),
 			path: 'identifier'
 		);
 
@@ -262,7 +262,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	public function testAYearlyResetWithoutTheYearIsRefused(): void {
 		$this->expectException(exception: GeneratedIdentifierException::class);
 		GeneratedIdentifierDeclaration::fromProperty(
-			property: $this->property(['format' => 'Z-{seq:5}', 'resetOn' => 'year']),
+			property: $this->property(overrides: ['format' => 'Z-{seq:5}', 'resetOn' => 'year']),
 			path: 'identifier'
 		);
 
@@ -293,7 +293,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	public function testAnUnknownAnnotationKeyIsRefused(): void {
 		$this->expectException(exception: GeneratedIdentifierException::class);
 		GeneratedIdentifierDeclaration::fromProperty(
-			property: $this->property(['reset' => 'year']),
+			property: $this->property(overrides: ['reset' => 'year']),
 			path: 'identifier'
 		);
 
@@ -307,7 +307,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	public function testAMissingSequenceNameIsRefused(): void {
 		$this->expectException(exception: GeneratedIdentifierException::class);
 		GeneratedIdentifierDeclaration::fromProperty(
-			property: $this->property(['sequence' => '  ']),
+			property: $this->property(overrides: ['sequence' => '  ']),
 			path: 'identifier'
 		);
 
@@ -325,10 +325,10 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 	public function testTheRefusalIsAVocabularyRefusal(): void {
 		try {
 			GeneratedIdentifierDeclaration::fromProperty(
-				property: $this->property(['format' => 'Z-{jaar}-{seq:5}']),
+				property: $this->property(overrides: ['format' => 'Z-{jaar}-{seq:5}']),
 				path: 'identifier'
 			);
-			$this->fail('an unknown placeholder should have been refused');
+			$this->fail(message: 'an unknown placeholder should have been refused');
 		} catch (GeneratedIdentifierException $refusal) {
 			$this->assertInstanceOf(
 				expected: \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException::class,

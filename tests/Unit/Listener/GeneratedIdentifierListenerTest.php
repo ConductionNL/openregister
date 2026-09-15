@@ -144,12 +144,12 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEmptyIdentifierIsFilled(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
 			->willReturn(1);
 
-		$object = $this->objectWith(['title' => 'A case']);
+		$object = $this->objectWith(body: ['title' => 'A case']);
 
 		$this->listener->handle(new ObjectCreatingEvent($object));
 
@@ -175,7 +175,7 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testANamedCounterIsGlobalAndKeyedByItsName(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty(sequence: 'register')]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty(sequence: 'register')]);
 
 		$seenScope = null;
 		$this->sequences->expects($this->once())
@@ -188,7 +188,7 @@ class GeneratedIdentifierListenerTest extends TestCase {
 				}
 			);
 
-		$this->listener->handle(new ObjectCreatingEvent($this->objectWith([])));
+		$this->listener->handle(new ObjectCreatingEvent($this->objectWith(body: [])));
 
 		$this->assertSame(expected: 0, actual: $seenScope[0]);
 		$this->assertSame(expected: 0, actual: $seenScope[1]);
@@ -206,7 +206,7 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 */
 	public function testASecondDeclaredIdentifierIsAlsoFilled(): void {
 		$this->schemaWith(
-			[
+			properties: [
 				'identifier' => $this->declaredProperty(sequence: 'case'),
 				'publicNumber' => $this->declaredProperty(sequence: 'public', format: 'P-{year}-{seq:3}'),
 			]
@@ -215,7 +215,7 @@ class GeneratedIdentifierListenerTest extends TestCase {
 			->method('reserveNext')
 			->willReturn(4);
 
-		$object = $this->objectWith([]);
+		$object = $this->objectWith(body: []);
 
 		$this->listener->handle(new ObjectCreatingEvent($object));
 
@@ -240,13 +240,13 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testASuppliedValueIsKeptAndAdvancesTheCounter(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 		$this->sequences->expects($this->never())->method('reserveNext');
 		$this->sequences->expects($this->once())
 			->method('advanceTo')
-			->with(0, 0, $this->stringContains('case'), 120);
+			->with(0, 0, $this->stringContains(string: 'case'), 120);
 
-		$object = $this->objectWith(['identifier' => 'Z-2026-00120']);
+		$object = $this->objectWith(body: ['identifier' => 'Z-2026-00120']);
 
 		$this->listener->handle(new ObjectCreatingEvent($object));
 
@@ -268,11 +268,11 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAForeignSuppliedValueDoesNotTouchTheCounter(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 		$this->sequences->expects($this->never())->method('reserveNext');
 		$this->sequences->expects($this->never())->method('advanceTo');
 
-		$this->listener->handle(new ObjectCreatingEvent($this->objectWith(['identifier' => 'OLD/7'])));
+		$this->listener->handle(new ObjectCreatingEvent($this->objectWith(body: ['identifier' => 'OLD/7'])));
 
 	}//end testAForeignSuppliedValueDoesNotTouchTheCounter()
 
@@ -285,10 +285,10 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testASchemaWithoutADeclarationIsUntouched(): void {
-		$this->schemaWith(['title' => ['type' => 'string']]);
+		$this->schemaWith(properties: ['title' => ['type' => 'string']]);
 		$this->sequences->expects($this->never())->method('reserveNext');
 
-		$object = $this->objectWith(['title' => 'A case']);
+		$object = $this->objectWith(body: ['title' => 'A case']);
 
 		$this->listener->handle(new ObjectCreatingEvent($object));
 
@@ -314,10 +314,10 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnavailableCounterRefusesTheCreate(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 		$this->sequences->method('reserveNext')->willThrowException(new \RuntimeException('db down'));
 
-		$event = new ObjectCreatingEvent($this->objectWith([]));
+		$event = new ObjectCreatingEvent($this->objectWith(body: []));
 		$this->listener->handle($event);
 
 		$this->assertTrue(condition: $event->isPropagationStopped());
@@ -331,11 +331,11 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUpdateThatChangesTheIdentifierIsRefused(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 
 		$event = new ObjectUpdatingEvent(
-			$this->objectWith(['identifier' => 'Z-2026-00009']),
-			$this->objectWith(['identifier' => 'Z-2026-00001'])
+			$this->objectWith(body: ['identifier' => 'Z-2026-00009']),
+			$this->objectWith(body: ['identifier' => 'Z-2026-00001'])
 		);
 
 		$this->listener->handle($event);
@@ -358,11 +358,11 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUpdateThatKeepsTheIdentifierIsAllowed(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 
 		$event = new ObjectUpdatingEvent(
-			$this->objectWith(['identifier' => 'Z-2026-00001', 'title' => 'New title']),
-			$this->objectWith(['identifier' => 'Z-2026-00001', 'title' => 'Old title'])
+			$this->objectWith(body: ['identifier' => 'Z-2026-00001', 'title' => 'New title']),
+			$this->objectWith(body: ['identifier' => 'Z-2026-00001', 'title' => 'Old title'])
 		);
 
 		$this->listener->handle($event);
@@ -380,11 +380,11 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPartialUpdateOmittingTheIdentifierIsAllowed(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 
 		$event = new ObjectUpdatingEvent(
-			$this->objectWith(['title' => 'New title']),
-			$this->objectWith(['identifier' => 'Z-2026-00001', 'title' => 'Old title'])
+			$this->objectWith(body: ['title' => 'New title']),
+			$this->objectWith(body: ['identifier' => 'Z-2026-00001', 'title' => 'Old title'])
 		);
 
 		$this->listener->handle($event);
@@ -399,13 +399,13 @@ class GeneratedIdentifierListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUpdateNeverTakesANumber(): void {
-		$this->schemaWith(['identifier' => $this->declaredProperty()]);
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
 		$this->sequences->expects($this->never())->method('reserveNext');
 
 		$this->listener->handle(
 			new ObjectUpdatingEvent(
-				$this->objectWith(['identifier' => 'Z-2026-00001']),
-				$this->objectWith(['identifier' => 'Z-2026-00001'])
+				$this->objectWith(body: ['identifier' => 'Z-2026-00001']),
+				$this->objectWith(body: ['identifier' => 'Z-2026-00001'])
 			)
 		);
 
