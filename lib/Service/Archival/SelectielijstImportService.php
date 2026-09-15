@@ -267,7 +267,10 @@ class SelectielijstImportService {
 			}
 
 			try {
-				$this->saveObject->saveObject($register->getId(), $schema->getId(), $row);
+				// The ENTITIES, not their ids. saveObject() accepts either, and a
+				// register or schema whose id is not yet materialised would be
+				// passed as null, which its signature refuses.
+				$this->saveObject->saveObject($register, $schema, $row);
 				$imported++;
 			} catch (Throwable $e) {
 				$failed++;
