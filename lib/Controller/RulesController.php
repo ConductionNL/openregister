@@ -59,8 +59,8 @@ use Throwable;
  * catalogue beside it already is.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller composes the inventory,
- *   the run log, the trial and the switch, which are the four halves of the one surface
- *   this change exists to add.
+ *   the run log, the trial, the replay and the switch, which are the surfaces this change
+ *   exists to add.
  *
  * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
@@ -81,6 +81,11 @@ class RulesController extends Controller {
 	 * @param IUserSession $userSession Names the actor a replay runs as.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten, and each one is a surface this
+	 *   controller publishes or the session the replay is an act of. Bundling them behind
+	 *   a locator would hide the dependencies rather than remove them, and splitting the
+	 *   controller would split one REST resource across two classes.
 	 */
 	public function __construct(
 		string $appName,

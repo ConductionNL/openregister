@@ -82,31 +82,51 @@ final class DependentValueTable {
 				continue;
 			}
 
-			$table = $property[self::ANNOTATION];
-			if (is_array($table) === false) {
+			$table = $this->tableOf(declaration: $property[self::ANNOTATION]);
+			if ($table === null) {
 				continue;
 			}
 
-			$controlledBy = ($table['controlledBy'] ?? null);
-			$allowed = ($table['allowed'] ?? null);
-			if (is_string($controlledBy) === false || $controlledBy === '' || is_array($allowed) === false) {
-				continue;
-			}
-
-			$pairs = [];
-			foreach ($allowed as $controllingValue => $values) {
-				if (is_array($values) === false) {
-					continue;
-				}
-
-				$pairs[(string)$controllingValue] = array_values(array_map('strval', $values));
-			}
-
-			$tables[(string)$name] = ['controlledBy' => $controlledBy, 'allowed' => $pairs];
-		}//end foreach
+			$tables[(string)$name] = $table;
+		}
 
 		return $tables;
 	}//end tablesOf()
+
+	/**
+	 * One declaration, read into the shape the runtime uses, or null.
+	 *
+	 * A malformed declaration answers null rather than throwing. Schema save is
+	 * where a malformed table is refused; this read must survive data that was
+	 * somehow stored anyway, because the alternative is one bad annotation
+	 * making every object of that schema unsaveable.
+	 *
+	 * @param mixed $declaration The raw annotation value.
+	 *
+	 * @return array{controlledBy: string, allowed: array<string, array<int, string>>}|null The table, or null.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function tableOf(mixed $declaration): ?array {
+		if (is_array($declaration) === false) {
+			return null;
+		}
+
+		$controlledBy = ($declaration['controlledBy'] ?? null);
+		$allowed = ($declaration['allowed'] ?? null);
+		if (is_string($controlledBy) === false || $controlledBy === '' || is_array($allowed) === false) {
+			return null;
+		}
+
+		$pairs = [];
+		foreach ($allowed as $controllingValue => $values) {
+			if (is_array($values) === true) {
+				$pairs[(string)$controllingValue] = array_values(array_map('strval', $values));
+			}
+		}
+
+		return ['controlledBy' => $controlledBy, 'allowed' => $pairs];
+	}//end tableOf()
 
 	/**
 	 * The properties whose tables the object being saved breaks.

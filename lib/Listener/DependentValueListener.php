@@ -119,34 +119,19 @@ class DependentValueListener implements IEventListener {
 		?ObjectEntity $stored,
 	): void {
 		try {
-			$reference = $object->getSchema();
-			if ($reference === null || $reference === '') {
-				return;
-			}
-
 			$data = $object->getObject();
-			if (is_array($data) === false) {
-				return;
-			}
-
-			$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-			$properties = ($schema->getProperties() ?? []);
-			if (is_array($properties) === false || $this->tables->declaresAny(properties: $properties) === false) {
+			$properties = $this->tablesFor(object: $object);
+			if (is_array($data) === false || $properties === null) {
 				// The whole cost for a schema that declares no table: one array
 				// scan, no lookup of the stored object, no refusal path. That
 				// is the "behaves exactly as before" of task 5.3.
 				return;
 			}
 
-			$previous = [];
-			if ($stored !== null && is_array($stored->getObject()) === true) {
-				$previous = $stored->getObject();
-			}
-
 			$violations = $this->tables->violations(
 				properties: $properties,
 				data: $data,
-				stored: $previous
+				stored: $this->storedData(stored: $stored)
 			);
 			if ($violations === []) {
 				return;
@@ -160,6 +145,57 @@ class DependentValueListener implements IEventListener {
 			);
 		}//end try
 	}//end validate()
+
+	/**
+	 * The schema's properties, when it declares at least one table.
+	 *
+	 * Null means "there is nothing here for this guard to do", which is the
+	 * answer for a schema with no table, an object with no schema, and a
+	 * schema whose properties cannot be read. All three are the same decision
+	 * for the caller, so they are one answer rather than three branches.
+	 *
+	 * @param ObjectEntity $object The object the write carries.
+	 *
+	 * @return array<string, mixed>|null The properties, or null.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function tablesFor(ObjectEntity $object): ?array {
+		$reference = $object->getSchema();
+		if ($reference === null || $reference === '') {
+			return null;
+		}
+
+		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false || $this->tables->declaresAny(properties: $properties) === false) {
+			return null;
+		}
+
+		return $properties;
+	}//end tablesFor()
+
+	/**
+	 * The object as it stands, or an empty array on a create.
+	 *
+	 * @param ObjectEntity|null $stored The stored object, on an update.
+	 *
+	 * @return array<string, mixed> The stored data.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function storedData(?ObjectEntity $stored): array {
+		if ($stored === null) {
+			return [];
+		}
+
+		$data = $stored->getObject();
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+	}//end storedData()
 
 	/**
 	 * Stop the write, naming both properties in every refusal.
