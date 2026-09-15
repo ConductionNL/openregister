@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -157,6 +158,7 @@ class ScheduledReportService {
 		private readonly LoggerInterface $logger,
 		private readonly IMailer $mailer,
 		private readonly IConfig $config,
+		private readonly ?ExportProfileService $profileService = null,
 	) {
 	}//end __construct()
 
@@ -223,6 +225,7 @@ class ScheduledReportService {
 		$report->setSchemaId($this->coerceNullableInt(value: ($data['schemaId'] ?? null)));
 		$report->setFilters(json_encode(($data['filters'] ?? []), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 		$report->setFormat((string)$data['format']);
+		$report->setProfileId($this->coerceNullableInt(value: ($data['profileId'] ?? null)));
 		$report->setScheduleType((string)$data['scheduleType']);
 		$report->setScheduleHour((int)($data['scheduleHour'] ?? 0));
 		$report->setScheduleDayOfWeek($this->coerceNullableInt(value: ($data['scheduleDayOfWeek'] ?? null)));
@@ -300,6 +303,10 @@ class ScheduledReportService {
 		$report->setSchemaId($this->coerceNullableInt(value: $merged['schemaId']));
 		$report->setFilters(json_encode($merged['filters'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 		$report->setFormat((string)$merged['format']);
+		if (array_key_exists('profileId', $data) === true) {
+			$report->setProfileId($this->coerceNullableInt(value: $data['profileId']));
+		}
+
 		$report->setScheduleType((string)$merged['scheduleType']);
 		$report->setScheduleHour((int)$merged['scheduleHour']);
 		$report->setScheduleDayOfWeek($this->coerceNullableInt(value: $merged['scheduleDayOfWeek']));
@@ -716,6 +723,10 @@ class ScheduledReportService {
 	 * @throws ExportTooLargeException When the pdf row cap is exceeded.
 	 */
 	private function runExport(ScheduledReport $report, \OCP\IUser $owner): array {
+		if ($report->getProfileId() !== null) {
+			return $this->runProfileExport(report: $report, owner: $owner);
+		}
+
 		$register = $this->registerMapper->find($report->getRegisterId(), _rbac: false, _multitenancy: false);
 		$schema = null;
 		if ($report->getSchemaId() !== null) {
@@ -740,6 +751,42 @@ class ScheduledReportService {
 				];
 		}//end switch
 	}//end runExport()
+
+	/**
+	 * Run the export profile this schedule names, as its owner.
+	 *
+	 * The owner's access is what the file holds, because `runOne()` has already
+	 * put the owner in the session and the profile service resolves the export
+	 * verb against the uid it is handed. A schedule owned by somebody who may
+	 * read half the register produces that half.
+	 *
+	 * REFUSES LOUDLY WHEN THE PROFILE SERVICE IS ABSENT. The dependency is
+	 * optional only so that callers built before this change still construct,
+	 * and a schedule that names a profile it cannot run must fail rather than
+	 * quietly export something else.
+	 *
+	 * @param ScheduledReport $report The report.
+	 * @param \OCP\IUser $owner The impersonated owner.
+	 *
+	 * @return array{bytes: string, rowCount: int} The file and its row count.
+	 *
+	 * @throws RuntimeException When the profile cannot be run.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function runProfileExport(ScheduledReport $report, \OCP\IUser $owner): array {
+		if ($this->profileService === null) {
+			throw new RuntimeException(
+				'This scheduled report names export profile ' . (string)$report->getProfileId()
+				. ', and the export profile service is not available to run it.'
+			);
+		}
+
+		$profile = $this->profileService->find(id: (int)$report->getProfileId());
+		$written = $this->profileService->run(profile: $profile, actorUid: $owner->getUID());
+
+		return ['bytes' => $written['bytes'], 'rowCount' => $written['rowCount']];
+	}//end runProfileExport()
 
 	/**
 	 * Count data rows in CSV bytes (total non-empty lines minus the header row).
@@ -823,6 +870,20 @@ class ScheduledReportService {
 			'pdf' => 'pdf',
 			default => 'xlsx',
 		};
+
+		// A profile writes its own format, and the name has to say so: a file
+		// called .xlsx holding csv bytes is the kind of thing a receiving system
+		// opens once and never trusts again.
+		if ($report->getProfileId() !== null && $this->profileService !== null) {
+			try {
+				$extension = ($this->profileService->find(id: (int)$report->getProfileId())->getFormat() ?? 'csv');
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ScheduledReportService] Could not read the profile format for the filename',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
+				);
+			}
+		}
 
 		$slug = $this->slugify(value: (string)$report->getName());
 		$date = (new DateTime())->format('Y-m-d');

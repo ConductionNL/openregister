@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\BulkAction\AssignAction;
+use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\BulkAction\SetPropertiesAction;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCP\EventDispatcher\Event;
@@ -48,12 +49,14 @@ class BulkActionRegistrationListener implements IEventListener {
 	 * @param SetPropertiesAction $setProperties The bulk attribute write.
 	 * @param AssignAction $assign The bulk redistribution.
 	 * @param ApplyRuleAction $applyRule The rule replay.
+	 * @param ExportWholeSetAction $exportWholeSet The whole-set extract.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly SetPropertiesAction $setProperties,
 		private readonly AssignAction $assign,
 		private readonly ApplyRuleAction $applyRule,
+		private readonly ExportWholeSetAction $exportWholeSet,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -72,7 +75,7 @@ class BulkActionRegistrationListener implements IEventListener {
 			return;
 		}
 
-		foreach ([$this->setProperties, $this->assign, $this->applyRule] as $action) {
+		foreach ([$this->setProperties, $this->assign, $this->applyRule, $this->exportWholeSet] as $action) {
 			try {
 				$event->registerAction(action: $action);
 			} catch (\Throwable $exception) {

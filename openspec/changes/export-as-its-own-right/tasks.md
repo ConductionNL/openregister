@@ -14,13 +14,13 @@
 
 ## 3. Schedule and whole-set extract
 
-- [ ] 3.1 A profile runs on a schedule through the scheduled report runner, with the owner's access.
-- [ ] 3.2 A whole-set profile runs through `bulk-action-jobs`, one file per schema, with progress and skips (D-5).
+- [x] 3.1 A profile runs on a schedule through the scheduled report runner, with the owner's access.
+- [x] 3.2 A whole-set profile runs through `bulk-action-jobs`, one file per schema, with progress and skips (D-5).
 
 ## 4. The record
 
-- [ ] 4.1 One audit entry per completed export: actor, profile, row count, time (D-6).
-- [ ] 4.2 A refused export recorded with its reason.
+- [x] 4.1 One audit entry per completed export: actor, profile, row count, time (D-6).
+- [x] 4.2 A refused export recorded with its reason.
 
 ## 5. Tests
 
