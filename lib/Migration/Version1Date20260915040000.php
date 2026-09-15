@@ -38,8 +38,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Doctrine\DBAL\Schema\Table;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Schema\ITable;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -106,11 +106,11 @@ class Version1Date20260915040000 extends SimpleMigrationStep {
 	/**
 	 * Add the party columns that are still missing.
 	 *
-	 * @param Table $table The link table.
+	 * @param ITable $table The link table.
 	 *
 	 * @return bool Whether anything was added.
 	 */
-	private function addColumns(Table $table): bool {
+	private function addColumns(ITable $table): bool {
 		$changed = false;
 		foreach (self::COLUMNS as $name => [$type, $options]) {
 			if ($table->hasColumn($name) === true) {
