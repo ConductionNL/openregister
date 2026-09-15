@@ -8,9 +8,9 @@
 
 ## 2. The profile
 
-- [ ] 2.1 An export profile object: name, ordered field set, value mode, format, optional filter (D-3).
-- [ ] 2.2 The field set is independent of any saved view's columns.
-- [ ] 2.3 Value mode `stored` and `rendered`, with the mode written into the export's metadata (D-4).
+- [x] 2.1 An export profile object: name, ordered field set, value mode, format, optional filter (D-3).
+- [x] 2.2 The field set is independent of any saved view's columns.
+- [x] 2.3 Value mode `stored` and `rendered`, with the mode written into the export's metadata (D-4).
 
 ## 3. Schedule and whole-set extract
 
