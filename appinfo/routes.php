@@ -962,6 +962,18 @@ return [
         ['name' => 'objects#uses',      'url' => '/api/objects/{register}/{schema}/{id}/uses',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#used',      'url' => '/api/objects/{register}/{schema}/{id}/used',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#logs',      'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Relation rows and the relation graph (relation-types-with-inverses).
+        // The stored rows are the links no $ref property can hold: a split's
+        // provenance, what a child inherited, an address outside the product,
+        // and a reference somebody wrote in prose. `uses` and `used` above
+        // still answer for the $ref relations; these answer for the rest, and
+        // the graph unions both.
+        ['name' => 'objectRelations#index',       'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#addLink',     'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#removeLink',  'url' => '/api/objects/{register}/{schema}/{id}/relation-rows/{relationId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'relationId' => '[^/]+']],
+        ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],

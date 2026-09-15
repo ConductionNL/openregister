@@ -376,6 +376,51 @@ class ObjectRelationService {
 	}//end remove()
 
 	/**
+	 * Persist a row whose caller adjusted it after it was written.
+	 *
+	 * @param ObjectRelation $row The row.
+	 *
+	 * @return ObjectRelation The persisted row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function saveRow(ObjectRelation $row): ObjectRelation {
+		return $this->mapper->save(relation: $row);
+	}//end saveRow()
+
+	/**
+	 * The relation declaration one property of one schema carries.
+	 *
+	 * The caller asking is a controller that holds a schema id and a property
+	 * name and needs the inheritance and the type the schema declares for it.
+	 *
+	 * @param int|null $schemaId The schema holding the property.
+	 * @param string $property The property name.
+	 * @param string $language The BCP-47 tag.
+	 *
+	 * @return array<string, mixed>|null The descriptor.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function declarationFor(?int $schemaId, string $property, string $language = 'nl'): ?array {
+		if ($schemaId === null) {
+			return null;
+		}
+
+		try {
+			$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			return null;
+		}
+
+		return $this->relationTypes->descriptorFor(
+			schema: $schema,
+			property: $property,
+			language: $language
+		);
+	}//end declarationFor()
+
+	/**
 	 * Every stored relation row touching an object, with its labels resolved.
 	 *
 	 * Rows where the object is the SOURCE read with the near label; rows where
