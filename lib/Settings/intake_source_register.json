@@ -73,7 +73,30 @@
                     "objectDescriptionField": "description",
                     "x-openregister-lifecycle": {
                         "field": "state",
-                        "initial": "configured"
+                        "initial": "configured",
+                        "transitions": {
+                            "start": {
+                                "from": [
+                                    "configured",
+                                    "failing"
+                                ],
+                                "to": "polling"
+                            },
+                            "fail": {
+                                "from": [
+                                    "configured",
+                                    "polling"
+                                ],
+                                "to": "failing"
+                            },
+                            "reset": {
+                                "from": [
+                                    "polling",
+                                    "failing"
+                                ],
+                                "to": "configured"
+                            }
+                        }
                     },
                     "x-openregister-list": {
                         "columns": [
