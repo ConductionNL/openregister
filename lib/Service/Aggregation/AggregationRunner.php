@@ -2514,6 +2514,19 @@ class AggregationRunner {
 			$whereParts[] = "(_deleted IS NULL OR _deleted = 'null' OR _deleted = '')";
 		}
 
+		// Archive predicate, in the same shapes and for the same reason as the
+		// organisation rule two comments below: this fast path bypasses
+		// MagicMapper, so it has to reproduce the list path's default rather
+		// than answer a different question with a confident number. A tile that
+		// counts archived records while the page under it hides them is a
+		// disagreement nobody reads as a bug — they read it as the tile being
+		// right.
+		if ($platformName === 'postgres') {
+			$whereParts[] = "(_archived IS NULL OR _archived = 'null'::jsonb)";
+		} else {
+			$whereParts[] = "(_archived IS NULL OR _archived = 'null' OR _archived = '')";
+		}
+
 		// SECURITY: the organisation boundary. This fast path bypasses
 		// MagicMapper entirely, so it must reproduce the SAME rule the list
 		// path applies — no wider, and no narrower.

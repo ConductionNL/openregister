@@ -318,6 +318,13 @@ Vrij en open source onder de EUPL-licentie.
 			     both need the openregister_flow_timers tables. -->
 			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
 			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
+			<!-- The archive and freeze columns (object-archive-state). The
+			     default object list now carries `_archived IS NULL`, and a
+			     magic table that predates the column answers that with an SQL
+			     error, which reaches a user as a 500 on a plain list. Nothing
+			     re-syncs an already-materialised table on a read, so the sync
+			     has to be asked for, and an upgrade is when. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\AddObjectStateColumns</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
