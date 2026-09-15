@@ -31,6 +31,9 @@ use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -55,6 +58,9 @@ class ArchivalControllerReviewTest extends TestCase {
 	private ReviewOutcomeService&MockObject $outcomes;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
+	private MagicMapper&MockObject $objectMapper;
+	private SchemaMapper&MockObject $schemaMapper;
+	private ArchivalNominationService&MockObject $nominations;
 	private ArchivalController $controller;
 
 	protected function setUp(): void {
@@ -65,23 +71,31 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->outcomes = $this->createMock(ReviewOutcomeService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->objectMapper = $this->getMockBuilder(MagicMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['update', 'find'])
+			->getMock();
+		$this->schemaMapper = $this->getMockBuilder(SchemaMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['find'])
+			->getMock();
+		$this->nominations = $this->createMock(ArchivalNominationService::class);
 
 		$this->controller = new ArchivalController(
 			'openregister',
 			$this->request,
 			$this->createMock(DestructionService::class),
 			$this->createMock(LegalHoldService::class),
-			$this->getMockBuilder(MagicMapper::class)
-				->disableOriginalConstructor()
-				->onlyMethods(['update', 'find'])
-				->getMock(),
+			$this->objectMapper,
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(LoggerInterface::class),
 			$this->lists,
 			new DestructionReviewService(),
 			$this->outcomes,
-			$this->createMock(AuditTrailMapper::class)
+			$this->createMock(AuditTrailMapper::class),
+			$this->nominations,
+			$this->schemaMapper
 		);
 	}
 
@@ -267,6 +281,86 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->assertSame(
 			Http::STATUS_UNAUTHORIZED,
 			$this->controller->myPendingReviews()->getStatus()
+		);
+	}
+
+	/**
+	 * Point the mappers at one record and its schema.
+	 *
+	 * @return ObjectEntity The record.
+	 */
+	private function recordUnderNomination(): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid('obj-1');
+		$object->setSchema('7');
+
+		$this->objectMapper->method('find')->willReturn($object);
+		$this->schemaMapper->method('find')->willReturn(
+			$this->getMockBuilder(Schema::class)->disableOriginalConstructor()->getMock()
+		);
+
+		return $object;
+	}
+
+	public function testRecomputingANominationNeedsTheArchivistRole(): void {
+		$this->signIn('anneke', isArchivist: false);
+
+		$this->assertSame(
+			Http::STATUS_FORBIDDEN,
+			$this->controller->recomputeNomination('obj-1')->getStatus()
+		);
+	}
+
+	/**
+	 * 🔴 A RECOMPUTATION WITH NO REASON IS REFUSED BEFORE ANYTHING IS DERIVED.
+	 * The selectielijst moves, and a nomination silently rederived against a
+	 * newer list is a disposal date nobody can account for.
+	 */
+	public function testRecomputingWithoutAReasonIsRefusedAndDerivesNothing(): void {
+		$this->signIn('archivaris');
+		$this->withParams([]);
+
+		$this->nominations->expects($this->never())->method('nominate');
+
+		$this->assertSame(
+			Http::STATUS_BAD_REQUEST,
+			$this->controller->recomputeNomination('obj-1')->getStatus()
+		);
+	}
+
+	public function testRecomputingWithAReasonRecordsItAndPersistsTheRecord(): void {
+		$this->signIn('archivaris');
+		$this->withParams(['reason' => 'Selectielijst 2026 replaced the 2020 list']);
+		$this->recordUnderNomination();
+
+		$this->nominations->method('nominate')->willReturn(
+			[
+				'status' => ArchivalNominationService::STATUS_NOMINATED,
+				'trigger' => 'recompute',
+				'reason' => 'Selectielijst 2026 replaced the 2020 list',
+			]
+		);
+		$this->objectMapper->expects($this->once())->method('update');
+
+		$response = $this->controller->recomputeNomination('obj-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('recompute', $response->getData()['nomination']['trigger']);
+	}
+
+	public function testASchemaThatDoesNotArchiveIsAConflictAndIsNotWritten(): void {
+		$this->signIn('archivaris');
+		$this->withParams(['reason' => 'Trying anyway']);
+		$this->recordUnderNomination();
+
+		$this->nominations->method('nominate')->willReturn(
+			['status' => ArchivalNominationService::STATUS_NOT_APPLICABLE]
+		);
+		$this->objectMapper->expects($this->never())->method('update');
+
+		$this->assertSame(
+			Http::STATUS_CONFLICT,
+			$this->controller->recomputeNomination('obj-1')->getStatus()
 		);
 	}
 }

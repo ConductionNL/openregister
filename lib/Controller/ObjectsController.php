@@ -2645,6 +2645,23 @@ class ObjectsController extends Controller {
 				$renderedData = $this->stripEmptyValues(data: $renderedData);
 			}
 
+			// THE RECORD SAYS WHAT ITS READER MAY DO WITH IT. Resolved in the
+			// same pass that decided this read, from the memoised verdicts, so
+			// it costs the resolutions a client would otherwise provoke by
+			// trying. Without it every client guesses, and the user finds out
+			// by clicking into a 403 (design D-9).
+			//
+			// AFTER the empty strip, deliberately: a caller who may do nothing
+			// on this row has an EMPTY list of actions, and that is an answer.
+			// Stripping it would leave the client unable to tell "no rights" from
+			// "this instance does not report rights".
+			$renderedData = $this->withPermittedActions(
+				renderedData: $renderedData,
+				schema: $resolved['schemaEntity'],
+				object: $objectEntity,
+				objectService: $objectService
+			);
+
 			// Content negotiation: emit JSON-LD when requested. The serializer
 			// wraps the already-rendered array — no second data path — so all
 			// access control above remains applied (json-ld-output).
@@ -2671,6 +2688,59 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		}//end try
 	}//end show()
+
+	/**
+	 * Add the actions this caller may take on the record being returned.
+	 *
+	 * Written into `@self.actions`, beside the rest of the record's own
+	 * metadata, so no data property can collide with it and no existing caller
+	 * has to change to keep working.
+	 *
+	 * BEST EFFORT, ON PURPOSE. A resolution that fails leaves the record
+	 * untouched rather than failing the read: the actions are a convenience for
+	 * the client, and the verdicts that matter were already made — this row was
+	 * returned because the read was allowed, and every write is resolved again
+	 * on its own request. A reporting field must never be able to refuse a read.
+	 *
+	 * @param array             $renderedData  The rendered record.
+	 * @param Schema|null       $schema        The schema, when it resolved.
+	 * @param ObjectEntity|null $object        The row.
+	 * @param ObjectService     $objectService The service holding the resolver.
+	 *
+	 * @return array The record, with its actions when they could be resolved.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function withPermittedActions(
+		array $renderedData,
+		?Schema $schema,
+		?ObjectEntity $object,
+		ObjectService $objectService,
+	): array {
+		if ($schema === null || $object === null || isset($renderedData['@self']) === false) {
+			return $renderedData;
+		}
+
+		try {
+			$renderedData['@self']['actions'] = $objectService->getPermissionHandler()->permittedActionsFor(
+				schema: $schema,
+				object: $object
+			);
+		} catch (\Throwable $e) {
+			// See the docblock: reporting never refuses a read.
+			$this->logger?->warning(
+				message: '[ObjectsController] Could not resolve the actions for a record; returning it without them',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schemaId' => $schema->getId(),
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+
+		return $renderedData;
+	}//end withPermittedActions()
 
 	/**
 	 * Creates a new object in the specified register and schema

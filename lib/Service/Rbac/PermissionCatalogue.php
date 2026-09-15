@@ -82,6 +82,14 @@ class PermissionCatalogue {
 	 * edits the rules themselves, and the one a deny may not take from the last
 	 * principal holding it.
 	 *
+	 * `destroy` is here because `delete-window-and-recorded-destruction` made it
+	 * a second, narrower right than `delete`: deleting puts an object in the
+	 * trash, where it can come back, and destroying ends it. `PermissionHandler`
+	 * has carried it in its canonical set since that change landed, and
+	 * `DestroyRightService` resolves it on every destruction, so a catalogue
+	 * without it refused a block naming a verb this instance already enforces
+	 * (task 8.5, decision D10).
+	 *
 	 * @var array<string, string>
 	 */
 	public const CANONICAL = [
@@ -89,6 +97,7 @@ class PermissionCatalogue {
 		'create' => 'Add a new object to the schema.',
 		'update' => 'Change an object that already exists.',
 		'delete' => 'Remove an object.',
+		'destroy' => 'End a deleted object for good, before its recovery window closes.',
 		'list' => 'See the objects of a schema as a list, with totals and facets.',
 		'manage' => 'Change the access rules themselves, including roles and grants.',
 	];

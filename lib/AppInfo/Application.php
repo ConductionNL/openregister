@@ -2558,6 +2558,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
 		$context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+		// Access derived from what an identity provider asserted, once per
+		// sign-in. Costs one app-config read on an instance that declares no
+		// rule, and never fails a sign-in: see the listener.
+		$context->registerEventListener(
+			\OCP\User\Events\UserLoggedInEvent::class,
+			\OCA\OpenRegister\Listener\IdentityClaimsLoginListener::class
+		);
+
 		// Flow node discovery. OpenRegister contributes its own built-ins
 		// through the same event every consuming app uses, so the contribution
 		// path is exercised by its owner and cannot rot unnoticed.
@@ -3050,6 +3058,14 @@ class Application extends App implements IBootstrap {
 		// - queue-mode drain triggers: schema save + app enable (a provider may
 		// have appeared); the fallback HandoffQueueDrainJob catches the rest.
 		$context->registerEventListener(ObjectTransitionedEvent::class, HandoffLifecycleListener::class);
+
+		// Nomination at closure: a record reaching a state its schema declares
+		// final gets its archiefnominatie and archiefactiedatum derived and
+		// written, with the rule that produced each.
+		$context->registerEventListener(
+			ObjectTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\ArchivalNominationListener::class
+		);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
