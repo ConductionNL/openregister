@@ -161,6 +161,37 @@ class ApiVersionCatalogue {
 	}//end served()
 
 	/**
+	 * The declared identifiers, as strings, lowest first.
+	 *
+	 * 🔴 NOT `array_keys(all())`. PHP turns a numeric string array key into an
+	 * integer, so the keys of the version map are ints while every version's
+	 * own `id` is a string. Publishing the keys directly shipped
+	 * `servedVersions: [1, 2]` beside `apiVersions: [{version: "1"}]`, and a
+	 * consumer comparing the two with `===` would find them different forever
+	 * while both looked right in the JSON.
+	 *
+	 * @return array<int, string> The identifiers.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 */
+	public function identifiers(): array {
+		return array_values(array_map(static fn (ApiVersion $version): string => $version->id, $this->all()));
+
+	}//end identifiers()
+
+	/**
+	 * The identifiers that still answer, as strings, lowest first.
+	 *
+	 * @return array<int, string> The served identifiers.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 */
+	public function servedIdentifiers(): array {
+		return array_values(array_map(static fn (ApiVersion $version): string => $version->id, $this->served()));
+
+	}//end servedIdentifiers()
+
+	/**
 	 * One version by identifier, or null when nothing declares it.
 	 *
 	 * A withdrawn version is returned here rather than hidden: the caller

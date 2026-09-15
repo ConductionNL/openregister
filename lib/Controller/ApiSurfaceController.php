@@ -185,7 +185,7 @@ class ApiSurfaceController extends Controller {
 			return new JSONResponse(
 				data: [
 					'error' => 'No API version "' . $version . '" is declared on this instance.',
-					'servedVersions' => array_keys($this->catalogue->served()),
+					'servedVersions' => $this->catalogue->servedIdentifiers(),
 				],
 				statusCode: Http::STATUS_NOT_FOUND,
 			);
@@ -196,7 +196,7 @@ class ApiSurfaceController extends Controller {
 				data: [
 					'error' => 'API version ' . $declared->id . ' has been withdrawn. Use version ' . (string)$declared->successor . '.',
 					'successorVersion' => $declared->successor,
-					'servedVersions' => array_keys($this->catalogue->served()),
+					'servedVersions' => $this->catalogue->servedIdentifiers(),
 				],
 				statusCode: Http::STATUS_GONE,
 			);

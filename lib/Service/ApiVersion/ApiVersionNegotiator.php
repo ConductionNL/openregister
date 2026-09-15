@@ -121,7 +121,7 @@ class ApiVersionNegotiator {
 	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
 	 */
 	public function acceptableIdentifiers(): array {
-		return array_keys($this->catalogue->served());
+		return $this->catalogue->servedIdentifiers();
 
 	}//end acceptableIdentifiers()
 

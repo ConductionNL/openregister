@@ -129,7 +129,8 @@ class ApiCapabilitiesService {
 		$served = $this->catalogue->served();
 
 		$contracts = [];
-		foreach (array_keys($served) as $identifier) {
+		foreach ($served as $version) {
+			$identifier = $version->id;
 			$contracts[$identifier] = (self::CONTRACT_PATH . $identifier . '/oas');
 		}
 
