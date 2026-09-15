@@ -114,6 +114,8 @@ class MagicSearchHandler {
 		'_updated',
 		'_expires',
 		'_deleted',
+		'_archived',
+		'_frozen',
 		'_locked',
 		'_files',
 		'_relations',

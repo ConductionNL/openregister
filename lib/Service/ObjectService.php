@@ -2164,7 +2164,13 @@ class ObjectService implements ObjectServiceInterface
     }//end validateObjectIfRequired()
 
     /**
-     * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
+     * Enforce JSON-Schema `readOnly: true` and `immutable: true` on the
+     * UPDATE write path.
+     *
+     * Both rules need the same previously-stored record, so they share one
+     * load here. They are not the same rule: `readOnly` refuses every value
+     * that differs from what is stored, `immutable` accepts the first value
+     * and refuses every later change.
      *
      * No-op on CREATE (uuid === null). On UPDATE:
      *  1. Strip `@self` from the incoming payload (it is not a user-controllable
@@ -2234,20 +2240,46 @@ class ObjectService implements ObjectServiceInterface
             schema: $this->currentSchema
         );
 
-        if ($violations === []) {
+        // `immutable: true` is checked here rather than in a second private
+        // method so it reuses the record this one already loaded. Two methods
+        // would mean two `find()` calls on every update, and the second would
+        // eventually be the one somebody forgot to call.
+        $immutableViolations = $this->validateHandler->validateImmutableConstraints(
+            incomingObject: $candidate,
+            existingObject: $existingData,
+            schema: $this->currentSchema
+        );
+
+        if ($violations === [] && $immutableViolations === []) {
             return;
         }
 
-        $properties = array_map(static fn (array $v): string => $v['property'], $violations);
-        $suffix     = 'ies';
-        if (count($violations) === 1) {
-            $suffix = 'y';
+        $parts = [];
+        if ($violations !== []) {
+            $properties = array_map(static fn (array $v): string => $v['property'], $violations);
+            $suffix     = 'ies';
+            if (count($violations) === 1) {
+                $suffix = 'y';
+            }
+
+            $parts[] = 'Cannot modify readOnly propert'.$suffix.': '.implode(', ', $properties);
         }
 
-        $message = 'Cannot modify readOnly propert'.$suffix.': '.implode(', ', $properties);
+        if ($immutableViolations !== []) {
+            $immutableNames = array_map(static fn (array $v): string => $v['property'], $immutableViolations);
+            $suffix         = 'ies';
+            if (count($immutableViolations) === 1) {
+                $suffix = 'y';
+            }
+
+            $parts[]    = 'Cannot change immutable propert'.$suffix.': '.implode(', ', $immutableNames);
+            $violations = array_merge($violations, $immutableViolations);
+        }
+
+        $message = implode('. ', $parts);
 
         $this->logger->info(
-            message: '[ObjectService] readOnly enforcement rejected UPDATE',
+            message: '[ObjectService] readOnly / immutable enforcement rejected UPDATE',
             context: [
                 'file'       => __FILE__,
                 'line'       => __LINE__,
