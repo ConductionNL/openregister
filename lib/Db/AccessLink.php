@@ -344,6 +344,8 @@ class AccessLink extends Entity implements JsonSerializable {
 	 * Whether the link is closed with a password.
 	 *
 	 * @return bool True when a password must be presented.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
 	public function hasPassword(): bool {
 		return (trim((string)$this->passwordHash) !== '');
@@ -367,6 +369,8 @@ class AccessLink extends Entity implements JsonSerializable {
 	 * The name shown beside the link's acts.
 	 *
 	 * @return string The label, or the principal id when there is none.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 */
 	public function principalName(): string {
 		$label = trim((string)$this->label);

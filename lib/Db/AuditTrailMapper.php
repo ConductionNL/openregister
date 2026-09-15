@@ -2260,6 +2260,8 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return AuditTrail The created audit trail entry
 	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function createAuditTrailEntry(
