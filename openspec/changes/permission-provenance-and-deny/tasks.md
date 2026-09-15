@@ -49,10 +49,10 @@
 
 ## 8. Discovery wave 1: derived, scoped and expiring grants
 
-- [ ] 8.1 A rule maps identity provider claims to roles and scopes at login, in the declared rule shape.
-- [ ] 8.2 A grant may carry an end, including one bound to a workflow step's deadline; an expired grant is not resolved and needs no sweep (D-11).
-- [ ] 8.3 A change to a rule that derives access re-runs the derivation and reports how many grants changed (D-11).
-- [ ] 8.4 `manage` may be scoped to a named area, so delegated administration is not a second administrator.
+- [x] 8.1 A rule maps identity provider claims to roles and scopes at login, in the declared rule shape. `openregister.claim_derived_grants` holds the rules; `IdentityClaimsCollectingEvent` asks the app that holds the provider session what it asserted; the derived groups are folded into the caller's own, scoped, after the administrator check.
+- [x] 8.2 A grant may carry an end, including one bound to a workflow step's deadline; an expired grant is not resolved and needs no sweep (D-11). An entry carrying `until` is dropped at resolution. A step binds a grant to its deadline by writing that deadline in, so there is no second clock to drift.
+- [x] 8.3 A change to a rule that derives access re-runs the derivation and reports how many grants changed (D-11). `POST /api/permissions/derived-grants/reapply`, administrator only, reporting the accounts whose access moved.
+- [x] 8.4 `manage` may be scoped to a named area, so delegated administration is not a second administrator. An entry carrying `scopedTo` answers only in the registers and schemas it names.
 - [x] 8.5 Hand the catalogue's destroy verb to `delete-window-and-recorded-destruction`, which consumes it under D10. `destroy` is canonical in the catalogue, so a block or a role naming it saves; `DestroyRightService` already resolves it through `PermissionHandler`.
 
 ## 9. The rollout: staging first (D15)
