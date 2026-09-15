@@ -62,6 +62,8 @@ use Throwable;
  *   and it is also the state whose rules the editing form was rendered under.
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
+ *
+ * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
  */
 class StateFieldRuleListener implements IEventListener {
 

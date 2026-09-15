@@ -53,6 +53,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * @param array<string, string> $messages Per-property refusal text the author declared.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function __construct(
 		private readonly ?string $state = null,
@@ -69,6 +71,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * @param string|null $state The state, when one is known.
 	 *
 	 * @return self The empty rule set.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public static function none(?string $state = null): self {
 		return new self(state: $state);
@@ -78,6 +82,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * The state these rules belong to.
 	 *
 	 * @return string|null The state, or null when the schema declares no lifecycle.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function getState(): ?string {
 		return $this->state;
@@ -87,6 +93,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * Properties kept out of the rendered object.
 	 *
 	 * @return array<int, string> The property names.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function getHidden(): array {
 		return $this->hidden;
@@ -96,6 +104,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * Properties rendered but refused on change.
 	 *
 	 * @return array<int, string> The property names.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function getReadOnly(): array {
 		return $this->readOnly;
@@ -105,6 +115,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * Properties that may not be left empty.
 	 *
 	 * @return array<int, string> The property names.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function getRequired(): array {
 		return $this->required;
@@ -117,6 +129,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * without state rules must cost nothing on the render and save paths.
 	 *
 	 * @return bool True when all three lists are empty.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function isEmpty(): bool {
 		return ($this->hidden === [] && $this->readOnly === [] && $this->required === []);
@@ -128,6 +142,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * @param string $property The property name.
 	 *
 	 * @return bool True when the property is hidden.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function hides(string $property): bool {
 		return in_array($property, $this->hidden, true);
@@ -139,6 +155,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * @param string $property The property name.
 	 *
 	 * @return bool True when the property is read only.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function freezes(string $property): bool {
 		return in_array($property, $this->readOnly, true);
@@ -150,6 +168,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * @param string $property The property name.
 	 *
 	 * @return string|null The declared message, or null.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function messageFor(string $property): ?string {
 		return ($this->messages[$property] ?? null);
@@ -164,6 +184,8 @@ final class StateFieldRules implements JsonSerializable {
 	 * the object is in.
 	 *
 	 * @return array{state: string|null, hidden: array<int, string>, readOnly: array<int, string>, required: array<int, string>} The published shape.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

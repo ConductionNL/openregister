@@ -852,6 +852,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @param array<string, mixed>|null $state The subscription state mirror.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function setRegistryState(?array $state): void {
 		$this->registryState = $state;
@@ -861,6 +863,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Get the lifecycle state's field rules, when set by the render layer.
 	 *
 	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function getFieldRules(): ?array {
 		return $this->fieldRules;

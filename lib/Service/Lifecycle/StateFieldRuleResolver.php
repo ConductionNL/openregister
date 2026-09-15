@@ -74,6 +74,8 @@ class StateFieldRuleResolver {
 	 * @param ConditionDialect $dialect The evaluator for a rule's `when` condition, in either dialect.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -88,6 +90,8 @@ class StateFieldRuleResolver {
 	 * @param Schema $schema The schema to read.
 	 *
 	 * @return array<string, mixed>|null The annotation.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function annotationOf(Schema $schema): ?array {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -109,6 +113,8 @@ class StateFieldRuleResolver {
 	 * @param array<string, mixed> $annotation The lifecycle annotation.
 	 *
 	 * @return string The field name, empty when the annotation names none.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function fieldOf(array $annotation): string {
 		return (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
@@ -121,6 +127,8 @@ class StateFieldRuleResolver {
 	 * @param array<string, mixed> $data The object's data.
 	 *
 	 * @return string|null The state, or null when the object carries no value.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function stateOf(array $annotation, array $data): ?string {
 		$field = $this->fieldOf(annotation: $annotation);
@@ -317,6 +325,8 @@ class StateFieldRuleResolver {
 	 * @param string $state The state to read.
 	 *
 	 * @return array<string, mixed>|null The block, or null when there is none to apply.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function blockFor(array $annotation, string $state): ?array {
 		$states = ($annotation['states'] ?? []);
@@ -346,6 +356,8 @@ class StateFieldRuleResolver {
 	 * @param string $state The state being resolved.
 	 *
 	 * @return array<string, mixed> The evaluation document.
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function document(array $data, string $state): array {
 		$user = $this->userSession->getUser();
