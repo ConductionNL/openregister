@@ -560,6 +560,21 @@ return [
         ['name' => 'contacts#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
         ['name' => 'contacts#objects',   'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
 
+        // Parties — a party holds a typed role on an object for a period, and
+        // may have no Nextcloud account at all. The literal `/parties/primary`
+        // route comes BEFORE `/parties/{partyUuid}` on purpose: the wildcard
+        // would otherwise match the literal string "primary" and the replace
+        // would 404 on a route that exists.
+        ['name' => 'party#index',          'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#create',         'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#replacePrimary', 'url' => '/api/objects/{register}/{schema}/{id}/parties/primary',      'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#destroy',        'url' => '/api/objects/{register}/{schema}/{id}/parties/{partyUuid}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'partyUuid' => '[^/]+']],
+        // App-global party reads. `search` and `resolve` are literals and come
+        // before the `{partyUuid}` wildcard for the same reason.
+        ['name' => 'party#search',         'url' => '/api/parties/search',                                        'verb' => 'GET'],
+        ['name' => 'party#resolve',        'url' => '/api/parties/resolve',                                       'verb' => 'GET'],
+        ['name' => 'party#show',           'url' => '/api/parties/{partyUuid}',                                   'verb' => 'GET',    'requirements' => ['partyUuid' => '[^/]+']],
+
         // Calendar events — object↔CalDAV event links via DAV principal.
         ['name' => 'calendarEvents#index',     'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'calendarEvents#create',    'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -996,6 +1011,22 @@ return [
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#uses',      'url' => '/api/objects/{register}/{schema}/{id}/uses',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#used',      'url' => '/api/objects/{register}/{schema}/{id}/used',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // The reverse view: which records reference this object, grouped by schema,
+        // each with its title, its status and when it last changed (REQ-OHC-001).
+        [
+            'name' => 'objects#referencedBy',
+            'url' => '/api/objects/{register}/{schema}/{id}/referenced-by',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        // The record's own map features plus the ones it inherits from what it
+        // references, each naming the relation it arrived through (REQ-OHC-006).
+        [
+            'name' => 'objects#geoFeatures',
+            'url' => '/api/objects/{register}/{schema}/{id}/geo-features',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
         ['name' => 'objects#logs',      'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -1189,6 +1220,12 @@ return [
         ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
         ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
         ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        [
+            'name' => 'rules#replay',
+            'url' => '/api/schemas/{schema}/rules/{ruleId}/replay',
+            'verb' => 'POST',
+            'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+'],
+        ],
 
         // The property vocabulary: what a property may be, published so an
         // editor is generated from it instead of retyped per app. Literal
@@ -1202,6 +1239,14 @@ return [
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#related', 'url' => '/api/schemas/{id}/related', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // The list surface a schema declares: columns and search fields, so a
+        // generic surface renders any object type without a page of its own.
+        [
+            'name' => 'schemas#listPresentation',
+            'url' => '/api/schemas/{id}/list-presentation',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],

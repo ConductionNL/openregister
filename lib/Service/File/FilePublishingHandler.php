@@ -25,8 +25,10 @@ use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
 use OCP\Files\NotFoundException;
+use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
 use ZipArchive;
 
@@ -60,13 +62,31 @@ class FilePublishingHandler {
 	 * @param MagicMapper $objectEntityMapper Object entity mapper for fetching objects.
 	 * @param FileMapper $fileMapper File mapper for share operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param IServerContainer $container Container, for the lazily resolved party indicator guard.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly FileMapper $fileMapper,
 		private readonly LoggerInterface $logger,
+		private readonly IServerContainer $container,
 	) {
 	}//end __construct()
+
+	/**
+	 * The party indicator guard, resolved at the act rather than injected.
+	 *
+	 * Deliberately NOT wrapped in a try/catch that degrades to "no guard". A
+	 * control that cannot run must stop the act, not wave it through: an
+	 * indicator whose effect is refuse publication exists precisely for the
+	 * case where publishing is the harm.
+	 *
+	 * @return PartyIndicatorGuard The guard.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	private function partyIndicatorGuard(): PartyIndicatorGuard {
+		return $this->container->get(PartyIndicatorGuard::class);
+	}//end partyIndicatorGuard()
 
 	/**
 	 * Set the FileService instance for cross-handler coordination.
@@ -107,6 +127,19 @@ class FilePublishingHandler {
 		if (is_string($object) === true) {
 			$object = $this->objectEntityMapper->find($object);
 		}
+
+		// AN INDICATOR ON A PARTY IS EVALUATED WHERE THE ACT HAPPENS.
+		//
+		// Making a file on an object publicly readable IS the publication a
+		// protected address refuses. Checking it in the component that draws
+		// the chip would leave the refusal to whoever remembered to read a
+		// banner; checking it here means the share is never created. The
+		// guard is resolved lazily because FileService already sits in this
+		// handler's graph through a setter for exactly the same reason: a
+		// constructor dependency on the party model would close that cycle.
+		$this->partyIndicatorGuard()->assertPublicationAllowed(
+			objectUuid: (string)($object->getUuid() ?? '')
+		);
 
 		// Debug logging - original file parameter.
 		$originalFile = $file;
