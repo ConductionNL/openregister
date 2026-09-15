@@ -53,6 +53,11 @@ class Notifier implements INotifier {
 	 *                                       binding; absent, the uid is shown,
 	 *                                       which is worse copy but never a wrong
 	 *                                       name.
+	 * @param NotificationTemplateRegistry|null $templates The platform's shipped
+	 *                                       message templates. Consulted only for
+	 *                                       an event whose words an administrator
+	 *                                       has actually changed; nullable and
+	 *                                       last for the same reason as above.
 	 */
 	public function __construct(
 		private readonly IFactory $factory,
