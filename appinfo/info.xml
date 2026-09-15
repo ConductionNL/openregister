@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.26-unstable.20260915070000</version>
+    <version>2.1.26-unstable.20260915130000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -325,6 +325,12 @@ Vrij en open source onder de EUPL-licentie.
 			     re-syncs an already-materialised table on a read, so the sync
 			     has to be asked for, and an upgrade is when. Idempotent. -->
 			<step>OCA\OpenRegister\Repair\AddObjectStateColumns</step>
+			<!-- Intake sources (objects-as-the-hinge-between-cases): the
+			     intake-sources register with its intake-source schema, so a watched
+			     folder, a mailbox or an inbound endpoint is a row somebody can add
+			     and switch off rather than a field in a settings screen. Idempotent
+			     with force: false, so an administrator's edit survives. -->
+			<step>OCA\OpenRegister\Repair\SeedIntakeSourceRegister</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -386,6 +392,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
+			<step>OCA\OpenRegister\Repair\SeedIntakeSourceRegister</step>
 		</install>
 	</repair-steps>
 

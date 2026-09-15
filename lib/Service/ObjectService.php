@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -1697,6 +1698,18 @@ class ObjectService implements ObjectServiceInterface
                 data: $object
             );
 
+            // Evaluate expression defaults, CREATE only, before validation.
+            // A property that is both required and derived can never be created
+            // if its value arrives after the validator has looked. The refusal
+            // names the property, because "validation failed" about a value the
+            // caller never sent is the least actionable message there is.
+            if ($uuidWasNull === true) {
+                $object = $this->saveHandler->applyExpressionDefaults(
+                    schema: $this->currentSchema,
+                    data: $object
+                );
+            }
+
             // Normalize date values BEFORE validation.
             // Accepts datetime input (e.g. "2024-01-15T10:30:00+02:00") for date fields
             // and casts it to date-only (e.g. "2024-01-15") so Opis validation passes.
@@ -1725,6 +1738,11 @@ class ObjectService implements ObjectServiceInterface
             // Skipped on CREATE (no prior value to violate). Loads the existing
             // object exactly once so the check is data-driven, not metadata-only.
             $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
+
+            // A lens is resolved at read and never stored, so a value sent for
+            // one is refused on CREATE as well as UPDATE. Writing through a
+            // lens is writing to somebody else's record by accident (D-2).
+            $this->enforceLensesAreReadOnly(object: $object);
 
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
 
@@ -2330,6 +2348,55 @@ class ObjectService implements ObjectServiceInterface
 
         return 'Cannot '.$verb.' propert'.$suffix.': '.implode(', ', $properties);
     }//end describeViolations()
+
+    /**
+     * Refuse a write that names a lens property.
+     *
+     * A lens holds the path, not the value: it is resolved on read against the
+     * referenced record and stored nowhere. Accepting a value for one would
+     * write a second copy of somebody else's field, which is the disagreement
+     * the lens exists to end. The refusal names the property, because a client
+     * that sent one cannot otherwise tell which of its fields is a lens.
+     *
+     * @param array $object Incoming object payload (top-level keys = property names).
+     *
+     * @return void
+     *
+     * @throws ValidationException When the payload names one or more lens properties.
+     *
+     * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+     */
+    private function enforceLensesAreReadOnly(array $object): void
+    {
+        if ($this->currentSchema === null) {
+            return;
+        }
+
+        $named = LensResolver::refusedLensWrites(schema: $this->currentSchema, object: $object);
+        if ($named === []) {
+            return;
+        }
+
+        $suffix = 'ies';
+        if (count($named) === 1) {
+            $suffix = 'y';
+        }
+
+        $message = 'Cannot write lens propert'.$suffix.': '.implode(', ', $named)
+            .'. A lens reads a referenced record and is never stored.';
+
+        $this->logger->info(
+            message: '[ObjectService] lens write refused',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'schemaId'   => $this->currentSchema->getId(),
+                'properties' => $named,
+            ]
+        );
+
+        throw new ValidationException(message: $message);
+    }//end enforceLensesAreReadOnly()
 
     /**
      * Normalize date values in object data before validation.

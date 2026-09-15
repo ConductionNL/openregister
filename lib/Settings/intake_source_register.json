@@ -1,0 +1,215 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Intake Sources",
+        "description": "The places records arrive from: a watched folder, a mailbox, an inbound endpoint. Ours used to be one mailbox in a settings screen, which made a second mailbox a code change. As objects they can be listed, switched off, permissioned and audited like everything else (ADR-031). Materialised by the SeedIntakeSourceRegister repair step; OpenRegister does not self-import its own register JSON at boot (ADR-037).",
+        "version": "1.0.0"
+    },
+    "x-openregister": {
+        "type": "core",
+        "app": "openregister",
+        "openregister": "^v0.2.10",
+        "description": "Administered intake sources. Nothing here polls: a source names where records come from and whether it is switched on, and the app that reads it does the polling."
+    },
+    "paths": {},
+    "components": {
+        "registers": {
+            "intake-sources": {
+                "slug": "intake-sources",
+                "title": "Intake Sources",
+                "version": "1.0.0",
+                "description": "Where records arrive from. One row per watched folder, mailbox or inbound endpoint, each switchable off without being deleted.",
+                "authorization": {
+                    "scope": "private",
+                    "read": [
+                        "authenticated"
+                    ],
+                    "create": [
+                        "admin"
+                    ],
+                    "update": [
+                        "admin"
+                    ],
+                    "delete": [
+                        "admin"
+                    ]
+                },
+                "published": "2026-09-14T00:00:00+00:00",
+                "schemas": [
+                    "intake-source"
+                ],
+                "folder": "Open Registers/Intake Sources"
+            }
+        },
+        "schemas": {
+            "intake-source": {
+                "slug": "intake-source",
+                "title": "Intake source",
+                "version": "1.0.0",
+                "published": "2026-09-14T00:00:00+00:00",
+                "summary": "A place records arrive from, switchable off without being deleted.",
+                "description": "A watched folder, a mailbox or an inbound endpoint, held as an object so there can be more than one. `enabled` is the switch: a disabled source stops being polled and stays listed, so turning one off is not the same as losing what it was. `connection` names the credential or connection the poller resolves, because a secret does not belong in an object.",
+                "authorization": {
+                    "scope": "private",
+                    "read": [
+                        "authenticated"
+                    ],
+                    "create": [
+                        "admin"
+                    ],
+                    "update": [
+                        "admin"
+                    ],
+                    "delete": [
+                        "admin"
+                    ]
+                },
+                "required": [
+                    "slug",
+                    "kind"
+                ],
+                "configuration": {
+                    "objectNameField": "title",
+                    "objectDescriptionField": "description",
+                    "x-openregister-lifecycle": {
+                        "field": "state",
+                        "initial": "configured",
+                        "transitions": {
+                            "start": {
+                                "from": [
+                                    "configured",
+                                    "failing"
+                                ],
+                                "to": "polling"
+                            },
+                            "fail": {
+                                "from": [
+                                    "configured",
+                                    "polling"
+                                ],
+                                "to": "failing"
+                            },
+                            "reset": {
+                                "from": [
+                                    "polling",
+                                    "failing"
+                                ],
+                                "to": "configured"
+                            }
+                        }
+                    },
+                    "x-openregister-list": {
+                        "columns": [
+                            {
+                                "property": "title",
+                                "label": "Source"
+                            },
+                            {
+                                "property": "kind",
+                                "label": "Kind"
+                            },
+                            {
+                                "property": "enabled",
+                                "label": "Polled"
+                            },
+                            {
+                                "property": "lastPolledAt",
+                                "label": "Last polled"
+                            }
+                        ],
+                        "searchFields": [
+                            "title",
+                            "slug",
+                            "location"
+                        ]
+                    }
+                },
+                "properties": {
+                    "slug": {
+                        "title": "Slug",
+                        "type": "string",
+                        "description": "The source's stable name, referenced by whatever polls it."
+                    },
+                    "title": {
+                        "title": "Title",
+                        "type": "string",
+                        "description": "What to call this source in a list."
+                    },
+                    "description": {
+                        "title": "Description",
+                        "type": "string",
+                        "description": "What arrives here, in the words of whoever set it up."
+                    },
+                    "kind": {
+                        "title": "Kind",
+                        "type": "string",
+                        "enum": [
+                            "watchedFolder",
+                            "mailbox",
+                            "endpoint"
+                        ],
+                        "description": "What sort of place this is. The poller for that kind reads the location and the settings."
+                    },
+                    "enabled": {
+                        "title": "Enabled",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether this source is polled. A disabled source stays listed."
+                    },
+                    "location": {
+                        "title": "Location",
+                        "type": "string",
+                        "description": "The folder path, the mailbox address or the endpoint path, by kind."
+                    },
+                    "connection": {
+                        "title": "Connection",
+                        "type": "string",
+                        "description": "The connection or credential the poller resolves for this source. A secret never lives on the object."
+                    },
+                    "targetRegister": {
+                        "title": "Target register",
+                        "type": "string",
+                        "description": "The register arriving records are written to."
+                    },
+                    "targetSchema": {
+                        "title": "Target schema",
+                        "type": "string",
+                        "description": "The schema arriving records are written as."
+                    },
+                    "settings": {
+                        "title": "Settings",
+                        "type": "object",
+                        "description": "Per-kind settings: the folder's file filter, the mailbox's folder, the endpoint's expected content type."
+                    },
+                    "state": {
+                        "title": "State",
+                        "type": "string",
+                        "enum": [
+                            "configured",
+                            "polling",
+                            "failing"
+                        ],
+                        "description": "Where the source stands. Written by whatever polls it, not by hand."
+                    },
+                    "lastPolledAt": {
+                        "title": "Last polled at",
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When this source was last read. Empty means it has not been read yet, which is not the same as failing."
+                    },
+                    "lastError": {
+                        "title": "Last error",
+                        "type": "string",
+                        "description": "What went wrong the last time, so a failing source explains itself in the list."
+                    },
+                    "organisation": {
+                        "title": "Organisation",
+                        "type": "string",
+                        "description": "UUID of the organisation this source belongs to. Empty for a shared one."
+                    }
+                }
+            }
+        },
+        "objects": []
+    }
+}
