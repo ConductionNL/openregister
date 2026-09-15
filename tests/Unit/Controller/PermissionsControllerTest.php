@@ -230,7 +230,7 @@ class PermissionsControllerTest extends TestCase {
 		$this->assertSame(DenyEnforcementMode::MODE_STAGING, $body['denyEnforcement']);
 
 		$verbs = array_column($body['permissions'], 'verb');
-		$this->assertSame(['read', 'create', 'update', 'delete', 'destroy', 'list', 'manage'], $verbs);
+		$this->assertSame(['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage'], $verbs);
 
 		foreach ($body['permissions'] as $entry) {
 			foreach (['verb', 'app', 'description', 'levels', 'canonical'] as $key) {

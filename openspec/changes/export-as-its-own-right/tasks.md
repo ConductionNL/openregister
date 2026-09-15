@@ -24,9 +24,9 @@
 
 ## 5. Tests
 
-- [ ] 5.1 `tests/e2e/ci/export-profile.spec.ts`: a read-only principal refused, a profile with its own field order, a rendered export.
-- [ ] 5.2 Unit tests: the verb on every path, the upgrade default, both value modes, the metadata line, the audit entries.
-- [ ] 5.3 `openspec validate export-as-its-own-right --strict`.
+- [x] 5.1 `tests/e2e/ci/export-profile.spec.ts`: a read-only principal refused, a profile with its own field order, a rendered export.
+- [x] 5.2 Unit tests: the verb on every path, the upgrade default, both value modes, the metadata line, the audit entries.
+- [x] 5.3 `openspec validate export-as-its-own-right --strict`.
 
 ## 6. Hand over
 

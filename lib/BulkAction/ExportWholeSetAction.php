@@ -42,8 +42,10 @@ use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUser;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -211,10 +213,16 @@ class ExportWholeSetAction implements BulkActionInterface {
 			return BulkActionResult::failed('The export profile could not be read: ' . $e->getMessage());
 		}
 
+		// `ObjectEntity` holds the register and the schema as strings, and every
+		// collaborator here counts them. Coerced once, at the boundary, rather
+		// than at each of the six call sites.
+		$registerId = $this->identifier(value: $object->getRegister());
+		$schemaId = $this->identifier(value: $object->getSchema());
+
 		$schema = null;
-		if ($object->getSchema() !== null) {
+		if ($schemaId !== null) {
 			try {
-				$schema = $this->schemaMapper->find((int)$object->getSchema(), _rbac: false, _multitenancy: false);
+				$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 			} catch (Throwable $e) {
 				$schema = null;
 			}
@@ -226,8 +234,8 @@ class ExportWholeSetAction implements BulkActionInterface {
 				profile: ($profile->getName() ?? ''),
 				rule: $refusal->getRule(),
 				reason: $refusal->getMessage(),
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
+				register: $registerId,
+				schema: $schemaId,
 				actorId: $actor->getUID()
 			);
 
@@ -240,11 +248,11 @@ class ExportWholeSetAction implements BulkActionInterface {
 		}
 
 		if ($commit === false) {
-			return BulkActionResult::applied('Would be written to ' . $this->filenameFor(profile: $profile, schemaId: $object->getSchema()));
+			return BulkActionResult::applied('Would be written to ' . $this->filenameFor(profile: $profile, schemaId: $schemaId));
 		}
 
 		try {
-			$this->append(profile: $profile, schemaId: $object->getSchema(), actor: $actor, line: $line);
+			$this->append(profile: $profile, schemaId: $schemaId, actor: $actor, line: $line);
 		} catch (Throwable $e) {
 			return BulkActionResult::failed('The row could not be written: ' . $e->getMessage());
 		}
@@ -254,13 +262,28 @@ class ExportWholeSetAction implements BulkActionInterface {
 			rowCount: 1,
 			format: 'csv',
 			valueMode: ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
+			register: $registerId,
+			schema: $schemaId,
 			actorId: $actor->getUID()
 		);
 
-		return BulkActionResult::applied('Written to ' . $this->filenameFor(profile: $profile, schemaId: $object->getSchema()));
+		return BulkActionResult::applied('Written to ' . $this->filenameFor(profile: $profile, schemaId: $schemaId));
 	}//end apply()
+
+	/**
+	 * A register or schema identifier as an int, or null when there is none.
+	 *
+	 * @param string|null $value The identifier the object carries.
+	 *
+	 * @return int|null The identifier.
+	 */
+	private function identifier(?string $value): ?int {
+		if ($value === null || is_numeric($value) === false) {
+			return null;
+		}
+
+		return (int)$value;
+	}//end identifier()
 
 	/**
 	 * Append one line to the file this schema owns, creating it with its
@@ -273,6 +296,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @return void
 	 *
+	 * @throws RuntimeException When the export folder is not a folder.
 	 * @throws \OCP\Files\NotPermittedException When the Files folder refuses the write.
 	 */
 	private function append(ExportProfile $profile, ?int $schemaId, IUser $actor, string $line): void {
@@ -282,6 +306,15 @@ class ExportWholeSetAction implements BulkActionInterface {
 		}
 
 		$folder = $userFolder->get(path: self::FOLDER);
+		if ($folder instanceof Folder === false) {
+			// Something that is not a folder sits where the export folder should
+			// be. Refusing is the only safe answer: the alternative is writing
+			// rows into whatever it is.
+			throw new RuntimeException(
+				'The path ' . self::FOLDER . ' in this user\'s files is not a folder, so the extract has nowhere to go.'
+			);
+		}
+
 		$filename = $this->filenameFor(profile: $profile, schemaId: $schemaId);
 
 		if ($folder->nodeExists(path: $filename) === false) {

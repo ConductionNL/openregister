@@ -50,6 +50,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFilters(?string $filters)
  * @method string|null getFormat()
  * @method void setFormat(?string $format)
+ * @method int|null getProfileId()
+ * @method void setProfileId(?int $profileId)
  * @method string|null getScheduleType()
  * @method void setScheduleType(?string $scheduleType)
  * @method int|null getScheduleHour()
