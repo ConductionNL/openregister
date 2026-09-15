@@ -378,6 +378,29 @@ test.describe('notification routing over HTTP', () => {
 		expect((await globalBack.json()).override.enabled, 'the global value is untouched').toBe(
 			false,
 		)
+
+		// And the list answers differently for the pinned scope than without
+		// it. A scoped value that can be written and never read back is a
+		// setting nobody can see the effect of.
+		const inScope = (
+			await (
+				await admin.get(
+					`${API}/notification-preferences?scope=${encodeURIComponent(`schema:${schemaSlug}`)}`,
+				)
+			).json()
+		).results.find(
+			(row: Record<string, unknown>) =>
+				row.schema === schemaSlug && row.notification === 'termijn',
+		)
+		const globally = (await (await admin.get(`${API}/notification-preferences`)).json()).results.find(
+			(row: Record<string, unknown>) =>
+				row.schema === schemaSlug && row.notification === 'termijn',
+		)
+
+		expect(inScope.enabled, 'the pinned scope is on').toBe(true)
+		expect(inScope.scope).toBe(`schema:${schemaSlug}`)
+		expect(globally.enabled, 'without the scope the global value answers').toBe(false)
+		expect(globally.scope).toBe('global')
 	})
 
 	test('an administrator sends a broadcast, every user sees it once, and the record names the sender', async () => {
