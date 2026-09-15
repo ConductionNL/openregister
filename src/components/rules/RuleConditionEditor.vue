@@ -135,6 +135,8 @@ export default {
 		 * The published sentence for this rule's kind.
 		 *
 		 * @return {string} The sentence, or an empty string.
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		kindSentence() {
 			const found = this.kinds.find((row) => row.kind === this.rule.kind)
@@ -145,6 +147,8 @@ export default {
 		 * The categories the operator catalogue groups itself by.
 		 *
 		 * @return {Array<string>} The categories, in the catalogue's order.
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		categories() {
 			const seen = []
@@ -160,6 +164,8 @@ export default {
 		 * Whether the draft differs from what the schema declares.
 		 *
 		 * @return {boolean} True when the author has changed something.
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		dirty() {
 			return this.draftText.trim() !== this.declaredText.trim()
@@ -169,6 +175,8 @@ export default {
 		 * The declared condition, rendered.
 		 *
 		 * @return {string} The JSON.
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		declaredText() {
 			if (this.rule.condition === null || this.rule.condition === undefined) {

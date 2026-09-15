@@ -95,6 +95,8 @@ export default {
 		 * A placeholder showing the query shape rather than describing it.
 		 *
 		 * @return {string} The placeholder.
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		queryPlaceholder() {
 			return '{\n  "status": "open"\n}'
@@ -102,6 +104,13 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * A different rule is being read, so the previous preview is not about it.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 */
 		ruleId() {
 			this.result = null
 			this.refusal = null

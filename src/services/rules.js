@@ -148,6 +148,8 @@ export async function fetchOperators() {
  * @param {string} fallback What to say when the response carries nothing.
  *
  * @return {string} The message.
+ *
+ * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 export function messageFor(error, fallback) {
 	return (

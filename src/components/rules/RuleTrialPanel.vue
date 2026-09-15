@@ -142,6 +142,8 @@ export default {
 		 * A placeholder that shows the shape rather than describing it.
 		 *
 		 * @return {string} The placeholder.
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		samplePlaceholder() {
 			return '{\n  "ontvangstdatum": "2026-01-01",\n  "bedrag": 900\n}'
@@ -151,6 +153,8 @@ export default {
 		 * Whether the trial reported any write at all.
 		 *
 		 * @return {boolean} True when there is a write to show.
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		hasWrites() {
 			return this.result?.writes && Object.keys(this.result.writes).length > 0
@@ -158,14 +162,28 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * A different rule is being read, so the previous result is not about it.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 */
 		ruleId() {
 			this.result = null
 			this.error = ''
 		},
 
+		/**
+		 * The condition changed, so a result left on screen is about the old one.
+		 *
+		 * That is the worst thing this panel could show, so it is cleared.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 */
 		draft() {
-			// A result about the previous condition, left on screen beside a
-			// changed one, is the worst thing this panel could show.
 			this.result = null
 		},
 	},
