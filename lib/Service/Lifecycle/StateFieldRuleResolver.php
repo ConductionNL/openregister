@@ -49,6 +49,12 @@ use OCP\IUserSession;
  * that exists for exactly that.
  *
  * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The branches are the declaration's
+ *   tolerated shapes, not logic: three rule kinds, two spellings of a condition, two of a
+ *   field list, four kinds of group clause, and the memo's one guard. Splitting them
+ *   across classes would put the schema's grammar in two places, which is the drift the
+ *   single-reading rule in the docblock above exists to prevent.
  */
 class StateFieldRuleResolver {
 
@@ -158,12 +164,12 @@ class StateFieldRuleResolver {
 	public function resolve(Schema $schema, array $data, ?string $state = null): StateFieldRules {
 		$annotation = $this->annotationOf(schema: $schema);
 		if ($annotation === null) {
-			return StateFieldRules::none();
+			return new StateFieldRules();
 		}
 
 		$state = ($state ?? $this->stateOf(annotation: $annotation, data: $data));
 		if ($state === null) {
-			return StateFieldRules::none();
+			return new StateFieldRules();
 		}
 
 		// Per-request memo, per openregister ADR-009. The key is the triple the
@@ -261,16 +267,20 @@ class StateFieldRuleResolver {
 	 * @return StateFieldRules The three lists, already decided.
 	 *
 	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each branch is one way the declaration
+	 *   can legitimately say "nothing applies"; see the class docblock.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Same reason.
 	 */
 	public function resolveFromAnnotation(array $annotation, array $data, ?string $state = null): StateFieldRules {
 		$state = ($state ?? $this->stateOf(annotation: $annotation, data: $data));
 		if ($state === null) {
-			return StateFieldRules::none();
+			return new StateFieldRules();
 		}
 
 		$block = $this->blockFor(annotation: $annotation, state: $state);
 		if ($block === null) {
-			return StateFieldRules::none(state: $state);
+			return new StateFieldRules(state: $state);
 		}
 
 		$document = $this->document(data: $data, state: $state);
@@ -281,14 +291,14 @@ class StateFieldRuleResolver {
 		// rule listed as conditional must actually be conditional.
 		$blockCondition = ($block['condition'] ?? null);
 		if ($blockCondition !== null && $this->dialect->holds(node: $blockCondition, document: $document) === false) {
-			return StateFieldRules::none(state: $state);
+			return new StateFieldRules(state: $state);
 		}
 
 		$resolved = ['hidden' => [], 'readOnly' => [], 'required' => []];
 		$messages = [];
 		$fields = ($block['fields'] ?? []);
 		if (is_array($fields) === false) {
-			return StateFieldRules::none(state: $state);
+			return new StateFieldRules(state: $state);
 		}
 
 		foreach (self::KINDS as $kind) {
@@ -382,6 +392,9 @@ class StateFieldRuleResolver {
 	 * @param array<string, mixed> $document The evaluation document.
 	 *
 	 * @return array<int, string> The field names, empty when the entry does not apply.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per tolerated spelling of
+	 *   `fields`, `field`, `when` and `condition`.
 	 */
 	private function applicableFields(mixed $entry, array $document): array {
 		if (is_array($entry) === false) {
@@ -426,6 +439,10 @@ class StateFieldRuleResolver {
 	 * @param array<string, mixed> $entry The declared entry.
 	 *
 	 * @return bool True when the entry applies.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) `groups` has four accepted forms and
+	 *   two pseudo-groups; each is a branch, and each is a documented part of the contract.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Same reason.
 	 */
 	private function appliesToUser(array $entry): bool {
 		$groups = ($entry['groups'] ?? null);

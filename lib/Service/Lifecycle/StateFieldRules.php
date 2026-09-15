@@ -66,19 +66,6 @@ final class StateFieldRules implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * The empty answer: a schema with no lifecycle, or a state that declares nothing.
-	 *
-	 * @param string|null $state The state, when one is known.
-	 *
-	 * @return self The empty rule set.
-	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
-	 */
-	public static function none(?string $state = null): self {
-		return new self(state: $state);
-	}//end none()
-
-	/**
 	 * The state these rules belong to.
 	 *
 	 * @return string|null The state, or null when the schema declares no lifecycle.

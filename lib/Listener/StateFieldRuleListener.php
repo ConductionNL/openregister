@@ -63,6 +63,12 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The listener is the save path's one
+ *   field-rule gate, and every type it names is one step of that gate: the two events it
+ *   answers, the schema it reads the declaration from, the two evaluators that decide, and
+ *   the four rule-engine types that record the refusal. The same count and the same reason
+ *   as LifecycleValidationListener beside it.
+ *
  * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
  */
 class StateFieldRuleListener implements IEventListener {

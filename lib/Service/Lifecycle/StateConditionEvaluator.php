@@ -265,6 +265,9 @@ class StateConditionEvaluator {
 	 * @param mixed $node The condition node.
 	 *
 	 * @return string|null The reference path, or null when the condition reads nothing.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two dialects, each with a scalar and a
+	 *   list spelling of a reference, plus the recursive descent.
 	 */
 	private static function firstReferenceOf(mixed $node): ?string {
 		if (is_array($node) === false) {
