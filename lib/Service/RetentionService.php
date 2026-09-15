@@ -108,7 +108,7 @@ class RetentionService {
 	 * @param LoggerInterface $logger Logger
 	 * @param RetentionRowScanner $rowScanner Walks every table a retention decision can live in
 	 * @param ArchiveActionDateCalculator $actionDateCalculator Calculates the archiefactiedatum
-	 * @param SelectielijstResolver $selectielijstResolver Decides which revision of a category applies
+	 * @param SelectielijstResolver $listResolver Decides which revision of a category applies
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
 	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
@@ -126,7 +126,7 @@ class RetentionService {
 		private readonly LoggerInterface $logger,
 		private readonly RetentionRowScanner $rowScanner,
 		private readonly ArchiveActionDateCalculator $actionDateCalculator,
-		private readonly SelectielijstResolver $selectielijstResolver,
+		private readonly SelectielijstResolver $listResolver,
 	) {
 	}//end __construct()
 
@@ -219,7 +219,7 @@ class RetentionService {
 		$classification = $archiveConfig['classification'] ?? null;
 		$entry = null;
 		if ($classification !== null) {
-			$entry = $this->selectielijstResolver->entryFor(category: $classification);
+			$entry = $this->listResolver->entryFor(category: $classification);
 		}
 
 		if ($entry !== null) {
@@ -227,7 +227,7 @@ class RetentionService {
 			$applied['archiefnominatie'] = ($data['archiefnominatie'] ?? 'nog_niet_bepaald');
 			$applied['bewaartermijn'] = ($data['bewaartermijn'] ?? null);
 			$applied['selectielijstBron'] = ($data['bron'] ?? null);
-			$applied['provenance'] = $this->selectielijstResolver->provenanceOf(entry: $entry);
+			$applied['provenance'] = $this->listResolver->provenanceOf(entry: $entry);
 		}
 
 		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
@@ -375,7 +375,7 @@ class RetentionService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function lookupSelectielijstEntry(string $category): ?array {
-		return $this->selectielijstResolver->lookupSelectielijstEntry(category: $category);
+		return $this->listResolver->lookupSelectielijstEntry(category: $category);
 	}//end lookupSelectielijstEntry()
 
 

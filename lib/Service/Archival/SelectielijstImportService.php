@@ -52,6 +52,15 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The branches are the ways a
+ *              handed-over file can be wrong, and each one names which way it
+ *              was: an unknown format, an unparseable body, a row with no
+ *              category, a row whose column count does not match the header, a
+ *              version already here, a version with no rows. Folding them
+ *              together would lower the number and hand an archivist "the
+ *              import failed", which is exactly what sends them back to the
+ *              file with nothing to go on.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Importing register objects needs the
  *              register, the schema, the settings that name both, and the save path.
  */
@@ -125,20 +134,7 @@ class SelectielijstImportService {
 	public function parse(string $contents, string $filename): array {
 		$extension = strtolower((string)pathinfo($filename, PATHINFO_EXTENSION));
 
-		if ($extension === 'json') {
-			$rows = json_decode($contents, true);
-			if (is_array($rows) === false) {
-				throw new InvalidArgumentException(
-					'The selectielijst file is not readable JSON: ' . json_last_error_msg()
-				);
-			}
-		} elseif ($extension === 'csv') {
-			$rows = $this->parseCsv(contents: $contents);
-		} else {
-			throw new InvalidArgumentException(
-				sprintf('A selectielijst is imported from a .csv or a .json file, not a ".%s"', $extension)
-			);
-		}
+		$rows = $this->rowsFromFile(contents: $contents, extension: $extension);
 
 		$parsed = [];
 		foreach ($rows as $index => $row) {
@@ -176,6 +172,37 @@ class SelectielijstImportService {
 
 		return $parsed;
 	}//end parse()
+
+	/**
+	 * Read the file into raw rows, by the format its name declares.
+	 *
+	 * @param string $contents  The file contents.
+	 * @param string $extension The lower-cased extension.
+	 *
+	 * @return array<int, mixed> The raw rows.
+	 *
+	 * @throws InvalidArgumentException When the format is unknown or the contents unparseable.
+	 */
+	private function rowsFromFile(string $contents, string $extension): array {
+		if ($extension === 'csv') {
+			return $this->parseCsv(contents: $contents);
+		}
+
+		if ($extension !== 'json') {
+			throw new InvalidArgumentException(
+				sprintf('A selectielijst is imported from a .csv or a .json file, not a ".%s"', $extension)
+			);
+		}
+
+		$rows = json_decode($contents, true);
+		if (is_array($rows) === false) {
+			throw new InvalidArgumentException(
+				'The selectielijst file is not readable JSON: ' . json_last_error_msg()
+			);
+		}
+
+		return $rows;
+	}//end rowsFromFile()
 
 	/**
 	 * Read a CSV with a header row into a list of field maps.

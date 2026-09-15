@@ -1516,9 +1516,9 @@ return [
 
 		// The classification plan arrives as a file, versioned, and a new
 		// version is diffed against the one in use before it is switched to.
-		['name' => 'archival#importSelectielijst', 'url' => '/api/archival/selectielijst/import', 'verb' => 'POST'],
-		['name' => 'archival#selectielijstVersions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
-		['name' => 'archival#selectielijstDiff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
+		['name' => 'selectielijst#import', 'url' => '/api/archival/selectielijst/import', 'verb' => 'POST'],
+		['name' => 'selectielijst#versions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
+		['name' => 'selectielijst#diff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],

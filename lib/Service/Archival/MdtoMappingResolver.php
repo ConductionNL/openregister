@@ -133,29 +133,38 @@ class MdtoMappingResolver {
 
 		$unfilled = [];
 		foreach ($mandatory as $element) {
-			$entry = ($mapping[$element] ?? null);
-			if (is_array($entry) === false) {
-				$unfilled[] = $element;
-				continue;
-			}
-
-			if (($entry[ElementMappingValidator::SOURCE_CONST] ?? null) !== null) {
-				continue;
-			}
-
-			$property = ($entry[ElementMappingValidator::SOURCE_PROPERTY] ?? null);
-			if (is_string($property) === false || trim($property) === '') {
-				$unfilled[] = $element;
-				continue;
-			}
-
-			if ($this->valueAt(row: $row, path: $property) === null) {
+			if ($this->isFilled(entry: ($mapping[$element] ?? null), row: $row) === false) {
 				$unfilled[] = $element;
 			}
-		}//end foreach
+		}
 
 		return $unfilled;
 	}//end unfilledMandatoryElements()
+
+	/**
+	 * Does this mapping entry put a value on this record?
+	 *
+	 * @param mixed                $entry The mapping entry for one element.
+	 * @param array<string, mixed> $row   The record's data.
+	 *
+	 * @return bool True when the element is filled.
+	 */
+	private function isFilled(mixed $entry, array $row): bool {
+		if (is_array($entry) === false) {
+			return false;
+		}
+
+		if (($entry[ElementMappingValidator::SOURCE_CONST] ?? null) !== null) {
+			return true;
+		}
+
+		$property = ($entry[ElementMappingValidator::SOURCE_PROPERTY] ?? null);
+		if (is_string($property) === false || trim($property) === '') {
+			return false;
+		}
+
+		return ($this->valueAt(row: $row, path: $property) !== null);
+	}//end isFilled()
 
 	/**
 	 * Follow a dotted path into the object's data.

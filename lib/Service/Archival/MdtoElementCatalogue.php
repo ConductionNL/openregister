@@ -123,6 +123,38 @@ class MdtoElementCatalogue {
 	}//end knows()
 
 	/**
+	 * The element declarations of one complex type.
+	 *
+	 * @param DOMXPath $xpath The document.
+	 * @param string   $type  The complex type name.
+	 *
+	 * @return array<string, bool> Element name mapped to whether it is mandatory.
+	 */
+	private function elementsOfType(DOMXPath $xpath, string $type): array {
+		$elements = [];
+		$query = sprintf('//xsd:complexType[@name="%s"]//xsd:element[@name]', $type);
+
+		foreach ($xpath->query($query) as $node) {
+			if (($node instanceof DOMElement) === false) {
+				continue;
+			}
+
+			$name = $node->getAttribute('name');
+			if ($name === '') {
+				continue;
+			}
+
+			// An absent minOccurs means 1 in XSD, which is the direction that
+			// matters: treating it as optional would let a mandatory element go
+			// unmapped and the refusal never fire.
+			$minOccurs = $node->getAttribute('minOccurs');
+			$elements[$name] = ($minOccurs === '' || (int)$minOccurs >= 1);
+		}
+
+		return $elements;
+	}//end elementsOfType()
+
+	/**
 	 * Read the element declarations out of the vendored XSD.
 	 *
 	 * @return array<string, bool> Element name mapped to whether it is mandatory.
@@ -153,23 +185,7 @@ class MdtoElementCatalogue {
 
 		$elements = [];
 		foreach (self::TYPES as $type) {
-			$query = sprintf('//xsd:complexType[@name="%s"]//xsd:element[@name]', $type);
-			foreach ($xpath->query($query) as $node) {
-				if (($node instanceof DOMElement) === false) {
-					continue;
-				}
-
-				$name = $node->getAttribute('name');
-				if ($name === '') {
-					continue;
-				}
-
-				// An absent minOccurs means 1 in XSD, which is the direction
-				// that matters: treating it as optional would let a mandatory
-				// element go unmapped and the refusal never fire.
-				$minOccurs = $node->getAttribute('minOccurs');
-				$elements[$name] = ($minOccurs === '' || (int)$minOccurs >= 1);
-			}
+			$elements = array_merge($elements, $this->elementsOfType(xpath: $xpath, type: $type));
 		}
 
 		if ($elements === []) {

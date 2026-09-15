@@ -22,16 +22,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\ArchivalController;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
-use OCA\OpenRegister\Service\Archival\DestructionListRepository;
-use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Archival\LegalHoldService;
-use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Controller\SelectielijstController;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Http;
@@ -44,16 +35,16 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Tests the selectielijst endpoints of ArchivalController.
+ * Tests SelectielijstController.
  */
-class ArchivalControllerSelectielijstTest extends TestCase {
+class SelectielijstControllerTest extends TestCase {
 
 	private IRequest&MockObject $request;
 	private SelectielijstImportService&MockObject $selectielijst;
 	private ObjectRetentionHandler&MockObject $settingsHandler;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
-	private ArchivalController $controller;
+	private SelectielijstController $controller;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -64,26 +55,14 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new ArchivalController(
+		$this->controller = new SelectielijstController(
 			'openregister',
 			$this->request,
-			$this->createMock(DestructionService::class),
-			$this->createMock(LegalHoldService::class),
-			$this->getMockBuilder(MagicMapper::class)
-				->disableOriginalConstructor()
-				->onlyMethods(['update', 'find'])
-				->getMock(),
+			$this->selectielijst,
+			$this->settingsHandler,
 			$this->userSession,
 			$this->groupManager,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(DestructionListRepository::class),
-			new DestructionReviewService(),
-			$this->createMock(ReviewOutcomeService::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(ArchivalNominationService::class),
-			$this->createMock(SchemaMapper::class),
-			$this->selectielijst,
-			$this->settingsHandler
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 
@@ -123,7 +102,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 
 		$this->assertSame(
 			Http::STATUS_FORBIDDEN,
-			$this->controller->importSelectielijst()->getStatus()
+			$this->controller->import()->getStatus()
 		);
 	}
 
@@ -132,7 +111,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 		$this->withParams([]);
 		$this->request->method('getUploadedFile')->willReturn(null);
 
-		$response = $this->controller->importSelectielijst();
+		$response = $this->controller->import();
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertStringContainsString('uploaded "file"', $response->getData()['error']);
@@ -154,7 +133,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 			->method('import')
 			->willReturn(['version' => '2026', 'imported' => 1, 'failed' => 0]);
 
-		$response = $this->controller->importSelectielijst();
+		$response = $this->controller->import();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(1, $response->getData()['imported']);
@@ -171,7 +150,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 		$this->selectielijst->method('parse')
 			->willThrowException(new InvalidArgumentException('not a ".xlsx"'));
 
-		$response = $this->controller->importSelectielijst();
+		$response = $this->controller->import();
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertStringContainsString('.xlsx', $response->getData()['error']);
@@ -183,7 +162,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 		$this->settingsHandler->method('getArchivalSettingsOnly')
 			->willReturn(['selectielijstVersion' => '2020']);
 
-		$data = $this->controller->selectielijstVersions()->getData();
+		$data = $this->controller->versions()->getData();
 
 		$this->assertSame(['2020' => 40, '2026' => 42], $data['versions']);
 		$this->assertSame('2020', $data['inUse']);
@@ -204,7 +183,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 			->with('2020', '2026')
 			->willReturn(['from' => '2020', 'to' => '2026', 'added' => [], 'removed' => [], 'changed' => []]);
 
-		$this->assertSame(Http::STATUS_OK, $this->controller->selectielijstDiff()->getStatus());
+		$this->assertSame(Http::STATUS_OK, $this->controller->diff()->getStatus());
 	}
 
 	public function testADiffWithNothingToCompareAgainstSaysSo(): void {
@@ -216,7 +195,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 
 		$this->assertSame(
 			Http::STATUS_BAD_REQUEST,
-			$this->controller->selectielijstDiff()->getStatus()
+			$this->controller->diff()->getStatus()
 		);
 	}
 
@@ -226,7 +205,7 @@ class ArchivalControllerSelectielijstTest extends TestCase {
 		$this->selectielijst->method('diff')
 			->willThrowException(new InvalidArgumentException('No selectielijst rows are stored under version "2030"'));
 
-		$response = $this->controller->selectielijstDiff();
+		$response = $this->controller->diff();
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertStringContainsString('2030', $response->getData()['error']);
