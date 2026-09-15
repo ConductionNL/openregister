@@ -225,6 +225,7 @@ class Notifier implements INotifier {
 			'retention_holds_skipped' => $this->prepareRetentionHoldsSkipped(...),
 			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
 			'destruction_review_pending' => $this->prepareDestructionReviewPending(...),
+			'timeline_mention' => $this->prepareTimelineMention(...),
 			default => null,
 		};
 
@@ -234,6 +235,44 @@ class Notifier implements INotifier {
 
 		return $handler(notification: $notification, l: $l);
 	}//end prepare()
+
+	/**
+	 * Render "somebody named you in a note".
+	 *
+	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
+	 * throws out of prepare(), so the mention would subscribe the colleague
+	 * and tell them nothing.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	private function prepareTimelineMention(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$objectTitle = (string) ($parameters['objectTitle'] ?? '');
+		$author = (string) ($parameters['author'] ?? '');
+
+		$notification->setParsedSubject($l->t('You were named in a note'));
+
+		$notification->setParsedMessage(
+			$l->t('%1$s named you in a note on "%2$s". You now follow it, so you will hear about what happens next.', [$author, $objectTitle])
+		);
+
+		if ($author === '') {
+			$notification->setParsedMessage(
+				$l->t('A note on "%1$s" names you. You now follow it, so you will hear about what happens next.', [$objectTitle])
+			);
+		}
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareTimelineMention()
 
 	/**
 	 * Render "the retention sweep kept records that are under a legal hold".

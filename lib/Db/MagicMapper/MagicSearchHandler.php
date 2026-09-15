@@ -50,6 +50,8 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Search\SearchTermParser;
+use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -84,6 +86,28 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull'];
 
 	/**
+	 * The working set: archived rows are left out. The default.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_EXCLUDE = 'exclude';
+
+	/**
+	 * The archived lens: archived rows and nothing else.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_ONLY = 'only';
+
+	/**
+	 * Both lenses at once. The literal is the parameter value callers send
+	 * (`_archived=any`), so the two cannot drift apart.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_ANY = 'any';
+
+	/**
 	 * Metadata columns every magic table carries.
 	 *
 	 * Mirrors MagicMapper::getMetadataColumns(); kept as a literal here so a
@@ -114,6 +138,8 @@ class MagicSearchHandler {
 		'_updated',
 		'_expires',
 		'_deleted',
+		'_archived',
+		'_frozen',
 		'_locked',
 		'_files',
 		'_relations',
@@ -151,6 +177,24 @@ class MagicSearchHandler {
 	private array $schemaColumnMapCache = [];
 
 	/**
+	 * Parser for boolean search terms.
+	 *
+	 * Built here rather than injected: it is pure and dependency-free, and
+	 * adding a seventh constructor argument would break every caller that
+	 * constructs this handler positionally.
+	 *
+	 * @var SearchTermParser
+	 */
+	private SearchTermParser $termParser;
+
+	/**
+	 * Compiler turning a parsed term into SQL.
+	 *
+	 * @var SearchTermSqlCompiler
+	 */
+	private SearchTermSqlCompiler $termCompiler;
+
+	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -168,6 +212,8 @@ class MagicSearchHandler {
 		private readonly SchemaTypeConverter $schemaTypeConverter,
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
 	) {
+		$this->termParser = new SearchTermParser();
+		$this->termCompiler = new SearchTermSqlCompiler();
 	}//end __construct()
 
 	/**
@@ -443,8 +489,12 @@ class MagicSearchHandler {
 		$queryBuilder = $this->db->getQueryBuilder();
 		$queryBuilder->from($tableName, 't');
 
-		// Apply basic filters (deleted, etc.).
-		$this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted);
+		// Apply basic filters (deleted, archived).
+		$this->applyBasicFilters(
+			qb: $queryBuilder,
+			includeDeleted: $includeDeleted,
+			archivedMode: $this->resolveArchivedMode(query: $query)
+		);
 
 		// Apply multi-tenancy and RBAC access control filters.
 		$this->applyAccessControlFilters(
@@ -578,6 +628,22 @@ class MagicSearchHandler {
 			$conditions[] = '_deleted IS NULL';
 		}
 
+		// 1b. Archive filter. Spelled here as well as in applyBasicFilters()
+		// because the two paths build the same WHERE by different means and a
+		// condition added to only one of them is exactly the drift the comment
+		// on step 3 below records: the UNION path silently returned MORE rows
+		// than the single-table path for the same query. Too many rows is the
+		// dangerous direction, and an archived record surfacing in a working
+		// list is that failure with a record attached.
+		$archivedMode = $this->resolveArchivedMode(query: $query);
+		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+			$conditions[] = '_archived IS NULL';
+		}
+
+		if ($archivedMode === self::ARCHIVED_ONLY) {
+			$conditions[] = '_archived IS NOT NULL';
+		}
+
 		// 2. RBAC filter (role-based access control).
 		if ($_rbac === true) {
 			$rbacCondition = $this->buildRbacConditionSql(schema: $schema);
@@ -690,12 +756,84 @@ class MagicSearchHandler {
 		bool $isPostgres,
 		?array $existingColumns = null,
 	): ?string {
-		$searchConditions = [];
-		$likePattern = $connection->quote('%' . $search . '%');
-		$quotedTerm = $connection->quote($search);
-
 		// Check if fuzzy search is explicitly requested via _fuzzy=true parameter.
 		$fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
+
+		// A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is
+		// parsed and compiled; anything else keeps the substring match this
+		// search has always applied, byte for byte.
+		if ($this->termParser->needsParsing(term: $search) === true) {
+			$node = $this->termParser->parse(term: $search);
+
+			return $this->termCompiler->compile(
+				node: $node,
+				leafBuilder: function (string $pattern, string $literal) use (
+					$schema,
+					$connection,
+					$isPostgres,
+					$existingColumns,
+					$fuzzyEnabled
+				): string {
+					return $this->buildSearchLeafSql(
+						pattern: $pattern,
+						literal: $literal,
+						schema: $schema,
+						connection: $connection,
+						isPostgres: $isPostgres,
+						existingColumns: $existingColumns,
+						fuzzyEnabled: $fuzzyEnabled,
+						nullSafe: true
+					);
+				}
+			);
+		}//end if
+
+		return $this->buildSearchLeafSql(
+			pattern: ('%' . $search . '%'),
+			literal: $search,
+			schema: $schema,
+			connection: $connection,
+			isPostgres: $isPostgres,
+			existingColumns: $existingColumns,
+			fuzzyEnabled: $fuzzyEnabled,
+			nullSafe: false
+		);
+	}//end buildSearchConditionSql()
+
+	/**
+	 * Build the SQL for one literal term across every searchable column.
+	 *
+	 * Extracted from buildSearchConditionSql() so the boolean compiler can call
+	 * it once per leaf while the column rules stay in one place.
+	 *
+	 * @param string      $pattern         The LIKE pattern, unquoted.
+	 * @param string      $literal         The literal text, for the fuzzy arm.
+	 * @param Schema      $schema          Schema for determining searchable columns.
+	 * @param object      $connection      Database connection for value quoting.
+	 * @param bool        $isPostgres      Whether the active platform is PostgreSQL.
+	 * @param array|null  $existingColumns Optional list of existing column names.
+	 * @param bool        $fuzzyEnabled    Whether `_fuzzy=true` was requested.
+	 * @param bool        $nullSafe        Wrap every column in COALESCE so NOT can negate it.
+	 *
+	 * @phpstan-param array<int, string>|null $existingColumns
+	 *
+	 * @psalm-param array<int, string>|null $existingColumns
+	 *
+	 * @return string The SQL condition, already parenthesised.
+	 */
+	private function buildSearchLeafSql(
+		string $pattern,
+		string $literal,
+		Schema $schema,
+		object $connection,
+		bool $isPostgres,
+		?array $existingColumns,
+		bool $fuzzyEnabled,
+		bool $nullSafe,
+	): string {
+		$searchConditions = [];
+		$likePattern = $connection->quote($pattern);
+		$quotedTerm = $connection->quote($literal);
 
 		// Search in schema string properties (ILIKE/LIKE only for performance).
 		$properties = $schema->getProperties() ?? [];
@@ -710,39 +848,83 @@ class MagicSearchHandler {
 
 				// Quote column name to handle reserved words (e.g., 'case', 'status').
 				$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-				if ($isPostgres === true) {
-					// ILIKE is always case-insensitive on PostgreSQL.
-					$searchConditions[] = "{$quotedCol}::text ILIKE {$likePattern}";
-					continue;
-				}
-
-				// CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
-				// collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
-				$searchConditions[] = "LOWER(CAST({$quotedCol} AS CHAR)) LIKE LOWER({$likePattern})";
+				$searchConditions[] = $this->columnMatchSql(
+					column: $quotedCol,
+					likePattern: $likePattern,
+					isPostgres: $isPostgres,
+					nullSafe: $nullSafe
+				);
 			}//end if
 		}//end foreach
 
 		// Search in metadata text fields.
-		if ($isPostgres === true) {
-			$searchConditions[] = "_name::text ILIKE {$likePattern}";
-			$searchConditions[] = "_description::text ILIKE {$likePattern}";
-			$searchConditions[] = "_summary::text ILIKE {$likePattern}";
-		} else {
-			$searchConditions[] = "LOWER(CAST(_name AS CHAR)) LIKE LOWER({$likePattern})";
-			$searchConditions[] = "LOWER(CAST(_description AS CHAR)) LIKE LOWER({$likePattern})";
-			$searchConditions[] = "LOWER(CAST(_summary AS CHAR)) LIKE LOWER({$likePattern})";
+		foreach (['_name', '_description', '_summary'] as $metadataColumn) {
+			$searchConditions[] = $this->columnMatchSql(
+				column: $metadataColumn,
+				likePattern: $likePattern,
+				isPostgres: $isPostgres,
+				nullSafe: $nullSafe
+			);
 		}
 
 		// Add fuzzy matching ONLY for _name when explicitly requested via _fuzzy=true.
 		// This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
 		if ($fuzzyEnabled === true) {
-			$searchConditions[] = "similarity(_name::text, {$quotedTerm}) > 0.1";
+			$fuzzyColumn = '_name::text';
+			if ($nullSafe === true) {
+				$fuzzyColumn = "COALESCE(_name::text, '')";
+			}
+
+			$searchConditions[] = "similarity({$fuzzyColumn}, {$quotedTerm}) > 0.1";
 		}
 
 		// Both branches above push three conditions, so $searchConditions is
 		// never empty here and the old null return was unreachable.
 		return '(' . implode(' OR ', $searchConditions) . ')';
-	}//end buildSearchConditionSql()
+	}//end buildSearchLeafSql()
+
+	/**
+	 * Match one column against a LIKE pattern, per platform.
+	 *
+	 * When $nullSafe is true the column is wrapped in COALESCE. A NULL column
+	 * makes LIKE evaluate to NULL, and `NOT NULL` is NULL rather than TRUE — so
+	 * without this a record whose searchable columns are empty would silently
+	 * fall out of a `NOT` term, which is the exact silent wrong answer the
+	 * boolean grammar exists to remove. The plain path keeps the historical SQL
+	 * unchanged, since it has no negation to get wrong.
+	 *
+	 * @param string $column      The already-quoted column reference.
+	 * @param string $likePattern The already-quoted LIKE pattern.
+	 * @param bool   $isPostgres  Whether the active platform is PostgreSQL.
+	 * @param bool   $nullSafe    Whether to wrap the column in COALESCE.
+	 *
+	 * @return string The SQL condition for this column.
+	 */
+	private function columnMatchSql(
+		string $column,
+		string $likePattern,
+		bool $isPostgres,
+		bool $nullSafe,
+	): string {
+		if ($isPostgres === true) {
+			// ILIKE is always case-insensitive on PostgreSQL.
+			$expression = "{$column}::text";
+			if ($nullSafe === true) {
+				$expression = "COALESCE({$column}::text, '')";
+			}
+
+			return "{$expression} ILIKE {$likePattern}";
+		}
+
+		// CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
+		// collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
+		$expression = "LOWER(CAST({$column} AS CHAR))";
+		if ($nullSafe === true) {
+			$expression = "LOWER(CAST(COALESCE({$column}, '') AS CHAR))";
+		}
+
+		return "{$expression} LIKE LOWER({$likePattern})";
+	}//end columnMatchSql()
 
 	/**
 	 * Whether an `isnull` operator value asks for IS NULL rather than IS NOT NULL.
@@ -1289,6 +1471,7 @@ class MagicSearchHandler {
 			'_unreadFor',
 			'_count',
 			'_includeDeleted',
+			'_archived',
 			'_relations_contains',
 			'_multitenancy_explicit',
 			'_fuzzy',
@@ -1307,16 +1490,66 @@ class MagicSearchHandler {
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param bool $includeDeleted Whether to include deleted objects
+	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 *
 	 * @return void
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted): void {
+	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE): void {
 		// Handle deleted filter.
 		if ($includeDeleted === false) {
 			$qb->andWhere($qb->expr()->isNull('t._deleted'));
 		}
 
+		// Handle the archive filter. Exclusion is the DEFAULT rather than a
+		// filter the caller has to remember, so a caller who forgets the
+		// parameter gets the working set — the safe answer. Asking for both is
+		// the only way to see an archived row beside an open one.
+		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+			$qb->andWhere($qb->expr()->isNull('t._archived'));
+		}
+
+		if ($archivedMode === self::ARCHIVED_ONLY) {
+			$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+		}
+
 	}//end applyBasicFilters()
+
+	/**
+	 * Resolve the archive lens a query asks for.
+	 *
+	 * `_archived` absent or false is the working set, `_archived=true` is the
+	 * archived lens alone and `_archived=any` is both. Anything else reads as
+	 * the working set, because an unrecognised lens must never silently widen
+	 * what a list shows.
+	 *
+	 * ⚠️ `filter_var(..., FILTER_VALIDATE_BOOLEAN)` alone cannot do this. It
+	 * maps the string `"any"` to false, which is indistinguishable from
+	 * `_archived=false` — so the one parameter value that means "show me
+	 * everything" would have quietly meant "hide the archive".
+	 *
+	 * @param array $query The search query parameters.
+	 *
+	 * @return string One of the ARCHIVED_* constants.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function resolveArchivedMode(array $query): string {
+		if (array_key_exists('_archived', $query) === false) {
+			return self::ARCHIVED_EXCLUDE;
+		}
+
+		$raw = $query['_archived'];
+
+		if (is_string($raw) === true && strtolower(trim($raw)) === self::ARCHIVED_ANY) {
+			return self::ARCHIVED_ANY;
+		}
+
+		if (filter_var($raw, FILTER_VALIDATE_BOOLEAN) === true) {
+			return self::ARCHIVED_ONLY;
+		}
+
+		return self::ARCHIVED_EXCLUDE;
+	}//end resolveArchivedMode()
 
 	/**
 	 * Check if a mixed value represents an explicit boolean true
@@ -2192,9 +2425,40 @@ class MagicSearchHandler {
 		Schema $schema,
 		bool $fuzzyEnabled = false,
 	): void {
+		$isPostgres = $this->isPostgresPlatform();
+
+		// A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is
+		// parsed and compiled. Anything else keeps the substring match below,
+		// unchanged, which is what makes an operator-free term mean exactly what
+		// it meant before this change.
+		if ($this->termParser->needsParsing(term: $search) === true) {
+			$node = $this->termParser->parse(term: $search);
+			$qb->andWhere(
+				$this->termCompiler->compile(
+					node: $node,
+					leafBuilder: function (string $pattern, string $literal) use (
+						$qb,
+						$schema,
+						$isPostgres,
+						$fuzzyEnabled
+					): string {
+						return $this->buildSearchLeafQbSql(
+							qb: $qb,
+							pattern: $pattern,
+							literal: $literal,
+							schema: $schema,
+							isPostgres: $isPostgres,
+							fuzzyEnabled: $fuzzyEnabled
+						);
+					}
+				)
+			);
+
+			return;
+		}//end if
+
 		$properties = $schema->getProperties();
 		$searchConditions = $qb->expr()->orX();
-		$isPostgres = $this->isPostgresPlatform();
 
 		// Use lowercase search for case-insensitive matching.
 		$lowerSearch = strtolower($search);
@@ -2252,6 +2516,70 @@ class MagicSearchHandler {
 
 		$qb->andWhere($searchConditions);
 	}//end applyFullTextSearch()
+
+	/**
+	 * Build the SQL for one literal term on the QueryBuilder path.
+	 *
+	 * Mirrors the column rules of applyFullTextSearch() exactly — the same
+	 * encrypted-property skip, the same date-format skip, the same `t.` alias —
+	 * and emits raw SQL so the boolean compiler can wrap it in AND, OR and NOT.
+	 * Values still travel as bound parameters.
+	 *
+	 * Every column is wrapped in COALESCE. LIKE against a NULL column is NULL,
+	 * and NOT NULL is NULL rather than TRUE, so without this a record with no
+	 * text at all would silently fall out of `NOT geweigerd`.
+	 *
+	 * @param IQueryBuilder $qb           The query builder, for parameter binding.
+	 * @param string        $pattern      The LIKE pattern.
+	 * @param string        $literal      The literal text, for the fuzzy arm.
+	 * @param Schema        $schema       Schema for determining searchable columns.
+	 * @param bool          $isPostgres   Whether the active platform is PostgreSQL.
+	 * @param bool          $fuzzyEnabled Whether `_fuzzy=true` was requested.
+	 *
+	 * @return string The SQL condition, already parenthesised.
+	 */
+	private function buildSearchLeafQbSql(
+		IQueryBuilder $qb,
+		string $pattern,
+		string $literal,
+		Schema $schema,
+		bool $isPostgres,
+		bool $fuzzyEnabled,
+	): string {
+		$patternParam = $qb->createNamedParameter($pattern);
+		$conditions = [];
+
+		// Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
+		$dateFormats = ['date', 'date-time', 'time'];
+		foreach (($schema->getProperties() ?? []) as $field => $propertyConfig) {
+			// Encrypted properties get no dedicated magic-table column, so a LIKE
+			// over one either hits a missing column or scans ciphertext.
+			if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
+				continue;
+			}
+
+			if (($propertyConfig['type'] ?? '') !== 'string'
+				|| in_array($propertyConfig['format'] ?? '', $dateFormats, true) === true
+			) {
+				continue;
+			}
+
+			$columnName = $this->sanitizeColumnName(name: $field);
+			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$patternParam}";
+		}//end foreach
+
+		foreach (['_name', '_description', '_summary'] as $metadataColumn) {
+			$conditions[] = "LOWER(COALESCE(t.{$metadataColumn}, '')) LIKE {$patternParam}";
+		}
+
+		if ($fuzzyEnabled === true) {
+			$literalParam = $qb->createNamedParameter($literal);
+			$conditions[] = "similarity(COALESCE(t._name::text, ''), {$literalParam}) > 0.1";
+		}
+
+		return '(' . implode(' OR ', $conditions) . ')';
+	}//end buildSearchLeafQbSql()
 
 	/**
 	 * Apply sorting to the query

@@ -325,7 +325,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 	private function makeNativeRunner(): AggregationRunner {
 		$pdo = new PDO('sqlite::memory:');
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_organisation" TEXT, "status" TEXT, "amount" INTEGER)');
+		$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_archived" TEXT, "_organisation" TEXT, "status" TEXT, "amount" INTEGER)');
 		$insert = $pdo->prepare('INSERT INTO "oc_register_1_schema_x" ("_deleted", "_organisation", "status", "amount") VALUES (NULL, ?, ?, ?)');
 		foreach ($this->dataset() as $row) {
 			$insert->execute(['__no_active_org__', $row['status'], $row['amount']]);
