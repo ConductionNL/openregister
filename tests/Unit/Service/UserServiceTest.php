@@ -150,15 +150,15 @@ class UserServiceTest extends TestCase {
 				$this->v = $vals;
 			}
 
-			public function getUID() {
+			public function getUID(): string {
 				return $this->v['uid'];
 			}
 
-			public function getDisplayName() {
+			public function getDisplayName(): string {
 				return $this->v['displayName'];
 			}
 
-			public function setDisplayName($displayName) {
+			public function setDisplayName($displayName): bool {
 				$this->v['displayName'] = $displayName;
 				return true;
 			}
@@ -175,11 +175,11 @@ class UserServiceTest extends TestCase {
 				return true;
 			}
 
-			public function delete() {
+			public function delete(): bool {
 				return true;
 			}
 
-			public function setPassword($password, $recoveryPassword = null) {
+			public function setPassword($password, $recoveryPassword = null): bool {
 				return true;
 			}
 
@@ -191,15 +191,15 @@ class UserServiceTest extends TestCase {
 				return true;
 			}
 
-			public function getHome() {
+			public function getHome(): string {
 				return '/home/testuser';
 			}
 
-			public function getBackendClassName() {
+			public function getBackendClassName(): string {
 				return $this->v['backend'];
 			}
 
-			public function getBackend() {
+			public function getBackend(): ?\OCP\UserInterface {
 				return null;
 			}
 
@@ -219,14 +219,14 @@ class UserServiceTest extends TestCase {
 				return (bool)($this->v['canEditProperty'] ?? true);
 			}
 
-			public function isEnabled() {
+			public function isEnabled(): bool {
 				return $this->v['enabled'];
 			}
 
-			public function setEnabled(bool $enabled = true) {
+			public function setEnabled(bool $enabled = true): void {
 			}
 
-			public function getEMailAddress() {
+			public function getEMailAddress(): ?string {
 				return $this->v['email'];
 			}
 
@@ -238,7 +238,7 @@ class UserServiceTest extends TestCase {
 				return $this->v['email'];
 			}
 
-			public function getAvatarImage($size) {
+			public function getAvatarImage($size): ?\OCP\IImage {
 				return null;
 			}
 
@@ -246,7 +246,7 @@ class UserServiceTest extends TestCase {
 				return $this->v['uid'] . '@localhost';
 			}
 
-			public function setEMailAddress($mailAddress) {
+			public function setEMailAddress($mailAddress): void {
 				$this->v['email'] = $mailAddress;
 			}
 
@@ -256,11 +256,11 @@ class UserServiceTest extends TestCase {
 			public function setPrimaryEMailAddress(string $mailAddress): void {
 			}
 
-			public function getQuota() {
+			public function getQuota(): string {
 				return $this->v['quota'];
 			}
 
-			public function setQuota($quota) {
+			public function setQuota($quota): void {
 			}
 
 			public function getManagerUids(): array {
@@ -1012,15 +1012,15 @@ class UserServiceTest extends TestCase {
 	public function testBuildUserDataArrayQuotaExceptionFallback(): void {
 		// Create an extended user where getUsedSpace throws an exception
 		$user = new class implements IUser {
-			public function getUID() {
+			public function getUID(): string {
 				return 'testuser';
 			}
 
-			public function getDisplayName() {
+			public function getDisplayName(): string {
 				return 'Test';
 			}
 
-			public function setDisplayName($d) {
+			public function setDisplayName($d): bool {
 				return true;
 			}
 
@@ -1036,11 +1036,11 @@ class UserServiceTest extends TestCase {
 				return true;
 			}
 
-			public function delete() {
+			public function delete(): bool {
 				return true;
 			}
 
-			public function setPassword($p, $r = null) {
+			public function setPassword($p, $r = null): bool {
 				return true;
 			}
 
@@ -1052,15 +1052,15 @@ class UserServiceTest extends TestCase {
 				return true;
 			}
 
-			public function getHome() {
+			public function getHome(): string {
 				return '/home';
 			}
 
-			public function getBackendClassName() {
+			public function getBackendClassName(): string {
 				return 'db';
 			}
 
-			public function getBackend() {
+			public function getBackend(): ?\OCP\UserInterface {
 				return null;
 			}
 
@@ -1080,14 +1080,14 @@ class UserServiceTest extends TestCase {
 				return false;
 			}
 
-			public function isEnabled() {
+			public function isEnabled(): bool {
 				return true;
 			}
 
-			public function setEnabled(bool $e = true) {
+			public function setEnabled(bool $e = true): void {
 			}
 
-			public function getEMailAddress() {
+			public function getEMailAddress(): ?string {
 				return 'test@test.com';
 			}
 
@@ -1099,7 +1099,7 @@ class UserServiceTest extends TestCase {
 				return null;
 			}
 
-			public function getAvatarImage($s) {
+			public function getAvatarImage($s): ?\OCP\IImage {
 				return null;
 			}
 
@@ -1107,7 +1107,7 @@ class UserServiceTest extends TestCase {
 				return 'test@cloud';
 			}
 
-			public function setEMailAddress($m) {
+			public function setEMailAddress($m): void {
 			}
 
 			public function setSystemEMailAddress(string $m): void {
@@ -1116,11 +1116,11 @@ class UserServiceTest extends TestCase {
 			public function setPrimaryEMailAddress(string $m): void {
 			}
 
-			public function getQuota() {
+			public function getQuota(): string {
 				return '1000000';
 			}
 
-			public function setQuota($q) {
+			public function setQuota($q): void {
 			}
 
 			public function getManagerUids(): array {
@@ -1767,15 +1767,15 @@ class UserServiceTest extends TestCase {
 
 		// Override the user with a custom one that throws on getQuota
 		$throwingUser = new class implements IUser {
-			public function getUID() {
+			public function getUID(): string {
 				return 'testuser';
 			}
 
-			public function getDisplayName() {
+			public function getDisplayName(): string {
 				return 'Test';
 			}
 
-			public function setDisplayName($d) {
+			public function setDisplayName($d): bool {
 				return true;
 			}
 
@@ -1791,11 +1791,11 @@ class UserServiceTest extends TestCase {
 				return true;
 			}
 
-			public function delete() {
+			public function delete(): bool {
 				return true;
 			}
 
-			public function setPassword($p, $r = null) {
+			public function setPassword($p, $r = null): bool {
 				return true;
 			}
 
@@ -1807,15 +1807,15 @@ class UserServiceTest extends TestCase {
 				return true;
 			}
 
-			public function getHome() {
+			public function getHome(): string {
 				return '/home';
 			}
 
-			public function getBackendClassName() {
+			public function getBackendClassName(): string {
 				return 'db';
 			}
 
-			public function getBackend() {
+			public function getBackend(): ?\OCP\UserInterface {
 				return null;
 			}
 
@@ -1835,14 +1835,14 @@ class UserServiceTest extends TestCase {
 				return false;
 			}
 
-			public function isEnabled() {
+			public function isEnabled(): bool {
 				return true;
 			}
 
-			public function setEnabled(bool $e = true) {
+			public function setEnabled(bool $e = true): void {
 			}
 
-			public function getEMailAddress() {
+			public function getEMailAddress(): ?string {
 				return 'test@test.com';
 			}
 
@@ -1854,7 +1854,7 @@ class UserServiceTest extends TestCase {
 				return null;
 			}
 
-			public function getAvatarImage($s) {
+			public function getAvatarImage($s): ?\OCP\IImage {
 				return null;
 			}
 
@@ -1862,7 +1862,7 @@ class UserServiceTest extends TestCase {
 				return 'test@cloud';
 			}
 
-			public function setEMailAddress($m) {
+			public function setEMailAddress($m): void {
 			}
 
 			public function setSystemEMailAddress(string $m): void {
@@ -1871,11 +1871,11 @@ class UserServiceTest extends TestCase {
 			public function setPrimaryEMailAddress(string $m): void {
 			}
 
-			public function getQuota() {
+			public function getQuota(): string {
 				throw new \Exception('Quota service unavailable');
 			}
 
-			public function setQuota($q) {
+			public function setQuota($q): void {
 			}
 
 			public function getManagerUids(): array {
