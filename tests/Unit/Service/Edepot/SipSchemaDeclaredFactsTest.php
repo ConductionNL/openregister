@@ -15,6 +15,7 @@ namespace Unit\Service\Edepot;
 
 use DateTime;
 use DOMDocument;
+use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -234,7 +235,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			$sourceReader,
 			$writer,
 			$bestandGenerator,
-			new MdtoPreconditions($appConfig, new NullLogger(), $sourceReader, $bestandGenerator)
+			new MdtoPreconditions($appConfig, new NullLogger(), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class))
 		);
 	}//end generator()
 

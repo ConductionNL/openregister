@@ -44,6 +44,7 @@ use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -3343,6 +3344,27 @@ class SaveObject {
 			// exception rather than being re-derived at each catch site.
 			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
 				throw LockedException::forObject($existingObject);
+			}
+
+			// The archive and the freeze refuse the write here, at the one
+			// choke point every data write to an existing object already
+			// passes through. Put anywhere further out — in a controller, say —
+			// and a flow, an import or a cascade would each need its own copy
+			// of the check, which is how a guard ends up holding one door of
+			// four.
+			//
+			// Neither refusal applies to the reversal or to the retention
+			// machinery: `unarchive()`, `unfreeze()`, a destruction date and a
+			// legal hold are all written through the mapper's dedicated
+			// metadata paths and never reach `saveObject()`. That is deliberate.
+			// An archive that quietly disabled `retention-management` would be
+			// the opposite of what an archive is for.
+			if ($existingObject->isArchived() === true) {
+				throw ObjectStateWriteException::archived($existingObject);
+			}
+
+			if ($existingObject->isFrozen() === true) {
+				throw ObjectStateWriteException::frozen($existingObject);
 			}
 
 			return $existingObject;

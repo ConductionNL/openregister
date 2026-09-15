@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\Service\Edepot;
 
 use DOMDocument;
+use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
@@ -399,7 +400,7 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 		$writer = new MdtoDocumentWriter();
 		$sourceReader = new MdtoSourceReader(new MdtoValueReader(), $this->objectAnnotations());
 		$bestandGenerator = new MdtoBestandGenerator($writer);
-		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator);
+		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class));
 
 		return new MdtoXmlGenerator(
 			$appConfig,

@@ -724,6 +724,30 @@ class Schema extends Entity implements JsonSerializable {
 	public const WRITEONLY_PATHS_ANNOTATION = 'x-openregister-writeonly-paths';
 
 	/**
+	 * The annotation by which a schema opts its objects into archiving.
+	 *
+	 * Shape: `{"enabled": true}`. Read through
+	 * {@see self::isArchivingEnabled()}, which is the single definition of
+	 * "does this schema offer archiving" — no caller should re-read the key.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVE_ANNOTATION = 'x-openregister-archive';
+
+	/**
+	 * The property-level keyword that makes a value immutable once set.
+	 *
+	 * A property carrying `"immutable": true` accepts its first value and
+	 * refuses every later change, whatever the object's state and whoever the
+	 * actor is. That is a rule about the property, not about the object: a
+	 * vastgesteld besluit keeps its date while the rest of the object is still
+	 * open for editing.
+	 *
+	 * @var string
+	 */
+	public const IMMUTABLE_PROPERTY_KEYWORD = 'immutable';
+
+	/**
 	 * The lens annotation: properties that read a referenced record's field live.
 	 *
 	 * Keyed by the property name the lens renders as, each entry naming the
@@ -2765,6 +2789,20 @@ class Schema extends Entity implements JsonSerializable {
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// Whether this schema's objects can be archived by hand:
+		// `{"enabled": true}`. Distinct from `x-openregister-archival` above,
+		// which is about legal retention. Absent from this list
+		// setConfiguration() would silently DROP it, a schema editor would
+		// report a saved opt-in, and the archive endpoint would answer 422 on
+		// a schema whose author had just enabled it — the same or#460/#462-class
+		// loss the comments around this list record five times over.
+		self::ARCHIVE_ANNOTATION,
+		// Which object property fills which MDTO element. Absent from this list
+		// setConfiguration() would DROP it, so a schema editor would report a
+		// saved mapping, the annotation would not be there, and the transfer
+		// refusal it exists to drive would never fire. The three comments above
+		// record that same loss three times.
+		'x-openregister-mdto-mapping',
 		'x-openregister-object-source',
 		'x-openregister-quality',
 		'x-openregister-dedup',
@@ -3340,6 +3378,36 @@ class Schema extends Entity implements JsonSerializable {
 
 		return is_array($configuration['x-openregister-archival'] ?? null);
 	}//end hasArchivalAnnotation()
+
+	/**
+	 * Whether this schema offers archiving.
+	 *
+	 * ⚠️ NOT the same question as {@see self::hasArchivalAnnotation()}, and the
+	 * two annotations are not spellings of each other.
+	 * `x-openregister-archival` declares a legally retained schema whose rows a
+	 * user may not delete at all. `x-openregister-archive` declares that this
+	 * schema's objects have a finished state and may be taken out of the
+	 * working views by hand. A schema can carry either, both, or neither.
+	 *
+	 * The rule is declared once on the schema rather than decided by each app
+	 * that renders a button (ADR-031), so a schema with no finished state never
+	 * grows an action nobody uses.
+	 *
+	 * @return bool True when the schema declares `x-openregister-archive` with
+	 *              `enabled: true`.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isArchivingEnabled(): bool {
+		$configuration = ($this->getConfiguration() ?? []);
+		$annotation = ($configuration[self::ARCHIVE_ANNOTATION] ?? null);
+
+		if (is_array($annotation) === false) {
+			return false;
+		}
+
+		return ($annotation['enabled'] ?? false) === true;
+	}//end isArchivingEnabled()
 
 	/**
 	 * String representation of the schema
