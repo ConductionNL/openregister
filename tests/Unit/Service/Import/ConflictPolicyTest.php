@@ -102,6 +102,8 @@ final class ConflictPolicyTest extends TestCase {
 	 * The rule that outranks the policy: two matches is never one match.
 	 * Asserted for every policy, because "under upsert" would leave the other
 	 * three free to pick a candidate.
+	 *
+	 * @return void
 	 */
 	public function testARowMatchingTwoObjectsIsRefusedUnderEveryPolicy(): void {
 		foreach (ConflictPolicy::POLICIES as $policy) {

@@ -508,7 +508,8 @@ class ImportPreviewService {
 	 * @param Schema $schema The target schema.
 	 * @param array<string, mixed>|null $pack The saved mapping, if any.
 	 *
-	 * @return array{decision: string, reason: string|null, targetUuid: string|null, candidates: array<int, string>, payload: array<string, mixed>} The decision.
+	 * @return array{decision: string, reason: string|null, targetUuid: string|null,
+	 *               candidates: array<int, string>, payload: array<string, mixed>} The decision.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One row, five ways it can
 	 * be refused, each naming its own reason.
@@ -740,10 +741,14 @@ class ImportPreviewService {
 		$unknown = SchemaMappingCheck::unknownTargets(definition: $definition, schema: $schema);
 
 		if ($unknown !== []) {
+			$noun = 'properties';
+			if (count($unknown) === 1) {
+				$noun = 'a property';
+			}
+
 			throw new InvalidArgumentException(
-				'Column mapping "'.$packSlug.'" maps onto '
-				.(count($unknown) === 1 ? 'a property ' : 'properties ')
-				.'the schema does not have: '.implode(', ', $unknown).'.'
+				'Column mapping "'.$packSlug.'" maps onto '.$noun
+				.' the schema does not have: '.implode(', ', $unknown).'.'
 			);
 		}
 

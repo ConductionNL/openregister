@@ -32,6 +32,7 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\ImportPreviewController;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
+use OCA\OpenRegister\Db\ImportPreviewRow;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -62,6 +63,13 @@ final class ImportPreviewControllerTest extends TestCase {
 	 * @var ImportPreviewMapper
 	 */
 	private ImportPreviewMapper $previewMapper;
+
+	/**
+	 * Per-row decision persistence.
+	 *
+	 * @var ImportPreviewRowMapper
+	 */
+	private ImportPreviewRowMapper $rowMapper;
 
 	/**
 	 * Register lookup.
@@ -113,6 +121,7 @@ final class ImportPreviewControllerTest extends TestCase {
 
 		$this->service = $this->createMock(ImportPreviewService::class);
 		$this->previewMapper = $this->createMock(ImportPreviewMapper::class);
+		$this->rowMapper = $this->createMock(ImportPreviewRowMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
@@ -149,7 +158,7 @@ final class ImportPreviewControllerTest extends TestCase {
 			$this->request,
 			$this->service,
 			$this->previewMapper,
-			$this->createMock(ImportPreviewRowMapper::class),
+			$this->rowMapper,
 			new SourceRowReader(),
 			$this->registerMapper,
 			$this->createMock(IJobList::class),
@@ -210,6 +219,8 @@ final class ImportPreviewControllerTest extends TestCase {
 	/**
 	 * A preview is the first half of a write, so it is gated like one. A
 	 * caller who may not manage the register never reaches the file.
+	 *
+	 * @return void
 	 */
 	public function testAPreviewIntoARegisterTheCallerMayNotManageIsRefused(): void {
 		$this->signIn('alice');
@@ -248,6 +259,69 @@ final class ImportPreviewControllerTest extends TestCase {
 		$this->previewMapper->method('find')->willReturn($preview);
 
 		$this->assertSame(404, $this->controller()->show(7)->getStatus());
+	}
+
+	/**
+	 * The per-row decisions are the thing an operator reads before deciding
+	 * whether to commit, so the route has to hand back the reason with the
+	 * decision, and the filter has to reach the mapper.
+	 *
+	 * @return void
+	 */
+	public function testTheRowsRouteReturnsTheDecisionsAndTheirReasons(): void {
+		$this->signIn('alice');
+		$this->params['decision'] = 'refuse';
+
+		$preview = new ImportPreview();
+		$preview->setId(7);
+		$preview->setCreatedBy('alice');
+		$preview->setTotal(3);
+		$this->previewMapper->method('find')->willReturn($preview);
+
+		$refused = new ImportPreviewRow();
+		$refused->setPreviewId(7);
+		$refused->setRowNumber(2);
+		$refused->setDecision(ImportPreviewRow::DECISION_REFUSE);
+		$refused->setReason('The match key hits more than one object: object-a, object-b.');
+		$refused->setCandidates(['object-a', 'object-b']);
+
+		$this->rowMapper->expects($this->once())
+			->method('findByPreview')
+			->with(7, 'refuse', 100, 0)
+			->willReturn([$refused]);
+
+		$response = $this->controller()->rows(7);
+		$body = $response->getData();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(3, $body['total']);
+		$this->assertCount(1, $body['results']);
+		$this->assertSame('refuse', $body['results'][0]->jsonSerialize()['decision']);
+		$this->assertStringContainsString('more than one object', $body['results'][0]->jsonSerialize()['reason']);
+	}
+
+	/**
+	 * An empty `decision` is not a filter on the empty string. Passing it
+	 * through would answer with no rows and look exactly like a preview that
+	 * decided nothing.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyDecisionFilterIsReadAsNoFilter(): void {
+		$this->signIn('alice');
+		$this->params['decision'] = '';
+
+		$preview = new ImportPreview();
+		$preview->setId(7);
+		$preview->setCreatedBy('alice');
+		$this->previewMapper->method('find')->willReturn($preview);
+
+		$this->rowMapper->expects($this->once())
+			->method('findByPreview')
+			->with(7, null, 100, 0)
+			->willReturn([]);
+
+		$this->assertSame(200, $this->controller()->rows(7)->getStatus());
 	}
 
 	public function testACommitTheServiceRefusesAnswersWithAConflict(): void {

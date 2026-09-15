@@ -165,6 +165,8 @@ class SourceRowReader {
 	 * @param string|null $filePath The path to test.
 	 *
 	 * @return bool True when the path is a staged copy.
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function isStaged(?string $filePath): bool {
 		if ($filePath === null || $filePath === '') {

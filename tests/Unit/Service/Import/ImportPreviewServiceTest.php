@@ -313,7 +313,11 @@ final class ImportPreviewServiceTest extends TestCase {
 	public function testAFirstMigrationRefusesAnUnexpectedMatch(): void {
 		$this->matchResolver->method('resolve')->willReturnCallback(
 			static function (array $object): array {
-				return (string)($object['bsn'] ?? '') === '111' ? ['object-111'] : [];
+				if ((string)($object['bsn'] ?? '') === '111') {
+					return ['object-111'];
+				}
+
+				return [];
 			}
 		);
 
@@ -364,7 +368,11 @@ final class ImportPreviewServiceTest extends TestCase {
 	public function testTheWriteAppliesTheDecisionsThePreviewMade(): void {
 		$this->matchResolver->method('resolve')->willReturnCallback(
 			static function (array $object): array {
-				return (string)($object['bsn'] ?? '') === '111' ? ['object-111'] : [];
+				if ((string)($object['bsn'] ?? '') === '111') {
+					return ['object-111'];
+				}
+
+				return [];
 			}
 		);
 
@@ -418,6 +426,8 @@ final class ImportPreviewServiceTest extends TestCase {
 	 * A commit that names no file at all is the same failure as a commit
 	 * naming the wrong one: it cannot say the decisions still describe what
 	 * is being written.
+	 *
+	 * @return void
 	 */
 	public function testACommitThatNamesNoFileIsRefused(): void {
 		$this->matchResolver->method('resolve')->willReturn([]);
@@ -435,6 +445,8 @@ final class ImportPreviewServiceTest extends TestCase {
 	/**
 	 * Committing twice writes once. The idempotence key is the stamp a real
 	 * write leaves, not the decision, so the second commit finds nothing to do.
+	 *
+	 * @return void
 	 */
 	public function testARecommitDoesNotWriteTwice(): void {
 		$this->matchResolver->method('resolve')->willReturn([]);

@@ -160,13 +160,13 @@ class ImportPreviewController extends Controller {
 			return $this->authRequired();
 		}
 
-		$state = $this->request->getParam('state');
+		$state = $this->optionalParam(name: 'state');
 		$limit = min((int)$this->request->getParam('limit', 50), self::MAX_PAGE);
 		$offset = (int)$this->request->getParam('offset', 0);
 
 		$previews = $this->previewMapper->findByActor(
 			createdBy: $uid,
-			state: ($state === null || $state === '') ? null : (string)$state,
+			state: $state,
 			limit: $limit,
 			offset: $offset
 		);
@@ -280,13 +280,13 @@ class ImportPreviewController extends Controller {
 			return $preview;
 		}
 
-		$decision = $this->request->getParam('decision');
+		$decision = $this->optionalParam(name: 'decision');
 		$limit = min((int)$this->request->getParam('limit', 100), self::MAX_PAGE);
 		$offset = (int)$this->request->getParam('offset', 0);
 
 		$rows = $this->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: ($decision === null || $decision === '') ? null : (string)$decision,
+			decision: $decision,
 			limit: $limit,
 			offset: $offset
 		);
@@ -504,6 +504,23 @@ class ImportPreviewController extends Controller {
 
 		return false;
 	}//end mayManage()
+
+	/**
+	 * One request parameter, with an empty string read as absent.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return string|null The value, or null when the request omits it.
+	 */
+	private function optionalParam(string $name): ?string {
+		$value = $this->request->getParam($name);
+
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		return (string)$value;
+	}//end optionalParam()
 
 	/**
 	 * The current user's uid, or null when nobody is signed in.

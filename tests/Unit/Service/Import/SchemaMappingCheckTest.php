@@ -88,6 +88,8 @@ final class SchemaMappingCheckTest extends TestCase {
 	 * A nested target lands inside a property the schema does have, so it is
 	 * the root that is checked. Flagging `adres.straat` would refuse every
 	 * mapping onto an object property.
+	 *
+	 * @return void
 	 */
 	public function testANestedTargetIsJudgedByItsRootProperty(): void {
 		$definition = [
@@ -103,6 +105,8 @@ final class SchemaMappingCheckTest extends TestCase {
 	/**
 	 * The object's own identifier and the `@self` box are not schema
 	 * properties, and never were.
+	 *
+	 * @return void
 	 */
 	public function testTheIdentifierAndTheSelfBoxAreNotUnknownProperties(): void {
 		$definition = [
@@ -118,6 +122,8 @@ final class SchemaMappingCheckTest extends TestCase {
 	/**
 	 * A schema that lists no properties makes no claim about what exists, so
 	 * calling any target unknown against it would be an invented refusal.
+	 *
+	 * @return void
 	 */
 	public function testASchemaWithoutPropertiesRefusesNothing(): void {
 		$schema = new Schema();
