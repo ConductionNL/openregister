@@ -111,10 +111,16 @@ Vrij en open source onder de EUPL-licentie.
              the Nextcloud version, so the PHP 8.3 requirement does not itself
              depend on this floor.
 
-             max-version stays 34, which is the fleet-wide value everywhere
-             except openconnector, which declares 35. That split is known and
-             deliberately not resolved here. -->
-        <nextcloud min-version="32" max-version="34"/>
+             max-version is 35 as of 2026-09-15 for Nextcloud 35 readiness:
+             keepiq (and any other AppHost consumer) depends on OpenRegister,
+             so if keepiq advertises 35, OpenRegister must too — otherwise a
+             clean NC35 occ upgrade would disable OpenRegister and take keepiq's
+             admin surface down with it. openconnector already declares 35; the
+             rest of the fleet still trails at 34. Verified 2026-09-15 to
+             upgrade and enable on NC35 (PostgreSQL); the schema-introspection
+             migration needs a raised memory_limit (default 512M OOMs — see
+             openregister#3776). Full test suite still to be run. -->
+        <nextcloud min-version="32" max-version="35"/>
     </dependencies>
 
 	<background-jobs>
