@@ -14,6 +14,8 @@ use OCA\OpenRegister\Controller\NotesController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -31,6 +33,8 @@ class NotesControllerTest extends TestCase {
 	private NoteService&MockObject $noteService;
 	private ObjectService&MockObject $objectService;
 	private TimelineVisibilityService&MockObject $visibility;
+	private TimelineWriteService&MockObject $timeline;
+	private TimelineEntryService&MockObject $entries;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -47,12 +51,20 @@ class NotesControllerTest extends TestCase {
 			static fn (?string $value): string => ($value === 'public' ? 'public' : 'internal')
 		);
 
+		// The record projection is mocked out: what this suite asserts is that
+		// the notes endpoint keeps its own shape and its own answers, which is
+		// exactly what task 1.3 asks for.
+		$this->timeline = $this->createMock(TimelineWriteService::class);
+		$this->entries = $this->createMock(TimelineEntryService::class);
+
 		$this->controller = new NotesController(
 			'openregister',
 			$this->request,
 			$this->noteService,
 			$this->objectService,
-			$this->visibility
+			$this->visibility,
+			$this->timeline,
+			$this->entries
 		);
 	}
 
@@ -305,5 +317,75 @@ class NotesControllerTest extends TestCase {
 		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
 
 		$this->assertSame(400, $result->getStatus());
+	}
+
+	/**
+	 * A note written with no kind behaves exactly as it did before this change.
+	 *
+	 * The payload the notes endpoint returns is the one every leaf app already
+	 * renders. The record is an ADDITION beside it, carried under its own key,
+	 * so a consumer reading `id`, `message` and `visibility` sees nothing new.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	public function testAPlainNoteKeepsItsOwnShape(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'Even genoteerd']);
+		$this->noteService->method('createNote')->willReturn(
+			['id' => 41, 'message' => 'Even genoteerd', 'visibility' => 'internal']
+		);
+		$this->timeline->method('projectNote')->willReturn(null);
+
+		$response = $this->controller->create('zaken', 'zaak', 'uuid-123');
+		$data = $response->getData();
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame(41, $data['id']);
+		$this->assertSame('Even genoteerd', $data['message']);
+		$this->assertSame('internal', $data['visibility']);
+		$this->assertArrayNotHasKey('kind', $data);
+		$this->assertArrayNotHasKey('fields', $data);
+	}
+
+	/**
+	 * A note written the old way still becomes a searchable record.
+	 *
+	 * Half a timeline that cannot be searched is worse than none, so the
+	 * endpoint projects. The projection never throws, and a note whose record
+	 * could not be written is still returned.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	public function testANoteWrittenTheOldWayIsProjectedIntoARecord(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'Even genoteerd']);
+		$this->noteService->method('createNote')->willReturn(['id' => 41, 'message' => 'Even genoteerd']);
+
+		$entry = new \OCA\OpenRegister\Db\TimelineEntry();
+		$entry->setUuid('entry-a');
+		$this->timeline->expects($this->once())->method('projectNote')->willReturn($entry);
+
+		$this->assertSame('entry-a', $this->controller->create('zaken', 'zaak', 'uuid-123')->getData()['entryId']);
+	}
+
+	/**
+	 * Deleting a note reads its record first, so its references can be forgotten.
+	 *
+	 * After the delete there is nothing left to look the entry up by.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	public function testDeletingANoteForgetsWhatItPointedAt(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+
+		$entry = new \OCA\OpenRegister\Db\TimelineEntry();
+		$entry->setUuid('entry-a');
+		$this->entries->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
+		$this->timeline->expects($this->once())->method('forgetNote')->with(41, 'entry-a');
+
+		$this->assertTrue($this->controller->destroy('zaken', 'zaak', 'uuid-123', '41')->getData()['success']);
 	}
 }
