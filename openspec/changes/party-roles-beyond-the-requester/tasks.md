@@ -10,9 +10,9 @@
 
 - [x] 2.1 A party carries its own properties with no Nextcloud account (D-2). A party is an object of a schema that declares `x-openregister-party`; the declaration names which property carries what.
 - [x] 2.2 Addresses hang off the party with a kind: correspondence, case, location (D-3). A bare string still reads as a correspondence e-mail, so a register holding one address per party keeps working.
-- [x] 2.3 The notification recipient resolver reads a party's addresses, not only a user id (D-2). `PartyNotificationService` plus `EmailSender::sendToAddress`.
+- [x] 2.3 The notification recipient resolver reads a party's addresses, not only a user id (D-2). A rule addresses `{kind: parties}`, the dispatcher sends it through `PartyNotificationService`, and `EmailSender::sendToAddress` reaches an address rather than a uid.
 - [x] 2.4 Inbound resolution matches any address the party holds and creates no second party (D-3). `PartyService::resolveByAddress`: the search narrows, the exact comparison decides.
-- [x] 2.5 An organisation party names a parent, with cycle and depth guards. `PartyService::assertParentAllowed`, depth from the declaration.
+- [x] 2.5 An organisation party names a parent, with cycle and depth guards. `PartyService::assertParentAllowed`, depth from the declaration, enforced on the save itself by `PartyTreeGuardListener`.
 
 ## 3. Indicators
 
@@ -41,11 +41,10 @@
 
 ## Left for a follow-up, deliberately
 
-- A `parties` recipient kind inside `AnnotationNotificationDispatcher`, so a
-  declarative schema rule can address the parties on an object the way it
-  addresses watchers today. The resolver answers in verified uids and a party
-  without an account has none, so widening that contract is its own change.
-  `PartyNotificationService` is the unit the dispatcher will call.
 - The picker and the parties block in the frontend. This change is the object
   layer the leaf apps consume; dossiq's lane owns the case-type declaration and
   the block that renders it.
+- A party recipient on the nc-notification and activity channels. A party
+  without an account has nothing to notify there, so `{kind: parties}` is
+  honoured on the email channel only, and the other channels ignore it rather
+  than pretending.
