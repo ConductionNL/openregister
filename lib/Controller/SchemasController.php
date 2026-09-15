@@ -41,6 +41,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
@@ -2346,4 +2347,49 @@ class SchemasController extends Controller {
 
 		return false;
 	}//end checkSchemaManagePermission()
+
+	/**
+	 * Read the list surface a schema declares: its columns and its search fields.
+	 *
+	 * A generic list surface asks this once per schema and renders whatever comes
+	 * back, so an object type is as usable as a case list without a page written
+	 * for it. A schema that declares nothing answers with the columns every list
+	 * already shows and `declared: false`, so a surface with its own defaults can
+	 * keep them.
+	 *
+	 * @param int|string                $id       The schema id, uuid or slug.
+	 * @param ListPresentationResolver $resolver The resolver.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Read-only catalogue read of a schema's own declaration.
+	 * Returns schema metadata only, no object data, like the sibling `related` and
+	 * `explore` endpoints.
+	 *
+	 * @return JSONResponse The declared columns and search fields, or 404.
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function listPresentation(int|string $id, ListPresentationResolver $resolver): JSONResponse {
+		try {
+			// Metadata read: a schema's own declaration is catalogue data, scoped
+			// the same way the sibling `related` endpoint scopes it.
+			$schema = $this->schemaMapper->find($id, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		$presentation = $resolver->resolve(schema: $schema);
+		$presentation['schema'] = [
+			'id' => (string)$schema->getId(),
+			'slug' => $schema->getSlug(),
+			'title' => $schema->getTitle(),
+		];
+
+		return new JSONResponse(data: $presentation);
+	}//end listPresentation()
 }//end class
