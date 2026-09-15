@@ -41,6 +41,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
@@ -866,6 +867,14 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (DependentValueDeclarationException $e) {
+			// A dependent value table that names nothing constrains nothing,
+			// and the object it was written to guard would save cleanly. The
+			// refusal names the property rather than being logged (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
@@ -1104,6 +1113,14 @@ class SchemasController extends Controller {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
 			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (DependentValueDeclarationException $e) {
+			// A dependent value table that names nothing constrains nothing,
+			// and the object it was written to guard would save cleanly. The
+			// refusal names the property rather than being logged (ADR-005).
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
@@ -1600,6 +1617,14 @@ class SchemasController extends Controller {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
 			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (DependentValueDeclarationException $e) {
+			// A dependent value table that names nothing constrains nothing,
+			// and the object it was written to guard would save cleanly. The
+			// refusal names the property rather than being logged (ADR-005).
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422

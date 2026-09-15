@@ -124,7 +124,10 @@ class LifecycleAutoWhenValidationTest extends TestCase {
 		$this->assertContains('lifecycle-autowhen-malformed', $codes);
 
 		$message = $this->messageFor(['autoWhen' => "@self.motivering != ''"], 'lifecycle-autowhen-malformed');
-		$this->assertStringContainsString('JSONLogic rule object', $message);
+		// The message names BOTH dialects, because either is accepted and an
+		// author who was shown only one would rewrite a working rule.
+		$this->assertStringContainsString('must be a rule object', $message);
+		$this->assertStringContainsString('"prop"', $message);
 		$this->assertStringContainsString('"var"', $message);
 	}//end testAnActionDialectStringAutoWhenIsRefused()
 
