@@ -34,7 +34,7 @@
 
 ## 6. Hand over
 
-- [ ] 6.1 Hand the inventory and the run log to the dossiq lane for `field-rules-declared`, with the cluster 19 candidate ids.
+- [x] 6.1 Hand the inventory and the run log to the dossiq lane for `field-rules-declared`, with the cluster 19 candidate ids (`handover.md`).
 
 ## Shipped so far
 
@@ -47,8 +47,10 @@ the ceiling (3.1), the JSON AST as a condition dialect the save path speaks
 (4.2), the dependent value table (4.3), the expression default (4.4), the
 replay as a previewed bulk job (3.3) and the no-ceiling regression (5.3).
 
-Left for the last branch: 6.1 the hand-over, and the admin surface the reads
-exist for.
+`handover.md` beside this file is task 6.1: the contract as it stands, for the
+dossiq lane and for every app that gets the surface without writing one.
+
+Left for the last branch: the admin surface the reads exist for.
 
 4.2 moved the dry run and the save path in ONE change, on purpose. A trial that
 understood a dialect the save path does not would answer "it fires" about a
