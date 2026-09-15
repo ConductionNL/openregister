@@ -123,6 +123,7 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\WatcherPruneListener;
@@ -2830,6 +2831,17 @@ class Application extends App implements IBootstrap {
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
+
+		// Per-state field rules — see x-openregister-lifecycle.states.<state>.fields.
+		// Registered AFTER LifecycleInitialStateListener, which stamps the
+		// initial state onto a create: reading the state before that listener
+		// has run would resolve a create against no state at all and let a
+		// required field through. On an update it runs after
+		// LifecycleValidationListener for the same reason the approval gate
+		// does — a transition nobody declared is not worth asking field
+		// questions about.
+		$context->registerEventListener(ObjectCreatingEvent::class, StateFieldRuleListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, StateFieldRuleListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into

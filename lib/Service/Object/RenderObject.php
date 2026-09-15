@@ -2001,6 +2001,16 @@ class RenderObject {
 			}//end if
 		}//end if
 
+		// Publish the lifecycle state's field rules beside the object, so a form
+		// renders what this state hides, freezes and demands without a second
+		// call. It runs after the strip block because the two must agree: what
+		// was just removed is what `hidden` names. A form that ignores this is
+		// still refused on save by StateFieldRuleListener — the hint is a
+		// courtesy, never the enforcement.
+		if ($schema !== null) {
+			$this->attachFieldRules(entity: $entity, schema: $schema);
+		}
+
 		// Decrypt properties flagged `x-openregister-encrypted: true` (field-level-
 		// object-encryption). This MUST run after the writeOnly/property-authorization
 		// strip block above, and nowhere earlier: a property that block just removed is
@@ -2165,6 +2175,59 @@ class RenderObject {
 
 		return $entity;
 	}//end renderEntity()
+
+	/**
+	 * Attach `@self.fieldRules` to a rendered object.
+	 *
+	 * The rules are resolved against the object as stored rather than against
+	 * what survived the strip above: a `hidden` field is gone from the payload
+	 * by this point, and resolving from the payload would make a rule whose
+	 * condition reads a hidden value silently stop applying.
+	 *
+	 * An object whose schema declares no state rules gets no key at all, so a
+	 * register that does not use them pays nothing and its responses do not
+	 * change shape.
+	 *
+	 * The rules ride the transient `@self` mechanism rather than being written
+	 * into the payload's own `@self` key, because `ObjectEntity::getObjectArray()`
+	 * rebuilds that envelope from the entity and keeps only a whitelist from
+	 * the payload: a key set on the array here would be dropped on serialisation,
+	 * silently, which is the same shape of no-op this change exists to refuse.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param Schema $schema The entity's schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	private function attachFieldRules(ObjectEntity $entity, Schema $schema): void {
+		try {
+			$stored = ($entity->getObject() ?? []);
+			if (is_array($stored) === false) {
+				$stored = [];
+			}
+
+			$rules = $this->propertyRbacHandler->stateFieldRulesFor(schema: $schema, object: $stored);
+		} catch (\Throwable $e) {
+			// The hint is a courtesy on a read. Losing it must never cost the
+			// object, and the save path refuses the same write either way.
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] field rules could not be resolved for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+			return;
+		}
+
+		if ($rules->isEmpty() === true) {
+			return;
+		}
+
+		$entity->setFieldRules($rules->jsonSerialize());
+	}//end attachFieldRules()
 
 	/**
 	 * Attach `@self._clocks`: the AVG date and the Archiefwet date, each with

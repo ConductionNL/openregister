@@ -46,6 +46,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -67,12 +69,14 @@ class PropertyRbacHandler {
 	 * @param IGroupManager $groupManager Group manager for user group operations
 	 * @param ConditionMatcher $conditionMatcher Condition matcher for match expressions
 	 * @param LoggerInterface $logger Logger for debugging
+	 * @param StateFieldRuleResolver $stateFieldRules Resolver for the lifecycle state's field rules
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly LoggerInterface $logger,
+		private readonly StateFieldRuleResolver $stateFieldRules,
 	) {
 	}//end __construct()
 
@@ -146,6 +150,14 @@ class PropertyRbacHandler {
 		// (e.g. ?fields=apiToken) yet is still removed here because stripping is
 		// applied after selection in the render path.
 		$object = $this->stripWriteOnlyProperties(schema: $schema, object: $object);
+
+		// A field the object's lifecycle state hides is stripped here, on the
+		// same boundary and before the admin short-circuit. It runs before the
+		// short-circuit because a state rule is not a privilege grant: the case
+		// type says the field is not part of this state's record, and an
+		// administrator reading it back would see a field no form can write.
+		// An author who wants a role spared says so with `groups`.
+		$object = $this->stripStateHiddenProperties(schema: $schema, object: $object);
 
 		// If user is admin, return object as-is (writeOnly already stripped above).
 		if ($this->isAdmin() === true) {
@@ -558,17 +570,26 @@ class PropertyRbacHandler {
 		array $incomingData,
 		bool $isCreate = false,
 	): array {
-		// If user is admin, no restrictions.
+		// The lifecycle state's own refusals come first and survive both
+		// short-circuits below, so GraphQL and every other caller of this
+		// method inherit them without a call-site change. They are not
+		// privilege checks: see stripStateHiddenProperties() for why admin is
+		// not exempt from a state rule.
+		$unauthorizedProps = $this->stateBlockedProperties(
+			schema: $schema,
+			object: $object,
+			incomingData: $incomingData
+		);
+
+		// If user is admin, no further restrictions.
 		if ($this->isAdmin() === true) {
-			return [];
+			return $unauthorizedProps;
 		}
 
-		// If schema has no property-level authorization, no restrictions.
+		// If schema has no property-level authorization, no further restrictions.
 		if ($schema->hasPropertyAuthorization() === false) {
-			return [];
+			return $unauthorizedProps;
 		}
-
-		$unauthorizedProps = [];
 
 		// Get properties with authorization.
 		// Returns associative array: propertyName => authorizationConfig.
@@ -603,8 +624,110 @@ class PropertyRbacHandler {
 			}
 		}//end foreach
 
-		return $unauthorizedProps;
+		return array_values(array_unique($unauthorizedProps));
 	}//end getUnauthorizedProperties()
+
+	/**
+	 * The lifecycle state's field rules for one object, already decided.
+	 *
+	 * The render path publishes these as `@self.fieldRules`. It asks through
+	 * this handler rather than holding the resolver of its own, so the rules a
+	 * form is shown and the rules the strip applies can never be two different
+	 * readings of the same declaration.
+	 *
+	 * @param Schema $schema Schema containing the lifecycle annotation
+	 * @param array $object Object data to resolve against
+	 *
+	 * @return StateFieldRules The hidden, read-only and required lists
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	public function stateFieldRulesFor(Schema $schema, array $object): StateFieldRules {
+		return $this->stateFieldRules->resolve(schema: $schema, data: $object);
+	}//end stateFieldRulesFor()
+
+	/**
+	 * Remove the properties the object's lifecycle state hides.
+	 *
+	 * The state is read off the object's own data, so one call answers for
+	 * whichever state it is in. A schema with no `states` block resolves to
+	 * nothing and the object is returned untouched, which is why this costs
+	 * a map lookup on every render rather than a rule walk.
+	 *
+	 * @param Schema $schema Schema containing the lifecycle annotation
+	 * @param array $object Object data to filter
+	 *
+	 * @return array Object data with state-hidden properties removed
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	public function stripStateHiddenProperties(Schema $schema, array $object): array {
+		$rules = $this->stateFieldRules->resolve(schema: $schema, data: $object);
+		foreach ($rules->getHidden() as $property) {
+			if (array_key_exists($property, $object) === false) {
+				continue;
+			}
+
+			unset($object[$property]);
+			$this->logger->debug(
+				message: '[PropertyRbacHandler] Filtered property hidden by lifecycle state',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'property' => $property,
+					'state' => $rules->getState(),
+				]
+			);
+		}
+
+		return $object;
+	}//end stripStateHiddenProperties()
+
+	/**
+	 * The incoming properties the object's current lifecycle state refuses.
+	 *
+	 * Read only and hidden are the two kinds that refuse a write here;
+	 * `required` is not, because an empty required field is a refusal ABOUT the
+	 * write rather than about a property the caller may not touch, and it names
+	 * the state in its message. That one lives in StateFieldRuleListener.
+	 *
+	 * @param Schema $schema Schema containing the lifecycle annotation
+	 * @param array $object Existing object data (empty array for creates)
+	 * @param array $incomingData Incoming data from client
+	 *
+	 * @return array Array of property names the state refuses
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	private function stateBlockedProperties(Schema $schema, array $object, array $incomingData): array {
+		$source = $object;
+		if ($source === []) {
+			$source = $incomingData;
+		}
+
+		$rules = $this->stateFieldRules->resolve(schema: $schema, data: $source);
+		if ($rules->isEmpty() === true) {
+			return [];
+		}
+
+		$blocked = [];
+		foreach (array_merge($rules->getReadOnly(), $rules->getHidden()) as $property) {
+			if (array_key_exists($property, $incomingData) === false) {
+				continue;
+			}
+
+			// Resubmitting the stored value is not a change, exactly as the
+			// property-authorization loop below allows, so a PATCH may carry
+			// the whole object back without tripping over its frozen fields.
+			if (($object[$property] ?? null) === $incomingData[$property]) {
+				continue;
+			}
+
+			$blocked[] = $property;
+		}
+
+		return $blocked;
+	}//end stateBlockedProperties()
 
 	/**
 	 * Check if user has access to a property for a specific action

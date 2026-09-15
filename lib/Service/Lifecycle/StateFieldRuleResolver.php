@@ -60,6 +60,13 @@ class StateFieldRuleResolver {
 	public const KINDS = ['hidden', 'readOnly', 'required'];
 
 	/**
+	 * Per-request memo of resolutions that do not read the object's data.
+	 *
+	 * @var array<string, StateFieldRules>
+	 */
+	private array $memo = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IUserSession $userSession The session naming the user a rule is resolved for.
@@ -146,8 +153,90 @@ class StateFieldRuleResolver {
 			return StateFieldRules::none();
 		}
 
-		return $this->resolveFromAnnotation(annotation: $annotation, data: $data, state: $state);
+		$state = ($state ?? $this->stateOf(annotation: $annotation, data: $data));
+		if ($state === null) {
+			return StateFieldRules::none();
+		}
+
+		// Per-request memo, per openregister ADR-009. The key is the triple the
+		// answer actually depends on when no condition is declared: the schema,
+		// the state and who is asking. A state whose rules DO read the object's
+		// data is deliberately not cached — the requirement is that
+		// `@self.fieldRules` reports the rules that apply to this object as it
+		// stands, and a memo across objects would report the first object's.
+		$key = null;
+		if ($this->isConditional(annotation: $annotation, state: $state) === false) {
+			$key = implode('|', [(string)$schema->getId(), $state, $this->groupsKey()]);
+			if (isset($this->memo[$key]) === true) {
+				return $this->memo[$key];
+			}
+		}
+
+		$rules = $this->resolveFromAnnotation(annotation: $annotation, data: $data, state: $state);
+		if ($key !== null) {
+			$this->memo[$key] = $rules;
+		}
+
+		return $rules;
 	}//end resolve()
+
+	/**
+	 * Whether a state's rules read the object's data at all.
+	 *
+	 * @param array<string, mixed> $annotation The lifecycle annotation.
+	 * @param string $state The state to inspect.
+	 *
+	 * @return bool True when any rule of the state carries a condition.
+	 */
+	private function isConditional(array $annotation, string $state): bool {
+		$block = $this->blockFor(annotation: $annotation, state: $state);
+		if ($block === null) {
+			return false;
+		}
+
+		if (($block['condition'] ?? null) !== null) {
+			return true;
+		}
+
+		$fields = ($block['fields'] ?? []);
+		if (is_array($fields) === false) {
+			return false;
+		}
+
+		foreach ($fields as $entries) {
+			if (is_array($entries) === false) {
+				continue;
+			}
+
+			foreach ($entries as $entry) {
+				if (is_array($entry) === false) {
+					continue;
+				}
+
+				if (($entry['when'] ?? ($entry['condition'] ?? null)) !== null) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}//end isConditional()
+
+	/**
+	 * A stable key for the current user's group membership.
+	 *
+	 * @return string The key.
+	 */
+	private function groupsKey(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return '@anonymous';
+		}
+
+		$groups = $this->groupManager->getUserGroupIds($user);
+		sort($groups);
+		return ($user->getUID() . ':' . implode(',', $groups));
+	}//end groupsKey()
 
 	/**
 	 * The rules that apply, read straight from an annotation.
