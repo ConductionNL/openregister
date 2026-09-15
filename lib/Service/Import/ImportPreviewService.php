@@ -68,6 +68,16 @@ use Throwable;
  * the reader, the mapping, the validator, the match lookup and the write path
  * meet. Splitting it would put the decision in one class and the reason for
  * the decision in another.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Same reason, counted a
+ * second way. Two lifecycles over one record, each with its own refusals.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every dependency is one the
+ * preview must share with the write path, which is the point: a preview that
+ * resolved its own mapping or its own validator would describe an import
+ * nobody runs.
+ * @SuppressWarnings(PHPMD.StaticAccess) ConflictPolicy, MatchResolver's key
+ * normaliser and SchemaMappingCheck are pure functions of their arguments.
+ * Injecting them would let a caller substitute the rule that says a row
+ * matching two objects is refused.
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
@@ -157,12 +167,14 @@ class ImportPreviewService {
 		$matchKey = MatchResolver::normaliseKey(matchKey: ($params['matchKey'] ?? null));
 		$packSlug = ($params['packSlug'] ?? null);
 
-		if ($packSlug !== null && $packSlug !== '') {
+		if ($packSlug === '') {
+			$packSlug = null;
+		}
+
+		if ($packSlug !== null) {
 			// Resolving it here rather than at run time means an unknown
 			// mapping is refused before a preview record exists to poll.
 			$this->resolvePack(packSlug: (string)$packSlug, schema: $schema);
-		} else {
-			$packSlug = null;
 		}
 
 		return $this->previewMapper->createFromArray(
@@ -272,8 +284,11 @@ class ImportPreviewService {
 			return;
 		}
 
-		if (is_file((string)$path) === true) {
-			@unlink((string)$path);
+		if (is_file((string)$path) === true && unlink((string)$path) === false) {
+			$this->logger->warning(
+				message: '[ImportPreviewService] The staged source could not be removed',
+				context: ['previewId' => $preview->getId()]
+			);
 		}
 
 		$preview->setSourcePath(null);

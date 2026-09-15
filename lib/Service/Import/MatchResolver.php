@@ -118,24 +118,15 @@ class MatchResolver {
 			return [];
 		}
 
-		$filters = [
-			'register' => $register->getId(),
-			'schema' => $schema->getId(),
-		];
+		$filters = $this->buildFilters(
+			object: $object,
+			matchKey: $matchKey,
+			register: $register,
+			schema: $schema
+		);
 
-		foreach ($matchKey as $property) {
-			$value = $this->readValue(object: $object, property: $property);
-
-			if ($value === null || $value === '') {
-				return [];
-			}
-
-			if ($property === 'id' || $property === '@self.id') {
-				$filters['id'] = $value;
-				continue;
-			}
-
-			$filters[$property] = $value;
+		if ($filters === null) {
+			return [];
 		}
 
 		try {
@@ -173,6 +164,45 @@ class MatchResolver {
 	}//end resolve()
 
 	/**
+	 * The filter set for one row's lookup, or null when the row carries no
+	 * value for one of the key's properties.
+	 *
+	 * A row with a blank key is a new record, not a match against every
+	 * object whose property is also blank, so the whole lookup is abandoned
+	 * rather than run with the blank in it.
+	 *
+	 * @param array<string, mixed> $object The mapped object.
+	 * @param array<int, string> $matchKey The declared key's property names.
+	 * @param Register $register The target register.
+	 * @param Schema $schema The target schema.
+	 *
+	 * @return array<string, mixed>|null The filters, or null when the row cannot be matched.
+	 */
+	private function buildFilters(array $object, array $matchKey, Register $register, Schema $schema): ?array {
+		$filters = [
+			'register' => $register->getId(),
+			'schema' => $schema->getId(),
+		];
+
+		foreach ($matchKey as $property) {
+			$value = $this->readValue(object: $object, property: $property);
+
+			if ($value === null || $value === '') {
+				return null;
+			}
+
+			$key = $property;
+			if ($property === 'id' || $property === '@self.id') {
+				$key = 'id';
+			}
+
+			$filters[$key] = $value;
+		}
+
+		return $filters;
+	}//end buildFilters()
+
+	/**
 	 * Read one property off a mapped object, understanding the `@self` box.
 	 *
 	 * @param array<string, mixed> $object The mapped object.
@@ -181,13 +211,14 @@ class MatchResolver {
 	 * @return string|null The value as a string, or null when absent or not scalar.
 	 */
 	private function readValue(array $object, string $property): ?string {
+		$value = ($object[$property] ?? null);
+
 		if (str_starts_with($property, '@self.') === true) {
-			$selfProperty = substr($property, 6);
-			$value = ($object['@self'][$selfProperty] ?? null);
-		} elseif ($property === 'id') {
+			$value = ($object['@self'][substr($property, 6)] ?? null);
+		}
+
+		if ($property === 'id') {
 			$value = ($object['@self']['id'] ?? $object['id'] ?? null);
-		} else {
-			$value = ($object[$property] ?? null);
 		}
 
 		if (is_scalar($value) === false) {

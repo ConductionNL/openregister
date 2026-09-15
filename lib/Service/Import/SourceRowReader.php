@@ -205,12 +205,12 @@ class SourceRowReader {
 	 * @return array<int, array{row: int, data: array<string, mixed>}> The rows.
 	 */
 	private function readSpreadsheet(string $filePath, string $format): array {
+		$reader = new Xlsx();
+
 		if ($format === self::FORMAT_CSV) {
 			$reader = new Csv();
 			$reader->setDelimiter(',');
 			$reader->setEnclosure('"');
-		} else {
-			$reader = new Xlsx();
 		}
 
 		$reader->setReadDataOnly(true);

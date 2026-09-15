@@ -59,6 +59,12 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A REST surface over the
  * preview record, its rows, the policy catalogue and the lifecycle service.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Six endpoints over one
+ * resource. Splitting them across controllers to move the number under the
+ * threshold would put the same ownership check in two places, which is the
+ * failure the threshold exists to prevent.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection of
+ * the six collaborators those six endpoints need.
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
