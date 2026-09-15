@@ -169,6 +169,9 @@ class TimelineEntriesProvider implements IFilteringProvider {
 	 *
 	 * @return array<int, FilterDefinition> The definitions.
 	 *
+	 * @psalm-return   list{FilterDefinition}
+	 * @phpstan-return list<\OCP\Search\FilterDefinition>
+	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
 	 */
 	public function getCustomFilters(): array {

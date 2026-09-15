@@ -115,14 +115,9 @@ class LanguageDetector {
 	 * @return string|null The winner, or null when nothing scored enough.
 	 */
 	private function byFunctionWords(string $text): ?string {
-		$words = preg_split('/[^\p{L}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY);
-		if (is_array($words) === false || $words === []) {
+		$scores = $this->score(text: $text);
+		if ($scores === []) {
 			return null;
-		}
-
-		$scores = [];
-		foreach (self::MARKERS as $code => $markers) {
-			$scores[$code] = count(array_intersect($words, $markers));
 		}
 
 		arsort($scores);
@@ -140,6 +135,30 @@ class LanguageDetector {
 
 		return (string)$best;
 	}//end byFunctionWords()
+
+	/**
+	 * How many function words of each language the text carries.
+	 *
+	 * An empty result means there was nothing to count, which the caller reads
+	 * as no evidence rather than as a score of zero for everybody.
+	 *
+	 * @param string $text The entry text.
+	 *
+	 * @return array<string,int> The score per language, or an empty array.
+	 */
+	private function score(string $text): array {
+		$words = preg_split('/[^\p{L}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY);
+		if (is_array($words) === false || $words === []) {
+			return [];
+		}
+
+		$scores = [];
+		foreach (self::MARKERS as $code => $markers) {
+			$scores[$code] = count(array_intersect($words, $markers));
+		}
+
+		return $scores;
+	}//end score()
 
 	/**
 	 * The highest score that is not the winner's own.

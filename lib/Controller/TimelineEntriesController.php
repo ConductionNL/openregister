@@ -360,18 +360,10 @@ class TimelineEntriesController extends Controller {
 			return new JSONResponse(['message' => 'A search needs a term'], Http::STATUS_BAD_REQUEST);
 		}
 
-		// An unknown visibility is DROPPED rather than refused. The parameter
-		// narrows a search; a caller that misspells it gets everything they
-		// are entitled to, which is the same answer as omitting it.
-		$visibility = $this->text(params: $params, key: 'visibility');
-		if ($visibility !== null && $this->visibility->isKnownValue(value: $visibility) === false) {
-			$visibility = null;
-		}
-
 		try {
 			$results = $this->search->searchAsArrays(
 				term: $term,
-				visibility: $visibility,
+				visibility: $this->askedVisibility(params: $params),
 				kind: $this->text(params: $params, key: 'kind'),
 				limit: (int)($params['limit'] ?? 25)
 			);
@@ -381,6 +373,31 @@ class TimelineEntriesController extends Controller {
 
 		return new JSONResponse(['results' => $results, 'total' => count($results)]);
 	}//end searchEntries()
+
+	/**
+	 * The visibility a search asked for, when it named one this app knows.
+	 *
+	 * An unknown value is DROPPED rather than refused. The parameter narrows a
+	 * search; a caller that misspells it gets everything they are entitled to,
+	 * which is the same answer as omitting it, and refusing would turn a typo
+	 * into a broken search page.
+	 *
+	 * @param array<string,mixed> $params The request parameters.
+	 *
+	 * @return string|null The flag, or null for no narrowing.
+	 */
+	private function askedVisibility(array $params): ?string {
+		$visibility = $this->text(params: $params, key: 'visibility');
+		if ($visibility === null) {
+			return null;
+		}
+
+		if ($this->visibility->isKnownValue(value: $visibility) === false) {
+			return null;
+		}
+
+		return $visibility;
+	}//end askedVisibility()
 
 	/**
 	 * Read one optional, non-empty string off the query.

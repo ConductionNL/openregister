@@ -96,28 +96,7 @@ class TimelineKindService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function declareKind(array $data): TimelineKind {
-		$slug = '';
-		if (isset($data['slug']) === true && is_string($data['slug']) === true) {
-			$slug = strtolower(trim($data['slug']));
-		}
-
-		if ($slug === '') {
-			throw new TimelineValidationException(['slug' => 'A kind needs a slug']);
-		}
-
-		$properties = [];
-		if (isset($data['properties']) === true) {
-			if (is_array($data['properties']) === false) {
-				throw new TimelineValidationException(['properties' => 'Properties must be a map of property names to declarations']);
-			}
-
-			$properties = $data['properties'];
-		}
-
-		$required = [];
-		if (isset($data['required']) === true && is_array($data['required']) === true) {
-			$required = array_values(array_filter($data['required'], 'is_string'));
-		}
+		['slug' => $slug, 'properties' => $properties, 'required' => $required] = $this->readDeclaration(data: $data);
 
 		$kind = $this->kindMapper->findBySlug(slug: $slug);
 		if ($kind === null) {
@@ -130,6 +109,47 @@ class TimelineKindService {
 			$this->fill(kind: $kind, data: $data, properties: $properties, required: $required)
 		);
 	}//end declareKind()
+
+	/**
+	 * The three parts of a declaration that have to be right before anything is written.
+	 *
+	 * Refused here rather than inside the write, so a payload that cannot make
+	 * a kind never reaches the mapper and never half-writes one.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return array{slug: string, properties: array<string,mixed>, required: array<int,string>} The parts.
+	 *
+	 * @throws TimelineValidationException When the slug is missing or the properties are not a map.
+	 */
+	private function readDeclaration(array $data): array {
+		$slug = '';
+		if (isset($data['slug']) === true && is_string($data['slug']) === true) {
+			$slug = strtolower(trim($data['slug']));
+		}
+
+		if ($slug === '') {
+			throw new TimelineValidationException(['slug' => 'A kind needs a slug']);
+		}
+
+		$properties = [];
+		if (isset($data['properties']) === true) {
+			if (is_array($data['properties']) === false) {
+				throw new TimelineValidationException(
+					['properties' => 'Properties must be a map of property names to declarations']
+				);
+			}
+
+			$properties = $data['properties'];
+		}
+
+		$required = [];
+		if (isset($data['required']) === true && is_array($data['required']) === true) {
+			$required = array_values(array_filter($data['required'], 'is_string'));
+		}
+
+		return ['slug' => $slug, 'properties' => $properties, 'required' => $required];
+	}//end readDeclaration()
 
 	/**
 	 * A kind nobody has declared yet, with its stable id minted.
@@ -224,8 +244,31 @@ class TimelineKindService {
 			throw new TimelineValidationException(['kind' => 'No entry kind named '.$kindSlug.' is declared']);
 		}
 
+		['accepted' => $accepted, 'errors' => $errors] = $this->judge(kind: $kind, fields: $fields);
+		if ($errors !== []) {
+			throw new TimelineValidationException($errors);
+		}
+
+		return $accepted;
+	}//end validateFields()
+
+	/**
+	 * Walk a kind's declared properties, keeping what fits and naming what does not.
+	 *
+	 * Every property is judged before anything is thrown, so a caller fixing a
+	 * form is told about all four wrong fields at once rather than one per
+	 * round trip.
+	 *
+	 * @param TimelineKind        $kind   The declaration.
+	 * @param array<string,mixed> $fields The values the entry carries.
+	 *
+	 * @return array{accepted: array<string,mixed>, errors: array<string,string>} What fits, and what does not.
+	 */
+	private function judge(TimelineKind $kind, array $fields): array {
 		$accepted = [];
 		$errors = [];
+		$required = ($kind->getRequired() ?? []);
+		$slug = (string)$kind->getSlug();
 
 		foreach (($kind->getProperties() ?? []) as $name => $declaration) {
 			if (is_string($name) === false) {
@@ -236,8 +279,8 @@ class TimelineKindService {
 				name: $name,
 				declaration: $declaration,
 				fields: $fields,
-				required: ($kind->getRequired() ?? []),
-				slug: (string)$kind->getSlug()
+				required: $required,
+				slug: $slug
 			);
 
 			if ($verdict !== null) {
@@ -250,12 +293,8 @@ class TimelineKindService {
 			}
 		}//end foreach
 
-		if ($errors !== []) {
-			throw new TimelineValidationException($errors);
-		}
-
-		return $accepted;
-	}//end validateFields()
+		return ['accepted' => $accepted, 'errors' => $errors];
+	}//end judge()
 
 	/**
 	 * Judge one declared property against what the entry carries.
