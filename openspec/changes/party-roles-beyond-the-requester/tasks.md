@@ -29,7 +29,7 @@
 
 ## 5. Tests
 
-- [x] 5.1 `tests/e2e/ci/party-roles.spec.ts`: two gemachtigden on one case, replace the primary party, read the audit entry, the inbound address, the indicator across two cases, the refused publication and the capped query. Written and tagged; not run locally (no Playwright on the build host).
+- [x] 5.1 `tests/e2e/ci/party-roles.spec.ts`: two gemachtigden on one case, replace the primary party, read the audit entry, the inbound address, the indicator across two cases, the refused publication, the capped query and a real merge. Written and tagged; not run locally (no Playwright on the build host).
 - [x] 5.2 Unit tests: the accepted-kind refusal, the address union, the inbound match, the cycle guard, the three indicator effects, the cap refusal. Thirty-seven tests under `tests/Unit/Service/Party/` and `tests/Unit/Listener/PartyMergeListenerTest.php`.
 - [x] 5.3 A regression test that a schema declaring no party kinds behaves as today. `PartyDeclarationTest::testASchemaDeclaringNoPartyKindsBehavesAsBefore` and `PartyRoleServiceTest::testASchemaDeclaringNoKindsAcceptsAnyParty`.
 - [x] 5.4 `openspec validate party-roles-beyond-the-requester --strict`.
