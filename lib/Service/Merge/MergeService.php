@@ -1187,6 +1187,16 @@ class MergeService {
 			array_unique(
 				array_filter(
 					[
+						// IDENTITY IS NOT A CHOICE, and this is not theoretical:
+						// `ObjectEntity::getObject()` prepends `id => uuid` to
+						// EVERY payload it returns, so without this the preview
+						// asked a reviewer which record's identity should
+						// survive, and every decision map that sensibly ignored
+						// the question was refused as incomplete. The survivor's
+						// identity is decided by which object is `into`.
+						'id',
+						'uuid',
+						'@self',
 						(string)($config['statusField'] ?? self::DEFAULT_STATUS_FIELD),
 						(string)($config['sourceLinkField'] ?? ''),
 						(string)($survivorshipConfig['sourceLinkField'] ?? ''),
