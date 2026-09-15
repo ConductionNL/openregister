@@ -258,7 +258,7 @@ class InheritedGeoCollector {
 			$candidates = $source;
 		}
 
-		if (is_array($candidates) === false || array_is_list($candidates) === false) {
+		if (array_is_list($candidates) === false) {
 			return [];
 		}
 

@@ -191,10 +191,6 @@ class LensResolver {
 			return null;
 		}
 
-		if (($referenced instanceof ObjectEntity) === false) {
-			return null;
-		}
-
 		if ($this->mayRead(referenced: $referenced, _rbac: $_rbac) === false) {
 			return self::WITHHELD;
 		}

@@ -50,6 +50,8 @@ final class IntakeSourceRegistryTest extends TestCase {
 	 *
 	 * @param array|null $objects The objects the register holds, or null to make the read fail.
 	 * @param array      $capture Receives the filters the read was asked for.
+	 *
+	 * @return IntakeSourceRegistry The registry under test.
 	 */
 	private function registry(?array $objects, array &$capture): IntakeSourceRegistry {
 		$objectService = $this->createMock(ObjectService::class);

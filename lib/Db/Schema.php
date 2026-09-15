@@ -2016,8 +2016,9 @@ class Schema extends Entity implements JsonSerializable {
 	 * its own. A schema declaring neither keeps whatever the surface defaults
 	 * to today.
 	 *
-	 * @return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
-	 *                                                                                                              The declared columns and search fields, each possibly empty.
+	 * @return array The declared columns and search fields, each possibly empty.
+	 *
+	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
 	 *
 	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
 	 */

@@ -73,6 +73,10 @@ final class ReferencedByServiceTest extends TestCase {
 	 * @param array $tables  Table descriptors the magic mapper reports.
 	 * @param array $rowsBy  Map of schema id to the rows that table returns.
 	 * @param array $capture Receives every filter array the mapper was asked for.
+	 * @param array $schemas Schemas the schema mapper resolves, keyed by id.
+	 * @param array $registers Registers the register mapper resolves, keyed by id.
+	 *
+	 * @return ReferencedByService The service under test.
 	 */
 	private function service(array $tables, array $rowsBy, array &$capture, array $schemas, array $registers): ReferencedByService {
 		$magicMapper = $this->createMock(MagicMapper::class);
