@@ -288,10 +288,13 @@ class ArchiveHandler {
 	 * Four copies of the same gate is how one of them ends up checking `read`.
 	 *
 	 * @param string $identifier Object id, uuid, slug or uri.
+	 * @param string|null $register The register the url names, so an object in
+	 *                              another one is not reachable from this address.
+	 * @param string|null $schema The schema the url names, checked the same way.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists or it is out of scope.
 	 *
 	 * @return array{object: ObjectEntity, register: Register, schema: Schema} The resolved context.
 	 */
