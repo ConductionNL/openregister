@@ -3100,16 +3100,18 @@ class SaveObject {
 		// check endpoint on purpose: a client that never calls the endpoint —
 		// an import, a script, an integration — is stopped here all the same.
 		//
-		// Gated on $_rbac like the property-authorization guard above it:
-		// $_rbac === false marks an internal/system write (cascades, repair
-		// steps, migrations) that has already been decided elsewhere, and a
-		// policy meant for a human filling in a form has no business refusing
-		// those.
+		// NOT gated on $_rbac, and that is deliberate. $_rbac === false means
+		// "skip the permission checks" and the controller sets it for every
+		// ADMINISTRATOR, so gating on it would turn the declaration off for the
+		// one caller most likely to be doing a bulk create. This is a policy
+		// about the data, not about the caller's rights: an administrator is
+		// no more entitled to a second copy of a record than anyone else, which
+		// is the same reason `overrideGroups` has no implicit admin bypass.
+		//
+		// The opt-in that bounds the blast radius is the DECLARATION: nothing
+		// happens at all unless the schema asked for `onCreate: "block"`.
 		$dedupOverriddenMatches = [];
-		$dedupPolicy = null;
-		if ($_rbac === true) {
-			$dedupPolicy = $this->resolveDedupCreatePolicy();
-		}
+		$dedupPolicy = $this->resolveDedupCreatePolicy();
 
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
