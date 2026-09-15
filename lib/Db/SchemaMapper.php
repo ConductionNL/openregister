@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
+use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
@@ -49,6 +50,8 @@ use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
+use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
@@ -1098,9 +1101,11 @@ class SchemaMapper extends QBMapper {
 		$this->validateLifecycleAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
+		$this->validateRelationAnnotation(schema: $schema);
 		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
+		$this->validateHingeAnnotations(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
 		$this->validateMergeAnnotation(schema: $schema);
 		$this->validatePartyAnnotation(schema: $schema);
@@ -1409,6 +1414,47 @@ class SchemaMapper extends QBMapper {
 	}//end validateCalculationsAnnotation()
 
 	/**
+	 * Validate the relation declarations on a schema's properties.
+	 *
+	 * Blocking, and deliberately so. Both keys are new, so no register carries
+	 * one and refusing breaks no existing import, which is the test the
+	 * advisory policy above sets. And both failures they catch are silent
+	 * ones: a symmetric relation that also names an inverse reads one way on
+	 * one side and the other way on the other, and a `type` naming a
+	 * vocabulary entry that does not exist renders as the generic "referenced
+	 * by" fallback forever while its author believes the link is typed.
+	 *
+	 * Validated here rather than in the controller because this is the one
+	 * choke point the create, update and file-upload paths all pass through.
+	 *
+	 * @param Schema $schema Schema being saved.
+	 *
+	 * @throws RelationDeclarationException When a relation declaration cannot be honoured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function validateRelationAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+		];
+
+		$vocabulary = ($configuration[RelationAnnotationValidator::VOCABULARY_ANNOTATION] ?? null);
+		if ($vocabulary !== null) {
+			$shape[RelationAnnotationValidator::VOCABULARY_ANNOTATION] = $vocabulary;
+		}
+
+		$errors = (new RelationAnnotationValidator())->validate($shape);
+		if ($errors === []) {
+			return;
+		}
+
+		throw new RelationDeclarationException(errors: $errors);
+	}//end validateRelationAnnotation()
+
+	/**
 	 * Validate the two property-level rule annotations this change adds.
 	 *
 	 * REFUSES, it does not warn. A table naming a property the schema does not
@@ -1571,6 +1617,54 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (declared match rules not used): ' . implode(' ', $messages)
 		);
 	}//end validateDedupAnnotation()
+
+	/**
+	 * Validate the lens, list and geographic-inheritance annotations.
+	 *
+	 * All three are declarative reading instructions, not storage requirements:
+	 * a malformed one costs a surface, never an object. So this degrades to a
+	 * warning rather than aborting the import — but it does warn, because the
+	 * failure mode without it is a lens that renders empty forever and reads
+	 * exactly like a field nobody filled in.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	private function validateHingeAnnotations(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+		];
+
+		$declared = false;
+		foreach ([Schema::LENS_ANNOTATION, Schema::LIST_ANNOTATION, Schema::GEO_INHERITANCE_ANNOTATION] as $key) {
+			if (isset($configuration[$key]) === false) {
+				continue;
+			}
+
+			$shape[$key] = $configuration[$key];
+			$declared = true;
+		}
+
+		if ($declared === false) {
+			return;
+		}
+
+		$errors = (new HingeAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$this->logger->warning(
+			'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are '
+			. 'invalid and were ignored: ' . implode(' ', $messages)
+		);
+	}//end validateHingeAnnotations()
 
 	/**
 	 * Validate the optional `x-openregister-survivorship` annotation.
