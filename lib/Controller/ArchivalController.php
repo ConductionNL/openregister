@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
+use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -135,6 +137,8 @@ class ArchivalController extends Controller {
 	 * @param AuditTrailMapper $auditMapper Records who signed off what.
 	 * @param ArchivalNominationService $nominations Derives and writes an archival nomination.
 	 * @param SchemaMapper $schemaMapper Loads the schema a nomination is derived from.
+	 * @param SelectielijstImportService $selectielijst Imports, versions and diffs a selectielijst.
+	 * @param ObjectRetentionHandler $settingsHandler Names the selectielijst version in use.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor; every parameter is a
 	 *              distinct collaborator, and four of them arrived with the review half of the
@@ -155,6 +159,8 @@ class ArchivalController extends Controller {
 		private readonly AuditTrailMapper $auditMapper,
 		private readonly ArchivalNominationService $nominations,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly SelectielijstImportService $selectielijst,
+		private readonly ObjectRetentionHandler $settingsHandler,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -976,6 +982,159 @@ class ArchivalController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end recomputeNomination()
+
+	/**
+	 * Import a selectielijst or classification plan from a file.
+	 *
+	 * POST /api/archival/selectielijst/import
+	 *
+	 * The archivist is handed a list as a file. Importing it as versioned rows,
+	 * and diffing a new version against the one in use, is what turns "we
+	 * support selectielijsten" into something an archiefinspecteur can check.
+	 *
+	 * @return JSONResponse What was stored.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	#[NoAdminRequired]
+	public function importSelectielijst(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
+
+		$version = (string)$this->request->getParam('version', '');
+		$uploaded = $this->request->getUploadedFile('file');
+
+		$contents = null;
+		$filename = (string)$this->request->getParam('filename', '');
+
+		if (is_array($uploaded) === true && isset($uploaded['tmp_name']) === true) {
+			$contents = @file_get_contents((string)$uploaded['tmp_name']);
+			$filename = (string)($uploaded['name'] ?? $filename);
+		} else {
+			$inline = $this->request->getParam('contents');
+			if (is_string($inline) === true) {
+				$contents = $inline;
+			}
+		}
+
+		if (is_string($contents) === false || trim($contents) === '') {
+			return new JSONResponse(
+				data: ['error' => 'Send the selectielijst as an uploaded "file", or inline as "contents" with a "filename"'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$source = null;
+		if ($filename !== '') {
+			$source = $filename;
+		}
+
+		try {
+			$rows = $this->selectielijst->parse(contents: $contents, filename: $filename);
+			$result = $this->selectielijst->import(
+				rows: $rows,
+				version: $version,
+				source: $source
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		} catch (Throwable $e) {
+			$this->logger->error('[ArchivalController] Selectielijst import failed: ' . $e->getMessage());
+			return new JSONResponse(
+				data: ['error' => 'The selectielijst could not be imported'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+
+		return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+	}//end importSelectielijst()
+
+	/**
+	 * Which selectielijst versions are stored, and which one is applied.
+	 *
+	 * GET /api/archival/selectielijst/versions
+	 *
+	 * @return JSONResponse The versions and their row counts.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	#[NoAdminRequired]
+	public function selectielijstVersions(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
+
+		$inUse = null;
+		try {
+			$inUse = ($this->settingsHandler->getArchivalSettingsOnly()['selectielijstVersion'] ?? null);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ArchivalController] Could not read the archival settings: ' . $e->getMessage());
+		}
+
+		return new JSONResponse(
+			data: [
+				'versions' => $this->selectielijst->versions(),
+				'inUse' => $inUse,
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end selectielijstVersions()
+
+	/**
+	 * Compare a newly imported selectielijst against the one in use.
+	 *
+	 * GET /api/archival/selectielijst/diff?from=&to=
+	 *
+	 * `from` defaults to the version in use, because comparing against what is
+	 * actually applied is the question an archivist has before switching.
+	 *
+	 * @return JSONResponse The changed rows and what each change would do.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	#[NoAdminRequired]
+	public function selectielijstDiff(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
+
+		$from = (string)$this->request->getParam('from', '');
+		$to = (string)$this->request->getParam('to', '');
+
+		if ($from === '') {
+			try {
+				$from = (string)($this->settingsHandler->getArchivalSettingsOnly()['selectielijstVersion'] ?? '');
+			} catch (Throwable $e) {
+				$from = '';
+			}
+		}
+
+		if ($from === '' || $to === '') {
+			return new JSONResponse(
+				data: ['error' => 'Name the version to compare with "to", and the one to compare against with "from" or by setting the version in use'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			return new JSONResponse(
+				data: $this->selectielijst->diff(from: $from, to: $to),
+				statusCode: Http::STATUS_OK
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+	}//end selectielijstDiff()
 
 	/**
 	 * The user id of whoever is asking, or null when nobody is signed in.

@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
+use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -61,6 +63,7 @@ class ArchivalControllerReviewTest extends TestCase {
 	private MagicMapper&MockObject $objectMapper;
 	private SchemaMapper&MockObject $schemaMapper;
 	private ArchivalNominationService&MockObject $nominations;
+	private SelectielijstImportService&MockObject $selectielijst;
 	private ArchivalController $controller;
 
 	protected function setUp(): void {
@@ -80,6 +83,7 @@ class ArchivalControllerReviewTest extends TestCase {
 			->onlyMethods(['find'])
 			->getMock();
 		$this->nominations = $this->createMock(ArchivalNominationService::class);
+		$this->selectielijst = $this->createMock(SelectielijstImportService::class);
 
 		$this->controller = new ArchivalController(
 			'openregister',
@@ -95,7 +99,9 @@ class ArchivalControllerReviewTest extends TestCase {
 			$this->outcomes,
 			$this->createMock(AuditTrailMapper::class),
 			$this->nominations,
-			$this->schemaMapper
+			$this->schemaMapper,
+			$this->selectielijst,
+			$this->createMock(ObjectRetentionHandler::class)
 		);
 	}
 
