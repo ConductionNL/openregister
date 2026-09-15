@@ -30,4 +30,4 @@
 
 ## 6. Hand over
 
-- [ ] 6.1 Hand the profile and the verb to the dossiq lane for `case-list-export-via-or-export-leaf`, with the ten candidate ids.
+- [x] 6.1 Hand the profile and the verb to the dossiq lane for `case-list-export-via-or-export-leaf`, with the ten candidate ids.
