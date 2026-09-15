@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureBucket;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
+use OCA\OpenRegister\Service\Gdpr\Erasure\SubjectPartyCounter;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -158,6 +159,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			$retention,
 			$scopeService,
 			$this->createMock(SchemaMapper::class),
+			new SubjectPartyCounter(),
 			$this->db($coRows),
 			new NullLogger()
 		);
@@ -369,6 +371,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			$this->createMock(RetentionService::class),
 			$scopeService,
 			$this->createMock(SchemaMapper::class),
+			new SubjectPartyCounter(),
 			$db,
 			new NullLogger()
 		);

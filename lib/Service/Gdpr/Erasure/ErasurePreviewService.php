@@ -67,16 +67,6 @@ use Throwable;
  */
 class ErasurePreviewService {
 	/**
-	 * The payload keys that hold a list of party records.
-	 *
-	 * The same list {@see \OCA\OpenRegister\Service\Portal\PortalPartyResolver}
-	 * reads, so "party record" means one thing in this app.
-	 *
-	 * @var array<int, string>
-	 */
-	private const PARTY_LIST_KEYS = ['rollen', 'roles', 'parties', 'betrokkenen'];
-
-	/**
 	 * Wire the authorities the preview asks.
 	 *
 	 * @param DataSubjectRequestService $subjects       Cross-register discovery.
@@ -84,6 +74,7 @@ class ErasurePreviewService {
 	 * @param RetentionService          $retention      Immutable archival status.
 	 * @param DestructionScopeService   $scopeService   What goes with an object.
 	 * @param SchemaMapper              $schemaMapper   Schema resolution for the scope.
+	 * @param SubjectPartyCounter       $parties        Party records naming the subject.
 	 * @param IDBConnection             $db             The PII index, for other subjects on a record.
 	 * @param LoggerInterface           $logger         PSR logger.
 	 *
@@ -95,6 +86,7 @@ class ErasurePreviewService {
 		private readonly RetentionService $retention,
 		private readonly DestructionScopeService $scopeService,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly SubjectPartyCounter $parties,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 	) {
@@ -113,6 +105,11 @@ class ErasurePreviewService {
 	 * @param string      $eraseMode `pseudonymise` or `whole-object`.
 	 *
 	 * @return array<string, mixed> The preview: counts, items, protected, digest.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ErasureBucket is a closed vocabulary,
+	 * the same shape as DestructionScope. Its members are compile-time constants
+	 * and emptyCounts() derives the zeroed block from them, so injecting it would
+	 * add a collaborator that can never vary.
 	 *
 	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
 	 */
@@ -414,11 +411,6 @@ class ErasurePreviewService {
 	/**
 	 * Count the party records inside an object that name this subject.
 	 *
-	 * A party record is one entry in a `rollen` / `roles` / `parties` /
-	 * `betrokkenen` list. It counts when any scalar in that entry is one of the
-	 * subject's known values, which is the same match the pseudonymiser makes,
-	 * so the count and the act agree.
-	 *
 	 * @param ObjectEntity      $object    The object.
 	 * @param string            $subjectId The subject value.
 	 * @param array<int, array> $matched   The PII hits.
@@ -426,95 +418,11 @@ class ErasurePreviewService {
 	 * @return int The number of party records naming the subject.
 	 */
 	private function countPartyRecords(ObjectEntity $object, string $subjectId, array $matched): int {
-		$needles = $this->needles(subjectId: $subjectId, matched: $matched);
-		if ($needles === []) {
-			return 0;
-		}
-
-		return $this->walkParties(data: ($object->getObject() ?? []), needles: $needles);
+		return $this->parties->count(
+			payload: ($object->getObject() ?? []),
+			needles: $this->parties->needles(subjectId: $subjectId, matched: $matched)
+		);
 	}//end countPartyRecords()
-
-	/**
-	 * Walk a payload counting party-list entries that name the subject.
-	 *
-	 * @param array<mixed>      $data    The payload or a sub-array.
-	 * @param array<int, string> $needles Lower-cased subject values.
-	 *
-	 * @return int The count in this subtree.
-	 */
-	private function walkParties(array $data, array $needles): int {
-		$count = 0;
-
-		foreach ($data as $key => $value) {
-			if (is_array($value) === false) {
-				continue;
-			}
-
-			if (in_array((string)$key, self::PARTY_LIST_KEYS, true) === true) {
-				foreach ($value as $party) {
-					if (is_array($party) === true && $this->mentions(data: $party, needles: $needles) === true) {
-						$count++;
-					}
-				}
-				continue;
-			}
-
-			$count += $this->walkParties(data: $value, needles: $needles);
-		}
-
-		return $count;
-	}//end walkParties()
-
-	/**
-	 * Whether a sub-payload carries any of the subject's values.
-	 *
-	 * @param array<mixed>       $data    The sub-payload.
-	 * @param array<int, string> $needles Lower-cased subject values.
-	 *
-	 * @return bool True when it names the subject.
-	 */
-	private function mentions(array $data, array $needles): bool {
-		foreach ($data as $value) {
-			if (is_array($value) === true) {
-				if ($this->mentions(data: $value, needles: $needles) === true) {
-					return true;
-				}
-				continue;
-			}
-
-			if (is_scalar($value) === true
-				&& in_array(strtolower((string)$value), $needles, true) === true
-			) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end mentions()
-
-	/**
-	 * The subject's lower-cased values: the id plus every matched PII value.
-	 *
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits.
-	 *
-	 * @return array<int, string> The needles.
-	 */
-	private function needles(string $subjectId, array $matched): array {
-		$needles = [];
-		if (trim($subjectId) !== '') {
-			$needles[] = strtolower(trim($subjectId));
-		}
-
-		foreach ($matched as $hit) {
-			$value = strtolower(trim((string)($hit['value'] ?? '')));
-			if ($value !== '') {
-				$needles[] = $value;
-			}
-		}
-
-		return array_values(array_unique($needles));
-	}//end needles()
 
 	/**
 	 * Other people's identifiers of the SAME KIND on this object.
@@ -536,7 +444,7 @@ class ErasurePreviewService {
 			return [];
 		}
 
-		$needles = $this->needles(subjectId: $subjectId, matched: $matched);
+		$needles = $this->parties->needles(subjectId: $subjectId, matched: $matched);
 		$uuid = (string)($object->getUuid() ?? '');
 		if ($uuid === '') {
 			return [];

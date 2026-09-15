@@ -89,6 +89,11 @@ class ErasureRunner {
 	 * @param LoggerInterface           $logger         PSR logger.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A Nextcloud DI constructor.
+	 * Every parameter is one authority this runner asks rather than re-derives,
+	 * and the destruction path alone accounts for four of them. Bundling them
+	 * behind a container would hide which authorities an erasure consults.
 	 */
 	public function __construct(
 		private readonly ErasurePreviewService $previewService,
