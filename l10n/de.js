@@ -2533,7 +2533,7 @@ OC.L10N.register(
     "Test webhook delivery failed" : "Test-Webhook-Zustellung fehlgeschlagen",
     "Test webhook sent successfully" : "Test-Webhook erfolgreich gesendet",
     "Testing..." : "Wird getestet …",
-    "Text" : "Freitext",
+    "Text" : "Text",
     "Text Chunk #{id}" : "Text-Chunk #{id}",
     "Text chunks" : "Text-Chunks",
     "Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings." : "Text-Chunks werden während der Dateiextraktion generiert und in der Datenbank gespeichert. Die Vektorisierung liest diese vorab in Chunks aufgeteilten Dateien und wandelt sie in Embeddings um.",
