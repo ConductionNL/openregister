@@ -48,7 +48,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
  */
-class Version1Date20260915034700 extends SimpleMigrationStep {
+class Version1Date20260915061500 extends SimpleMigrationStep {
 
 	/**
 	 * The favourites table.
