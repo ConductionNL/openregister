@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Notification;
 
+use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\L10N\IFactory;
@@ -57,8 +58,57 @@ class Notifier implements INotifier {
 		private readonly IFactory $factory,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly ?IUserManager $userManager = null,
+		private readonly ?NotificationTemplateRegistry $templates = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Render this notification from an administrator's edited template, if any.
+	 *
+	 * Only an EDIT short-circuits the renderer. The shipped text is the same
+	 * sentence the renderer already produces, and it carries the action links
+	 * and the plural forms the registry's flat template cannot, so falling
+	 * through to the renderer is the better answer whenever nobody has changed
+	 * the words.
+	 *
+	 * @param INotification $notification The notification being prepared.
+	 * @param string $languageCode The reader's language.
+	 *
+	 * @return INotification|null The prepared notification, or null when there is no edit.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 */
+	private function renderEditedTemplate(INotification $notification, string $languageCode): ?INotification {
+		if ($this->templates === null) {
+			return null;
+		}
+
+		$event = $notification->getSubject();
+		if ($this->templates->knows(event: $event) === false) {
+			return null;
+		}
+
+		if ($this->templates->hasEdit(event: $event) === false) {
+			return null;
+		}
+
+		$rendered = $this->templates->render(
+			event: $event,
+			locale: $languageCode,
+			variables: $notification->getSubjectParameters()
+		);
+		if ($rendered === null || $rendered['subject'] === '') {
+			return null;
+		}
+
+		$notification->setParsedSubject($rendered['subject']);
+		$notification->setParsedMessage($rendered['body']);
+		$notification->setIcon(
+			$this->urlGenerator->getAbsoluteURL($this->urlGenerator->imagePath('openregister', 'app-dark.svg'))
+		);
+
+		return $notification;
+	}//end renderEditedTemplate()
 
 	/**
 	 * The display name for a uid, falling back to the uid itself.
@@ -151,6 +201,15 @@ class Notifier implements INotifier {
 		// Unknown subjects are not an error worth logging loudly: object
 		// lifecycle subjects (object_created / object_updated /
 		// object_transitioned) are rendered by AnnotationNotifier, not here.
+		// An administrator's edit of this event's shipped template wins over
+		// the renderer below, which is what makes the shipped set editable
+		// rather than merely present. When nothing has been edited the registry
+		// answers nothing and the app's own renderer runs, unchanged.
+		$edited = $this->renderEditedTemplate(notification: $notification, languageCode: $languageCode);
+		if ($edited !== null) {
+			return $edited;
+		}
+
 		$handler = match ($notification->getSubject()) {
 			'configuration_update_available' => $this->prepareConfigurationUpdate(...),
 			'handoff_drain_failed' => $this->prepareHandoffDrainFailed(...),

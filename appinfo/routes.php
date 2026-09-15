@@ -1051,6 +1051,11 @@ return [
         // Notification Preferences — override-only, per-(schema, notification) user preferences.
         ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
+        // Notification Templates — the shipped text per platform event, the
+        // events that have none, and an administrator's edit of either.
+        ['name' => 'notificationTemplates#index',  'url' => '/api/notification-templates', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#gaps',   'url' => '/api/notification-templates/gaps', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#update', 'url' => '/api/notification-templates/{event}', 'verb' => 'PUT'],
         // Notification Broadcasts — one administered message to every user.
         // The active read and the acknowledge act on the caller's own receipt
         // and are open to any signed-in user; the rest is administrators only.
