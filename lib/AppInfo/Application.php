@@ -48,6 +48,10 @@ use OCA\OpenRegister\Controller\CaseTokenController;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationValueMapper;
 // Thirteen imports from OCA\OpenRegister\Service\Objects\ stood here — a
 // namespace that DOES NOT EXIST. Those classes live under Service\Object\
 // (singular); the plural was left behind by the rename. Every one was unused, so
@@ -169,6 +173,12 @@ use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportH
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
@@ -718,6 +728,7 @@ class Application extends App implements IBootstrap {
 		$this->registerCacheAndFileHandlers(context: $context);
 		$this->registerConfigurationServices(context: $context);
 		$this->registerSettingsServices(context: $context);
+		$this->registerConfigurationDeploymentServices(context: $context);
 		$this->registerVectorizationService(context: $context);
 		$this->registerObjectInteractionServices(context: $context);
 		$this->registerIntegrationRegistry(context: $context);
@@ -1185,6 +1196,85 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
+	/**
+	 * Register the configuration deployment lifecycle.
+	 *
+	 * Registered explicitly rather than autowired: every class here takes the
+	 * app name as a defaulted string, and a container that resolves a scalar
+	 * by guessing is a container that silently builds the wrong object.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function registerConfigurationDeploymentServices(IRegistrationContext $context): void {
+		$context->registerService(
+			ConfigurationValueStore::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationValueStore(
+					values: $container->get(ConfigurationValueMapper::class),
+					appConfig: $container->get('OCP\IAppConfig'),
+					appName: 'openregister'
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationDraftService::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationDraftService(
+					sets: $container->get(ConfigurationDraftSetMapper::class),
+					drafts: $container->get(ConfigurationDraftMapper::class),
+					store: $container->get(ConfigurationValueStore::class),
+					registry: $container->get(ConfigurationKeyRegistry::class),
+					session: $container->get('OCP\IUserSession'),
+					appConfig: $container->get('OCP\IAppConfig'),
+					appName: 'openregister'
+				);
+			}
+		);
+
+		$context->registerService(
+			DeploymentPreviewService::class,
+			function (ContainerInterface $container) {
+				return new DeploymentPreviewService(
+					drafts: $container->get(ConfigurationDraftService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					registry: $container->get(ConfigurationKeyRegistry::class)
+				);
+			}
+		);
+
+		$context->registerService(
+			DeploymentService::class,
+			function (ContainerInterface $container) {
+				return new DeploymentService(
+					drafts: $container->get(ConfigurationDraftService::class),
+					previews: $container->get(DeploymentPreviewService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					deployments: $container->get(ConfigurationDeploymentMapper::class),
+					sets: $container->get(ConfigurationDraftSetMapper::class),
+					db: $container->get('OCP\IDBConnection'),
+					session: $container->get('OCP\IUserSession'),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationExplainer::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationExplainer(
+					store: $container->get(ConfigurationValueStore::class),
+					deployments: $container->get(ConfigurationDeploymentMapper::class)
+				);
+			}
+		);
+
+	}//end registerConfigurationDeploymentServices()
+
 	private function registerSettingsServices(IRegistrationContext $context): void {
 		$context->registerService(
 			ValidationOperationsHandler::class,
