@@ -139,7 +139,7 @@ class ObjectRelationService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function applyInheritance(ObjectEntity $parent, array $childData, array $inherits): array {
-		$parentData = ($parent->getObject() ?? []);
+		$parentData = $parent->getObject();
 		$record = [];
 
 		foreach ($inherits as $role => $property) {
