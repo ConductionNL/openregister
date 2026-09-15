@@ -69,6 +69,12 @@ final class ErasurePreviewStoreTest extends TestCase {
 	}//end session()
 
 	/**
+	 * The store over a staged mapper, session and group manager.
+	 *
+	 * @param ErasurePreview|null $row   The row findByUuid returns, or null to make it miss.
+	 * @param string              $uid   The acting principal.
+	 * @param bool                $admin Whether that principal is an administrator.
+	 *
 	 * @return array{0: ErasurePreviewStore, 1: MockObject&ErasurePreviewMapper}
 	 */
 	private function store(?ErasurePreview $row, string $uid = 'handler', bool $admin = false): array {

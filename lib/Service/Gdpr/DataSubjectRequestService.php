@@ -140,6 +140,8 @@ class DataSubjectRequestService {
 	 * @return array<int, array{object: array, gdprEntities: array}>
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function findSubjectData(
 		string $subjectId,
@@ -149,7 +151,15 @@ class DataSubjectRequestService {
 		bool $multitenancy = true,
 	): array {
 		$envelopes = [];
-		foreach ($this->findSubjectObjects($subjectId, $type, $mode, $rbac, $multitenancy) as $hit) {
+		$hits = $this->findSubjectObjects(
+			subjectId: $subjectId,
+			type: $type,
+			mode: $mode,
+			rbac: $rbac,
+			multitenancy: $multitenancy
+		);
+
+		foreach ($hits as $hit) {
 			$envelopes[] = [
 				'object' => $hit['object']->jsonSerialize(),
 				'gdprEntities' => $hit['gdprEntities'],

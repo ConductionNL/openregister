@@ -49,6 +49,11 @@ final class ErasurePreviewServiceTest extends TestCase {
 
 	/**
 	 * One object carrying the subject's email, plus whatever payload is given.
+	 *
+	 * @param string       $uuid    The object uuid.
+	 * @param array<mixed> $payload The object payload.
+	 *
+	 * @return ObjectEntity The object.
 	 */
 	private function object(string $uuid, array $payload = []): ObjectEntity {
 		$object = new ObjectEntity();
@@ -62,6 +67,10 @@ final class ErasurePreviewServiceTest extends TestCase {
 
 	/**
 	 * The discovery hit shape findSubjectObjects() hands back.
+	 *
+	 * @param ObjectEntity $object The object the subject was found on.
+	 *
+	 * @return array<string, mixed> One discovery hit.
 	 */
 	private function hit(ObjectEntity $object): array {
 		return [
@@ -79,6 +88,10 @@ final class ErasurePreviewServiceTest extends TestCase {
 
 	/**
 	 * A db whose co-subject probe returns exactly the staged rows.
+	 *
+	 * @param array<int, array<string, mixed>> $rows Rows the probe returns.
+	 *
+	 * @return IDBConnection The staged connection.
 	 */
 	private function db(array $rows): IDBConnection {
 		$expr = $this->createMock(IExpressionBuilder::class);
@@ -113,6 +126,8 @@ final class ErasurePreviewServiceTest extends TestCase {
 	 * @param callable|null        $immutable validateNotImmutable() stand-in.
 	 * @param array<int, array>    $coRows    Rows the co-subject probe returns.
 	 * @param array<string, int>   $scope     Destruction scope counts.
+	 *
+	 * @return ErasurePreviewService The assembled service.
 	 */
 	private function service(
 		array $hits,
@@ -318,7 +333,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 		$second = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
 
 		self::assertSame($first['digest'], $second['digest']);
-		// generatedAt differs between the two and is deliberately outside the
+		// The generatedAt differs between the two and is deliberately outside the
 		// digest, or every approval would be stale the instant it was given.
 		self::assertNotSame('', $first['digest']);
 	}//end testTheDigestAgreesAcrossTwoReadingsOfAnUnchangedWorld()

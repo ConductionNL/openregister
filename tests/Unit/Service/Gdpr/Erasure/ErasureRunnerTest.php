@@ -103,6 +103,8 @@ final class ErasureRunnerTest extends TestCase {
 	 * @param array<int, string>                   $uuids       The uuids discovery can load.
 	 * @param string                               $digest      The fresh preview's digest.
 	 * @param DestructionRefusedException|null     $rightRefusal Per-object destroy-right refusal.
+	 *
+	 * @return ErasureRunner The assembled runner.
 	 */
 	private function runner(
 		array $items,

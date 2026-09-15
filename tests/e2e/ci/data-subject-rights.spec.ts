@@ -36,17 +36,28 @@ import type { APIRequestContext } from '@playwright/test'
  * (testOneDestructionPathOneRecord) — named here so nobody has to take this
  * comment's word for it.
  *
- * HERMETIC BY CONSTRUCTION. It creates and removes its own previews and needs
- * no `occ`, no docker and no seeded PII.
+ * HERMETIC BY CONSTRUCTION. It needs no `occ`, no docker and no seeded PII.
+ *
+ * WHAT IT LEAVES BEHIND, SAID PLAINLY. Each test records a preview row against
+ * a subject that exists only for this run (`preview-shape-<run>@example.org`
+ * and friends), and those rows stay. There is deliberately no delete route: a
+ * recorded answer that can be removed is not a record, and the row is the thing
+ * an erasure was checked against. The rows aggregate onto nothing a person
+ * reads — no total, no dashboard, no report — and they name no real subject, so
+ * they are residue in the same sense a log line is.
  */
 import { expect, request as pwRequest, test } from '@playwright/test'
 import { resolveBaseUrl } from '../base-url.ts'
 
 const BASE = resolveBaseUrl()
-const ADMIN = process.env.ADMIN_USER || process.env.OR_USER || 'admin'
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 
-/* The same fixed uids the sharing, watcher and delete-window specs use,
+/* No admin context here, on purpose. An AVG request is handled by a HANDLER,
+ * and every route under test is `@NoAdminRequired`. Driving it as the
+ * administrator would pass the reach rule by privilege and prove nothing about
+ * the rule itself, so both accounts below are ordinary users — and the reach
+ * test needs two of them.
+ *
+ * The same fixed uids the sharing, watcher and delete-window specs use,
  * provisioned by the workflow's `playwright-seed-command` (tests/e2e/ci/seed.sh). */
 const OWNER = 'e2e-owner'
 const OTHER = 'e2e-other'
