@@ -7,6 +7,30 @@ sidebar_position: 35
 
 This document defines a comprehensive test matrix for all property validation scenarios in OpenRegister, based on `SchemaPropertyValidatorService.php`.
 
+:::tip Read the vocabulary, do not retype it
+
+Every list below is a snapshot. The live one is published:
+
+```
+GET /api/schemas/property-vocabulary
+```
+
+It returns every property type the layer accepts, the constraint keys each
+type takes, the string formats, whether converting a populated property to a
+type is supported, and a sentence per entry. Generate your property editor
+from that read instead of hand-writing a shorter list, because a hand-written
+list is how an app ends up offering eight of the types the layer validates.
+
+A key the vocabulary does not hold fails the schema save with a 422 naming it.
+A key starting with `x-` is a vendor extension and passes through.
+
+An app whose own form lets an administrator author properties declares which
+vocabulary keys that form forwards, with `x-openregister-extends-form`. Read
+the declared narrowings, and what each form leaves out, at
+`GET /api/schemas/extending-forms`.
+
+:::
+
 ## Test Categories
 
 ### 1. String Type Tests

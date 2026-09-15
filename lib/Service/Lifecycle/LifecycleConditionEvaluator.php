@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUserSession;
@@ -41,13 +41,23 @@ use Psr\Log\LoggerInterface;
  *
  * FAIL-CLOSED IN BOTH DIRECTIONS
  * ------------------------------
- * - An expression that cannot be evaluated refuses: `FlowExpression::isTrue()`
- *   answers false for it.
+ * - An expression that cannot be evaluated refuses: {@see ConditionDialect}
+ *   answers false for it, in either dialect.
  * - A condition that is present but is not a non-empty rule object refuses
  *   BEFORE evaluation. This does not rely on save-time validation having run:
  *   SchemaMapper stores most invalid lifecycle annotations with only a warning,
- *   and handed to FlowExpression a scalar evaluates as a truthy literal, which
- *   would authorise every transition the condition was written to block.
+ *   and handed to an expression evaluator a scalar evaluates as a truthy
+ *   literal, which would authorise every transition the condition was written
+ *   to block.
+ *
+ * TWO DIALECTS, ONE EVALUATION POINT
+ * ----------------------------------
+ * A condition may be written in JSONLogic (`{">": [{"var": "object.bedrag"}, 500]}`)
+ * or in the JSON AST (`{"gt": [{"prop": "object.bedrag"}, 500]}`). Which one it
+ * is, is decided by {@see ConditionDialect}, the same class the dry run and the
+ * run log's tracer ask, so a rule tried in the trial surface is evaluated by the
+ * dialect the save path will use on it. Per D-7 the AST is the authored form and
+ * JSONLogic is legacy, kept because schemas carry it today.
  *
  * Not `final`, and only so that {@see AutoTransitionSelector}'s tests can hand
  * it a double and prove the selector evaluates no JSONLogic of its own. It is
@@ -70,14 +80,17 @@ class LifecycleConditionEvaluator {
 	 * @param IGroupManager $groupManager Resolves the caller's group ids.
 	 * @param IL10N $l10n Translation layer for the engine's own refusal message.
 	 * @param LoggerInterface $logger Logs refusals so a bad rule is diagnosable.
+	 * @param ConditionDialect $dialect Decides which dialect a condition is written in.
 	 *
 	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
+		private readonly ConditionDialect $dialect,
 	) {
 	}//end __construct()
 
@@ -111,6 +124,13 @@ class LifecycleConditionEvaluator {
 		string $field,
 	): ?array {
 		if (array_key_exists('condition', $spec) === false || $spec['condition'] === null) {
+			return null;
+		}
+
+		// A condition switched off from the rule inventory refuses nothing. The
+		// switch bites HERE, at the one place a transition condition is
+		// evaluated, so that the inventory reports a state it actually causes.
+		if (($spec['enabled'] ?? true) === false) {
 			return null;
 		}
 
@@ -158,9 +178,9 @@ class LifecycleConditionEvaluator {
 	 * shared rather than rediscovered:
 	 *
 	 * - a value that is present but is NOT a non-empty rule object never
-	 *   reaches `FlowExpression`, where a scalar evaluates as a truthy literal;
+	 *   reaches an evaluator, where a scalar evaluates as a truthy literal;
 	 * - an expression that cannot be evaluated counts as not holding, because
-	 *   `FlowExpression::isTrue()` answers false for it.
+	 *   {@see ConditionDialect::holds()} answers false for it in both dialects.
 	 *
 	 * Both directions fail closed, which means the opposite thing for the two
 	 * callers and the right thing for each: a condition that cannot be trusted
@@ -181,10 +201,8 @@ class LifecycleConditionEvaluator {
 	 *
 	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
-	 * stateless expression facade; calling it statically IS the reuse.
-	 *
 	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function holds(
 		mixed $rule,
@@ -201,15 +219,15 @@ class LifecycleConditionEvaluator {
 			// The runtime does not trust save-time validation: a schema written
 			// by a path that skipped the mapper can still carry a scalar here.
 			$this->logger->warning(
-				'[LifecycleConditionEvaluator] Transition condition is not a JSONLogic rule object; refusing.',
+				'[LifecycleConditionEvaluator] Transition condition is not a rule object; refusing.',
 				['schema' => $schemaSlug, 'action' => $action, 'field' => $field]
 			);
 			return false;
 		}
 
-		return FlowExpression::isTrue(
-			logic: $rule,
-			data: $this->document(newData: $newData, oldData: $oldData, action: $action, from: $from, to: $to)
+		return $this->dialect->holds(
+			node: $rule,
+			document: $this->document(newData: $newData, oldData: $oldData, action: $action, from: $from, to: $to)
 		);
 	}//end holds()
 
@@ -242,6 +260,11 @@ class LifecycleConditionEvaluator {
 	 * `user` is empty under `occ`, which has no session. A condition reading
 	 * `user.uid` therefore refuses on the CLI unless it allows for that.
 	 *
+	 * PUBLIC so that the rule run log can trace a refusal against the SAME
+	 * document the refusal was decided on. A tracer that rebuilt the document
+	 * itself would be a second opinion about what the condition read, and would
+	 * drift the first time this shape changes.
+	 *
 	 * @param array<string, mixed> $newData The object as it would be saved.
 	 * @param array<string, mixed> $oldData The object as currently stored.
 	 * @param string $action The matched transition's name.
@@ -249,8 +272,10 @@ class LifecycleConditionEvaluator {
 	 * @param string $to The lifecycle value being moved to.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
-	private function document(array $newData, array $oldData, string $action, string $from, string $to): array {
+	public function document(array $newData, array $oldData, string $action, string $from, string $to): array {
 		$user = $this->userSession->getUser();
 		$uid = '';
 		$groups = [];

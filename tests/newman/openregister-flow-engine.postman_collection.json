@@ -58,6 +58,18 @@
       "value": ""
     },
     {
+      "key": "synchronization",
+      "value": ""
+    },
+    {
+      "key": "contractQueue",
+      "value": "[]"
+    },
+    {
+      "key": "contractHead",
+      "value": ""
+    },
+    {
       "key": "flows",
       "value": ""
     },
@@ -98,7 +110,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const stamp = 'fe' + Date.now().toString(36)",
+                  "// `stampPrefix` lets a run on a shared instance name its fixtures so any",
+                  "// leftovers can be traced to it. Every name still starts `flow-engine-`,",
+                  "// so the leak check in run-flow-engine.sh keeps matching them.",
+                  "const stamp = (pm.variables.get('stampPrefix') || 'fe') + Date.now().toString(36)",
                   "pm.collectionVariables.set('stamp', stamp)",
                   "pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'))",
                   "pm.test('instance is up', () => pm.response.to.have.status(200))",
@@ -218,7 +233,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"flow-engine-item-{{stamp}}\",\n  \"slug\": \"flow-engine-item-{{stamp}}\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"sourceId\": {\n      \"type\": \"string\"\n    },\n    \"externalId\": {\n      \"type\": \"integer\"\n    },\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"note\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+              "raw": "{\n  \"title\": \"flow-engine-item-{{stamp}}\",\n  \"slug\": \"flow-engine-item-{{stamp}}\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"sourceId\": {\n      \"type\": \"string\"\n    },\n    \"externalId\": {\n      \"type\": \"integer\"\n    },\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"note\": {\n      \"type\": \"string\"\n    },\n    \"email\": {\n      \"type\": \"string\"\n    }\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/apps/openregister/api/schemas",
@@ -416,7 +431,7 @@
               "raw": "{\n  \"name\": \"flow-engine-ext-{{stamp}}\",\n  \"location\": \"https://jsonplaceholder.typicode.com\",\n  \"type\": \"api\",\n  \"isEnabled\": true,\n  \"version\": \"1.0.0\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/source",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -425,8 +440,60 @@
                 "openregister",
                 "api",
                 "objects",
-                "openconnector",
+                "integriq",
                 "source"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create synchronization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('synchronization', (b['@self'] && b['@self'].id) || b.id || '')",
+                  "pm.test('synchronization created', () => pm.expect(pm.collectionVariables.get('synchronization'), JSON.stringify(b).slice(0, 200)).to.be.a('string').and.not.eql(''))",
+                  "pm.test('synchronization carries its source', () => pm.expect(String(b.sourceId || ''), 'a blank sourceId persists fine and only fails at run time').to.not.eql(''))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-sync-{{stamp}}\",\n  \"sourceId\": \"{{extSource}}\",\n  \"sourceType\": \"api\",\n  \"sourceConfig\": {\n    \"endpoint\": \"/users\",\n    \"resultsPosition\": \"_root\",\n    \"usesPagination\": false\n  },\n  \"targetType\": \"register/schema\",\n  \"targetId\": \"{{register}}/{{schema}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/synchronization",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "integriq",
+                "synchronization"
               ]
             }
           }
@@ -467,7 +534,7 @@
               "raw": "{\n  \"name\": \"flow-engine-nc-{{stamp}}\",\n  \"location\": \"http://localhost\",\n  \"type\": \"api\",\n  \"isEnabled\": true,\n  \"version\": \"1.0.0\",\n  \"configuration\": {\n    \"headers\": {\n      \"Authorization\": \"Basic {{authToken}}\",\n      \"OCS-APIRequest\": \"true\"\n    }\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/source",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -476,7 +543,7 @@
                 "openregister",
                 "api",
                 "objects",
-                "openconnector",
+                "integriq",
                 "source"
               ]
             }
@@ -3440,6 +3507,203 @@
       ]
     },
     {
+      "name": "15 — Run a configured synchronization from a flow",
+      "description": "Hand a whole configured synchronization to one node and let it import the collection.",
+      "item": [
+        {
+          "name": "synchronization-run — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_synchronization_run_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('synchronization-run: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))",
+                  "",
+                  "// 🔴 PUBLISH BEFORE RUNNING. Since flow definition versioning a flow is created",
+                  "// as a DRAFT, and a draft backs no run — the run step below would answer 409",
+                  "// no-published-version. Publishing here is exactly what an author does in the",
+                  "// editor, so the case still describes the same journey it always did.",
+                  "const _publishId = b.uuid || ''",
+                  "if (_publishId) {",
+                  "    pm.sendRequest({",
+                  "        url: pm.collectionVariables.get('baseUrl') + '/apps/openregister/api/flows/' + _publishId + '/publish',",
+                  "        method: 'POST',",
+                  "        header: {",
+                  "            'OCS-APIRequest': 'true',",
+                  "            'Authorization': pm.request.headers.get('Authorization') || '',",
+                  "            'Content-Type': 'application/json'",
+                  "        },",
+                  "        body: { mode: 'raw', raw: '{}' }",
+                  "    }, (err, res) => {",
+                  "        pm.test('flow published', () => {",
+                  "            pm.expect(err, String(err)).to.be.null",
+                  "            pm.expect(res.code, res.text().slice(0, 300)).to.eql(200)",
+                  "        })",
+                  "    })",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-synchronization-run-{{stamp}}\",\n  \"description\": \"Hand a whole configured synchronization to one node and let it import the collection.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"sr1\",\n      \"type\": \"openconnector.synchronization-run\",\n      \"config\": {\n        \"synchronization\": \"{{synchronization}}\"\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"sr1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"sr1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "synchronization-run — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_synchronization_run_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_synchronization_run_status', String(run.status))",
+                  "pm.collectionVariables.set('case_synchronization_run_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('synchronization-run: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('synchronization-run: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_synchronization_run_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_synchronization_run_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "synchronization-run — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_synchronization_run_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_synchronization_run_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('synchronization-run: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const bearingField = objects.filter((o) => String(o[\"email\"] || '') !== '')",
+                  "pm.test('synchronization-run: at least 10 row(s) carry email', () => {",
+                  "    pm.expect(bearingField.length, 'the run was green but imported nothing').to.be.at.least(10)",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=1000"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "98 — coverage",
       "item": [
         {
@@ -3450,7 +3714,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const cases = [{\"key\":\"api-sync\",\"requires\":null},{\"key\":\"notify-on-change\",\"requires\":null},{\"key\":\"mailbox-summary-ai\",\"requires\":\"agent\"},{\"key\":\"data-quality-sweep\",\"requires\":null},{\"key\":\"enrichment\",\"requires\":null},{\"key\":\"approval-routing\",\"requires\":null},{\"key\":\"retention-sweep\",\"requires\":null},{\"key\":\"paginated-sync\",\"requires\":null},{\"key\":\"route-and-merge\",\"requires\":null},{\"key\":\"sync-cursor\",\"requires\":null},{\"key\":\"batch-export\",\"requires\":null},{\"key\":\"map-transform\",\"requires\":null},{\"key\":\"trigger-object\",\"requires\":null},{\"key\":\"wait-suspends\",\"requires\":null}]",
+                  "const cases = [{\"key\":\"api-sync\",\"requires\":null},{\"key\":\"notify-on-change\",\"requires\":null},{\"key\":\"mailbox-summary-ai\",\"requires\":\"agent\"},{\"key\":\"data-quality-sweep\",\"requires\":null},{\"key\":\"enrichment\",\"requires\":null},{\"key\":\"approval-routing\",\"requires\":null},{\"key\":\"retention-sweep\",\"requires\":null},{\"key\":\"paginated-sync\",\"requires\":null},{\"key\":\"route-and-merge\",\"requires\":null},{\"key\":\"sync-cursor\",\"requires\":null},{\"key\":\"batch-export\",\"requires\":null},{\"key\":\"map-transform\",\"requires\":null},{\"key\":\"trigger-object\",\"requires\":null},{\"key\":\"wait-suspends\",\"requires\":null},{\"key\":\"synchronization-run\",\"requires\":null}]",
                   "const skipped = cases.filter((c) => pm.collectionVariables.get('case_' + c.key.replace(/-/g, '_') + '_skipped') === '1')",
                   "const ran = cases.length - skipped.length",
                   "console.log('COVERAGE: ' + ran + ' of ' + cases.length + ' flow-engine cases ran'",
@@ -3813,6 +4077,158 @@
           }
         },
         {
+          "name": "list synchronization contracts to purge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sync = pm.collectionVariables.get('synchronization')",
+                  "const body = pm.response.json()",
+                  "const listed = body.results || []",
+                  "const ids = sync ? listed.filter((c) => c.synchronizationId === sync).map((c) => (c['@self'] && c['@self'].id) || c.id).filter(Boolean) : []",
+                  "pm.test('every listed contract belongs to this run', () => pm.expect(ids.length, 'the synchronizationId filter was not applied').to.eql(sync ? listed.length : ids.length))",
+                  "pm.collectionVariables.set('contractQueue', JSON.stringify(ids))",
+                  "pm.collectionVariables.set('contractHead', ids.length ? ids[0] : '')",
+                  "console.log('purging ' + ids.length + ' synchronization contract(s)')",
+                  "if (!ids.length) { pm.execution.setNextRequest('delete synchronization') }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/synchronization_contract?synchronizationId={{synchronization}}&_limit=500",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "integriq",
+                "synchronization_contract?synchronizationId={{synchronization}}&_limit=500"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete one synchronization contract",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('synchronization contract purged', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
+                  "const queue = JSON.parse(pm.collectionVariables.get('contractQueue') || '[]')",
+                  "queue.shift()",
+                  "pm.collectionVariables.set('contractQueue', JSON.stringify(queue))",
+                  "if (queue.length) {",
+                  "    pm.collectionVariables.set('contractHead', queue[0])",
+                  "    pm.execution.setNextRequest('delete one synchronization contract')",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/synchronization_contract/{{contractHead}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "integriq",
+                "synchronization_contract",
+                "{{contractHead}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete synchronization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('synchronization deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/synchronization/{{synchronization}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "integriq",
+                "synchronization",
+                "{{synchronization}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "delete mapping",
           "event": [
             {
@@ -3886,7 +4302,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source/{{extSource}}",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/source/{{extSource}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -3895,7 +4311,7 @@
                 "openregister",
                 "api",
                 "objects",
-                "openconnector",
+                "integriq",
                 "source",
                 "{{extSource}}"
               ]
@@ -3932,7 +4348,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source/{{ncSource}}",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/integriq/source/{{ncSource}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -3941,7 +4357,7 @@
                 "openregister",
                 "api",
                 "objects",
-                "openconnector",
+                "integriq",
                 "source",
                 "{{ncSource}}"
               ]

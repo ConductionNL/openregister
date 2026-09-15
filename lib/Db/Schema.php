@@ -2534,6 +2534,11 @@ class Schema extends Entity implements JsonSerializable {
 			return;
 		}
 
+		if ($key === 'partyKinds') {
+			$validatedConfig[$key] = $this->validatePartyKindsValue(value: $value);
+			return;
+		}
+
 		if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
 			$validatedConfig[$key] = $this->validateWriteOnlyPathsValue(value: $value);
 			return;
@@ -2755,6 +2760,12 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-merge',
 		'x-openregister-handoff',
 		'x-openregister-mcp',
+		// The extending-form declaration: which property-vocabulary keys an
+		// app's own property form forwards. Absent from this list it would be
+		// silently DROPPED by setConfiguration(), and the narrowing the
+		// annotation exists to make visible would be invisible again, which is
+		// the exact failure the three comments below record.
+		'x-openregister-extends-form',
 		// The extensible action vocabulary: a map of action key →
 		// {name, description} that `validateAuthorizationRules()` reads to
 		// decide which non-CRUD actions an authorization block may name.
@@ -2823,6 +2834,13 @@ class Schema extends Entity implements JsonSerializable {
 		// The reference properties a record collects map features from, each
 		// feature naming the relation it arrived through.
 		self::GEO_INHERITANCE_ANNOTATION,
+		// Declares that objects of this schema ARE parties: which kind of
+		// party, and which of its properties carry the name, the addresses,
+		// the indicators and the parent. Absent from this list,
+		// setConfiguration() would DROP it and the party model would report
+		// "this schema is not a party schema" for a schema that says it is —
+		// the same silent no-op class as every entry above.
+		'x-openregister-party',
 	];
 
 	/**
@@ -2923,6 +2941,124 @@ class Schema extends Entity implements JsonSerializable {
 
 		return $entries;
 	}//end getLinkRoles()
+
+	/**
+	 * Validate and normalise `partyKinds`: the kinds of party an object of
+	 * this schema accepts, and per kind the roles it may hold.
+	 *
+	 * Each entry is `{key, label, description?, roles?}`; a bare string reads
+	 * as `{key: s, label: s}`. Keys are unique, non-empty and at most 64
+	 * characters, the width of the link table's `party_kind` column. `roles`
+	 * is an optional list of role keys: naming it binds those roles to that
+	 * kind, leaving it out lets the kind hold any role the schema declares.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The normalised entries.
+	 *
+	 * @throws InvalidArgumentException When the value is not a list of valid entries.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	private function validatePartyKindsValue(mixed $value): array {
+		if (is_array($value) === false || array_is_list($value) === false) {
+			throw new InvalidArgumentException("Configuration 'partyKinds' must be a list of party kinds");
+		}
+
+		$entries = [];
+		$seen = [];
+		foreach ($value as $entry) {
+			$normalised = self::normalisePartyKind(entry: $entry);
+			if ($normalised === null) {
+				throw new InvalidArgumentException("Each 'partyKinds' entry needs a non-empty key of at most 64 characters");
+			}
+
+			if (isset($seen[$normalised['key']]) === true) {
+				throw new InvalidArgumentException("'partyKinds' names the key '" . $normalised['key'] . "' twice");
+			}
+
+			$seen[$normalised['key']] = true;
+			$entries[] = $normalised;
+		}
+
+		return $entries;
+	}//end validatePartyKindsValue()
+
+	/**
+	 * One `partyKinds` entry as `{key, label, description?, roles?}`, or null when it has no usable key.
+	 *
+	 * @param mixed $entry A string or an array.
+	 *
+	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>}|null The entry.
+	 */
+	private static function normalisePartyKind(mixed $entry): ?array {
+		$normalised = self::normaliseLinkRole(entry: $entry);
+		if ($normalised === null) {
+			return null;
+		}
+
+		if (is_array($entry) === false || isset($entry['roles']) === false || is_array($entry['roles']) === false) {
+			return $normalised;
+		}
+
+		$roles = [];
+		foreach ($entry['roles'] as $role) {
+			$role = trim((string)$role);
+			if ($role !== '' && in_array($role, $roles, true) === false) {
+				$roles[] = $role;
+			}
+		}
+
+		if ($roles !== []) {
+			$normalised['roles'] = $roles;
+		}
+
+		return $normalised;
+	}//end normalisePartyKind()
+
+	/**
+	 * The kinds of party an object of this schema accepts, [] when it declares none.
+	 *
+	 * A schema that declares none keeps its reference properties and behaves
+	 * as it did before the party model: the picker offers everything and the
+	 * validator refuses nothing.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function getPartyKinds(): array {
+		$configured = $this->configuration['partyKinds'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($configured as $entry) {
+			$normalised = self::normalisePartyKind(entry: $entry);
+			if ($normalised !== null) {
+				$entries[] = $normalised;
+			}
+		}
+
+		return $entries;
+	}//end getPartyKinds()
+
+	/**
+	 * The `x-openregister-party` annotation, [] when the schema is not a party schema.
+	 *
+	 * @return array<string, mixed> The annotation as stored.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function getPartyAnnotation(): array {
+		$configured = $this->configuration['x-openregister-party'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		return $configured;
+	}//end getPartyAnnotation()
 
 	/**
 	 * Validate the linkedTypes configuration value.

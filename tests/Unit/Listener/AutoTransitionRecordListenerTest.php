@@ -49,6 +49,29 @@ use Psr\Log\LoggerInterface;
  */
 class AutoTransitionRecordListenerTest extends TestCase {
 
+	/**
+	 * The real condition dialect, not a double.
+	 *
+	 * Which dialect a condition is written in is part of what the save path
+	 * decides, so a test that stubbed it would be asserting about a decision
+	 * the engine no longer makes.
+	 *
+	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
+		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+				)
+			)
+		);
+
+	}//end realConditionDialect()
+
+
 	private const AUTO_WHEN = ['!!' => ['var' => 'object.motivering']];
 
 	private SchemaMapper&MockObject $schemaMapper;
@@ -78,7 +101,8 @@ class AutoTransitionRecordListenerTest extends TestCase {
 				$this->createMock(IUserSession::class),
 				$groupManager,
 				$l10n,
-				$logger
+				$logger,
+				$this->realConditionDialect()
 			),
 			$logger
 		);

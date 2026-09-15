@@ -54,6 +54,29 @@ use RuntimeException;
  */
 class LifecycleConditionTest extends TestCase {
 
+	/**
+	 * The real condition dialect, not a double.
+	 *
+	 * Which dialect a condition is written in is part of what the save path
+	 * decides, so a test that stubbed it would be asserting about a decision
+	 * the engine no longer makes.
+	 *
+	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
+		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+				)
+			)
+		);
+
+	}//end realConditionDialect()
+
+
 	private SchemaMapper&MockObject $schemaMapper;
 
 	private ContainerInterface&MockObject $guardContainer;
@@ -109,9 +132,20 @@ class LifecycleConditionTest extends TestCase {
 				$this->userSession,
 				$this->groupManager,
 				$this->l10n,
-				$this->logger
+				$this->logger,
+				$this->realConditionDialect()
 			),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+						placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+							userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+						)
+					)
+				)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 	}//end setUp()
 
@@ -223,9 +257,20 @@ class LifecycleConditionTest extends TestCase {
 				$this->userSession,
 				$this->groupManager,
 				$this->l10n,
-				$this->logger
+				$this->logger,
+				$this->realConditionDialect()
 			),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+						placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+							userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+						)
+					)
+				)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$this->schemaWithTransition(
@@ -460,7 +505,7 @@ class LifecycleConditionTest extends TestCase {
 		// working, so it is a warning where an honest refusal is only debug.
 		$this->logger->expects($this->once())
 			->method('warning')
-			->with($this->stringContains('not a JSONLogic rule object'));
+			->with($this->stringContains('not a rule object'));
 
 		$this->schemaWithTransition(self::TRANSITION + ['condition' => 'yes']);
 		$this->listener->handle($this->event());
@@ -476,14 +521,24 @@ class LifecycleConditionTest extends TestCase {
 			$this->schemaMapper,
 			new LifecycleGuardRegistry(
 				$this->guardContainer,
-				$this->createMock(IServerContainer::class),
+				$this->createMock(originalClassName: IServerContainer::class),
 				$this->logger
 			),
 			$this->userSession,
 			$this->permissionHandler,
 			$this->logger,
-			new LifecycleConditionEvaluator($this->userSession, $this->groupManager, $this->l10n, $this->logger),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context)
+			new LifecycleConditionEvaluator($this->userSession, $this->groupManager, $this->l10n, $this->logger, $this->realConditionDialect()),
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
+					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
+						placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+							userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
+						)
+					)
+				)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$schema = new Schema();

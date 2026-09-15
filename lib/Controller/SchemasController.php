@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
@@ -50,8 +51,9 @@ use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
-use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\UploadService;
@@ -841,6 +843,15 @@ class SchemasController extends Controller {
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
 			return new JSONResponse(data: $schema, statusCode: 201);
+		} catch (PropertyVocabularyException $e) {
+			// A type, a constraint key or a forwarded key the vocabulary does
+			// not hold is the caller's input and a person is waiting on the
+			// answer, so the refusal names the value rather than being logged
+			// and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (AuthorizationBlockException $e) {
 			// A deny that contradicts a grant beside it, or one that would leave
 			// nobody holding `manage`. The request was understood; the rules
@@ -853,6 +864,14 @@ class SchemasController extends Controller {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
 			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (DependentValueDeclarationException $e) {
+			// A dependent value table that names nothing constrains nothing,
+			// and the object it was written to guard would save cleanly. The
+			// refusal names the property rather than being logged (ADR-005).
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
@@ -1074,6 +1093,15 @@ class SchemasController extends Controller {
 			);
 
 			return new JSONResponse(data: $updatedSchema);
+		} catch (PropertyVocabularyException $e) {
+			// A type, a constraint key or a forwarded key the vocabulary does
+			// not hold is the caller's input and a person is waiting on the
+			// answer, so the refusal names the value rather than being logged
+			// and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (AuthorizationBlockException $e) {
 			// A deny that contradicts a grant beside it, or one that would leave
 			// nobody holding `manage`. The request was understood; the rules
@@ -1086,6 +1114,14 @@ class SchemasController extends Controller {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
 			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (DependentValueDeclarationException $e) {
+			// A dependent value table that names nothing constrains nothing,
+			// and the object it was written to guard would save cleanly. The
+			// refusal names the property rather than being logged (ADR-005).
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
@@ -1561,6 +1597,15 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schema);
+		} catch (PropertyVocabularyException $e) {
+			// A type, a constraint key or a forwarded key the vocabulary does
+			// not hold is the caller's input and a person is waiting on the
+			// answer, so the refusal names the value rather than being logged
+			// and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (AuthorizationBlockException $e) {
 			// A deny that contradicts a grant beside it, or one that would leave
 			// nobody holding `manage`. The request was understood; the rules
@@ -1573,6 +1618,14 @@ class SchemasController extends Controller {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
 			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (DependentValueDeclarationException $e) {
+			// A dependent value table that names nothing constrains nothing,
+			// and the object it was written to guard would save cleanly. The
+			// refusal names the property rather than being logged (ADR-005).
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422

@@ -59,6 +59,15 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * Merges every archival source an object carries into one resolved
  * `@self._retention` decision, in MDTO concepts with English keys.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity IS the job.
+ *              Five stored blocks describe the same arc in different words, and
+ *              each branch here is one source this class had to learn to read;
+ *              the class exists because those branches used to be spread over
+ *              the codebase and had already drifted apart. Folding them together
+ *              would not simplify the problem, it would hide which source
+ *              answered, which is the one thing a records officer needs when a
+ *              disposal date looks wrong.
  */
 class ArchivalDecisionResolver {
 
@@ -173,6 +182,7 @@ class ArchivalDecisionResolver {
         $decision['basis'] = $this->resolveBasis(retention: $retention, tmlo: $tmlo, annotation: $annotation, declared: $declared);
         $decision['source'] = $this->stringOrNull(value: ($retention['selectielijstBron'] ?? null));
         $decision = $this->withSourceProvenance(decision: $decision, retention: $retention);
+        $decision = $this->withProcessRecord(decision: $decision, retention: $retention);
 
         // The raw annotation evaluation is passed through rather than folded
         // away: `matchedRule` is the only thing that says WHICH rule in the
@@ -507,6 +517,50 @@ class ArchivalDecisionResolver {
 
         return $decision;
     }//end withSourceProvenance()
+
+    /**
+     * Add the archiving process facts: which row, which nomination, what happened.
+     *
+     * 🔴 A HANDLER ANSWERING A WOO REQUEST NEEDS THE GRONDSLAG IN FRONT OF
+     * THEM, not a category code they then have to look up. `disposalCategory`
+     * says which class of record this is; `selectionListRow` says which row of
+     * which list actually decided, which is the thing an archiefinspecteur
+     * asks for.
+     *
+     * `nomination` carries the status, so an object nothing could nominate
+     * reads as `unnominatable` with its reason rather than as an object nobody
+     * has got to yet. Those two look identical from an absent appraisal, and
+     * only one of them is somebody's problem.
+     *
+     * `outcome` is the destruction or transfer record once one exists. A
+     * transfer decided on a destruction list used to live only on that list,
+     * so the record itself could not say it had been handed over.
+     *
+     * @param array<string, mixed> $decision  The decision so far.
+     * @param array<string, mixed> $retention The stored retention block.
+     *
+     * @return array<string, mixed> The decision, with the process facts.
+     *
+     * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+     */
+    private function withProcessRecord(array $decision, array $retention): array {
+        $row = $this->stringOrNull(value: ($retention['selectielijstRow'] ?? null));
+        if ($row !== null) {
+            $decision['selectionListRow'] = $row;
+        }
+
+        $nomination = ($retention['nomination'] ?? null);
+        if (is_array($nomination) === true && $nomination !== []) {
+            $decision['nomination'] = $nomination;
+        }
+
+        $outcome = ($retention['outcome'] ?? null);
+        if (is_array($outcome) === true && $outcome !== []) {
+            $decision['outcome'] = $outcome;
+        }
+
+        return $decision;
+    }//end withProcessRecord()
 
     /**
      * Decide which authority the retention period rests on.
