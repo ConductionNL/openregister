@@ -169,6 +169,8 @@ class ObjectStateWriteException extends Exception {
 	 * The state that refused the write.
 	 *
 	 * @return string|null `archived`, `frozen`, or null when not built by a factory.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function getState(): ?string {
 		return $this->state;
@@ -178,6 +180,8 @@ class ObjectStateWriteException extends Exception {
 	 * Who put the object into the refusing state.
 	 *
 	 * @return string|null The user id, or null when the marker did not record one.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function getActor(): ?string {
 		return $this->actor;
@@ -187,6 +191,8 @@ class ObjectStateWriteException extends Exception {
 	 * When the object entered the refusing state.
 	 *
 	 * @return string|null An ISO 8601 string, or null when the marker did not record one.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function getAt(): ?string {
 		return $this->at;
@@ -219,6 +225,8 @@ class ObjectStateWriteException extends Exception {
 	 * @param Throwable|null $previous The previous exception that caused this one.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		string $message = 'Cannot write to this object in its current state',

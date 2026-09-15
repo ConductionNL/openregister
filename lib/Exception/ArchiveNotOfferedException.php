@@ -69,6 +69,8 @@ class ArchiveNotOfferedException extends Exception {
 	 * @param Throwable|null $previous The previous exception that caused this one.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		string $message = 'This schema does not offer archiving',

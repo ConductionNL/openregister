@@ -65,6 +65,8 @@ class ArchiveHandler {
 	 * @param PermissionHandler $permissionHandler The `update` gate.
 	 * @param IUserSession $userSession The acting user.
 	 * @param LoggerInterface $logger PSR-3 logger.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,

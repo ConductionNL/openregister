@@ -60,6 +60,8 @@ class ObjectStateController extends Controller {
 	 * @param IUserSession $userSession The user session.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		string $appName,
@@ -67,7 +69,7 @@ class ObjectStateController extends Controller {
 		private readonly ArchiveHandler $archiveHandler,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct($appName, $request);
+		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
 
 	/**

@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -75,6 +75,8 @@ class AddObjectStateColumns implements IRepairStep {
 	 * Human-readable step name surfaced in occ and the admin UI.
 	 *
 	 * @return string The step name.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function getName(): string {
 		return 'Add the archive and freeze columns to existing object tables';
@@ -86,6 +88,8 @@ class AddObjectStateColumns implements IRepairStep {
 	 * @param IOutput $output Migration output handle.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function run(IOutput $output): void {
 		$reconciled = 0;
