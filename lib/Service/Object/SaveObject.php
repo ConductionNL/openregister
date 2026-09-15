@@ -3181,7 +3181,7 @@ class SaveObject {
 
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: ($register?->getId() ?? $registerId),
+				register: $registerId,
 				schema: $schemaId,
 				data: $data,
 				overrideRequested: $dedupOverrideRequested
