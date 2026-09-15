@@ -14,8 +14,8 @@
 
 ## 3. The subject's own export
 
-- [ ] 3.1 A machine readable export of everything held about a subject, as a background job (D-4).
-- [ ] 3.2 A delivered file with its own expiry, and an audit entry naming requester and subject.
+- [x] 3.1 A machine readable export of everything held about a subject, as a background job (D-4).
+- [x] 3.2 A delivered file with its own expiry, and an audit entry naming requester and subject.
 
 ## 4. Reach and revocation
 
@@ -30,7 +30,7 @@
 ## 6. Tests
 
 - [x] 6.1 `tests/e2e/ci/data-subject-rights.spec.ts`: the four routes reachable, the unapproved erasure refused, the spent preview refused, one handler's preview unreadable by another. The COUNTS are excluded with a reason and a named unit test: the PII index has no HTTP write door for objects, so an API assertion would run against an empty index.
-- [x] 6.2 Unit tests: the unresolvable hold, the unapproved erasure refusal. (The export expiry and the external grant refusal belong to tasks 3 and 5, which ship on the follow-up branch.)
+- [x] 6.2 Unit tests: the unresolvable hold, the unapproved erasure refusal, the export expiry (clock fixture), the external grant refusal and lapse.
 - [x] 6.3 `openspec validate data-subject-rights-across-the-instance --strict`.
 
 ## 7. Hand over

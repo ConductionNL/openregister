@@ -452,6 +452,14 @@ return [
             'verb' => 'GET', 'requirements' => ['principal' => '[^/]+']],
         ['name' => 'principalReach#revoke', 'url' => '/api/rbac/reach/{principal}/revoke',
             'verb' => 'POST', 'requirements' => ['principal' => '[^/]+']],
+        // The data subject's own export (task 3): ask, read the state back,
+        // take the file. The middle route exists because the assembly is a
+        // background job and a caller needs to know when it is ready.
+        ['name' => 'subjectExport#create', 'url' => '/api/gdpr/subject-exports', 'verb' => 'POST'],
+        ['name' => 'subjectExport#show', 'url' => '/api/gdpr/subject-exports/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'subjectExport#download', 'url' => '/api/gdpr/subject-exports/{id}/download',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
