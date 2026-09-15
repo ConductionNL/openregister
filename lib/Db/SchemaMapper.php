@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
+use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
@@ -1101,6 +1102,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
+		$this->validateHingeAnnotations(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
 		$this->validateMergeAnnotation(schema: $schema);
 		$this->validatePartyAnnotation(schema: $schema);
@@ -1571,6 +1573,54 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (declared match rules not used): ' . implode(' ', $messages)
 		);
 	}//end validateDedupAnnotation()
+
+	/**
+	 * Validate the lens, list and geographic-inheritance annotations.
+	 *
+	 * All three are declarative reading instructions, not storage requirements:
+	 * a malformed one costs a surface, never an object. So this degrades to a
+	 * warning rather than aborting the import — but it does warn, because the
+	 * failure mode without it is a lens that renders empty forever and reads
+	 * exactly like a field nobody filled in.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	private function validateHingeAnnotations(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+		];
+
+		$declared = false;
+		foreach ([Schema::LENS_ANNOTATION, Schema::LIST_ANNOTATION, Schema::GEO_INHERITANCE_ANNOTATION] as $key) {
+			if (isset($configuration[$key]) === false) {
+				continue;
+			}
+
+			$shape[$key] = $configuration[$key];
+			$declared = true;
+		}
+
+		if ($declared === false) {
+			return;
+		}
+
+		$errors = (new HingeAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+		$this->logger->warning(
+			'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are '
+			. 'invalid and were ignored: ' . implode(' ', $messages)
+		);
+	}//end validateHingeAnnotations()
 
 	/**
 	 * Validate the optional `x-openregister-survivorship` annotation.
