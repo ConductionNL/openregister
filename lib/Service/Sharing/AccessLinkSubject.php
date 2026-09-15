@@ -68,7 +68,7 @@ class AccessLinkSubject {
 		}
 
 		return $this->half(subjectId: $id, index: 0);
-	}
+	}//end objectUuid()
 
 	/**
 	 * The file id a file subject names, or null.
@@ -81,7 +81,7 @@ class AccessLinkSubject {
 	 */
 	public function fileId(string $subjectId): ?string {
 		return $this->half(subjectId: trim($subjectId), index: 1);
-	}
+	}//end fileId()
 
 	/**
 	 * One half of a `<object uuid>/<file id>` subject, or null.
@@ -103,5 +103,5 @@ class AccessLinkSubject {
 		}
 
 		return $half;
-	}
-}
+	}//end half()
+}//end class
