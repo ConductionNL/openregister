@@ -908,8 +908,18 @@ return [
         // declares no capability set, requires no expiry and attributes nothing.
         // @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
         ['name' => 'accessLink#open', 'url' => '/api/public/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
-        ['name' => 'accessLink#comment', 'url' => '/api/public/links/{anchor}/comments', 'verb' => 'POST', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
-        ['name' => 'accessLink#upload', 'url' => '/api/public/links/{anchor}/files', 'verb' => 'POST', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
+        [
+            'name' => 'accessLink#comment',
+            'url' => '/api/public/links/{anchor}/comments',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
+        [
+            'name' => 'accessLink#upload',
+            'url' => '/api/public/links/{anchor}/files',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
         ['name' => 'accessLink#index', 'url' => '/api/access-links', 'verb' => 'GET'],
         ['name' => 'accessLink#mint', 'url' => '/api/access-links', 'verb' => 'POST'],
         ['name' => 'accessLink#update', 'url' => '/api/access-links/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],

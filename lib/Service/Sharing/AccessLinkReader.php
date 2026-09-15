@@ -105,6 +105,7 @@ class AccessLinkReader {
 	 * @param SchemaMapper $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
 	 * @param NoteService $notes Reads the timeline.
+	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
@@ -112,6 +113,7 @@ class AccessLinkReader {
 		private readonly SchemaMapper $schemas,
 		private readonly PropertyRbacHandler $properties,
 		private readonly NoteService $notes,
+		private readonly AccessLinkSubject $subjects,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -141,7 +143,10 @@ class AccessLinkReader {
 		}
 
 		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
-			$uuid = $this->objectOfFileSubject(subjectId: $uuid);
+			$uuid = $this->subjects->objectUuid(
+				subjectType: AccessLink::SUBJECT_FILE,
+				subjectId: (string)$link->getSubjectId()
+			);
 			if ($uuid === null) {
 				return null;
 			}
@@ -205,7 +210,7 @@ class AccessLinkReader {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
 			$body['file'] = $this->fileDescriptor(
 				object: $object,
-				fileId: (string)$this->fileOfFileSubject(subjectId: (string)$link->getSubjectId())
+				fileId: (string)$this->subjects->fileId(subjectId: (string)$link->getSubjectId())
 			);
 			if ($body['file'] === null) {
 				// A file the object does not carry is a file that is not there.
@@ -405,54 +410,4 @@ class AccessLinkReader {
 		return $files;
 	}//end filesOf()
 
-	/**
-	 * The object uuid a file subject belongs to.
-	 *
-	 * A file link is written as `<object uuid>/<file id>`, so the object that
-	 * owns the file is named in the link rather than looked up from the file.
-	 * A file id alone would let a link point at a file whose object nobody
-	 * checked.
-	 *
-	 * @param string $subjectId The file subject.
-	 *
-	 * @return string|null The object uuid, or null when the subject is malformed.
-	 *
-	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
-	 */
-	private function objectOfFileSubject(string $subjectId): ?string {
-		$parts = explode('/', $subjectId, 2);
-		if (count($parts) !== 2) {
-			return null;
-		}
-
-		$uuid = trim($parts[0]);
-		if ($uuid === '') {
-			return null;
-		}
-
-		return $uuid;
-	}//end objectOfFileSubject()
-
-	/**
-	 * The file id a file subject names.
-	 *
-	 * @param string $subjectId The file subject, as `<object uuid>/<file id>`.
-	 *
-	 * @return string|null The file id, or null when the subject is malformed.
-	 *
-	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
-	 */
-	private function fileOfFileSubject(string $subjectId): ?string {
-		$parts = explode('/', $subjectId, 2);
-		if (count($parts) !== 2) {
-			return null;
-		}
-
-		$fileId = trim($parts[1]);
-		if ($fileId === '') {
-			return null;
-		}
-
-		return $fileId;
-	}//end fileOfFileSubject()
 }//end class

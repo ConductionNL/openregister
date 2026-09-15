@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -78,6 +79,7 @@ class AccessLinkReaderTest extends TestCase {
 			schemas: $this->schemas,
 			properties: $this->properties,
 			notes: $this->notes,
+			subjects: new AccessLinkSubject(),
 			logger: $this->logger
 		);
 	}
@@ -138,6 +140,7 @@ class AccessLinkReaderTest extends TestCase {
 			schemas: $schemas,
 			properties: $this->properties,
 			notes: $this->notes,
+			subjects: new AccessLinkSubject(),
 			logger: $this->logger
 		);
 

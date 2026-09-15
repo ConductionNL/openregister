@@ -36,8 +36,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\AccessLinkController;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCP\AppFramework\Http;
@@ -58,8 +58,8 @@ class AccessLinkControllerTest extends TestCase {
 	private IRequest&MockObject $request;
 	private AccessLinkService&MockObject $links;
 	private AccessLinkReader&MockObject $reader;
-	private NoteService&MockObject $notes;
-	private FileService&MockObject $files;
+	private AccessLinkMintGuard&MockObject $mintGuard;
+	private AccessLinkActs&MockObject $acts;
 	private IUserSession&MockObject $userSession;
 	private IThrottler&MockObject $throttler;
 	private LoggerInterface&MockObject $logger;
@@ -74,8 +74,8 @@ class AccessLinkControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->links = $this->createMock(AccessLinkService::class);
 		$this->reader = $this->createMock(AccessLinkReader::class);
-		$this->notes = $this->createMock(NoteService::class);
-		$this->files = $this->createMock(FileService::class);
+		$this->mintGuard = $this->createMock(AccessLinkMintGuard::class);
+		$this->acts = $this->createMock(AccessLinkActs::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->throttler = $this->createMock(IThrottler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -91,8 +91,8 @@ class AccessLinkControllerTest extends TestCase {
 			request: $this->request,
 			links: $this->links,
 			reader: $this->reader,
-			notes: $this->notes,
-			files: $this->files,
+			mintGuard: $this->mintGuard,
+			acts: $this->acts,
 			userSession: $this->userSession,
 			throttler: $this->throttler,
 			logger: $this->logger
@@ -207,9 +207,9 @@ class AccessLinkControllerTest extends TestCase {
 		$this->links->method('passwordAccepted')->willReturn(true);
 		$this->reader->method('subjectObject')->willReturn($this->object());
 		$this->params['message'] = 'Advies: akkoord.';
-		$this->notes->expects($this->once())
-			->method('createNoteAs')
-			->with('object-uuid', 'Advies: akkoord.', 'openregister_links', 'link:7a1f0f2e-0000-4000-8000-000000000001', 'public')
+		$this->acts->expects($this->once())
+			->method('comment')
+			->with($this->anything(), $this->anything(), 'Advies: akkoord.')
 			->willReturn(['id' => 4, 'message' => 'Advies: akkoord.']);
 
 		$response = $this->controller->comment(anchor: 'AnchorValueThatIsOpaque');
@@ -220,7 +220,7 @@ class AccessLinkControllerTest extends TestCase {
 	public function testACommentThroughAReadOnlyLinkIsRefused(): void {
 		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read'));
 		$this->links->method('passwordAccepted')->willReturn(true);
-		$this->notes->expects($this->never())->method('createNoteAs');
+		$this->acts->expects($this->never())->method('comment');
 
 		$response = $this->controller->comment(anchor: 'AnchorValueThatIsOpaque');
 
@@ -242,7 +242,7 @@ class AccessLinkControllerTest extends TestCase {
 	public function testAnAdviserWhoMayReadAndCommentMayNotUpload(): void {
 		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,comment'));
 		$this->links->method('passwordAccepted')->willReturn(true);
-		$this->files->expects($this->never())->method('addFile');
+		$this->acts->expects($this->never())->method('upload');
 
 		$response = $this->controller->upload(anchor: 'AnchorValueThatIsOpaque');
 
@@ -269,6 +269,7 @@ class AccessLinkControllerTest extends TestCase {
 
 	public function testMintingRefusesAndNamesTheRequirementItRefusedOn(): void {
 		$this->signIn();
+		$this->mintGuard->method('mayMint')->willReturn(true);
 		$this->links->method('mint')->willThrowException(
 			new InvalidArgumentException('An access link must carry an expiry: pass expiresAt as a date this instance can read.')
 		);
@@ -281,6 +282,7 @@ class AccessLinkControllerTest extends TestCase {
 
 	public function testMintingReturnsTheLinkAndItsUrl(): void {
 		$this->signIn();
+		$this->mintGuard->method('mayMint')->willReturn(true);
 		$this->params['subjectType'] = 'object';
 		$this->params['subjectId'] = 'object-uuid';
 		$this->params['capabilities'] = ['read', 'comment'];
@@ -297,6 +299,7 @@ class AccessLinkControllerTest extends TestCase {
 
 	public function testMintingAcceptsACommaSeparatedCapabilityList(): void {
 		$this->signIn();
+		$this->mintGuard->method('mayMint')->willReturn(true);
 		$this->params['capabilities'] = 'read, upload';
 		$this->params['expiresAt'] = '2026-12-31T00:00:00+00:00';
 		$this->links->expects($this->once())
@@ -311,6 +314,28 @@ class AccessLinkControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->mint()->getStatus());
+	}
+
+	/**
+	 * The guard that carries the whole capability. Every read through a link
+	 * runs with the group rules off, so if a mint could name any uuid, any
+	 * signed-in user could publish any record and the link would keep serving
+	 * it correctly for as long as it lived.
+	 */
+	public function testAUserCannotPublishASubjectTheyMayNotReadThemselves(): void {
+		$this->signIn(uid: 'nieuwsgierige-collega');
+		$this->params['subjectType'] = 'object';
+		$this->params['subjectId'] = 'somebody-elses-object';
+		$this->mintGuard->expects($this->once())
+			->method('mayMint')
+			->with('object', 'somebody-elses-object')
+			->willReturn(false);
+		$this->links->expects($this->never())->method('mint');
+
+		$response = $this->controller->mint();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame(['message' => 'Not Found'], $response->getData());
 	}
 
 	// ---- index(), update() and revoke(). -----------------------------------

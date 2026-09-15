@@ -48,8 +48,8 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCP\AppFramework\Controller;
@@ -83,24 +83,14 @@ class AccessLinkController extends Controller {
 	private const THROTTLE_ACTION = 'openregister_access_link';
 
 	/**
-	 * The comment actor type a link writes under.
-	 *
-	 * A distinct type, never `users`, so a note left through a link can never
-	 * be mistaken for one left by an account with the same id.
-	 *
-	 * @var string
-	 */
-	private const LINK_ACTOR_TYPE = 'openregister_links';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
 	 * @param AccessLinkService $links The link lifecycle.
 	 * @param AccessLinkReader $reader Serves what a link opens.
-	 * @param NoteService $notes Writes a comment left through a link.
-	 * @param FileService $files Stores a file added through a link.
+	 * @param AccessLinkMintGuard $mintGuard Decides whether a caller may publish a subject.
+	 * @param AccessLinkActs $acts Performs the comment and the upload, as the link.
 	 * @param IUserSession $userSession The current session, on the owner endpoints.
 	 * @param IThrottler $throttler Brute-force throttler for rejected anchors.
 	 * @param LoggerInterface $logger PSR logger.
@@ -110,8 +100,8 @@ class AccessLinkController extends Controller {
 		IRequest $request,
 		private readonly AccessLinkService $links,
 		private readonly AccessLinkReader $reader,
-		private readonly NoteService $notes,
-		private readonly FileService $files,
+		private readonly AccessLinkMintGuard $mintGuard,
+		private readonly AccessLinkActs $acts,
 		private readonly IUserSession $userSession,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
@@ -195,13 +185,7 @@ class AccessLinkController extends Controller {
 		}
 
 		try {
-			$note = $this->notes->createNoteAs(
-				objectUuid: (string)$object->getUuid(),
-				message: $message,
-				actorType: self::LINK_ACTOR_TYPE,
-				actorId: $link->principalId(),
-				visibility: 'public'
-			);
+			$note = $this->acts->comment(link: $link, object: $object, message: $message);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link comment failed: ' . $failure->getMessage());
 
@@ -260,11 +244,11 @@ class AccessLinkController extends Controller {
 		}
 
 		try {
-			$stored = $this->files->addFile(
-				objectEntity: $object,
+			$stored = $this->acts->upload(
+				link: $link,
+				object: $object,
 				fileName: $fileName,
-				content: $content,
-				share: false
+				content: $content
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link upload failed: ' . $failure->getMessage());
@@ -280,7 +264,7 @@ class AccessLinkController extends Controller {
 			context: ['fileName' => $fileName]
 		);
 
-		return new JSONResponse($this->files->formatFile($stored), Http::STATUS_CREATED);
+		return new JSONResponse($stored, Http::STATUS_CREATED);
 	}//end upload()
 
 	/**
@@ -288,7 +272,18 @@ class AccessLinkController extends Controller {
 	 *
 	 * Mint a link over one object, view or file.
 	 *
-	 * @return JSONResponse The minted link and its URL, or 400 naming the refusal.
+	 * THE GUARD HERE IS THE WHOLE ACCESS DECISION. Every read through the link
+	 * afterwards runs with the group rules off, because there is no session for
+	 * them to judge, so this is the only moment anybody asks whether this
+	 * subject may be published at all. Without it, any signed-in user could
+	 * publish any record by naming its uuid, and the link would keep serving it
+	 * correctly for as long as it lived.
+	 *
+	 * A subject this caller may not read answers 404 rather than 403, for the
+	 * reason `ObjectsController::show()` already chose: a 403 would confirm that
+	 * the uuid exists.
+	 *
+	 * @return JSONResponse The minted link and its URL, 400 naming the refusal, or 404.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
@@ -299,11 +294,17 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
+		$subjectType = (string)$this->request->getParam('subjectType', '');
+		$subjectId = (string)$this->request->getParam('subjectId', '');
+		if ($this->mintGuard->mayMint(subjectType: $subjectType, subjectId: $subjectId) === false) {
+			return $this->notFound();
+		}
+
 		try {
 			$minted = $this->links->mint(
 				userId: $user->getUID(),
-				subjectType: (string)$this->request->getParam('subjectType', ''),
-				subjectId: (string)$this->request->getParam('subjectId', ''),
+				subjectType: $subjectType,
+				subjectId: $subjectId,
 				capabilities: $this->capabilitiesParam(),
 				expiresAt: $this->stringParam(name: 'expiresAt'),
 				password: $this->stringParam(name: 'password'),
