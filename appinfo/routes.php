@@ -445,6 +445,13 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'erasurePreview#run', 'url' => '/api/gdpr/erasure-previews/{id}/run',
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Reach and revocation (data-subject-rights-across-the-instance task 4):
+        // everything one principal can reach, listed from the resolver, then
+        // taken away in one recorded act. Admin-gated by the framework.
+        ['name' => 'principalReach#show', 'url' => '/api/rbac/reach/{principal}',
+            'verb' => 'GET', 'requirements' => ['principal' => '[^/]+']],
+        ['name' => 'principalReach#revoke', 'url' => '/api/rbac/reach/{principal}/revoke',
+            'verb' => 'POST', 'requirements' => ['principal' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control

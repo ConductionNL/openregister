@@ -19,8 +19,8 @@
 
 ## 4. Reach and revocation
 
-- [ ] 4.1 A reach listing read from the permission resolver, with the source of each grant (D-5).
-- [ ] 4.2 One revocation act, recorded naming every grant removed.
+- [x] 4.1 A reach listing read from the permission resolver, with the source of each grant (D-5).
+- [x] 4.2 One revocation act, recorded naming every grant removed.
 
 ## 5. External grants
 
