@@ -85,6 +85,47 @@ class ElementMappingValidatorTest extends TestCase {
 		$this->assertFalse($catalogue->knows('bewaarTermijn'));
 	}
 
+	/**
+	 * The catalogue still reads when the entity resolver returns null.
+	 *
+	 * 🔴 This is the test the production bug needed. Nextcloud's `lib/base.php`
+	 * replaces libxml's external entity loader with one returning null, and
+	 * that loader handles the primary document as well as the entities it
+	 * references. So `DOMDocument::load($path)` returns false for a readable
+	 * local file on every real instance, the catalogue came back empty, and
+	 * `ElementMappingValidator` reported `mdto-mapping-catalogue-unreadable`
+	 * for every mapping. A bare PHP process installs no such loader, so the
+	 * whole suite passed while the feature could not run. Installing the loader
+	 * here is what makes the difference visible.
+	 */
+	public function testTheCatalogueReadsUnderNextcloudsNullEntityResolver(): void {
+		// PHP 8.4 hands back the resolver that was installed; 8.3 and below
+		// return a bool, so only restore what is actually callable and fall
+		// back to clearing it, which is the state a bare process starts in.
+		$previous = libxml_set_external_entity_loader(static fn () => null);
+		if (is_callable($previous) === false) {
+			$previous = null;
+		}
+
+		try {
+			$catalogue = new MdtoElementCatalogue();
+
+			$this->assertSame(
+				['identificatie', 'naam', 'waardering', 'archiefvormer', 'beperkingGebruik'],
+				$catalogue->mandatory()
+			);
+			$this->assertSame(
+				[],
+				(new ElementMappingValidator($catalogue))->validate(
+					mapping: $this->completeMapping(),
+					properties: $this->properties()
+				)
+			);
+		} finally {
+			libxml_set_external_entity_loader($previous);
+		}
+	}
+
 	public function testACompleteMappingIsAccepted(): void {
 		$this->assertSame(
 			[],
