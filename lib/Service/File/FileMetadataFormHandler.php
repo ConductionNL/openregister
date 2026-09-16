@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
+use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use Throwable;
@@ -135,14 +136,14 @@ class FileMetadataFormHandler {
 	 *
 	 * @return array|null What changed, or null when nothing did.
 	 *
-	 * @throws \Exception When the file cannot be found or the rename is refused.
+	 * @throws Exception When the file cannot be found or the rename is refused.
 	 *
 	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
 	 */
 	private function saveOne(ObjectEntity $object, int $fileId, array $entry): ?array {
 		$node = $this->fileService->getFile(object: $object, file: (string)$fileId);
 		if ($node === null) {
-			throw new \Exception("File $fileId is not on this object.");
+			throw new Exception(message: "File $fileId is not on this object.");
 		}
 
 		$current = $this->fileService->formatFile($node);

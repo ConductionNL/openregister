@@ -126,62 +126,110 @@ class NotSuppliedHandler {
 
 		$violations = [];
 		foreach ($record as $property => $reason) {
-			$property = (string)$property;
-
-			if (is_string($reason) === false || $reason === '') {
-				$violations[] = [
-					'property' => $property,
-					'code' => 'not-supplied-without-a-reason',
-					'message' => "'$property' is marked not supplied with no reason. Name one from the schema's list.",
-				];
-				continue;
-			}
-
-			if (array_key_exists($property, $properties) === false) {
-				$violations[] = [
-					'property' => $property,
-					'code' => 'not-supplied-unknown-property',
-					'message' => "'$property' is marked not supplied, and this schema does not declare it.",
-				];
-				continue;
-			}
-
-			$answered = (
-				array_key_exists($property, $object) === true
-				&& $object[$property] !== null
-				&& $object[$property] !== ''
-				&& $object[$property] !== []
+			$refusal = $this->refuseEntry(
+				property: (string)$property,
+				reason: $reason,
+				object: $object,
+				properties: $properties,
+				reasons: $reasons
 			);
-			if ($answered === true) {
-				$violations[] = [
-					'property' => $property,
-					'code' => 'not-supplied-and-answered',
-					'message' => "'$property' carries a value and is marked not supplied. It can be one or the other.",
-				];
-				continue;
-			}
 
-			if ($reasons === []) {
-				$violations[] = [
-					'property' => $property,
-					'code' => 'not-supplied-no-reasons-administered',
-					'message' => "This schema administers no not-supplied reasons, so '$property' cannot be marked.",
-				];
-				continue;
+			if ($refusal !== null) {
+				$violations[] = $refusal;
 			}
-
-			if (array_key_exists($reason, $reasons) === false) {
-				$known = implode(', ', array_keys($reasons));
-				$violations[] = [
-					'property' => $property,
-					'code' => 'not-supplied-unknown-reason',
-					'message' => "'$reason' is not a reason this schema administers. It accepts: $known.",
-				];
-			}
-		}//end foreach
+		}
 
 		return $violations;
 	}//end validate()
+
+	/**
+	 * The reason one entry of the record cannot be accepted, if there is one.
+	 *
+	 * Four rules, in the order a person would check them: a reason has to be
+	 * there, the property has to exist, it cannot also carry a value, and the
+	 * reason has to be one this schema administers. The first that fires is the
+	 * one returned, because a property refused for two reasons at once is a
+	 * message nobody can act on.
+	 *
+	 * @param string $property The property named in the record.
+	 * @param mixed $reason The reason code it was marked with.
+	 * @param array $object The candidate object body.
+	 * @param array $properties The schema's declared properties.
+	 * @param array<string, string> $reasons The reasons this schema administers.
+	 *
+	 * @return array{property: string, code: string, message: string}|null The refusal, or null.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function refuseEntry(
+		string $property,
+		mixed $reason,
+		array $object,
+		array $properties,
+		array $reasons,
+	): ?array {
+		if (is_string($reason) === false || $reason === '') {
+			return [
+				'property' => $property,
+				'code' => 'not-supplied-without-a-reason',
+				'message' => "'$property' is marked not supplied with no reason. Name one from the schema's list.",
+			];
+		}
+
+		if (array_key_exists($property, $properties) === false) {
+			return [
+				'property' => $property,
+				'code' => 'not-supplied-unknown-property',
+				'message' => "'$property' is marked not supplied, and this schema does not declare it.",
+			];
+		}
+
+		if ($this->carriesAValue(object: $object, property: $property) === true) {
+			return [
+				'property' => $property,
+				'code' => 'not-supplied-and-answered',
+				'message' => "'$property' carries a value and is marked not supplied. It can be one or the other.",
+			];
+		}
+
+		if ($reasons === []) {
+			return [
+				'property' => $property,
+				'code' => 'not-supplied-no-reasons-administered',
+				'message' => "This schema administers no not-supplied reasons, so '$property' cannot be marked.",
+			];
+		}
+
+		if (array_key_exists($reason, $reasons) === false) {
+			$known = implode(', ', array_keys($reasons));
+
+			return [
+				'property' => $property,
+				'code' => 'not-supplied-unknown-reason',
+				'message' => "'$reason' is not a reason this schema administers. It accepts: $known.",
+			];
+		}
+
+		return null;
+	}//end refuseEntry()
+
+	/**
+	 * Whether the body answers a property at all.
+	 *
+	 * @param array $object The candidate object body.
+	 * @param string $property The property name.
+	 *
+	 * @return boolean Whether a value is there.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function carriesAValue(array $object, string $property): bool {
+		if (array_key_exists($property, $object) === false) {
+			return false;
+		}
+
+		return ($object[$property] !== null && $object[$property] !== '' && $object[$property] !== []);
+	}//end carriesAValue()
 
 	/**
 	 * The body the validator should see.

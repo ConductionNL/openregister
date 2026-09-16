@@ -48,6 +48,11 @@ use OCA\OpenRegister\Db\Schema;
  * and the rest stay with the validator that already owns them. Duplicating
  * half of Opis here would leave two answers to the same question and no rule
  * about which one wins.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is one refusal per rule and one
+ *              arm per checked type, each in its own method and each well under the method
+ *              thresholds. Splitting the six-arm type match into a class of its own would move the
+ *              number without making anything easier to read, and it is the only thing left to move.
  */
 class RepeatingGroupValidator {
 
@@ -240,6 +245,25 @@ class RepeatingGroupValidator {
 			];
 		}
 
+		return array_merge(
+			$this->missingMembers(name: $name, position: $position, row: $row, required: $required),
+			$this->mistypedMembers(name: $name, position: $position, row: $row, members: $members)
+		);
+	}//end validateRow()
+
+	/**
+	 * The members a row had to answer and did not.
+	 *
+	 * @param string $name The group's property name.
+	 * @param integer $position The row, counted from one.
+	 * @param array $row The submitted row.
+	 * @param array $required The members a row has to answer.
+	 *
+	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function missingMembers(string $name, int $position, array $row, array $required): array {
 		$violations = [];
 		foreach ($required as $member) {
 			$member = (string)$member;
@@ -257,19 +281,31 @@ class RepeatingGroupValidator {
 			);
 		}
 
+		return $violations;
+	}//end missingMembers()
+
+	/**
+	 * The members a row answered with the wrong kind of value.
+	 *
+	 * An unanswered member is {@see self::missingMembers()}'s business, and a
+	 * member whose declared type this class does not check is left to the
+	 * validator that defines it.
+	 *
+	 * @param string $name The group's property name.
+	 * @param integer $position The row, counted from one.
+	 * @param array $row The submitted row.
+	 * @param array $members The declared members.
+	 *
+	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function mistypedMembers(string $name, int $position, array $row, array $members): array {
+		$violations = [];
 		foreach ($members as $member => $declaration) {
 			$member = (string)$member;
-			if (is_array($declaration) === false || array_key_exists($member, $row) === false) {
-				continue;
-			}
-
-			$expected = ($declaration['type'] ?? null);
-			if (is_string($expected) === false || in_array($expected, self::CHECKED_TYPES, true) === false) {
-				continue;
-			}
-
-			// An unanswered member is the required rule's business, above.
-			if ($row[$member] === null || $row[$member] === '') {
+			$expected = $this->checkableType(declaration: $declaration);
+			if ($expected === null || $this->answers(row: $row, member: $member) === false) {
 				continue;
 			}
 
@@ -287,7 +323,47 @@ class RepeatingGroupValidator {
 		}//end foreach
 
 		return $violations;
-	}//end validateRow()
+	}//end mistypedMembers()
+
+	/**
+	 * The declared type of a member, when it is one this class checks.
+	 *
+	 * @param mixed $declaration The member's declaration.
+	 *
+	 * @return string|null The type to check against, or null to leave it alone.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function checkableType(mixed $declaration): ?string {
+		if (is_array($declaration) === false) {
+			return null;
+		}
+
+		$expected = ($declaration['type'] ?? null);
+		if (is_string($expected) === false || in_array($expected, self::CHECKED_TYPES, true) === false) {
+			return null;
+		}
+
+		return $expected;
+	}//end checkableType()
+
+	/**
+	 * Whether a row answers a member at all.
+	 *
+	 * @param array $row The submitted row.
+	 * @param string $member The member name.
+	 *
+	 * @return boolean Whether there is a value to check.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function answers(array $row, string $member): bool {
+		if (array_key_exists($member, $row) === false) {
+			return false;
+		}
+
+		return ($row[$member] !== null && $row[$member] !== '');
+	}//end answers()
 
 	/**
 	 * Whether a submitted value matches a declared JSON-Schema type.
