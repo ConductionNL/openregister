@@ -1154,6 +1154,28 @@ return [
         // Notification Preferences — override-only, per-(schema, notification) user preferences.
         ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
+        // Notification Templates — the shipped text per platform event, the
+        // events that have none, and an administrator's edit of either.
+        ['name' => 'notificationTemplates#index',  'url' => '/api/notification-templates', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#gaps',   'url' => '/api/notification-templates/gaps', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#update', 'url' => '/api/notification-templates/{event}', 'verb' => 'PUT'],
+        // Notification Broadcasts — one administered message to every user.
+        // The active read and the acknowledge act on the caller's own receipt
+        // and are open to any signed-in user; the rest is administrators only.
+        ['name' => 'notificationBroadcast#index',   'url' => '/api/notification-broadcasts', 'verb' => 'GET'],
+        ['name' => 'notificationBroadcast#create',  'url' => '/api/notification-broadcasts', 'verb' => 'POST'],
+        ['name' => 'notificationBroadcast#active',  'url' => '/api/notification-broadcasts/active', 'verb' => 'GET'],
+        [
+            'name' => 'notificationBroadcast#acknowledge',
+            'url' => '/api/notification-broadcasts/{uuid}/acknowledge',
+            'verb' => 'POST',
+        ],
+        ['name' => 'notificationBroadcast#destroy', 'url' => '/api/notification-broadcasts/{uuid}', 'verb' => 'DELETE'],
+        // Notification Group Preferences — the team's layer between the schema
+        // default and each member's own value. Writing requires administering
+        // the named group; reading is open to its members.
+        ['name' => 'notificationGroupPreferences#index',  'url' => '/api/notification-group-preferences', 'verb' => 'GET'],
+        ['name' => 'notificationGroupPreferences#update', 'url' => '/api/notification-group-preferences', 'verb' => 'PUT'],
         // Notification Delivery Window — override-only, per-user quiet-hours preference.
         ['name' => 'notificationDeliveryWindow#index',  'url' => '/api/notification-delivery-window', 'verb' => 'GET'],
         ['name' => 'notificationDeliveryWindow#update', 'url' => '/api/notification-delivery-window', 'verb' => 'PUT'],

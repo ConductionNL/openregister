@@ -67,6 +67,7 @@ class NotificationHistoryMapper extends QBMapper {
 		'status' => 'status',
 		'subjectType' => 'subject_type',
 		'subjectId' => 'subject_id',
+		'eventId' => 'event_id',
 	];
 
 	/**
@@ -102,6 +103,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 * @param string|null $locale Recipient locale (null for broadcast).
 	 * @param string|null $subjectType What the notice is about, as a list axis.
 	 * @param string|null $subjectId The subject's own id, defaulting to the object uuid.
+	 * @param string|null $eventId The firing this row belongs to, shared by every transport of one dispatch.
 	 *
 	 * @return NotificationHistory The persisted row.
 	 *
@@ -120,6 +122,7 @@ class NotificationHistoryMapper extends QBMapper {
 		?string $locale = null,
 		?string $subjectType = null,
 		?string $subjectId = null,
+		?string $eventId = null,
 	): NotificationHistory {
 		$entity = new NotificationHistory();
 		$entity->setRuleId($ruleId);
@@ -133,6 +136,7 @@ class NotificationHistoryMapper extends QBMapper {
 		$entity->setErrorMessage($errorMessage);
 		$entity->setLocale($locale);
 		$entity->setSubjectType($subjectType);
+		$entity->setEventId($eventId);
 		// A notice with no explicit subject is about the object it fired on, so
 		// opening that object still clears it. Defaulting here rather than at
 		// each call site is what keeps "the work clears the bell" true for
