@@ -93,9 +93,18 @@ class OperationsConsoleController extends Controller {
 	public function jobs(): JSONResponse {
 		$state = $this->request->getParam('state');
 
+		// An empty filter is no filter, never a state called "". Narrowing to
+		// a state nothing holds would answer an empty list to a caller who
+		// believes they asked for everything.
+		$wanted = null;
+
+		if (is_string($state) === true && $state !== '') {
+			$wanted = $state;
+		}
+
 		return new JSONResponse(
 			data: $this->console->jobs(
-				state: (is_string($state) === true && $state !== '') ? $state : null,
+				state: $wanted,
 				limit: $this->intParam(name: 'limit', fallback: 50)
 			)
 		);

@@ -75,10 +75,7 @@ async function contextFor(
 }
 
 /** Assert a seeded account is usable before any test leans on it. */
-async function assertSeededUser(
-	ctx: APIRequestContext,
-	uid: string,
-): Promise<void> {
+async function assertSeededUser(ctx: APIRequestContext, uid: string): Promise<void> {
 	const res = await ctx.get(`${API}/registers`)
 	expect(
 		res.status(),
@@ -148,7 +145,9 @@ test.describe('one console over what the instance is doing', () => {
 
 	test.afterAll(async () => {
 		for (const jobId of jobs) {
-			await admin.post(`${API}/bulk-jobs/${jobId}/cancel`).catch(() => undefined)
+			await admin
+				.post(`${API}/bulk-jobs/${jobId}/cancel`)
+				.catch(() => undefined)
 		}
 
 		for (const uuid of created) {
@@ -170,9 +169,14 @@ test.describe('one console over what the instance is doing', () => {
 
 		const body = await res.json()
 
-		expect(body.window?.hours, 'the console did not name its window').toBeGreaterThan(0)
 		expect(
-			(body.panes ?? []).map((pane: Record<string, unknown>) => pane.id).sort(),
+			body.window?.hours,
+			'the console did not name its window',
+		).toBeGreaterThan(0)
+		expect(
+			(body.panes ?? [])
+				.map((pane: Record<string, unknown>) => pane.id)
+				.sort(),
 			'the console did not report the three panes',
 		).toEqual(['jobs', 'notifications', 'rule-runs'])
 
@@ -212,7 +216,10 @@ test.describe('one console over what the instance is doing', () => {
 		// its runs came out. Asserting the shape rather than a count keeps this
 		// true as the wrapper grows the observed set.
 		for (const job of body.unobserved ?? []) {
-			expect(job.observed, `${job.name} is in the unobserved list while observed`).toBe(false)
+			expect(
+				job.observed,
+				`${job.name} is in the unobserved list while observed`,
+			).toBe(false)
 			expect(job.name, 'an unobserved job came back with no name').toBeTruthy()
 		}
 	})
@@ -230,7 +237,9 @@ test.describe('one console over what the instance is doing', () => {
 			},
 		})
 
-		expect(create.status(), `job create failed: ${await create.text()}`).toBe(201)
+		expect(create.status(), `job create failed: ${await create.text()}`).toBe(
+			201,
+		)
 
 		const job = await create.json()
 		jobs.push(String(job.id))
@@ -238,10 +247,14 @@ test.describe('one console over what the instance is doing', () => {
 		const listed = await admin.get(`${API}/operations/jobs`)
 		const rows = (await listed.json()).results ?? []
 		const row = rows.find(
-			(candidate: Record<string, unknown>) => String(candidate.id) === String(job.id),
+			(candidate: Record<string, unknown>) =>
+				String(candidate.id) === String(job.id),
 		)
 
-		expect(row, 'the job the console just created is missing from its own listing').toBeTruthy()
+		expect(
+			row,
+			'the job the console just created is missing from its own listing',
+		).toBeTruthy()
 		expect(row.actions.resume, 'a previewed job offered a resume').toBe(false)
 		expect(row.actions.pause, 'a previewed job offered a pause').toBe(false)
 		expect(row.actions.cancel, 'a previewed job offered no cancel').toBe(true)
@@ -256,7 +269,10 @@ test.describe('one console over what the instance is doing', () => {
 	test('a running job is held by hand and set going again', async () => {
 		const jobId = jobs[0]
 
-		test.skip(jobId === undefined, 'no job was created, so there is nothing to pause')
+		test.skip(
+			jobId === undefined,
+			'no job was created, so there is nothing to pause',
+		)
 
 		const commit = await admin.post(`${API}/bulk-jobs/${jobId}/commit`, {
 			data: { justification: 'e2e operations console' },
@@ -276,7 +292,10 @@ test.describe('one console over what the instance is doing', () => {
 		}
 
 		expect(paused.status(), `pause failed: ${await paused.text()}`).toBe(200)
-		expect((await paused.json()).state, 'the pause did not change the state').toBe('paused')
+		expect(
+			(await paused.json()).state,
+			'the pause did not change the state',
+		).toBe('paused')
 
 		const twice = await admin.post(`${API}/bulk-jobs/${jobId}/pause`)
 		expect(twice.status(), 'a paused job was paused again').toBe(422)
@@ -289,12 +308,17 @@ test.describe('one console over what the instance is doing', () => {
 	test('an ordinary user cannot pause a job that is not theirs', async () => {
 		const jobId = jobs[0]
 
-		test.skip(jobId === undefined, 'no job was created, so there is nothing to pause')
+		test.skip(
+			jobId === undefined,
+			'no job was created, so there is nothing to pause',
+		)
 
 		const res = await other.post(`${API}/bulk-jobs/${jobId}/pause`)
 
 		// 404 rather than 403: a job the caller may not touch must not be
 		// distinguishable from one that does not exist.
-		expect(res.status(), 'another user paused a job that is not theirs').toBe(404)
+		expect(res.status(), 'another user paused a job that is not theirs').toBe(
+			404,
+		)
 	})
 })

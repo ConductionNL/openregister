@@ -449,7 +449,7 @@
       "type": "custom",
       "title": "Operations",
       "component": "OperationsConsoleIndex",
-      "_note": "The administrator's one read of what the instance is doing (admin-operations-console). Joins records that already exist: bulk jobs, notification dispatches and rule runs, plus the background jobs whose runs are recorded nowhere and are therefore named as unobserved. The acting verbs stay on bulkJobs#pause / #resume / #retry so one ownership rule lives in one place."
+      "_note": "The administrator's one read of what the instance is doing (admin-operations-console). Joins records that already exist: bulk jobs, notification dispatches and rule runs, plus the background jobs whose runs are recorded nowhere and are therefore named as unobserved. The acting verbs stay on bulkJobs#pause / #resume / #retry so one ownership rule lives in one place. type:\"custom\" is forced rather than preferred, and gate-69's custom-page ratchet is knowingly accepted here: CnPageRenderer honours `page.component` ONLY for type:\"custom\" (CnPageRenderer.vue, pageComponent()), so declaring type:\"dashboard\" would dispatch to the library's dashboard component and render this console as a blank page with no error. The screen is also not a widget grid: each pane is a join across four mappers, not a widget over one index endpoint. Moving it to a typed dashboard means rewriting the three panes as registered widgets, which belongs with the run-history branch that gives the job pane real rows."
     }
   ],
   "store": {

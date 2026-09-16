@@ -110,13 +110,6 @@ class OperationsConsoleService {
 	public const STATUS_DISPATCHED = 'dispatched';
 
 	/**
-	 * The rule verdict that means the engine could not decide.
-	 *
-	 * @var string
-	 */
-	public const VERDICT_ERROR = 'error';
-
-	/**
 	 * The background jobs whose runs are recorded somewhere readable.
 	 *
 	 * One entry today, and that is the finding rather than an oversight:

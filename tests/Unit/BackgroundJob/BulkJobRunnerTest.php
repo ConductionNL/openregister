@@ -126,6 +126,8 @@ final class BulkJobRunnerTest extends TestCase {
 	 * state nothing honours.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
 	 */
 	public function testAPausedJobIsNotWalkedAndNotRequeued(): void {
 		$this->jobMapper->method('find')->willReturn($this->job(BulkJob::STATE_PAUSED));

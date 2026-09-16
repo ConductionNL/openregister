@@ -148,11 +148,9 @@
 							})
 						}}
 						{{
-							t(
-								'openregister',
-								'Waiting to go out: {queued}.',
-								{ queued: notificationPane.queued },
-							)
+							t('openregister', 'Waiting to go out: {queued}.', {
+								queued: notificationPane.queued,
+							})
 						}}
 					</p>
 					<NcNoteCard
@@ -167,7 +165,9 @@
 							)
 						}}
 					</NcNoteCard>
-					<table v-if="notificationOutcomes.length > 0" class="consoleTable">
+					<table
+						v-if="notificationOutcomes.length > 0"
+						class="consoleTable">
 						<thead>
 							<tr>
 								<th scope="col">
@@ -399,13 +399,9 @@ export default {
 					axios.get(
 						generateUrl('/apps/openregister/api/operations/console'),
 					),
+					axios.get(generateUrl('/apps/openregister/api/operations/jobs')),
 					axios.get(
-						generateUrl('/apps/openregister/api/operations/jobs'),
-					),
-					axios.get(
-						generateUrl(
-							'/apps/openregister/api/operations/rule-runs',
-						),
+						generateUrl('/apps/openregister/api/operations/rule-runs'),
 					),
 				])
 
@@ -447,8 +443,8 @@ export default {
 				)
 				await this.load()
 			} catch (exception) {
-				this.error
-					= (exception.response || {}).data?.error
+				this.error =
+					(exception.response || {}).data?.error
 					|| t('openregister', 'That did not go through.')
 			} finally {
 				this.acting = null

@@ -325,6 +325,8 @@ final class BulkJobsControllerTest extends TestCase {
 	 * The console's two new verbs reach the service and answer the wire.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
 	 */
 	public function testPauseAndResumeReachTheService(): void {
 		$this->signIn('coordinator');
@@ -345,6 +347,8 @@ final class BulkJobsControllerTest extends TestCase {
 	 * ownership check that ran after the act would stop nothing.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
 	 */
 	public function testAnotherUsersJobCannotBePausedOrResumed(): void {
 		$this->signIn('handler', false);
@@ -360,6 +364,8 @@ final class BulkJobsControllerTest extends TestCase {
 	 * An administrator drives the console over anybody's job.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
 	 */
 	public function testAnAdministratorMayPauseSomebodyElsesJob(): void {
 		$this->signIn('admin', true);
@@ -374,6 +380,8 @@ final class BulkJobsControllerTest extends TestCase {
 	 * A refusal from the state machine reaches the caller as a 422 with its code.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
 	 */
 	public function testPausingAJobThatIsNotRunningAnswersTheRefusal(): void {
 		$this->signIn('coordinator');

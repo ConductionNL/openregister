@@ -162,6 +162,8 @@ final class OperationsConsoleControllerTest extends TestCase {
 	 *
 	 * @param string $method The controller method.
 	 *
+	 * @return void
+	 *
 	 * @dataProvider consoleReads
 	 */
 	public function testTheConsoleIsNotReachableByANonAdministrator(string $method): void {
