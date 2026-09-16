@@ -137,7 +137,10 @@
 					</NcButton>
 				</div>
 
-				<NcButton variant="secondary" data-testid="working-calendar-add-rule" @click="addRule">
+				<NcButton
+					variant="secondary"
+					data-testid="working-calendar-add-rule"
+					@click="addRule">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -218,7 +221,10 @@
 					</NcButton>
 				</div>
 
-				<p v-if="previewError" class="calendar-form__hint calendar-form__hint--bad" role="status">
+				<p
+					v-if="previewError"
+					class="calendar-form__hint calendar-form__hint--bad"
+					role="status">
 					{{ previewError }}
 				</p>
 
@@ -407,8 +413,14 @@ export default {
 		 */
 		kindOptions() {
 			return [
-				{ value: 'fixed', label: this.t('openregister', 'A date every year') },
-				{ value: 'easter', label: this.t('openregister', 'Counted from Easter') },
+				{
+					value: 'fixed',
+					label: this.t('openregister', 'A date every year'),
+				},
+				{
+					value: 'easter',
+					label: this.t('openregister', 'Counted from Easter'),
+				},
 			]
 		},
 	},
@@ -503,7 +515,10 @@ export default {
 			const definition = {
 				slug: this.form.slug.trim(),
 				title: this.form.title.trim(),
-				workingWeekdays: [...this.form.workingWeekdays].sort((a, b) => a - b),
+				workingWeekdays: [...this.form.workingWeekdays].sort(
+					(a, b) => a - b,
+				),
+
 				hoursPerWorkingDay: Number(this.form.hoursPerWorkingDay),
 				rules: this.form.rules.map((rule) => this.toRule(rule)),
 				exceptions: this.form.exceptions
@@ -698,7 +713,9 @@ export default {
 
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/flow-timers/calendars/preview'),
+					generateUrl(
+						'/apps/openregister/api/flow-timers/calendars/preview',
+					),
 					{
 						calendar: this.toDefinition(),
 						year: Number(this.previewYear),
@@ -706,8 +723,8 @@ export default {
 				)
 				this.previewDates = response.data?.dates || []
 			} catch (error) {
-				this.previewError
-					= error.response?.data?.error
+				this.previewError =
+					error.response?.data?.error
 					|| this.t('openregister', 'The preview could not be computed.')
 			} finally {
 				this.previewing = false
@@ -743,8 +760,8 @@ export default {
 				// The server's message is the message. A generic "save failed"
 				// here would hide the validator's sentence, which names the
 				// rule that is wrong.
-				this.error
-					= error.response?.data?.error
+				this.error =
+					error.response?.data?.error
 					|| this.t('openregister', 'The calendar could not be saved.')
 			} finally {
 				this.saving = false

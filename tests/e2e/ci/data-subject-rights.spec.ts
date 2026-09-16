@@ -117,7 +117,10 @@ test.describe('the previewed erasure over HTTP', () => {
 		const res = await owner.post(PREVIEWS, {
 			data: { subject, eraseMode: 'whole-object', request: `DSR-${RUN}` },
 		})
-		expect(res.ok(), `preview failed: ${res.status()} ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`preview failed: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
 
 		return (await res.json()) as Record<string, unknown>
 	}
@@ -133,10 +136,20 @@ test.describe('the previewed erasure over HTTP', () => {
 	test('a preview comes back recorded, pending, and split three ways', async () => {
 		const preview = await takePreview(`preview-shape-${RUN}@example.org`)
 
-		expect(String(preview.uuid ?? ''), 'the preview was not recorded').toMatch(/[0-9a-f-]{36}/)
-		expect(preview.status, 'a fresh preview must not already be approved').toBe('pending')
-		expect(preview.requestId, 'the preview does not name the request it answers').toBe(`DSR-${RUN}`)
-		expect(String(preview.digest ?? ''), 'the preview carries no digest').toHaveLength(64)
+		expect(String(preview.uuid ?? ''), 'the preview was not recorded').toMatch(
+			/[0-9a-f-]{36}/,
+		)
+		expect(preview.status, 'a fresh preview must not already be approved').toBe(
+			'pending',
+		)
+		expect(
+			preview.requestId,
+			'the preview does not name the request it answers',
+		).toBe(`DSR-${RUN}`)
+		expect(
+			String(preview.digest ?? ''),
+			'the preview carries no digest',
+		).toHaveLength(64)
 
 		const report = preview.report as Record<string, unknown>
 		const counts = report.counts as Record<string, Record<string, number>>
@@ -145,8 +158,16 @@ test.describe('the previewed erasure over HTTP', () => {
 		// write "deels niet, en dit is waarom", so all three are present even
 		// when a bucket is empty.
 		for (const bucket of ['erasable', 'pseudonymised', 'protected']) {
-			expect(counts[bucket], `the preview has no ${bucket} bucket`).toBeTruthy()
-			for (const kind of ['objects', 'files', 'timelineEntries', 'partyRecords']) {
+			expect(
+				counts[bucket],
+				`the preview has no ${bucket} bucket`,
+			).toBeTruthy()
+			for (const kind of [
+				'objects',
+				'files',
+				'timelineEntries',
+				'partyRecords',
+			]) {
 				expect(
 					typeof counts[bucket][kind],
 					`${bucket}.${kind} is not counted`,
@@ -154,13 +175,21 @@ test.describe('the previewed erasure over HTTP', () => {
 			}
 		}
 
-		expect(Array.isArray(report.protected), 'protected records are not listed by name').toBeTruthy()
+		expect(
+			Array.isArray(report.protected),
+			'protected records are not listed by name',
+		).toBeTruthy()
 	})
 
 	test('a preview without a subject is refused', async () => {
-		const res = await owner.post(PREVIEWS, { data: { eraseMode: 'whole-object' } })
+		const res = await owner.post(PREVIEWS, {
+			data: { eraseMode: 'whole-object' },
+		})
 
-		expect(res.status(), 'a preview with no subject should be a bad request').toBe(400)
+		expect(
+			res.status(),
+			'a preview with no subject should be a bad request',
+		).toBe(400)
 	})
 
 	test('an unapproved erasure does not run', async () => {
@@ -173,9 +202,10 @@ test.describe('the previewed erasure over HTTP', () => {
 		// THE REFUSAL NAMES THE RULE. "Forbidden" with no rule leaves a handler
 		// guessing about an irreversible act.
 		expect(body.error).toBe('ERASURE_REFUSED')
-		expect(body.rule, `the refusal does not name its rule: ${JSON.stringify(body)}`).toBe(
-			'erasure-not-approved',
-		)
+		expect(
+			body.rule,
+			`the refusal does not name its rule: ${JSON.stringify(body)}`,
+		).toBe('erasure-not-approved')
 
 		// NOTHING WAS WRITTEN: the preview is still pending, not consumed.
 		const after = await owner.get(`${PREVIEWS}/${preview.uuid}`)
@@ -190,14 +220,22 @@ test.describe('the previewed erasure over HTTP', () => {
 
 		const approved = await approve.json()
 		expect(approved.status).toBe('approved')
-		expect(approved.approvedBy, 'the approval does not name who gave it').toBe(OWNER)
+		expect(approved.approvedBy, 'the approval does not name who gave it').toBe(
+			OWNER,
+		)
 
 		const run = await owner.post(`${PREVIEWS}/${preview.uuid}/run`)
-		expect(run.ok(), `run failed: ${run.status()} ${await run.text()}`).toBeTruthy()
+		expect(
+			run.ok(),
+			`run failed: ${run.status()} ${await run.text()}`,
+		).toBeTruthy()
 
 		const outcome = await run.json()
 		expect(outcome.preview).toBe(preview.uuid)
-		expect(outcome.request, 'the run does not carry the request it answers').toBe(`DSR-${RUN}`)
+		expect(
+			outcome.request,
+			'the run does not carry the request it answers',
+		).toBe(`DSR-${RUN}`)
 		expect(typeof outcome.destroyedCount).toBe('number')
 		expect(typeof outcome.complete).toBe('boolean')
 
@@ -210,7 +248,10 @@ test.describe('the previewed erasure over HTTP', () => {
 		const preview = await takePreview(`private-${RUN}@example.org`)
 
 		const read = await other.get(`${PREVIEWS}/${preview.uuid}`)
-		expect(read.status(), 'a stranger must not reach another handler\'s preview').toBe(404)
+		expect(
+			read.status(),
+			"a stranger must not reach another handler's preview",
+		).toBe(404)
 
 		const body = await read.json()
 		// ANSWERED AS UNKNOWN, NOT AS FORBIDDEN. "Forbidden" would confirm that
@@ -218,11 +259,15 @@ test.describe('the previewed erasure over HTTP', () => {
 		expect(body.rule).toBe('erasure-preview-unknown')
 
 		const run = await other.post(`${PREVIEWS}/${preview.uuid}/run`)
-		expect(run.status(), 'a stranger must not be able to run it either').toBe(404)
+		expect(run.status(), 'a stranger must not be able to run it either').toBe(
+			404,
+		)
 	})
 
 	test('an unknown preview id is refused rather than answered', async () => {
-		const res = await owner.get(`${PREVIEWS}/00000000-0000-4000-8000-000000000000`)
+		const res = await owner.get(
+			`${PREVIEWS}/00000000-0000-4000-8000-000000000000`,
+		)
 
 		expect(res.status()).toBe(404)
 		expect((await res.json()).rule).toBe('erasure-preview-unknown')
