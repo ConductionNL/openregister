@@ -420,6 +420,18 @@ return [
         ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/processing-activities/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/processing-activities/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#accountability', 'url' => '/api/avg/accountability',               'verb' => 'GET'],
+        // Doelbinding: the administered purposes a read may be made under, and
+        // the count of entries per purpose. `report` is registered ABOVE
+        // `show` so the literal segment wins over the {id} placeholder.
+        ['name' => 'processingPurpose#index',   'url' => '/api/avg/purposes',        'verb' => 'GET'],
+        ['name' => 'processingPurpose#report',  'url' => '/api/avg/purposes/report', 'verb' => 'GET'],
+        ['name' => 'processingPurpose#show',    'url' => '/api/avg/purposes/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'processingPurpose#create',  'url' => '/api/avg/purposes',        'verb' => 'POST'],
+        ['name' => 'processingPurpose#update',  'url' => '/api/avg/purposes/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'processingPurpose#destroy', 'url' => '/api/avg/purposes/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // Whether the audit trail is actually reaching the organisation's log platform.
+        ['name' => 'auditSink#show',        'url' => '/api/audit/sink',             'verb' => 'GET'],
+        ['name' => 'auditSink#acknowledge', 'url' => '/api/audit/sink/acknowledge', 'verb' => 'POST'],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#access',         'url' => '/api/avg/access',         'verb' => 'GET'],
         ['name' => 'dsar#portability',    'url' => '/api/avg/portability',    'verb' => 'GET'],
