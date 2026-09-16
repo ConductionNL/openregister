@@ -10,19 +10,25 @@
  * one that decides to do nothing, and an unrouted controller method looks
  * identical to a passing test right up until a consumer calls it.
  *
- * ⚠️ WHAT IS DELIBERATELY NOT HERE. A default instance serves version 1
- * supported and nothing else, which is correct, so there is no deprecated and
- * no withdrawn version on it to call. Those two scenarios are proven by
- * `tests/Unit/Middleware/ApiVersionMiddlewareTest.php` — the end-date headers
- * and the 410 with its successor — and they get an e2e case here once the
- * declaration has an administration surface, which is the branch this lane
- * continues on. A skipped placeholder carrying an `@e2e` anchor was written
- * first and deleted: a skipped test claiming a scenario is covered is worse
- * than an uncovered scenario, because it stops anyone looking.
+ * ⚠️ THE DEPRECATION CASES ADMINISTER A DECLARATION AND PUT IT BACK. A default
+ * instance serves version 1 supported and nothing else, so there is nothing
+ * deprecated to call. The two cases below write a declaration through the
+ * administration surface, exercise it, and restore what was there before in a
+ * `finally`. They are serial for that reason: two workers editing one
+ * instance-wide declaration would each see the other's.
+ *
+ * An earlier revision skipped these with an `@e2e` anchor still attached. That
+ * was deleted rather than shipped: a skipped test claiming a scenario is
+ * covered stops anyone looking, which is worse than the gap it hides.
  *
  * @e2e openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#a-client-reads-the-upload-limit-before-uploading
  * @e2e openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#the-unauthenticated-answer-names-no-register
+ * @e2e openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#five-suppliers-move-at-their-own-pace
+ * @e2e openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#a-withdrawn-version-says-where-to-go
+ * @e2e openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#a-responsible-disclosure-contact-is-findable
  */
+import type { APIRequestContext } from '@playwright/test'
+
 import { expect, test } from '@playwright/test'
 
 const CAPABILITIES = '/index.php/apps/openregister/api/capabilities'
@@ -164,5 +170,146 @@ test.describe('Speaking a version', () => {
 		const response = await request.get(`${VERSIONS}/997/oas`)
 
 		expect(response.status()).toBe(404)
+	})
+})
+
+const DECLARATION = '/index.php/apps/openregister/api/settings/api-versions'
+
+/**
+ * Serial: these edit one instance-wide declaration, so two workers running
+ * them at once would each see the other's edit.
+ */
+test.describe.serial('The version lifecycle, administered', () => {
+	/**
+	 * Put a declaration in place, run the body, and restore what was there.
+	 *
+	 * ⚠️ THE RESTORE IS IN A `finally`, AND IT MATTERS MORE THAN THE TEST. A
+	 * failed assertion that leaves version 1 deprecated leaves every LATER spec
+	 * on this shared instance reading Deprecation headers it did not expect,
+	 * and the failure surfaces somewhere unrelated.
+	 */
+	async function withDeclaration(
+		request: APIRequestContext,
+		versions: Array<Record<string, unknown>>,
+		body: () => Promise<void>,
+	): Promise<void> {
+		const before = await request.get(DECLARATION)
+		test.skip(
+			before.status() === 403,
+			'The declaration surface is administrator-only and this run is not signed in as one.',
+		)
+		expect(before.status(), 'the declaration is readable before the test edits it').toBe(200)
+		const previous = (await before.json()).versions
+
+		const applied = await request.put(DECLARATION, { data: { versions } })
+		expect(applied.status(), 'the declaration was accepted').toBe(200)
+
+		try {
+			await body()
+		} finally {
+			await request.put(DECLARATION, {
+				data: {
+					versions: previous.map((v: Record<string, unknown>) => ({
+						id: v.version,
+						status: v.status,
+						deprecatedOn: v.deprecatedOn,
+						sunset: v.sunset,
+						successor: v.successor,
+						description: v.description,
+					})),
+				},
+			})
+		}
+	}
+
+	test('five suppliers move at their own pace: version 1 answers and names its end date', async ({
+		request,
+	}) => {
+		await withDeclaration(
+			request,
+			[
+				{
+					id: '1',
+					status: 'deprecated',
+					deprecatedOn: '2026-09-01',
+					sunset: '2027-03-01',
+					successor: '2',
+				},
+				{ id: '2', status: 'supported' },
+			],
+			async () => {
+				const response = await request.get(CAPABILITIES, {
+					headers: { 'API-Version': '1' },
+				})
+
+				expect(response.status(), 'a deprecated version still answers').toBe(200)
+				expect(response.headers()['api-version']).toBe('1')
+				expect(
+					response.headers().sunset,
+					'the client learns its deadline from the calls it already makes',
+				).toBe('Mon, 01 Mar 2027 00:00:00 GMT')
+				expect(response.headers().deprecation).toBe('Tue, 01 Sep 2026 00:00:00 GMT')
+				expect(response.headers().link).toContain('rel="successor-version"')
+			},
+		)
+	})
+
+	test('a withdrawn version says where to go', async ({ request }) => {
+		await withDeclaration(
+			request,
+			[
+				{ id: '1', status: 'withdrawn', successor: '2' },
+				{ id: '2', status: 'supported' },
+			],
+			async () => {
+				const response = await request.get(CAPABILITIES, {
+					headers: { 'API-Version': '1' },
+				})
+
+				expect(
+					response.status(),
+					'410 and not 404: a 404 reads as a bug in the caller and sends an integrator hunting',
+				).toBe(410)
+
+				const body = await response.json()
+				expect(body.successorVersion).toBe('2')
+				expect(body.error).toContain('Use version 2')
+			},
+		)
+	})
+})
+
+test.describe('Discovery', () => {
+	test('the well-known index names what this instance serves', async ({ request }) => {
+		const response = await request.get(
+			'/index.php/apps/openregister/.well-known',
+		)
+
+		expect(response.status()).toBe(200)
+
+		const body = await response.json()
+		expect(body.paths['security.txt']).toContain('/.well-known/security.txt')
+	})
+
+	test('a responsible disclosure contact is findable, or honestly absent', async ({
+		request,
+	}) => {
+		const response = await request.get(
+			'/index.php/apps/openregister/.well-known/security.txt',
+		)
+
+		// A default instance administers no contact, and 404 is the correct
+		// answer: a file naming security@example.com reads as a working
+		// disclosure channel and swallows the report. Either outcome is valid;
+		// what must never happen is a 200 carrying a placeholder.
+		expect([200, 404]).toContain(response.status())
+
+		if (response.status() === 200) {
+			expect(response.headers()['content-type']).toContain('text/plain')
+			const body = await response.text()
+			expect(body).toContain('Contact:')
+			expect(body, 'RFC 9116 requires Expires').toContain('Expires:')
+			expect(body).not.toContain('example.com')
+		}
 	})
 })
