@@ -4,8 +4,8 @@
  * ConfigurationDeploymentController — the HTTP surface of the lifecycle.
  *
  * Open a set, draft values into it, read what it would change, approve it,
- * deploy it, read the history, roll one back, and ask why a setting has the
- * value it has.
+ * deploy it, read the history, roll one back, ask why a setting has the value
+ * it has, and seed the working defaults as a set to review.
  *
  * ADMINISTRATOR ONLY, and by the framework rather than by a check in a method
  * body. No route here carries `@NoAdminRequired`, so Nextcloud's middleware
@@ -46,12 +46,14 @@ use OCP\IRequest;
 /**
  * Draft, preview, deploy, explain and roll back configuration.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A controller over the four
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A controller over the five
  * services the lifecycle is made of; each route reaches exactly one of them.
- * @SuppressWarnings(PHPMD.TooManyPublicMethods) Twelve routes plus the
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Thirteen routes plus the
  * constructor. Each public method IS one route in appinfo/routes.php, so
  * splitting the class to get under the threshold would split the route table
- * across two controllers and gain nothing a reader can use.
+ * across two controllers and gain nothing a reader can use. The bundle half
+ * DID earn its own controller, which is where the line sits: a second surface,
+ * not a thirteenth route on this one.
  */
 class ConfigurationDeploymentController extends Controller {
 

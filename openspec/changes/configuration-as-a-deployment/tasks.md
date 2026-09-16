@@ -1,10 +1,15 @@
 # Tasks: configuration-as-a-deployment
 
-Shipped in two parts. The first PR is this file's sections 1, 2, 3, 6 and 7
-minus the four boxes named below; it is complete on its own, because a draft
-that can be previewed, deployed and rolled back is a working lifecycle whether
-or not bundles exist yet. Sections 4 and 5, and task 1.3, continue on
-`feat/configuration-bundles-and-seeding`.
+Shipped in two parts, both merged. The first PR carried sections 1, 2, 3, 6 and
+7 minus four boxes; it was complete on its own, because a draft that can be
+previewed, deployed and rolled back is a working lifecycle whether or not
+bundles exist yet. The second, `feat/configuration-bundles-and-seeding`, carried
+sections 4 and 5, task 1.3 and its regression at 6.3. Every box is ticked.
+
+What the second part deliberately did NOT add: a bundle model. The layered value
+store, the layer vocabulary and the explainer's chain already carried the bundle
+layer, so the only new table is the binding, and a bundle is its name plus the
+values recorded against it.
 
 ## 1. Drafts
 
