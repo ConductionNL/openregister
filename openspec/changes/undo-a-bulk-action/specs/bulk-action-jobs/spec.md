@@ -41,7 +41,7 @@ naming the ceiling.
 - **GIVEN** an instance ceiling and a job whose recorded prior values would exceed it
 - **WHEN** the job is created
 - **THEN** creation fails naming the ceiling
-- @e2e exclude {validator, covered by unit tests}
+- @e2e exclude {a creation-time refusal with no HTTP fixture large enough to trip it; asserted in tests/Unit/Service/BulkJob/BulkJobPriorValueCaptureTest.php::testAJobAboveTheUndoCeilingIsRefusedAtCreationNamingTheCeiling}
 
 ### Requirement: A reversal is a new job that names the job it undoes (REQ-UBA-003)
 
@@ -73,7 +73,7 @@ original write and the reversal as two acts with their own actors.
 - **GIVEN** a job whose reversal window has passed
 - **WHEN** a reversal is requested
 - **THEN** it is refused naming the window
-- @e2e exclude {time-dependent, covered by unit tests with a clock fixture}
+- @e2e exclude {time-dependent, and the HTTP surface exposes no clock; asserted in tests/Unit/Service/BulkJob/BulkJobReversalTest.php::testAReversalOutsideTheWindowIsRefusedNamingTheWindow}
 
 ### Requirement: A member changed since the job is not silently overwritten (REQ-UBA-004)
 
@@ -95,4 +95,4 @@ a later change.
 - **GIVEN** a completed reversal with skipped members
 - **WHEN** the reversal job is read
 - **THEN** each skipped member is listed with its reason
-- @e2e exclude {job read, covered by unit tests}
+- @e2e exclude {needs a completed reversal, so the same worker dependency; asserted in tests/Unit/Controller/BulkJobsControllerTest.php::testTheMembersRouteCarriesTheOutcomeAndItsReason and tests/Unit/BulkAction/RestorePriorValuesActionTest.php::testALaterEditIsReportedByNameAndNeverOverwritten}
