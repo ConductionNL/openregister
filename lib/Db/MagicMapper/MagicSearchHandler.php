@@ -1671,8 +1671,11 @@ class MagicSearchHandler {
 	 * @param bool $_rbac Whether RBAC filtering is enabled
 	 * @param bool $_multitenancy Whether multitenancy filtering is enabled
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
+	 * @param int|null $registerId The register of the table being read, for shared master data
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	private function applyAccessControlFilters(
 		IQueryBuilder $qb,

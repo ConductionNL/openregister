@@ -76,20 +76,28 @@ trait MultiTenancyTrait {
 	private ?SharedMasterDataService $sharedMasterData = null;
 
 	/**
-	 * The shared master data resolver for this mapper, or null when unavailable.
+	 * The shared master data resolver for this mapper.
 	 *
-	 * @return SharedMasterDataService|null The resolver.
+	 * `$this->db` and `getTableName()` are read WITHOUT a probe, and that is a
+	 * decision rather than an oversight. Both are things this trait's header has
+	 * required of its host since it was written, and every one of the eleven
+	 * mappers supplies them by extending QBMapper.
+	 *
+	 * A probe was tried first and removed. `isset($this->db)` and
+	 * `method_exists($this, 'getTableName')` are provably always true in the
+	 * context of all eleven, so phpstan reported 34 errors for code that can
+	 * never run, and an inline ignore does not apply to a trait that is analysed
+	 * once per using class. Rather than baseline a suppression, the one host
+	 * that was not honouring the contract — `TenancyGuardHost`, a stand-in for a
+	 * mapper in this trait's own unit test — now honours it. A stand-in that
+	 * supplies what the real thing supplies is a better stand-in.
+	 *
+	 * @return SharedMasterDataService The resolver.
 	 */
-	private function sharedMasterData(): ?SharedMasterDataService {
-		if ($this->sharedMasterData !== null) {
-			return $this->sharedMasterData;
+	private function sharedMasterData(): SharedMasterDataService {
+		if ($this->sharedMasterData === null) {
+			$this->sharedMasterData = new SharedMasterDataService(db: $this->db);
 		}
-
-		if (isset($this->db) === false) {
-			return null;
-		}
-
-		$this->sharedMasterData = new SharedMasterDataService(db: $this->db);
 
 		return $this->sharedMasterData;
 	}//end sharedMasterData()
@@ -108,7 +116,7 @@ trait MultiTenancyTrait {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	private function sharedMasterDataIds(array $activeOrgUuids): array {
-		if ($activeOrgUuids === [] || method_exists($this, 'getTableName') === false) {
+		if ($activeOrgUuids === []) {
 			return [];
 		}
 
@@ -117,12 +125,7 @@ trait MultiTenancyTrait {
 			return [];
 		}
 
-		$resolver = $this->sharedMasterData();
-		if ($resolver === null) {
-			return [];
-		}
-
-		return $resolver->sharedIds(table: $table, consumerOrgUuids: $activeOrgUuids);
+		return $this->sharedMasterData()->sharedIds(table: $table, consumerOrgUuids: $activeOrgUuids);
 	}//end sharedMasterDataIds()
 
 	/**
@@ -951,20 +954,12 @@ trait MultiTenancyTrait {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
 	private function refuseSharedMasterDataWrite(Entity $entity): void {
-		if (method_exists($this, 'getTableName') === false) {
-			return;
-		}
-
 		$table = $this->getTableName();
 		if ($table !== SharedMasterDataService::REGISTERS && $table !== SharedMasterDataService::SCHEMAS) {
 			return;
 		}
 
 		$resolver = $this->sharedMasterData();
-		if ($resolver === null) {
-			return;
-		}
-
 		$activeOrgUuids = $this->getActiveOrganisationUuids();
 		$entityId = $entity->getId();
 		if (is_int($entityId) === false) {

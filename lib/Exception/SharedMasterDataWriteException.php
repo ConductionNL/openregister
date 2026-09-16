@@ -110,9 +110,9 @@ class SharedMasterDataWriteException extends Exception {
 		}
 
 		parent::__construct(
-			'This ' . $subject . ' is shared master data held by ' . $holder
+			message: 'This ' . $subject . ' is shared master data held by ' . $holder
 			. '. Your organisation reads it and cannot change it. Ask ' . $holder . ' to make the change.',
-			Http::STATUS_FORBIDDEN
+			code: Http::STATUS_FORBIDDEN
 		);
 
 	}//end __construct()

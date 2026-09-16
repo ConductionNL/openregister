@@ -106,6 +106,8 @@ class SharedMasterDataService {
 	 * share it just removed.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	public function clearCache(): void {
 		$this->declarations = null;
@@ -356,6 +358,8 @@ class SharedMasterDataService {
 	 * @param array<int, string> $activeOrgUuids The acting organisation and its parents.
 	 *
 	 * @return boolean True when the acting organisation only consumes this row.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	public function isConsumedShare(string $table, ?int $id, array $activeOrgUuids): bool {
 		if ($id === null) {
@@ -427,6 +431,8 @@ class SharedMasterDataService {
 	 * @param string $uuid The organisation UUID.
 	 *
 	 * @return string|null The name, or null when it could not be read.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	public function holderName(string $uuid): ?string {
 		if (array_key_exists($uuid, $this->holderNames) === true) {

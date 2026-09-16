@@ -172,6 +172,8 @@ class TenantLogRedactor {
 	 * @param array<string, mixed> $context The context.
 	 *
 	 * @return array<string, mixed> The cleaned context, or an explicit refusal marker.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
 	public function redact(array $context): array {
 		$clean = $this->line(context: $context);
@@ -188,6 +190,8 @@ class TenantLogRedactor {
 	 * How many lines have been dropped on this instance.
 	 *
 	 * @return integer The count.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
 	public function droppedLines(): int {
 		if ($this->appConfig === null) {

@@ -46,6 +46,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSize(?int $size)
  * @method string|null getObjectUuid()
  * @method void setObjectUuid(?string $objectUuid)
+ * @method string|null getOrganisationId()
+ * @method void setOrganisationId(?string $organisationId)
  * @method string|null getRegisterUuid()
  * @method void setRegisterUuid(?string $registerUuid)
  * @method string|null getSchemaUuid()
