@@ -112,7 +112,16 @@ class PublicApiCorsMiddleware extends Middleware {
 				return $response;
 			}
 
-			$this->reflector->reflect($controller, $methodName);
+			// INHERITED: `reflect()` is not on IControllerMethodReflector, only on
+			// the concrete reflector the container injects. Calling it unguarded
+			// works in production and throws against any double built from the
+			// interface, which sends this whole method down its fail-open path
+			// without a word. Guarded, production is unchanged and the behaviour
+			// becomes testable.
+			if (method_exists($this->reflector, 'reflect') === true) {
+				$this->reflector->reflect($controller, $methodName);
+			}
+
 			if ($this->reflector->hasAnnotation('PublicPage') === false) {
 				return $response;
 			}
