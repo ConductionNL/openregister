@@ -97,6 +97,8 @@ class ElementMappingValidatorTest extends TestCase {
 	 * for every mapping. A bare PHP process installs no such loader, so the
 	 * whole suite passed while the feature could not run. Installing the loader
 	 * here is what makes the difference visible.
+	 *
+	 * @return void
 	 */
 	public function testTheCatalogueReadsUnderNextcloudsNullEntityResolver(): void {
 		// PHP 8.4 hands back the resolver that was installed; 8.3 and below
@@ -111,12 +113,12 @@ class ElementMappingValidatorTest extends TestCase {
 			$catalogue = new MdtoElementCatalogue();
 
 			$this->assertSame(
-				['identificatie', 'naam', 'waardering', 'archiefvormer', 'beperkingGebruik'],
-				$catalogue->mandatory()
+				expected: ['identificatie', 'naam', 'waardering', 'archiefvormer', 'beperkingGebruik'],
+				actual: $catalogue->mandatory()
 			);
 			$this->assertSame(
-				[],
-				(new ElementMappingValidator($catalogue))->validate(
+				expected: [],
+				actual: (new ElementMappingValidator($catalogue))->validate(
 					mapping: $this->completeMapping(),
 					properties: $this->properties()
 				)
