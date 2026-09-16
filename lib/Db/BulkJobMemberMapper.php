@@ -31,6 +31,11 @@ use OCP\IDBConnection;
  * Class BulkJobMemberMapper
  *
  * @template-extends QBMapper<BulkJobMember>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Eleven queries over one
+ * table. Each is one indexed read the engine or the reversal needs, and
+ * splitting them across two mappers to get under the threshold would put two
+ * objects in front of one table without removing a single query.
  */
 class BulkJobMemberMapper extends QBMapper {
 	/**

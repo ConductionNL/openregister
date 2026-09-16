@@ -77,49 +77,72 @@ class Version1Date20260916121200 extends SimpleMigrationStep {
 		$added = 0;
 
 		if ($schema->hasTable('openregister_bulk_jobs') === true) {
-			$table = $schema->getTable('openregister_bulk_jobs');
-
-			if ($table->hasColumn('reversal_window') === false) {
-				$table->addColumn('reversal_window', Types::INTEGER, ['notnull' => false, 'unsigned' => true]);
-				$added++;
-			}
-
-			if ($table->hasColumn('reversible_until') === false) {
-				$table->addColumn('reversible_until', Types::DATETIME, ['notnull' => false]);
-				$added++;
-			}
-
-			if ($table->hasColumn('reverses_job_id') === false) {
-				$table->addColumn('reverses_job_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
-				$added++;
-			}
-
-			if ($table->hasColumn('reversed_by_job_id') === false) {
-				$table->addColumn('reversed_by_job_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
-				$added++;
-			}
-
-			if ($table->hasIndex('idx_or_bulkjob_reverses') === false) {
-				$table->addIndex(['reverses_job_id'], 'idx_or_bulkjob_reverses');
-			}
-		}//end if
+			$added += $this->addJobColumns(schema: $schema);
+		}
 
 		if ($schema->hasTable('openregister_bulk_job_members') === true) {
-			$table = $schema->getTable('openregister_bulk_job_members');
-
-			if ($table->hasColumn('prior_values') === false) {
-				$table->addColumn('prior_values', Types::TEXT, ['notnull' => false]);
-				$added++;
-			}
-
-			if ($table->hasColumn('applied_values') === false) {
-				$table->addColumn('applied_values', Types::TEXT, ['notnull' => false]);
-				$added++;
-			}
-		}//end if
+			$added += $this->addMemberColumns(schema: $schema);
+		}
 
 		$output->info('Added '.$added.' reversal column(s) to the bulk job tables');
 
 		return $schema;
 	}//end changeSchema()
+
+	/**
+	 * Add the four reversal columns to the job table.
+	 *
+	 * @param ISchemaWrapper $schema The schema being changed.
+	 *
+	 * @return int How many columns were added.
+	 */
+	private function addJobColumns(ISchemaWrapper $schema): int {
+		$table = $schema->getTable('openregister_bulk_jobs');
+		$added = 0;
+
+		$columns = [
+			'reversal_window' => [Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
+			'reversible_until' => [Types::DATETIME, ['notnull' => false]],
+			'reverses_job_id' => [Types::BIGINT, ['notnull' => false, 'unsigned' => true]],
+			'reversed_by_job_id' => [Types::BIGINT, ['notnull' => false, 'unsigned' => true]],
+		];
+
+		foreach ($columns as $name => $definition) {
+			if ($table->hasColumn($name) === true) {
+				continue;
+			}
+
+			$table->addColumn($name, $definition[0], $definition[1]);
+			$added++;
+		}
+
+		if ($table->hasIndex('idx_or_bulkjob_reverses') === false) {
+			$table->addIndex(['reverses_job_id'], 'idx_or_bulkjob_reverses');
+		}
+
+		return $added;
+	}//end addJobColumns()
+
+	/**
+	 * Add the two reversal columns to the member table.
+	 *
+	 * @param ISchemaWrapper $schema The schema being changed.
+	 *
+	 * @return int How many columns were added.
+	 */
+	private function addMemberColumns(ISchemaWrapper $schema): int {
+		$table = $schema->getTable('openregister_bulk_job_members');
+		$added = 0;
+
+		foreach (['prior_values', 'applied_values'] as $name) {
+			if ($table->hasColumn($name) === true) {
+				continue;
+			}
+
+			$table->addColumn($name, Types::TEXT, ['notnull' => false]);
+			$added++;
+		}
+
+		return $added;
+	}//end addMemberColumns()
 }//end class

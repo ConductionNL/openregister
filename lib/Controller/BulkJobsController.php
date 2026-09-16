@@ -5,7 +5,8 @@
  *
  * The HTTP surface of a bulk action job: the action catalogue, creating a
  * job (which rehearses it), reading its progress and its per-object
- * outcomes, downloading the outcome, committing, cancelling and retrying.
+ * outcomes, downloading the outcome, committing, cancelling, retrying and
+ * undoing.
  *
  * Every route is owner-scoped. A user reads their own jobs; an administrator
  * may read any.
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -53,10 +55,13 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A REST surface over the
  * job record, the action catalogue and the lifecycle service.
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Nine endpoints over one
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Ten endpoints over one
  * resource. Splitting them across controllers to move the number under the
  * threshold would put the same ownership check in two places, which is the
  * failure the threshold exists to prevent.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) The same ten endpoints. Every
+ * public method here is one route, and the count is the size of the resource
+ * rather than a sign the class does two things.
  *
  * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
  */
@@ -75,15 +80,20 @@ class BulkJobsController extends Controller {
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param BulkJobService $service The lifecycle service.
+	 * @param BulkJobReversal $reversal The inverse of a reversible job.
 	 * @param BulkJobMapper $jobMapper Job persistence.
 	 * @param BulkActionRegistry $registry The action catalogue.
 	 * @param IUserSession $userSession Current-user session.
 	 * @param IGroupManager $groupManager Group manager (admin check).
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection.
+	 * Each is a collaborator this REST surface genuinely uses.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly BulkJobService $service,
+		private readonly BulkJobReversal $reversal,
 		private readonly BulkJobMapper $jobMapper,
 		private readonly BulkActionRegistry $registry,
 		private readonly IUserSession $userSession,
@@ -338,14 +348,14 @@ class BulkJobsController extends Controller {
 		$justification = $this->nullableString(value: $this->request->getParam('justification'));
 
 		try {
-			$reversal = $this->service->reverse(original: $job, actorUid: $uid, justification: $justification);
+			$created = $this->reversal->reverse(original: $job, actorUid: $uid, justification: $justification);
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
 		}
 
-		return new JSONResponse(data: $reversal->jsonSerialize(), statusCode: 201);
+		return new JSONResponse(data: $created->jsonSerialize(), statusCode: 201);
 	}//end reverse()
 
 	/**
