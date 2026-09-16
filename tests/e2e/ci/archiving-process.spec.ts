@@ -479,3 +479,93 @@ test.describe('archiving-nomination', () => {
 		)
 	})
 })
+
+/*
+ * THE ADMINISTERED ELEMENT MAPPING, AND THE REFUSAL IT DRIVES.
+ *
+ * The unit tests cover which elements a mapping leaves unfilled. What they
+ * cannot see is whether the schema editor accepts a mapping at all: the key has
+ * to survive `setConfiguration()`, which silently DROPS any configuration key
+ * not in Schema::ANNOTATION_VOCABULARY. A dropped key looks exactly like a
+ * saved one from the client's side, and the refusal it exists to drive would
+ * then never fire on any instance.
+ */
+test.describe('archiving-element-mapping', () => {
+	test.use({ storageState: STORAGE_STATE })
+
+	let register: { id: number; slug: string; title: string } | null = null
+	let schema: { id: number; slug: string; title: string } | null = null
+
+	const COMPLETE_MAPPING = {
+		identificatie: { property: 'zaaknummer' },
+		naam: { property: 'titel' },
+		waardering: { property: 'resultaat' },
+		archiefvormer: { const: 'Gemeente Voorbeeld' },
+		beperkingGebruik: { const: 'Geen beperking' },
+	}
+
+	test.beforeAll(async ({ request }) => {
+		register = await createRegister(request, `${RUN}-map`)
+	})
+
+	test.afterAll(async ({ request }) => {
+		if (schema !== null) {
+			await deleteSchema(request, schema.id)
+		}
+
+		if (register !== null) {
+			await deleteRegister(request, register.id)
+		}
+	})
+
+	// @e2e retention-management::an-unmapped-mandatory-element-stops-the-transfer-here
+	test('a mapping that leaves a mandatory element unfilled is refused at schema save', async ({ request }) => {
+		const incomplete = { ...COMPLETE_MAPPING }
+		delete (incomplete as Record<string, unknown>).archiefvormer
+
+		const refused = await request.post(`${API}/schemas`, {
+			headers: { 'Content-Type': 'application/json' },
+			data: {
+				slug: `${RUN}-unmapped`,
+				title: 'E2E unmapped',
+				properties: {
+					zaaknummer: { type: 'string', title: 'Zaaknummer' },
+					titel: { type: 'string', title: 'Titel' },
+					resultaat: { type: 'string', title: 'Resultaat' },
+				},
+				configuration: { 'x-openregister-mdto-mapping': incomplete },
+			},
+		})
+
+		expect(refused.status(), 'a mapping missing a mandatory element is refused').toBe(400)
+		const body = await refused.text()
+		expect(body, 'and the refusal names the element').toContain('archiefvormer')
+	})
+
+	// @e2e retention-management::an-unmapped-mandatory-element-stops-the-transfer-here
+	test('a complete mapping survives the save and reads back', async ({ request }) => {
+		schema = await createSchema(
+			request,
+			RUN,
+			'mapped',
+			{
+				zaaknummer: { type: 'string', title: 'Zaaknummer' },
+				titel: { type: 'string', title: 'Titel' },
+				resultaat: { type: 'string', title: 'Resultaat' },
+			},
+			{ configuration: { 'x-openregister-mdto-mapping': COMPLETE_MAPPING } },
+		)
+		await linkSchemaToRegister(request, register!, [schema.id])
+
+		const read = await request.get(`${API}/schemas/${schema.id}`)
+		expect(read.status(), 'read the saved schema back').toBe(200)
+		const configuration = (await read.json())?.configuration ?? {}
+
+		// 🔴 THE KEY SURVIVED. setConfiguration() drops any key not in
+		// ANNOTATION_VOCABULARY, and a dropped key reports success.
+		expect(
+			configuration['x-openregister-mdto-mapping']?.archiefvormer?.const,
+			'the mapping was stored, not dropped',
+		).toBe('Gemeente Voorbeeld')
+	})
+})

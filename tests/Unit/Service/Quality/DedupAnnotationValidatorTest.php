@@ -76,4 +76,85 @@ class DedupAnnotationValidatorTest extends TestCase {
 		$this->assertContains('dedup.bad-threshold', $codes);
 		$this->assertContains('dedup.bad-blocking-keys', $codes);
 	}
+
+	/**
+	 * The declared create policy validates.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function testValidCreatePolicy(): void {
+		$shape = [
+			'x-openregister-dedup' => [
+				'matchRules' => [['field' => 'kvkNumber', 'method' => 'exact']],
+				'onCreate' => 'block',
+				'overrideGroups' => ['case-supervisors'],
+			],
+		];
+		$this->assertSame([], $this->validator->validate($shape));
+	}
+
+	/**
+	 * A misspelled `onCreate` is reported rather than ignored: a schema that
+	 * meant `block` and wrote `blocking` would otherwise let every duplicate
+	 * through and look correct doing it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function testMisspelledOnCreateIsRefused(): void {
+		$shape = [
+			'x-openregister-dedup' => [
+				'matchRules' => [['field' => 'kvkNumber', 'method' => 'exact']],
+				'onCreate' => 'blocking',
+			],
+		];
+		$codes = array_column($this->validator->validate($shape), 'code');
+		$this->assertContains('dedup.unknown-on-create', $codes);
+	}
+
+	/**
+	 * `overrideGroups` has to be a list of group ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function testOverrideGroupsMustBeGroupIds(): void {
+		$scalar = [
+			'x-openregister-dedup' => [
+				'matchRules' => [['field' => 'kvkNumber', 'method' => 'exact']],
+				'overrideGroups' => 'case-supervisors',
+			],
+		];
+		$this->assertContains('dedup.bad-override-groups', array_column($this->validator->validate($scalar), 'code'));
+
+		$empty = [
+			'x-openregister-dedup' => [
+				'matchRules' => [['field' => 'kvkNumber', 'method' => 'exact']],
+				'overrideGroups' => ['case-supervisors', ''],
+			],
+		];
+		$this->assertContains('dedup.bad-override-group', array_column($this->validator->validate($empty), 'code'));
+	}
+
+	/**
+	 * Naming override groups before turning blocking on is allowed: it would
+	 * otherwise be a two-step edit for no gain.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function testOverrideGroupsWithoutBlockIsValid(): void {
+		$shape = [
+			'x-openregister-dedup' => [
+				'matchRules' => [['field' => 'kvkNumber', 'method' => 'exact']],
+				'overrideGroups' => ['case-supervisors'],
+			],
+		];
+		$this->assertSame([], $this->validator->validate($shape));
+	}
 }

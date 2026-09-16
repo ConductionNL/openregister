@@ -149,6 +149,28 @@ return [
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
         ],
 
+        // Per-object favourite (`favourites-and-recent`). A star is a fact about
+        // a person, not about the object, so it is written here and never
+        // through the object: writing it into the object would change that
+        // object's audit trail and cut a version for every reader.
+        // There is no GET here on purpose. Every object read already carries
+        // `@self.favourite`, so a detail page renders the star from data it has
+        // and a list renders a column of them from one query.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectFavourite#star',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectFavourite#unstar',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
         // Per-object read state. Reading an object is per-user state that must
         // not be written through the object itself, which would put "alice
         // looked at this" in the object's audit trail and cut a version on every
@@ -412,6 +434,18 @@ return [
         ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
+        // Previewed erasure (data-subject-rights-across-the-instance): count
+        // first, approve, then erase through the recorded destruction. The
+        // one-call `dataSubjectRequest#erase` above stays for callers that had
+        // already decided; this is the surface for a request that has to be
+        // ANSWERED, protected records and all.
+        ['name' => 'erasurePreview#create', 'url' => '/api/gdpr/erasure-previews', 'verb' => 'POST'],
+        ['name' => 'erasurePreview#show', 'url' => '/api/gdpr/erasure-previews/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#approve', 'url' => '/api/gdpr/erasure-previews/{id}/approve',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#run', 'url' => '/api/gdpr/erasure-previews/{id}/run',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
@@ -494,6 +528,13 @@ return [
         ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
         // MDM read-only surface — duplicate-candidate listing.
         ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+        // Duplicate check at intake: score an UNSAVED body against what is stored.
+        //
+        // ORDER MATTERS. `objects#postPatch` is POST /api/objects/{register}/{schema}/{id}
+        // and would otherwise match this URL with `dedup-check` as the id, turning a
+        // read-only check into a patch of a non-existent object. It is registered far
+        // below (the objects block), so this entry must stay ABOVE it, here.
+        ['name' => 'duplicate#check', 'url' => '/api/objects/{register}/{schema}/dedup-check', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
         ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
         ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
@@ -1023,6 +1064,15 @@ return [
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Archive and freeze (object-archive-state). DELETE undoes POST on the
+        // same url, which is what makes restore the obvious opposite of
+        // archive; a second `/unarchive` url would read as a third state.
+        // Neither verb needs `delete` on the object — archiving is not a step
+        // towards deletion (openregister ADR-010).
+        ['name' => 'objectState#archive', 'url' => '/api/objects/{register}/{schema}/{id}/archive', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#unarchive', 'url' => '/api/objects/{register}/{schema}/{id}/archive', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#freeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#unfreeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         // Registry subscriptions (registry-subscriptions, finding B22).
         ['name' => 'registrySubscription#subscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registrySubscription#unsubscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
@@ -1105,6 +1155,28 @@ return [
         // Notification Preferences — override-only, per-(schema, notification) user preferences.
         ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
+        // Notification Templates — the shipped text per platform event, the
+        // events that have none, and an administrator's edit of either.
+        ['name' => 'notificationTemplates#index',  'url' => '/api/notification-templates', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#gaps',   'url' => '/api/notification-templates/gaps', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#update', 'url' => '/api/notification-templates/{event}', 'verb' => 'PUT'],
+        // Notification Broadcasts — one administered message to every user.
+        // The active read and the acknowledge act on the caller's own receipt
+        // and are open to any signed-in user; the rest is administrators only.
+        ['name' => 'notificationBroadcast#index',   'url' => '/api/notification-broadcasts', 'verb' => 'GET'],
+        ['name' => 'notificationBroadcast#create',  'url' => '/api/notification-broadcasts', 'verb' => 'POST'],
+        ['name' => 'notificationBroadcast#active',  'url' => '/api/notification-broadcasts/active', 'verb' => 'GET'],
+        [
+            'name' => 'notificationBroadcast#acknowledge',
+            'url' => '/api/notification-broadcasts/{uuid}/acknowledge',
+            'verb' => 'POST',
+        ],
+        ['name' => 'notificationBroadcast#destroy', 'url' => '/api/notification-broadcasts/{uuid}', 'verb' => 'DELETE'],
+        // Notification Group Preferences — the team's layer between the schema
+        // default and each member's own value. Writing requires administering
+        // the named group; reading is open to its members.
+        ['name' => 'notificationGroupPreferences#index',  'url' => '/api/notification-group-preferences', 'verb' => 'GET'],
+        ['name' => 'notificationGroupPreferences#update', 'url' => '/api/notification-group-preferences', 'verb' => 'PUT'],
         // Notification Delivery Window — override-only, per-user quiet-hours preference.
         ['name' => 'notificationDeliveryWindow#index',  'url' => '/api/notification-delivery-window', 'verb' => 'GET'],
         ['name' => 'notificationDeliveryWindow#update', 'url' => '/api/notification-delivery-window', 'verb' => 'PUT'],
@@ -1340,6 +1412,25 @@ return [
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
+
+        // The API as a described, versioned surface (api-as-a-versioned-surface).
+        // `capabilities` and `versions` are PUBLIC on purpose: a client that has
+        // to authenticate to learn the upload limit will not learn the upload
+        // limit, and every integrator currently discovers it by hitting it. The
+        // public body carries versions and ceilings only; the operational
+        // switches appear only when a session is present (design D-5).
+        //
+        // `/api/versions/{version}/oas` names the DOCUMENT, not the contract the
+        // call itself speaks — a caller may legitimately read the description of
+        // a version it has not moved to yet.
+        ['name' => 'apiSurface#capabilities', 'url' => '/api/capabilities', 'verb' => 'GET'],
+        ['name' => 'apiSurface#versions', 'url' => '/api/versions', 'verb' => 'GET'],
+        [
+            'name'         => 'apiSurface#contract',
+            'url'          => '/api/versions/{version}/oas',
+            'verb'         => 'GET',
+            'requirements' => ['version' => '[0-9]{1,3}'],
+        ],
         // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
         ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
         ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],
@@ -1643,6 +1734,12 @@ return [
 		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+		// The classification plan arrives as a file, versioned, and a new
+		// version is diffed against the one in use before it is switched to.
+		['name' => 'selectielijst#import', 'url' => '/api/archival/selectielijst/import', 'verb' => 'POST'],
+		['name' => 'selectielijst#versions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
+		['name' => 'selectielijst#diff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],

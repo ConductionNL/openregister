@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ViewHistoryService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
@@ -2636,6 +2637,17 @@ class ObjectsController extends Controller {
 			// Only include when explicitly requested via _extend parameter.
 			// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
 			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
+			// Opening an object's detail is what records a view
+			// (`favourites-and-recent`). It happens HERE and nowhere else,
+			// because this is the read path a person is behind: a list read, an
+			// export and a webhook all render objects too, and none of them is
+			// somebody looking at one thing.
+			$this->recordObjectView(
+				object: $objectEntity,
+				register: $register,
+				schema: $schema
+			);
+
 			$renderedData = $renderedObject;
 			if (isset($renderedData['@self']) === true) {
 				// The tab badges (`object-read-state`). Attached HERE and
@@ -2919,6 +2931,17 @@ class ObjectsController extends Controller {
 			FILTER_VALIDATE_BOOLEAN
 		);
 
+		// DUPLICATE OVERRIDE, read from the RAW request for the same reason
+		// `_failIfExists` above is: the body filter a few lines up strips every
+		// `_`-prefixed key, so a control left in `$object` is gone by the time
+		// the save path could act on it. Read here, it is a request the save
+		// path evaluates against the schema's declared `overrideGroups`; asking
+		// is never the same as being allowed.
+		$dedupOverride = filter_var(
+			$this->request->getParam('_dedupOverride', false),
+			FILTER_VALIDATE_BOOLEAN
+		);
+
 		// Determine RBAC and multitenancy settings based on admin status.
 		$isAdmin = $this->isCurrentUserAdmin();
 		$rbac = !$isAdmin;
@@ -2946,7 +2969,8 @@ class ObjectsController extends Controller {
 				_multitenancy: true,
 				uuid: null,
 				uploadedFiles: $uploadedFilesValue,
-				failIfExists: $failIfExists
+				failIfExists: $failIfExists,
+				_dedupOverride: $dedupOverride
 			);
 
 			// TODO: Unlock the object after saving using LockingHandler through ObjectService.
@@ -3001,6 +3025,19 @@ class ObjectsController extends Controller {
 				data: [
 					'error' => $exception->getMessage(),
 					'uuid' => $exception->getUuid(),
+				],
+				statusCode: 409
+			);
+		} catch (\OCA\OpenRegister\Exception\DuplicateBlockedException $exception) {
+			// Also before the generic \Exception, and for the same reason: a
+			// create refused because the register already holds this record is
+			// not a permissions problem, and a 403 would send the user looking
+			// for the wrong fix. The matches travel with the refusal so the
+			// form can offer the existing object instead of a second one.
+			return new JSONResponse(
+				data: [
+					'error' => $exception->getMessage(),
+					'matches' => $exception->getMatches(),
 				],
 				statusCode: 409
 			);
@@ -5420,6 +5457,41 @@ class ObjectsController extends Controller {
 		return $self;
 
 	}//end withUnreadCounts()
+
+	/**
+	 * Record that the caller opened this object.
+	 *
+	 * Throttled inside `ViewHistoryService` to one record per user, object and
+	 * minute, so a detail page that reads its object several times while it
+	 * renders leaves one row carrying the moment of the first read.
+	 *
+	 * Resolved through the container rather than the constructor, the same lazy
+	 * posture the render layer uses for the sibling primitives: recording that
+	 * somebody looked at an object must never be able to take out the read of
+	 * that object, and an anonymous read records nothing at all.
+	 *
+	 * @param ObjectEntity $object The object being read.
+	 * @param string $register The register as the caller addressed it.
+	 * @param string $schema The schema as the caller addressed it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 */
+	private function recordObjectView(ObjectEntity $object, string $register, string $schema): void {
+		try {
+			$this->container->get(ViewHistoryService::class)->recordView(
+				object: $object,
+				register: $register,
+				schema: $schema
+			);
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				sprintf('[ObjectsController] view not recorded: %s', $e->getMessage())
+			);
+		}//end try
+
+	}//end recordObjectView()
 
 	/**
 	 * Read the records that reference this object, grouped by schema.
