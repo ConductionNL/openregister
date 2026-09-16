@@ -83,16 +83,16 @@ test.describe('The published contract', () => {
 		expect(body.versions.length).toBeGreaterThan(0)
 		for (const version of body.versions) {
 			expect(version.version).toMatch(/^[0-9]{1,3}$/)
-			expect(['supported', 'deprecated', 'withdrawn']).toContain(version.status)
+			expect(['supported', 'deprecated', 'withdrawn']).toContain(
+				version.status,
+			)
 		}
 	})
 
 	test('each served version has its own description', async ({ request }) => {
 		const { currentVersion } = await (await request.get(CAPABILITIES)).json()
 
-		const response = await request.get(
-			`${VERSIONS}/${currentVersion}/oas`,
-		)
+		const response = await request.get(`${VERSIONS}/${currentVersion}/oas`)
 		expect(response.status()).toBe(200)
 
 		const document = await response.json()

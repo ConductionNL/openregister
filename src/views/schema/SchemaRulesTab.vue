@@ -3,7 +3,12 @@
 		<NcAppContentDetails>
 			<h2>{{ t('openregister', 'Rules') }}</h2>
 			<p class="lead">
-				{{ t('openregister', 'Everything that runs when an object of this schema is saved, in the order it runs.') }}
+				{{
+					t(
+						'openregister',
+						'Everything that runs when an object of this schema is saved, in the order it runs.',
+					)
+				}}
 			</p>
 
 			<NcLoadingIcon v-if="loading" :size="44" />
@@ -14,7 +19,7 @@
 				</p>
 
 				<RuleInventoryTable
-:rules="rules"
+					:rules="rules"
 					:kinds="vocabulary.kinds"
 					:selectedId="selected ? selected.id : ''"
 					:switching="switching"
@@ -30,24 +35,26 @@
 					</div>
 
 					<RuleConditionEditor
-:rule="selected"
+						:rule="selected"
 						:kinds="vocabulary.kinds"
 						:actions="vocabulary.actions"
 						:operators="operators"
 						@update:draft="draft = $event" />
 
 					<RuleTrialPanel
-:schema="schemaReference"
+						:schema="schemaReference"
 						:ruleId="selected.id"
 						:draft="draft"
 						:verdicts="vocabulary.verdicts" />
 
 					<RuleReplayPanel
-v-if="selected.kind === 'calculation'"
+						v-if="selected.kind === 'calculation'"
 						:schema="schemaReference"
 						:ruleId="selected.id" />
 
-					<RuleRunsPanel :ruleId="selected.id" :verdicts="vocabulary.verdicts" />
+					<RuleRunsPanel
+						:ruleId="selected.id"
+						:verdicts="vocabulary.verdicts" />
 				</div>
 			</template>
 		</NcAppContentDetails>
@@ -62,7 +69,13 @@ import RuleInventoryTable from '../../components/rules/RuleInventoryTable.vue'
 import RuleReplayPanel from '../../components/rules/RuleReplayPanel.vue'
 import RuleRunsPanel from '../../components/rules/RuleRunsPanel.vue'
 import RuleTrialPanel from '../../components/rules/RuleTrialPanel.vue'
-import { fetchInventory, fetchOperators, fetchVocabulary, messageFor, setRuleEnabled } from '../../services/rules.js'
+import {
+	fetchInventory,
+	fetchOperators,
+	fetchVocabulary,
+	messageFor,
+	setRuleEnabled,
+} from '../../services/rules.js'
 
 /**
  * The administrator's rule surface for one schema.
@@ -166,7 +179,13 @@ export default {
 				this.rules = inventory.rules ?? []
 				this.operators = operators
 			} catch (failure) {
-				this.error = messageFor(failure, t('openregister', 'The rules for this schema could not be read.'))
+				this.error = messageFor(
+					failure,
+					t(
+						'openregister',
+						'The rules for this schema could not be read.',
+					),
+				)
 				this.rules = []
 			} finally {
 				this.loading = false
@@ -211,10 +230,14 @@ export default {
 				const inventory = await fetchInventory(this.schemaReference)
 				this.rules = inventory.rules ?? []
 				if (this.selected) {
-					this.selected = this.rules.find((row) => row.id === this.selected.id) ?? null
+					this.selected =
+						this.rules.find((row) => row.id === this.selected.id) ?? null
 				}
 			} catch (failure) {
-				this.error = messageFor(failure, t('openregister', 'The rule could not be switched.'))
+				this.error = messageFor(
+					failure,
+					t('openregister', 'The rule could not be switched.'),
+				)
 			} finally {
 				this.switching = ''
 			}

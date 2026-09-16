@@ -858,10 +858,12 @@ export default {
 		 * @return {string|null} The ISO date, or null when the row carries none.
 		 */
 		destroyableFrom(item) {
-			return item?.deletionWindow?.destroyableFrom
+			return (
+				item?.deletionWindow?.destroyableFrom
 				|| item?.['@self']?.deleted?.destroyableFrom
 				|| item?.['@self']?.deleted?.purgeDate
 				|| null
+			)
 		},
 
 		/**

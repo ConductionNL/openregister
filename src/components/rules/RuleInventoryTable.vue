@@ -1,9 +1,14 @@
 <template>
 	<div class="ruleInventory">
 		<NcEmptyContent
-v-if="rules.length === 0"
+			v-if="rules.length === 0"
 			:name="t('openregister', 'No rules on this schema yet')"
-			:description="t('openregister', 'A calculation, a state field block, a transition condition or a triggering flow appears here the moment you declare it.')">
+			:description="
+				t(
+					'openregister',
+					'A calculation, a state field block, a transition condition or a triggering flow appears here the moment you declare it.',
+				)
+			">
 			<template #icon>
 				<GavelIcon :size="44" />
 			</template>
@@ -37,27 +42,38 @@ v-if="rules.length === 0"
 			</thead>
 			<tbody>
 				<tr
-v-for="rule in rules"
+					v-for="rule in rules"
 					:key="rule.id"
-					:class="{ selected: rule.id === selectedId, idle: rule.idle === true }">
+					:class="{
+						selected: rule.id === selectedId,
+						idle: rule.idle === true,
+					}">
 					<td>{{ rule.order }}</td>
 					<td>
 						<strong>{{ rule.label || rule.key }}</strong>
 						<span class="ruleId">{{ rule.id }}</span>
 					</td>
 					<td>{{ kindLabel(rule.kind) }}</td>
-					<td><code>{{ rule.source }}</code></td>
+					<td>
+						<code>{{ rule.source }}</code>
+					</td>
 					<td>
 						<span v-if="rule.lastRun">{{ rule.lastRun }}</span>
-						<span v-else class="muted">{{ t('openregister', 'Never') }}</span>
+						<span v-else class="muted">{{
+							t('openregister', 'Never')
+						}}</span>
 						<span v-if="rule.idle === true" class="idleFlag">
-							{{ t('openregister', 'Nothing in the reporting window') }}
+							{{
+								t('openregister', 'Nothing in the reporting window')
+							}}
 						</span>
-						<span v-if="rule.lastError" class="lastError">{{ rule.lastError }}</span>
+						<span v-if="rule.lastError" class="lastError">{{
+							rule.lastError
+						}}</span>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-type="switch"
+							type="switch"
 							:modelValue="rule.enabled"
 							:disabled="switching === rule.id"
 							@update:modelValue="$emit('toggle', rule, $event)">
@@ -141,9 +157,13 @@ export default {
 		 */
 		switchLabel(rule) {
 			if (rule.enabled) {
-				return t('openregister', 'Switch off {rule}', { rule: rule.label || rule.key })
+				return t('openregister', 'Switch off {rule}', {
+					rule: rule.label || rule.key,
+				})
 			}
-			return t('openregister', 'Switch on {rule}', { rule: rule.label || rule.key })
+			return t('openregister', 'Switch on {rule}', {
+				rule: rule.label || rule.key,
+			})
 		},
 	},
 }
