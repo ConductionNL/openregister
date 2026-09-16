@@ -141,7 +141,9 @@ class ArchivalNominationService {
 	 * schema names nothing and NOTHING IS EVER TERMINAL: no error, no log, no
 	 * nomination, and a closed dossier with no archival future. So `final` also
 	 * takes `{ from: <schema>, field: <property> }`, resolved against the
-	 * referenced row; see {@see LifecycleFinalStateResolver}.
+	 * referenced row; see {@see LifecycleFinalStateResolver}. A graph-mode
+	 * annotation already says the same thing in `graph.schema` and
+	 * `graph.finalField`, so it is read there rather than declared twice.
 	 *
 	 * @param Schema $schema The object's schema.
 	 * @param string $state  The lifecycle value the object just reached.
@@ -162,7 +164,7 @@ class ArchivalNominationService {
 			return false;
 		}
 
-		$final = ($annotation['final'] ?? []);
+		$final = ($annotation['final'] ?? $this->graphFinal(annotation: $annotation));
 		if (is_array($final) === false) {
 			return false;
 		}
@@ -335,6 +337,36 @@ class ArchivalNominationService {
 			'selectionListRow' => $row,
 		];
 	}//end derive()
+
+	/**
+	 * The reference a graph-mode annotation already declares, read as `final`.
+	 *
+	 * A graph block names `schema` and `finalField`: the sibling schema its
+	 * states live in, and the property on a state row that marks the last one.
+	 * That is the reference form written in different words, so a graph-mode
+	 * schema gets the same answer without declaring `final` twice. An explicit
+	 * `final` still wins, because an author who wrote one meant it.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
+	 *
+	 * @return array<string, mixed>|null The reference form, or null when the annotation is not graph mode.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
+	 */
+	private function graphFinal(array $annotation): ?array {
+		$graph = ($annotation['graph'] ?? null);
+		if (is_array($graph) === false) {
+			return null;
+		}
+
+		$from = $this->text(value: ($graph['schema'] ?? null));
+		$field = $this->text(value: ($graph['finalField'] ?? null));
+		if ($from === null || $field === null) {
+			return null;
+		}
+
+		return ['from' => $from, 'field' => $field];
+	}//end graphFinal()
 
 	/**
 	 * The archival declaration that applies to this record, wherever it lives.

@@ -47,7 +47,8 @@ case, and nothing said so. Two independent blocks, both silent.
 - [x] 8.1 `x-openregister-lifecycle.final` takes the reference form `{ from, field }` beside the static list, validated at schema save and resolved against the referenced row, memoised per request (REQ-APS-007).
 - [x] 8.2 Nomination reads `x-openregister-archival` from `configuration` when the `archive` column is unset, and every refusal names both places it looked (REQ-APS-008).
 - [x] 8.3 Unit tests for both, mutation-checked against a dossiq-shaped fixture: status as a `$ref`, `isFinal` on the referenced row.
-- [x] 8.4 The dossiq lane declares `"final": { "from": "statusType", "field": "isFinal" }` on the case schema's lifecycle block.
+- [x] 8.4 A graph-mode annotation is read through `graph.schema` and `graph.finalField`, which say the same thing, so it declares no second `final`.
+- [x] 8.5 The dossiq lane declares `"final": { "from": "statusType", "field": "isFinal" }` on the case schema's lifecycle block.
 
 ## Shipped so far
 

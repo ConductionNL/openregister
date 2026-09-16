@@ -78,6 +78,13 @@ requirement ends.
 - **AND** the message names the two keys the reference form needs
 - @e2e exclude {schema-save validation, covered by unit tests}
 
+#### Scenario: a graph block already names the end and is read there
+
+- **GIVEN** a schema whose lifecycle declares `graph.schema` and `graph.finalField` and no `final`
+- **WHEN** an object reaches a state whose row carries that property as true
+- **THEN** the state is terminal, without the schema declaring the same thing twice
+- @e2e exclude {resolution against a referenced row, covered by unit tests}
+
 #### Scenario: a static list of states still decides
 
 - **GIVEN** a schema declaring `final` as a list of state values

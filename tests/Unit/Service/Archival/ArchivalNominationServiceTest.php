@@ -573,4 +573,57 @@ class ArchivalNominationServiceTest extends TestCase {
 		$this->assertStringContainsString('`archive` block', $nomination['unnominatableReason']);
 		$this->assertStringContainsString('x-openregister-archival', $nomination['unnominatableReason']);
 	}
+
+	/**
+	 * A graph block already names the sibling schema and the property that
+	 * marks the last state, so a graph-mode schema gets the same answer without
+	 * declaring `final` twice.
+	 *
+	 * @return void
+	 */
+	public function testAGraphBlockAlreadyNamesTheEndAndIsReadThere(): void {
+		$this->objects->method('findAcrossAllSources')->willReturn($this->statusRow(true));
+
+		$schema = $this->schema(
+			[],
+			[
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'graph' => [
+						'schema' => 'statusType',
+						'parentField' => 'caseType',
+						'parentFrom' => 'caseType',
+						'orderField' => 'order',
+						'finalField' => 'isFinal',
+						'allowedMoves' => 'forward',
+					],
+				],
+			]
+		);
+
+		$this->assertTrue($this->service->isTerminalState(schema: $schema, state: 'status-uuid'));
+	}
+
+	/**
+	 * An author who wrote `final` meant it, so it wins over the graph block.
+	 *
+	 * @return void
+	 */
+	public function testAnExplicitFinalWinsOverTheGraphBlock(): void {
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+
+		$schema = $this->schema(
+			[],
+			[
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'final' => ['afgehandeld'],
+					'graph' => ['schema' => 'statusType', 'finalField' => 'isFinal'],
+				],
+			]
+		);
+
+		$this->assertTrue($this->service->isTerminalState(schema: $schema, state: 'afgehandeld'));
+		$this->assertFalse($this->service->isTerminalState(schema: $schema, state: 'status-uuid'));
+	}
 }
