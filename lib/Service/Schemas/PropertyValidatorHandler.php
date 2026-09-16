@@ -651,6 +651,9 @@ class PropertyValidatorHandler {
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
+	 * @SuppressWarnings(PHPMD.StaticAccess)         `fromProperty()` is a named constructor on a
+	 *                                              value object; a factory injected here would
+	 *                                              answer one question and hold no state.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md

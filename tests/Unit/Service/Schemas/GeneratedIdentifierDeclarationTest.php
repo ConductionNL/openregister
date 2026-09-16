@@ -79,15 +79,15 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 			property: $this->property(),
 			path: 'identifier'
 		);
-		$at = new DateTimeImmutable('2026-03-04 10:00:00');
+		$moment = new DateTimeImmutable('2026-03-04 10:00:00');
 
 		$this->assertSame(
 			expected: 'Z-2026-00001',
-			actual: $declaration->render(sequenceValue: 1, at: $at)
+			actual: $declaration->render(sequenceValue: 1, moment: $moment)
 		);
 		$this->assertSame(
 			expected: 'Z-2026-00002',
-			actual: $declaration->render(sequenceValue: 2, at: $at)
+			actual: $declaration->render(sequenceValue: 2, moment: $moment)
 		);
 
 	}//end testTwoValuesRenderConsecutively()
@@ -110,7 +110,7 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 			expected: 'Z-2026-100001',
 			actual: $declaration->render(
 				sequenceValue: 100001,
-				at: new DateTimeImmutable('2026-03-04 10:00:00')
+				moment: new DateTimeImmutable('2026-03-04 10:00:00')
 			)
 		);
 
@@ -126,10 +126,10 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 			property: $this->property(overrides: ['format' => 'CASE/{year}/{month}/{seq:4}']),
 			path: 'identifier'
 		);
-		$at = new DateTimeImmutable('2026-11-04 10:00:00');
+		$moment = new DateTimeImmutable('2026-11-04 10:00:00');
 
 		foreach ([1, 42, 9999, 123456] as $value) {
-			$rendered = $declaration->render(sequenceValue: $value, at: $at);
+			$rendered = $declaration->render(sequenceValue: $value, moment: $moment);
 			$parsed = $declaration->parse(value: $rendered);
 
 			$this->assertNotNull(actual: $parsed, message: 'did not parse back: '.$rendered);
@@ -189,11 +189,11 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 
 		$this->assertSame(
 			expected: '',
-			actual: $declaration->periodAt(new DateTimeImmutable('2026-01-01'))
+			actual: $declaration->periodAt(moment: new DateTimeImmutable('2026-01-01'))
 		);
 		$this->assertSame(
 			expected: '',
-			actual: $declaration->periodAt(new DateTimeImmutable('2027-01-01'))
+			actual: $declaration->periodAt(moment: new DateTimeImmutable('2027-01-01'))
 		);
 
 	}//end testNeverResettingHasOnePeriod()
@@ -211,11 +211,11 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 
 		$this->assertSame(
 			expected: '2026',
-			actual: $declaration->periodAt(new DateTimeImmutable('2026-12-31 23:59:59'))
+			actual: $declaration->periodAt(moment: new DateTimeImmutable('2026-12-31 23:59:59'))
 		);
 		$this->assertSame(
 			expected: '2027',
-			actual: $declaration->periodAt(new DateTimeImmutable('2027-01-01 00:00:00'))
+			actual: $declaration->periodAt(moment: new DateTimeImmutable('2027-01-01 00:00:00'))
 		);
 
 	}//end testAYearlyCounterHasOnePeriodPerYear()

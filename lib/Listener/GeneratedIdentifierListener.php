@@ -145,9 +145,9 @@ class GeneratedIdentifierListener implements IEventListener {
 					sequenceValue: $this->sequences->reserveNext(
 						registerId: 0,
 						schemaId: 0,
-						scopeKey: $this->scopeKey(declaration: $declaration, period: $declaration->periodAt($now))
+						scopeKey: $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $now))
 					),
-					at: $now
+					moment: $now
 				);
 				$changed = true;
 			} catch (Throwable $failure) {
@@ -212,7 +212,9 @@ class GeneratedIdentifierListener implements IEventListener {
 		$after = ($new->getObject() ?? []);
 		$before = ($old->getObject() ?? []);
 
-		foreach ($declarations as $field => $declaration) {
+		// Only the property NAMES matter here: the freeze compares the value before
+		// with the value after, and never renders anything.
+		foreach (array_keys($declarations) as $field) {
 			$was = (string)($before[$field] ?? '');
 			if ($was === '' || array_key_exists($field, $after) === false) {
 				continue;
@@ -308,6 +310,12 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @param int $schemaId The schema's id, as the object carries it.
 	 *
 	 * @return array<string, GeneratedIdentifierDeclaration> Property name to its declaration.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `fromProperty()` is a named constructor.
+	 *                                       Injecting a factory to build a value object
+	 *                                       from an array it already has would add a
+	 *                                       collaborator that answers one question and
+	 *                                       holds no state.
 	 */
 	private function declarationsOf(Schema $schema, int $schemaId): array {
 		$declarations = [];

@@ -173,15 +173,15 @@ final class GeneratedIdentifierDeclaration {
 	 * what makes `Z-2026-00001` and `Z-2027-00001` two different first values
 	 * rather than one collision.
 	 *
-	 * @param DateTimeInterface $at The moment the object is being created.
+	 * @param DateTimeInterface $moment The moment the object is being created.
 	 *
 	 * @return string The period key.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
-	public function periodAt(DateTimeInterface $at): string {
+	public function periodAt(DateTimeInterface $moment): string {
 		if ($this->resetOn === self::RESET_YEAR) {
-			return $at->format('Y');
+			return $moment->format('Y');
 		}
 
 		return '';
@@ -192,22 +192,22 @@ final class GeneratedIdentifierDeclaration {
 	 * Render one value of this identifier.
 	 *
 	 * @param int $sequenceValue The number taken from the counter.
-	 * @param DateTimeInterface $at The moment the object is being created.
+	 * @param DateTimeInterface $moment The moment the object is being created.
 	 *
 	 * @return string The rendered identifier.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
-	public function render(int $sequenceValue, DateTimeInterface $at): string {
+	public function render(int $sequenceValue, DateTimeInterface $moment): string {
 		return (string)preg_replace_callback(
 			'/\{(seq(?::(\d+))?|year|month)\}/',
-			static function (array $match) use ($sequenceValue, $at): string {
+			static function (array $match) use ($sequenceValue, $moment): string {
 				if ($match[1] === 'year') {
-					return $at->format('Y');
+					return $moment->format('Y');
 				}
 
 				if ($match[1] === 'month') {
-					return $at->format('m');
+					return $moment->format('m');
 				}
 
 				$pad = (int)($match[2] ?? 1);
@@ -237,41 +237,7 @@ final class GeneratedIdentifierDeclaration {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	public function parse(string $value): ?array {
-		$pattern = '';
-		$groups = [];
-		$offset = 0;
-
-		preg_match_all('/\{(seq(?::(\d+))?|year|month)\}/', $this->format, $matches, PREG_OFFSET_CAPTURE);
-		foreach ($matches[0] as $index => $placeholder) {
-			$pattern .= preg_quote(substr($this->format, $offset, ($placeholder[1] - $offset)), '/');
-			$offset = ($placeholder[1] + strlen($placeholder[0]));
-
-			$name = $matches[1][$index][0];
-			if ($name === 'year') {
-				$pattern .= '(\d{4})';
-				$groups[] = 'year';
-				continue;
-			}
-
-			if ($name === 'month') {
-				$pattern .= '(\d{2})';
-				$groups[] = 'month';
-				continue;
-			}
-
-			// A padded sequence can also have grown past its padding, so the
-			// lower bound is the pad and there is no upper bound.
-			$declaredPad = $matches[2][$index][0];
-			$pad = 1;
-			if ($declaredPad !== '') {
-				$pad = (int)$declaredPad;
-			}
-
-			$pattern .= '(\d{'.$pad.',})';
-			$groups[] = 'seq';
-		}//end foreach
-
-		$pattern .= preg_quote(substr($this->format, $offset), '/');
+		['pattern' => $pattern, 'groups' => $groups] = $this->readBackPattern();
 
 		if (preg_match('/^'.$pattern.'$/', $value, $found) !== 1) {
 			return null;
@@ -305,6 +271,85 @@ final class GeneratedIdentifierDeclaration {
 		return ['sequence' => $sequence, 'period' => $period];
 
 	}//end parse()
+
+	/**
+	 * Build the expression that reads a rendered value back apart.
+	 *
+	 * Derived from the SAME format string that renders, walked placeholder by
+	 * placeholder, so the two cannot drift: a placeholder added to `render()` is
+	 * added here in the same edit or neither works.
+	 *
+	 * The group NAMES come back beside the pattern, because a capture group's
+	 * position means nothing on its own. `Z-{year}-{seq:5}` and `{seq:5}-{year}`
+	 * both capture two numbers, and only the name says which is which.
+	 *
+	 * @return array{pattern: string, groups: array<int, string>} The expression and what each group holds.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	private function readBackPattern(): array {
+		$pattern = '';
+		$groups = [];
+		$offset = 0;
+
+		preg_match_all('/\{(seq(?::(\d+))?|year|month)\}/', $this->format, $matches, PREG_OFFSET_CAPTURE);
+		foreach ($matches[0] as $index => $placeholder) {
+			$pattern .= preg_quote(substr($this->format, $offset, ($placeholder[1] - $offset)), '/');
+			$offset = ($placeholder[1] + strlen($placeholder[0]));
+
+			$name = $matches[1][$index][0];
+
+			// `{seq:5}` captures as `seq:5`, so the KIND has to be normalised
+			// before it is recorded. Storing the raw capture instead leaves every
+			// padded sequence unrecognised further down, and `parse()` then answers
+			// null for a value this very format rendered.
+			$kind = $name;
+			if (str_starts_with($name, 'seq') === true) {
+				$kind = 'seq';
+			}
+
+			$groups[] = $kind;
+			$pattern .= $this->groupFor(name: $name, declaredPad: $matches[2][$index][0]);
+		}//end foreach
+
+		$pattern .= preg_quote(substr($this->format, $offset), '/');
+
+		return ['pattern' => $pattern, 'groups' => $groups];
+
+	}//end readBackPattern()
+
+	/**
+	 * The capture group one placeholder reads back as.
+	 *
+	 * A padded sequence can also have GROWN past its padding, so the lower bound
+	 * is the pad and there is no upper bound. Anchoring it at exactly the pad
+	 * would make the hundred-thousand-and-first value of a five-digit format
+	 * unparseable, and an import of it would then advance no counter at all.
+	 *
+	 * @param string $name The placeholder's name.
+	 * @param string $declaredPad The digits after `seq:`, or an empty string.
+	 *
+	 * @return string The capture group.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	private function groupFor(string $name, string $declaredPad): string {
+		if ($name === 'year') {
+			return '(\d{4})';
+		}
+
+		if ($name === 'month') {
+			return '(\d{2})';
+		}
+
+		$pad = 1;
+		if ($declaredPad !== '') {
+			$pad = (int)$declaredPad;
+		}
+
+		return '(\d{'.$pad.',})';
+
+	}//end groupFor()
 
 	/**
 	 * Refuse a declaration on a property that is not a string.
