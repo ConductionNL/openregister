@@ -198,7 +198,10 @@ test.describe.serial('The version lifecycle, administered', () => {
 			before.status() === 403,
 			'The declaration surface is administrator-only and this run is not signed in as one.',
 		)
-		expect(before.status(), 'the declaration is readable before the test edits it').toBe(200)
+		expect(
+			before.status(),
+			'the declaration is readable before the test edits it',
+		).toBe(200)
 		const previous = (await before.json()).versions
 
 		const applied = await request.put(DECLARATION, { data: { versions } })
@@ -242,13 +245,17 @@ test.describe.serial('The version lifecycle, administered', () => {
 					headers: { 'API-Version': '1' },
 				})
 
-				expect(response.status(), 'a deprecated version still answers').toBe(200)
+				expect(response.status(), 'a deprecated version still answers').toBe(
+					200,
+				)
 				expect(response.headers()['api-version']).toBe('1')
 				expect(
 					response.headers().sunset,
 					'the client learns its deadline from the calls it already makes',
 				).toBe('Mon, 01 Mar 2027 00:00:00 GMT')
-				expect(response.headers().deprecation).toBe('Tue, 01 Sep 2026 00:00:00 GMT')
+				expect(response.headers().deprecation).toBe(
+					'Tue, 01 Sep 2026 00:00:00 GMT',
+				)
 				expect(response.headers().link).toContain('rel="successor-version"')
 			},
 		)
@@ -280,7 +287,9 @@ test.describe.serial('The version lifecycle, administered', () => {
 })
 
 test.describe('Discovery', () => {
-	test('the well-known index names what this instance serves', async ({ request }) => {
+	test('the well-known index names what this instance serves', async ({
+		request,
+	}) => {
 		const response = await request.get(
 			'/index.php/apps/openregister/.well-known',
 		)
