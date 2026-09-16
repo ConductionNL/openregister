@@ -116,7 +116,10 @@ async function createUser(user: string): Promise<void> {
 	const created = await admin.post(OCS_USERS, {
 		form: { userid: user, password: PASSWORD },
 	})
-	expect(created.ok(), `creating ${user} failed: ${await created.text()}`).toBeTruthy()
+	expect(
+		created.ok(),
+		`creating ${user} failed: ${await created.text()}`,
+	).toBeTruthy()
 	createdUsers.push(user)
 }
 
@@ -181,8 +184,14 @@ test.describe('shared master data across legal entities', () => {
 		// tenant filter resolves from. Without this the filter has no active
 		// organisation and refuses everything, and the reads below would be
 		// empty for a reason that has nothing to do with sharing.
-		for (const [context, org] of [[asA, orgA], [asB, orgB], [asC, orgC]] as const) {
-			const active = await context.post(`${API}/organisations/${org}/set-active`)
+		for (const [context, org] of [
+			[asA, orgA],
+			[asB, orgB],
+			[asC, orgC],
+		] as const) {
+			const active = await context.post(
+				`${API}/organisations/${org}/set-active`,
+			)
 			expect(
 				active.status(),
 				`setting the active organisation failed: ${await active.text()}`,
@@ -200,7 +209,10 @@ test.describe('shared master data across legal entities', () => {
 				description: 'held by A, read by B',
 			},
 		})
-		expect(shared.status(), `creating the shared register failed: ${await shared.text()}`).toBeLessThanOrEqual(201)
+		expect(
+			shared.status(),
+			`creating the shared register failed: ${await shared.text()}`,
+		).toBeLessThanOrEqual(201)
 		sharedRegisterId = (await shared.json()).id
 
 		const priv = await asA.post(`${API}/registers`, {
@@ -210,7 +222,10 @@ test.describe('shared master data across legal entities', () => {
 				description: 'held by A, shared with nobody',
 			},
 		})
-		expect(priv.status(), `creating the private register failed: ${await priv.text()}`).toBeLessThanOrEqual(201)
+		expect(
+			priv.status(),
+			`creating the private register failed: ${await priv.text()}`,
+		).toBeLessThanOrEqual(201)
 		privateRegisterId = (await priv.json()).id
 
 		const schema = await asA.post(`${API}/schemas`, {
@@ -220,13 +235,19 @@ test.describe('shared master data across legal entities', () => {
 				properties: CODE_LIST_PROPERTIES,
 			},
 		})
-		expect(schema.status(), `creating the schema failed: ${await schema.text()}`).toBeLessThanOrEqual(201)
+		expect(
+			schema.status(),
+			`creating the schema failed: ${await schema.text()}`,
+		).toBeLessThanOrEqual(201)
 		schemaId = (await schema.json()).id
 
 		const link = await asA.put(`${API}/registers/${sharedRegisterId}`, {
 			data: { schemas: [schemaId] },
 		})
-		expect(link.status(), `linking the schema failed: ${await link.text()}`).toBe(200)
+		expect(
+			link.status(),
+			`linking the schema failed: ${await link.text()}`,
+		).toBe(200)
 	})
 
 	test.afterAll(async () => {
@@ -268,17 +289,24 @@ test.describe('shared master data across legal entities', () => {
 			if (!del.ok()) warn(`user ${user} delete`, del.status())
 		}
 
-		await Promise.all([admin.dispose(), asA?.dispose(), asB?.dispose(), asC?.dispose()])
+		await Promise.all([
+			admin.dispose(),
+			asA?.dispose(),
+			asB?.dispose(),
+			asC?.dispose(),
+		])
 	})
 
-	test('before the declaration, B sees neither of the holder\'s registers', async () => {
+	test("before the declaration, B sees neither of the holder's registers", async () => {
 		// The control that separates "the share works" from "the tenant filter
 		// never applied". Without this, every assertion below would also pass on
 		// an instance where multitenancy was simply off.
 		const listed = await asB.get(`${API}/registers`)
 		expect(listed.status()).toBe(200)
 
-		const ids = ((await listed.json()).results ?? []).map((r: { id: number }) => r.id)
+		const ids = ((await listed.json()).results ?? []).map(
+			(r: { id: number }) => r.id,
+		)
 		expect(ids).not.toContain(sharedRegisterId)
 		expect(ids).not.toContain(privateRegisterId)
 	})
@@ -287,7 +315,10 @@ test.describe('shared master data across legal entities', () => {
 		const declared = await asA.put(`${API}/registers/${sharedRegisterId}`, {
 			data: { sharedWith: [orgB] },
 		})
-		expect(declared.status(), `declaring the share failed: ${await declared.text()}`).toBe(200)
+		expect(
+			declared.status(),
+			`declaring the share failed: ${await declared.text()}`,
+		).toBe(200)
 
 		// Read it back rather than trusting the write response. An unknown key
 		// that this app drops in silence answers the create with the value it
@@ -302,7 +333,9 @@ test.describe('shared master data across legal entities', () => {
 		const listed = await asB.get(`${API}/registers`)
 		expect(listed.status()).toBe(200)
 
-		const ids = ((await listed.json()).results ?? []).map((r: { id: number }) => r.id)
+		const ids = ((await listed.json()).results ?? []).map(
+			(r: { id: number }) => r.id,
+		)
 		expect(ids).toContain(sharedRegisterId)
 	})
 
@@ -310,14 +343,16 @@ test.describe('shared master data across legal entities', () => {
 		const listed = await asB.get(`${API}/registers`)
 		expect(listed.status()).toBe(200)
 
-		const ids = ((await listed.json()).results ?? []).map((r: { id: number }) => r.id)
+		const ids = ((await listed.json()).results ?? []).map(
+			(r: { id: number }) => r.id,
+		)
 		expect(
 			ids,
 			'a share must admit the declared row, never every row its holder owns',
 		).not.toContain(privateRegisterId)
 	})
 
-	test('a user of B cannot write the holder\'s row, and the refusal names the holder', async () => {
+	test("a user of B cannot write the holder's row, and the refusal names the holder", async () => {
 		const refused = await asB.put(`${API}/registers/${sharedRegisterId}`, {
 			data: { title: `Rewritten by B ${RUN}` },
 		})
@@ -337,7 +372,9 @@ test.describe('shared master data across legal entities', () => {
 		const listed = await asC.get(`${API}/registers`)
 		expect(listed.status()).toBe(200)
 
-		const ids = ((await listed.json()).results ?? []).map((r: { id: number }) => r.id)
+		const ids = ((await listed.json()).results ?? []).map(
+			(r: { id: number }) => r.id,
+		)
 		expect(ids).not.toContain(sharedRegisterId)
 		expect(ids).not.toContain(privateRegisterId)
 	})
