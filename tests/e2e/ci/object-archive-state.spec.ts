@@ -126,8 +126,16 @@ test.describe('object archive state over HTTP', () => {
 				properties: {
 					// `immutable` is not `readOnly`: a value that is not there
 					// yet can still be written, once.
-					vastgesteldOp: { type: 'string', title: 'Vastgesteld op', immutable: true },
-					toelichting: { type: 'string', title: 'Toelichting', maxLength: 255 },
+					vastgesteldOp: {
+						type: 'string',
+						title: 'Vastgesteld op',
+						immutable: true,
+					},
+					toelichting: {
+						type: 'string',
+						title: 'Toelichting',
+						maxLength: 255,
+					},
 				},
 				authorization: {
 					read: ['authenticated'],
@@ -137,25 +145,55 @@ test.describe('object archive state over HTTP', () => {
 				},
 			},
 		})
-		expect(besluit.ok(), `besluit schema create failed: ${await besluit.text()}`).toBeTruthy()
+		expect(
+			besluit.ok(),
+			`besluit schema create failed: ${await besluit.text()}`,
+		).toBeTruthy()
 		besluitSchemaId = String((await besluit.json()).id)
 
 		for (const [title, assign] of [
-			['archive-me', (u: string) => { archivedUuid = u }],
-			['leave-me-open', (u: string) => { openUuid = u }],
-			['freeze-me', (u: string) => { frozenUuid = u }],
+			[
+				'archive-me',
+				(u: string) => {
+					archivedUuid = u
+				},
+			],
+			[
+				'leave-me-open',
+				(u: string) => {
+					openUuid = u
+				},
+			],
+			[
+				'freeze-me',
+				(u: string) => {
+					frozenUuid = u
+				},
+			],
 		] as const) {
-			const obj = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
-				data: { title },
-			})
-			expect(obj.ok(), `object create failed: ${await obj.text()}`).toBeTruthy()
+			const obj = await admin.post(
+				`${API}/objects/${registerId}/${schemaId}`,
+				{
+					data: { title },
+				},
+			)
+			expect(
+				obj.ok(),
+				`object create failed: ${await obj.text()}`,
+			).toBeTruthy()
 			assign(uuidOf(await obj.json()))
 		}
 
-		const besluitObj = await admin.post(`${API}/objects/${registerId}/${besluitSchemaId}`, {
-			data: { toelichting: 'concept' },
-		})
-		expect(besluitObj.ok(), `besluit create failed: ${await besluitObj.text()}`).toBeTruthy()
+		const besluitObj = await admin.post(
+			`${API}/objects/${registerId}/${besluitSchemaId}`,
+			{
+				data: { toelichting: 'concept' },
+			},
+		)
+		expect(
+			besluitObj.ok(),
+			`besluit create failed: ${await besluitObj.text()}`,
+		).toBeTruthy()
 		besluitUuid = uuidOf(await besluitObj.json())
 	})
 
@@ -167,7 +205,9 @@ test.describe('object archive state over HTTP', () => {
 			[schemaId, frozenUuid, 'freeze'],
 		] as const) {
 			if (uuid) {
-				await admin.delete(`${API}/objects/${registerId}/${schema}/${uuid}/${path}`)
+				await admin.delete(
+					`${API}/objects/${registerId}/${schema}/${uuid}/${path}`,
+				)
 			}
 		}
 
@@ -201,12 +241,17 @@ test.describe('object archive state over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}/${archivedUuid}/archive`,
 			{ data: { reason: 'afgehandeld' } },
 		)
-		expect(archived.ok(), `archive failed: ${await archived.text()}`).toBeTruthy()
+		expect(
+			archived.ok(),
+			`archive failed: ${await archived.text()}`,
+		).toBeTruthy()
 		const marker = (await archived.json()).archived
 		expect(marker?.by, 'the marker must name who archived it').toBeTruthy()
 		expect(marker?.reason).toBe('afgehandeld')
 
-		const list = await admin.get(`${API}/objects/${registerId}/${schemaId}?_limit=100`)
+		const list = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}?_limit=100`,
+		)
 		expect(list.ok()).toBeTruthy()
 		const listed = (await list.json()).results as Array<Record<string, unknown>>
 		const listedUuids = listed.map(uuidOf)
@@ -224,20 +269,26 @@ test.describe('object archive state over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}?_limit=100&_archived=true`,
 		)
 		expect(lens.ok()).toBeTruthy()
-		const lensUuids = ((await lens.json()).results as Array<Record<string, unknown>>).map(uuidOf)
+		const lensUuids = (
+			(await lens.json()).results as Array<Record<string, unknown>>
+		).map(uuidOf)
 
-		expect(lensUuids, 'the archived lens must show the archived object').toContain(archivedUuid)
 		expect(
 			lensUuids,
-			'and must show only archived objects',
-		).not.toContain(openUuid)
+			'the archived lens must show the archived object',
+		).toContain(archivedUuid)
+		expect(lensUuids, 'and must show only archived objects').not.toContain(
+			openUuid,
+		)
 	})
 
 	test('a read by id still answers for an archived object', async () => {
 		// The exclusion is a property of the LIST, not of the record. If a read
 		// by id were filtered too, every `$ref` into an archived object would
 		// break and restore could never find what it exists to restore.
-		const read = await admin.get(`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`)
+		const read = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`,
+		)
 
 		expect(
 			read.ok(),
@@ -247,11 +298,17 @@ test.describe('object archive state over HTTP', () => {
 	})
 
 	test('an edit to an archived object is refused and the refusal names the archive', async () => {
-		const write = await admin.put(`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`, {
-			data: { title: 'changed-while-archived' },
-		})
+		const write = await admin.put(
+			`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`,
+			{
+				data: { title: 'changed-while-archived' },
+			},
+		)
 
-		expect(write.ok(), 'a write to an archived object must not succeed').toBeFalsy()
+		expect(
+			write.ok(),
+			'a write to an archived object must not succeed',
+		).toBeFalsy()
 		expect(
 			await write.text(),
 			'the refusal must name the archive, not just fail',
@@ -260,7 +317,9 @@ test.describe('object archive state over HTTP', () => {
 		// And the object is unchanged, which is the half a status code cannot
 		// show: a refusal that answered 409 after writing would pass the line
 		// above.
-		const read = await admin.get(`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`)
+		const read = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`,
+		)
 		expect((await read.json()).title).toBe('archive-me')
 	})
 
@@ -268,22 +327,41 @@ test.describe('object archive state over HTTP', () => {
 		const restored = await admin.delete(
 			`${API}/objects/${registerId}/${schemaId}/${archivedUuid}/archive`,
 		)
-		expect(restored.ok(), `restore failed: ${await restored.text()}`).toBeTruthy()
+		expect(
+			restored.ok(),
+			`restore failed: ${await restored.text()}`,
+		).toBeTruthy()
 
-		const list = await admin.get(`${API}/objects/${registerId}/${schemaId}?_limit=100`)
-		const listedUuids = ((await list.json()).results as Array<Record<string, unknown>>).map(uuidOf)
-		expect(listedUuids, 'a restored object is back in the default list').toContain(archivedUuid)
+		const list = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}?_limit=100`,
+		)
+		const listedUuids = (
+			(await list.json()).results as Array<Record<string, unknown>>
+		).map(uuidOf)
+		expect(
+			listedUuids,
+			'a restored object is back in the default list',
+		).toContain(archivedUuid)
 
 		// And it takes writes again, which is what "restored" has to mean.
-		const write = await admin.put(`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`, {
-			data: { title: 'archive-me' },
-		})
-		expect(write.ok(), `a restored object must accept a write: ${await write.text()}`).toBeTruthy()
+		const write = await admin.put(
+			`${API}/objects/${registerId}/${schemaId}/${archivedUuid}`,
+			{
+				data: { title: 'archive-me' },
+			},
+		)
+		expect(
+			write.ok(),
+			`a restored object must accept a write: ${await write.text()}`,
+		).toBeTruthy()
 
 		// Put it back in the archive for the count test and the teardown.
-		await admin.post(`${API}/objects/${registerId}/${schemaId}/${archivedUuid}/archive`, {
-			data: { reason: 'afgehandeld' },
-		})
+		await admin.post(
+			`${API}/objects/${registerId}/${schemaId}/${archivedUuid}/archive`,
+			{
+				data: { reason: 'afgehandeld' },
+			},
+		)
 	})
 
 	test('a frozen object stays in the list and still refuses writes', async () => {
@@ -293,17 +371,26 @@ test.describe('object archive state over HTTP', () => {
 		)
 		expect(frozen.ok(), `freeze failed: ${await frozen.text()}`).toBeTruthy()
 
-		const list = await admin.get(`${API}/objects/${registerId}/${schemaId}?_limit=100`)
-		const listedUuids = ((await list.json()).results as Array<Record<string, unknown>>).map(uuidOf)
+		const list = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}?_limit=100`,
+		)
+		const listedUuids = (
+			(await list.json()).results as Array<Record<string, unknown>>
+		).map(uuidOf)
 
 		// The whole reason frozen and archived are two states. A zaak in
 		// bezwaar has to be findable and unchangeable at the same time.
-		expect(listedUuids, 'a frozen object stays in the working list').toContain(frozenUuid)
+		expect(listedUuids, 'a frozen object stays in the working list').toContain(
+			frozenUuid,
+		)
 		expect(listedUuids, 'an archived one does not').not.toContain(archivedUuid)
 
-		const write = await admin.put(`${API}/objects/${registerId}/${schemaId}/${frozenUuid}`, {
-			data: { title: 'changed-while-frozen' },
-		})
+		const write = await admin.put(
+			`${API}/objects/${registerId}/${schemaId}/${frozenUuid}`,
+			{
+				data: { title: 'changed-while-frozen' },
+			},
+		)
 		expect(write.ok(), 'a write to a frozen object must not succeed').toBeFalsy()
 		expect(await write.text()).toMatch(/frozen/i)
 	})
@@ -322,11 +409,13 @@ test.describe('object archive state over HTTP', () => {
 			`${API}/objects/${registerId}/${besluitSchemaId}/${besluitUuid}`,
 			{ data: { vastgesteldOp: '2026-09-15', toelichting: 'concept' } },
 		)
-		expect(second.ok(), 'changing a set immutable property must be refused').toBeFalsy()
 		expect(
-			await second.text(),
-			'the refusal must name the property',
-		).toMatch(/vastgesteldOp/)
+			second.ok(),
+			'changing a set immutable property must be refused',
+		).toBeFalsy()
+		expect(await second.text(), 'the refusal must name the property').toMatch(
+			/vastgesteldOp/,
+		)
 
 		// The rest of the object is still editable: immutability is a rule
 		// about the property, not a freeze on the record.

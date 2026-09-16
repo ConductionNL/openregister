@@ -86,7 +86,9 @@ test.describe('a typed relation reads differently from each side', () => {
 		schemaId: string,
 		data: Record<string, unknown>,
 	): Promise<string> {
-		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, { data })
+		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
+			data,
+		})
 		expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
 
 		const body = await res.json()
@@ -115,7 +117,10 @@ test.describe('a typed relation reads differently from each side', () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
 
 		const reg = await admin.post(`${API}/registers`, {
-			data: { title: `e2e relation types register ${RUN}`, description: 'e2e' },
+			data: {
+				title: `e2e relation types register ${RUN}`,
+				description: 'e2e',
+			},
 		})
 		expect(reg.ok(), `register create failed: ${await reg.text()}`).toBeTruthy()
 		registerId = String((await reg.json()).id)
@@ -129,8 +134,16 @@ test.describe('a typed relation reads differently from each side', () => {
 				title: `e2e relation types case ${RUN}`,
 				description: 'e2e',
 				properties: {
-					onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
-					classificatie: { type: 'string', title: 'Classificatie', maxLength: 64 },
+					onderwerp: {
+						type: 'string',
+						title: 'Onderwerp',
+						maxLength: 255,
+					},
+					classificatie: {
+						type: 'string',
+						title: 'Classificatie',
+						maxLength: 64,
+					},
 					blokkeert: {
 						type: 'array',
 						items: {
@@ -149,7 +162,11 @@ test.describe('a typed relation reads differently from each side', () => {
 				},
 				configuration: {
 					'x-openregister-relation-types': [
-						{ key: 'blocks', label: 'blocks', inverseLabel: 'blocked by' },
+						{
+							key: 'blocks',
+							label: 'blocks',
+							inverseLabel: 'blocked by',
+						},
 					],
 				},
 				authorization: {
@@ -207,7 +224,9 @@ test.describe('a typed relation reads differently from each side', () => {
 	})
 
 	test('the near side reads blocks and the far side reads blocked by', async () => {
-		const blocked = await createObject(caseSchemaId, { onderwerp: `Bezwaar ${RUN}` })
+		const blocked = await createObject(caseSchemaId, {
+			onderwerp: `Bezwaar ${RUN}`,
+		})
 		const blocker = await createObject(caseSchemaId, {
 			onderwerp: `Vergunning ${RUN}`,
 			blokkeert: [blocked],
@@ -219,7 +238,10 @@ test.describe('a typed relation reads differently from each side', () => {
 		expect(uses.ok(), `uses failed: ${await uses.text()}`).toBeTruthy()
 
 		const near = rowFor(await uses.json(), blocked)
-		expect(near, 'the blocked case is not listed among what the blocker uses').toBeTruthy()
+		expect(
+			near,
+			'the blocked case is not listed among what the blocker uses',
+		).toBeTruthy()
 		const nearRelation = near.relation as Record<string, unknown>
 		expect(nearRelation.property).toBe('blokkeert')
 		expect(nearRelation.displayLabel).toBe('blocks')
@@ -232,7 +254,10 @@ test.describe('a typed relation reads differently from each side', () => {
 		expect(used.ok(), `used failed: ${await used.text()}`).toBeTruthy()
 
 		const far = rowFor(await used.json(), blocker)
-		expect(far, 'the blocking case is not listed among what uses the blocked one').toBeTruthy()
+		expect(
+			far,
+			'the blocking case is not listed among what uses the blocked one',
+		).toBeTruthy()
 		const farRelation = far.relation as Record<string, unknown>
 		expect(farRelation.property).toBe('blokkeert')
 		// The whole change in one assertion: the SAME link, read from the other
@@ -243,7 +268,9 @@ test.describe('a typed relation reads differently from each side', () => {
 	})
 
 	test('an unannotated reference still reads, as referenced by', async () => {
-		const parent = await createObject(caseSchemaId, { onderwerp: `Hoofdzaak ${RUN}` })
+		const parent = await createObject(caseSchemaId, {
+			onderwerp: `Hoofdzaak ${RUN}`,
+		})
 		const child = await createObject(caseSchemaId, {
 			onderwerp: `Deelzaak ${RUN}`,
 			deelzaakVan: parent,
@@ -255,11 +282,16 @@ test.describe('a typed relation reads differently from each side', () => {
 		expect(used.ok(), `used failed: ${await used.text()}`).toBeTruthy()
 
 		const row = rowFor(await used.json(), child)
-		expect(row, 'the sub-case is not listed among what uses the parent').toBeTruthy()
+		expect(
+			row,
+			'the sub-case is not listed among what uses the parent',
+		).toBeTruthy()
 		// This property IS annotated, so it proves the annotated far label; the
 		// fallback itself is asserted in the unit tests, where a property with
 		// no annotation can be declared without a second schema.
-		expect((row.relation as Record<string, unknown>).displayLabel).toBe('has sub-case')
+		expect((row.relation as Record<string, unknown>).displayLabel).toBe(
+			'has sub-case',
+		)
 	})
 
 	test('a derived child records where it came from and what it inherited', async () => {
@@ -299,15 +331,22 @@ test.describe('a typed relation reads differently from each side', () => {
 			`${API}/objects/${registerId}/${caseSchemaId}/${parent}`,
 			{ data: { onderwerp: `Melding ${RUN}`, classificatie: 'openbaar' } },
 		)
-		expect(moved.ok(), `parent update failed: ${await moved.text()}`).toBeTruthy()
+		expect(
+			moved.ok(),
+			`parent update failed: ${await moved.text()}`,
+		).toBeTruthy()
 
-		const after = await admin.get(`${API}/objects/${registerId}/${caseSchemaId}/${child}`)
+		const after = await admin.get(
+			`${API}/objects/${registerId}/${caseSchemaId}/${child}`,
+		)
 		expect(after.ok(), `child read failed: ${await after.text()}`).toBeTruthy()
 		expect((await after.json()).classificatie).toBe('intern')
 	})
 
 	test('an external address is listed like any other relation', async () => {
-		const zaak = await createObject(caseSchemaId, { onderwerp: `Publicatie ${RUN}` })
+		const zaak = await createObject(caseSchemaId, {
+			onderwerp: `Publicatie ${RUN}`,
+		})
 
 		const added = await admin.post(
 			`${API}/objects/${registerId}/${caseSchemaId}/${zaak}/relation-rows`,
@@ -318,23 +357,35 @@ test.describe('a typed relation reads differently from each side', () => {
 				},
 			},
 		)
-		expect(added.status(), `external link create failed: ${await added.text()}`).toBe(201)
+		expect(
+			added.status(),
+			`external link create failed: ${await added.text()}`,
+		).toBe(201)
 
 		const listed = await admin.get(
 			`${API}/objects/${registerId}/${caseSchemaId}/${zaak}/relation-rows`,
 		)
-		expect(listed.ok(), `relation rows failed: ${await listed.text()}`).toBeTruthy()
+		expect(
+			listed.ok(),
+			`relation rows failed: ${await listed.text()}`,
+		).toBeTruthy()
 
 		const rows = (await listed.json()).results as Array<Record<string, unknown>>
 		const external = rows.find((row) => row.kind === 'external')
-		expect(external, 'the external address is not listed among the relations').toBeTruthy()
+		expect(
+			external,
+			'the external address is not listed among the relations',
+		).toBeTruthy()
 		expect(external.targetTitle).toBe('Publicatie in de Staatscourant')
 
 		// A relation row uuid is not a capability: removing it needs the object.
 		const removed = await admin.delete(
 			`${API}/objects/${registerId}/${caseSchemaId}/${zaak}/relation-rows/${external.uuid}`,
 		)
-		expect(removed.ok(), `external link delete failed: ${await removed.text()}`).toBeTruthy()
+		expect(
+			removed.ok(),
+			`external link delete failed: ${await removed.text()}`,
+		).toBeTruthy()
 	})
 
 	test('the graph answers with typed directed edges and says when it stopped', async () => {
@@ -354,14 +405,19 @@ test.describe('a typed relation reads differently from each side', () => {
 		expect(deep.ok(), `graph failed: ${await deep.text()}`).toBeTruthy()
 
 		const graph = await deep.json()
-		const uuids = (graph.nodes as Array<Record<string, unknown>>).map((n) => String(n.uuid))
+		const uuids = (graph.nodes as Array<Record<string, unknown>>).map((n) =>
+			String(n.uuid),
+		)
 		expect(uuids).toContain(second)
 		expect(uuids).toContain(third)
 
 		const edge = (graph.edges as Array<Record<string, unknown>>).find(
 			(e) => e.from === first && e.to === second,
 		)
-		expect(edge, 'the first-to-second edge is missing from the graph').toBeTruthy()
+		expect(
+			edge,
+			'the first-to-second edge is missing from the graph',
+		).toBeTruthy()
 		expect(edge.label).toBe('blocks')
 		expect(edge.direction).toBe('outgoing')
 
@@ -369,7 +425,10 @@ test.describe('a typed relation reads differently from each side', () => {
 		const shallow = await admin.get(
 			`${API}/objects/${registerId}/${caseSchemaId}/${first}/graph?depth=1`,
 		)
-		expect(shallow.ok(), `shallow graph failed: ${await shallow.text()}`).toBeTruthy()
+		expect(
+			shallow.ok(),
+			`shallow graph failed: ${await shallow.text()}`,
+		).toBeTruthy()
 
 		const bounded = await shallow.json()
 		expect(bounded.depth).toBe(1)
@@ -379,7 +438,10 @@ test.describe('a typed relation reads differently from each side', () => {
 		const exported = await admin.get(
 			`${API}/objects/${registerId}/${caseSchemaId}/${first}/graph/export?depth=2`,
 		)
-		expect(exported.ok(), `graph export failed: ${await exported.text()}`).toBeTruthy()
+		expect(
+			exported.ok(),
+			`graph export failed: ${await exported.text()}`,
+		).toBeTruthy()
 		expect(exported.headers()['content-type']).toContain('text/csv')
 		expect(await exported.text()).toContain('blocks')
 	})

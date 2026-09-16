@@ -62,7 +62,10 @@ export async function fetchInventory(schema, idleDays) {
  * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 export async function setRuleEnabled(schema, ruleId, enabled) {
-	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}`, { schema, ruleId })
+	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}`, {
+		schema,
+		ruleId,
+	})
 	const { data } = await axios.patch(url, { enabled })
 	return data
 }
@@ -79,7 +82,10 @@ export async function setRuleEnabled(schema, ruleId, enabled) {
  * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 export async function evaluateRule(schema, ruleId, payload) {
-	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}/evaluate`, { schema, ruleId })
+	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}/evaluate`, {
+		schema,
+		ruleId,
+	})
 	const { data } = await axios.post(url, payload)
 	return data
 }
@@ -99,7 +105,10 @@ export async function evaluateRule(schema, ruleId, payload) {
  * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 export async function replayRule(schema, ruleId, payload) {
-	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}/replay`, { schema, ruleId })
+	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}/replay`, {
+		schema,
+		ruleId,
+	})
 	const { data } = await axios.post(url, payload)
 	return data
 }
@@ -133,7 +142,9 @@ export async function fetchRuns(ruleId, filters = {}) {
  * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
  */
 export async function fetchOperators() {
-	const { data } = await axios.get(generateUrl(`${BASE}/schemas/calculation-operators`))
+	const { data } = await axios.get(
+		generateUrl(`${BASE}/schemas/calculation-operators`),
+	)
 	return data?.operators ?? []
 }
 
