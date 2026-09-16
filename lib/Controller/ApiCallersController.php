@@ -62,6 +62,16 @@ use Throwable;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Every type here is required by
+ * the framework contract or by one of the two reads. Controller, IRequest,
+ * JSONResponse and Http come from NC AppFramework; IUserSession and
+ * IGroupManager are the administrator guard and cannot be collapsed into one
+ * without losing the distinction between "nobody is signed in" and "this person
+ * is not an administrator"; ApiCallRecordMapper and ApiCallRecord are the
+ * record; ApiVersionCatalogue and ApiVersion are the declaration; IAppConfig
+ * stores it; DateTime bounds the period; LoggerInterface and Throwable are the
+ * failure path.
+ *
  * @psalm-suppress UnusedClass Registered through appinfo/routes.php.
  */
 class ApiCallersController extends Controller {
@@ -140,12 +150,16 @@ class ApiCallersController extends Controller {
 		);
 
 		$version = trim((string)$this->request->getParam('version', ''));
+		$narrowTo = null;
+		if ($version !== '') {
+			$narrowTo = $version;
+		}
 
 		try {
 			$rows = $this->records->findInPeriod(
 				from: $from,
 				to: $to,
-				apiVersion: ($version === '') ? null : $version,
+				apiVersion: $narrowTo,
 				limit: self::MAX_ROWS,
 			);
 		} catch (Throwable $e) {

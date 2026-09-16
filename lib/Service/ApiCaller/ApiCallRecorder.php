@@ -143,7 +143,7 @@ class ApiCallRecorder {
 	 * @param string $path The request path.
 	 * @param string $method The HTTP method.
 	 * @param string $apiVersion The contract version that served it.
-	 * @param DateTime|null $at When it happened; defaults to now.
+	 * @param DateTime|null $moment When it happened; defaults to now.
 	 *
 	 * @return void
 	 *
@@ -154,7 +154,7 @@ class ApiCallRecorder {
 		string $path,
 		string $method,
 		string $apiVersion,
-		?DateTime $at = null,
+		?DateTime $moment = null,
 	): void {
 		if ($this->isEnabled() === false) {
 			return;
@@ -166,7 +166,7 @@ class ApiCallRecorder {
 				route: self::routeOf(path: $path),
 				method: strtoupper(substr($method, 0, 10)),
 				apiVersion: $apiVersion,
-				at: ($at ?? new DateTime()),
+				moment: ($moment ?? new DateTime()),
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

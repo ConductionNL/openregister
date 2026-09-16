@@ -138,10 +138,13 @@ class ApiCallRecord extends Entity implements JsonSerializable {
 	 */
 	public function jsonSerialize(): array {
 		$principal = (string)$this->principal;
+		if ($principal === '') {
+			$principal = 'anonymous';
+		}
 
 		return [
 			'id' => $this->id,
-			'principal' => ($principal === '') ? 'anonymous' : $principal,
+			'principal' => $principal,
 			'route' => (string)$this->route,
 			'method' => (string)$this->method,
 			'version' => (string)$this->apiVersion,

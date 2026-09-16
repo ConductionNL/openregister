@@ -52,6 +52,14 @@ use Throwable;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Outbound
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * Reason: the count is `IClient`'s, not this class's. A decorator implements
+ *         every method of the interface it decorates or it is not a decorator,
+ *         and the method left out is exactly the hole this class exists to
+ *         close. Splitting it to satisfy a count would mean two objects a
+ *         caller has to pick between, which is the situation design D-6 names
+ *         as the cause of the bug.
  */
 class OutboundHttpClient implements IClient {
 
@@ -98,7 +106,14 @@ class OutboundHttpClient implements IClient {
 	}//end withProxy()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function get(string $uri, array $options = []): IResponse {
 		return $this->inner->get($uri, $this->withProxy(options: $options));
@@ -106,7 +121,14 @@ class OutboundHttpClient implements IClient {
 	}//end get()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function head(string $uri, array $options = []): IResponse {
 		return $this->inner->head($uri, $this->withProxy(options: $options));
@@ -114,7 +136,14 @@ class OutboundHttpClient implements IClient {
 	}//end head()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function post(string $uri, array $options = []): IResponse {
 		return $this->inner->post($uri, $this->withProxy(options: $options));
@@ -122,7 +151,14 @@ class OutboundHttpClient implements IClient {
 	}//end post()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function put(string $uri, array $options = []): IResponse {
 		return $this->inner->put($uri, $this->withProxy(options: $options));
@@ -130,7 +166,14 @@ class OutboundHttpClient implements IClient {
 	}//end put()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function patch(string $uri, array $options = []): IResponse {
 		return $this->inner->patch($uri, $this->withProxy(options: $options));
@@ -138,7 +181,14 @@ class OutboundHttpClient implements IClient {
 	}//end patch()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function delete(string $uri, array $options = []): IResponse {
 		return $this->inner->delete($uri, $this->withProxy(options: $options));
@@ -146,7 +196,14 @@ class OutboundHttpClient implements IClient {
 	}//end delete()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function options(string $uri, array $options = []): IResponse {
 		return $this->inner->options($uri, $this->withProxy(options: $options));
@@ -154,7 +211,15 @@ class OutboundHttpClient implements IClient {
 	}//end options()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $method The HTTP method.
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function request(string $method, string $uri, array $options = []): IResponse {
 		return $this->inner->request($method, $uri, $this->withProxy(options: $options));
@@ -162,7 +227,14 @@ class OutboundHttpClient implements IClient {
 	}//end request()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IPromise The promise.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function getAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->getAsync($uri, $this->withProxy(options: $options));
@@ -170,7 +242,14 @@ class OutboundHttpClient implements IClient {
 	}//end getAsync()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IPromise The promise.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function headAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->headAsync($uri, $this->withProxy(options: $options));
@@ -178,7 +257,14 @@ class OutboundHttpClient implements IClient {
 	}//end headAsync()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IPromise The promise.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function postAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->postAsync($uri, $this->withProxy(options: $options));
@@ -186,7 +272,14 @@ class OutboundHttpClient implements IClient {
 	}//end postAsync()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IPromise The promise.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function putAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->putAsync($uri, $this->withProxy(options: $options));
@@ -194,7 +287,14 @@ class OutboundHttpClient implements IClient {
 	}//end putAsync()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IPromise The promise.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function deleteAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->deleteAsync($uri, $this->withProxy(options: $options));
@@ -202,7 +302,14 @@ class OutboundHttpClient implements IClient {
 	}//end deleteAsync()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param string $uri The target URI.
+	 * @param array<string, mixed> $options The caller's request options.
+	 *
+	 * @return IPromise The promise.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function optionsAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->optionsAsync($uri, $this->withProxy(options: $options));
@@ -210,13 +317,19 @@ class OutboundHttpClient implements IClient {
 	}//end optionsAsync()
 
 	/**
-	 * @inheritDoc
+	 * Forwards a built PSR-7 request to the decorated client, unproxied.
 	 *
 	 * 🔴 NOT PROXIED, AND IT CANNOT BE. `sendRequest()` takes a built PSR-7
 	 * request with nowhere to put a transport option, so there is no honest
 	 * way to apply the proxy here. Passing it through unchanged is the truthful
 	 * behaviour; silently succeeding while bypassing the proxy is what a
 	 * pretend implementation would do. No call site in this app uses it.
+	 *
+	 * @param RequestInterface $request The built request.
+	 *
+	 * @return ResponseInterface The response.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function sendRequest(RequestInterface $request): ResponseInterface {
 		return $this->inner->sendRequest($request);
@@ -224,7 +337,13 @@ class OutboundHttpClient implements IClient {
 	}//end sendRequest()
 
 	/**
-	 * @inheritDoc
+	 * Forwards to the decorated client with the administered proxy merged in.
+	 *
+	 * @param Throwable $e The thrown error.
+	 *
+	 * @return IResponse The response it maps to.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function getResponseFromThrowable(Throwable $e): IResponse {
 		return $this->inner->getResponseFromThrowable($e);

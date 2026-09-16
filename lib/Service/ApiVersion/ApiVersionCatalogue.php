@@ -328,6 +328,8 @@ class ApiVersionCatalogue {
 	/**
 	 * Read and decode the administered declaration.
 	 *
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
+	 *
 	 * @return array<int, array<string, mixed>> The declarations, or an empty list.
 	 */
 	private function readAdministered(array &$rejected): array {
@@ -359,6 +361,7 @@ class ApiVersionCatalogue {
 	 * Turn declarations into versions, recording each refusal.
 	 *
 	 * @param array<int, array<string, mixed>> $declarations The raw declarations.
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
 	 *
 	 * @return array<string, ApiVersion> Versions keyed by identifier.
 	 */
@@ -396,6 +399,7 @@ class ApiVersionCatalogue {
 	 * sends an integrator somewhere that refuses them too.
 	 *
 	 * @param array<string, ApiVersion> $versions The candidate set.
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
 	 *
 	 * @return bool True when the set can be served.
 	 */

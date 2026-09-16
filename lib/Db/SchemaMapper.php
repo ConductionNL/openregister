@@ -1959,24 +1959,6 @@ class SchemaMapper extends QBMapper {
 	}//end validateArchivalAnnotation()
 
 	/**
-	 * Validate the optional `x-openregister-handoff` annotation (ADR-051).
-	 *
-	 * The annotation is stored under `configuration['x-openregister-handoff']`.
-	 * A malformed handoff declaration REJECTS the schema (contract: schema-save
-	 * validation SHALL reject with the typed handoff-* error codes) — unlike
-	 * advisory annotations, a broken handoff would otherwise surface as a
-	 * runtime conversion failure on user action.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/semantic-object-handoff/spec.md
-	 *   (Requirement: `x-openregister-handoff` declarative dialect)
-	 */
-	/**
 	 * Refuse a broken `x-openregister-external-links` declaration at save.
 	 *
 	 * This one throws rather than warns, and the reason is the feature's own
@@ -2016,6 +1998,24 @@ class SchemaMapper extends QBMapper {
 		throw new Exception(ExternalLinkResolver::ANNOTATION . ': ' . implode(' ', $errors));
 	}//end validateExternalLinksAnnotation()
 
+	/**
+	 * Validate the optional `x-openregister-handoff` annotation (ADR-051).
+	 *
+	 * The annotation is stored under `configuration['x-openregister-handoff']`.
+	 * A malformed handoff declaration REJECTS the schema (contract: schema-save
+	 * validation SHALL reject with the typed handoff-* error codes) — unlike
+	 * advisory annotations, a broken handoff would otherwise surface as a
+	 * runtime conversion failure on user action.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws Exception When the annotation is malformed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/semantic-object-handoff/spec.md
+	 *   (Requirement: `x-openregister-handoff` declarative dialect)
+	 */
 	private function validateHandoffAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
 		$annotation = ($configuration['x-openregister-handoff'] ?? null);

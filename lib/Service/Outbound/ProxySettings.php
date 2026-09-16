@@ -143,7 +143,7 @@ class ProxySettings {
 				return [];
 			}
 
-			return array_values(array_filter(array_map('strval', $system), static fn (string $h): bool => (trim($h) !== '')));
+			return array_values(array_filter(array_map('strval', $system), static fn (string $host): bool => (trim($host) !== '')));
 		}
 
 		$hosts = [];

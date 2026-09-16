@@ -50,6 +50,13 @@ use Throwable;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiCaller
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * Reason: `IpRange::matches()` is a pure function over two strings, kept in its
+ *         own class so the matching a security control depends on is tested
+ *         separately from the policy that calls it. Injecting a matcher object
+ *         to reach one stateless comparison would add a seam with nothing
+ *         behind it, and the seam is not where the risk lives.
  */
 class CallerPolicy {
 

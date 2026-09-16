@@ -66,7 +66,7 @@ class ApiCallRecordMapper extends QBMapper {
 	 * @return void
 	 */
 	public function __construct(IDBConnection $db) {
-		parent::__construct($db, self::TABLE, ApiCallRecord::class);
+		parent::__construct(db: $db, tableName: self::TABLE, entityClass: ApiCallRecord::class);
 
 	}//end __construct()
 
@@ -83,7 +83,7 @@ class ApiCallRecordMapper extends QBMapper {
 	 * @param string $route The route pattern.
 	 * @param string $method The HTTP method.
 	 * @param string $apiVersion The contract version that served it.
-	 * @param DateTime $at When the call happened.
+	 * @param DateTime $moment When the call happened.
 	 *
 	 * @return bool True when the call was counted.
 	 *
@@ -94,9 +94,9 @@ class ApiCallRecordMapper extends QBMapper {
 		string $route,
 		string $method,
 		string $apiVersion,
-		DateTime $at,
+		DateTime $moment,
 	): bool {
-		if ($this->increment(principal: $principal, route: $route, method: $method, apiVersion: $apiVersion, at: $at) > 0) {
+		if ($this->increment(principal: $principal, route: $route, method: $method, apiVersion: $apiVersion, moment: $moment) > 0) {
 			return true;
 		}
 
@@ -107,9 +107,9 @@ class ApiCallRecordMapper extends QBMapper {
 			$record->setMethod($method);
 			$record->setApiVersion($apiVersion);
 			$record->setCallCount(1);
-			$record->setFirstSeen($at);
-			$record->setLastSeen($at);
-			$this->insert($record);
+			$record->setFirstSeen($moment);
+			$record->setLastSeen($moment);
+			$this->insert(entity: $record);
 
 			return true;
 		} catch (Throwable) {
@@ -121,7 +121,7 @@ class ApiCallRecordMapper extends QBMapper {
 				route: $route,
 				method: $method,
 				apiVersion: $apiVersion,
-				at: $at
+				moment: $moment
 			) > 0);
 		}//end try
 
@@ -152,7 +152,7 @@ class ApiCallRecordMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($apiVersion)));
 		}
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 
 	}//end findInPeriod()
 
@@ -185,7 +185,7 @@ class ApiCallRecordMapper extends QBMapper {
 	 * @param string $route The route pattern.
 	 * @param string $method The HTTP method.
 	 * @param string $apiVersion The contract version.
-	 * @param DateTime $at When the call happened.
+	 * @param DateTime $moment When the call happened.
 	 *
 	 * @return int The number of rows updated: one, or none.
 	 */
@@ -194,12 +194,12 @@ class ApiCallRecordMapper extends QBMapper {
 		string $route,
 		string $method,
 		string $apiVersion,
-		DateTime $at,
+		DateTime $moment,
 	): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update(self::TABLE)
 			->set('call_count', $qb->createFunction($qb->getColumnName('call_count') . ' + 1'))
-			->set('last_seen', $qb->createNamedParameter($at, IQueryBuilder::PARAM_DATE))
+			->set('last_seen', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATE))
 			->where($qb->expr()->eq('principal', $qb->createNamedParameter($principal)))
 			->andWhere($qb->expr()->eq('route', $qb->createNamedParameter($route)))
 			->andWhere($qb->expr()->eq('method', $qb->createNamedParameter($method)))

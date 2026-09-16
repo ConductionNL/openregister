@@ -242,8 +242,12 @@ class ExternalLinkResolver {
 			return (string)$value;
 		}
 
-		if (is_bool($value) === true) {
-			return ($value === true) ? 'true' : 'false';
+		if ($value === true) {
+			return 'true';
+		}
+
+		if ($value === false) {
+			return 'false';
 		}
 
 		return null;

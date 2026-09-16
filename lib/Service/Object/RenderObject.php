@@ -2507,24 +2507,6 @@ class RenderObject {
 	}//end applyArchivalDecision()
 
 	/**
-	 * Compute + attach the annotation-driven `_retention.annotation` block.
-	 *
-	 * Stateless w.r.t. the row's persisted columns; pulls the annotation off
-	 * the schema's `configuration` and asks `RetentionEvaluator` to produce
-	 * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
-	 * current row + `_created` timestamp.
-	 *
-	 * Failures are logged + swallowed: a malformed annotation must NEVER
-	 * break object rendering.
-	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param Schema|null $schema The resolved schema (may be null).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
-	 */
-	/**
 	 * Attach the links out of this record, under `@self.externalLinks`.
 	 *
 	 * A link whose placeholders cannot all be filled is not offered, and a
@@ -2589,6 +2571,24 @@ class RenderObject {
 		}//end try
 	}//end applyExternalLinks()
 
+	/**
+	 * Compute + attach the annotation-driven `_retention.annotation` block.
+	 *
+	 * Stateless w.r.t. the row's persisted columns; pulls the annotation off
+	 * the schema's `configuration` and asks `RetentionEvaluator` to produce
+	 * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
+	 * current row + `_created` timestamp.
+	 *
+	 * Failures are logged + swallowed: a malformed annotation must NEVER
+	 * break object rendering.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param Schema|null $schema The resolved schema (may be null).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
 	private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void {
 		if ($schema === null) {
 			return;
