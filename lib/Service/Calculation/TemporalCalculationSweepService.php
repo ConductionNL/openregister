@@ -47,7 +47,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalDeclaration;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -81,6 +81,7 @@ class TemporalCalculationSweepService {
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly ObjectService $objectService,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleFinalDeclaration $finalForm = new LifecycleFinalDeclaration(),
 	) {
 
 	}//end __construct()
@@ -387,9 +388,9 @@ class TemporalCalculationSweepService {
 		// rows in another schema. This sweep compares stored strings, so it has
 		// nothing to compare them with and says so by naming no terminals,
 		// rather than stringifying the declaration into two states no object
-		// will ever be in. See LifecycleFinalStateResolver.
+		// will ever be in. See LifecycleFinalDeclaration.
 		$final = ($lifecycle['final'] ?? []);
-		if (is_array($final) === false || LifecycleFinalStateResolver::isReferenceForm($final) === true) {
+		if (is_array($final) === false || $this->finalForm->isReferenceForm($final) === true) {
 			$final = [];
 		}
 

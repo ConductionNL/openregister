@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\Appraisal;
+use OCA\OpenRegister\Service\Archival\ArchivalDeclarationReader;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
@@ -61,7 +62,8 @@ class ArchivalNominationServiceTest extends TestCase {
 		$this->service = new ArchivalNominationService(
 			$this->retentionService,
 			$this->logger,
-			new LifecycleFinalStateResolver($this->objects, $this->logger)
+			new LifecycleFinalStateResolver($this->objects, $this->logger),
+			new ArchivalDeclarationReader($this->logger)
 		);
 	}
 

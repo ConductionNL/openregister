@@ -89,12 +89,12 @@ class LifecycleFinalStateResolverTest extends TestCase {
 	}
 
 	public function testTheReferenceFormIsToldApartFromAListOfStates(): void {
-		$this->assertTrue(LifecycleFinalStateResolver::isReferenceForm(['from' => 'statusType', 'field' => 'isFinal']));
-		$this->assertTrue(LifecycleFinalStateResolver::isReferenceForm(['from' => 'statusType']));
-		$this->assertFalse(LifecycleFinalStateResolver::isReferenceForm(['afgehandeld', 'ingetrokken']));
-		$this->assertFalse(LifecycleFinalStateResolver::isReferenceForm([]));
-		$this->assertFalse(LifecycleFinalStateResolver::isReferenceForm('afgehandeld'));
-		$this->assertFalse(LifecycleFinalStateResolver::isReferenceForm(null));
+		$this->assertTrue($this->resolver->isReferenceForm(['from' => 'statusType', 'field' => 'isFinal']));
+		$this->assertTrue($this->resolver->isReferenceForm(['from' => 'statusType']));
+		$this->assertFalse($this->resolver->isReferenceForm(['afgehandeld', 'ingetrokken']));
+		$this->assertFalse($this->resolver->isReferenceForm([]));
+		$this->assertFalse($this->resolver->isReferenceForm('afgehandeld'));
+		$this->assertFalse($this->resolver->isReferenceForm(null));
 	}
 
 	public function testARowThatSaysItIsFinalEndsTheLifecycle(): void {

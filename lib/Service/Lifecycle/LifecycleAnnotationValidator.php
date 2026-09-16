@@ -46,12 +46,14 @@ final class LifecycleAnnotationValidator {
 	 * `new LifecycleAnnotationValidator()` keeps working; the parameter exists
 	 * so a test can substitute one.
 	 *
-	 * @param LifecycleStateValidator $states Validates the `states` block.
+	 * @param LifecycleStateValidator   $states      Validates the `states` block.
+	 * @param LifecycleFinalDeclaration $finalForm   Owns the shape rule for `final`.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LifecycleStateValidator $states = new LifecycleStateValidator(),
+		private readonly LifecycleFinalDeclaration $finalForm = new LifecycleFinalDeclaration(),
 	) {
 	}//end __construct()
 
@@ -171,10 +173,10 @@ final class LifecycleAnnotationValidator {
 		// Final values (if declared) must be in the enum, UNLESS `final` takes
 		// the reference form `{ from, field }`, in which case the ends are rows
 		// in another schema and this schema has no enum that could list them.
-		$finalError = $this->validateFinalForm(final: $final);
+		$finalError = $this->finalForm->validateForm($final);
 		if ($finalError !== null) {
 			$errors[] = $finalError;
-		} elseif (LifecycleFinalStateResolver::isReferenceForm($final) === false && is_array($final) === true) {
+		} elseif ($this->finalForm->isReferenceForm($final) === false && is_array($final) === true) {
 			foreach ($final as $finalState) {
 				if (isset($enumSet[(string)$finalState]) === false) {
 					$errors[] = [
@@ -391,7 +393,7 @@ final class LifecycleAnnotationValidator {
 		// mode the app owns the state vocabulary, so there is no enum to check
 		// against, and the reference form is the only one that can name an end
 		// when the states are rows.
-		$finalError = $this->validateFinalForm(final: ($annotation['final'] ?? null));
+		$finalError = $this->finalForm->validateForm(($annotation['final'] ?? null));
 		if ($finalError !== null) {
 			$errors[] = $finalError;
 		}
@@ -527,7 +529,7 @@ final class LifecycleAnnotationValidator {
 		// `final` (optional): shape-checked, never enum-checked. A graph-mode
 		// lifecycle field is a `$ref` with no enum, so the reference form is
 		// the only one that can name an end.
-		$finalError = $this->validateFinalForm(final: ($annotation['final'] ?? null));
+		$finalError = $this->finalForm->validateForm(($annotation['final'] ?? null));
 		if ($finalError !== null) {
 			$errors[] = $finalError;
 		}
@@ -544,39 +546,7 @@ final class LifecycleAnnotationValidator {
 			}
 		}
 
-		// A `condition` on the graph block is REFUSED, not ignored and not
-		// half-enforced. Graph-mode moves are derived inside TransitionEngine;
-		// a graph annotation declares no `transitions`, so LifecycleValidation-
-		// Listener returns through its app-managed branch and the ordinary save
-		// path enforces nothing. A condition honoured on the engine route but
-		// absent on the save path would leave an author believing a state is
-		// unreachable when it is one direct write away — the silent direction
-		// of the failure is why this refuses instead. Unblocked by graph-mode
-		// enforcement on the save path (`lifecycle-graph-enforcement`).
-		if (isset($graph['condition']) === true) {
-			$errors[] = [
-				'code' => 'lifecycle-condition-graph-unsupported',
-				'message' => 'x-openregister-lifecycle.graph does not support `condition`: '
-					. 'graph-mode moves are not enforced on the save path, so a condition '
-					. 'declared here would not hold. Declare conditions on static transitions.',
-			];
-		}
-
-		// An `autoWhen` on the graph block is REFUSED for the reason its
-		// `condition` sibling above is: a graph block declares no transitions,
-		// so the ordinary save path enforces nothing on a graph-mode move, and
-		// an automatic move made through the engine could be undone by one
-		// unchecked direct write. A graph block also has no per-transition
-		// object in which an author could say which derived sibling to move to.
-		// Unblocked by `lifecycle-graph-enforcement`.
-		if (isset($graph['autoWhen']) === true) {
-			$errors[] = [
-				'code' => 'lifecycle-autowhen-graph-unsupported',
-				'message' => 'x-openregister-lifecycle.graph does not support `autoWhen`: '
-					. 'graph-mode automatic transitions are not supported while graph-mode '
-					. 'moves are unenforced on the save path. Declare `autoWhen` on a static transition.',
-			];
-		}
+		$errors = array_merge($errors, $this->validateGraphUnsupported(graph: $graph));
 
 		// `allowedMoves`: required, one of forward|adjacent|any.
 		$allowed = ($graph['allowedMoves'] ?? null);
@@ -597,6 +567,53 @@ final class LifecycleAnnotationValidator {
 
 		return $errors;
 	}//end validateGraphMode()
+
+	/**
+	 * Refuse the two keys a graph block may not carry.
+	 *
+	 * A `condition` on the graph block is REFUSED, not ignored and not
+	 * half-enforced. Graph-mode moves are derived inside TransitionEngine; a
+	 * graph annotation declares no `transitions`, so LifecycleValidation-
+	 * Listener returns through its app-managed branch and the ordinary save
+	 * path enforces nothing. A condition honoured on the engine route but
+	 * absent on the save path would leave an author believing a state is
+	 * unreachable when it is one direct write away. The silent direction of
+	 * that failure is why this refuses instead. Unblocked by graph-mode
+	 * enforcement on the save path (`lifecycle-graph-enforcement`).
+	 *
+	 * An `autoWhen` is refused for the same reason, plus one of its own: a
+	 * graph block has no per-transition object in which an author could say
+	 * which derived sibling to move to.
+	 *
+	 * @param array<string, mixed> $graph The `graph` block.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function validateGraphUnsupported(array $graph): array {
+		$errors = [];
+
+		if (isset($graph['condition']) === true) {
+			$errors[] = [
+				'code' => 'lifecycle-condition-graph-unsupported',
+				'message' => 'x-openregister-lifecycle.graph does not support `condition`: '
+					. 'graph-mode moves are not enforced on the save path, so a condition '
+					. 'declared here would not hold. Declare conditions on static transitions.',
+			];
+		}
+
+		if (isset($graph['autoWhen']) === true) {
+			$errors[] = [
+				'code' => 'lifecycle-autowhen-graph-unsupported',
+				'message' => 'x-openregister-lifecycle.graph does not support `autoWhen`: '
+					. 'graph-mode automatic transitions are not supported while graph-mode '
+					. 'moves are unenforced on the save path. Declare `autoWhen` on a static transition.',
+			];
+		}
+
+		return $errors;
+	}//end validateGraphUnsupported()
 
 	/**
 	 * Shape-check the `initial` value in its two accepted forms.
@@ -634,64 +651,6 @@ final class LifecycleAnnotationValidator {
 			'message' => 'x-openregister-lifecycle.initial must be a string or an object with "from" and "field".',
 		];
 	}//end validateInitialForm()
-
-	/**
-	 * Shape-check the `final` value in its two accepted forms.
-	 *
-	 * Valid: a list of state values (the static form, checked against the
-	 * field's enum by the caller), or the reference form
-	 * `{ "from": "<schema>", "field": "<property>" }` with both keys non-empty
-	 * strings. The reference form exists because a lifecycle field that is a
-	 * `$ref` carries the uuid of a row, and a schema cannot list uuids that
-	 * every tenant creates for itself; see {@see LifecycleFinalStateResolver}.
-	 *
-	 * The refusal names the shape rather than the value, because an author who
-	 * wrote `{ "from": "statusType" }` has not written a list with a bad entry,
-	 * they have written half a reference, and saying "not in the field's enum"
-	 * would send them to the enum instead of to the missing key.
-	 *
-	 * ⚠️ `from` here names a SCHEMA, not a reference declared in
-	 * `x-openregister-references`, which is what `initial.from` names. The
-	 * lifecycle value already IS the row's identifier, so nothing has to be
-	 * followed to find the row; the schema is named so a uuid that happens to
-	 * match an unrelated row cannot answer for a status.
-	 *
-	 * @param mixed $final The raw `final` value off the annotation.
-	 *
-	 * @return array{code: string, message: string}|null Error, or null when valid.
-	 *
-	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
-	 */
-	private function validateFinalForm(mixed $final): ?array {
-		if ($final === null) {
-			return null;
-		}
-
-		$malformed = [
-			'code' => 'lifecycle-final-malformed',
-			'message' => 'x-openregister-lifecycle.final must be a list of states, or an object '
-				. 'with non-empty "from" (the schema the lifecycle field references) and "field" '
-				. '(the property on that row saying whether it is an end) strings.',
-		];
-
-		if (is_array($final) === false) {
-			return $malformed;
-		}
-
-		if (LifecycleFinalStateResolver::isReferenceForm($final) === false) {
-			return null;
-		}
-
-		$from = ($final['from'] ?? null);
-		$field = ($final['field'] ?? null);
-		if (is_string($from) === false || trim($from) === ''
-			|| is_string($field) === false || trim($field) === ''
-		) {
-			return $malformed;
-		}
-
-		return null;
-	}//end validateFinalForm()
 
 	/**
 	 * Shape-check a transition's optional `authorization` list.

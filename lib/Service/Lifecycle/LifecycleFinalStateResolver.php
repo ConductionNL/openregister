@@ -63,20 +63,27 @@ class LifecycleFinalStateResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $objects Loads the referenced row.
-	 * @param LoggerInterface $logger  Where an unresolvable reference is reported.
+	 * The declaration reader is defaulted rather than required because it is a
+	 * pure shape check with no collaborators; the parameter exists so a test
+	 * can substitute one.
+	 *
+	 * @param MagicMapper                $objects     Loads the referenced row.
+	 * @param LoggerInterface            $logger      Where an unresolvable reference is reported.
+	 * @param LifecycleFinalDeclaration  $declaration Tells the two forms of `final` apart.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objects,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleFinalDeclaration $declaration = new LifecycleFinalDeclaration(),
 	) {
 	}//end __construct()
 
 	/**
 	 * Is this value the reference form of `final` rather than a list of states?
 	 *
-	 * The two forms are told apart by shape, not by a flag: a list of state
-	 * strings has no `from`, and the reference form is never a list.
+	 * Delegates to {@see LifecycleFinalDeclaration}, which owns the shape rule
+	 * for every reader of `final`. Kept here so a caller that already holds the
+	 * resolver does not have to wire a second collaborator to ask.
 	 *
 	 * @param mixed $final The declared `final` value.
 	 *
@@ -84,12 +91,8 @@ class LifecycleFinalStateResolver {
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
 	 */
-	public static function isReferenceForm(mixed $final): bool {
-		if (is_array($final) === false) {
-			return false;
-		}
-
-		return array_key_exists('from', $final) === true || array_key_exists('field', $final) === true;
+	public function isReferenceForm(mixed $final): bool {
+		return $this->declaration->isReferenceForm($final);
 	}//end isReferenceForm()
 
 	/**
