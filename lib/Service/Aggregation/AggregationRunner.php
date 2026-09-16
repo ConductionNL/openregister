@@ -2546,7 +2546,16 @@ class AggregationRunner {
 		// MagicMapper), never an approximation.
 		// Column is `_organisation` — magic tables prefix metadata cols with
 		// `_` (see MagicMapper::METADATA_PREFIX).
-		$orgScope = $this->organizationHandler->resolveOrganizationScope();
+		// The register+schema pair goes with the question. A shared master data
+		// declaration (REQ-SLE-001) widens the readable set for exactly this
+		// pair, and an aggregation that resolved the scope without naming the
+		// pair would count a narrower set than the list path returns — the same
+		// class of silent disagreement the SCOPE_* constants were extracted to
+		// end.
+		$orgScope = $this->organizationHandler->resolveOrganizationScope(
+			registerId: $register->getId(),
+			schemaId: $schema->getId()
+		);
 		$orgColumn = $quote . '_organisation' . $quote;
 		switch ($orgScope['mode']) {
 			case MagicOrganizationHandler::SCOPE_ALL:

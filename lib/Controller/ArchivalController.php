@@ -946,8 +946,15 @@ class ArchivalController extends Controller {
 			);
 
 			if (($nomination['status'] ?? null) === ArchivalNominationService::STATUS_NOT_APPLICABLE) {
+				// The reason names both places a declaration could have lived.
+				// "Does not declare an archive block" was true of one of them
+				// and sent readers to the schema editor while the answer sat in
+				// the schema's `x-openregister-archival` annotation.
 				return new JSONResponse(
-					data: ['error' => 'This schema does not declare an archive block, so there is nothing to nominate'],
+					data: [
+						'error' => 'This schema declares no archiving, so there is nothing to nominate',
+						'reason' => ($nomination['unnominatableReason'] ?? null),
+					],
 					statusCode: Http::STATUS_CONFLICT
 				);
 			}

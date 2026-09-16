@@ -24,6 +24,8 @@
 namespace OCA\OpenRegister\Db;
 
 use Exception;
+use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -55,6 +57,122 @@ use Symfony\Component\HttpFoundation\Response;
  * @package OCA\OpenRegister\Db
  */
 trait MultiTenancyTrait {
+
+	/**
+	 * The shared master data resolver, built on first use.
+	 *
+	 * NOT constructor-injected, and that is a deliberate trade. Eleven mappers
+	 * mix this trait in, each with its own constructor and its own unit tests
+	 * building it by hand; threading one more argument through all of them to
+	 * reach a class that reads two columns would be a large, purely mechanical
+	 * diff over code this change has no other reason to touch. The resolver
+	 * takes exactly one dependency, `$this->db`, which the trait already
+	 * documents as required, and holds no state beyond a per-request cache.
+	 *
+	 * @var SharedMasterDataService|null
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md
+	 */
+	private ?SharedMasterDataService $sharedMasterData = null;
+
+	/**
+	 * The shared master data resolver for this mapper.
+	 *
+	 * `$this->db` and `getTableName()` are read WITHOUT a probe, and that is a
+	 * decision rather than an oversight. Both are things this trait's header has
+	 * required of its host since it was written, and every one of the eleven
+	 * mappers supplies them by extending QBMapper.
+	 *
+	 * A probe was tried first and removed. `isset($this->db)` and
+	 * `method_exists($this, 'getTableName')` are provably always true in the
+	 * context of all eleven, so phpstan reported 34 errors for code that can
+	 * never run, and an inline ignore does not apply to a trait that is analysed
+	 * once per using class. Rather than baseline a suppression, the one host
+	 * that was not honouring the contract — `TenancyGuardHost`, a stand-in for a
+	 * mapper in this trait's own unit test — now honours it. A stand-in that
+	 * supplies what the real thing supplies is a better stand-in.
+	 *
+	 * @return SharedMasterDataService The resolver.
+	 */
+	private function sharedMasterData(): SharedMasterDataService {
+		if ($this->sharedMasterData === null) {
+			$this->sharedMasterData = new SharedMasterDataService(db: $this->db);
+		}
+
+		return $this->sharedMasterData;
+	}//end sharedMasterData()
+
+	/**
+	 * Which rows of THIS mapper's table the caller may read through a declared share.
+	 *
+	 * Only registers and schemas can be declared shared master data, so every
+	 * other mapper using this trait resolves an empty list and its query is
+	 * untouched, byte for byte.
+	 *
+	 * @param array<int, string> $activeOrgUuids The caller's organisation and its parents.
+	 *
+	 * @return array<int, int> Row ids readable through a share.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function sharedMasterDataIds(array $activeOrgUuids): array {
+		if ($activeOrgUuids === []) {
+			return [];
+		}
+
+		$table = $this->getTableName();
+		if ($table !== SharedMasterDataService::REGISTERS && $table !== SharedMasterDataService::SCHEMAS) {
+			return [];
+		}
+
+		return $this->sharedMasterData()->sharedIds(table: $table, consumerOrgUuids: $activeOrgUuids);
+	}//end sharedMasterDataIds()
+
+	/**
+	 * The log redactor for this mapper.
+	 *
+	 * `isset()` rather than `??`, deliberately: reading a DECLARED but
+	 * uninitialised typed property with `??` raises an Error, and several
+	 * mappers declare `$appConfig` without always assigning it. `isset()` is
+	 * false for both the undeclared and the uninitialised case, which is the
+	 * probe the rest of this trait already uses.
+	 *
+	 * @return TenantLogRedactor The redactor, with the app config when there is one.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function tenantLogRedactor(): TenantLogRedactor {
+		return new TenantLogRedactor(appConfig: $this->tenancyAppConfig());
+	}//end tenantLogRedactor()
+
+	/**
+	 * The host's app config, or null when this host does not carry one.
+	 *
+	 * The trait's header has always called `$appConfig` OPTIONAL, and it means
+	 * it: six of the eleven mappers using this trait declare no such property.
+	 * So the probe is real, and psalm reporting it as redundant is psalm
+	 * analysing the trait in the context of one class that happens to have it.
+	 * Four identical probes are already carried in psalm-baseline.xml for
+	 * exactly this reason.
+	 *
+	 * This accessor exists so that number does not grow. A fifth probe would
+	 * have needed a fifth baseline entry, and a baseline that grows every time
+	 * somebody reads an optional property is a baseline nobody can read a
+	 * regression out of. `isSaasMode()` now routes through here too, so the
+	 * count is unchanged.
+	 *
+	 * @return IAppConfig|null The app config, or null.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function tenancyAppConfig(): ?IAppConfig {
+		if (isset($this->appConfig) === false) {
+			return null;
+		}
+
+		return $this->appConfig;
+	}//end tenancyAppConfig()
+
 	/**
 	 * Get the active organisation UUID from the session.
 	 *
@@ -278,6 +396,14 @@ trait MultiTenancyTrait {
 		$activeOrgUuids = $this->getActiveOrganisationUuids();
 		$organisationColumn = $this->buildQualifiedColumnName(columnName: $columnName, tableAlias: $tableAlias);
 
+		// Shared master data (REQ-SLE-001): rows held by ANOTHER organisation
+		// that declared this one a consumer. They are OR-ed into the same
+		// predicate the caller's own rows are matched by, by ROW ID rather than
+		// by organisation, so a consumer of one code list gains that code list
+		// and nothing else the holder owns.
+		$sharedIds = $this->sharedMasterDataIds(activeOrgUuids: $activeOrgUuids);
+		$sharedIdColumn = $this->buildQualifiedColumnName(columnName: 'id', tableAlias: $tableAlias);
+
 		if (empty($activeOrgUuids) === true) {
 			$this->applyNoActiveOrgFilter(
 				qb: $qb,
@@ -293,7 +419,9 @@ trait MultiTenancyTrait {
 			user: $user,
 			activeOrgUuids: $activeOrgUuids,
 			allowNullOrg: $allowNullOrg,
-			organisationColumn: $organisationColumn
+			organisationColumn: $organisationColumn,
+			sharedIds: $sharedIds,
+			sharedIdColumn: $sharedIdColumn
 		);
 	}//end applyOrganisationFilter()
 
@@ -422,11 +550,12 @@ trait MultiTenancyTrait {
 	 * @return bool True if SaaS mode is enabled
 	 */
 	protected function isSaasMode(): bool {
-		if (isset($this->appConfig) === false) {
+		$appConfig = $this->tenancyAppConfig();
+		if ($appConfig === null) {
 			return false;
 		}
 
-		$multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+		$multitenancyConfig = $appConfig->getValueString('openregister', 'multitenancy', '');
 		if (empty($multitenancyConfig) === true) {
 			return false;
 		}
@@ -478,10 +607,14 @@ trait MultiTenancyTrait {
 	 * @param array $activeOrgUuids Active organisation UUIDs
 	 * @param bool $allowNullOrg Allow NULL organisation
 	 * @param string $organisationColumn Organisation column name
+	 * @param array $sharedIds Row ids readable through a shared master data declaration
+	 * @param string $sharedIdColumn The qualified id column those ids are matched against
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	private function applyActiveOrgFilter(
 		IQueryBuilder $qb,
@@ -489,27 +622,13 @@ trait MultiTenancyTrait {
 		array $activeOrgUuids,
 		bool $allowNullOrg,
 		string $organisationColumn,
+		array $sharedIds = [],
+		string $sharedIdColumn = 'id',
 	): void {
 		$isAdmin = $this->isUserAdmin(user: $user);
 
 		if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
-			// Audit log the admin cross-tenant override.
-			if (isset($this->logger) === true) {
-				$hasGetUid = ($user !== null && method_exists($user, 'getUID'));
-				$userId = 'unknown';
-				if ($hasGetUid === true) {
-					$userId = $user->getUID();
-				}
-
-				$this->logger->info(
-					'[MultiTenancyTrait] Admin override: cross-organisation access granted',
-					[
-						'type' => 'cross_tenant_access_admin_override',
-						'userId' => $userId,
-					]
-				);
-			}
-
+			$this->logAdminOverride(user: $user);
 			return;
 		}
 
@@ -523,6 +642,17 @@ trait MultiTenancyTrait {
 		// This is used for system-wide resources like Registers and Schemas.
 		if ($allowNullOrg === true) {
 			$orgPredicates[] = $qb->expr()->isNull($organisationColumn);
+		}
+
+		// Shared master data (REQ-SLE-001). Matching by row id is what keeps the
+		// widening honest: adding the holder's UUID to the organisation
+		// predicate would hand the consumer EVERY row the holder owns in this
+		// table, which is a cross-tenant hole wearing the shape of a feature.
+		if ($sharedIds !== []) {
+			$orgPredicates[] = $qb->expr()->in(
+				$sharedIdColumn,
+				$qb->createNamedParameter($sharedIds, IQueryBuilder::PARAM_INT_ARRAY)
+			);
 		}
 
 		// Guard: OCP\DB\QueryBuilder\IExpressionBuilder::orX() documents that calling it
@@ -555,6 +685,45 @@ trait MultiTenancyTrait {
 
 		$qb->andWhere($qb->expr()->orX(...$orgPredicates));
 	}//end applyActiveOrgFilter()
+
+	/**
+	 * Record that an admin read across the organisation boundary.
+	 *
+	 * REQ-SLE-003: the tenant, not the person. An admin override on a shared
+	 * back office is read by whoever operates that instance, and the line's job
+	 * is to say that a cross-organisation read happened, never who in
+	 * particular made it.
+	 *
+	 * @param mixed $user The session user, which may be null or may not expose a UID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function logAdminOverride(mixed $user): void {
+		if (isset($this->logger) === false) {
+			return;
+		}
+
+		$userId = 'unknown';
+		if ($user !== null && method_exists($user, 'getUID') === true) {
+			$userId = $user->getUID();
+		}
+
+		$redactor = $this->tenantLogRedactor();
+		$line = $redactor->line(
+			context: [
+				'type' => 'cross_tenant_access_admin_override',
+				'actor' => $redactor->pseudonym(userId: $userId),
+			]
+		);
+
+		if ($line === null) {
+			return;
+		}
+
+		$this->logger->info('[MultiTenancyTrait] Admin override: cross-organisation access granted', $line);
+	}//end logAdminOverride()
 
 	/**
 	 * Build the organisation predicates for the active organisation(s).
@@ -754,20 +923,40 @@ trait MultiTenancyTrait {
 
 		// Verify the organisations match (applies to everyone including admins).
 		if ($entityOrgUuid !== $activeOrgUuid) {
+			// Shared master data (REQ-SLE-001, design D-2). The read side now
+			// hands a consumer the holder's registers and schemas, so a
+			// consumer reaching a write path is no longer somebody poking at a
+			// tenant they never saw: it is somebody editing a row that is on
+			// their screen, legitimately, and the difference belongs in the
+			// refusal. `assertWritable()` throws a refusal that NAMES THE
+			// HOLDER, which is what turns "forbidden" into "ask Gemeente X".
+			//
+			// It is a narrowing of this same refusal, never a widening: it
+			// throws or it returns, and when it returns the generic violation
+			// below still fires.
+			$this->refuseSharedMasterDataWrite(entity: $entity);
+
 			// Audit log the cross-tenant access attempt.
 			if (isset($this->logger) === true) {
-				$userId = $this->getCurrentUserId() ?? 'anonymous';
-				$this->logger->warning(
-					'[MultiTenancyTrait] Cross-tenant access denied',
-					[
+				// REQ-SLE-003: the organisation UUID and a pseudonymous actor
+				// reference. The refusal is the fact worth recording; the
+				// person's login name is not, and on a shared back office it is
+				// a disclosure to the other legal entity.
+				$redactor = $this->tenantLogRedactor();
+				$line = $redactor->line(
+					context: [
 						'type' => 'cross_tenant_access_denied',
-						'userId' => $userId,
+						'actor' => $redactor->pseudonym(userId: $this->getCurrentUserId()),
 						'sourceOrganisation' => $activeOrgUuid,
 						'targetOrganisation' => $entityOrgUuid,
 						'entityType' => get_class($entity),
 						'entityId' => $entity->getId(),
 					]
 				);
+
+				if ($line !== null) {
+					$this->logger->warning('[MultiTenancyTrait] Cross-tenant access denied', $line);
+				}
 			}
 
 			throw new Exception(
@@ -776,6 +965,76 @@ trait MultiTenancyTrait {
 			);
 		}//end if
 	}//end verifyOrganisationAccess()
+
+	/**
+	 * Refuse a write to shared master data with a message that names the holder.
+	 *
+	 * Called only from {@see verifyOrganisationAccess()}, on the branch where
+	 * the write is already going to be refused. This decides WHICH refusal the
+	 * caller gets, not WHETHER they get one: a caller who is not a declared
+	 * consumer falls straight through and meets the generic cross-tenant
+	 * violation.
+	 *
+	 * The log line follows REQ-SLE-003: the organisation UUID and a
+	 * pseudonymous actor reference, never a name or an e-mail, and the context
+	 * goes through the redactor so a credential that found its way into it
+	 * never reaches the log.
+	 *
+	 * @param Entity $entity The register or schema being written.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\SharedMasterDataWriteException When the caller is a declared consumer.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function refuseSharedMasterDataWrite(Entity $entity): void {
+		$table = $this->getTableName();
+		if ($table !== SharedMasterDataService::REGISTERS && $table !== SharedMasterDataService::SCHEMAS) {
+			return;
+		}
+
+		$resolver = $this->sharedMasterData();
+		$activeOrgUuids = $this->getActiveOrganisationUuids();
+		$entityId = $entity->getId();
+		if (is_int($entityId) === false) {
+			return;
+		}
+
+		try {
+			$resolver->assertWritable(table: $table, id: $entityId, activeOrgUuids: $activeOrgUuids);
+		} catch (\OCA\OpenRegister\Exception\SharedMasterDataWriteException $refusal) {
+			if (isset($this->logger) === true) {
+				$redactor = $this->tenantLogRedactor();
+				$line = $redactor->line(
+					context: [
+						'type' => 'shared_master_data_write_denied',
+						'sourceOrganisation' => $this->getActiveOrganisationUuid(),
+						'holderOrganisation' => $refusal->getHolderUuid(),
+						'resourceType' => $refusal->getResourceType(),
+						'entityId' => $entityId,
+						'actor' => $redactor->pseudonym(userId: $this->getCurrentUserId()),
+						'file' => __FILE__,
+						'line' => __LINE__,
+					]
+				);
+
+				if ($line !== null) {
+					$this->logger->warning('[MultiTenancyTrait] Shared master data is read-only to a consumer', $line);
+				}
+			}
+
+			throw $refusal;
+		}//end try
+
+		// The write about to happen may BE a declaration change: `shared_with`
+		// lives on the same row. The resolver caches every declaration for the
+		// request, so a holder that revokes a share and re-reads in the same
+		// request would otherwise still see it. Dropping the cache here costs
+		// one query on a path that already writes.
+		$resolver->clearCache();
+	}//end refuseSharedMasterDataWrite()
 
 	/**
 	 * Check if the current user has permission to perform an action.
