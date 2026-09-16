@@ -71,6 +71,7 @@ class CodedFilterExpander {
 		private readonly ConceptRepository $concepts,
 		private readonly ConceptHierarchy $hierarchy,
 		private readonly SchemaMapper $schemas,
+		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 
 	}//end __construct()
@@ -95,7 +96,7 @@ class CodedFilterExpander {
 			return $filters;
 		}
 
-		$declarations = CodedPropertyDeclaration::fromProperties(properties: ($schema->getProperties() ?? []));
+		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
 		if ($declarations === []) {
 			return $filters;
 		}

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
+use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -112,6 +113,7 @@ class VocabularyController extends Controller {
 		private readonly ObjectService $objectService,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly CodedOptionsBuilder $options,
+		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -228,7 +230,7 @@ class VocabularyController extends Controller {
 			}
 
 			$properties = ($schema->getProperties() ?? []);
-			$declaration = CodedPropertyDeclaration::fromProperty(property: ($properties[$property] ?? null));
+			$declaration = $this->declarationFactory->fromProperty(property: ($properties[$property] ?? null));
 			if ($declaration !== null) {
 				return $declaration;
 			}
@@ -238,7 +240,7 @@ class VocabularyController extends Controller {
 			return null;
 		}
 
-		return CodedPropertyDeclaration::fromProperty(
+		return $this->declarationFactory->fromProperty(
 			property: [
 				CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
 			]

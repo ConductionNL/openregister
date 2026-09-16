@@ -140,33 +140,8 @@ class DuplicateController extends Controller {
 	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function check(string $register, string $schema): JSONResponse {
-		$candidate = $this->request->getParams();
-
-		// Strip the routing keys and every underscore-prefixed control.
-		//
-		// The cut-off is `_threshold`, not `threshold`, on purpose. A schema is
-		// free to declare a property called `threshold` — a permit register
-		// plausibly does — and a control sharing that name would silently drop
-		// the candidate's own value out of the comparison, which is the exact
-		// class of quiet wrong answer this endpoint exists to avoid. The
-		// underscore prefix is already the API's reserved namespace (`_extend`,
-		// `_ids`, `_watching`, `_unread`, `_dedupOverride`), so nothing that
-		// starts with one can be a property.
-		foreach (['register', 'schema', '_route', '@self', 'id'] as $reserved) {
-			unset($candidate[$reserved]);
-		}
-
-		foreach (array_keys($candidate) as $key) {
-			if (is_string($key) === true && str_starts_with($key, '_') === true) {
-				unset($candidate[$key]);
-			}
-		}
-
-		$thresholdParam = $this->request->getParam('_threshold');
-		$threshold = null;
-		if ($thresholdParam !== null && (string)$thresholdParam !== '' && is_numeric($thresholdParam) === true) {
-			$threshold = (float)$thresholdParam;
-		}
+		$candidate = $this->strippedCandidate();
+		$threshold = $this->requestedThreshold();
 
 		try {
 			$matches = $this->duplicates->checkCandidate(
@@ -194,4 +169,50 @@ class DuplicateController extends Controller {
 			]
 		);
 	}//end check()
+
+	/**
+	 * The request's candidate object, with routing keys and every
+	 * underscore-prefixed control stripped.
+	 *
+	 * The cut-off is `_threshold`, not `threshold`, on purpose. A schema is
+	 * free to declare a property called `threshold` — a permit register
+	 * plausibly does — and a control sharing that name would silently drop
+	 * the candidate's own value out of the comparison, which is the exact
+	 * class of quiet wrong answer this endpoint exists to avoid. The
+	 * underscore prefix is already the API's reserved namespace (`_extend`,
+	 * `_ids`, `_watching`, `_unread`, `_dedupOverride`), so nothing that
+	 * starts with one can be a property.
+	 *
+	 * @return array<string,mixed> The candidate to compare.
+	 */
+	private function strippedCandidate(): array {
+		$candidate = $this->request->getParams();
+
+		foreach (['register', 'schema', '_route', '@self', 'id'] as $reserved) {
+			unset($candidate[$reserved]);
+		}
+
+		foreach (array_keys($candidate) as $key) {
+			if (is_string($key) === true && str_starts_with($key, '_') === true) {
+				unset($candidate[$key]);
+			}
+		}
+
+		return $candidate;
+	}//end strippedCandidate()
+
+	/**
+	 * The `_threshold` query control parsed to a float, or null when it is
+	 * absent, empty or not numeric.
+	 *
+	 * @return float|null The requested threshold.
+	 */
+	private function requestedThreshold(): ?float {
+		$thresholdParam = $this->request->getParam('_threshold');
+		if ($thresholdParam !== null && (string)$thresholdParam !== '' && is_numeric($thresholdParam) === true) {
+			return (float)$thresholdParam;
+		}
+
+		return null;
+	}//end requestedThreshold()
 }//end class

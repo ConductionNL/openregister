@@ -56,6 +56,7 @@ class CodedValueGuard {
 		private readonly ConceptRepository $concepts,
 		private readonly ConceptLifecycle $lifecycle,
 		private readonly ConceptHierarchy $hierarchy,
+		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 
 	}//end __construct()
@@ -106,7 +107,7 @@ class CodedValueGuard {
 	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
 	 */
 	public function collectViolations(array $object, Schema $schema, ?DateTimeInterface $at = null): array {
-		$declarations = CodedPropertyDeclaration::fromProperties(properties: ($schema->getProperties() ?? []));
+		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
 		if ($declarations === []) {
 			return [];
 		}
@@ -208,7 +209,7 @@ class CodedValueGuard {
 	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
 	 */
 	public function rolledUpScores(array $object, Schema $schema): array {
-		$declarations = CodedPropertyDeclaration::fromProperties(properties: ($schema->getProperties() ?? []));
+		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
 		$scores = [];
 
 		foreach ($declarations as $property => $declaration) {

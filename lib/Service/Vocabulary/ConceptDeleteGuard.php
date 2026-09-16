@@ -65,6 +65,7 @@ class ConceptDeleteGuard {
 		private readonly ConceptLifecycle $lifecycle,
 		private readonly SchemaMapper $schemas,
 		private readonly MagicMapper $objects,
+		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 
 	}//end __construct()
@@ -130,7 +131,7 @@ class ConceptDeleteGuard {
 				continue;
 			}
 
-			$declarations = CodedPropertyDeclaration::fromProperties(properties: ($schema->getProperties() ?? []));
+			$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
 			foreach ($declarations as $property => $declaration) {
 				if ($declaration->scheme !== $schemeUri) {
 					continue;

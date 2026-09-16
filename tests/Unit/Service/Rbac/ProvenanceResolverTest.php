@@ -99,7 +99,7 @@ class ProvenanceResolverTest extends TestCase {
 				principals: $principals,
 				objectAuthorization: $object,
 				schemaAuthorization: $schema,
-				registerAuthorization: $register
+				registerAuth: $register
 			)['source']
 		);
 
@@ -109,7 +109,7 @@ class ProvenanceResolverTest extends TestCase {
 				action: 'read',
 				principals: $principals,
 				schemaAuthorization: $schema,
-				registerAuthorization: $register
+				registerAuth: $register
 			)['source']
 		);
 
@@ -118,7 +118,7 @@ class ProvenanceResolverTest extends TestCase {
 			$this->resolver->forAction(
 				action: 'read',
 				principals: $principals,
-				registerAuthorization: $register
+				registerAuth: $register
 			)['source']
 		);
 	}//end testTheObjectBeatsTheSchemaWhichBeatsTheRegister()
