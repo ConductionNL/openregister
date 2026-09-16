@@ -491,6 +491,8 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
             'verb' => 'GET'],
+        ['name' => 'configurationDeployment#seed', 'url' => '/api/configuration/seed',
+            'verb' => 'POST'],
         // Configuration bundles. A bundle is a binding, not a model: its values
         // live at the bundle layer of openregister_config_values and these
         // routes address it by name. Administrator only, same as above.

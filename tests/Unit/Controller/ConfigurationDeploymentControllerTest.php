@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSeedService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
@@ -115,7 +116,8 @@ final class ConfigurationDeploymentControllerTest extends TestCase {
 			($previews ?? $this->createMock(DeploymentPreviewService::class)),
 			($deployments ?? $this->createMock(DeploymentService::class)),
 			($explainer ?? $this->createMock(ConfigurationExplainer::class)),
-			new ConfigurationKeyRegistry()
+			new ConfigurationKeyRegistry(),
+			$this->createMock(ConfigurationSeedService::class)
 		);
 	}//end controller()
 

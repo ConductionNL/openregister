@@ -57,7 +57,13 @@ rather than a model to add.
 
 ## 5. Seeding
 
-- [ ] 5.1 The repair-time seed available as an administered action on a running instance, writing drafts. **Part two**, with 1.3: both are the settings surface adopting the lifecycle rather than the lifecycle itself.
+- [x] 5.1 The repair-time seed available as an administered action on a running
+  instance, writing drafts. `POST /api/configuration/seed` stages the working
+  defaults into a draft set an administrator reviews. The defaults are read from
+  the settings getters, which already answer their domain's default when the key
+  is absent, so there is no second table of defaults to drift. A key the
+  instance already sets is skipped and named: an administrator asking for the
+  gaps to be filled is not asking for their own choices to be replaced.
 
 ## 6. Tests
 

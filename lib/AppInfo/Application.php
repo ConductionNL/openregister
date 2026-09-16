@@ -179,6 +179,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationBundleService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSeedService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
@@ -1330,6 +1331,17 @@ class Application extends App implements IBootstrap {
 					values: $container->get(ConfigurationValueMapper::class),
 					drafts: $container->get(ConfigurationDraftService::class),
 					session: $container->get('OCP\IUserSession')
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationSeedService::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationSeedService(
+					drafts: $container->get(ConfigurationDraftService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					settings: $container->get(SettingsService::class)
 				);
 			}
 		);

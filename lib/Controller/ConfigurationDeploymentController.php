@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSeedService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
@@ -64,6 +65,7 @@ class ConfigurationDeploymentController extends Controller {
 	 * @param DeploymentService         $deployments The apply and the rollback.
 	 * @param ConfigurationExplainer    $explainer  The effective-configuration read.
 	 * @param ConfigurationKeyRegistry  $registry   The draftable vocabulary.
+	 * @param ConfigurationSeedService  $seeds      The working defaults, as drafts.
 	 */
 	public function __construct(
 		string $appName,
@@ -73,6 +75,7 @@ class ConfigurationDeploymentController extends Controller {
 		private readonly DeploymentService $deployments,
 		private readonly ConfigurationExplainer $explainer,
 		private readonly ConfigurationKeyRegistry $registry,
+		private readonly ConfigurationSeedService $seeds,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -423,6 +426,36 @@ class ConfigurationDeploymentController extends Controller {
 		);
 
 	}//end effective()
+
+	/**
+	 * POST /api/configuration/seed — stage the working defaults for review.
+	 *
+	 * Body: `name` (optional).
+	 *
+	 * REQ-CAD-006: seeding is an act an administrator takes on a running
+	 * instance, and it writes drafts. A key this instance already sets is
+	 * skipped and named, because an administrator asking for the gaps to be
+	 * filled is not asking for their own choices to be replaced.
+	 *
+	 * @return JSONResponse The set, what was staged, and what was skipped.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
+	 */
+	public function seed(): JSONResponse {
+		try {
+			$seeded = $this->seeds->seed(name: $this->optional(key: 'name'));
+		} catch (DeploymentRefusedException $exception) {
+			return new JSONResponse(
+				data: $exception->toResponseBody(),
+				statusCode: $exception->getStatusCode()
+			);
+		}
+
+		return new JSONResponse(data: $seeded, statusCode: Http::STATUS_CREATED);
+
+	}//end seed()
 
 	/**
 	 * A request parameter, normalised to null when absent or empty.
