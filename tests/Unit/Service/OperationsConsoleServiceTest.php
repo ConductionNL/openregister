@@ -114,7 +114,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 		$this->queue->method('findAll')->willReturn([]);
 		$this->templates->method('gaps')->willReturn([]);
 		$this->ruleRuns->method('findRecent')->willReturn([]);
-		$this->ruleSummaries->method('findRecent')->willReturn([]);
+		$this->ruleSummaries->method('findHoldingAnError')->willReturn([]);
 	}
 
 	private function service(): OperationsConsoleService {
@@ -156,7 +156,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 		return $run;
 	}
 
-	private function summary(?string $error): RuleRunSummary {
+	private function summary(string $error): RuleRunSummary {
 		$summary = new RuleRunSummary();
 		$summary->setId(1);
 		$summary->setRuleId('rule-a');
@@ -251,8 +251,13 @@ final class OperationsConsoleServiceTest extends TestCase {
 			[$this->ruleRun('allow'), $this->ruleRun('allow'), $this->ruleRun('error')]
 		);
 		$this->ruleSummaries = $this->createMock(RuleRunSummaryMapper::class);
-		$this->ruleSummaries->method('findRecent')->willReturn(
-			[$this->summary('Property "zaaktype" is not on the schema'), $this->summary(null)]
+		// The narrowing is the mapper's `WHERE last_error IS NOT NULL`, not a
+		// filter here: ordering every rule by last_error_at and filtering after
+		// puts NULLs first on Postgres and pushes the errored rules off the
+		// page. So the double returns what that query returns, and this asserts
+		// the service counts it rather than re-deciding it.
+		$this->ruleSummaries->method('findHoldingAnError')->willReturn(
+			[$this->summary('Property "zaaktype" is not on the schema')]
 		);
 
 		$pane = $this->pane($this->service()->panes(), 'rule-runs');
@@ -260,12 +265,12 @@ final class OperationsConsoleServiceTest extends TestCase {
 		$this->assertSame(3, $pane['total']);
 		$this->assertSame(2, $pane['counts']['allow']);
 		$this->assertSame(1, $pane['counts']['error']);
-		$this->assertSame(1, $pane['attention'], 'One rule is holding an error; the other has never had one.');
+		$this->assertSame(1, $pane['attention'], 'One rule is holding an error.');
 	}
 
 	public function testTheRuleRunListingNamesTheRuleAndItsLastError(): void {
 		$this->ruleSummaries = $this->createMock(RuleRunSummaryMapper::class);
-		$this->ruleSummaries->method('findRecent')->willReturn(
+		$this->ruleSummaries->method('findHoldingAnError')->willReturn(
 			[$this->summary('Property "zaaktype" is not on the schema')]
 		);
 

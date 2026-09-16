@@ -6,12 +6,13 @@ import type { APIRequestContext } from '@playwright/test'
  *
  * THE OPERATIONS CONSOLE, end to end, over the HTTP API.
  *
- * Scenario anchors, in the portable `<spec>::<slug>` form so they still
- * resolve once `openspec/changes/admin-operations-console/specs/` is archived
- * into `openspec/specs/`:
- *
- * @e2e operations-console::a-failed-run-is-visible-with-its-reason
- * @e2e operations-console::a-stuck-queue-is-cleared-by-hand
+ * NO SCENARIO ANCHOR IS CLAIMED HERE YET, ON PURPOSE. The spec's scenarios
+ * are written against the run history this branch does not ship: "a failed run
+ * is visible with its reason" needs a run row per job, and "a stuck queue is
+ * cleared by hand" needs run-now. Anchoring them to this file would say those
+ * scenarios are covered and stop the next reader looking, which is a worse
+ * outcome than an uncovered scenario that is still visibly uncovered. The
+ * branch that lands the wrapper anchors them, and `tasks.md` says so.
  *
  * WHAT THIS FILE PROVES.
  *

@@ -56,7 +56,6 @@ use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
-use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCP\BackgroundJob\IJob;
@@ -277,10 +276,7 @@ class OperationsConsoleService {
 			$verdicts[$verdict] = ((int)($verdicts[$verdict] ?? 0) + 1);
 		}
 
-		$failing = array_filter(
-			$this->ruleSummaries->findRecent(limit: self::MAX_ROWS),
-			static fn (RuleRunSummary $summary): bool => $summary->getLastError() !== null
-		);
+		$failing = $this->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS);
 
 		return [
 			'id' => 'rule-runs',
@@ -337,11 +333,7 @@ class OperationsConsoleService {
 
 		$failing = [];
 
-		foreach ($this->ruleSummaries->findRecent(limit: self::MAX_ROWS) as $summary) {
-			if ($summary->getLastError() === null) {
-				continue;
-			}
-
+		foreach ($this->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS) as $summary) {
 			$failing[] = [
 				'ruleId' => $summary->getRuleId(),
 				'schemaSlug' => $summary->getSchemaSlug(),
