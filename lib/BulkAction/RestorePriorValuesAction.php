@@ -244,6 +244,16 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 		}
 
 		$current = $object->getObject();
+		$restore = ($record->getPriorValues() ?? []);
+
+		// "Already back" is checked FIRST. An object somebody restored by hand
+		// also fails the changed-since test below, and reporting that one as
+		// "somebody edited this" would send its owner looking for an edit that
+		// never happened.
+		if ($this->wouldChangeNothing(restore: $restore, current: $current) === true) {
+			return BulkActionResult::skipped(reason: 'the object already carries the values it had before');
+		}
+
 		$changed = $this->propertiesChangedSince(record: $record, current: $current);
 
 		if ($changed !== []) {
@@ -251,12 +261,6 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 				reason: 'not reversible: '.implode(', ', $changed).' changed after the original job wrote it, and a '
 					.'later change is never overwritten'
 			);
-		}
-
-		$restore = ($record->getPriorValues() ?? []);
-
-		if ($this->wouldChangeNothing(restore: $restore, current: $current) === true) {
-			return BulkActionResult::skipped(reason: 'the object already carries the values it had before');
 		}
 
 		if ($commit === false) {
@@ -318,13 +322,64 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 		$changed = [];
 
 		foreach ($applied as $key => $value) {
-			if (($current[$key] ?? null) !== $value) {
+			if ($this->sameValue(left: ($current[$key] ?? null), right: $value) === false) {
 				$changed[] = (string)$key;
 			}
 		}
 
 		return $changed;
 	}//end propertiesChangedSince()
+
+	/**
+	 * Whether two stored values are the same value.
+	 *
+	 * Strict, with one narrow exception: two NUMBERS that agree are the same
+	 * number whether one of them arrived as a string. The object write path
+	 * casts a numeric property to the type its schema declares, so the value
+	 * the job handed it and the value the register stored can differ in type
+	 * and in nothing else. Strict comparison alone would read that cast as
+	 * somebody's later edit, and every member of a numeric bulk write would
+	 * come back not reversible with no edit behind it.
+	 *
+	 * Null and the booleans are deliberately NOT folded in. `null` and `false`
+	 * are different answers to "is this set", and losing that distinction here
+	 * would let a real change pass as no change, which is the one direction
+	 * this check must never fail in.
+	 *
+	 * @param mixed $left  One value.
+	 * @param mixed $right The other.
+	 *
+	 * @return bool True when they are the same value.
+	 */
+	private function sameValue(mixed $left, mixed $right): bool {
+		if ($left === $right) {
+			return true;
+		}
+
+		if ($this->isNumber(value: $left) === false || $this->isNumber(value: $right) === false) {
+			return false;
+		}
+
+		return ((float)$left === (float)$right);
+	}//end sameValue()
+
+	/**
+	 * Whether a stored value is a number, however it was typed.
+	 *
+	 * A boolean is not. `true` is numeric to PHP's cast and is not a number to
+	 * anybody reading the register.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for an int, a float or a numeric string.
+	 */
+	private function isNumber(mixed $value): bool {
+		if (is_int($value) === true || is_float($value) === true) {
+			return true;
+		}
+
+		return (is_string($value) === true && is_numeric($value) === true);
+	}//end isNumber()
 
 	/**
 	 * Whether the object already carries the values the reversal would write.
@@ -335,8 +390,12 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 * @return bool True when the write would change nothing.
 	 */
 	private function wouldChangeNothing(array $restore, array $current): bool {
+		if ($restore === []) {
+			return true;
+		}
+
 		foreach ($restore as $key => $value) {
-			if (array_key_exists($key, $current) === false || $current[$key] !== $value) {
+			if ($this->sameValue(left: ($current[$key] ?? null), right: $value) === false) {
 				return false;
 			}
 		}

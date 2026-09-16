@@ -169,6 +169,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 
 	/**
 	 * A reversible action whose plan is read off the object it is handed.
+	 *
+	 * @return ReversibleBulkActionInterface The action double.
 	 */
 	private function reversibleAction(): ReversibleBulkActionInterface {
 		$action = $this->createMock(ReversibleBulkActionInterface::class);

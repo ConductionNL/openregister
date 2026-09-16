@@ -63,6 +63,10 @@ final class ReversibilityAnnotationValidatorTest extends TestCase {
 	}
 
 	/**
+	 * @param string $kind The declared kind under test.
+	 *
+	 * @return void
+	 *
 	 * @dataProvider irreversibleKinds
 	 */
 	public function testAnIrreversibleKindCannotDeclareItselfReversible(string $kind): void {
@@ -159,6 +163,10 @@ final class ReversibilityAnnotationValidatorTest extends TestCase {
 	}
 
 	/**
+	 * @param mixed $window The declared window under test.
+	 *
+	 * @return void
+	 *
 	 * @dataProvider badWindows
 	 */
 	public function testAWindowOutsideTheBoundsIsRefused(mixed $window): void {

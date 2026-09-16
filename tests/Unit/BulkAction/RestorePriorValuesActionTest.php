@@ -166,6 +166,52 @@ final class RestorePriorValuesActionTest extends TestCase {
 		$this->assertSame([], $this->writes);
 	}
 
+	public function testAnObjectSomebodyRestoredByHandIsNotReportedAsAnEdit(): void {
+		// It also fails the changed-since test, and calling it "somebody
+		// edited this" would send its owner looking for an edit that never
+		// happened.
+		$this->memberMapper->method('findByJobAndObject')->willReturn(
+			$this->record(['status' => 'in behandeling'], ['status' => 'afgehandeld'])
+		);
+
+		$result = $this->action()->apply($this->object(['status' => 'in behandeling']), $this->parameters(), true);
+
+		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
+		$this->assertStringContainsString('already carries the values it had before', (string)$result->getReason());
+		$this->assertStringNotContainsString('changed after', (string)$result->getReason());
+		$this->assertSame([], $this->writes);
+	}
+
+	public function testANumericCastAtSaveTimeIsNotReadAsSomebodysEdit(): void {
+		// The job wrote the string "7"; the register stored the integer its
+		// schema declares. Strict comparison would call that a later edit, and
+		// every member of a numeric bulk write would come back not reversible
+		// with no edit behind it.
+		$this->memberMapper->method('findByJobAndObject')->willReturn(
+			$this->record(['priority' => 3], ['priority' => '7'])
+		);
+
+		$result = $this->action()->apply($this->object(['priority' => 7]), $this->parameters(), true);
+
+		$this->assertTrue($result->isApplied(), (string)$result->getReason());
+		$this->assertSame([['uuid' => 'case-1', 'data' => ['priority' => 3]]], $this->writes);
+	}
+
+	public function testNullAndFalseAreNotFoldedTogether(): void {
+		// The one direction this check must never fail in: a real change that
+		// passes as no change. `null` and `false` are different answers to
+		// "is this set".
+		$this->memberMapper->method('findByJobAndObject')->willReturn(
+			$this->record(['flag' => true], ['flag' => false])
+		);
+
+		$result = $this->action()->apply($this->object(['flag' => null]), $this->parameters(), true);
+
+		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
+		$this->assertStringContainsString('flag', (string)$result->getReason());
+		$this->assertSame([], $this->writes);
+	}
+
 	public function testTheRehearsalReachesTheSameAnswerWithoutWriting(): void {
 		$this->memberMapper->method('findByJobAndObject')->willReturn(
 			$this->record(['status' => 'in behandeling'], ['status' => 'afgehandeld'])
