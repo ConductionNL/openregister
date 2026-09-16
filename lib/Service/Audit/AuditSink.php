@@ -314,6 +314,11 @@ class AuditSink {
 	 *
 	 * @return bool True when the line was written.
 	 *
+	 * @SuppressWarnings(PHPMD.ErrorControlOperator) The `@` is the point. An unwritable
+	 *   sink must produce a recorded gap and a status an operator can read, never a PHP
+	 *   warning in the middle of somebody's save. The error is not swallowed: it is read
+	 *   back from error_get_last() and put on the status verbatim.
+	 *
 	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
 	 */
 	private function append(string $path, string $line, ?string &$error): bool {
@@ -326,15 +331,7 @@ class AuditSink {
 				return true;
 			}
 
-			// A SHORT write is worse than no write: the file now holds half a
-			// record, and the next append makes it look like one malformed
-			// line. Say so, because the operator has to truncate.
-			if ($written !== false) {
-				$error = sprintf('short write to %s: %d of %d bytes', $path, $written, strlen($line));
-			} else {
-				$last = error_get_last();
-				$error = sprintf('write to %s failed: %s', $path, ($last['message'] ?? 'unknown error'));
-			}
+			$error = $this->describeFailure(path: $path, line: $line, written: $written);
 
 			if ($attempt < $attempts && $delay > 0) {
 				usleep($delay);
@@ -343,6 +340,32 @@ class AuditSink {
 
 		return false;
 	}//end append()
+
+	/**
+	 * Say what went wrong, in the words the operator has to act on.
+	 *
+	 * A SHORT write is worse than no write: the file now holds half a record,
+	 * and the next append makes it look like one malformed line. The two are
+	 * told apart here because the remedy differs. A failed write needs the
+	 * destination fixed; a short one needs the file truncated first.
+	 *
+	 * @param string    $path    The file that was being written.
+	 * @param string    $line    The line that was being written.
+	 * @param int|false $written What file_put_contents returned.
+	 *
+	 * @return string The failure, for the status and the gap entry.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function describeFailure(string $path, string $line, int|false $written): string {
+		if ($written !== false) {
+			return sprintf('short write to %s: %d of %d bytes', $path, $written, strlen($line));
+		}
+
+		$last = error_get_last();
+
+		return sprintf('write to %s failed: %s', $path, ($last['message'] ?? 'unknown error'));
+	}//end describeFailure()
 
 	/**
 	 * Record a gap: the entry that did not ship.

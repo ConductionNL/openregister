@@ -305,6 +305,9 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ProcessingPurpose::isValidStatus is the
+	 *   entity's own vocabulary check, the same shape Verwerkingsactiviteit uses.
+	 *
 	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
 	 */
 	private function hydrate(ProcessingPurpose $purpose): void {

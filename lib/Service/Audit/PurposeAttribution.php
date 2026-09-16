@@ -109,16 +109,35 @@ class PurposeAttribution {
 		];
 		$auditTrail->setResultSummary($summary);
 
-		// Only when nothing else claimed it. A write already resolves its own
-		// processing activity from the schema annotation, and that answer is
-		// about the write; this one is about the purpose the caller named.
-		if ($activityUuid !== null && $activityUuid !== '') {
-			$existing = $auditTrail->getProcessingActivityId();
-			if ($existing === null || $existing === '') {
-				$auditTrail->setProcessingActivityId($activityUuid);
-			}
-		}
+		$this->claimActivity(auditTrail: $auditTrail, activityUuid: $activityUuid);
 	}//end apply()
+
+	/**
+	 * Attribute the row to the purpose's activity, if nothing else claimed it.
+	 *
+	 * A write already resolves its own processing activity from the schema
+	 * annotation, and that answer is about the write. This one is about the
+	 * purpose the caller named, and it must not overwrite the other.
+	 *
+	 * @param AuditTrail  $auditTrail   The row being built.
+	 * @param string|null $activityUuid The activity the purpose resolved to.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	private function claimActivity(AuditTrail $auditTrail, ?string $activityUuid): void {
+		if ($activityUuid === null || $activityUuid === '') {
+			return;
+		}
+
+		$existing = $auditTrail->getProcessingActivityId();
+		if ($existing !== null && $existing !== '') {
+			return;
+		}
+
+		$auditTrail->setProcessingActivityId($activityUuid);
+	}//end claimActivity()
 
 	/**
 	 * Whether a row's purpose column disagrees with its sealed purpose.

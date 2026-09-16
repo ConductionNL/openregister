@@ -63,6 +63,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
+ *   for the same reason: this is the one place an audit row is written, and every entry
+ *   point that writes one has to go through it or the hash chain has a second author.
  */
 class AuditTrailMapper extends QBMapper {
 
