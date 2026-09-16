@@ -14,7 +14,6 @@ a principal other than the author before the set can be deployed.
 - **GIVEN** a live setting and a draft changing it
 - **WHEN** the instance reads the setting
 - **THEN** the live value is returned
-- @e2e tests/e2e/ci/configuration-deployment.spec.ts
 
 #### Scenario: four eyes are required
 
@@ -37,14 +36,12 @@ stay append-only.
 - **GIVEN** a deployment that changed nine values
 - **WHEN** an administrator rolls it back
 - **THEN** the nine earlier values are live and a new deployment records what it restored
-- @e2e tests/e2e/ci/configuration-deployment.spec.ts
 
 #### Scenario: a partial deployment does not happen
 
 - **GIVEN** a draft set where one value would fail validation
 - **WHEN** it is deployed
 - **THEN** nothing is applied and the refusing value is named
-- @e2e tests/e2e/ci/configuration-deployment.spec.ts
 
 ### Requirement: The instance explains its effective configuration (REQ-CAD-003)
 
@@ -58,7 +55,6 @@ first deployment SHALL be answered as such rather than as unknown.
 - **GIVEN** a setting overridden at register level
 - **WHEN** the explainer is asked
 - **THEN** it names the effective value, the register layer and the deployment that set it
-- @e2e tests/e2e/ci/configuration-deployment.spec.ts
 
 #### Scenario: an older value is named honestly
 

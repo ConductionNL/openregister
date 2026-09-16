@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
@@ -58,6 +59,7 @@ class ConfigurationDeploymentController extends Controller {
 	 * @param DeploymentPreviewService  $previews   The diff.
 	 * @param DeploymentService         $deployments The apply and the rollback.
 	 * @param ConfigurationExplainer    $explainer  The effective-configuration read.
+	 * @param ConfigurationKeyRegistry  $registry   The draftable vocabulary.
 	 */
 	public function __construct(
 		string $appName,
@@ -66,6 +68,7 @@ class ConfigurationDeploymentController extends Controller {
 		private readonly DeploymentPreviewService $previews,
 		private readonly DeploymentService $deployments,
 		private readonly ConfigurationExplainer $explainer,
+		private readonly ConfigurationKeyRegistry $registry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -89,6 +92,10 @@ class ConfigurationDeploymentController extends Controller {
 				'results' => array_map(static fn ($set) => $set->jsonSerialize(), $sets),
 				'total' => count($sets),
 				'fourEyesRequired' => $this->drafts->requiresFourEyes(),
+				// Which addresses may be drafted at all. Served here so a
+				// caller reads the vocabulary once instead of discovering it
+				// one refusal at a time.
+				'vocabulary' => $this->registry->vocabulary(),
 			]
 		);
 

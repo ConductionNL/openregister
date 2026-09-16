@@ -130,21 +130,6 @@ class ConfigurationKeyRegistry {
 	];
 
 	/**
-	 * Whether an address may hold a drafted value.
-	 *
-	 * @param string $layer     The layer.
-	 * @param string $configKey The configuration key.
-	 *
-	 * @return boolean True when the address is draftable.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function isDraftable(string $layer, string $configKey): bool {
-		return $this->refusalFor(layer: $layer, configKey: $configKey) === null;
-
-	}//end isDraftable()
-
-	/**
 	 * Why an address may not hold a drafted value, when it may not.
 	 *
 	 * @param string $layer     The layer.
@@ -238,16 +223,27 @@ class ConfigurationKeyRegistry {
 	}//end valueRefusalFor()
 
 	/**
-	 * Every declared instance key, with its shape.
+	 * The vocabulary a caller may draft against.
 	 *
-	 * @return array<string, string> The vocabulary.
+	 * Served over the draft-set surface so an operator, and the leaf app
+	 * staging a case type's configuration, can read which addresses exist
+	 * instead of discovering them one refusal at a time.
+	 *
+	 * @return array<string, mixed> The declared instance keys, the open
+	 *                              prefixes, and the keys no deployment may
+	 *                              carry, each with the reason.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function declaredKeys(): array {
-		return self::DECLARED;
+	public function vocabulary(): array {
+		return [
+			'instanceKeys' => self::DECLARED,
+			'openPrefixes' => self::OPEN_PREFIXES,
+			'reserved' => self::RESERVED,
+			'layers' => ConfigurationLayer::ORDER,
+		];
 
-	}//end declaredKeys()
+	}//end vocabulary()
 
 	/**
 	 * Whether a key belongs to an open prefix.

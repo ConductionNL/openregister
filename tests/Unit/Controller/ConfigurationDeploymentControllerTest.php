@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
@@ -113,7 +114,8 @@ final class ConfigurationDeploymentControllerTest extends TestCase {
 			($drafts ?? $this->createMock(ConfigurationDraftService::class)),
 			($previews ?? $this->createMock(DeploymentPreviewService::class)),
 			($deployments ?? $this->createMock(DeploymentService::class)),
-			($explainer ?? $this->createMock(ConfigurationExplainer::class))
+			($explainer ?? $this->createMock(ConfigurationExplainer::class)),
+			new ConfigurationKeyRegistry()
 		);
 	}//end controller()
 
@@ -287,6 +289,21 @@ final class ConfigurationDeploymentControllerTest extends TestCase {
 		$this->assertSame(2, $response->getData()['total']);
 		$this->assertSame('dep-2', $response->getData()['results'][0]['uuid']);
 	}//end testTheHistoryIsListedNewestFirstWithATotal()
+
+	public function testTheVocabularyIsServedSoACallerNeedNotGuess(): void {
+		$drafts = $this->createMock(ConfigurationDraftService::class);
+		$drafts->method('listSets')->willReturn([]);
+
+		$vocabulary = $this->controller($this->request(), $drafts)->index()->getData()['vocabulary'];
+
+		$this->assertSame('object', $vocabulary['instanceKeys']['rbac']);
+		$this->assertContains('integration.', $vocabulary['openPrefixes']);
+		$this->assertSame(['instance', 'register', 'bundle', 'subject'], $vocabulary['layers']);
+		// The two keys that govern deployments are visible AS reserved, with
+		// the reason, rather than simply absent. Absent reads as an oversight.
+		$this->assertArrayHasKey('configuration_four_eyes', $vocabulary['reserved']);
+		$this->assertArrayHasKey('configuration_drafting', $vocabulary['reserved']);
+	}//end testTheVocabularyIsServedSoACallerNeedNotGuess()
 
 	public function testThePreviewIsServedForAKnownSet(): void {
 		$set = new ConfigurationDraftSet();
