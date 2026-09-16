@@ -46,6 +46,11 @@ use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
  * Answer why this instance behaves like this.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) ConfigurationLayer is a closed
+ * vocabulary of compile-time constants. The precedence order it holds is the
+ * one REQ-CAD-003 names, and an injected copy could disagree with the order the
+ * deployment writes against.
  */
 class ConfigurationExplainer {
 

@@ -45,6 +45,12 @@ use OCP\IAppConfig;
 
 /**
  * The live value at one address.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) ConfigurationLayer is a closed
+ * vocabulary of compile-time constants and ConfigurationSnapshot::absent is a
+ * named constructor. Injecting either would mean a caller could hand this class
+ * a different set of layers than the deployment applies against, which is the
+ * bug the constants exist to prevent. Same shape as DestructionScope.
  */
 class ConfigurationValueStore {
 
@@ -145,6 +151,13 @@ class ConfigurationValueStore {
 		$undo = $this->undoEntryFor(layer: $layer, configKey: $configKey);
 
 		$row = $this->values->findAtAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+		if ($row !== null) {
+			$row->setConfigValue(['value' => $value]);
+			$row->setDeploymentUuid($deploymentUuid);
+			$row->setUpdatedBy($actor);
+			$this->values->save($row);
+		}
+
 		if ($row === null) {
 			$this->values->createFromArray(
 				[
@@ -156,11 +169,6 @@ class ConfigurationValueStore {
 					'updatedBy' => $actor,
 				]
 			);
-		} else {
-			$row->setConfigValue(['value' => $value]);
-			$row->setDeploymentUuid($deploymentUuid);
-			$row->setUpdatedBy($actor);
-			$this->values->save($row);
 		}
 
 		if ($layer === ConfigurationLayer::INSTANCE) {
@@ -223,12 +231,16 @@ class ConfigurationValueStore {
 				continue;
 			}
 
-			if (($entry['present'] ?? false) === true) {
-				$this->appConfig->setValueString($this->appName, $configKey, (string)($entry['raw'] ?? ''));
-			} else {
+			// A key that was not there before this deployment is put back by
+			// being deleted again, not by writing an empty string over it: an
+			// empty string is a value, and absence is not.
+			if (($entry['present'] ?? false) === false) {
 				$this->appConfig->deleteKey($this->appName, $configKey);
+				$restored++;
+				continue;
 			}
 
+			$this->appConfig->setValueString($this->appName, $configKey, (string)($entry['raw'] ?? ''));
 			$restored++;
 		}//end foreach
 

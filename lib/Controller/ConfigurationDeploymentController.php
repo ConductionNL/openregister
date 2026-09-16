@@ -47,6 +47,10 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A controller over the four
  * services the lifecycle is made of; each route reaches exactly one of them.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Twelve routes plus the
+ * constructor. Each public method IS one route in appinfo/routes.php, so
+ * splitting the class to get under the threshold would split the route table
+ * across two controllers and gain nothing a reader can use.
  */
 class ConfigurationDeploymentController extends Controller {
 
@@ -180,14 +184,29 @@ class ConfigurationDeploymentController extends Controller {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftValue(string $id): JSONResponse {
+		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayer::INSTANCE);
+		$layerRef = $this->optional(key: 'layerRef');
+		$configKey = (string)($this->request->getParam(key: 'key') ?? '');
+
 		try {
+			if (((bool)($this->request->getParam(key: 'removes') ?? false)) === true) {
+				return new JSONResponse(
+					data: $this->drafts->draftRemoval(
+						setUuid: $id,
+						layer: $layer,
+						layerRef: $layerRef,
+						configKey: $configKey
+					)->jsonSerialize(),
+					statusCode: Http::STATUS_CREATED
+				);
+			}
+
 			$draft = $this->drafts->draftValue(
 				setUuid: $id,
-				layer: (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayer::INSTANCE),
-				layerRef: $this->optional(key: 'layerRef'),
-				configKey: (string)($this->request->getParam(key: 'key') ?? ''),
-				value: $this->request->getParam(key: 'value'),
-				removes: ((bool)($this->request->getParam(key: 'removes') ?? false))
+				layer: $layer,
+				layerRef: $layerRef,
+				configKey: $configKey,
+				value: $this->request->getParam(key: 'value')
 			);
 		} catch (DeploymentRefusedException $exception) {
 			return new JSONResponse(

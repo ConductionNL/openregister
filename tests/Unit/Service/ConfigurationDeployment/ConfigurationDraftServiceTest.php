@@ -195,6 +195,29 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$this->assertSame(['enabled' => true], $draft->readDraftValue());
 	}//end testDraftingTheSameAddressTwiceReplacesThePendingValue()
 
+	public function testDraftingARemovalIsItsOwnActNotAFlag(): void {
+		[$service, $store] = $this->service($this->set());
+		$store->expects($this->never())->method('remove');
+
+		$draft = $service->draftRemoval('set-1', ConfigurationLayer::INSTANCE, null, 'rbac');
+
+		// Unsetting a key and setting it to null are different acts, and the
+		// draft has to record which one it is: a rollback restores the
+		// difference.
+		$this->assertTrue($draft->getRemoves());
+		$this->assertNull($draft->readDraftValue());
+		$this->assertTrue($draft->getBasePresent());
+		$this->assertSame(['enabled' => true], $draft->readBaseValue());
+	}//end testDraftingARemovalIsItsOwnActNotAFlag()
+
+	public function testDraftingAValueIsNotARemoval(): void {
+		[$service] = $this->service($this->set());
+
+		$draft = $service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false]);
+
+		$this->assertFalse($draft->getRemoves());
+	}//end testDraftingAValueIsNotARemoval()
+
 	public function testFourEyesAreRequired(): void {
 		$draft = new ConfigurationDraft();
 		$draft->setUuid('draft-1');

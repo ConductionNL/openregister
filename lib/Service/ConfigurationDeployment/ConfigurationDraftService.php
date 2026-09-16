@@ -43,6 +43,13 @@ use OCP\IUserSession;
 
 /**
  * Open a set, draft values into it, approve it.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) ConfigurationLayer is a closed
+ * vocabulary of compile-time constants, not a collaborator.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A Nextcloud DI constructor
+ * over the two mappers, the value store, the vocabulary, the session and the
+ * app config, plus the entity types it returns. Splitting it would put the
+ * "a draft never writes a live value" rule in two places.
  */
 class ConfigurationDraftService {
 
@@ -159,7 +166,6 @@ class ConfigurationDraftService {
 	 * @param string|null $layerRef  The layer reference, null at instance level.
 	 * @param string      $configKey The configuration key.
 	 * @param mixed       $value     The pending value.
-	 * @param boolean     $removes   Whether the draft removes the value.
 	 *
 	 * @return ConfigurationDraft The pending value.
 	 *
@@ -172,12 +178,89 @@ class ConfigurationDraftService {
 		string $layer,
 		?string $layerRef,
 		string $configKey,
+		mixed $value
+	): ConfigurationDraft {
+		return $this->stage(
+			setUuid: $setUuid,
+			layer: $layer,
+			layerRef: $layerRef,
+			configKey: $configKey,
+			value: $value,
+			removes: false
+		);
+
+	}//end draftValue()
+
+	/**
+	 * Draft the REMOVAL of one value.
+	 *
+	 * Its own method rather than a flag on draftValue. Setting a key to null
+	 * and unsetting it are different acts: the first leaves a key holding
+	 * nothing, the second leaves no key, and a rollback has to be able to
+	 * restore the difference. A caller that has to pass `null, true` to say
+	 * "unset" is a caller that will one day pass `null, false` by mistake.
+	 *
+	 * @param string      $setUuid   The set to draft into.
+	 * @param string      $layer     The layer.
+	 * @param string|null $layerRef  The layer reference, null at instance level.
+	 * @param string      $configKey The configuration key.
+	 *
+	 * @return ConfigurationDraft The pending removal.
+	 *
+	 * @throws DeploymentRefusedException When the set is closed or the address is not draftable.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function draftRemoval(
+		string $setUuid,
+		string $layer,
+		?string $layerRef,
+		string $configKey
+	): ConfigurationDraft {
+		return $this->stage(
+			setUuid: $setUuid,
+			layer: $layer,
+			layerRef: $layerRef,
+			configKey: $configKey,
+			value: null,
+			removes: true
+		);
+
+	}//end draftRemoval()
+
+	/**
+	 * Write one pending value into a set, against the live value it replaces.
+	 *
+	 * @param string      $setUuid   The set to draft into.
+	 * @param string      $layer     The layer.
+	 * @param string|null $layerRef  The layer reference, null at instance level.
+	 * @param string      $configKey The configuration key.
+	 * @param mixed       $value     The pending value.
+	 * @param boolean     $removes   Whether the draft removes the value.
+	 *
+	 * @return ConfigurationDraft The pending value.
+	 *
+	 * @throws DeploymentRefusedException When the set is closed or the address is not draftable.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function stage(
+		string $setUuid,
+		string $layer,
+		?string $layerRef,
+		string $configKey,
 		mixed $value,
-		bool $removes = false
+		bool $removes
 	): ConfigurationDraft {
 		$set = $this->loadSet(uuid: $setUuid);
 		$this->requireEditable(set: $set);
-		$this->requireDraftableAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey, value: $value);
+		$this->requireDraftableAddress(
+			layer: $layer,
+			layerRef: $layerRef,
+			configKey: $configKey,
+			value: $value,
+			checkValue: ($removes === false)
+		);
 
 		$live = $this->store->read(layer: $layer, layerRef: $layerRef, configKey: $configKey);
 		$existing = $this->drafts->findAtAddress(
@@ -210,7 +293,7 @@ class ConfigurationDraftService {
 			]
 		);
 
-	}//end draftValue()
+	}//end stage()
 
 	/**
 	 * The pending values in a set.
@@ -346,10 +429,14 @@ class ConfigurationDraftService {
 	/**
 	 * Refuse an address the vocabulary does not allow.
 	 *
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference.
-	 * @param string      $configKey The configuration key.
-	 * @param mixed       $value     The proposed value.
+	 * @param string      $layer      The layer.
+	 * @param string|null $layerRef   The layer reference.
+	 * @param string      $configKey  The configuration key.
+	 * @param mixed       $value      The proposed value.
+	 * @param boolean     $checkValue Whether the value has a shape to check. A
+	 *                                removal has no value, so type-checking one
+	 *                                would refuse every removal of a key that
+	 *                                declares a shape.
 	 *
 	 * @return void
 	 *
@@ -361,14 +448,15 @@ class ConfigurationDraftService {
 		string $layer,
 		?string $layerRef,
 		string $configKey,
-		mixed $value
+		mixed $value,
+		bool $checkValue
 	): void {
 		$refusal = $this->registry->refusalFor(layer: $layer, configKey: $configKey);
 		if ($refusal === null && ConfigurationLayer::requiresReference($layer) === true && $layerRef === null) {
 			$refusal = sprintf('the %s layer addresses one subject and needs a reference', $layer);
 		}
 
-		if ($refusal === null) {
+		if ($refusal === null && $checkValue === true) {
 			$refusal = $this->registry->valueRefusalFor(configKey: $configKey, value: $value);
 		}
 

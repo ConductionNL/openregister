@@ -41,6 +41,11 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 /**
  * The declared configuration vocabulary.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) ConfigurationLayer is a closed
+ * vocabulary of compile-time constants. This class refuses an unknown layer by
+ * asking it; injecting it would let a caller supply the answer to the question
+ * being asked.
  */
 class ConfigurationKeyRegistry {
 
