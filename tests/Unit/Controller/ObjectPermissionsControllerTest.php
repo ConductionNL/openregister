@@ -237,10 +237,10 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$response = $this->controllerFor(userId: 'bea', owner: 'bea', registerUnset: true)
 			->index('zaken', 'zaak', self::UUID);
 
-		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(expected: 500, actual: $response->getStatus());
 		$this->assertSame(
-			['message' => 'The access set for this object could not be assembled'],
-			$response->getData()
+			expected: ['message' => 'The access set for this object could not be assembled'],
+			actual: $response->getData()
 		);
 	}//end testAnAccessSetThatCannotBeAssembledIsReportedAsSuch()
 
