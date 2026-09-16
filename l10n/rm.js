@@ -1505,7 +1505,7 @@ OC.L10N.register(
     "More sources (10-20):" : "Dapli funtaunas (10-20):",
     "Most Active Objects" : "Ils objects ils pli activs",
     "Moves by days" : "Sa mova per dis",
-    "Moves when it falls on" : "Sa mova cur ch'el crода sin",
+    "Moves when it falls on" : "Sa mova cur ch'el croda sin",
     "Multiple Of" : "Multipel da",
     "Multiple of" : "Múltiplo de",
     "Multiple search trail deletion not implemented yet" : "Il stizzar da pliras colliaziuns da tschertga n'è anc betg implementà",
