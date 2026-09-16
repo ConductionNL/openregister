@@ -33,6 +33,7 @@ use OCA\OpenRegister\Event\FileRenamedEvent;
 use OCA\OpenRegister\Event\FileUnlockedEvent;
 use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -2253,7 +2254,7 @@ class FilesController extends Controller {
 				);
 			}
 
-			$handler = new \OCA\OpenRegister\Service\File\FileMetadataFormHandler(fileService: $this->fileService);
+			$handler = new FileMetadataFormHandler(fileService: $this->fileService);
 
 			return new JSONResponse(data: $handler->save(object: $object, entries: $entries));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {

@@ -553,12 +553,16 @@ class AuditTrailMapper extends QBMapper {
 			->orderBy('id', 'DESC')
 			->setMaxResults(1);
 
+		// Same actor, and an entry with no actor only ever merges with another
+		// one that has none. Folding a system write into a person's entry would
+		// put their name on a change they did not make.
 		$actor = $candidate->getUser();
-		if ($actor === null) {
-			$qb->andWhere($qb->expr()->isNull('user'));
-		} else {
-			$qb->andWhere($qb->expr()->eq('user', $qb->createNamedParameter($actor)));
+		$sameActor = $qb->expr()->isNull('user');
+		if ($actor !== null) {
+			$sameActor = $qb->expr()->eq('user', $qb->createNamedParameter($actor));
 		}
+
+		$qb->andWhere($sameActor);
 
 		$found = $this->findEntities(query: $qb);
 		if ($found === []) {

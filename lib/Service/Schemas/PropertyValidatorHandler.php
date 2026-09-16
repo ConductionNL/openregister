@@ -561,6 +561,16 @@ class PropertyValidatorHandler {
 	private array $validStringFormats;
 
 	/**
+	 * The save-time rules a repeating group's declaration has to satisfy.
+	 *
+	 * Its own class: the rules are about one keyword, they read better
+	 * together, and this file is the one every property-shaped change edits.
+	 *
+	 * @var RepeatingGroupDeclarationValidator
+	 */
+	private RepeatingGroupDeclarationValidator $repeatingGroups;
+
+	/**
 	 * Read the two allowlists off the published vocabulary.
 	 *
 	 * @return void
@@ -568,6 +578,7 @@ class PropertyValidatorHandler {
 	public function __construct() {
 		$this->validTypes = array_map('strval', array_keys(self::TYPES));
 		$this->validStringFormats = self::STRING_FORMATS;
+		$this->repeatingGroups = new RepeatingGroupDeclarationValidator();
 	}//end __construct()
 
 	/**
@@ -760,7 +771,7 @@ class PropertyValidatorHandler {
 		// written against it. Checked here rather than at save time because a
 		// group whose members nobody declared is a schema mistake, and the
 		// schema author is the only person who can fix it.
-		$this->validateRepeatingGroupDeclaration(property: $property, path: $path);
+		$this->repeatingGroups->validate(property: $property, path: $path);
 
 		// Validate array items if type is array.
 		$hasItems = ($property['items'] ?? null) !== null;
@@ -885,115 +896,6 @@ class PropertyValidatorHandler {
 
 		return true;
 	}//end validateProperties()
-
-	/**
-	 * Check that a repeating group declares a shape somebody can author.
-	 *
-	 * Three things have to hold. The group has to be a list, because rows are a
-	 * list and nothing else. Its `items` have to name the members, because a
-	 * row with no declared members is an untyped blob and the per-row refusal
-	 * this change promises has nothing to name. And `groupLabel`, when it is
-	 * there, has to point at a member that exists, because a label pointing at
-	 * a member nobody declared renders blank on every row and looks like a
-	 * data problem for as long as anybody is willing to look.
-	 *
-	 * `groupOrdered` needs no check beyond the group itself: it is a boolean
-	 * and either value is meaningful.
-	 *
-	 * @param array $property The property definition to check.
-	 * @param string $path The current path in the schema, for the message.
-	 *
-	 * @throws PropertyVocabularyException When the declaration does not hold together.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
-	 */
-	private function validateRepeatingGroupDeclaration(array $property, string $path): void {
-		$isGroup = (($property['repeatingGroup'] ?? false) === true);
-		// Present AND non-null, which is what every other check in this class
-		// asks. A null says the key is spelled correctly and asserts nothing
-		// about its value, and `PropertyVocabularyTest` probes the whole
-		// published vocabulary that way: reading a null as a declaration made
-		// two published keys impossible to save on their own.
-		$hasGroupKey = (
-			($property['groupOrdered'] ?? null) !== null
-			|| ($property['groupLabel'] ?? null) !== null
-		);
-
-		if ($isGroup === false) {
-			if ($hasGroupKey === false) {
-				return;
-			}
-
-			$this->refuseGroupDeclaration(
-				code: 'repeating-group-not-declared',
-				path: $path,
-				message: "'groupOrdered' and 'groupLabel' at '$path' need 'repeatingGroup: true'."
-			);
-		}
-
-		if (($property['type'] ?? null) !== 'array') {
-			$this->refuseGroupDeclaration(
-				code: 'repeating-group-not-an-array',
-				path: $path,
-				message: "A repeating group at '$path' has to be type 'array'. Rows are a list."
-			);
-		}
-
-		$members = ($property['items']['properties'] ?? null);
-		if (is_array($members) === false || $members === []) {
-			$this->refuseGroupDeclaration(
-				code: 'repeating-group-without-members',
-				path: $path,
-				message: "A repeating group at '$path' has to declare its members under 'items.properties'."
-			);
-		}
-
-		$label = ($property['groupLabel'] ?? null);
-		if ($label === null) {
-			return;
-		}
-
-		if (is_string($label) === false || array_key_exists($label, $members) === false) {
-			$known = implode(', ', array_map('strval', array_keys($members)));
-			$this->refuseGroupDeclaration(
-				code: 'repeating-group-unknown-label-member',
-				path: $path,
-				message: "'groupLabel' at '$path' names a member that is not declared. Members are: $known."
-			);
-		}
-	}//end validateRepeatingGroupDeclaration()
-
-	/**
-	 * Refuse a repeating-group declaration, in the vocabulary's own error shape.
-	 *
-	 * Extracted so the four refusals above read as four rules rather than as
-	 * four copies of the same six lines.
-	 *
-	 * @param string $code The machine-readable refusal code.
-	 * @param string $path The property path the refusal is about.
-	 * @param string $message The sentence a schema author reads.
-	 *
-	 * @throws PropertyVocabularyException Always.
-	 *
-	 * @return never
-	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
-	 */
-	private function refuseGroupDeclaration(string $code, string $path, string $message): never {
-		throw new PropertyVocabularyException(
-			$message,
-			[
-				[
-					'code' => $code,
-					'key' => 'repeatingGroup',
-					'path' => $path,
-					'message' => $message,
-				],
-			]
-		);
-	}//end refuseGroupDeclaration()
 
 	/**
 	 * Validate file-specific properties
