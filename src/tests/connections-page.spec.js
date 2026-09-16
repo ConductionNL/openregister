@@ -134,7 +134,7 @@ describe('the Connections menu entry', () => {
 function pageFormatters() {
 	const local = /\bformatters: \w+/.test(mainJs)
 		? require(path.join(ROOT, 'src', 'services', 'connectionFormatters.js'))
-			.default
+				.default
 		: {}
 	return { ...BUILT_IN_FORMATTERS, ...local }
 }
