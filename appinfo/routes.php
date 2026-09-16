@@ -1411,6 +1411,25 @@ return [
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
+
+        // The API as a described, versioned surface (api-as-a-versioned-surface).
+        // `capabilities` and `versions` are PUBLIC on purpose: a client that has
+        // to authenticate to learn the upload limit will not learn the upload
+        // limit, and every integrator currently discovers it by hitting it. The
+        // public body carries versions and ceilings only; the operational
+        // switches appear only when a session is present (design D-5).
+        //
+        // `/api/versions/{version}/oas` names the DOCUMENT, not the contract the
+        // call itself speaks — a caller may legitimately read the description of
+        // a version it has not moved to yet.
+        ['name' => 'apiSurface#capabilities', 'url' => '/api/capabilities', 'verb' => 'GET'],
+        ['name' => 'apiSurface#versions', 'url' => '/api/versions', 'verb' => 'GET'],
+        [
+            'name'         => 'apiSurface#contract',
+            'url'          => '/api/versions/{version}/oas',
+            'verb'         => 'GET',
+            'requirements' => ['version' => '[0-9]{1,3}'],
+        ],
         // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
         ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
         ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],
