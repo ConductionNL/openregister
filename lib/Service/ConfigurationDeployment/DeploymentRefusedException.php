@@ -93,7 +93,7 @@ class DeploymentRefusedException extends Exception {
 		private readonly array $refusals = [],
 		private readonly int $statusCode = Http::STATUS_CONFLICT
 	) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 
 	}//end __construct()
 

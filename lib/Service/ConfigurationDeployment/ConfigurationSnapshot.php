@@ -100,6 +100,8 @@ final class ConfigurationSnapshot implements JsonSerializable {
 	 * JSON serialisation.
 	 *
 	 * @return array<string, mixed> The serialised snapshot.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

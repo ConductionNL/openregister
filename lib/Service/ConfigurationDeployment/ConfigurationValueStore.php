@@ -112,7 +112,7 @@ class ConfigurationValueStore {
 			layer: $layer,
 			layerRef: null,
 			configKey: $configKey,
-			value: $this->decode($this->appConfig->getValueString($this->appName, $configKey, '')),
+			value: $this->decode(raw: $this->appConfig->getValueString($this->appName, $configKey, '')),
 			present: true,
 			deploymentUuid: $row?->getDeploymentUuid(),
 			updatedBy: $row?->getUpdatedBy()
@@ -164,7 +164,7 @@ class ConfigurationValueStore {
 		}
 
 		if ($layer === ConfigurationLayer::INSTANCE) {
-			$this->appConfig->setValueString($this->appName, $configKey, $this->encode($value));
+			$this->appConfig->setValueString($this->appName, $configKey, $this->encode(value: $value));
 		}
 
 		return $undo;
