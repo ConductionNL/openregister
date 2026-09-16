@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
@@ -1072,6 +1073,16 @@ class SchemasController extends Controller {
 				);
 			}
 		}//end if
+
+		// D-6: A GRANT TO AN EXTERNAL PRINCIPAL CARRIES AN END DATE OR IT DOES
+		// NOT EXIST. Asked BEFORE the write, because a refusal after
+		// updateFromArray would be a refusal of something already saved.
+		if (isset($data['authorization']) === true && is_array($data['authorization']) === true) {
+			$externalRefusal = (new ExternalGrantGuard())->refusalFor($data['authorization']);
+			if ($externalRefusal !== null) {
+				return new JSONResponse(data: $externalRefusal, statusCode: 400);
+			}
+		}
 
 		try {
 			// Update the schema with the provided data.

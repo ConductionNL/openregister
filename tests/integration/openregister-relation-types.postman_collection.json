@@ -10,29 +10,29 @@
     "basic": [
       {
         "key": "username",
-        "value": "{{username}}",
+        "value": "{{admin_user}}",
         "type": "string"
       },
       {
         "key": "password",
-        "value": "{{password}}",
+        "value": "{{admin_password}}",
         "type": "string"
       }
     ]
   },
   "variable": [
     {
-      "key": "baseUrl",
+      "key": "base_url",
       "value": "http://localhost",
       "type": "string"
     },
     {
-      "key": "username",
+      "key": "admin_user",
       "value": "admin",
       "type": "string"
     },
     {
-      "key": "password",
+      "key": "admin_password",
       "value": "admin",
       "type": "string"
     },
@@ -92,7 +92,17 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -131,7 +141,17 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -176,7 +196,17 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -215,7 +245,17 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -254,7 +294,17 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -293,7 +343,19 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -333,7 +395,19 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -373,7 +447,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/uses"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/uses",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "uses"
+          ]
         }
       },
       "event": [
@@ -414,7 +502,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/used"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/used",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "used"
+          ]
         }
       },
       "event": [
@@ -456,7 +558,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/derive"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/derive",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "derive"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -498,7 +614,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -537,7 +667,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -575,7 +719,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
         }
       },
       "event": [
@@ -613,7 +771,22 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows/{{linkUuid}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows/{{linkUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "relation-rows",
+            "{{linkUuid}}"
+          ]
         }
       },
       "event": [
@@ -650,7 +823,22 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows/{{linkUuid}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows/{{linkUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows",
+            "{{linkUuid}}"
+          ]
         }
       },
       "event": [
@@ -684,7 +872,27 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/graph?depth=1"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/graph?depth=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "graph"
+          ],
+          "query": [
+            {
+              "key": "depth",
+              "value": "1"
+            }
+          ]
         }
       },
       "event": [
@@ -727,7 +935,28 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/graph/export?depth=1"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/graph/export?depth=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "graph",
+            "export"
+          ],
+          "query": [
+            {
+              "key": "depth",
+              "value": "1"
+            }
+          ]
         }
       },
       "event": [
@@ -764,7 +993,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/graph"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/graph",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "00000000-0000-4000-8000-000000000000",
+            "graph"
+          ]
         }
       },
       "event": [
@@ -798,7 +1041,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -841,7 +1098,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -882,7 +1153,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -920,7 +1205,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "relation-rows"
+          ]
         }
       },
       "event": [
@@ -957,7 +1256,22 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-references/note-1"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-references/note-1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-references",
+            "note-1"
+          ]
         }
       },
       "event": [
@@ -992,7 +1306,21 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "relation-rows"
+          ]
         }
       },
       "event": [
@@ -1030,7 +1358,20 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{derivedUuid}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{derivedUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{derivedUuid}}"
+          ]
         }
       },
       "event": [
@@ -1064,7 +1405,20 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}"
+          ]
         }
       },
       "event": [
@@ -1098,7 +1452,20 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}"
+          ]
         }
       },
       "event": [
@@ -1132,7 +1499,18 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{controlSchemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{controlSchemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{controlSchemaId}}"
+          ]
         }
       },
       "event": [
@@ -1166,7 +1544,18 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{schemaId}}"
+          ]
         }
       },
       "event": [
@@ -1200,7 +1589,18 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{registerId}}"
+          ]
         }
       },
       "event": [

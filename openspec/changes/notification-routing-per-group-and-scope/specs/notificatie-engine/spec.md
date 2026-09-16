@@ -29,6 +29,27 @@ dispatch rather than delivered to nobody silently.
 - **THEN** the dispatch is recorded as failed, naming the group
 - @e2e exclude {failure path, covered by unit tests}
 
+### Requirement: A declared role assignment is writable through the schema (REQ-NRG-007)
+
+The role-to-groups assignment a rule addresses SHALL be writable on the
+schema, through the same import and save path every other schema field
+takes. A schema that declares it SHALL be accepted, and a malformed
+assignment SHALL be refused when it is written rather than at dispatch.
+
+#### Scenario: a schema declares who holds a role
+
+- **GIVEN** a schema whose authorization assigns `behandelaar` a group
+- **WHEN** the schema is saved
+- **THEN** the assignment is stored intact
+- **AND** a rule addressing that role reaches the group's members
+
+#### Scenario: a malformed assignment is refused when it is written
+
+- **GIVEN** a schema whose authorization assigns a role no group
+- **WHEN** the schema is saved
+- **THEN** the save is refused, naming the role
+- @e2e exclude {authoring-time refusal, covered by unit tests}
+
 ### Requirement: The effective preference merges schema, group and user, and names the layer (REQ-NRG-002)
 
 The effective preference SHALL be the schema default, overridden by a
