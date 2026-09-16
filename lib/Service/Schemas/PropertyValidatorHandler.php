@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 
 /**
  * Class PropertyValidatorHandler
@@ -478,6 +479,8 @@ class PropertyValidatorHandler {
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
 		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
+		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
+		'inputControl' => ['value' => 'string', 'description' => 'The control a list surface should render to filter on this field.'],
 		'aggregated' => ['value' => 'boolean', 'description' => 'Count the field in aggregations.'],
 		'translatable' => ['value' => 'boolean', 'description' => 'Store one value per language.'],
 		'sourceLanguage' => ['value' => 'string', 'description' => 'Which language the authored value is in. Needs translatable.'],
@@ -898,8 +901,54 @@ class PropertyValidatorHandler {
 			}
 		}
 
+		// Validate the declared search profile if present. An unknown match type
+		// is refused here rather than ignored at query time: ignoring it leaves
+		// the property matching the way it did before, which looks exactly like
+		// the declaration working.
+		$this->validateSearchProfile(property: $property, path: $path);
+
 		return true;
 	}//end validateProperty()
+
+	/**
+	 * Refuse an unknown match type or input control, naming the property.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @phpstan-param array<string, mixed> $property
+	 *
+	 * @psalm-param array<string, mixed> $property
+	 *
+	 * @throws Exception When a declared value is outside its vocabulary.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function validateSearchProfile(array $property, string $path): void {
+		$declarations = [
+			'matchType' => PropertySearchProfile::MATCH_TYPES,
+			'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+		];
+
+		foreach ($declarations as $key => $allowed) {
+			$declared = ($property[$key] ?? null);
+			if ($declared === null) {
+				continue;
+			}
+
+			if (is_string($declared) === false
+				|| in_array(strtolower(trim($declared)), $allowed, true) === false
+			) {
+				$rendered = json_encode($declared);
+				$allowedList = implode(', ', $allowed);
+				throw new Exception(
+					"Invalid {$key} {$rendered} at '$path'. Must be one of: {$allowedList}"
+				);
+			}
+		}
+	}//end validateSearchProfile()
 
 	/**
 	 * Validate an entire properties object

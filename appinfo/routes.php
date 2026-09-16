@@ -263,6 +263,7 @@ return [
 
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
+        ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         // Magic Table Sync endpoints.
@@ -445,6 +446,21 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'erasurePreview#run', 'url' => '/api/gdpr/erasure-previews/{id}/run',
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Reach and revocation (data-subject-rights-across-the-instance task 4):
+        // everything one principal can reach, listed from the resolver, then
+        // taken away in one recorded act. Admin-gated by the framework.
+        ['name' => 'principalReach#show', 'url' => '/api/rbac/reach/{principal}',
+            'verb' => 'GET', 'requirements' => ['principal' => '[^/]+']],
+        ['name' => 'principalReach#revoke', 'url' => '/api/rbac/reach/{principal}/revoke',
+            'verb' => 'POST', 'requirements' => ['principal' => '[^/]+']],
+        // The data subject's own export (task 3): ask, read the state back,
+        // take the file. The middle route exists because the assembly is a
+        // background job and a caller needs to know when it is ready.
+        ['name' => 'subjectExport#create', 'url' => '/api/gdpr/subject-exports', 'verb' => 'POST'],
+        ['name' => 'subjectExport#show', 'url' => '/api/gdpr/subject-exports/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'subjectExport#download', 'url' => '/api/gdpr/subject-exports/{id}/download',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
@@ -534,6 +550,21 @@ return [
         // read-only check into a patch of a non-existent object. It is registered far
         // below (the objects block), so this entry must stay ABOVE it, here.
         ['name' => 'duplicate#check', 'url' => '/api/objects/{register}/{schema}/dedup-check', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+        // Dismissal surface: a pair a person reviewed and ruled NOT the same.
+        // Under the literal /duplicates/ prefix, so unlike the check above these
+        // cannot collide with the object routes at all.
+        [
+            'name' => 'duplicate#dismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/dismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
+        [
+            'name' => 'duplicate#undismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/undismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
         // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
         ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
         ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
@@ -914,6 +945,35 @@ return [
             'verb' => 'POST',
             'requirements' => ['id' => '[^/]+'],
         ],
+
+        // Access links (access-by-link-not-by-account). A scoped, expiring link
+        // that opens one object, view or file for somebody with no account. The
+        // three `/api/public/links/` endpoints carry no session: the link row is
+        // the whole access decision, and it resolves a principal that is the
+        // link itself. An unknown, revoked, switched-off or expired anchor all
+        // answer the same 404. The four owner endpoints mint, list, switch off
+        // and revoke, and each is scoped to the principal that minted the link.
+        // Distinct from `objectShareLink#show` above, which resolves a CORE
+        // Files share token on the object's folder: that one is read-only,
+        // declares no capability set, requires no expiry and attributes nothing.
+        // @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+        ['name' => 'accessLink#open', 'url' => '/api/public/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
+        [
+            'name' => 'accessLink#comment',
+            'url' => '/api/public/links/{anchor}/comments',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
+        [
+            'name' => 'accessLink#upload',
+            'url' => '/api/public/links/{anchor}/files',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
+        ['name' => 'accessLink#index', 'url' => '/api/access-links', 'verb' => 'GET'],
+        ['name' => 'accessLink#mint', 'url' => '/api/access-links', 'verb' => 'POST'],
+        ['name' => 'accessLink#update', 'url' => '/api/access-links/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'accessLink#revoke', 'url' => '/api/access-links/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
 
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
