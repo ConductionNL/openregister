@@ -67,7 +67,12 @@ rather than a model to add.
 
 ## 6. Tests
 
-- [x] 6.1 `tests/e2e/ci/configuration-deployment.spec.ts`: draft, refusal, deploy, explain, roll back. Four scenarios carry an e2e anchor; two carry an `@e2e exclude` naming the unit test that asserts them and the reason the HTTP door does not exist.
+- [x] 6.1 `tests/e2e/ci/configuration-deployment.spec.ts`: draft, refusal, deploy,
+  explain, roll back, and in part two the bundle, the exception, the matrix copy
+  and the seed. Eight scenarios carry an e2e anchor; four carry an `@e2e exclude`
+  naming the unit test that asserts them and the reason the HTTP door does not
+  exist. The two added excludes are the same shape as the first two: the flag the
+  scenario needs is reserved, so no deployment and no request can set it.
 - [x] 6.2 Unit tests: the all-or-nothing apply, the append-only history, the four layers of the explainer, the stale-draft refusal and the reserved keys. 70 tests. Two mutation checks recorded in the PR body.
 - [x] 6.3 A regression test that an instance never drafting writes straight
   through. `tests/Unit/Service/SettingsStraightThroughTest.php` runs all ten

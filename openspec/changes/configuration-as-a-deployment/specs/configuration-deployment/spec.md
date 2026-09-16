@@ -76,12 +76,14 @@ exception.
 - **GIVEN** forty schemas bound to one bundle
 - **WHEN** a notification rule in the bundle changes and is deployed
 - **THEN** all forty use the new rule
+- @e2e tests/e2e/ci/configuration-deployment.spec.ts
 
 #### Scenario: an exception is visible as an exception
 
 - **GIVEN** one of those schemas overriding a single value
 - **WHEN** the bundle's bindings are listed
 - **THEN** that schema is listed as overriding, naming the value
+- @e2e tests/e2e/ci/configuration-deployment.spec.ts
 
 ### Requirement: Inherited integration configuration and copied matrices land as drafts (REQ-CAD-005)
 
@@ -96,9 +98,11 @@ and the copy SHALL land as a draft rather than live.
 - **GIVEN** an integration configured at the instance
 - **WHEN** a schema that sets none is read
 - **THEN** the instance value applies and the explainer names the instance
+- @e2e exclude {the e2e suite may not write an instance setting, because every instance key it could set is one a person or another suite depends on; the same inheritance is asserted over HTTP one layer lower in the bundle scenarios, and at the instance layer in tests/Unit/Service/ConfigurationDeployment/ConfigurationBundleServiceTest.php::testOneMailRelayAtTheInstanceAppliesToASchemaThatSetsNone}
 
 #### Scenario: a copied matrix is reviewed before it is live
 
 - **GIVEN** a permission matrix on one role
 - **WHEN** it is copied onto another role
 - **THEN** it exists as a draft and the live matrix is unchanged
+- @e2e tests/e2e/ci/configuration-deployment.spec.ts
