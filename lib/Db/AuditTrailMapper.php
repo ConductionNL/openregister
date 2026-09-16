@@ -2703,13 +2703,13 @@ class AuditTrailMapper extends QBMapper {
 
 		if ($from !== null) {
 			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATE))
+				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			);
 		}
 
 		if ($to !== null) {
 			$qb->andWhere(
-				$qb->expr()->lte('created', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATE))
+				$qb->expr()->lte('created', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			);
 		}
 

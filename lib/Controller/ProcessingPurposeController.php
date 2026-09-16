@@ -113,6 +113,13 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt A purpose is instance-wide configuration, not a record about
+	 *   anybody: a code, a name, and the verwerkingsactiviteit it names. There is no
+	 *   per-object owner to guard against, and the whole list is already readable by any
+	 *   authenticated caller through index() BY DESIGN, because a client that cannot see
+	 *   the purposes cannot name one and a refusal offering codes it may not read is a
+	 *   refusal nobody can act on. Guarding this id while leaving the list open would
+	 *   protect nothing and hide the gap. Writes are admin-gated in create/update/destroy.
 	 *
 	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
 	 */
