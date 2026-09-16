@@ -56,6 +56,11 @@ use Throwable;
  * every authority that can grant reach rather than re-derive any of them, so it
  * holds one collaborator per source.
  *
+ * @SuppressWarnings(PHPMD.StaticAccess) PrincipalReach is a closed vocabulary,
+ * the same shape as DestructionScope and ErasureBucket. Its members are
+ * compile-time constants and isRevocable() derives its answer from them, so
+ * injecting it would add a collaborator that can never vary.
+ *
  * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
  */
 class PrincipalReachService {
