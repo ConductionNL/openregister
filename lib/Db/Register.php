@@ -65,6 +65,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOrganisation(?string $organisation)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
+ * @method array|null getSharedWith()
+ * @method void setSharedWith(?array $sharedWith)
  * @method array|null getGroups()
  * @method void setGroups(?array $groups)
  * @method DateTime|null getDeleted()
@@ -203,6 +205,23 @@ class Register extends Entity implements JsonSerializable {
 	 * @var array|null JSON object describing authorizations
 	 */
 	protected ?array $authorization = [];
+
+	/**
+	 * The organisations that may READ this register as shared master data.
+	 *
+	 * The `organisation` column above is the HOLDER. This list is who else may
+	 * read it, declared by the holder and by nobody else — a consumer cannot
+	 * add itself, because a consumer cannot write this row at all
+	 * (SharedMasterDataWriteException).
+	 *
+	 * NULL or an empty list is the overwhelming majority and means exactly what
+	 * it did before this column existed: nothing is shared.
+	 *
+	 * @var array|null List of consumer organisation UUIDs
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	protected ?array $sharedWith = null;
 
 	/**
 	 * An array defining group-based permissions for CRUD actions.
@@ -344,6 +363,7 @@ class Register extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'application', type: 'string');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'sharedWith', type: 'json');
 		$this->addType(fieldName: 'groups', type: 'json');
 		$this->addType(fieldName: 'deleted', type: 'datetime');
 		$this->addType(fieldName: 'type', type: 'string');
@@ -515,6 +535,7 @@ class Register extends Entity implements JsonSerializable {
 	 *     application: null|string,
 	 *     organisation: null|string,
 	 *     authorization: array|null,
+	 *     sharedWith: array<int, string>,
 	 *     groups: array<string, list<string>>,
 	 *     languages: array<string>|null,
 	 *     configuration: array|null,
@@ -578,6 +599,7 @@ class Register extends Entity implements JsonSerializable {
 			'application' => $this->application,
 			'organisation' => $this->organisation,
 			'authorization' => $this->authorization,
+			'sharedWith' => ($this->sharedWith ?? []),
 			'groups' => $groups,
 			'type' => $this->type,
 			'languages' => $this->languages,

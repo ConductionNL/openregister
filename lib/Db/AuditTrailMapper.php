@@ -2553,6 +2553,93 @@ class AuditTrailMapper extends QBMapper {
 	}//end findByActor()
 
 	/**
+	 * Create one immutable, hash-chained audit record for a write that was
+	 * refused because the resource is shared master data held by another
+	 * organisation.
+	 *
+	 * A gemeenschappelijke regeling shares its code lists, its case types and
+	 * its parties across several legal entities, and the read path now hands a
+	 * consumer the holder's rows. The moment a consumer can SEE the holder's
+	 * code list, "they tried to change it" becomes a question an auditor asks
+	 * and a 403 alone cannot answer. This is the answer.
+	 *
+	 * Object-less by construction, following
+	 * {@see createPartyQueryRefusalEntry()}: there is no object, because the
+	 * write never happened. `object` has been nullable since
+	 * Version1Date20260423100000 for exactly this shape of row.
+	 *
+	 * 🔑 THE ACTOR IS PSEUDONYMOUS AND THE CONTEXT IS REDACTED BEFORE IT
+	 * ARRIVES. This method persists what it is handed; REQ-SLE-003 is enforced
+	 * by {@see \OCA\OpenRegister\Service\TenantLogRedactor} at the call site,
+	 * because the same context also goes to the log and the two must not
+	 * disagree about what a line may carry.
+	 *
+	 * @param string $holderOrganisation UUID of the organisation that holds the shared resource.
+	 * @param string $sourceOrganisation UUID of the organisation that attempted the write.
+	 * @param string $resourceType Either `register` or `schema`.
+	 * @param array $context Already-redacted refusal context.
+	 * @param int|null $register Register id the write targeted, when known.
+	 * @param int|null $schema Schema id the write targeted, when known.
+	 * @param string|null $objectUuid Object uuid the caller named, when it named one.
+	 * @param string|null $actorId Acting user id, or null for a system context.
+	 * @param string|null $actorReference Pseudonymous actor reference for the `user_name` column.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	public function createSharedMasterDataRefusalEntry(
+		string $holderOrganisation,
+		string $sourceOrganisation,
+		string $resourceType,
+		array $context = [],
+		?int $register = null,
+		?int $schema = null,
+		?string $objectUuid = null,
+		?string $actorId = null,
+		?string $actorReference = null,
+	): AuditTrail {
+		$userId = $actorId;
+		if ($userId === null || $userId === '') {
+			$userId = 'system';
+		}
+
+		$userName = $actorReference;
+		if ($userName === null || $userName === '') {
+			$userName = $userId;
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('shared_master_data_write_denied');
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setObjectUuid($objectUuid);
+		$auditTrail->setOrganisationId($sourceOrganisation);
+		$auditTrail->setResultSummary(
+			array_merge(
+				$context,
+				[
+					'holderOrganisation' => $holderOrganisation,
+					'sourceOrganisation' => $sourceOrganisation,
+					'resourceType' => $resourceType,
+					'outcome' => 'refused',
+				]
+			)
+		);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+
+	}//end createSharedMasterDataRefusalEntry()
+
+	/**
 	 * Create one immutable, hash-chained audit record for a party query that
 	 * was refused for exceeding the administered cap.
 	 *

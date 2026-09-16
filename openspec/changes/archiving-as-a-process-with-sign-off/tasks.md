@@ -39,6 +39,17 @@
 - [ ] 7.1 Hand the format half to the filinq lane (C-documents-9, C-documents-21, C-documents-33) and the resultaattype half to the dossiq lane, with ledger rows 11.22, 13.24, 7.7 and 8.1.
 - [x] 7.2 Record C-integrations-24 as an audit to commission rather than code to write (proposal, "Out of scope").
 
+## 8. The two declarations a consumer actually writes
+
+Found by the dossiq consumer lane: openregister could not nominate a dossiq
+case, and nothing said so. Two independent blocks, both silent.
+
+- [x] 8.1 `x-openregister-lifecycle.final` takes the reference form `{ from, field }` beside the static list, validated at schema save and resolved against the referenced row, memoised per request (REQ-APS-007).
+- [x] 8.2 Nomination reads `x-openregister-archival` from `configuration` when the `archive` column is unset, and every refusal names both places it looked (REQ-APS-008).
+- [x] 8.3 Unit tests for both, mutation-checked against a dossiq-shaped fixture: status as a `$ref`, `isFinal` on the referenced row.
+- [x] 8.4 A graph-mode annotation is read through `graph.schema` and `graph.finalField`, which say the same thing, so it declares no second `final`.
+- [x] 8.5 The dossiq lane declares `"final": { "from": "statusType", "field": "isFinal" }` on the case schema's lifecycle block.
+
 ## Shipped so far
 
 Part one (the review half) shipped as openregister#3736: tasks 3.1 to 3.3, 4.1,

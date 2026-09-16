@@ -45,8 +45,10 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\RetentionService;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Derives, writes and recomputes an object's archival nomination.
@@ -86,24 +88,58 @@ class ArchivalNominationService {
 	public const RULE_LOCAL_OVERRIDE = 'local_override';
 
 	/**
+	 * The schema's `x-openregister-archival` retention block decided it.
+	 *
+	 * A schema that declares retention the vocabulary way has said what happens
+	 * to its rows when their term runs out, and that is a nomination whether or
+	 * not anybody also filled in the `archive` column.
+	 */
+	public const RULE_ARCHIVAL_ANNOTATION = 'archival_annotation';
+
+	/**
+	 * Why a record on a schema that asks for no archiving is not nominated.
+	 *
+	 * Written out rather than left implicit, because "not applicable" and "we
+	 * looked in one of the two places" read identically from the outside, and
+	 * the second is the bug this reason exists to make visible.
+	 */
+	public const NOTHING_DECLARES_ARCHIVING = 'this schema declares neither an `archive` block with '
+		. '`enabled: true` nor an `x-openregister-archival` retention block, so nothing says what '
+		. 'happens to its records when their business use ends';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param RetentionService $retentionService Owns the selectielijst lookup and the date arithmetic.
-	 * @param LoggerInterface  $logger           Where an unnominatable record is reported.
+	 * @param RetentionService            $retentionService Owns the selectielijst lookup and the date arithmetic.
+	 * @param LoggerInterface             $logger           Where an unnominatable record is reported.
+	 * @param LifecycleFinalStateResolver $finalStates      Answers whether a referenced state row is an end.
+	 * @param ArchivalDeclarationReader   $declarations     Reads both places a schema can declare archiving.
 	 */
 	public function __construct(
 		private readonly RetentionService $retentionService,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleFinalStateResolver $finalStates,
+		private readonly ArchivalDeclarationReader $declarations,
 	) {
 	}//end __construct()
 
 	/**
 	 * Is this lifecycle value one the schema declares as an end?
 	 *
-	 * The vocabulary is `x-openregister-lifecycle.final`, the same list the
-	 * transition engine locks moves out of. Reading it here rather than keeping
-	 * a second list is the point: a state that stops being an end stops
+	 * The vocabulary is `x-openregister-lifecycle.final`, the same declaration
+	 * the transition engine locks moves out of. Reading it here rather than
+	 * keeping a second list is the point: a state that stops being an end stops
 	 * nominating on the same day.
+	 *
+	 * 🔴 A LIST OF STATE STRINGS CANNOT DESCRIBE A LIFECYCLE WHOSE STATES ARE
+	 * ROWS. When the lifecycle field is a `$ref`, the value reaching here is the
+	 * uuid of a row every tenant creates for itself, so a list written in the
+	 * schema names nothing and NOTHING IS EVER TERMINAL: no error, no log, no
+	 * nomination, and a closed dossier with no archival future. So `final` also
+	 * takes `{ from: <schema>, field: <property> }`, resolved against the
+	 * referenced row; see {@see LifecycleFinalStateResolver}. A graph-mode
+	 * annotation already says the same thing in `graph.schema` and
+	 * `graph.finalField`, so it is read there rather than declared twice.
 	 *
 	 * @param Schema $schema The object's schema.
 	 * @param string $state  The lifecycle value the object just reached.
@@ -111,6 +147,7 @@ class ArchivalNominationService {
 	 * @return bool True when the schema calls this state an end.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
 	 */
 	public function isTerminalState(Schema $schema, string $state): bool {
 		if (trim($state) === '') {
@@ -123,9 +160,13 @@ class ArchivalNominationService {
 			return false;
 		}
 
-		$final = ($annotation['final'] ?? []);
+		$final = ($annotation['final'] ?? $this->graphFinal(annotation: $annotation));
 		if (is_array($final) === false) {
 			return false;
+		}
+
+		if ($this->finalStates->isReferenceForm($final) === true) {
+			return $this->finalStates->isFinalByReference(declaration: $final, state: $state);
 		}
 
 		return in_array($state, $final, true);
@@ -158,9 +199,12 @@ class ArchivalNominationService {
 		?string $actor = null,
 		?string $reason = null,
 	): array {
-		$archive = $schema->getArchive();
-		if ($archive === [] || ($archive['enabled'] ?? false) === false) {
-			return ['status' => self::STATUS_NOT_APPLICABLE];
+		$archive = $this->declarations->read(object: $object, schema: $schema);
+		if ($archive === []) {
+			return [
+				'status' => self::STATUS_NOT_APPLICABLE,
+				'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING,
+			];
 		}
 
 		$derived = $this->derive(object: $object, schema: $schema, archive: $archive);
@@ -237,7 +281,10 @@ class ArchivalNominationService {
 			$appraisal = $this->text(value: ($archive['defaultNominatie'] ?? null));
 			$period = $this->text(value: ($archive['defaultBewaartermijn'] ?? null));
 			if ($appraisal !== null) {
-				$rule = self::RULE_SCHEMA_DEFAULT;
+				// A translated `x-openregister-archival` block says so itself,
+				// so the nomination names the declaration it actually came from
+				// rather than crediting an `archive` column nobody filled in.
+				$rule = ($archive['defaultRule'] ?? self::RULE_SCHEMA_DEFAULT);
 			}
 		}
 
@@ -288,19 +335,56 @@ class ArchivalNominationService {
 	}//end derive()
 
 	/**
+	 * The reference a graph-mode annotation already declares, read as `final`.
+	 *
+	 * A graph block names `schema` and `finalField`: the sibling schema its
+	 * states live in, and the property on a state row that marks the last one.
+	 * That is the reference form written in different words, so a graph-mode
+	 * schema gets the same answer without declaring `final` twice. An explicit
+	 * `final` still wins, because an author who wrote one meant it.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
+	 *
+	 * @return array<string, mixed>|null The reference form, or null when the annotation is not graph mode.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
+	 */
+	private function graphFinal(array $annotation): ?array {
+		$graph = ($annotation['graph'] ?? null);
+		if (is_array($graph) === false) {
+			return null;
+		}
+
+		$from = $this->text(value: ($graph['schema'] ?? null));
+		$field = $this->text(value: ($graph['finalField'] ?? null));
+		if ($from === null || $field === null) {
+			return null;
+		}
+
+		return ['from' => $from, 'field' => $field];
+	}//end graphFinal()
+
+	/**
 	 * Say which source was missing, rather than that one was.
+	 *
+	 * Both places a default can live are named, because "the schema declares no
+	 * default nomination" reads as a finished sentence and sent a reader to the
+	 * `archive` block alone, which is exactly the half-look that made a schema
+	 * declaring retention the vocabulary way unnominatable in silence.
 	 *
 	 * @param string|null $classification The classification the schema declared, if any.
 	 *
 	 * @return string The reason.
 	 */
 	private function missingSourceReason(?string $classification): string {
+		$where = ', and neither the schema\'s `archive` block nor its '
+			. '`x-openregister-archival` retention block names a default nomination';
+
 		if ($classification !== null) {
-			return 'no selectielijst row matches category ' . $classification
-				. ', and the schema declares no default nomination';
+			return 'no selectielijst row matches category ' . $classification . $where;
 		}
 
-		return 'the schema names no selectielijst category and declares no default nomination';
+		return 'the schema names no selectielijst category' . $where;
 	}//end missingSourceReason()
 
 	/**
