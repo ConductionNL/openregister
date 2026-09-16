@@ -118,6 +118,35 @@ class RuleRunSummaryMapper extends QBMapper {
 	}//end findBySchema()
 
 	/**
+	 * Every rule that has ever run, the ones that errored most recently first.
+	 *
+	 * One row per rule, so this table is as long as the instance has rules
+	 * rather than as long as it has evaluations; the console reads it whole
+	 * and bounds the page rather than paging a scan of the run log.
+	 *
+	 * The order puts the rules an administrator has to do something about at
+	 * the top: a rule whose last error is recent, then everything else by
+	 * when it last ran.
+	 *
+	 * @param int $limit How many summaries to return.
+	 *
+	 * @return array<int, RuleRunSummary> The summaries.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findRecent(int $limit = 50): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('last_error_at', 'DESC')
+			->addOrderBy('last_run', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		return $this->findEntities(query: $qb);
+
+	}//end findRecent()
+
+	/**
 	 * Record one evaluation against a rule's summary.
 	 *
 	 * Creates the row on the rule's first evaluation and updates it after. An
