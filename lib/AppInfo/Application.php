@@ -229,6 +229,7 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
@@ -606,7 +607,7 @@ class Application extends App implements IBootstrap {
 				// stack runs out. `OCP\Server::get()` is the public accessor
 				// for the server's own binding, and it is what reaches past
 				// the override we are installing.
-				return new \OCA\OpenRegister\Service\Outbound\OutboundClientFactory(
+				return new OutboundClientFactory(
 					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
 					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettings::class),
 				);
