@@ -61,6 +61,19 @@ class QueryHandler {
 	public const MAX_PAGE_SIZE = 1000;
 
 	/**
+	 * Page size a list/search request gets when it asks for none.
+	 *
+	 * Named rather than repeated so the number the capabilities answer
+	 * publishes and the number this method applies are the same constant. A
+	 * published limit that drifts from the enforced one is worse than no
+	 * published limit: an integrator sizes their paging against it once and
+	 * never checks again.
+	 *
+	 * @var integer
+	 */
+	public const DEFAULT_PAGE_SIZE = 20;
+
+	/**
 	 * Constructor for QueryHandler.
 	 *
 	 * @param MagicMapper $objectMapper Unified mapper for objects.
@@ -346,7 +359,7 @@ class QueryHandler {
 
 		// Extract pagination parameters (limit=0 is valid for count/facets-only requests).
 		// Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
-		$limit = min(max(0, (int)($query['_limit'] ?? 20)), self::MAX_PAGE_SIZE);
+		$limit = min(max(0, (int)($query['_limit'] ?? self::DEFAULT_PAGE_SIZE)), self::MAX_PAGE_SIZE);
 		$offset = $query['_offset'] ?? null;
 		$page = $query['_page'] ?? null;
 
