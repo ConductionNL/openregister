@@ -155,7 +155,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"title\": \"relations newman case\", \"description\": \"relation-types collection fixture\", \"properties\": {\"onderwerp\": {\"type\": \"string\", \"title\": \"Onderwerp\", \"maxLength\": 255}, \"classificatie\": {\"type\": \"string\", \"title\": \"Classificatie\", \"maxLength\": 64}, \"blokkeert\": {\"type\": \"array\", \"items\": {\"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"type\": \"blocks\"}}}, \"eigenaar\": {\"$ref\": \"relations-newman-case\", \"title\": \"Eigenaar\"}}, \"configuration\": {\"x-openregister-relation-types\": [{\"key\": \"blocks\", \"label\": \"blocks\", \"inverseLabel\": \"blocked by\"}]}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}}"
+          "raw": "{\"title\": \"relations newman case\", \"description\": \"relation-types collection fixture\", \"properties\": {\"onderwerp\": {\"type\": \"string\", \"title\": \"Onderwerp\", \"maxLength\": 255}, \"classificatie\": {\"type\": \"string\", \"title\": \"Classificatie\", \"maxLength\": 64}, \"blokkeert\": {\"type\": \"array\", \"items\": {\"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"type\": \"blocks\"}}}, \"eigenaar\": {\"type\": \"string\", \"$ref\": \"relations-newman-case\", \"title\": \"Eigenaar\"}}, \"configuration\": {\"x-openregister-relation-types\": [{\"key\": \"blocks\", \"label\": \"blocks\", \"inverseLabel\": \"blocked by\"}]}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}}"
         }
       },
       "event": [
@@ -259,7 +259,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"title\": \"relations newman refused\", \"description\": \"relation-types collection fixture\", \"properties\": {\"duplicaatVan\": {\"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"label\": \"duplicate of\", \"inverseLabel\": \"duplicated by\", \"symmetric\": true}}}}"
+          "raw": "{\"title\": \"relations newman refused\", \"description\": \"relation-types collection fixture\", \"properties\": {\"duplicaatVan\": {\"type\": \"string\", \"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"label\": \"duplicate of\", \"inverseLabel\": \"duplicated by\", \"symmetric\": true}}}}"
         }
       },
       "event": [
@@ -308,7 +308,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"title\": \"relations newman unknown type\", \"description\": \"relation-types collection fixture\", \"properties\": {\"vervolg\": {\"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"type\": \"folows\"}}}, \"configuration\": {\"x-openregister-relation-types\": [{\"key\": \"blocks\", \"label\": \"blocks\"}]}}"
+          "raw": "{\"title\": \"relations newman unknown type\", \"description\": \"relation-types collection fixture\", \"properties\": {\"vervolg\": {\"type\": \"string\", \"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"type\": \"folows\"}}}, \"configuration\": {\"x-openregister-relation-types\": [{\"key\": \"blocks\", \"label\": \"blocks\"}]}}"
         }
       },
       "event": [

@@ -1521,6 +1521,23 @@ return [
             'verb'         => 'GET',
             'requirements' => ['version' => '[0-9]{1,3}'],
         ],
+
+        // Who called what, and the declaration an administrator edits to
+        // deprecate it. Both administrator-only, checked in the method body:
+        // the caller record names every principal that integrates with this
+        // gemeente, and #[NoAdminRequired] answers "is anyone logged in", which
+        // is not the question.
+        ['name' => 'apiCallers#index', 'url' => '/api/callers', 'verb' => 'GET'],
+        ['name' => 'apiCallers#readDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'GET'],
+        ['name' => 'apiCallers#writeDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'PUT'],
+
+        // The well-known discovery paths, security.txt first. Served under the
+        // app's own prefix: an app cannot claim /.well-known for the whole
+        // instance, and the contact for the platform is the administrator's to
+        // publish. The index names the one rewrite that points the server root
+        // here, so the instruction sits where somebody looking will be.
+        ['name' => 'wellKnown#index', 'url' => '/.well-known', 'verb' => 'GET'],
+        ['name' => 'wellKnown#securityTxt', 'url' => '/.well-known/security.txt', 'verb' => 'GET'],
         // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
         ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
         ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],
