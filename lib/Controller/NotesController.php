@@ -396,7 +396,14 @@ class NotesController extends Controller {
 				);
 			}
 
-			$note = $this->noteService->getNote(noteId: (int)$noteId);
+			try {
+				$note = $this->noteService->getNote(noteId: (int)$noteId);
+			} catch (Exception $e) {
+				// A note that is not there is a 404, not the 400 a generic
+				// failure would give: the caller asked for something absent,
+				// it did not ask wrongly.
+				return new JSONResponse(data: ['error' => 'Note not found'], statusCode: 404);
+			}
 
 			// The same filter the note list applies, asked of one note: a
 			// reader who may not see an internal note may not read the texts

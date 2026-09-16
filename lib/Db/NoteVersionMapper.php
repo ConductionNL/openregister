@@ -32,11 +32,11 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * NoteVersionMapper handles database operations for NoteVersion rows.
  *
+ * @method NoteVersion insert(NoteVersion $entity)
  * @method NoteVersion update(Entity $entity)
  * @method NoteVersion delete(Entity $entity)
  * @method NoteVersion findEntity(IQueryBuilder $query)
@@ -153,31 +153,6 @@ class NoteVersionMapper extends QBMapper {
 
 		return (int)$qb->executeStatement();
 	}//end deleteByComments()
-
-	/**
-	 * Insert a version row, stamping its uuid and times.
-	 *
-	 * @param Entity $entity The NoteVersion being written.
-	 *
-	 * @return Entity The inserted entity.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
-	 */
-	public function insert(Entity $entity): Entity {
-		if ($entity instanceof NoteVersion) {
-			if ($entity->getUuid() === null) {
-				$entity->setUuid(Uuid::v4()->toRfc4122());
-			}
-
-			if ($entity->getEditedAt() === null) {
-				$entity->setEditedAt(new DateTime());
-			}
-
-			$entity->setCreated(new DateTime());
-		}
-
-		return parent::insert(entity: $entity);
-	}//end insert()
 
 	/**
 	 * Render a stored moment as an ISO-8601 string.

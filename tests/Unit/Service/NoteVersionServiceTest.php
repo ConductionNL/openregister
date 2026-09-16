@@ -86,6 +86,10 @@ class NoteVersionServiceTest extends TestCase {
 		$this->assertSame('users', $stored->getAuthorType());
 		$this->assertSame('b', $stored->getEditedBy());
 		$this->assertNotNull($stored->getEditedAt());
+		// The uuid and created stamp are the service's own, because a mapper
+		// override could not narrow its inherited parameter to NoteVersion.
+		$this->assertNotNull($stored->getUuid());
+		$this->assertNotNull($stored->getCreated());
 	}
 
 	public function testVersionsCarryResolvedDisplayNames(): void {

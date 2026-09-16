@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\NoteVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 /**
@@ -89,6 +90,8 @@ class NoteVersionService {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 *
 	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
 	 */
 	public function record(
@@ -105,8 +108,14 @@ class NoteVersionService {
 		$version->setAuthorType($authorType);
 		$version->setEditedBy($editedBy);
 		$version->setEditedAt(new DateTime());
+		// Stamped here rather than in a mapper `insert()` override: narrowing
+		// the parameter of an inherited method is not allowed in PHP, so the
+		// override could only take an `Entity` and would have to re-widen what
+		// the typed mapper already knows.
+		$version->setCreated(new DateTime());
+		$version->setUuid(Uuid::v4()->toRfc4122());
 
-		$this->mapper->insert(entity: $version);
+		$this->mapper->insert($version);
 	}//end record()
 
 	/**

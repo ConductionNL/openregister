@@ -527,6 +527,22 @@ class NotesControllerTest extends TestCase {
 	}
 
 	/**
+	 * A note that is not there is a 404, not a 400.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testVersionsOfANoteThatIsNotThereAre404(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('getNote')->willThrowException(new Exception('Note not found'));
+		$this->noteService->expects($this->never())->method('noteVersions');
+
+		$this->assertSame(404, $this->controller->versions('reg', 'schema', 'obj-id', '5')->getStatus());
+	}
+
+	/**
 	 * A reader who may not see the note may not read its history either.
 	 *
 	 * @return void
