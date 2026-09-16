@@ -500,7 +500,38 @@ class PropertyValidatorHandler {
 		'iri' => ['value' => 'string', 'description' => 'The vocabulary term this property means.'],
 		'domains' => ['value' => 'array', 'description' => 'The classes this property may be used on.'],
 		'ranges' => ['value' => 'array', 'description' => 'The classes this property may point at.'],
+		'authorization' => ['value' => 'object', 'description' => 'Which roles or groups may read and write this one property.'],
+		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
+		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
+		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
 	];
+
+	/**
+	 * The modifier keys that take a language suffix.
+	 *
+	 * These two carry prose a person reads, so a schema written for more than
+	 * one audience spells them `title:nl` and `description:en` beside the
+	 * unsuffixed pair. Nothing else in the vocabulary is prose, so nothing else
+	 * takes a suffix: an author who writes `order:en` has made a mistake, and a
+	 * blanket "anything with a colon passes" would hide it.
+	 *
+	 * @var array<int, string> The base keys a language suffix may follow.
+	 */
+	public const LOCALISED_KEYS = [
+		'title',
+		'description',
+	];
+
+	/**
+	 * The language tag a localised key may carry.
+	 *
+	 * BCP 47's common shapes: `en`, `nl`, `fy`, and a region or script after
+	 * them (`pt-BR`, `zh-Hans`). Deliberately not "anything after the colon",
+	 * because then a typo is a new language rather than a refusal.
+	 *
+	 * @var string A PCRE matching the part after the colon.
+	 */
+	public const LANGUAGE_TAG_PATTERN = '/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/';
 
 	/**
 	 * Keys that are stored and handed on, but not enforced here.
@@ -590,6 +621,33 @@ class PropertyValidatorHandler {
 	}//end vocabularyKeys()
 
 	/**
+	 * Whether a key is one of the prose keys carrying a language suffix.
+	 *
+	 * `title:en` is the same key as `title`, written for one audience. The
+	 * suffix is checked rather than waved through, so `title:englisch` is a
+	 * refusal and not a fourteenth language nobody will ever translate.
+	 *
+	 * @param string $key The property key to look at.
+	 *
+	 * @return bool True when the key is a localised spelling of a prose modifier.
+	 *
+	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 */
+	public static function isLocalisedKey(string $key): bool {
+		$colon = strpos($key, ':');
+		if ($colon === false) {
+			return false;
+		}
+
+		$base = substr($key, 0, $colon);
+		if (in_array($base, self::LOCALISED_KEYS, true) === false) {
+			return false;
+		}
+
+		return preg_match(self::LANGUAGE_TAG_PATTERN, substr($key, ($colon + 1))) === 1;
+	}//end isLocalisedKey()
+
+	/**
 	 * Refuse a property key the vocabulary does not hold.
 	 *
 	 * A key starting with `x-` is a vendor extension and passes through: that
@@ -616,6 +674,10 @@ class PropertyValidatorHandler {
 			}
 
 			if (in_array($key, $known, true) === true) {
+				continue;
+			}
+
+			if (self::isLocalisedKey(key: $key) === true) {
 				continue;
 			}
 

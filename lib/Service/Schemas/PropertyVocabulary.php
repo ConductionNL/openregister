@@ -228,8 +228,38 @@ final class PropertyVocabulary {
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
 	 */
 	public function hasKey(string $key): bool {
-		return in_array($key, $this->keys(), true);
+		if (in_array($key, $this->keys(), true) === true) {
+			return true;
+		}
+
+		return PropertyValidatorHandler::isLocalisedKey(key: $key);
 	}//end hasKey()
+
+	/**
+	 * The keys that take a language suffix, and the shape the suffix has.
+	 *
+	 * A generated editor needs both halves: which keys may be written per
+	 * language, and what it may put after the colon. Publishing only the base
+	 * keys would leave every app guessing the tag format, and guessing is how
+	 * `title:english` gets written and then refused at import.
+	 *
+	 * @return array{keys: array<int, string>, separator: string, languageTagPattern: string,
+	 *   example: string, description: string} The localisation rule.
+	 *
+	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the rule it enforces. A copy here
+	 *                                       would be the second list this class exists to remove.
+	 */
+	public function localisation(): array {
+		return [
+			'keys' => PropertyValidatorHandler::LOCALISED_KEYS,
+			'separator' => ':',
+			'languageTagPattern' => PropertyValidatorHandler::LANGUAGE_TAG_PATTERN,
+			'example' => 'title:nl',
+			'description' => 'The prose keys may be written once per language, as `<key>:<language tag>`.',
+		];
+	}//end localisation()
 
 	/**
 	 * The categories the vocabulary groups its types under.
@@ -269,6 +299,7 @@ final class PropertyVocabulary {
 			'modifiers' => $modifiers,
 			'passthrough' => $passthrough,
 			'keys' => $this->keys(),
+			'localisation' => $this->localisation(),
 			'vendorExtensionPrefix' => 'x-',
 			'counts' => [
 				'types' => count($types),
