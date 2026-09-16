@@ -86,11 +86,7 @@ class DuplicateController extends Controller {
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
 	 */
 	public function index(string $register, string $schema): JSONResponse {
-		$thresholdParam = $this->request->getParam('threshold');
-		$threshold = null;
-		if ($thresholdParam !== null && (string)$thresholdParam !== '' && is_numeric($thresholdParam) === true) {
-			$threshold = (float)$thresholdParam;
-		}
+		$threshold = $this->thresholdFromRequest(key: 'threshold');
 
 		$limit = (int)$this->request->getParam('limit', 20);
 		$offset = (int)$this->request->getParam('offset', 0);
@@ -155,11 +151,7 @@ class DuplicateController extends Controller {
 	public function check(string $register, string $schema): JSONResponse {
 		$candidate = $this->candidateFromRequest();
 
-		$thresholdParam = $this->request->getParam('_threshold');
-		$threshold = null;
-		if ($thresholdParam !== null && (string)$thresholdParam !== '' && is_numeric($thresholdParam) === true) {
-			$threshold = (float)$thresholdParam;
-		}
+		$threshold = $this->thresholdFromRequest(key: '_threshold');
 
 		try {
 			$matches = $this->duplicates->checkCandidate(
@@ -219,6 +211,36 @@ class DuplicateController extends Controller {
 
 		return $candidate;
 	}//end candidateFromRequest()
+
+	/**
+	 * A caller-supplied score cut-off, or null to use the schema's.
+	 *
+	 * One definition for both entry points. The listing spells the parameter
+	 * `threshold` and the check spells it `_threshold`, because the check's
+	 * body IS candidate data and a schema may legitimately declare a property
+	 * called `threshold`; what they must not differ on is how the value is
+	 * read, which is why the spelling is a parameter here and the parsing is
+	 * not duplicated.
+	 *
+	 * Anything that is not a number is ignored rather than refused: a stray
+	 * cut-off is not worth failing a read over, and falling back to the
+	 * schema's own threshold is the answer the caller would have got by not
+	 * sending one.
+	 *
+	 * @param string $key The request parameter to read.
+	 *
+	 * @return float|null The cut-off, or null when none was usably supplied.
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	private function thresholdFromRequest(string $key): ?float {
+		$value = $this->request->getParam($key);
+		if ($value === null || (string)$value === '' || is_numeric($value) === false) {
+			return null;
+		}
+
+		return (float)$value;
+	}//end thresholdFromRequest()
 
 	/**
 	 * Record that two objects were reviewed and are NOT the same, so the
