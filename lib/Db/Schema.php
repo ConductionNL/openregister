@@ -85,6 +85,8 @@ use stdClass;
  * @method void setOrganisation(?string $organisation)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
+ * @method array|null getSharedWith()
+ * @method void setSharedWith(?array $sharedWith)
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
@@ -269,6 +271,23 @@ class Schema extends Entity implements JsonSerializable {
 	 * @var array|null JSON object describing authorizations
 	 */
 	protected ?array $authorization = [];
+
+	/**
+	 * The organisations that may READ this schema as shared master data.
+	 *
+	 * The `organisation` column is the HOLDER; this list is who else may read
+	 * it. A case type and a party are the two the corpus asks for at this
+	 * grain: every entity in the samenwerkingsverband reads one definition of
+	 * "vergunningaanvraag" rather than keeping a copy that drifts.
+	 *
+	 * NULL or an empty list means nothing is shared, which is what every row
+	 * written before this column existed says.
+	 *
+	 * @var array|null List of consumer organisation UUIDs
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	protected ?array $sharedWith = null;
 
 	/**
 	 * Deletion timestamp
@@ -491,6 +510,7 @@ class Schema extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'application', type: 'string');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'sharedWith', type: 'json');
 		$this->addType(fieldName: 'deleted', type: 'datetime');
 		$this->addType(fieldName: 'configuration', type: 'json');
 		$this->addType(fieldName: 'groups', type: 'json');
@@ -1751,6 +1771,7 @@ class Schema extends Entity implements JsonSerializable {
 			'organisation' => $this->organisation,
 			'groups' => $this->groups,
 			'authorization' => $this->authorization,
+			'sharedWith' => ($this->sharedWith ?? []),
 			'deleted' => $deleted,
 			'configuration' => $this->configuration,
 			'allOf' => $this->allOf,
