@@ -83,6 +83,7 @@
 		"Message": "French 'message' is spelled identically; Nextcloud core fr renders it unchanged.",
 		"Urgent": "Same spelling and meaning in French (urgent).",
 		"Expression (JSON)": "\"Expression\" is spelled and used identically in French for a computed-value expression; \"Formule\" (formula) would shift the meaning, so the honest label is identical.",
-		"score": "French uses the loanword \"score\" for a points-based score; \"note\" means a grade and would confuse, so the honest value is identical."
+		"score": "French uses the loanword \"score\" for a points-based score; \"note\" means a grade and would confuse, so the honest value is identical.",
+		"Verdict": "The rule-evaluation outcome. French's own word for a verdict is the identically-spelled \"verdict\", so the value coincides with the English key; no distinct synonym exists."
 	}
 }
