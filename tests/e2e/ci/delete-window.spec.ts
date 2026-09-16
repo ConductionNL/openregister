@@ -195,7 +195,9 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 	test('the trash names the destroyable-from date and the days remaining', async () => {
 		const uuid = await createObject('window-row')
 
-		const del = await owner.delete(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const del = await owner.delete(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		expect(del.ok(), `delete failed: ${await del.text()}`).toBeTruthy()
 
 		const row = await trashRowFor(uuid)
@@ -209,7 +211,10 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 
 		// The schema declares 30 days, so the row deleted a moment ago has 30
 		// left. A hard-coded window would say 31, which is what this used to do.
-		expect(window.daysRemaining, 'the window is not the one the schema declared').toBe(30)
+		expect(
+			window.daysRemaining,
+			'the window is not the one the schema declared',
+		).toBe(30)
 		expect(window.retentionDays).toBe(30)
 		expect(window.retentionSource).toBe('schema')
 		expect(window.lapsed).toBe(false)
@@ -219,8 +224,12 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 		const uuid = await createObject('refusal-row')
 		await owner.delete(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
 
-		const read = await owner.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
-		expect(read.status(), 'a deleted object should not read as present').toBe(404)
+		const read = await owner.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
+		expect(read.status(), 'a deleted object should not read as present').toBe(
+			404,
+		)
 
 		const body = await read.json()
 		expect(
@@ -228,7 +237,9 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 			`the refusal does not say the object is deleted: ${JSON.stringify(body)}`,
 		).toBe('OBJECT_DELETED')
 		expect(String(body.message)).toContain('restored until')
-		expect(String(body.deleted?.destroyableFrom ?? '')).toMatch(/^\d{4}-\d{2}-\d{2}/)
+		expect(String(body.deleted?.destroyableFrom ?? '')).toMatch(
+			/^\d{4}-\d{2}-\d{2}/,
+		)
 	})
 
 	test('a restore inside the window brings the object back in one act', async () => {
@@ -245,8 +256,13 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 			'the restore does not say which window it happened inside',
 		).toBe(30)
 
-		const read = await owner.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
-		expect(read.ok(), 'the restored object should read as present again').toBeTruthy()
+		const read = await owner.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
+		expect(
+			read.ok(),
+			'the restored object should read as present again',
+		).toBeTruthy()
 	})
 
 	test('a caseworker without the destroy right is refused by name', async () => {
@@ -254,7 +270,10 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 		await owner.delete(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
 
 		const attempt = await other.delete(`${API}/deleted/${uuid}?force=true`)
-		expect(attempt.status(), 'a caller without the destroy right must be refused').toBe(403)
+		expect(
+			attempt.status(),
+			'a caller without the destroy right must be refused',
+		).toBe(403)
 
 		const body = await attempt.json()
 		expect(
@@ -295,15 +314,23 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 
 		// This schema declares no destruction scope, so nothing extra goes with
 		// the object and the preview says so rather than staying silent.
-		expect(body.preview?.scope, 'the preview carries no scope at all').toEqual([])
+		expect(body.preview?.scope, 'the preview carries no scope at all').toEqual(
+			[],
+		)
 		expect(body.preview?.total).toBe(0)
 		expect(body.preview?.destroyable).toBe(true)
 
 		// Two clocks, never one merged date. Both are present, and each names
 		// its rule even when that rule produced no date.
 		expect(body.clocks?.avg, 'the AVG clock is missing entirely').toBeTruthy()
-		expect(body.clocks?.archive, 'the Archiefwet clock is missing entirely').toBeTruthy()
-		expect(String(body.clocks.avg.rule ?? ''), 'the AVG clock names no rule').not.toBe('')
+		expect(
+			body.clocks?.archive,
+			'the Archiefwet clock is missing entirely',
+		).toBeTruthy()
+		expect(
+			String(body.clocks.avg.rule ?? ''),
+			'the AVG clock names no rule',
+		).not.toBe('')
 		expect(
 			String(body.clocks.archive.rule ?? ''),
 			'the Archiefwet clock names no rule',
@@ -319,18 +346,29 @@ test.describe('the delete window and the recorded destruction over HTTP', () => 
 		expect(destroy.ok(), `destroy failed: ${await destroy.text()}`).toBeTruthy()
 
 		const destroyed = await destroy.json()
-		expect(destroyed.destruction?.destroyedBy, 'the destruction names no actor').toBeTruthy()
-		expect(destroyed.destruction?.destroyedAt, 'the destruction names no time').toBeTruthy()
+		expect(
+			destroyed.destruction?.destroyedBy,
+			'the destruction names no actor',
+		).toBeTruthy()
+		expect(
+			destroyed.destruction?.destroyedAt,
+			'the destruction names no time',
+		).toBeTruthy()
 		expect(destroyed.destruction?.rule).toBe('destroy-right-granted')
 
 		// The object itself is gone.
-		const read = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const read = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		expect(read.status(), 'the destroyed object still resolves').toBe(404)
 
 		// And the record is still readable, through a door that does not go
 		// through the object.
 		const record = await admin.get(`${API}/deleted/${uuid}/destruction`)
-		expect(record.ok(), `destruction record read failed: ${await record.text()}`).toBeTruthy()
+		expect(
+			record.ok(),
+			`destruction record read failed: ${await record.text()}`,
+		).toBeTruthy()
 
 		const body = await record.json()
 		expect(

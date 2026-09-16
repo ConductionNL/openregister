@@ -1,0 +1,812 @@
+{
+  "info": {
+    "_postman_id": "or-duplicate-merge-2026-09-15",
+    "name": "OpenRegister Duplicate Merge And Dismissed Pairs",
+    "description": "The merge choice, the dismissed pair and the soft uniqueness alert, asserted where CI can see them.\n\nWHAT IT ASSERTS, each paired with its control:\n  * a nominated field warns on save and the save still succeeds, because the hint is an alert and not a constraint\n  * a unique-hint naming a property the schema does not declare is refused with 422 at schema save\n  * the scorer offers a pair BEFORE it is dismissed (the control) and stops offering it after\n  * a dismissal names the actor, the reason, the moment and a fingerprint\n  * the merge preview offers both values and a proposal per property\n  * a decision map that omits a property the preview offered is refused with 422, and the control after it shows nothing was written\n\nWHAT IT DOES NOT ASSERT. The refusal on an unreadable property needs a second user in a group this collection cannot create, and fingerprint expiry needs both sides controlled exactly; both are covered by unit tests named in the PR body.\n\nSELF-CLEANING. It creates its own register, schema and objects and removes all of them.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "registerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schemaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schemaSlug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "firstUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "secondUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "offered",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "setUp: a register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"dismissal newman register\", \"description\": \"dismissed-pair collection fixture\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the register is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: a schema with dedup rules and a nominated unique field",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"dismissal newman schema\", \"description\": \"dismissed-pair collection fixture\", \"properties\": {\"name\": {\"type\": \"string\", \"title\": \"Name\", \"maxLength\": 255}, \"email\": {\"type\": \"string\", \"title\": \"Email\", \"maxLength\": 255}, \"kvkNumber\": {\"type\": \"string\", \"title\": \"KvK Number\", \"maxLength\": 255}}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}, \"configuration\": {\"x-openregister-dedup\": {\"matchRules\": [{\"field\": \"name\", \"method\": \"normalized\", \"weight\": 0.5}, {\"field\": \"email\", \"method\": \"exact\", \"weight\": 0.5}], \"threshold\": 0.85, \"dismissGroups\": [\"admin\"]}, \"x-openregister-unique-hint\": [\"kvkNumber\"]}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the schema is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('schemaId', String(pm.response.json().id));",
+              "pm.collectionVariables.set('schemaSlug', String(pm.response.json().slug));",
+              "pm.test('both declarations persisted', () => {",
+              "  const cfg = pm.response.json().configuration || {};",
+              "  pm.expect(cfg['x-openregister-dedup']).to.be.an('object');",
+              "  pm.expect(cfg['x-openregister-unique-hint']).to.eql(['kvkNumber']);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "a unique-hint naming an undeclared property is refused with 422",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"bad hint newman schema\", \"properties\": {\"name\": {\"type\": \"string\", \"title\": \"Name\", \"maxLength\": 255}}, \"configuration\": {\"x-openregister-unique-hint\": [\"kvkNummer\"]}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the save is refused', () => pm.response.to.have.status(422));",
+              "pm.test('the refusal names the property', () => pm.expect(JSON.stringify(pm.response.json())).to.include('kvkNummer'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: the register carries the schema",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"schemas\": [\"{{schemaId}}\"]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the schema is attached', () => pm.expect(pm.response.code).to.be.below(300));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: the first record",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Jan de Vries\", \"email\": \"jan@example.test\", \"kvkNumber\": \"69599084\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('firstUuid', String((b['@self'] && b['@self'].id) || b.id || b.uuid));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: a near-identical second record, which also warns on the unique hint",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"jan de  vries\", \"email\": \"jan@example.test\", \"kvkNumber\": \"69599084\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created, because the hint is an alert and not a constraint', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('secondUuid', String((b['@self'] && b['@self'].id) || b.id || b.uuid));",
+              "pm.test('the response warns about the KvK number', () => {",
+              "  const w = b['@warnings'] || [];",
+              "  pm.expect(w.map(x => x.property)).to.include('kvkNumber');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CONTROL: the scorer offers the pair",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the listing answers 200', () => pm.response.to.have.status(200));",
+              "const ids = (pm.response.json().items || []).map(p => [p.objectA, p.objectB].sort().join('|'));",
+              "const want = [pm.collectionVariables.get('firstUuid'), pm.collectionVariables.get('secondUuid')].sort().join('|');",
+              "pm.test('our pair is offered before anyone dismisses it', () => pm.expect(ids).to.include(want));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "dismiss the pair as not a duplicate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}/dismiss"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"objectA\": \"{{firstUuid}}\", \"objectB\": \"{{secondUuid}}\", \"reason\": \"two brothers at one address\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the dismissal is recorded', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.test('it names the actor, the reason and the moment', () => {",
+              "  pm.expect(b.dismissedBy).to.eql(pm.collectionVariables.get('username'));",
+              "  pm.expect(b.reason).to.eql('two brothers at one address');",
+              "  pm.expect(b.dismissedAt).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('and a fingerprint of what was compared', () => pm.expect(b.fingerprint).to.be.a('string').and.not.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "the same false pair is not offered twice",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the listing answers 200', () => pm.response.to.have.status(200));",
+              "const ids = (pm.response.json().items || []).map(p => [p.objectA, p.objectB].sort().join('|'));",
+              "const want = [pm.collectionVariables.get('firstUuid'), pm.collectionVariables.get('secondUuid')].sort().join('|');",
+              "pm.test('the dismissed pair is gone', () => pm.expect(ids).to.not.include(want));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "change a compared value on one of the two",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Piet Jansen\", \"email\": \"piet@example.test\", \"kvkNumber\": \"69599084\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('updated', () => pm.expect(pm.response.code).to.be.below(300));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CONTROL: a changed record is a different question, so the pair may be offered again",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the listing answers 200', () => pm.response.to.have.status(200));",
+              "// The two no longer look alike, so this asserts only that the read",
+              "// still works and the dismissal did not become permanent state that",
+              "// survives the data it was about. The fingerprint-expiry behaviour",
+              "// itself is asserted in DuplicateDismissalExclusionTest, where both",
+              "// sides can be controlled exactly.",
+              "pm.expect(pm.response.json()).to.have.property('items');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "merge preview offers a choice per property",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/merge/preview"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"from\": \"{{secondUuid}}\", \"into\": \"{{firstUuid}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the preview answers 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('it offers the properties with both values and a proposal', () => {",
+              "  pm.expect(b.fieldChoices).to.be.an('object');",
+              "  pm.expect(b.fieldChoices).to.have.property('name');",
+              "  pm.expect(b.fieldChoices.name).to.have.property('from');",
+              "  pm.expect(b.fieldChoices.name).to.have.property('into');",
+              "  pm.expect(b.fieldChoices.name).to.have.property('proposed');",
+              "});",
+              "pm.collectionVariables.set('offered', Object.keys(b.fieldChoices).join(','));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "a decision map that omits a property the preview offered is refused with 422",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/merge/execute"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"from\": \"{{secondUuid}}\", \"into\": \"{{firstUuid}}\", \"reason\": \"same person\", \"decisions\": {\"name\": \"into\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the merge is refused', () => pm.response.to.have.status(422));",
+              "pm.test('the refusal names the omitted properties', () => pm.expect(pm.response.json().properties).to.be.an('array').and.not.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CONTROL: nothing was written by the refusal",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the object is still there', () => pm.response.to.have.status(200));",
+              "pm.test('and still active, so the refusal merged nothing', () => {",
+              "  const b = pm.response.json();",
+              "  pm.expect(String(b.status || 'active')).to.not.eql('merged-into-other');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the dismissal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}/undismiss"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"objectA\": \"{{firstUuid}}\", \"objectB\": \"{{secondUuid}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the second object",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the first object",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{firstUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the schema",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the register",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

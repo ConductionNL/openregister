@@ -4,14 +4,19 @@
 			<dt>{{ t('openregister', 'Verdict') }}</dt>
 			<dd>
 				<strong>{{ trace.verdict }}</strong>
-				<span v-if="verdictSentence" class="verdictSentence">{{ verdictSentence }}</span>
+				<span v-if="verdictSentence" class="verdictSentence">{{
+					verdictSentence
+				}}</span>
 			</dd>
 
 			<template v-if="trace.operand">
 				<dt>{{ t('openregister', 'What decided it') }}</dt>
 				<dd>
 					<code>{{ trace.operand }}</code>
-					<span class="operandValue">{{ t('openregister', 'read as') }} <code>{{ trace.operandValue }}</code></span>
+					<span class="operandValue"
+						>{{ t('openregister', 'read as') }}
+						<code>{{ trace.operandValue }}</code></span
+					>
 				</dd>
 			</template>
 
@@ -22,7 +27,12 @@
 		</dl>
 
 		<p v-if="!trace.operand && trace.verdict !== 'fired'" class="muted">
-			{{ t('openregister', 'This rule names no single operand. That happens when the condition is a literal, or when the walk could not reach one.') }}
+			{{
+				t(
+					'openregister',
+					'This rule names no single operand. That happens when the condition is a literal, or when the walk could not reach one.',
+				)
+			}}
 		</p>
 	</div>
 </template>
@@ -57,7 +67,9 @@ export default {
 		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 		 */
 		verdictSentence() {
-			const found = this.verdicts.find((row) => row.verdict === this.trace.verdict)
+			const found = this.verdicts.find(
+				(row) => row.verdict === this.trace.verdict,
+			)
 			return found ? found.description : ''
 		},
 	},

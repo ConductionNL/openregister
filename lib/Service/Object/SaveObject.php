@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
@@ -3189,6 +3190,20 @@ class SaveObject {
 			);
 		}
 
+		// SOFT UNIQUENESS, the create half. Unlike the guard above it never
+		// refuses: it records a warning the controller puts on the response
+		// beside the created object. A schema that needs a refusal declares
+		// `onCreate: "block"` instead, which is the guard above.
+		$uniqueHints = $this->resolveUniqueHintChecker();
+		if ($uniqueHints !== null) {
+			$uniqueHints->check(
+				configuration: ($schema->getConfiguration() ?? []),
+				register: $registerId,
+				schema: $schemaId,
+				data: $data
+			);
+		}
+
 		// Push the in-flight save onto the call stack so cascade
 		// descendants can detect cycles via `validateReferences()`.
 		// Popped in finally regardless of success/failure.
@@ -3234,6 +3249,38 @@ class SaveObject {
 	}//end saveObject()
 
 	/**
+	 * Resolve the soft-uniqueness checker from the app container, or null when
+	 * there is none.
+	 *
+	 * Lazily resolved for the same cycle reason {@see resolveDedupCreatePolicy()}
+	 * is: the checker reads through `ObjectService`, which owns this very
+	 * handler, so constructor injection would close the loop and the container
+	 * would refuse to build either end of it.
+	 *
+	 * @return UniqueHintChecker|null The checker, or null when unavailable.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function resolveUniqueHintChecker(): ?UniqueHintChecker {
+		if ($this->container === null) {
+			return null;
+		}
+
+		try {
+			$checker = $this->container->get(UniqueHintChecker::class);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] UniqueHintChecker not available: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($checker instanceof UniqueHintChecker) {
+			return $checker;
+		}
+
+		return null;
+	}//end resolveUniqueHintChecker()
+
+	/**
 	 * Resolve the create-time duplicate policy from the app container, or null
 	 * when there is none.
 	 *
@@ -3242,7 +3289,7 @@ class SaveObject {
 	 * through `ObjectService`, which owns this very handler. Constructor
 	 * injection would close that loop and Nextcloud's container would refuse
 	 * to build either end of it. Going through the INJECTED app container
-	 * rather than the global server is what keeps the lookup bounded — the
+	 * rather than the global server is what keeps the lookup bounded: the
 	 * global container knows nothing of this app's registrations and would
 	 * autowire the cycle instead of failing.
 	 *
@@ -3527,6 +3574,22 @@ class SaveObject {
 			throw new Exception(
 				'Cannot modify object: archival status is ' . $archStatus . ' (error: ' . $immutableMap[$archStatus] . ')',
 				409
+			);
+		}
+
+		// SOFT UNIQUENESS, the update half. The spec asks for the warning on
+		// create AND on update, and a create-only version would let every
+		// duplicate in through an edit instead. The object being written is
+		// excluded from its own matches, so re-saving a record that already
+		// holds the value is silent.
+		$uniqueHints = $this->resolveUniqueHintChecker();
+		if ($uniqueHints !== null) {
+			$uniqueHints->check(
+				configuration: ($schema->getConfiguration() ?? []),
+				register: $register->getId(),
+				schema: $schema->getId(),
+				data: $data,
+				selfUuid: ((string)$existingObject->getUuid())
 			);
 		}
 

@@ -128,7 +128,9 @@ test.describe('notification routing over HTTP', () => {
 			data: {
 				title: `e2e routing vergunning ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					read: ['authenticated'],
 					create: ['authenticated'],
@@ -157,7 +159,9 @@ test.describe('notification routing over HTTP', () => {
 			data: {
 				title: `e2e routing melding ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					read: ['authenticated'],
 					create: ['authenticated'],
@@ -175,7 +179,10 @@ test.describe('notification routing over HTTP', () => {
 				},
 			},
 		})
-		expect(sch2.ok(), `second schema create failed: ${await sch2.text()}`).toBeTruthy()
+		expect(
+			sch2.ok(),
+			`second schema create failed: ${await sch2.text()}`,
+		).toBeTruthy()
 		const sch2Body = await sch2.json()
 		secondSchemaId = String(sch2Body.id)
 		secondSchemaSlug = String(sch2Body.slug ?? sch2Body.id)
@@ -205,7 +212,12 @@ test.describe('notification routing over HTTP', () => {
 				},
 			})
 			await admin.put(`${API}/notification-group-preferences`, {
-				data: { group: 'admin', schema: slug, notification: 'termijn', reset: true },
+				data: {
+					group: 'admin',
+					schema: slug,
+					notification: 'termijn',
+					reset: true,
+				},
 			})
 		}
 
@@ -280,17 +292,27 @@ test.describe('notification routing over HTTP', () => {
 
 	test('the effective preferences read names the layer that decided', async () => {
 		const before = await admin.get(`${API}/notification-preferences`)
-		expect(before.ok(), `preferences read failed: ${await before.text()}`).toBeTruthy()
+		expect(
+			before.ok(),
+			`preferences read failed: ${await before.text()}`,
+		).toBeTruthy()
 
 		const entry = (await before.json()).results.find(
 			(row: Record<string, unknown>) =>
 				row.schema === schemaSlug && row.notification === 'termijn',
 		)
-		expect(entry, `no effective preference came back for ${schemaSlug}/termijn`).toBeTruthy()
-		expect(entry.source, 'with nothing stored the schema default must decide').toBe(
-			'schema-default',
-		)
-		expect(Array.isArray(entry.layers), 'the read must carry the layer trace').toBeTruthy()
+		expect(
+			entry,
+			`no effective preference came back for ${schemaSlug}/termijn`,
+		).toBeTruthy()
+		expect(
+			entry.source,
+			'with nothing stored the schema default must decide',
+		).toBe('schema-default')
+		expect(
+			Array.isArray(entry.layers),
+			'the read must carry the layer trace',
+		).toBeTruthy()
 	})
 
 	test('a team default overrides the schema default, and the user still wins', async () => {
@@ -303,16 +325,24 @@ test.describe('notification routing over HTTP', () => {
 				channels: ['nc-notification'],
 			},
 		})
-		expect(group.ok(), `group default write failed: ${await group.text()}`).toBeTruthy()
+		expect(
+			group.ok(),
+			`group default write failed: ${await group.text()}`,
+		).toBeTruthy()
 
-		const withGroup = (await (await admin.get(`${API}/notification-preferences`)).json()).results.find(
+		const withGroup = (
+			await (await admin.get(`${API}/notification-preferences`)).json()
+		).results.find(
 			(row: Record<string, unknown>) =>
 				row.schema === schemaSlug && row.notification === 'termijn',
 		)
-		expect(withGroup.source, 'the group is now the deciding layer').toBe('group-default')
-		expect(withGroup.channels, 'the team narrowed it to the in-app channel').toEqual([
-			'nc-notification',
-		])
+		expect(withGroup.source, 'the group is now the deciding layer').toBe(
+			'group-default',
+		)
+		expect(
+			withGroup.channels,
+			'the team narrowed it to the in-app channel',
+		).toEqual(['nc-notification'])
 
 		const own = await admin.put(`${API}/notification-preferences`, {
 			data: {
@@ -322,13 +352,20 @@ test.describe('notification routing over HTTP', () => {
 				channels: ['email'],
 			},
 		})
-		expect(own.ok(), `own override write failed: ${await own.text()}`).toBeTruthy()
+		expect(
+			own.ok(),
+			`own override write failed: ${await own.text()}`,
+		).toBeTruthy()
 
-		const withOwn = (await (await admin.get(`${API}/notification-preferences`)).json()).results.find(
+		const withOwn = (
+			await (await admin.get(`${API}/notification-preferences`)).json()
+		).results.find(
 			(row: Record<string, unknown>) =>
 				row.schema === schemaSlug && row.notification === 'termijn',
 		)
-		expect(withOwn.source, 'the user always wins over their team').toBe('user-override')
+		expect(withOwn.source, 'the user always wins over their team').toBe(
+			'user-override',
+		)
 		expect(withOwn.channels).toEqual(['email'])
 	})
 
@@ -365,19 +402,24 @@ test.describe('notification routing over HTTP', () => {
 				channels: ['email'],
 			},
 		})
-		expect(scoped.ok(), `scoped write failed: ${await scoped.text()}`).toBeTruthy()
-		expect((await scoped.json()).scope, 'the write must echo the scope it stored').toBe(
-			`schema:${schemaSlug}`,
-		)
+		expect(
+			scoped.ok(),
+			`scoped write failed: ${await scoped.text()}`,
+		).toBeTruthy()
+		expect(
+			(await scoped.json()).scope,
+			'the write must echo the scope it stored',
+		).toBe(`schema:${schemaSlug}`)
 
 		// The scoped value is a separate stored override; the global one is
 		// still there and still off, which is what "for that scope only" means.
 		const globalBack = await admin.put(`${API}/notification-preferences`, {
 			data: { schema: schemaSlug, notification: 'termijn', enabled: false },
 		})
-		expect((await globalBack.json()).override.enabled, 'the global value is untouched').toBe(
-			false,
-		)
+		expect(
+			(await globalBack.json()).override.enabled,
+			'the global value is untouched',
+		).toBe(false)
 
 		// And the list answers differently for the pinned scope than without
 		// it. A scoped value that can be written and never read back is a
@@ -392,14 +434,18 @@ test.describe('notification routing over HTTP', () => {
 			(row: Record<string, unknown>) =>
 				row.schema === schemaSlug && row.notification === 'termijn',
 		)
-		const globally = (await (await admin.get(`${API}/notification-preferences`)).json()).results.find(
+		const globally = (
+			await (await admin.get(`${API}/notification-preferences`)).json()
+		).results.find(
 			(row: Record<string, unknown>) =>
 				row.schema === schemaSlug && row.notification === 'termijn',
 		)
 
 		expect(inScope.enabled, 'the pinned scope is on').toBe(true)
 		expect(inScope.scope).toBe(`schema:${schemaSlug}`)
-		expect(globally.enabled, 'without the scope the global value answers').toBe(false)
+		expect(globally.enabled, 'without the scope the global value answers').toBe(
+			false,
+		)
 		expect(globally.scope).toBe('global')
 	})
 
@@ -411,22 +457,34 @@ test.describe('notification routing over HTTP', () => {
 				endsAt: new Date(Date.now() + 3600_000).toISOString(),
 			},
 		})
-		expect(sent.status(), `broadcast send failed: ${await sent.text()}`).toBe(201)
+		expect(sent.status(), `broadcast send failed: ${await sent.text()}`).toBe(
+			201,
+		)
 		const body = await sent.json()
 		broadcastUuid = String(body.uuid)
 		expect(body.sender, 'the record must name who sent it').toBe(ADMIN)
 
 		const first = await other.get(`${API}/notification-broadcasts/active`)
 		expect(first.ok(), `active read failed: ${await first.text()}`).toBeTruthy()
-		const firstUuids = (await first.json()).results.map((row: Record<string, unknown>) => row.uuid)
-		expect(firstUuids, 'a user should see the broadcast once').toContain(broadcastUuid)
+		const firstUuids = (await first.json()).results.map(
+			(row: Record<string, unknown>) => row.uuid,
+		)
+		expect(firstUuids, 'a user should see the broadcast once').toContain(
+			broadcastUuid,
+		)
 
-		const ack = await other.post(`${API}/notification-broadcasts/${broadcastUuid}/acknowledge`)
+		const ack = await other.post(
+			`${API}/notification-broadcasts/${broadcastUuid}/acknowledge`,
+		)
 		expect(ack.ok(), `acknowledge failed: ${await ack.text()}`).toBeTruthy()
 
 		const second = await other.get(`${API}/notification-broadcasts/active`)
-		const secondUuids = (await second.json()).results.map((row: Record<string, unknown>) => row.uuid)
-		expect(secondUuids, 'once seen, it does not come back').not.toContain(broadcastUuid)
+		const secondUuids = (await second.json()).results.map(
+			(row: Record<string, unknown>) => row.uuid,
+		)
+		expect(secondUuids, 'once seen, it does not come back').not.toContain(
+			broadcastUuid,
+		)
 
 		// One person's receipt is theirs. Without this the "once" could be a
 		// global flag that silences the message for everybody.
@@ -434,9 +492,10 @@ test.describe('notification routing over HTTP', () => {
 		const ownerUuids = (await stillThere.json()).results.map(
 			(row: Record<string, unknown>) => row.uuid,
 		)
-		expect(ownerUuids, "another user's receipt does not silence this one").toContain(
-			broadcastUuid,
-		)
+		expect(
+			ownerUuids,
+			"another user's receipt does not silence this one",
+		).toContain(broadcastUuid)
 	})
 
 	test('an ordinary user cannot send a broadcast', async () => {
@@ -457,8 +516,14 @@ test.describe('notification routing over HTTP', () => {
 		const list = await admin.get(`${API}/notification-templates`)
 		expect(list.ok(), `template list failed: ${await list.text()}`).toBeTruthy()
 		const listed = await list.json()
-		expect(listed.total, 'the platform must ship a template set').toBeGreaterThan(0)
-		expect(Array.isArray(listed.gaps), 'the listing must carry the gap list').toBeTruthy()
+		expect(
+			listed.total,
+			'the platform must ship a template set',
+		).toBeGreaterThan(0)
+		expect(
+			Array.isArray(listed.gaps),
+			'the listing must carry the gap list',
+		).toBeTruthy()
 
 		const gaps = await admin.get(`${API}/notification-templates/gaps`)
 		expect(gaps.ok(), `gap read failed: ${await gaps.text()}`).toBeTruthy()
@@ -467,24 +532,31 @@ test.describe('notification routing over HTTP', () => {
 			'the shipped set must have no gaps: an event with no template renders nothing at all',
 		).toBe(0)
 
-		const edited = await admin.put(`${API}/notification-templates/destruction_review_pending`, {
-			data: {
-				template: {
-					en: {
-						subject: `Reviewed by e2e ${RUN}`,
-						body: 'On {{schemaSlug}}.',
+		const edited = await admin.put(
+			`${API}/notification-templates/destruction_review_pending`,
+			{
+				data: {
+					template: {
+						en: {
+							subject: `Reviewed by e2e ${RUN}`,
+							body: 'On {{schemaSlug}}.',
+						},
 					},
 				},
 			},
-		})
-		expect(edited.ok(), `template edit failed: ${await edited.text()}`).toBeTruthy()
+		)
+		expect(
+			edited.ok(),
+			`template edit failed: ${await edited.text()}`,
+		).toBeTruthy()
 		const editedBody = await edited.json()
 		expect(editedBody.edited, 'the edit must be recorded as an edit').toBe(true)
 		expect(editedBody.template.en.subject).toBe(`Reviewed by e2e ${RUN}`)
 
 		const reread = await admin.get(`${API}/notification-templates`)
 		const row = (await reread.json()).results.find(
-			(entry: Record<string, unknown>) => entry.event === 'destruction_review_pending',
+			(entry: Record<string, unknown>) =>
+				entry.event === 'destruction_review_pending',
 		)
 		expect(row.source, 'the edited words are the ones that apply').toBe('edited')
 		expect(
@@ -497,9 +569,12 @@ test.describe('notification routing over HTTP', () => {
 		const read = await other.get(`${API}/notification-templates`)
 		expect(read.ok(), 'the variables are part of writing a rule').toBeTruthy()
 
-		const refused = await other.put(`${API}/notification-templates/scheduled_report_failed`, {
-			data: { template: { en: { subject: 'nope', body: 'nope' } } },
-		})
+		const refused = await other.put(
+			`${API}/notification-templates/scheduled_report_failed`,
+			{
+				data: { template: { en: { subject: 'nope', body: 'nope' } } },
+			},
+		)
 		expect(
 			refused.status(),
 			`only an administrator may change the platform's words, got ${refused.status()}`,
@@ -510,7 +585,9 @@ test.describe('notification routing over HTTP', () => {
 		// The dispatch itself is asynchronous, so what is asserted here is that
 		// the history read accepts the axis at all: a filter the mapper does not
 		// know silently returns everything, which reads exactly like a match.
-		const res = await admin.get(`${API}/notification-history?eventId=no-such-event`)
+		const res = await admin.get(
+			`${API}/notification-history?eventId=no-such-event`,
+		)
 		expect(res.ok(), `history read failed: ${await res.text()}`).toBeTruthy()
 		expect(
 			(await res.json()).total,

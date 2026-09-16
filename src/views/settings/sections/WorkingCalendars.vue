@@ -19,15 +19,25 @@
 			</div>
 
 			<template v-else>
-				<table class="calendars__table" data-testid="working-calendars-table">
+				<table
+					class="calendars__table"
+					data-testid="working-calendars-table">
 					<thead>
 						<tr>
 							<th scope="col">{{ t('openregister', 'Calendar') }}</th>
-							<th scope="col">{{ t('openregister', 'Working week') }}</th>
-							<th scope="col">{{ t('openregister', 'Hours a day') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Working week') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Hours a day') }}
+							</th>
 							<th scope="col">{{ t('openregister', 'Rules') }}</th>
-							<th scope="col">{{ t('openregister', 'Closure days') }}</th>
-							<th scope="col">{{ t('openregister', 'Organisation') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Closure days') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Organisation') }}
+							</th>
 							<th scope="col">
 								<span class="calendars__sr">{{
 									t('openregister', 'Actions')
@@ -42,17 +52,26 @@
 							:data-testid="'working-calendar-row-' + calendar.slug">
 							<td>
 								{{ calendar.title || calendar.slug }}
-								<span class="calendars__slug">{{ calendar.slug }}</span>
+								<span class="calendars__slug">{{
+									calendar.slug
+								}}</span>
 							</td>
 							<td>{{ weekLabel(calendar) }}</td>
 							<td>{{ calendar.hoursPerWorkingDay }}</td>
 							<td>{{ (calendar.rules || []).length }}</td>
 							<td>{{ (calendar.exceptions || []).length }}</td>
-							<td>{{ calendar.organisation || t('openregister', 'Shared') }}</td>
+							<td>
+								{{
+									calendar.organisation
+									|| t('openregister', 'Shared')
+								}}
+							</td>
 							<td class="calendars__actions">
 								<NcButton
 									variant="secondary"
-									:data-testid="'working-calendar-edit-' + calendar.slug"
+									:data-testid="
+										'working-calendar-edit-' + calendar.slug
+									"
 									@click="edit(calendar)">
 									<template #icon>
 										<Pencil :size="20" />
@@ -62,10 +81,14 @@
 								<NcButton
 									variant="tertiary"
 									:disabled="busy === calendar.slug"
-									:data-testid="'working-calendar-delete-' + calendar.slug"
+									:data-testid="
+										'working-calendar-delete-' + calendar.slug
+									"
 									@click="remove(calendar)">
 									<template #icon>
-										<NcLoadingIcon v-if="busy === calendar.slug" :size="20" />
+										<NcLoadingIcon
+											v-if="busy === calendar.slug"
+											:size="20" />
 										<Delete v-else :size="20" />
 									</template>
 									{{ t('openregister', 'Delete') }}
@@ -181,8 +204,8 @@ export default {
 				)
 				this.calendars = response.data?.results || []
 			} catch (error) {
-				this.error
-					= error.response?.data?.error
+				this.error =
+					error.response?.data?.error
 					|| this.t('openregister', 'The calendars could not be read.')
 			} finally {
 				this.loading = false
@@ -279,7 +302,10 @@ export default {
 					ok: false,
 					message:
 						error.response?.data?.error
-						|| this.t('openregister', 'The calendar could not be deleted.'),
+						|| this.t(
+							'openregister',
+							'The calendar could not be deleted.',
+						),
 				}
 			} finally {
 				this.busy = ''

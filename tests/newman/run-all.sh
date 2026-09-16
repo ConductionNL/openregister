@@ -118,6 +118,7 @@ DOMAIN_ORDER=(
     "working-calendars"
     "object-watchers"
     "dedup-check"
+    "duplicate-merge"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -187,6 +188,14 @@ declare -A DOMAIN_COLLECTIONS=(
     # appinfo/routes.php the call silently becomes a patch of a non-existent
     # object. No unit test can see that.
     [dedup-check]="$REPO_ROOT/tests/newman/openregister-dedup-check.postman_collection.json"
+    # The merge choice, the dismissed pair and the soft uniqueness alert.
+    # Registered here because all three are HTTP-shaped: two new routes, a
+    # 422 at schema save, a 422 on a decision map that does not match the
+    # preview it claims to approve, and a warning that rides the create
+    # RESPONSE rather than the object. A unit suite can see none of those,
+    # and a route missing from appinfo/routes.php is a 404 no PHPUnit test
+    # would notice.
+    [duplicate-merge]="$REPO_ROOT/tests/newman/openregister-duplicate-merge.postman_collection.json"
     # Typed relations with declared inverses. Registered here because the
     # asymmetry IS the contract and it only exists over HTTP: the same link
     # reads "blocks" on /uses and "blocked by" on /used, and the two handler
