@@ -5429,7 +5429,7 @@ class ObjectsControllerTest extends TestCase {
 	 *     verdicts keeps the container wiring in one place.
 	 */
 	private function grantExport(bool $allowed = true): void {
-		$rightService = $this->createMock(\OCA\OpenRegister\Service\Export\ExportRightService::class);
+		$rightService = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRightService::class);
 		$refusal = null;
 		if ($allowed === false) {
 			$refusal = new \OCA\OpenRegister\Service\Export\ExportRefusedException(
@@ -5441,7 +5441,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$rightService->method('refusalFor')->willReturn($refusal);
 
-		$recorder = $this->createMock(\OCA\OpenRegister\Service\Export\ExportAuditRecorder::class);
+		$recorder = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class);
 
 		$this->container->method('get')->willReturnCallback(
 			static function (string $id) use ($rightService, $recorder) {
@@ -5708,15 +5708,15 @@ class ObjectsControllerTest extends TestCase {
 	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
 	 */
 	public function testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb(): void {
-		$this->grantExport(false);
+		$this->grantExport(allowed: false);
 		$this->primeExportEntities();
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(403, $result->getStatus());
-		$this->assertSame('export', $result->getData()['verb']);
-		$this->assertSame('export-right-missing', $result->getData()['rule']);
+		$this->assertInstanceOf(expected: \OCP\AppFramework\Http\JSONResponse::class, actual: $result);
+		$this->assertSame(expected: 403, actual: $result->getStatus());
+		$this->assertSame(expected: 'export', actual: $result->getData()['verb']);
+		$this->assertSame(expected: 'export-right-missing', actual: $result->getData()['rule']);
 	}//end testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb()
 
 	/**
@@ -5735,9 +5735,9 @@ class ObjectsControllerTest extends TestCase {
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(503, $result->getStatus());
-		$this->assertSame('right-service-unavailable', $result->getData()['rule']);
+		$this->assertInstanceOf(expected: \OCP\AppFramework\Http\JSONResponse::class, actual: $result);
+		$this->assertSame(expected: 503, actual: $result->getStatus());
+		$this->assertSame(expected: 'right-service-unavailable', actual: $result->getData()['rule']);
 	}//end testExportRefusedWhenTheRightServiceIsUnavailable()
 
 	/**
@@ -5746,12 +5746,12 @@ class ObjectsControllerTest extends TestCase {
 	 * @return void
 	 */
 	private function primeExportEntities(): void {
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+		$registerEntity = $this->getMockBuilder(className: \OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();
 		$registerEntity->method('getSlug')->willReturn('my-register');
 
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+		$schemaEntity = $this->getMockBuilder(className: \OCA\OpenRegister\Db\Schema::class)
 			->addMethods(['getSlug'])
 			->getMock();
 		$schemaEntity->method('getSlug')->willReturn('my-schema');
@@ -5767,7 +5767,7 @@ class ObjectsControllerTest extends TestCase {
 			}
 		);
 
-		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$this->userSession->method('getUser')->willReturn($this->createMock(originalClassName: \OCP\IUser::class));
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
 		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
