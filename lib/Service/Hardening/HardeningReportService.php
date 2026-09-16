@@ -255,7 +255,8 @@ class HardeningReportService {
 				source: 'administered',
 				value: count($this->policy->allowedOrigins()),
 				unit: 'entries',
-				note: 'An empty allowlist reflects whichever origin asks, which is how this instance behaved before the control existed. Declare a floor of 1 to require a list.',
+				note: 'An empty allowlist reflects whichever origin asks, which is how this instance '
+					. 'behaved before the control existed. Declare a floor of 1 to require a list.',
 			),
 			$this->row(
 				id: 'upload.ceilingBytes',

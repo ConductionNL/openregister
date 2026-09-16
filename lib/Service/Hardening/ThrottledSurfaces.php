@@ -101,6 +101,8 @@ final class ThrottledSurfaces {
 	 * How many surfaces register attempts.
 	 *
 	 * @return int The count.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public static function count(): int {
 		return count(self::ALL);

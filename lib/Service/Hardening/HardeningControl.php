@@ -93,6 +93,8 @@ final class HardeningControl implements JsonSerializable {
 	 * What the administrator sees in the state column.
 	 *
 	 * @return string `on`, `off` or `unknown`.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function state(): string {
 		if ($this->value === null) {
@@ -122,6 +124,8 @@ final class HardeningControl implements JsonSerializable {
 	 * @param int $floor The floor to judge it against.
 	 *
 	 * @return bool True when the value is at or above the floor's strength.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public static function satisfies(string $comparator, int $value, int $floor): bool {
 		if ($comparator === 'atMost') {
@@ -136,6 +140,8 @@ final class HardeningControl implements JsonSerializable {
 	 * The row as the API publishes it.
 	 *
 	 * @return array<string, mixed> The serialised control.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function jsonSerialize(): array {
 		$row = [

@@ -88,6 +88,8 @@ class PlatformSecurityReader {
 	 * Whether the password policy app is running on this instance.
 	 *
 	 * @return bool True when the policy applies.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function passwordPolicyRuns(): bool {
 		try {

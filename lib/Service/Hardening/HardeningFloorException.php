@@ -55,7 +55,7 @@ class HardeningFloorException extends RuntimeException {
 		public readonly string $comparator,
 		string $message,
 	) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 
 	}//end __construct()
 
@@ -63,6 +63,8 @@ class HardeningFloorException extends RuntimeException {
 	 * The refusal as the API returns it.
 	 *
 	 * @return array<string, mixed> The refusal body.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function toArray(): array {
 		return [

@@ -186,6 +186,8 @@ class HardeningPolicy {
 	 * @param string $raw The comma-separated stored value.
 	 *
 	 * @return array<int, string> The entries, trimmed, lowercased and de-duplicated.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public static function parseOrigins(string $raw): array {
 		$entries = [];
@@ -206,6 +208,8 @@ class HardeningPolicy {
 	 * @param string $control The control identifier.
 	 *
 	 * @return int The administered value, or the baseline when nothing is stored.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function administered(string $control): int {
 		if (isset(self::CONTROLS[$control]) === false) {
@@ -236,6 +240,8 @@ class HardeningPolicy {
 	 * Every administered control and the value in force.
 	 *
 	 * @return array<string, int> Control identifier to value.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function administeredValues(): array {
 		$values = [];
@@ -253,6 +259,8 @@ class HardeningPolicy {
 	 * @param string $control The control identifier.
 	 *
 	 * @return int The declared floor, or the baseline when none was declared.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function floor(string $control): int {
 		$declared = $this->declaredFloors();
@@ -270,6 +278,8 @@ class HardeningPolicy {
 	 * @param string $control The control identifier.
 	 *
 	 * @return int The baseline, or 0 for a control with no declaration.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public static function baseline(string $control): int {
 		if (isset(self::CONTROLS[$control]) === true) {
@@ -290,6 +300,8 @@ class HardeningPolicy {
 	 * @param string $control The control identifier.
 	 *
 	 * @return string `atLeast` or `atMost`.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public static function comparator(string $control): string {
 		if (isset(self::CONTROLS[$control]) === true) {
@@ -312,6 +324,8 @@ class HardeningPolicy {
 	 * the closed direction: a corrupt floor map must not read as permission.
 	 *
 	 * @return array<string, int> Control identifier to declared floor.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function declaredFloors(): array {
 		try {
@@ -344,6 +358,8 @@ class HardeningPolicy {
 	 * Every floor in force, declared or baseline.
 	 *
 	 * @return array<string, int> Control identifier to floor.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function floors(): array {
 		$controls = array_merge(array_keys(self::CONTROLS), array_keys(self::REPORTED_CONTROLS));
@@ -366,6 +382,8 @@ class HardeningPolicy {
 	 * @param string $control The control identifier.
 	 *
 	 * @return bool True when the control is declared.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public static function isKnown(string $control): bool {
 		return (isset(self::CONTROLS[$control]) === true || isset(self::REPORTED_CONTROLS[$control]) === true);

@@ -208,6 +208,8 @@ class HardeningSettingsService {
 	 * @return string The normalised origin, or an empty string when the entry was blank.
 	 *
 	 * @throws InvalidArgumentException When the entry is not a bare origin.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public static function normaliseOrigin(string $origin): string {
 		$trimmed = strtolower(trim($origin));
