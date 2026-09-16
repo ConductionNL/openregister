@@ -115,6 +115,7 @@
 		"{title} in {register} / {schema}": "Placeholders plus the Dutch preposition 'in'.",
 		"Details": "Same spelling and meaning in Dutch; core nl keeps it.",
 		"Urgent": "Same spelling and meaning in Dutch (urgent).",
-		"score": "Established loanword in Dutch for a points-based score; no non-narrowing Dutch synonym exists (\"totaalscore\" would narrow it to a total), so the honest value is identical."
+		"score": "Established loanword in Dutch for a points-based score; no non-narrowing Dutch synonym exists (\"totaalscore\" would narrow it to a total), so the honest value is identical.",
+		"Operator": "The engine's comparison/logic operator. Dutch uses the identically-spelled international term \"operator\", the bundle writing \"operator\" in prose, so the value coincides with the English key; no distinct synonym exists."
 	}
 }
