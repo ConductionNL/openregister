@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 
 use Exception;
 use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -123,6 +124,28 @@ trait MultiTenancyTrait {
 
 		return $resolver->sharedIds(table: $table, consumerOrgUuids: $activeOrgUuids);
 	}//end sharedMasterDataIds()
+
+	/**
+	 * The log redactor for this mapper.
+	 *
+	 * `isset()` rather than `??`, deliberately: reading a DECLARED but
+	 * uninitialised typed property with `??` raises an Error, and several
+	 * mappers declare `$appConfig` without always assigning it. `isset()` is
+	 * false for both the undeclared and the uninitialised case, which is the
+	 * probe the rest of this trait already uses.
+	 *
+	 * @return TenantLogRedactor The redactor, with the app config when there is one.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function tenantLogRedactor(): TenantLogRedactor {
+		$appConfig = null;
+		if (isset($this->appConfig) === true) {
+			$appConfig = $this->appConfig;
+		}
+
+		return new TenantLogRedactor(appConfig: $appConfig);
+	}//end tenantLogRedactor()
 
 	/**
 	 * Get the active organisation UUID from the session.
@@ -586,13 +609,24 @@ trait MultiTenancyTrait {
 					$userId = $user->getUID();
 				}
 
-				$this->logger->info(
-					'[MultiTenancyTrait] Admin override: cross-organisation access granted',
-					[
+				// REQ-SLE-003: the tenant, not the person. An admin override on
+				// a shared instance is read by whoever operates that instance,
+				// and the line's job is to say that a cross-organisation read
+				// happened, never who in particular made it.
+				$redactor = $this->tenantLogRedactor();
+				$line = $redactor->line(
+					context: [
 						'type' => 'cross_tenant_access_admin_override',
-						'userId' => $userId,
+						'actor' => $redactor->pseudonym(userId: $userId),
 					]
 				);
+
+				if ($line !== null) {
+					$this->logger->info(
+						'[MultiTenancyTrait] Admin override: cross-organisation access granted',
+						$line
+					);
+				}
 			}
 
 			return;
@@ -850,20 +884,40 @@ trait MultiTenancyTrait {
 
 		// Verify the organisations match (applies to everyone including admins).
 		if ($entityOrgUuid !== $activeOrgUuid) {
+			// Shared master data (REQ-SLE-001, design D-2). The read side now
+			// hands a consumer the holder's registers and schemas, so a
+			// consumer reaching a write path is no longer somebody poking at a
+			// tenant they never saw: it is somebody editing a row that is on
+			// their screen, legitimately, and the difference belongs in the
+			// refusal. `assertWritable()` throws a refusal that NAMES THE
+			// HOLDER, which is what turns "forbidden" into "ask Gemeente X".
+			//
+			// It is a narrowing of this same refusal, never a widening: it
+			// throws or it returns, and when it returns the generic violation
+			// below still fires.
+			$this->refuseSharedMasterDataWrite(entity: $entity);
+
 			// Audit log the cross-tenant access attempt.
 			if (isset($this->logger) === true) {
-				$userId = $this->getCurrentUserId() ?? 'anonymous';
-				$this->logger->warning(
-					'[MultiTenancyTrait] Cross-tenant access denied',
-					[
+				// REQ-SLE-003: the organisation UUID and a pseudonymous actor
+				// reference. The refusal is the fact worth recording; the
+				// person's login name is not, and on a shared back office it is
+				// a disclosure to the other legal entity.
+				$redactor = $this->tenantLogRedactor();
+				$line = $redactor->line(
+					context: [
 						'type' => 'cross_tenant_access_denied',
-						'userId' => $userId,
+						'actor' => $redactor->pseudonym(userId: $this->getCurrentUserId()),
 						'sourceOrganisation' => $activeOrgUuid,
 						'targetOrganisation' => $entityOrgUuid,
 						'entityType' => get_class($entity),
 						'entityId' => $entity->getId(),
 					]
 				);
+
+				if ($line !== null) {
+					$this->logger->warning('[MultiTenancyTrait] Cross-tenant access denied', $line);
+				}
 			}
 
 			throw new Exception(
@@ -872,6 +926,77 @@ trait MultiTenancyTrait {
 			);
 		}//end if
 	}//end verifyOrganisationAccess()
+
+	/**
+	 * Refuse a write to shared master data with a message that names the holder.
+	 *
+	 * Called only from {@see verifyOrganisationAccess()}, on the branch where
+	 * the write is already going to be refused. This decides WHICH refusal the
+	 * caller gets, not WHETHER they get one: a caller who is not a declared
+	 * consumer falls straight through and meets the generic cross-tenant
+	 * violation.
+	 *
+	 * The log line follows REQ-SLE-003: the organisation UUID and a
+	 * pseudonymous actor reference, never a name or an e-mail, and the context
+	 * goes through the redactor so a credential that found its way into it
+	 * never reaches the log.
+	 *
+	 * @param Entity $entity The register or schema being written.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\SharedMasterDataWriteException When the caller is a declared consumer.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function refuseSharedMasterDataWrite(Entity $entity): void {
+		if (method_exists($this, 'getTableName') === false) {
+			return;
+		}
+
+		$table = $this->getTableName();
+		if ($table !== SharedMasterDataService::REGISTERS && $table !== SharedMasterDataService::SCHEMAS) {
+			return;
+		}
+
+		$resolver = $this->sharedMasterData();
+		if ($resolver === null) {
+			return;
+		}
+
+		$activeOrgUuids = $this->getActiveOrganisationUuids();
+		$entityId = $entity->getId();
+		if (is_int($entityId) === false) {
+			return;
+		}
+
+		try {
+			$resolver->assertWritable(table: $table, id: $entityId, activeOrgUuids: $activeOrgUuids);
+		} catch (\OCA\OpenRegister\Exception\SharedMasterDataWriteException $refusal) {
+			if (isset($this->logger) === true) {
+				$redactor = $this->tenantLogRedactor();
+				$line = $redactor->line(
+					context: [
+						'type' => 'shared_master_data_write_denied',
+						'sourceOrganisation' => $this->getActiveOrganisationUuid(),
+						'holderOrganisation' => $refusal->getHolderUuid(),
+						'resourceType' => $refusal->getResourceType(),
+						'entityId' => $entityId,
+						'actor' => $redactor->pseudonym(userId: $this->getCurrentUserId()),
+						'file' => __FILE__,
+						'line' => __LINE__,
+					]
+				);
+
+				if ($line !== null) {
+					$this->logger->warning('[MultiTenancyTrait] Shared master data is read-only to a consumer', $line);
+				}
+			}
+
+			throw $refusal;
+		}//end try
+	}//end refuseSharedMasterDataWrite()
 
 	/**
 	 * Check if the current user has permission to perform an action.
