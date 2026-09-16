@@ -263,6 +263,7 @@ return [
 
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
+        ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         // Magic Table Sync endpoints.
@@ -914,6 +915,35 @@ return [
             'verb' => 'POST',
             'requirements' => ['id' => '[^/]+'],
         ],
+
+        // Access links (access-by-link-not-by-account). A scoped, expiring link
+        // that opens one object, view or file for somebody with no account. The
+        // three `/api/public/links/` endpoints carry no session: the link row is
+        // the whole access decision, and it resolves a principal that is the
+        // link itself. An unknown, revoked, switched-off or expired anchor all
+        // answer the same 404. The four owner endpoints mint, list, switch off
+        // and revoke, and each is scoped to the principal that minted the link.
+        // Distinct from `objectShareLink#show` above, which resolves a CORE
+        // Files share token on the object's folder: that one is read-only,
+        // declares no capability set, requires no expiry and attributes nothing.
+        // @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+        ['name' => 'accessLink#open', 'url' => '/api/public/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
+        [
+            'name' => 'accessLink#comment',
+            'url' => '/api/public/links/{anchor}/comments',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
+        [
+            'name' => 'accessLink#upload',
+            'url' => '/api/public/links/{anchor}/files',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
+        ['name' => 'accessLink#index', 'url' => '/api/access-links', 'verb' => 'GET'],
+        ['name' => 'accessLink#mint', 'url' => '/api/access-links', 'verb' => 'POST'],
+        ['name' => 'accessLink#update', 'url' => '/api/access-links/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'accessLink#revoke', 'url' => '/api/access-links/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
 
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
