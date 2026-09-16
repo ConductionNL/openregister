@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\Service\ApiVersion;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use InvalidArgumentException;
 use JsonSerializable;
 
@@ -55,6 +56,16 @@ use JsonSerializable;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * Reason: named constructors and PHP's own date API. `ApiVersion::fromArray()`,
+ *         `ApiVersion::toHttpDate()` and `ApiVersionRefusedException::withdrawn()`
+ *         / `::unknown()` are static factories, which is the pattern phpmd's
+ *         StaticAccess rule cannot distinguish from a hidden dependency, and
+ *         `DateTimeImmutable::createFromFormat()` has no instance form. Injecting
+ *         a factory object for either would add a seam with nothing behind it.
+ *         The repo carries the same suppression shape on VocabularyController,
+ *         CodedValueGuard and DestructionScopeService for the same reason.
  */
 class ApiVersion implements JsonSerializable {
 
@@ -177,11 +188,13 @@ class ApiVersion implements JsonSerializable {
 		$this->deprecatedOn = self::normaliseDate(value: $deprecatedOn, field: 'deprecatedOn');
 		$this->sunset = self::normaliseDate(value: $sunset, field: 'sunset');
 
-		if ($successor === null) {
-			$this->successor = null;
-		} else {
-			$this->successor = self::requireIdentifier(value: $successor, field: 'successor');
-		}
+		// Assigned through a helper rather than inline. Each of the three obvious
+		// spellings is refused by a different analyser: phpmd refuses the else,
+		// phpstan refuses two guarded ifs because a readonly property needs one
+		// assignment it can prove always happens, and phpcs refuses the ternary.
+		// A helper that returns the value satisfies all three and reads better
+		// than any of them.
+		$this->successor = self::optionalIdentifier(value: $successor, field: 'successor');
 
 		$this->pathPrefixes = self::normalisePrefixes(values: $pathPrefixes);
 		$this->description = trim($description);
@@ -282,7 +295,7 @@ class ApiVersion implements JsonSerializable {
 			return null;
 		}
 
-		$parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $isoDate, new \DateTimeZone('UTC'));
+		$parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $isoDate, new DateTimeZone('UTC'));
 		if ($parsed === false) {
 			return null;
 		}
@@ -377,6 +390,25 @@ class ApiVersion implements JsonSerializable {
 	}//end requireIdentifier()
 
 	/**
+	 * Validate an identifier that may be absent.
+	 *
+	 * @param string|null $value The candidate identifier, or null.
+	 * @param string $field The field name, for the message.
+	 *
+	 * @throws InvalidArgumentException When a present identifier is not digits.
+	 *
+	 * @return string|null The identifier, or null.
+	 */
+	private static function optionalIdentifier(?string $value, string $field): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return self::requireIdentifier(value: $value, field: $field);
+
+	}//end optionalIdentifier()
+
+	/**
 	 * Validate a status.
 	 *
 	 * @param string $value The candidate status.
@@ -413,7 +445,7 @@ class ApiVersion implements JsonSerializable {
 		}
 
 		$trimmed = trim($value);
-		$parsed = DateTimeImmutable::createFromFormat('!Y-m-d', substr($trimmed, 0, 10), new \DateTimeZone('UTC'));
+		$parsed = DateTimeImmutable::createFromFormat('!Y-m-d', substr($trimmed, 0, 10), new DateTimeZone('UTC'));
 		if ($parsed === false || $parsed->format('Y-m-d') !== substr($trimmed, 0, 10)) {
 			throw new InvalidArgumentException(
 				'API version ' . $field . ' must be an ISO 8601 date, got "' . $value . '".'

@@ -67,6 +67,16 @@ use OCP\IRequest;
  *
  * @category Middleware
  * @package  OCA\OpenRegister\Middleware
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * Reason: named constructors and PHP's own date API. `ApiVersion::fromArray()`,
+ *         `ApiVersion::toHttpDate()` and `ApiVersionRefusedException::withdrawn()`
+ *         / `::unknown()` are static factories, which is the pattern phpmd's
+ *         StaticAccess rule cannot distinguish from a hidden dependency, and
+ *         `DateTimeImmutable::createFromFormat()` has no instance form. Injecting
+ *         a factory object for either would add a seam with nothing behind it.
+ *         The repo carries the same suppression shape on VocabularyController,
+ *         CodedValueGuard and DestructionScopeService for the same reason.
  */
 class ApiVersionMiddleware extends Middleware {
 
@@ -205,12 +215,11 @@ class ApiVersionMiddleware extends Middleware {
 	 * @return Response The decorated response.
 	 */
 	private function addDeprecationHeaders(Response $response, ApiVersion $version): Response {
+		// RFC 8594 allows an HTTP-date or the bare token. A deprecation with no
+		// recorded start date still has to announce itself, so it falls back to
+		// the token rather than omitting the header.
 		$deprecatedOn = ApiVersion::toHttpDate(isoDate: $version->deprecatedOn);
-		if ($deprecatedOn !== null) {
-			$response->addHeader('Deprecation', $deprecatedOn);
-		} else {
-			$response->addHeader('Deprecation', 'true');
-		}
+		$response->addHeader('Deprecation', ($deprecatedOn ?? 'true'));
 
 		$sunset = ApiVersion::toHttpDate(isoDate: $version->sunset);
 		if ($sunset !== null) {

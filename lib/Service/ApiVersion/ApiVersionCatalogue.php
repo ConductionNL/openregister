@@ -62,6 +62,16 @@ use Throwable;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * Reason: named constructors and PHP's own date API. `ApiVersion::fromArray()`,
+ *         `ApiVersion::toHttpDate()` and `ApiVersionRefusedException::withdrawn()`
+ *         / `::unknown()` are static factories, which is the pattern phpmd's
+ *         StaticAccess rule cannot distinguish from a hidden dependency, and
+ *         `DateTimeImmutable::createFromFormat()` has no instance form. Injecting
+ *         a factory object for either would add a seam with nothing behind it.
+ *         The repo carries the same suppression shape on VocabularyController,
+ *         CodedValueGuard and DestructionScopeService for the same reason.
  */
 class ApiVersionCatalogue {
 
@@ -141,7 +151,7 @@ class ApiVersionCatalogue {
 	 */
 	public function all(): array {
 		if ($this->resolved === null) {
-			$this->resolve();
+			$this->resolved = $this->resolve();
 		}
 
 		return $this->resolved;
@@ -242,7 +252,7 @@ class ApiVersionCatalogue {
 	 */
 	public function rejections(): array {
 		if ($this->resolved === null) {
-			$this->resolve();
+			$this->resolved = $this->resolve();
 		}
 
 		return $this->rejected;
@@ -252,17 +262,21 @@ class ApiVersionCatalogue {
 	/**
 	 * Build the catalogue from the administered declaration, or the built-in one.
 	 *
-	 * @return void
+	 * Returns the set rather than writing it to the memo, so a caller assigning
+	 * the result is provably left with a non-null value. Writing `$this->resolved`
+	 * from inside a void method reads the same to a human and not to psalm, which
+	 * flagged `all()` as able to return null.
+	 *
+	 * @return array<string, ApiVersion> The resolved versions.
 	 */
-	private function resolve(): void {
+	private function resolve(): array {
 		$this->rejected = [];
 
 		$administered = $this->readAdministered();
 		if ($administered !== []) {
 			$candidate = $this->buildVersions(declarations: $administered);
 			if ($this->isUsable(versions: $candidate) === true) {
-				$this->resolved = $candidate;
-				return;
+				return $candidate;
 			}
 
 			$this->logger->error(
@@ -271,7 +285,7 @@ class ApiVersionCatalogue {
 			);
 		}
 
-		$this->resolved = $this->buildVersions(declarations: self::BUILT_IN);
+		return $this->buildVersions(declarations: self::BUILT_IN);
 
 	}//end resolve()
 
