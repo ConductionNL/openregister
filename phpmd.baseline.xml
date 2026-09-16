@@ -304,7 +304,6 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/JsonLd/JsonLdSerializer.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/LanguageService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Lifecycle/LifecycleAnnotationValidator.php"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Lifecycle/LifecycleAnnotationValidator.php" method="validateGraphMode"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Lifecycle/TransitionEngine.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/Lifecycle/TransitionEngine.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Lifecycle/TransitionEngine.php" method="transition"/>
