@@ -86,6 +86,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFlowNode(?string $flowNode)
  * @method integer|null getFlowStep()
  * @method void setFlowStep(?int $flowStep)
+ * @method string|null getPurpose()
+ * @method void setPurpose(?string $purpose)
  * @method string|null getVersion()
  * @method void setVersion(?string $version)
  *
@@ -407,6 +409,23 @@ class AuditTrail extends Entity implements JsonSerializable {
 	protected ?int $flowStep = null;
 
 	/**
+	 * The administered purpose this row was written under.
+	 *
+	 * ⚠️ DELIBERATELY OUTSIDE the canonical JSON, exactly like `purgedAt`, and
+	 * for exactly the same reason: any key added to jsonSerialize() changes the
+	 * canonical form of every row ever written and invalidates the whole chain
+	 * (ADR-003 Rule 4). This column is the INDEXED, COUNTABLE projection of the
+	 * purpose. The SEALED copy lives in `resultSummary['purpose']`, which is
+	 * inside the canonical JSON, so the value a row was written under is
+	 * hash-protected and the column is the index over it. The two are written
+	 * in one place ({@see \OCA\OpenRegister\Service\Audit\PurposeAttribution}),
+	 * and a disagreement between them is detectable rather than invisible.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $purpose = null;
+
+	/**
 	 * Constructor for the AuditTrail class
 	 *
 	 * Sets up field types for all properties
@@ -447,6 +466,7 @@ class AuditTrail extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'flowRun', type: 'string');
 		$this->addType(fieldName: 'flowNode', type: 'string');
 		$this->addType(fieldName: 'flowStep', type: 'integer');
+		$this->addType(fieldName: 'purpose', type: 'string');
 	}//end __construct()
 
 	/**
