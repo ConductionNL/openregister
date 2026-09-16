@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
@@ -845,6 +846,15 @@ class SchemasController extends Controller {
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
 			return new JSONResponse(data: $schema, statusCode: 201);
+		} catch (UniqueHintException $e) {
+			// A nomination naming a property the schema does not declare is the
+			// caller's input and a person is waiting on the answer, so the
+			// refusal names the property rather than being logged and swallowed
+			// (ADR-005). MUST stay above the generic catch below.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (PropertyVocabularyException $e) {
 			// A type, a constraint key or a forwarded key the vocabulary does
 			// not hold is the caller's input and a person is waiting on the
@@ -1115,6 +1125,15 @@ class SchemasController extends Controller {
 			);
 
 			return new JSONResponse(data: $updatedSchema);
+		} catch (UniqueHintException $e) {
+			// A nomination naming a property the schema does not declare is the
+			// caller's input and a person is waiting on the answer, so the
+			// refusal names the property rather than being logged and swallowed
+			// (ADR-005). MUST stay above the generic catch below.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (PropertyVocabularyException $e) {
 			// A type, a constraint key or a forwarded key the vocabulary does
 			// not hold is the caller's input and a person is waiting on the
@@ -1629,6 +1648,15 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schema);
+		} catch (UniqueHintException $e) {
+			// A nomination naming a property the schema does not declare is the
+			// caller's input and a person is waiting on the answer, so the
+			// refusal names the property rather than being logged and swallowed
+			// (ADR-005). MUST stay above the generic catch below.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (PropertyVocabularyException $e) {
 			// A type, a constraint key or a forwarded key the vocabulary does
 			// not hold is the caller's input and a person is waiting on the

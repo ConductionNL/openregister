@@ -108,6 +108,7 @@ class DuplicateDetectionService {
 	 * @param SchemaMapper $schemaMapper Schema lookup for the dedup annotation.
 	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param SimilarityCalculator $similarity Pure field-similarity primitives.
+	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
@@ -119,6 +120,7 @@ class DuplicateDetectionService {
 		SchemaMapper $schemaMapper,
 		RegisterMapper $registerMapper,
 		private readonly SimilarityCalculator $similarity,
+		private readonly DismissedPairStore $dismissals,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
@@ -166,6 +168,14 @@ class DuplicateDetectionService {
 		foreach ($blocks as $bucket) {
 			$this->scoreBucket(bucket: $bucket, rules: $rules, cutOff: $cutOff, pairs: $pairs);
 		}
+
+		$pairs = $this->withoutDismissedPairs(
+			pairs: $pairs,
+			objects: $objects,
+			rules: $rules,
+			register: $register,
+			schema: $schema
+		);
 
 		usort($pairs, static fn (array $left, array $right) => $right['score'] <=> $left['score']);
 
@@ -301,6 +311,170 @@ class DuplicateDetectionService {
 	public function dedupAnnotation($register, $schema): array {
 		return $this->loadAnnotation(register: $register, schema: $schema);
 	}//end dedupAnnotation()
+
+	/**
+	 * The fingerprint of one pair: what the compared values looked like at the
+	 * moment somebody judged them.
+	 *
+	 * Built from the NORMALISED values of the rule fields, in canonical order,
+	 * for both objects. Normalised rather than raw so that re-saving a record
+	 * with different spacing does not resurrect a dismissal somebody already
+	 * made, and canonical so that the same pair fingerprints the same whichever
+	 * way round it was reviewed.
+	 *
+	 * Public because the dismissal route has to store the fingerprint of the
+	 * pair it is dismissing, and it must be the SAME function that the scorer
+	 * later compares against. Two implementations of "what was compared" is how
+	 * a dismissal silently stops matching itself.
+	 *
+	 * @param array<string, mixed> $dataA One object's payload.
+	 * @param array<string, mixed> $dataB The other object's payload.
+	 * @param array<int, array<string, mixed>> $rules The match rules that were compared.
+	 *
+	 * @return string A hex digest, or an empty string when there is nothing to fingerprint.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 */
+	public function pairFingerprint(array $dataA, array $dataB, array $rules): string {
+		$rules = $this->sanitiseRules(rules: $rules);
+		if (count($rules) === 0) {
+			return '';
+		}
+
+		$sides = [
+			$this->fingerprintSide(data: $dataA, rules: $rules),
+			$this->fingerprintSide(data: $dataB, rules: $rules),
+		];
+		sort($sides, SORT_STRING);
+
+		return hash('sha256', implode('||', $sides));
+	}//end pairFingerprint()
+
+	/**
+	 * One object's contribution to a pair fingerprint.
+	 *
+	 * @param array<string, mixed> $data The object's payload.
+	 * @param array<int, array<string, mixed>> $rules The sanitised match rules.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 */
+	private function fingerprintSide(array $data, array $rules): string {
+		$parts = [];
+		foreach ($rules as $rule) {
+			$field = (string)($rule['field'] ?? '');
+			if ($field === '') {
+				continue;
+			}
+
+			$parts[] = $field . '=' . $this->similarity->blockingToken(
+				'normalized',
+				$this->resolvePath(data: $data, path: $field)
+			);
+		}
+
+		sort($parts, SORT_STRING);
+
+		return implode('|', $parts);
+	}//end fingerprintSide()
+
+	/**
+	 * The rules a register/schema compares on, so a caller dismissing a pair
+	 * fingerprints exactly what the scorer compared.
+	 *
+	 * @param int|string $register Register reference.
+	 * @param int|string $schema Schema reference.
+	 *
+	 * @return array<int, array<string, mixed>> The effective match rules, empty when none are usable.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 */
+	public function effectiveRules($register, $schema): array {
+		$config = $this->resolveConfig(register: $register, schema: $schema, matchRules: null, threshold: null);
+		if ($config === null) {
+			return [];
+		}
+
+		return $config[0];
+	}//end effectiveRules()
+
+	/**
+	 * Drop the pairs a person has already ruled out, and only while their
+	 * judgement still describes the data.
+	 *
+	 * A dismissal is compared by FINGERPRINT, not by pair alone. Two objects
+	 * somebody looked at last month and called different people are not the
+	 * same question once one of them changes a compared value, and a
+	 * dismissal that outlived its evidence would hide a real duplicate
+	 * forever — which is the failure mode of every "don't show me this again"
+	 * button that stores only the pair.
+	 *
+	 * @param array<int, array<string, mixed>> $pairs The scored pairs.
+	 * @param array<int, ObjectEntity> $objects The candidate objects, to read values back from.
+	 * @param array<int, array<string, mixed>> $rules The match rules that were compared.
+	 * @param int|string $register Register reference.
+	 * @param int|string $schema Schema reference.
+	 *
+	 * @return array<int, array<string, mixed>> The pairs still worth offering.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `DismissedPairStore::key()` is a pure
+	 *   function of two uuids with nothing to inject, and it has to be the SAME
+	 *   function the store writes with: a second implementation of the canonical
+	 *   order is a dismissal looked up under a key nothing ever stored it at.
+	 */
+	private function withoutDismissedPairs(array $pairs, array $objects, array $rules, $register, $schema): array {
+		// @SuppressWarnings below covers DismissedPairStore::key(): it is a pure
+		// function of two uuids with no state to inject, and it MUST be the same
+		// function the store writes with, or a dismissal would be looked up
+		// under a key nothing ever stored it at.
+		if (count($pairs) === 0) {
+			return $pairs;
+		}
+
+		$dismissals = $this->dismissals->activeFor(
+			registerSlug: (string)$register,
+			schemaSlug: (string)$schema
+		);
+		if (count($dismissals) === 0) {
+			return $pairs;
+		}
+
+		$payloads = [];
+		foreach ($objects as $object) {
+			$payloads[(string)$object->getUuid()] = ($object->getObject() ?? []);
+		}
+
+		$kept = [];
+		foreach ($pairs as $pair) {
+			$key = DismissedPairStore::key(
+				first: (string)$pair['objectA'],
+				second: (string)$pair['objectB']
+			);
+
+			$dismissal = ($dismissals[$key] ?? null);
+			if ($dismissal === null) {
+				$kept[] = $pair;
+				continue;
+			}
+
+			$current = $this->pairFingerprint(
+				dataA: ($payloads[$pair['objectA']] ?? []),
+				dataB: ($payloads[$pair['objectB']] ?? []),
+				rules: $rules
+			);
+
+			if ($current !== (string)($dismissal['fingerprint'] ?? '')) {
+				// The values behind the judgement moved, so this is a new
+				// question and the pair is offered again.
+				$kept[] = $pair;
+			}
+		}//end foreach
+
+		return $kept;
+	}//end withoutDismissedPairs()
 
 	/**
 	 * Resolve effective rules, blocking keys and threshold.

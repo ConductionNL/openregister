@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.29-unstable.20260916111500</version>
+    <version>2.1.30-unstable.20260916121800</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -233,6 +233,7 @@ Vrij en open source onder de EUPL-licentie.
 			     register never existed: a merge history that is not recorded,
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
@@ -380,6 +381,7 @@ Vrij en open source onder de EUPL-licentie.
 			     register never existed: a merge history that is not recorded,
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
