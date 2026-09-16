@@ -35,7 +35,7 @@
 
 ## 7. Hand over
 
-- [ ] 7.1 Hand the purpose list to the dossiq lane for its BRP and KvK lookups, with the five candidate ids.
+- [x] 7.1 Hand the purpose list to the dossiq lane for its BRP and KvK lookups. The contract is in the PR body under "The consumer contract".
 - [ ] 7.2 Hand the purpose parameter to the integriq lane for the registry adapters.
 
 ## Where this stopped
