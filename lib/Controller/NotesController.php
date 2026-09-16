@@ -25,7 +25,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Exception\NoteEditForbiddenException;
+use OCA\OpenRegister\Exception\NoteLockedException;
 use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Service\NoteVersionService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
@@ -70,6 +73,7 @@ class NotesController extends Controller {
 	 * @param TimelineVisibilityService $visibility Visibility guard, filter and audit
 	 * @param TimelineWriteService $timeline Projects a note into the entry record, so it is searchable
 	 * @param TimelineEntryService $entries Reads and forgets the record behind a note
+	 * @param NoteVersionService $versions Audits an edit on the object and lists what a note said before
 	 *
 	 * @return void
 	 */
@@ -81,6 +85,7 @@ class NotesController extends Controller {
 		private readonly TimelineVisibilityService $visibility,
 		private readonly TimelineWriteService $timeline,
 		private readonly TimelineEntryService $entries,
+		private readonly NoteVersionService $versions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -244,7 +249,7 @@ class NotesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
 	 */
 	public function update(
 		string $register,
@@ -273,8 +278,20 @@ class NotesController extends Controller {
 			$note = $this->noteService->updateNote(
 				noteId: (int)$noteId,
 				message: $write['message'],
-				visibility: $write['visibility']
+				visibility: $write['visibility'],
+				mayManage: $this->visibility->mayManageObject(object: $object)
 			);
+
+			if ($write['message'] !== null) {
+				// The trail records that the note changed and who changed it;
+				// the text it used to carry stays in the versions, which is
+				// what keeps the trail small and readable.
+				$this->versions->auditEdit(
+					object: $object,
+					noteId: (int)$noteId,
+					versions: (int)($note['versionCount'] ?? 0)
+				);
+			}
 
 			// Keep the record and its references in step with the text that
 			// was just rewritten: an index answering with yesterday's sentence
@@ -298,10 +315,111 @@ class NotesController extends Controller {
 			return new JSONResponse(data: $note);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (NoteLockedException $e) {
+			// Caught ahead of the generic Exception below, which it extends:
+			// the whole point of a locked note is that the refusal is legible
+			// as a lock rather than as a bad request.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: NoteLockedException::HTTP_STATUS
+			);
+		} catch (NoteEditForbiddenException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: NoteEditForbiddenException::HTTP_STATUS
+			);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end update()
+
+	/**
+	 * Update a note, reached over PATCH.
+	 *
+	 * The canonical verb for changing part of a note: a caller sends only the
+	 * message, or only the visibility, and leaves the rest alone. The PUT
+	 * route stays where it is so no existing client breaks, and both land on
+	 * the same handler so the two verbs can never drift apart.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema The schema slug or identifier
+	 * @param string $id The ID of the object
+	 * @param string $noteId The ID of the note to update
+	 *
+	 * @return JSONResponse JSON response with the updated note
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function patch(
+		string $register,
+		string $schema,
+		string $id,
+		string $noteId,
+	): JSONResponse {
+		return $this->update(register: $register, schema: $schema, id: $id, noteId: $noteId);
+	}//end patch()
+
+	/**
+	 * List what a note used to say.
+	 *
+	 * Reading the history is reading the note: the list is served to anyone
+	 * the note list itself would serve, which for a caller without `update` on
+	 * the object means the note has to be a public one.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema The schema slug or identifier
+	 * @param string $id The ID of the object
+	 * @param string $noteId The ID of the note whose history is read
+	 *
+	 * @return JSONResponse JSON response with the versions, newest first
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function versions(
+		string $register,
+		string $schema,
+		string $id,
+		string $noteId,
+	): JSONResponse {
+		try {
+			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			if ($object === null) {
+				return new JSONResponse(
+					data: ['error' => 'Object not found'],
+					statusCode: 404
+				);
+			}
+
+			$note = $this->noteService->getNote(noteId: (int)$noteId);
+
+			// The same filter the note list applies, asked of one note: a
+			// reader who may not see an internal note may not read the texts
+			// it replaced either.
+			$filter = $this->visibility->effectiveFilter(object: $object, requested: null);
+			if (count($this->visibility->filterRows(rows: [$note], filter: $filter)) === 0) {
+				return new JSONResponse(data: ['error' => 'Note not found'], statusCode: 404);
+			}
+
+			$versions = $this->noteService->noteVersions(noteId: (int)$noteId);
+
+			return new JSONResponse(
+				data: [
+					'results' => $versions,
+					'total' => count($versions),
+				]
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end versions()
 
 	/**
 	 * Delete a note.

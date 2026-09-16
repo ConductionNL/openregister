@@ -1340,6 +1340,8 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        ['name' => 'notes#patch', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        ['name' => 'notes#versions', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}/versions', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
         // Timeline entries under objects: the entry as a record, with its

@@ -87,7 +87,7 @@ class NoteVersionService {
 	 * @param string  $authorType      That actor's type, e.g. `users`.
 	 * @param string  $editedBy        The user replacing the text.
 	 *
-	 * @return NoteVersion The stored version.
+	 * @return void
 	 *
 	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
 	 */
@@ -97,7 +97,7 @@ class NoteVersionService {
 		string $author,
 		string $authorType,
 		string $editedBy,
-	): NoteVersion {
+	): void {
 		$version = new NoteVersion();
 		$version->setCommentId($noteId);
 		$version->setMessage($previousMessage);
@@ -106,7 +106,7 @@ class NoteVersionService {
 		$version->setEditedBy($editedBy);
 		$version->setEditedAt(new DateTime());
 
-		return $this->mapper->insert($version);
+		$this->mapper->insert(entity: $version);
 	}//end record()
 
 	/**
