@@ -647,7 +647,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				v-model="codedConfig.scheme"
 				:disabled="loading"
 				:label="t('openregister', 'Concept scheme URI')"
-				:placeholder="'https://identifier.overheid.nl/tooi/…'" />
+				placeholder="https://identifier.overheid.nl/tooi/…" />
 			<div class="helper-text">
 				{{
 					t(
