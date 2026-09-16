@@ -2927,6 +2927,12 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-object-source',
 		'x-openregister-quality',
 		'x-openregister-dedup',
+		// Which properties a schema nominates as effectively unique, so a save
+		// whose value already exists elsewhere warns. Read by
+		// UniqueHintChecker. Absent from this list it would be dropped in
+		// silence and the alert would simply never fire — the same trap the
+		// comments above this list record three separate times.
+		'x-openregister-unique-hint',
 		'x-openregister-flows',
 		'x-openregister-survivorship',
 		'x-openregister-merge',

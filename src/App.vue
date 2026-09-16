@@ -6,7 +6,6 @@
 		:manifest="manifest"
 		:registry="registry"
 		:customComponents="customComponents"
-		:formatters="formatters"
 		:pageTypes="pageTypes"
 		:requiresApps="[]"
 		:translate="translateForApp">
@@ -118,15 +117,6 @@ export default {
 		 * resolves to nothing and does nothing when clicked.
 		 */
 		customComponents: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		/**
-		 * Cell formatters merged over the library built-ins
-		 * (`src/services/connectionFormatters.js`).
-		 */
-		formatters: {
 			type: Object,
 			default: () => ({}),
 		},

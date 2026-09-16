@@ -461,6 +461,36 @@ return [
             'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'subjectExport#download', 'url' => '/api/gdpr/subject-exports/{id}/download',
             'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Configuration as a deployment (configuration-as-a-deployment). A
+        // configuration change is drafted into a named set, previewed, approved
+        // and deployed as one unit; a rollback is a new deployment restoring an
+        // earlier one. Administrator only, by the framework: no route here
+        // carries NoAdminRequired, so the middleware refuses everybody else
+        // before the method runs.
+        ['name' => 'configurationDeployment#index', 'url' => '/api/configuration/draft-sets',
+            'verb' => 'GET'],
+        ['name' => 'configurationDeployment#create', 'url' => '/api/configuration/draft-sets',
+            'verb' => 'POST'],
+        ['name' => 'configurationDeployment#show', 'url' => '/api/configuration/draft-sets/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#discard', 'url' => '/api/configuration/draft-sets/{id}',
+            'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#draftValue', 'url' => '/api/configuration/draft-sets/{id}/values',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#preview', 'url' => '/api/configuration/draft-sets/{id}/preview',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#approve', 'url' => '/api/configuration/draft-sets/{id}/approve',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#deploy', 'url' => '/api/configuration/draft-sets/{id}/deploy',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#deployments', 'url' => '/api/configuration/deployments',
+            'verb' => 'GET'],
+        ['name' => 'configurationDeployment#deployment', 'url' => '/api/configuration/deployments/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#rollback', 'url' => '/api/configuration/deployments/{id}/rollback',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
+            'verb' => 'GET'],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
@@ -550,6 +580,21 @@ return [
         // read-only check into a patch of a non-existent object. It is registered far
         // below (the objects block), so this entry must stay ABOVE it, here.
         ['name' => 'duplicate#check', 'url' => '/api/objects/{register}/{schema}/dedup-check', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+        // Dismissal surface: a pair a person reviewed and ruled NOT the same.
+        // Under the literal /duplicates/ prefix, so unlike the check above these
+        // cannot collide with the object routes at all.
+        [
+            'name' => 'duplicate#dismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/dismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
+        [
+            'name' => 'duplicate#undismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/undismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
         // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
         ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
         ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
