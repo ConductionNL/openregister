@@ -1185,6 +1185,7 @@ return [
         ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#reverse', 'url' => '/api/bulk-jobs/{id}/reverse', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.

@@ -27,13 +27,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\BulkJob;
 
+use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
+use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\ObjectService;
@@ -70,6 +74,24 @@ class BulkJobService {
 	 * @var int
 	 */
 	public const CEILING_DEFAULT = 1000;
+
+	/**
+	 * The instance ceiling on how much undo data one job may store.
+	 *
+	 * In bytes of encoded prior and applied values across every member. The
+	 * bound is explicit because an unbounded undo buffer is a second copy of
+	 * the register (D-2).
+	 *
+	 * @var string
+	 */
+	public const UNDO_CEILING_KEY = 'bulk_job_max_undo_bytes';
+
+	/**
+	 * The default undo ceiling: one mebibyte.
+	 *
+	 * @var int
+	 */
+	public const UNDO_CEILING_DEFAULT = 1048576;
 
 	/**
 	 * How many members one background batch walks.
@@ -153,6 +175,23 @@ class BulkJobService {
 	}//end getBatchSize()
 
 	/**
+	 * How much undo data one job may store on this instance, in bytes.
+	 *
+	 * @return int The ceiling.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function getUndoCeiling(): int {
+		$ceiling = $this->appConfig->getValueInt(self::APP_ID, self::UNDO_CEILING_KEY, self::UNDO_CEILING_DEFAULT);
+
+		if ($ceiling < 1) {
+			return self::UNDO_CEILING_DEFAULT;
+		}
+
+		return $ceiling;
+	}//end getUndoCeiling()
+
+	/**
 	 * Create a job, rehearse it, and write nothing.
 	 *
 	 * @param string $actionId The action to run.
@@ -199,6 +238,17 @@ class BulkJobService {
 
 		$objects = $this->resolver->hydrate(uuids: $uuids, registerId: $registerId, schemaId: $schemaId);
 		$this->executor->assertGuards(action: $action, objects: $objects);
+		$this->assertUndoCeiling(action: $action, objects: $objects, parameters: $parameters);
+
+		$window = null;
+		$until = null;
+		if ($action instanceof ReversibleBulkActionInterface) {
+			$window = $action->getReversalWindow();
+			// Provisional: the preview has to be able to NAME the window before
+			// the job commits, and the executor re-stamps this the moment the
+			// job stops writing.
+			$until = (new DateTime())->modify('+'.$window.' seconds');
+		}
 
 		$job = $this->jobMapper->createFromArray(
 			[
@@ -213,6 +263,8 @@ class BulkJobService {
 				'total' => count($uuids),
 				'report' => ['selection' => ['kind' => $selectionType, 'countAtCreation' => count($uuids)]],
 				'startedBy' => $actorUid,
+				'reversalWindow' => $window,
+				'reversibleUntil' => $until,
 			]
 		);
 
@@ -263,6 +315,72 @@ class BulkJobService {
 
 		return $saved;
 	}//end commit()
+
+	/**
+	 * Undo a job: a new job, over the same members, writing the prior values.
+	 *
+	 * Deliberately NOT a rollback. The inverse is an ordinary bulk job whose
+	 * selection is the members the original actually wrote and whose
+	 * per-member write is the recorded prior value, so there is one execution
+	 * path, one ceiling, one preview, one audit shape, and the reversal is
+	 * itself reversible (D-1).
+	 *
+	 * It is created, not committed. The caller previews it like any other job
+	 * and commits it, which is what makes the members it will skip readable
+	 * before anything is written.
+	 *
+	 * @param BulkJob     $original      The job to undo.
+	 * @param string      $actorUid      The uid of the person undoing it.
+	 * @param string|null $justification The reason they typed.
+	 *
+	 * @return BulkJob The previewed reversal.
+	 *
+	 * @throws BulkJobRefusedException When the job cannot be undone, naming the reason.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function reverse(BulkJob $original, string $actorUid, ?string $justification = null): BulkJob {
+		$this->assertReversible(job: $original);
+
+		$uuids = $this->memberMapper->findWrittenUuidsByJob(jobId: (int)$original->getId());
+
+		if ($uuids === []) {
+			throw new BulkJobRefusedException(
+				message: 'This job wrote nothing, so there is nothing to undo.',
+				reason: 'nothing-to-reverse',
+				details: ['jobId' => $original->getId()]
+			);
+		}
+
+		$reversal = $this->create(
+			actionId: RestorePriorValuesAction::ID,
+			parameters: [RestorePriorValuesAction::PARAM_JOB => (int)$original->getId()],
+			selection: ['ids' => $uuids],
+			justification: $justification,
+			actorUid: $actorUid,
+			registerId: $original->getRegisterId(),
+			schemaId: $original->getSchemaId()
+		);
+
+		$report = ($reversal->getReport() ?? []);
+		$report['reverses'] = [
+			'jobId' => $original->getId(),
+			'jobUuid' => $original->getUuid(),
+			'action' => $original->getAction(),
+			'written' => count($uuids),
+		];
+
+		$reversal->setReversesJobId((int)$original->getId());
+		$reversal->setReport($report);
+		$reversal = $this->jobMapper->save($reversal);
+
+		// The original names its reversal too, so a job that has already been
+		// undone says so rather than accepting a second one.
+		$original->setReversedByJobId((int)$reversal->getId());
+		$this->jobMapper->save($original);
+
+		return $reversal;
+	}//end reverse()
 
 	/**
 	 * Ask a running job to stop before its next object.
@@ -391,6 +509,103 @@ class BulkJobService {
 	}//end members()
 
 	/**
+	 * Refuse a job that cannot be undone, naming which of the reasons it is.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When the job cannot be undone.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	private function assertReversible(BulkJob $job): void {
+		$finished = [BulkJob::STATE_COMPLETED, BulkJob::STATE_CANCELLED, BulkJob::STATE_FAILED];
+
+		if (in_array($job->getState(), $finished, true) === false) {
+			throw new BulkJobRefusedException(
+				message: 'Only a job that has stopped can be undone. This one is '.$job->getState().'. '
+					.'Cancel it first, then undo what it managed to write.',
+				reason: 'not-finished',
+				details: ['state' => $job->getState()]
+			);
+		}
+
+		if ($job->isReversible() === false) {
+			throw new BulkJobRefusedException(
+				message: 'The action '.$job->getAction().' is not reversible, so this job recorded nothing to go '
+					.'back to. Nothing was undone.',
+				reason: 'not-reversible',
+				details: ['action' => $job->getAction()]
+			);
+		}
+
+		$this->assertInsideWindow(job: $job);
+		$this->assertNotAlreadyReversed(job: $job);
+	}//end assertReversible()
+
+	/**
+	 * Refuse a reversal asked for after the window closed.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When the window has passed.
+	 */
+	private function assertInsideWindow(BulkJob $job): void {
+		$until = $job->getReversibleUntil();
+
+		if ($until === null || $until >= new DateTime()) {
+			return;
+		}
+
+		throw new BulkJobRefusedException(
+			message: 'The action '.$job->getAction().' can be undone for '.(int)$job->getReversalWindow()
+				.' seconds after it runs, and that window closed on '.$until->format(DateTime::ATOM).'.',
+			reason: 'window-expired',
+			details: ['reversibleUntil' => $until->format(DateTime::ATOM), 'window' => $job->getReversalWindow()]
+		);
+	}//end assertInsideWindow()
+
+	/**
+	 * Refuse a second reversal of a job that already has a live one.
+	 *
+	 * A cancelled reversal does not count: it wrote nothing, and refusing
+	 * because of it would strand the job it was meant to undo.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When a live reversal already exists.
+	 */
+	private function assertNotAlreadyReversed(BulkJob $job): void {
+		$reversalId = $job->getReversedByJobId();
+
+		if ($reversalId === null) {
+			return;
+		}
+
+		try {
+			$existing = $this->jobMapper->find($reversalId);
+		} catch (\Throwable $exception) {
+			return;
+		}
+
+		if ($existing->getState() === BulkJob::STATE_CANCELLED) {
+			return;
+		}
+
+		throw new BulkJobRefusedException(
+			message: 'This job is already being undone by job '.$reversalId.'. Read that one rather than starting a '
+				.'second reversal over the same objects.',
+			reason: 'already-reversed',
+			details: ['reversalJobId' => $reversalId, 'state' => $existing->getState()]
+		);
+	}//end assertNotAlreadyReversed()
+
+	/**
 	 * Refuse a job that does not say which register and schema it acts on.
 	 *
 	 * The object search resolves its table from the register and the schema,
@@ -440,6 +655,57 @@ class BulkJobService {
 			details: ['ceiling' => $ceiling, 'count' => $count]
 		);
 	}//end assertCeiling()
+
+	/**
+	 * Refuse a job whose recorded prior values would outgrow the undo ceiling.
+	 *
+	 * Measured at CREATION, over the rehearsed selection, because that is the
+	 * only moment at which refusing costs nobody anything. Half way through a
+	 * commit the choice is between an unbounded buffer and a job that silently
+	 * stops recording what it would take to go back, and the second is the
+	 * failure this change exists to prevent.
+	 *
+	 * @param BulkActionInterface           $action     The action.
+	 * @param array<string, ObjectEntity>   $objects    The hydrated selection.
+	 * @param array<string, mixed>          $parameters The job's parameters.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When the job would store too much.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	private function assertUndoCeiling(BulkActionInterface $action, array $objects, array $parameters): void {
+		if (($action instanceof ReversibleBulkActionInterface) === false) {
+			return;
+		}
+
+		$ceiling = $this->getUndoCeiling();
+		$bytes = 0;
+
+		foreach ($objects as $object) {
+			$plan = $action->reversalPlanFor(object: $object, parameters: $parameters);
+			$encoded = json_encode($plan);
+
+			if ($encoded === false) {
+				continue;
+			}
+
+			$bytes += strlen($encoded);
+
+			if ($bytes <= $ceiling) {
+				continue;
+			}
+
+			throw new BulkJobRefusedException(
+				message: 'This instance stores at most '.$ceiling.' bytes of undo data per bulk job, and this one '
+					.'would store more. Narrow the selection, write fewer properties, or ask an administrator to '
+					.'raise the ceiling.',
+				reason: 'undo-ceiling',
+				details: ['ceiling' => $ceiling, 'objects' => count($objects)]
+			);
+		}//end foreach
+	}//end assertUndoCeiling()
 
 	/**
 	 * Refuse a commit with no reason where the action requires one.

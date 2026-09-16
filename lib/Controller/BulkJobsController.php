@@ -110,6 +110,7 @@ class BulkJobsController extends Controller {
 			data: [
 				'results' => $this->registry->describe(),
 				'ceiling' => $this->service->getCeiling(),
+				'undoCeiling' => $this->service->getUndoCeiling(),
 			]
 		);
 	}//end actions()
@@ -305,6 +306,47 @@ class BulkJobsController extends Controller {
 
 		return new JSONResponse(data: $retried->jsonSerialize(), statusCode: 202);
 	}//end retry()
+
+	/**
+	 * Undo a job: create the reversal that writes its prior values back.
+	 *
+	 * The reversal is returned PREVIEWED, like any other job. The caller reads
+	 * which members it would restore and which it would leave alone, then
+	 * commits it. A reversal that committed itself would be a bulk write with
+	 * no preview, which is the shape this whole capability exists to replace.
+	 *
+	 * @param int $id The id of the job to undo.
+	 *
+	 * @return JSONResponse The previewed reversal, or the refusal.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	#[NoAdminRequired]
+	public function reverse(int $id): JSONResponse {
+		$job = $this->readable(id: $id);
+
+		if ($job instanceof JSONResponse) {
+			return $job;
+		}
+
+		$uid = $this->currentUid();
+
+		if ($uid === null) {
+			return $this->authRequired();
+		}
+
+		$justification = $this->nullableString(value: $this->request->getParam('justification'));
+
+		try {
+			$reversal = $this->service->reverse(original: $job, actorUid: $uid, justification: $justification);
+		} catch (BulkJobRefusedException $exception) {
+			return $this->refusal(exception: $exception);
+		} catch (InvalidArgumentException $exception) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
+		}
+
+		return new JSONResponse(data: $reversal->jsonSerialize(), statusCode: 201);
+	}//end reverse()
 
 	/**
 	 * A page of the job's per-object outcomes.
