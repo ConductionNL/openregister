@@ -2783,6 +2783,14 @@ class Schema extends Entity implements JsonSerializable {
 		// the same bug five times over.
 		'x-openregister-relation-types',
 		'x-openregister-processing-activity',
+		// Doelbinding: whether a read of this schema has to name an
+		// administered purpose. Absent from this list setConfiguration() would
+		// silently DROP it, and a schema whose author had just turned
+		// doelbinding on would keep answering every unbound read with a 200 —
+		// which is precisely the lawful-basis gap the annotation exists to
+		// close, wearing the appearance of a saved setting. The comments around
+		// this list record that same loss six times over.
+		'x-openregister-purpose-required',
 		// Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
 		// dialect). Was absent from this list, so setConfiguration() silently
 		// DROPPED it and per-schema read-logging could never be enabled —
