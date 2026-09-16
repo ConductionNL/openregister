@@ -77,7 +77,14 @@ class ArchivalDeclarationReader {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function read(ObjectEntity $object, Schema $schema): array {
-		$archive = $schema->getArchive();
+		// `?? []` is not belt-and-braces: `Schema`'s class docblock declares
+		// `@method array|null getArchive()` while the real method is
+		// `getArchive(): array`. Psalm believes the tag, phpstan believes the
+		// signature, and a method that returns the value straight through is
+		// where the two disagree out loud. Normalising here costs nothing and
+		// keeps the contradiction out of this file's contract. The stale tag
+		// itself belongs to a sweep of `Schema.php`, which is moving upstream.
+		$archive = ($schema->getArchive() ?? []);
 		if ($archive !== [] && ($archive['enabled'] ?? false) === true) {
 			return $archive;
 		}
