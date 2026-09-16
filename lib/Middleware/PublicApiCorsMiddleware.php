@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
+use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -56,12 +57,38 @@ class PublicApiCorsMiddleware extends Middleware {
 	 *
 	 * @param IRequest $request The current request
 	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
+	 * @param HardeningPolicy $policy Reads the administered origin allowlist
 	 */
 	public function __construct(
 		private readonly IRequest $request,
 		private readonly IControllerMethodReflector $reflector,
+		private readonly HardeningPolicy $policy,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether this instance lets a browser on that origin read a public answer.
+	 *
+	 * An empty allowlist means the administrator has not bound the public
+	 * surface, and the middleware keeps reflecting whatever asks, exactly as it
+	 * did before the control existed. That is the backwards-compatible reading,
+	 * and the hardening report says so rather than letting an empty list read
+	 * as a configured one.
+	 *
+	 * @param string $origin The Origin header, as sent.
+	 *
+	 * @return bool True when the origin may be reflected.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function allows(string $origin): bool {
+		$allowlist = $this->policy->allowedOrigins();
+		if ($allowlist === []) {
+			return true;
+		}
+
+		return in_array(strtolower(trim($origin)), $allowlist, true);
+	}//end allows()
 
 	/**
 	 * Reflect the Origin on responses from public endpoints.
@@ -87,6 +114,13 @@ class PublicApiCorsMiddleware extends Middleware {
 
 			$this->reflector->reflect($controller, $methodName);
 			if ($this->reflector->hasAnnotation('PublicPage') === false) {
+				return $response;
+			}
+
+			// An origin off the administered allowlist gets no header at all, and
+			// the body is unchanged. The browser refuses the read, and the
+			// response names neither the allowlist nor anything on it.
+			if ($this->allows(origin: $origin) === false) {
 				return $response;
 			}
 

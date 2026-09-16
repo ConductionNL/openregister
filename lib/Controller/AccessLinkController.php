@@ -51,6 +51,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
@@ -83,7 +84,7 @@ class AccessLinkController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const THROTTLE_ACTION = 'openregister_access_link';
+	public const THROTTLE_ACTION = ThrottledSurfaces::ACCESS_LINK;
 
 	/**
 	 * Constructor.

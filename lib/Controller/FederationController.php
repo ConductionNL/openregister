@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Service\FederationShareService;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -69,7 +70,7 @@ class FederationController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const THROTTLE_ACTION = 'openregister_federation_share_token';
+	public const THROTTLE_ACTION = ThrottledSurfaces::FEDERATION_SHARE_TOKEN;
 
 	/**
 	 * Confidentiality values treated as public (servable through a schema share).
