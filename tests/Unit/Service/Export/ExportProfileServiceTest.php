@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportProfileValidator;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRightService;
@@ -75,7 +76,8 @@ final class ExportProfileServiceTest extends TestCase {
 			$this->exportService,
 			$this->writer,
 			$this->rights,
-			$this->recorder
+			$this->recorder,
+			new ExportProfileValidator()
 		);
 	}//end service()
 

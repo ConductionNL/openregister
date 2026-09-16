@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
+use OCA\OpenRegister\Service\Export\ExportValueRenderer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use PHPUnit\Framework\TestCase;
 
@@ -40,7 +41,7 @@ final class ExportProfileWriterTest extends TestCase {
 		$cache = $this->createMock(CacheHandler::class);
 		$cache->method('getMultipleObjectNames')->willReturn($names);
 
-		return new ExportProfileWriter($cache);
+		return new ExportProfileWriter($cache, new ExportValueRenderer());
 	}//end writer()
 
 	private function profile(string $mode, array $fields, string $format = 'csv'): ExportProfile {

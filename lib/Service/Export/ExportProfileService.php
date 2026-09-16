@@ -60,8 +60,9 @@ class ExportProfileService {
 	 * @param SchemaMapper         $schemaMapper  Schema lookups.
 	 * @param ExportService        $exportService The selection every export shares.
 	 * @param ExportProfileWriter  $writer        Projection and file writing.
-	 * @param ExportRightService   $rightService  The export verb.
-	 * @param ExportAuditRecorder  $recorder      The audit trail.
+	 * @param ExportRightService    $rightService  The export verb.
+	 * @param ExportAuditRecorder   $recorder      The audit trail.
+	 * @param ExportProfileValidator $validator    Judges a submitted profile.
 	 *
 	 * @return void
 	 */
@@ -73,6 +74,7 @@ class ExportProfileService {
 		private readonly ExportProfileWriter $writer,
 		private readonly ExportRightService $rightService,
 		private readonly ExportAuditRecorder $recorder,
+		private readonly ExportProfileValidator $validator,
 	) {
 	}//end __construct()
 
@@ -122,10 +124,13 @@ class ExportProfileService {
 	 *
 	 * @throws InvalidArgumentException When the submission does not make sense.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID
+	 *     pattern, as AuditTrailMapper::createToolInvocationEntry().
+	 *
 	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
 	 */
 	public function create(array $data, string $ownerUid): ExportProfile {
-		$this->validate(data: $data, partial: false);
+		$this->validator->validate(data: $data, partial: false);
 
 		$profile = new ExportProfile();
 		$profile->setUuid((string)Uuid::v4());
@@ -150,7 +155,7 @@ class ExportProfileService {
 	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
 	 */
 	public function update(ExportProfile $profile, array $data): ExportProfile {
-		$this->validate(data: $data, partial: true);
+		$this->validator->validate(data: $data, partial: true);
 		$this->apply(profile: $profile, data: $data);
 		$profile->setUpdatedAt(new DateTime());
 
@@ -260,7 +265,7 @@ class ExportProfileService {
 	 *
 	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
 	 */
-	public function filenameFor(ExportProfile $profile): string {
+	private function filenameFor(ExportProfile $profile): string {
 		$slug = preg_replace('/[^a-z0-9]+/i', '-', (string)($profile->getName() ?? 'export'));
 		$slug = trim((string)$slug, '-');
 		if ($slug === '') {
@@ -280,7 +285,7 @@ class ExportProfileService {
 	 *
 	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
 	 */
-	public function registerOf(ExportProfile $profile): ?Register {
+	private function registerOf(ExportProfile $profile): ?Register {
 		if ($profile->getRegisterId() === null) {
 			return null;
 		}
@@ -301,7 +306,7 @@ class ExportProfileService {
 	 *
 	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
 	 */
-	public function schemaOf(ExportProfile $profile): ?Schema {
+	private function schemaOf(ExportProfile $profile): ?Schema {
 		if ($profile->getSchemaId() === null) {
 			return null;
 		}
@@ -313,60 +318,9 @@ class ExportProfileService {
 		}
 	}//end schemaOf()
 
-	/**
-	 * Validate a submitted profile.
-	 *
-	 * @param array<string, mixed> $data    The submission.
-	 * @param bool                 $partial Whether absent keys are allowed.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When the submission does not make sense.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) A partial update validates
-	 *     the same rules over fewer keys, which is one rule set, not two.
-	 */
-	private function validate(array $data, bool $partial): void {
-		if ($partial === false) {
-			foreach (['name', 'registerId', 'fields'] as $required) {
-				if (isset($data[$required]) === false) {
-					throw new InvalidArgumentException('An export profile needs a ' . $required . '.');
-				}
-			}
-		}
 
-		if (isset($data['fields']) === true) {
-			if (is_array($data['fields']) === false || $data['fields'] === []) {
-				throw new InvalidArgumentException('An export profile needs at least one field.');
-			}
 
-			foreach ($data['fields'] as $field) {
-				if (is_string($field) === false || trim($field) === '') {
-					throw new InvalidArgumentException('Every field in an export profile is a non-empty name.');
-				}
-			}
-		}
 
-		if (isset($data['valueMode']) === true
-			&& in_array($data['valueMode'], ExportProfile::MODES, true) === false
-		) {
-			throw new InvalidArgumentException(
-				'An export profile writes stored values or rendered ones, and names which.'
-			);
-		}
-
-		if (isset($data['format']) === true
-			&& in_array($data['format'], ExportProfile::FORMATS, true) === false
-		) {
-			throw new InvalidArgumentException(
-				'An export profile writes ' . implode(' or ', ExportProfile::FORMATS) . '.'
-			);
-		}
-
-		if (isset($data['filters']) === true && is_array($data['filters']) === false) {
-			throw new InvalidArgumentException('The filter of an export profile is a map.');
-		}
-	}//end validate()
 
 	/**
 	 * Copy a validated submission onto the entity.
@@ -377,19 +331,45 @@ class ExportProfileService {
 	 * @return void
 	 */
 	private function apply(ExportProfile $profile, array $data): void {
+		$this->applyIdentity(profile: $profile, data: $data);
+		$this->applyScope(profile: $profile, data: $data);
+		$this->applyShape(profile: $profile, data: $data);
+	}//end apply()
+
+	/**
+	 * The name and the description.
+	 *
+	 * @param ExportProfile        $profile The entity.
+	 * @param array<string, mixed> $data    The submission.
+	 *
+	 * @return void
+	 */
+	private function applyIdentity(ExportProfile $profile, array $data): void {
 		if (isset($data['name']) === true) {
 			$profile->setName((string)$data['name']);
 		}
 
-		if (array_key_exists('description', $data) === true) {
-			$description = null;
-			if ($data['description'] !== null) {
-				$description = (string)$data['description'];
-			}
-
-			$profile->setDescription($description);
+		if (array_key_exists('description', $data) === false) {
+			return;
 		}
 
+		$description = null;
+		if ($data['description'] !== null) {
+			$description = (string)$data['description'];
+		}
+
+		$profile->setDescription($description);
+	}//end applyIdentity()
+
+	/**
+	 * What the profile reads: the register, the schema, the filter and the flag.
+	 *
+	 * @param ExportProfile        $profile The entity.
+	 * @param array<string, mixed> $data    The submission.
+	 *
+	 * @return void
+	 */
+	private function applyScope(ExportProfile $profile, array $data): void {
 		if (isset($data['registerId']) === true) {
 			$profile->setRegisterId((int)$data['registerId']);
 		}
@@ -403,13 +383,6 @@ class ExportProfileService {
 			$profile->setSchemaId($schemaId);
 		}
 
-		if (isset($data['fields']) === true) {
-			$profile->setFields((string)json_encode(array_values($data['fields'])));
-		}
-
-		$profile->setValueMode((string)($data['valueMode'] ?? $profile->getValueMode() ?? ExportProfile::MODE_STORED));
-		$profile->setFormat((string)($data['format'] ?? $profile->getFormat() ?? 'csv'));
-
 		if (array_key_exists('filters', $data) === true) {
 			$filters = null;
 			if ($data['filters'] !== null) {
@@ -422,5 +395,22 @@ class ExportProfileService {
 		if (array_key_exists('wholeSet', $data) === true) {
 			$profile->setWholeSet((bool)$data['wholeSet']);
 		}
-	}//end apply()
+	}//end applyScope()
+
+	/**
+	 * What the file looks like: the field order, the value mode and the format.
+	 *
+	 * @param ExportProfile        $profile The entity.
+	 * @param array<string, mixed> $data    The submission.
+	 *
+	 * @return void
+	 */
+	private function applyShape(ExportProfile $profile, array $data): void {
+		if (isset($data['fields']) === true) {
+			$profile->setFields((string)json_encode(array_values($data['fields'])));
+		}
+
+		$profile->setValueMode((string)($data['valueMode'] ?? $profile->getValueMode() ?? ExportProfile::MODE_STORED));
+		$profile->setFormat((string)($data['format'] ?? $profile->getFormat() ?? 'csv'));
+	}//end applyShape()
 }//end class

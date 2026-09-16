@@ -32,7 +32,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
-use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -42,6 +41,11 @@ use Throwable;
 
 /**
  * Projects objects onto a profile's field set and writes them out.
+ *
+ * What a single cell SAYS is {@see ExportValueRenderer}'s job, not this one's.
+ * The two were one class until the split: deciding the column order and
+ * deciding how a code list value reads are different questions, and only the
+ * second one differs between the two value modes.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
@@ -57,14 +61,16 @@ class ExportProfileWriter {
 	public const CSV_METADATA_PREFIX = '#openregister-export ';
 
 	/**
-	 * Wire the name resolver.
+	 * Wire the name resolver and the value renderer.
 	 *
-	 * @param CacheHandler $cacheHandler Uuid to name resolution for rendered relations.
+	 * @param CacheHandler        $cacheHandler Uuid to name resolution for rendered relations.
+	 * @param ExportValueRenderer $renderer     What a single cell says, in the profile's mode.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CacheHandler $cacheHandler,
+		private readonly ExportValueRenderer $renderer,
 	) {
 	}//end __construct()
 
@@ -188,11 +194,11 @@ class ExportProfileWriter {
 			foreach ($fields as $field) {
 				$raw = $this->rawValue(object: $object, field: $field);
 				if ($rendered === false) {
-					$row[$field] = $this->stored(value: $raw);
+					$row[$field] = $this->renderer->stored(value: $raw);
 					continue;
 				}
 
-				$row[$field] = $this->rendered(
+				$row[$field] = $this->renderer->rendered(
 					value: $raw,
 					property: ($properties[$field] ?? []),
 					names: $names
@@ -227,136 +233,9 @@ class ExportProfileWriter {
 		return ($object->getObject()[$field] ?? null);
 	}//end rawValue()
 
-	/**
-	 * A value written as the object holds it.
-	 *
-	 * Nothing is resolved and nothing is reformatted. A structure is JSON
-	 * encoded rather than flattened, because flattening it would be a rendering
-	 * decision, and this mode makes none.
-	 *
-	 * @param mixed $value The raw value.
-	 *
-	 * @return string The cell.
-	 */
-	private function stored($value): string {
-		if ($value === null) {
-			return '';
-		}
 
-		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'true';
-			}
 
-			return 'false';
-		}
 
-		if (is_array($value) === true || is_object($value) === true) {
-			return (string)json_encode($value);
-		}
-
-		return (string)$value;
-	}//end stored()
-
-	/**
-	 * A value written as a surface would show it.
-	 *
-	 * @param mixed                $value    The raw value.
-	 * @param array<string, mixed> $property The schema property, when the schema resolved.
-	 * @param array<string, string> $names   Uuid to object name map.
-	 *
-	 * @return string The cell.
-	 */
-	private function rendered($value, array $property, array $names): string {
-		if ($value === null) {
-			return '';
-		}
-
-		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'yes';
-			}
-
-			return 'no';
-		}
-
-		if (is_array($value) === true) {
-			$parts = [];
-			foreach ($value as $item) {
-				$parts[] = $this->rendered(value: $item, property: $property, names: $names);
-			}
-
-			return implode('; ', $parts);
-		}
-
-		if (is_object($value) === true) {
-			return (string)json_encode($value);
-		}
-
-		$scalar = (string)$value;
-
-		if (isset($names[$scalar]) === true) {
-			return $names[$scalar];
-		}
-
-		$label = $this->enumLabel(value: $scalar, property: $property);
-		if ($label !== null) {
-			return $label;
-		}
-
-		return $this->formatDate(value: $scalar);
-	}//end rendered()
-
-	/**
-	 * The administered label for a code list value, when the schema names one.
-	 *
-	 * JSON Schema has no label field of its own, so the convention every editor
-	 * settled on is used: `enumNames` parallel to `enum`. A schema that declares
-	 * an enum and no names has no labels to render, and the code is the label.
-	 *
-	 * @param string               $value    The stored value.
-	 * @param array<string, mixed> $property The schema property.
-	 *
-	 * @return string|null The label, or null when there is none.
-	 */
-	private function enumLabel(string $value, array $property): ?string {
-		$enum = ($property['enum'] ?? null);
-		$labels = ($property['enumNames'] ?? ($property['enumLabels'] ?? null));
-		if (is_array($enum) === false || is_array($labels) === false) {
-			return null;
-		}
-
-		$index = array_search($value, $enum, true);
-		if ($index === false) {
-			return null;
-		}
-
-		$label = ($labels[$index] ?? null);
-		if (is_string($label) === false) {
-			return null;
-		}
-
-		return $label;
-	}//end enumLabel()
-
-	/**
-	 * An ISO 8601 timestamp as a surface would show it, or the value unchanged.
-	 *
-	 * @param string $value The stored value.
-	 *
-	 * @return string The cell.
-	 */
-	private function formatDate(string $value): string {
-		if (str_contains(haystack: $value, needle: 'T') === false) {
-			return $value;
-		}
-
-		try {
-			return (new DateTime($value))->format('Y-m-d H:i:s');
-		} catch (Throwable $e) {
-			return $value;
-		}
-	}//end formatDate()
 
 	/**
 	 * Resolve every uuid the declared fields carry to an object name.
