@@ -43,6 +43,8 @@ use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
 use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
@@ -1122,6 +1124,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateHandoffContractBinding(schema: $schema);
 		$this->validateMcpAnnotation(schema: $schema);
 		$this->validateRegistryAnnotation(schema: $schema);
+		$this->validateExternalLinksAnnotation(schema: $schema);
 		$this->validateExtendingFormAnnotation(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
@@ -2001,6 +2004,46 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
+
+	/**
+	 * Refuse a broken `x-openregister-external-links` declaration at save.
+	 *
+	 * This one throws rather than warns, and the reason is the feature's own
+	 * failure mode. A link whose placeholder cannot be filled is HIDDEN by
+	 * design, because a URL with `{bagId}` still in it is a broken link that
+	 * looks like a working one. That makes a misspelt placeholder and an object
+	 * with no value indistinguishable at render: an author would read a 200,
+	 * see no link, and have no way to tell which of the two happened. The save
+	 * is the only moment the two can be told apart, so it is the only moment
+	 * worth refusing at.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a declaration cannot produce a link.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 */
+	private function validateExternalLinksAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
+		if ($annotation === null) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			ExternalLinkResolver::ANNOTATION => $annotation,
+		];
+
+		$errors = (new ExternalLinkAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		throw new Exception(ExternalLinkResolver::ANNOTATION . ': ' . implode(' ', $errors));
+	}//end validateExternalLinksAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-handoff` annotation (ADR-051).

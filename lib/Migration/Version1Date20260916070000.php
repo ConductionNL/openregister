@@ -1,22 +1,21 @@
 <?php
 
 /**
- * Administered purposes, and the purpose an audit row was written under.
+ * The caller record: who calls which endpoint, and on which contract version.
  *
- * Creates openregister_processing_purposes: one row per administered purpose,
- * each naming the verwerkingsactiviteit it is bound to. A purpose that names
- * no activity is not a purpose anybody can report on, so the binding is the
- * column the resolver refuses on.
+ * A gemeente deprecating an endpoint has no idea who still calls it, so a
+ * deprecation is announced by mailing list and confirmed by breaking. One
+ * table ends that: principal, route, method, version, a count and a last-seen.
  *
- * Adds `purpose` to openregister_audit_trails as the INDEXED, COUNTABLE
- * projection of the purpose a read ran under. The sealed copy lives in
- * `result_summary`, which is inside the canonical JSON; this column is
- * deliberately outside it, because any key added to AuditTrail::jsonSerialize()
- * changes the canonical form of every row ever written (ADR-003 Rule 4, and the
- * same reason `purged_at` sits outside it). The two are written together and a
- * disagreement between them is detectable.
+ * 🔴 NO PAYLOAD COLUMN, DELIBERATELY. Knowing that a leverancier still calls a
+ * route is enough to hold the conversation. Recording what they sent is a
+ * second copy of case data in a log, which is exactly the failure
+ * C-access-and-privacy-54 describes in Plane, and a log is precisely where
+ * nobody looks for personal data when a deletion request arrives. There is no
+ * column here that could hold a request body, so no later change can quietly
+ * start writing one (design D-4).
  *
- * Idempotent: the table and the column are created only when absent.
+ * Idempotent: the table is created only when absent.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -30,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -44,11 +43,12 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Create the administered purpose table and the audit trail's purpose column.
+ * Create the API caller record table.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
  */
 class Version1Date20260916070000 extends SimpleMigrationStep {
+
 	/**
 	 * Change the database schema.
 	 *
@@ -58,7 +58,7 @@ class Version1Date20260916070000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -67,47 +67,44 @@ class Version1Date20260916070000 extends SimpleMigrationStep {
 
 		$schema = $schemaClosure();
 
-		if ($schema->hasTable('openregister_processing_purposes') === false) {
-			$table = $schema->createTable('openregister_processing_purposes');
-			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-			$table->addColumn('uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-			// The code a caller names. Short, readable, and the value that
-			// travels on the request, so it is what the refusal quotes back.
-			$table->addColumn('code', Types::STRING, ['notnull' => true, 'length' => 128]);
-			$table->addColumn('name', Types::STRING, ['notnull' => false, 'length' => 255]);
-			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
-			// The verwerkingsactiviteit this purpose is bound to, as the
-			// administrator wrote it (code or uuid), and as resolved. Both are
-			// kept: the reference survives a rename, the uuid is what the audit
-			// row is attributed to.
-			$table->addColumn('activity', Types::STRING, ['notnull' => false, 'length' => 128]);
-			$table->addColumn('activity_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-			$table->addColumn('organisation_id', Types::STRING, ['notnull' => false, 'length' => 64]);
-			$table->addColumn('status', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'active']);
-			$table->addColumn('created', Types::DATETIME, ['notnull' => false]);
-			$table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
-
-			$table->setPrimaryKey(['id']);
-			$table->addUniqueIndex(['code'], 'or_purpose_code_uniq');
-			$table->addIndex(['uuid'], 'or_purpose_uuid_idx');
-			$table->addIndex(['activity_uuid'], 'or_purpose_activity_idx');
-			$table->addIndex(['status'], 'or_purpose_status_idx');
+		if ($schema->hasTable('openregister_api_calls') === true) {
+			return $schema;
 		}
 
-		if ($schema->hasTable('openregister_audit_trails') === true) {
-			$audit = $schema->getTable('openregister_audit_trails');
-			if ($audit->hasColumn('purpose') === false) {
-				$audit->addColumn('purpose', Types::STRING, ['notnull' => false, 'length' => 128]);
-			}
+		$table = $schema->createTable('openregister_api_calls');
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		// The Nextcloud uid, or the empty string for an anonymous caller. Not
+		// null, because a unique index over a nullable column does not stop a
+		// second anonymous row on every database this app runs on.
+		$table->addColumn('principal', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => '']);
+		// The ROUTE, not the URL. `/api/objects/{register}/{schema}/{id}` and
+		// not the thousand paths it expands to, because a per-id row would make
+		// this table larger than the objects it describes and answer a question
+		// nobody asked.
+		$table->addColumn('route', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '']);
+		$table->addColumn('method', Types::STRING, ['notnull' => true, 'length' => 10, 'default' => 'GET']);
+		$table->addColumn('api_version', Types::STRING, ['notnull' => true, 'length' => 8, 'default' => '1']);
+		$table->addColumn('call_count', Types::BIGINT, ['notnull' => true, 'unsigned' => true, 'default' => 0]);
+		$table->addColumn('first_seen', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('last_seen', Types::DATETIME, ['notnull' => false]);
 
-			// "Countable per purpose" is a reporting query over millions of
-			// rows; without the index it is a table scan on the largest table
-			// this app has.
-			if ($audit->hasIndex('or_audit_purpose_idx') === false) {
-				$audit->addIndex(['purpose'], 'or_audit_purpose_idx');
-			}
-		}
+		$table->setPrimaryKey(['id']);
+		// One row per caller, route, method and version. The increment is an
+		// UPDATE against this index, so a call costs one indexed write rather
+		// than a row.
+		$table->addUniqueIndex(
+			['principal', 'route', 'method', 'api_version'],
+			'idx_or_apicall_unique'
+		);
+		// The administrator's read: everything that called anything in a period.
+		$table->addIndex(['last_seen'], 'idx_or_apicall_seen');
+		// The deprecation read: who still calls this version.
+		$table->addIndex(['api_version', 'last_seen'], 'idx_or_apicall_version');
+		$table->addIndex(['principal'], 'idx_or_apicall_principal');
+
+		$output->info('Created openregister_api_calls table');
 
 		return $schema;
+
 	}//end changeSchema()
 }//end class
