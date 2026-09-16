@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use PHPUnit\Framework\TestCase;
 
 final class ExternalGrantGuardTest extends TestCase {
+	/** @var ExternalGrantGuard The guard under test. */
 	private ExternalGrantGuard $guard;
 
 	protected function setUp(): void {

@@ -215,7 +215,10 @@ class ReachRevocationService {
 				}
 			}
 
-			$out[$key] = array_values($kept);
+			// `$kept` is only ever appended to, so it is already a list.
+			// array_values() here would be a no-op that reads as a reindex
+			// somebody needed.
+			$out[$key] = $kept;
 		}
 
 		return $out;

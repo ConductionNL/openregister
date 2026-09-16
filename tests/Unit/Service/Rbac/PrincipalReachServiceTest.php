@@ -76,7 +76,12 @@ final class PrincipalReachServiceTest extends TestCase {
 		$grant->setActingAs('bram');
 		$grant->setScope(['read']);
 		$grant->setStatus(DelegationGrant::STATUS_GRANTED);
-		$grant->setExpiresAt(new DateTime($live === true ? '+30 days' : '-1 day'));
+		$ends = '-1 day';
+		if ($live === true) {
+			$ends = '+30 days';
+		}
+
+		$grant->setExpiresAt(new DateTime($ends));
 
 		return $grant;
 	}//end delegation()
