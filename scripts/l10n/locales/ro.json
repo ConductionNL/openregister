@@ -70,7 +70,8 @@
 		"public": "Same spelling and meaning in Romanian.",
 		"Slug": "URL-slug term, used unchanged in Romanian developer language.",
 		"Normal": "Same spelling and meaning in Romanian (normal).",
-		"Urgent": "Same spelling and meaning in Romanian (urgent)."
+		"Urgent": "Same spelling and meaning in Romanian (urgent).",
+		"Text": "\"Text\" is the same word in Romanian for the text field type; no non-identical synonym exists, so the honest label is identical."
 	},
 	"corrections": {
 		"Add Application": "Informal imperative 'Adaugă aplicație' replaced with the formal 'Adăugați aplicația'. The measured register for ro in this bundle is FORMAL and detectors/ro.js flags the 2nd-person-singular imperative; every other imperative here already uses the -ați/-eți form, so this was inconsistent with its own bundle.",
