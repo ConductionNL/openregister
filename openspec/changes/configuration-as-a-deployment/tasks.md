@@ -10,12 +10,12 @@ or not bundles exist yet. Sections 4 and 5, and task 1.3, continue on
 
 - [x] 1.1 A draft value beside the live value, keyed the same way (D-1).
 - [x] 1.2 A draft set with an author, and an optional requirement that the approver differs.
-- [ ] 1.3 Every settings domain handler accepts a draft write. **Part two.** The
-  facade (`SettingsService`) has ten `update*` methods delegating to six
-  handlers, and routing each through the draft gate changes the behaviour of
-  every existing settings endpoint. It belongs in its own PR with its own
-  regression test that an instance which never drafts writes straight through
-  (6.3), not appended to the PR that introduces the lifecycle.
+- [x] 1.3 Every settings domain handler accepts a draft write. All ten `update*`
+  methods on `SettingsService` ask `SettingsDraftGate` first. With drafting off,
+  which is the default, the gate answers null and the facade writes straight
+  through. The gate stages the payload merged over the live value rather than a
+  normalised blob, so the handlers' defaults stay in one place; the control test
+  runs the real handler and pins that the two paths read back the same.
 
 ## 2. Deployment and rollback
 
@@ -48,7 +48,11 @@ rather than a model to add.
 
 - [x] 6.1 `tests/e2e/ci/configuration-deployment.spec.ts`: draft, refusal, deploy, explain, roll back. Four scenarios carry an e2e anchor; two carry an `@e2e exclude` naming the unit test that asserts them and the reason the HTTP door does not exist.
 - [x] 6.2 Unit tests: the all-or-nothing apply, the append-only history, the four layers of the explainer, the stale-draft refusal and the reserved keys. 70 tests. Two mutation checks recorded in the PR body.
-- [ ] 6.3 A regression test that an instance never drafting writes straight through. **Part two**, with 1.3: there is no draft write path through the settings facade yet, so the regression has nothing to regress against.
+- [x] 6.3 A regression test that an instance never drafting writes straight
+  through. `tests/Unit/Service/SettingsStraightThroughTest.php` runs all ten
+  update methods twice, with no gate wired and with a gate whose drafting is
+  off, and a third time with drafting on so a method that forgot to ask the gate
+  is visible. Two mutation checks in the PR body.
 - [x] 6.4 `openspec validate configuration-as-a-deployment --strict`.
 
 ## 7. Hand over and findings

@@ -180,6 +180,8 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDomainMap;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDraftGate;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
@@ -1317,6 +1319,19 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		$context->registerService(
+			SettingsDraftGate::class,
+			function (ContainerInterface $container) {
+				return new SettingsDraftGate(
+					drafts: $container->get(ConfigurationDraftService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					domains: new SettingsDomainMap(),
+					appConfig: $container->get('OCP\IAppConfig'),
+					appName: 'openregister'
+				);
+			}
+		);
+
 	}//end registerConfigurationDeploymentServices()
 
 	/**
@@ -1365,7 +1380,8 @@ class Application extends App implements IBootstrap {
 					fileSettingsHandler: $container->get(FileSettingsHandler::class),
 					objRetentionHandler: $container->get(ObjectRetentionHandler::class),
 					cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
-					cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
+					cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class),
+					draftGate: $container->get(SettingsDraftGate::class)
 				);
 			}
 		);

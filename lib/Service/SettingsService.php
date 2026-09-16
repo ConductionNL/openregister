@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDomainMap;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDraftGate;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -289,6 +291,16 @@ class SettingsService {
 	private ?IAppContainer $container = null;
 
 	/**
+	 * The draft gate every update method asks before it writes.
+	 *
+	 * Null on an instance that never wired the lifecycle, and null is also what
+	 * the gate answers when drafting is off, so both mean "write through".
+	 *
+	 * @var SettingsDraftGate|null
+	 */
+	private ?SettingsDraftGate $draftGate = null;
+
+	/**
 	 * Constructor for SettingsService
 	 *
 	 * @param IConfig $config Configuration service
@@ -312,6 +324,7 @@ class SettingsService {
 	 * @param ObjectRetentionHandler|null $objRetentionHandler Object retention handler
 	 * @param CacheSettingsHandler|null $cacheSettingsHandler Cache settings handler
 	 * @param ConfigurationSettingsHandler|null $cfgSettingsHandler Configuration settings handler
+	 * @param SettingsDraftGate|null $draftGate Draft gate staging writes when drafting is on
 	 *
 	 * @return void
 	 *
@@ -340,6 +353,7 @@ class SettingsService {
 		?ObjectRetentionHandler $objRetentionHandler = null,
 		?CacheSettingsHandler $cacheSettingsHandler = null,
 		?ConfigurationSettingsHandler $cfgSettingsHandler = null,
+		?SettingsDraftGate $draftGate = null,
 	) {
 		$this->config = $config;
 		$this->auditTrailMapper = $auditTrailMapper;
@@ -365,7 +379,27 @@ class SettingsService {
 		$this->objectRetentionHandler = $objRetentionHandler;
 		$this->cacheSettingsHandler = $cacheSettingsHandler;
 		$this->configurationSettingsHandler = $cfgSettingsHandler;
+		$this->draftGate = $draftGate;
 	}//end __construct()
+
+
+	/**
+	 * Ask the draft gate whether this write is staged instead of applied.
+	 *
+	 * REQ-CAD-006. Null means write through, which is what an instance that
+	 * never switched drafting on always gets, and what an instance with no gate
+	 * wired gets as well.
+	 *
+	 * @param string $domain The settings domain being written.
+	 * @param array  $data   The data handed to the facade.
+	 *
+	 * @return array|null The pending write, or null to write through.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
+	 */
+	private function drafted(string $domain, array $data): ?array {
+		return $this->draftGate?->draftIfEnabled(domain: $domain, payload: $data);
+	}//end drafted()
 
 	// ============================================
 	// DELEGATION METHODS TO HANDLERS
@@ -401,6 +435,12 @@ class SettingsService {
 	public function updateSearchBackendConfig(array $data): array {
 		// Extract backend string from data array (database is the only valid backend).
 		$backend = $data['backend'] ?? $data['active'] ?? 'database';
+
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_SEARCH_BACKEND, data: ['active' => $backend]);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->searchBackendHandler->updateSearchBackendConfig($backend);
 	}//end updateSearchBackendConfig()
 
@@ -427,6 +467,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateLLMSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_LLM, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->llmSettingsHandler->updateLLMSettingsOnly($data);
 	}//end updateLLMSettingsOnly()
 
@@ -453,6 +498,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateFileSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_FILE, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->fileSettingsHandler->updateFileSettingsOnly($data);
 	}//end updateFileSettingsOnly()
 
@@ -479,6 +529,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateObjectSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_OBJECT, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->objectRetentionHandler->updateObjectSettingsOnly($data);
 	}//end updateObjectSettingsOnly()
 
@@ -503,6 +558,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateRetentionSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_RETENTION, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->objectRetentionHandler->updateRetentionSettingsOnly($data);
 	}//end updateRetentionSettingsOnly()
 
@@ -527,6 +587,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateArchivalSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_ARCHIVAL, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->objectRetentionHandler->updateArchivalSettingsOnly($data);
 	}//end updateArchivalSettingsOnly()
 
@@ -590,6 +655,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateSettings(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_SETTINGS, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateSettings($data);
 	}//end updateSettings()
 
@@ -625,6 +695,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateRbacSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_RBAC, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateRbacSettingsOnly($data);
 	}//end updateRbacSettingsOnly()
 
@@ -647,14 +722,18 @@ class SettingsService {
 	 *
 	 * @param array $data Organisation settings data
 	 *
-	 * @return (mixed|null|true)[][] Updated organisation settings
-	 *
-	 * @psalm-return array{organisation: array{default_organisation: mixed|null,
-	 *               auto_create_default_organisation: mixed|true}}
+	 * @return array Updated organisation settings, or the pending write when
+	 *               drafting is on.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateOrganisationSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_ORGANISATION, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateOrganisationSettingsOnly($data);
 	}//end updateOrganisationSettingsOnly()
 
@@ -729,6 +808,11 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function updateMultitenancySettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_MULTITENANCY, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateMultitenancySettingsOnly($data);
 	}//end updateMultitenancySettingsOnly()
 

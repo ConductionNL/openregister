@@ -117,6 +117,7 @@ class ConfigurationKeyRegistry {
 	private const RESERVED = [
 		'configuration_four_eyes' => 'the approval requirement governs deployments and cannot be changed by one',
 		'configuration_drafting' => 'the drafting switch governs deployments and cannot be changed by one',
+		'configuration_draft_set' => 'a set that could move where drafts land could redirect its own review',
 	];
 
 	/**
