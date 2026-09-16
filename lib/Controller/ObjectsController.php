@@ -147,6 +147,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry Relation resourceUrl resolver (null-safe)
 	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService Optional recovery-window service (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
 	 *
 	 * @return void
@@ -178,6 +179,7 @@ class ObjectsController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
 		private readonly ?\OCP\IURLGenerator $relationUrlGenerator = null,
 		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService = null,
+		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
 		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -1077,7 +1079,7 @@ class ObjectsController extends Controller {
 	 *
 	 * Returns null in the two cases that must stay exactly as they were: no
 	 * guard wired (an older container), and a schema that does not ask for
-	 * doelbinding. That null is the backwards-compatibility promise — an
+	 * doelbinding. That null is the backwards-compatibility promise, and an
 	 * instance that administers no purposes reads precisely as it did before.
 	 *
 	 * 403, not 404. The RBAC denials above return 404 so a caller cannot learn
@@ -1335,9 +1337,9 @@ class ObjectsController extends Controller {
 		}
 
 		// Doelbinding. A list over a schema that asks for a declared purpose is
-		// a registry query like any other — the person search the requirement
-		// was written for IS a list, so guarding only the single read would
-		// leave the case it exists for open.
+		// a registry query like any other: the person search the requirement was
+		// written for IS a list, so guarding only the single read would leave
+		// the case it exists for open.
 		$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
 		if ($refusal !== null) {
 			return $refusal;
@@ -3113,7 +3115,7 @@ class ObjectsController extends Controller {
 
 		// Return the created object.
 		// Note: Sub-objects are only returned when _extend is explicitly requested on GET.
-		return new JSONResponse(data: $objectEntity->jsonSerialize(), statusCode: 201);
+		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()), statusCode: 201);
 	}//end create()
 
 	/**
@@ -3585,7 +3587,7 @@ class ObjectsController extends Controller {
 
 			// Return the successfully saved object directly.
 			// We already have it in memory from saveObject(), no need to re-fetch.
-			return new JSONResponse(data: $objectEntity->jsonSerialize());
+			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
 		} catch (AppendOnlyException $exception) {
 			// Reject patch on append-only schema with HTTP 405.
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
@@ -3783,7 +3785,7 @@ class ObjectsController extends Controller {
 				// Ignore unlock errors since the update was successful.
 			}
 
-			return new JSONResponse(data: $objectEntity->jsonSerialize());
+			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
 		} catch (AppendOnlyException $exception) {
 			// Reject post-patch on append-only schema with HTTP 405.
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
@@ -5688,4 +5690,38 @@ class ObjectsController extends Controller {
 			data: $collector->collect(object: $objectEntity, schema: $schemaEntity, _rbac: $rbac)
 		);
 	}//end geoFeatures()
+
+	/**
+	 * Put any soft-uniqueness warnings this write produced onto the response.
+	 *
+	 * Under `@warnings`, beside `@self`: it is metadata about this write, not a
+	 * property of the object, and it must never be mistaken for one. The status
+	 * code is untouched, because the hint is an ALERT and the write succeeded.
+	 * Turning it into a 4xx would make it the refusal the spec explicitly does
+	 * not want, and a schema that needs a refusal declares
+	 * `x-openregister-dedup.onCreate: "block"` instead.
+	 *
+	 * The collector is drained, so a bulk request cannot hand a later row the
+	 * warnings of an earlier one.
+	 *
+	 * @param array<string, mixed> $body The serialised object.
+	 *
+	 * @return array<string, mixed> The body, with `@warnings` when there are any.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function withUniqueHintWarnings(array $body): array {
+		if ($this->uniqueHintWarnings === null) {
+			return $body;
+		}
+
+		$warnings = $this->uniqueHintWarnings->drain();
+		if (count($warnings) === 0) {
+			return $body;
+		}
+
+		$body['@warnings'] = $warnings;
+
+		return $body;
+	}//end withUniqueHintWarnings()
 }//end class

@@ -133,10 +133,16 @@ test.describe('generated identifier over HTTP', () => {
 		const issued: string[] = []
 
 		for (const title of ['First case', 'Second case']) {
-			const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
-				data: { title },
-			})
-			expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
+			const res = await admin.post(
+				`${API}/objects/${registerId}/${schemaId}`,
+				{
+					data: { title },
+				},
+			)
+			expect(
+				res.ok(),
+				`object create failed: ${await res.text()}`,
+			).toBeTruthy()
 			const body = await res.json()
 			uuids.push(String(body['@self']?.id ?? body.id ?? body.uuid))
 
@@ -158,20 +164,27 @@ test.describe('generated identifier over HTTP', () => {
 
 	test('editing the identifier is refused with 422 and the value is unchanged', async () => {
 		const uuid = uuids[0]
-		const before = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const before = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		const issued = String((await before.json()).identifier ?? '')
 		expect(issued).toBeTruthy()
 
-		const attempt = await admin.put(`${API}/objects/${registerId}/${schemaId}/${uuid}`, {
-			data: { title: 'First case', identifier: 'Z-2026-00009' },
-		})
+		const attempt = await admin.put(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+			{
+				data: { title: 'First case', identifier: 'Z-2026-00009' },
+			},
+		)
 
 		expect(
 			attempt.status(),
 			`changing a generated identifier should be refused, got ${attempt.status()}`,
 		).toBe(422)
 
-		const after = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const after = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		expect(
 			String((await after.json()).identifier ?? ''),
 			'a refused update must leave the issued identifier in place',
@@ -183,15 +196,25 @@ test.describe('generated identifier over HTTP', () => {
 		// would pass the refusal assertion and make every numbered case
 		// uneditable, with nothing else here to notice.
 		const uuid = uuids[1]
-		const before = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const before = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		const issued = String((await before.json()).identifier ?? '')
 
-		const edit = await admin.put(`${API}/objects/${registerId}/${schemaId}/${uuid}`, {
-			data: { title: 'Second case, retitled', identifier: issued },
-		})
-		expect(edit.ok(), `an ordinary edit was refused: ${await edit.text()}`).toBeTruthy()
+		const edit = await admin.put(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+			{
+				data: { title: 'Second case, retitled', identifier: issued },
+			},
+		)
+		expect(
+			edit.ok(),
+			`an ordinary edit was refused: ${await edit.text()}`,
+		).toBeTruthy()
 
-		const after = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const after = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		const body = await after.json()
 		expect(String(body.title ?? '')).toBe('Second case, retitled')
 		expect(String(body.identifier ?? '')).toBe(issued)
@@ -201,12 +224,22 @@ test.describe('generated identifier over HTTP', () => {
 		const year = new Date().getFullYear()
 		const supplied = `Z-${year}-00120`
 
-		const imported = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
-			data: { title: 'Imported case', identifier: supplied },
-		})
-		expect(imported.ok(), `import create failed: ${await imported.text()}`).toBeTruthy()
+		const imported = await admin.post(
+			`${API}/objects/${registerId}/${schemaId}`,
+			{
+				data: { title: 'Imported case', identifier: supplied },
+			},
+		)
+		expect(
+			imported.ok(),
+			`import create failed: ${await imported.text()}`,
+		).toBeTruthy()
 		const importedBody = await imported.json()
-		uuids.push(String(importedBody['@self']?.id ?? importedBody.id ?? importedBody.uuid))
+		uuids.push(
+			String(
+				importedBody['@self']?.id ?? importedBody.id ?? importedBody.uuid,
+			),
+		)
 		expect(
 			String(importedBody.identifier ?? ''),
 			'a supplied identifier must be kept, not overwritten',

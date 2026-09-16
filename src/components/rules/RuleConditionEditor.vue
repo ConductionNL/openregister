@@ -10,7 +10,9 @@
 			</dd>
 
 			<dt>{{ t('openregister', 'Declared in') }}</dt>
-			<dd><code>{{ rule.source }}</code></dd>
+			<dd>
+				<code>{{ rule.source }}</code>
+			</dd>
 
 			<dt>{{ t('openregister', 'What it does when it fires') }}</dt>
 			<dd>
@@ -25,18 +27,30 @@
 			<dt>{{ t('openregister', 'Ceiling for one replay') }}</dt>
 			<dd>
 				<span v-if="rule.maxObjects">{{ rule.maxObjects }}</span>
-				<span v-else class="muted">{{ t('openregister', 'None declared. The instance-wide bulk job ceiling applies.') }}</span>
+				<span v-else class="muted">{{
+					t(
+						'openregister',
+						'None declared. The instance-wide bulk job ceiling applies.',
+					)
+				}}</span>
 			</dd>
 		</dl>
 
 		<h3>{{ t('openregister', 'The condition') }}</h3>
 		<p class="lead">
-			{{ t('openregister', 'Edit it here to try a change before you put it in the schema. Nothing on this screen saves a condition.') }}
+			{{
+				t(
+					'openregister',
+					'Edit it here to try a change before you put it in the schema. Nothing on this screen saves a condition.',
+				)
+			}}
 		</p>
 
-		<label for="ruleConditionDraft">{{ t('openregister', 'Condition, as JSON') }}</label>
+		<label for="ruleConditionDraft">{{
+			t('openregister', 'Condition, as JSON')
+		}}</label>
 		<textarea
-id="ruleConditionDraft"
+			id="ruleConditionDraft"
 			v-model="draftText"
 			rows="10"
 			spellcheck="false"
@@ -46,10 +60,21 @@ id="ruleConditionDraft"
 			{{ parseError }}
 		</p>
 		<p v-else-if="unknownOperator" class="refusal">
-			{{ t('openregister', 'No engine holds the operator "{op}". The schema save would refuse this.', { op: unknownOperator }) }}
+			{{
+				t(
+					'openregister',
+					'No engine holds the operator "{op}". The schema save would refuse this.',
+					{ op: unknownOperator },
+				)
+			}}
 		</p>
 		<p v-else-if="dirty" class="accepted">
-			{{ t('openregister', 'Every operator in this condition is one the engine dispatches on.') }}
+			{{
+				t(
+					'openregister',
+					'Every operator in this condition is one the engine dispatches on.',
+				)
+			}}
 		</p>
 
 		<NcButton v-if="dirty" variant="tertiary" @click="reset">
@@ -58,7 +83,10 @@ id="ruleConditionDraft"
 
 		<details class="operatorReference">
 			<summary>{{ t('openregister', 'Operators you can use') }}</summary>
-			<div v-for="category in categories" :key="category" class="operatorCategory">
+			<div
+				v-for="category in categories"
+				:key="category"
+				class="operatorCategory">
 				<h4>{{ category }}</h4>
 				<table class="operatorTable">
 					<thead>
@@ -76,7 +104,9 @@ id="ruleConditionDraft"
 					</thead>
 					<tbody>
 						<tr v-for="row in operatorsIn(category)" :key="row.op">
-							<td><code>{{ row.op }}</code></td>
+							<td>
+								<code>{{ row.op }}</code>
+							</td>
 							<td>{{ row.arity }}</td>
 							<td>{{ row.description }}</td>
 						</tr>
@@ -261,7 +291,11 @@ export default {
 			try {
 				parsed = JSON.parse(this.draftText)
 			} catch (failure) {
-				this.parseError = t('openregister', 'That is not valid JSON: {reason}', { reason: failure.message })
+				this.parseError = t(
+					'openregister',
+					'That is not valid JSON: {reason}',
+					{ reason: failure.message },
+				)
 				this.$emit('update:draft', null)
 				return
 			}

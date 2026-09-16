@@ -49,7 +49,9 @@ use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
@@ -1108,6 +1110,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
+		$this->validateUniqueHintAnnotation(schema: $schema);
 		$this->validateHingeAnnotations(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
 		$this->validateMergeAnnotation(schema: $schema);
@@ -1720,6 +1723,50 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and were ignored: ' . implode(' ', $messages)
 		);
 	}//end validateHingeAnnotations()
+
+	/**
+	 * Validate the optional `x-openregister-unique-hint` annotation.
+	 *
+	 * FATAL, unlike {@see validateDedupAnnotation()} one method above, which
+	 * degrades a malformed block to a logged warning. The difference is the
+	 * cost of being wrong. A malformed dedup block costs a duplicate sweep you
+	 * can re-run; a nomination of a property that does not exist costs a
+	 * uniqueness alert that silently never fires, and the only symptom is a
+	 * second case on the same KvK number found months later or never. The
+	 * administrator who typed the name is the one person who can fix it, and
+	 * they are still holding the form.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws UniqueHintException When a nomination names a property the schema does not declare.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function validateUniqueHintAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		if (array_key_exists('x-openregister-unique-hint', $configuration) === false) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			'x-openregister-unique-hint' => $configuration['x-openregister-unique-hint'],
+		];
+
+		$errors = (new UniqueHintAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+
+		throw new UniqueHintException(
+			message: 'x-openregister-unique-hint: ' . implode(' ', $messages),
+			errors: $errors
+		);
+	}//end validateUniqueHintAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-survivorship` annotation.

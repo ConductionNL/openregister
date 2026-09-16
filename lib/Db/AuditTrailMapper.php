@@ -2280,8 +2280,16 @@ class AuditTrailMapper extends QBMapper {
 	 * @param array $context Additional context data
 	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
 	 * @param string|null $actorName Explicit actor display name, paired with $actorId.
+	 * @param string|null $ipAddress The calling address, for callers that have one and must record it.
+	 *
+	 * `$ipAddress` exists for a principal that is not a session at all: an
+	 * access link is opened by somebody with no account, and reconstructing a
+	 * wrong publication needs where it was opened from as much as when. Omit it
+	 * and the column is left exactly as before, so no existing caller changes.
 	 *
 	 * @return AuditTrail The created audit trail entry
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
@@ -2291,6 +2299,7 @@ class AuditTrailMapper extends QBMapper {
 		array $context = [],
 		?string $actorId = null,
 		?string $actorName = null,
+		?string $ipAddress = null,
 	): AuditTrail {
 		$userId = $actorId;
 		$userName = $actorName;
@@ -2324,6 +2333,10 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setChanged($context);
 		$auditTrail->setUser($userId);
 		$auditTrail->setUserName($userName);
+		if ($ipAddress !== null && trim($ipAddress) !== '') {
+			$auditTrail->setIpAddress(trim($ipAddress));
+		}
+
 		$auditTrail->setCreated(new DateTime());
 
 		return $this->insertHashChained(auditTrail: $auditTrail);

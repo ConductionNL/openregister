@@ -29,9 +29,13 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DuplicateController;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
 use OCP\AppFramework\Http;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -49,15 +53,27 @@ class DuplicateControllerTest extends TestCase {
 	 */
 	private $request;
 
+	/**
+	 * Dismissed-pair store.
+	 *
+	 * @var DismissedPairStore&MockObject
+	 */
+	private $dismissals;
+
 	private DuplicateController $controller;
 
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->duplicates = $this->createMock(DuplicateDetectionService::class);
+		$this->dismissals = $this->createMock(DismissedPairStore::class);
 		$this->controller = new DuplicateController(
 			'openregister',
 			$this->request,
-			$this->duplicates
+			$this->duplicates,
+			$this->dismissals,
+			$this->createMock(ObjectService::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 
@@ -305,20 +321,37 @@ class DuplicateControllerTest extends TestCase {
 
 		$other = $this->createMock(DuplicateDetectionService::class);
 		$other->method('checkCandidate')->willThrowException(new RuntimeException('missing'));
-		$controller = new DuplicateController('openregister', $this->request, $other);
+		$controller = new DuplicateController(
+			'openregister',
+			$this->request,
+			$other,
+			$this->dismissals,
+			$this->createMock(ObjectService::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class)
+		);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->check('reg', 'sch')->getStatus());
 	}//end testCheckMapsFailuresLikeTheListing()
 
 	/**
-	 * Side-effect-free contract: the controller has no injected write/merge
-	 * collaborator at all — DuplicateDetectionService is read-only and the
-	 * controller only ever calls findDuplicates(). Reflection guards against
-	 * a future accidental write-service injection.
+	 * The controller must never reach a MERGE.
+	 *
+	 * This test used to say the controller had no write collaborator at all,
+	 * and that stopped being true when the dismissal routes arrived: recording
+	 * "we looked, these two are different people" is a write, and it needs
+	 * DismissedPairStore and ObjectService. Left as it was, the assertion would
+	 * still have passed on a technicality (neither class is called *merge*)
+	 * while its own comment described a controller that no longer exists.
+	 *
+	 * What is still true, and what this now guards, is the boundary that
+	 * matters: listing candidates, checking one and dismissing a pair must
+	 * never be able to merge two records. That is MergeController's surface,
+	 * behind its own preview and its own reversal window.
 	 *
 	 * @return void
 	 */
-	public function testControllerHasNoWriteCollaborator(): void {
+	public function testControllerCanNeverMerge(): void {
 		$reflection = new ReflectionClass(DuplicateController::class);
 		$constructor = $reflection->getConstructor();
 
@@ -330,5 +363,9 @@ class DuplicateControllerTest extends TestCase {
 			$this->assertStringNotContainsStringIgnoringCase('merge', $name);
 			$this->assertStringNotContainsStringIgnoringCase('survivorship', $name);
 		}
-	}//end testControllerHasNoWriteCollaborator()
+
+		$source = (string)file_get_contents((string)$reflection->getFileName());
+		$this->assertStringNotContainsString('executeMerge', $source);
+		$this->assertStringNotContainsString('previewMerge', $source);
+	}//end testControllerCanNeverMerge()
 }//end class
