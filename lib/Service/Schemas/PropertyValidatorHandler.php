@@ -651,6 +651,9 @@ class PropertyValidatorHandler {
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
+	 * @SuppressWarnings(PHPMD.StaticAccess)         `fromProperty()` is a named constructor on a
+	 *                                              value object; a factory injected here would
+	 *                                              answer one question and hold no state.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
@@ -660,6 +663,12 @@ class PropertyValidatorHandler {
 		// nobody defines is a typo, and a typo that passes is a constraint
 		// that silently constrains nothing for as long as nobody counts.
 		$this->assertKeysAreInTheVocabulary(property: $property, path: $path);
+
+		// A generated identifier is checked where every other property key is.
+		// The refusal extends PropertyVocabularyException, so every schema-save
+		// path already answers it as a 422 naming the property, and no controller
+		// had to learn about this annotation to do it.
+		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
 
 		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {
