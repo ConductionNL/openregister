@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+// phpcs:disable PEAR.Commenting.FunctionComment.WrongStyle -- the section banners above tests are banners, not doc comments.
+// phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
+// phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed fixtures; the declaration IS the description.
 
 use DateTime;
 use OCA\OpenRegister\Db\AccessLink;
