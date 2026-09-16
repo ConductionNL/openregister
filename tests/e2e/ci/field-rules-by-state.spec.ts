@@ -107,9 +107,17 @@ test.describe('field rules by state', () => {
 						title: 'Status',
 						enum: ['open', 'bezwaar', 'herstel', 'besloten', 'gesloten'],
 					},
-					onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
+					onderwerp: {
+						type: 'string',
+						title: 'Onderwerp',
+						maxLength: 255,
+					},
 					bedrag: { type: 'number', title: 'Bedrag' },
-					motivering: { type: 'string', title: 'Motivering', maxLength: 255 },
+					motivering: {
+						type: 'string',
+						title: 'Motivering',
+						maxLength: 255,
+					},
 					besluit: { type: 'string', title: 'Besluit', maxLength: 255 },
 					outcome: { type: 'string', title: 'Outcome', maxLength: 255 },
 				},
@@ -145,7 +153,11 @@ test.describe('field rules by state', () => {
 			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
 			{
 				headers: JSON_HEADERS,
-				data: { status: 'gesloten', onderwerp: 'Zonder resultaat sluiten', bedrag: 100 },
+				data: {
+					status: 'gesloten',
+					onderwerp: 'Zonder resultaat sluiten',
+					bedrag: 100,
+				},
 			},
 		)
 
@@ -210,7 +222,9 @@ test.describe('field rules by state', () => {
 		)
 
 		expect(raise.status(), 'the save above the threshold was refused').toBe(422)
-		expect(await raise.text(), 'the refusal names the field').toContain('motivering')
+		expect(await raise.text(), 'the refusal names the field').toContain(
+			'motivering',
+		)
 	})
 
 	// @e2e row-field-level-security::the-same-field-is-not-required-below-the-threshold
@@ -256,7 +270,11 @@ test.describe('field rules by state', () => {
 				`${API}/objects/${registerId}/${schemaId}/${uuid}`,
 				{
 					headers: JSON_HEADERS,
-					data: { status: 'besloten', onderwerp: `Vanuit ${from}`, bedrag: 100 },
+					data: {
+						status: 'besloten',
+						onderwerp: `Vanuit ${from}`,
+						bedrag: 100,
+					},
 				},
 			)
 

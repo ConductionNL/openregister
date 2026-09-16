@@ -52,7 +52,10 @@ function inSevenDays(): string {
 }
 
 /** Build an API context authenticated as one user. */
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -99,8 +102,17 @@ test.describe('access by link rather than by account', () => {
 				title: `e2e access-link schema ${RUN}`,
 				description: 'e2e',
 				properties: {
-					onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
-					bsn: { type: 'string', title: 'BSN', maxLength: 32, writeOnly: true },
+					onderwerp: {
+						type: 'string',
+						title: 'Onderwerp',
+						maxLength: 255,
+					},
+					bsn: {
+						type: 'string',
+						title: 'BSN',
+						maxLength: 32,
+						writeOnly: true,
+					},
 				},
 				authorization: {
 					read: ['authenticated'],
@@ -138,7 +150,9 @@ test.describe('access by link rather than by account', () => {
 
 	test.afterAll(async () => {
 		if (objectUuid) {
-			await admin.delete(`${API}/objects/${registerId}/${schemaId}/${objectUuid}`)
+			await admin.delete(
+				`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
+			)
 			await admin.delete(`${API}/deleted/${objectUuid}`)
 		}
 
@@ -183,7 +197,10 @@ test.describe('access by link rather than by account', () => {
 		expect(link.anchor, 'the mint must return an anchor').toBeTruthy()
 
 		const opened = await anon.get(`${API}/public/links/${link.anchor}`)
-		expect(opened.ok(), `an anonymous open failed: ${await opened.text()}`).toBeTruthy()
+		expect(
+			opened.ok(),
+			`an anonymous open failed: ${await opened.text()}`,
+		).toBeTruthy()
 
 		const body = await opened.json()
 		expect(body.subject.onderwerp).toBe(`Bezwaar ${RUN}`)
@@ -191,10 +208,18 @@ test.describe('access by link rather than by account', () => {
 
 		// REQ-ABL-004: a write-only property is never returned on a read, and a
 		// link is a read.
-		expect(body.subject.bsn, 'a hidden property must stay hidden through a link').toBeUndefined()
+		expect(
+			body.subject.bsn,
+			'a hidden property must stay hidden through a link',
+		).toBeUndefined()
 
 		// The platform's own bookkeeping is not part of what gets published.
-		for (const forbidden of ['owner', 'organisation', 'folder', 'authorization']) {
+		for (const forbidden of [
+			'owner',
+			'organisation',
+			'folder',
+			'authorization',
+		]) {
 			expect(
 				body.subject['@self'][forbidden],
 				`a link must not publish @self.${forbidden}`,
@@ -217,18 +242,33 @@ test.describe('access by link rather than by account', () => {
 		const link = await mint.json()
 
 		const opened = await anon.get(`${API}/public/links/${link.anchor}`)
-		expect(opened.ok(), `an anonymous view open failed: ${await opened.text()}`).toBeTruthy()
+		expect(
+			opened.ok(),
+			`an anonymous view open failed: ${await opened.text()}`,
+		).toBeTruthy()
 
 		const body = await opened.json()
 		expect(body.link.subjectType).toBe('view')
-		expect(Array.isArray(body.results), 'a view link answers a list').toBeTruthy()
-		expect(body.total, 'the published view should carry the record').toBeGreaterThan(0)
+		expect(
+			Array.isArray(body.results),
+			'a view link answers a list',
+		).toBeTruthy()
+		expect(
+			body.total,
+			'the published view should carry the record',
+		).toBeGreaterThan(0)
 
 		// Every row is filtered the same way a single object is.
 		for (const row of body.results as Array<Record<string, unknown>>) {
-			expect(row.bsn, 'a hidden property must stay hidden in a published view').toBeUndefined()
+			expect(
+				row.bsn,
+				'a hidden property must stay hidden in a published view',
+			).toBeUndefined()
 			const self = (row['@self'] ?? {}) as Record<string, unknown>
-			expect(self.owner, 'a published view must not carry @self.owner').toBeUndefined()
+			expect(
+				self.owner,
+				'a published view must not carry @self.owner',
+			).toBeUndefined()
 		}
 
 		await admin.delete(`${API}/access-links/${link.id}`)
@@ -237,9 +277,14 @@ test.describe('access by link rather than by account', () => {
 	test('knowing the case number is not knowing the link', async () => {
 		// The object uuid is public knowledge to anybody who got a letter. If it
 		// resolved as an anchor, the link would not be a secret at all.
-		const guessed = await anon.get(`${API}/public/links/${objectUuid.replace(/-/g, '')}`)
+		const guessed = await anon.get(
+			`${API}/public/links/${objectUuid.replace(/-/g, '')}`,
+		)
 
-		expect(guessed.status(), 'an anchor built from the subject must resolve to nothing').toBe(404)
+		expect(
+			guessed.status(),
+			'an anchor built from the subject must resolve to nothing',
+		).toBe(404)
 	})
 
 	test('an adviser may read and comment, and not upload', async () => {
@@ -255,15 +300,24 @@ test.describe('access by link rather than by account', () => {
 		const link = await mint.json()
 		expect(link.capabilities).toEqual(['read', 'comment'])
 
-		const commented = await anon.post(`${API}/public/links/${link.anchor}/comments`, {
-			data: { message: 'Advies: akkoord met kanttekening.' },
-		})
-		expect(commented.status(), `an allowed comment failed: ${await commented.text()}`).toBe(201)
+		const commented = await anon.post(
+			`${API}/public/links/${link.anchor}/comments`,
+			{
+				data: { message: 'Advies: akkoord met kanttekening.' },
+			},
+		)
+		expect(
+			commented.status(),
+			`an allowed comment failed: ${await commented.text()}`,
+		).toBe(201)
 
 		const refused = await anon.post(`${API}/public/links/${link.anchor}/files`, {
 			data: { name: 'advies.txt', content: 'akkoord' },
 		})
-		expect(refused.status(), 'an undeclared capability must be refused, not silently ignored').toBe(403)
+		expect(
+			refused.status(),
+			'an undeclared capability must be refused, not silently ignored',
+		).toBe(403)
 		expect((await refused.json()).capabilities).toEqual(['read', 'comment'])
 
 		await admin.delete(`${API}/access-links/${link.id}`)
@@ -283,7 +337,10 @@ test.describe('access by link rather than by account', () => {
 		expect(link.hasPassword).toBe(true)
 
 		const without = await anon.get(`${API}/public/links/${link.anchor}`)
-		expect(without.status(), 'a password-protected link must not serve without the password').toBe(401)
+		expect(
+			without.status(),
+			'a password-protected link must not serve without the password',
+		).toBe(401)
 		expect(JSON.stringify(await without.json())).not.toContain(`Bezwaar ${RUN}`)
 
 		const wrong = await anon.get(`${API}/public/links/${link.anchor}`, {
@@ -294,7 +351,10 @@ test.describe('access by link rather than by account', () => {
 		const right = await anon.get(`${API}/public/links/${link.anchor}`, {
 			headers: { 'X-OpenRegister-Link-Password': 'Geheim-2026-link' },
 		})
-		expect(right.ok(), `the right password should open the link: ${await right.text()}`).toBeTruthy()
+		expect(
+			right.ok(),
+			`the right password should open the link: ${await right.text()}`,
+		).toBeTruthy()
 		expect((await right.json()).subject.onderwerp).toBe(`Bezwaar ${RUN}`)
 
 		await admin.delete(`${API}/access-links/${link.id}`)
@@ -302,7 +362,11 @@ test.describe('access by link rather than by account', () => {
 
 	test('revocation is immediate and silent', async () => {
 		const mint = await admin.post(`${API}/access-links`, {
-			data: { subjectType: 'object', subjectId: objectUuid, expiresAt: inSevenDays() },
+			data: {
+				subjectType: 'object',
+				subjectId: objectUuid,
+				expiresAt: inSevenDays(),
+			},
 		})
 		expect(mint.ok(), `mint failed: ${await mint.text()}`).toBeTruthy()
 		const link = await mint.json()
@@ -314,29 +378,46 @@ test.describe('access by link rather than by account', () => {
 		expect(revoked.ok(), `revoke failed: ${await revoked.text()}`).toBeTruthy()
 
 		const after = await anon.get(`${API}/public/links/${link.anchor}`)
-		expect(after.status(), 'a revoked link answers 404, never 403 and never a reduced page').toBe(404)
+		expect(
+			after.status(),
+			'a revoked link answers 404, never 403 and never a reduced page',
+		).toBe(404)
 
 		const body = JSON.stringify(await after.json())
-		expect(body, 'the 404 must reveal nothing about the record').not.toContain(`Bezwaar ${RUN}`)
+		expect(body, 'the 404 must reveal nothing about the record').not.toContain(
+			`Bezwaar ${RUN}`,
+		)
 		expect(body).not.toContain(objectUuid)
 	})
 
 	test('a switched-off link answers the same 404, and can be switched back on', async () => {
 		const mint = await admin.post(`${API}/access-links`, {
-			data: { subjectType: 'object', subjectId: objectUuid, expiresAt: inSevenDays() },
+			data: {
+				subjectType: 'object',
+				subjectId: objectUuid,
+				expiresAt: inSevenDays(),
+			},
 		})
 		expect(mint.ok(), `mint failed: ${await mint.text()}`).toBeTruthy()
 		const link = await mint.json()
 
-		const off = await admin.put(`${API}/access-links/${link.id}`, { data: { disabled: true } })
+		const off = await admin.put(`${API}/access-links/${link.id}`, {
+			data: { disabled: true },
+		})
 		expect(off.ok(), `switching off failed: ${await off.text()}`).toBeTruthy()
 
-		expect((await anon.get(`${API}/public/links/${link.anchor}`)).status()).toBe(404)
+		expect((await anon.get(`${API}/public/links/${link.anchor}`)).status()).toBe(
+			404,
+		)
 
-		const on = await admin.put(`${API}/access-links/${link.id}`, { data: { disabled: false } })
+		const on = await admin.put(`${API}/access-links/${link.id}`, {
+			data: { disabled: false },
+		})
 		expect(on.ok(), `switching on failed: ${await on.text()}`).toBeTruthy()
 
-		expect((await anon.get(`${API}/public/links/${link.anchor}`)).ok()).toBeTruthy()
+		expect(
+			(await anon.get(`${API}/public/links/${link.anchor}`)).ok(),
+		).toBeTruthy()
 
 		await admin.delete(`${API}/access-links/${link.id}`)
 	})
@@ -344,10 +425,16 @@ test.describe('access by link rather than by account', () => {
 	test('an internal note stays internal', async () => {
 		const notesUrl = `${API}/objects/${registerId}/${schemaId}/${objectUuid}/notes`
 		const internal = await admin.post(notesUrl, {
-			data: { message: `Intern: let op de termijn ${RUN}`, visibility: 'internal' },
+			data: {
+				message: `Intern: let op de termijn ${RUN}`,
+				visibility: 'internal',
+			},
 		})
 		const publicNote = await admin.post(notesUrl, {
-			data: { message: `Openbaar: ontvangstbevestiging ${RUN}`, visibility: 'public' },
+			data: {
+				message: `Openbaar: ontvangstbevestiging ${RUN}`,
+				visibility: 'public',
+			},
 		})
 
 		// The notes API is a separate surface. When it is not reachable here the
@@ -359,7 +446,11 @@ test.describe('access by link rather than by account', () => {
 		).toBeTruthy()
 
 		const mint = await admin.post(`${API}/access-links`, {
-			data: { subjectType: 'object', subjectId: objectUuid, expiresAt: inSevenDays() },
+			data: {
+				subjectType: 'object',
+				subjectId: objectUuid,
+				expiresAt: inSevenDays(),
+			},
 		})
 		expect(mint.ok(), `mint failed: ${await mint.text()}`).toBeTruthy()
 		const link = await mint.json()
@@ -368,17 +459,24 @@ test.describe('access by link rather than by account', () => {
 		expect(opened.ok(), `open failed: ${await opened.text()}`).toBeTruthy()
 
 		const timeline = JSON.stringify((await opened.json()).timeline ?? [])
-		expect(timeline, 'the public entry should be served').toContain(`Openbaar: ontvangstbevestiging ${RUN}`)
-		expect(timeline, 'an internal entry must never be served through a link').not.toContain(
-			`Intern: let op de termijn ${RUN}`,
+		expect(timeline, 'the public entry should be served').toContain(
+			`Openbaar: ontvangstbevestiging ${RUN}`,
 		)
+		expect(
+			timeline,
+			'an internal entry must never be served through a link',
+		).not.toContain(`Intern: let op de termijn ${RUN}`)
 
 		await admin.delete(`${API}/access-links/${link.id}`)
 	})
 
 	test('a link is listed to its minter and revocable from that listing', async () => {
 		const mint = await admin.post(`${API}/access-links`, {
-			data: { subjectType: 'object', subjectId: objectUuid, expiresAt: inSevenDays() },
+			data: {
+				subjectType: 'object',
+				subjectId: objectUuid,
+				expiresAt: inSevenDays(),
+			},
 		})
 		expect(mint.ok(), `mint failed: ${await mint.text()}`).toBeTruthy()
 		const link = await mint.json()
@@ -388,22 +486,32 @@ test.describe('access by link rather than by account', () => {
 
 		const rows = (await listed.json()).results as Array<Record<string, unknown>>
 		const mine = rows.find((row) => row.id === link.id)
-		expect(mine, 'a capability you cannot see is a capability you cannot revoke').toBeTruthy()
+		expect(
+			mine,
+			'a capability you cannot see is a capability you cannot revoke',
+		).toBeTruthy()
 
 		await admin.delete(`${API}/access-links/${link.id}`)
 	})
 
 	test('an anonymous caller cannot mint or list links', async () => {
 		const minted = await anon.post(`${API}/access-links`, {
-			data: { subjectType: 'object', subjectId: objectUuid, expiresAt: inSevenDays() },
+			data: {
+				subjectType: 'object',
+				subjectId: objectUuid,
+				expiresAt: inSevenDays(),
+			},
 		})
-		expect(minted.status(), 'minting is a write and is never anonymous').toBeGreaterThanOrEqual(400)
+		expect(
+			minted.status(),
+			'minting is a write and is never anonymous',
+		).toBeGreaterThanOrEqual(400)
 
 		const listed = await anon.get(`${API}/access-links`)
 		if (listed.ok()) {
 			expect(
 				(await listed.json()).results,
-				'an anonymous listing must be empty, never everybody\'s links',
+				"an anonymous listing must be empty, never everybody's links",
 			).toEqual([])
 		} else {
 			expect(listed.status()).toBeGreaterThanOrEqual(400)

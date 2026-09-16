@@ -2,23 +2,38 @@
 	<section class="ruleTrial">
 		<h3>{{ t('openregister', 'Try this rule') }}</h3>
 		<p class="lead">
-			{{ t('openregister', 'Nothing is written. You get the verdict, and the writes the rule would have made.') }}
+			{{
+				t(
+					'openregister',
+					'Nothing is written. You get the verdict, and the writes the rule would have made.',
+				)
+			}}
 		</p>
 
 		<fieldset class="trialTarget">
 			<legend>{{ t('openregister', 'What to run it against') }}</legend>
-			<NcCheckboxRadioSwitch v-model="target" value="sample" name="ruleTrialTarget" type="radio">
+			<NcCheckboxRadioSwitch
+				v-model="target"
+				value="sample"
+				name="ruleTrialTarget"
+				type="radio">
 				{{ t('openregister', 'A sample object I paste here') }}
 			</NcCheckboxRadioSwitch>
-			<NcCheckboxRadioSwitch v-model="target" value="stored" name="ruleTrialTarget" type="radio">
+			<NcCheckboxRadioSwitch
+				v-model="target"
+				value="stored"
+				name="ruleTrialTarget"
+				type="radio">
 				{{ t('openregister', 'An object that already exists') }}
 			</NcCheckboxRadioSwitch>
 		</fieldset>
 
 		<div v-if="target === 'sample'" class="trialField">
-			<label for="ruleTrialSample">{{ t('openregister', 'Sample object, as JSON') }}</label>
+			<label for="ruleTrialSample">{{
+				t('openregister', 'Sample object, as JSON')
+			}}</label>
 			<textarea
-id="ruleTrialSample"
+				id="ruleTrialSample"
 				v-model="sample"
 				rows="8"
 				spellcheck="false"
@@ -30,12 +45,12 @@ id="ruleTrialSample"
 
 		<div v-else class="trialField">
 			<NcTextField
-id="ruleTrialRegister"
+				id="ruleTrialRegister"
 				v-model="register"
 				:label="t('openregister', 'Register')"
 				:placeholder="t('openregister', 'Id, uuid or slug')" />
 			<NcTextField
-id="ruleTrialObject"
+				id="ruleTrialObject"
 				v-model="objectId"
 				:label="t('openregister', 'Object')"
 				:placeholder="t('openregister', 'Id, uuid, slug or uri')" />
@@ -46,7 +61,12 @@ id="ruleTrialObject"
 			<span v-else>{{ t('openregister', 'Run the draft') }}</span>
 		</NcButton>
 		<p v-if="draft !== null" class="draftNotice">
-			{{ t('openregister', 'This runs the condition you edited, not the one the schema declares.') }}
+			{{
+				t(
+					'openregister',
+					'This runs the condition you edited, not the one the schema declares.',
+				)
+			}}
 		</p>
 
 		<div v-if="result" class="trialResult">
@@ -70,8 +90,12 @@ id="ruleTrialObject"
 				</thead>
 				<tbody>
 					<tr v-for="(value, key) in result.writes" :key="key">
-						<td><code>{{ key }}</code></td>
-						<td><code>{{ renderValue(value) }}</code></td>
+						<td>
+							<code>{{ key }}</code>
+						</td>
+						<td>
+							<code>{{ renderValue(value) }}</code>
+						</td>
 					</tr>
 				</tbody>
 			</table>
@@ -229,9 +253,16 @@ export default {
 			let payload
 			if (this.target === 'sample') {
 				try {
-					payload = { object: this.sample.trim() === '' ? {} : JSON.parse(this.sample) }
+					payload = {
+						object:
+							this.sample.trim() === '' ? {} : JSON.parse(this.sample),
+					}
 				} catch (parseFailure) {
-					this.sampleError = t('openregister', 'That is not valid JSON: {reason}', { reason: parseFailure.message })
+					this.sampleError = t(
+						'openregister',
+						'That is not valid JSON: {reason}',
+						{ reason: parseFailure.message },
+					)
 					return
 				}
 			} else {
@@ -246,11 +277,16 @@ export default {
 			try {
 				this.result = await evaluateRule(this.schema, this.ruleId, payload)
 				if (this.result.ok === false) {
-					this.error = this.result.error?.message || t('openregister', 'The rule could not be tried.')
+					this.error =
+						this.result.error?.message
+						|| t('openregister', 'The rule could not be tried.')
 					this.result = null
 				}
 			} catch (failure) {
-				this.error = messageFor(failure, t('openregister', 'The rule could not be tried.'))
+				this.error = messageFor(
+					failure,
+					t('openregister', 'The rule could not be tried.'),
+				)
 			} finally {
 				this.running = false
 			}
