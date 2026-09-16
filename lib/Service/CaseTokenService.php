@@ -182,8 +182,6 @@ class CaseTokenService {
 	 * object missing, RBAC-denied) so the caller returns a uniform 404
 	 * and the endpoint is not an enumeration oracle.
 	 *
-	 * @param string $token The opaque token.
-	 *
 	 * THE VIEW CARRIES THE OBJECT'S PUBLIC TIMELINE. A citizen following a
 	 * "track your case" link came to find out what has happened, and a status
 	 * with no history answers half the question. The entries are filtered on
