@@ -507,28 +507,19 @@ class PropertyValidatorHandler {
 	];
 
 	/**
-	 * The modifier keys that take a language suffix.
+	 * The modifier keys that take a language suffix, and the shape it has.
 	 *
-	 * These two carry prose a person reads, so a schema written for more than
-	 * one audience spells them `title:nl` and `description:en` beside the
-	 * unsuffixed pair. Nothing else in the vocabulary is prose, so nothing else
-	 * takes a suffix: an author who writes `order:en` has made a mistake, and a
-	 * blanket "anything with a colon passes" would hide it.
+	 * `title` and `description` carry prose a person reads, so a schema written
+	 * for more than one audience spells them `title:nl` and `description:en`
+	 * beside the unsuffixed pair. Nothing else is prose, and the tag is matched
+	 * rather than waved through (BCP 47's common shapes: `en`, `pt-BR`,
+	 * `zh-Hans`), so `order:en` and `title:englisch` stay the mistakes they are.
 	 *
 	 * @var array<int, string> The base keys a language suffix may follow.
 	 */
-	public const LOCALISED_KEYS = [
-		'title',
-		'description',
-	];
+	public const LOCALISED_KEYS = ['title', 'description'];
 
 	/**
-	 * The language tag a localised key may carry.
-	 *
-	 * BCP 47's common shapes: `en`, `nl`, `fy`, and a region or script after
-	 * them (`pt-BR`, `zh-Hans`). Deliberately not "anything after the colon",
-	 * because then a typo is a new language rather than a refusal.
-	 *
 	 * @var string A PCRE matching the part after the colon.
 	 */
 	public const LANGUAGE_TAG_PATTERN = '/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/';
@@ -622,10 +613,6 @@ class PropertyValidatorHandler {
 
 	/**
 	 * Whether a key is one of the prose keys carrying a language suffix.
-	 *
-	 * `title:en` is the same key as `title`, written for one audience. The
-	 * suffix is checked rather than waved through, so `title:englisch` is a
-	 * refusal and not a fourteenth language nobody will ever translate.
 	 *
 	 * @param string $key The property key to look at.
 	 *

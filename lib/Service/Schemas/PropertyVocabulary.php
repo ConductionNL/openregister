@@ -226,6 +226,11 @@ final class PropertyVocabulary {
 	 * @return bool True when a property may carry this key.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the localisation rule because it is
+	 *                                       the thing that enforces it. Spelling the suffix check
+	 *                                       out again here would be the second list this class
+	 *                                       exists to remove.
 	 */
 	public function hasKey(string $key): bool {
 		if (in_array($key, $this->keys(), true) === true) {
@@ -241,17 +246,16 @@ final class PropertyVocabulary {
 	 * A generated editor needs both halves: which keys may be written per
 	 * language, and what it may put after the colon. Publishing only the base
 	 * keys would leave every app guessing the tag format, and guessing is how
-	 * `title:english` gets written and then refused at import.
+	 * `title:english` gets written and then refused at import. It is reached
+	 * through {@see self::all()} rather than on its own, because the rule is
+	 * part of the published payload and not a second question.
 	 *
 	 * @return array{keys: array<int, string>, separator: string, languageTagPattern: string,
 	 *   example: string, description: string} The localisation rule.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the rule it enforces. A copy here
-	 *                                       would be the second list this class exists to remove.
 	 */
-	public function localisation(): array {
+	private function localisation(): array {
 		return [
 			'keys' => PropertyValidatorHandler::LOCALISED_KEYS,
 			'separator' => ':',
