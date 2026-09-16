@@ -1154,6 +1154,28 @@ return [
         // Notification Preferences — override-only, per-(schema, notification) user preferences.
         ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
+        // Notification Templates — the shipped text per platform event, the
+        // events that have none, and an administrator's edit of either.
+        ['name' => 'notificationTemplates#index',  'url' => '/api/notification-templates', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#gaps',   'url' => '/api/notification-templates/gaps', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#update', 'url' => '/api/notification-templates/{event}', 'verb' => 'PUT'],
+        // Notification Broadcasts — one administered message to every user.
+        // The active read and the acknowledge act on the caller's own receipt
+        // and are open to any signed-in user; the rest is administrators only.
+        ['name' => 'notificationBroadcast#index',   'url' => '/api/notification-broadcasts', 'verb' => 'GET'],
+        ['name' => 'notificationBroadcast#create',  'url' => '/api/notification-broadcasts', 'verb' => 'POST'],
+        ['name' => 'notificationBroadcast#active',  'url' => '/api/notification-broadcasts/active', 'verb' => 'GET'],
+        [
+            'name' => 'notificationBroadcast#acknowledge',
+            'url' => '/api/notification-broadcasts/{uuid}/acknowledge',
+            'verb' => 'POST',
+        ],
+        ['name' => 'notificationBroadcast#destroy', 'url' => '/api/notification-broadcasts/{uuid}', 'verb' => 'DELETE'],
+        // Notification Group Preferences — the team's layer between the schema
+        // default and each member's own value. Writing requires administering
+        // the named group; reading is open to its members.
+        ['name' => 'notificationGroupPreferences#index',  'url' => '/api/notification-group-preferences', 'verb' => 'GET'],
+        ['name' => 'notificationGroupPreferences#update', 'url' => '/api/notification-group-preferences', 'verb' => 'PUT'],
         // Notification Delivery Window — override-only, per-user quiet-hours preference.
         ['name' => 'notificationDeliveryWindow#index',  'url' => '/api/notification-delivery-window', 'verb' => 'GET'],
         ['name' => 'notificationDeliveryWindow#update', 'url' => '/api/notification-delivery-window', 'verb' => 'PUT'],
@@ -1389,6 +1411,25 @@ return [
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
+
+        // The API as a described, versioned surface (api-as-a-versioned-surface).
+        // `capabilities` and `versions` are PUBLIC on purpose: a client that has
+        // to authenticate to learn the upload limit will not learn the upload
+        // limit, and every integrator currently discovers it by hitting it. The
+        // public body carries versions and ceilings only; the operational
+        // switches appear only when a session is present (design D-5).
+        //
+        // `/api/versions/{version}/oas` names the DOCUMENT, not the contract the
+        // call itself speaks — a caller may legitimately read the description of
+        // a version it has not moved to yet.
+        ['name' => 'apiSurface#capabilities', 'url' => '/api/capabilities', 'verb' => 'GET'],
+        ['name' => 'apiSurface#versions', 'url' => '/api/versions', 'verb' => 'GET'],
+        [
+            'name'         => 'apiSurface#contract',
+            'url'          => '/api/versions/{version}/oas',
+            'verb'         => 'GET',
+            'requirements' => ['version' => '[0-9]{1,3}'],
+        ],
         // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
         ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
         ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],
