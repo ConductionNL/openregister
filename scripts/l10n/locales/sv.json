@@ -128,6 +128,7 @@
 		"Min ms": "Column label; \"Min ms\" is used unchanged in Swedish.",
 		"Register #{id}": "\"Register\" is identical in Swedish; the rest is a placeholder.",
 		"{property} - {other}": "Placeholder-only pattern; no translatable text.",
-		"Text": "\"Text\" is the same word in Swedish for the text field type; the only alternatives narrow it (\"Fritext\") or shift to \"Sträng\" (string), so the honest label is identical."
+		"Text": "\"Text\" is the same word in Swedish for the text field type; the only alternatives narrow it (\"Fritext\") or shift to \"Sträng\" (string), so the honest label is identical.",
+		"Operator": "The engine's comparison/logic operator. Swedish uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists."
 	}
 }
