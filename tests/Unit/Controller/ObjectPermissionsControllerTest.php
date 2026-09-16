@@ -50,6 +50,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -76,6 +77,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 	 * @param array<int, AuditTrail> $trail   The object's audit trail.
 	 * @param boolean                $schemaDeclaresRules Whether the schema's cascade writes any rules down.
 	 * @param boolean                $registerUnset       Whether ObjectService lost its register after resolving the object.
+	 * @param LoggerInterface|null   $logger              The logger the controller reports failures to.
 	 *
 	 * @return ObjectPermissionsController The controller under test.
 	 */
@@ -87,6 +89,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		array $trail = [],
 		bool $schemaDeclaresRules = true,
 		bool $registerUnset = false,
+		?LoggerInterface $logger = null,
 	): ObjectPermissionsController {
 		$object = new ObjectEntity();
 		$object->setUuid(self::UUID);
@@ -162,7 +165,8 @@ class ObjectPermissionsControllerTest extends TestCase {
 			objectService: $objectService,
 			report: $report,
 			userSession: $userSession,
-			groupManager: $groupManager
+			groupManager: $groupManager,
+			logger: ($logger ?? new NullLogger())
 		);
 	}//end controllerFor()
 
@@ -234,7 +238,11 @@ class ObjectPermissionsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAccessSetThatCannotBeAssembledIsReportedAsSuch(): void {
-		$response = $this->controllerFor(userId: 'bea', owner: 'bea', registerUnset: true)
+		// The generic message must not be the only trace: the cause is logged.
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$logger->expects($this->once())->method('error');
+
+		$response = $this->controllerFor(userId: 'bea', owner: 'bea', registerUnset: true, logger: $logger)
 			->index('zaken', 'zaak', self::UUID);
 
 		$this->assertSame(expected: 500, actual: $response->getStatus());

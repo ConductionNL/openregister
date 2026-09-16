@@ -51,6 +51,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * The per-object access set and its history.
@@ -68,6 +69,7 @@ class ObjectPermissionsController extends Controller {
 	 * @param ObjectAccessReport $report        Assembles the answer.
 	 * @param IUserSession       $userSession   The calling principal.
 	 * @param IGroupManager      $groupManager  Administrator detection.
+	 * @param LoggerInterface    $logger        Records why an access set could not be assembled.
 	 */
 	public function __construct(
 		string $appName,
@@ -76,6 +78,7 @@ class ObjectPermissionsController extends Controller {
 		private readonly ObjectAccessReport $report,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -136,7 +139,13 @@ class ObjectPermissionsController extends Controller {
 			// that. Left to the framework it is a 500 carrying a stack trace, on
 			// an endpoint a non-admin owner may call, and an empty set in its
 			// place would read as "nobody holds any right on this", which is
-			// the one answer an auditor must not be given by accident.
+			// the one answer an auditor must not be given by accident. The cause
+			// goes to the log, so the caller's generic message is not the only
+			// trace of it.
+			$this->logger->error(
+				message: '[ObjectPermissionsController] The access set for {uuid} could not be assembled: {error}',
+				context: ['uuid' => $id, 'error' => $e->getMessage(), 'exception' => $e]
+			);
 			return new JSONResponse(
 				['message' => 'The access set for this object could not be assembled'],
 				Http::STATUS_INTERNAL_SERVER_ERROR
