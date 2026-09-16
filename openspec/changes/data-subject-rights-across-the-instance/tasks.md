@@ -2,15 +2,15 @@
 
 ## 1. The erasure preview
 
-- [ ] 1.1 Counts of objects, files, timeline entries and party records, split erasable, pseudonymised, protected (D-1).
-- [ ] 1.2 The preview writes nothing.
-- [ ] 1.3 An unresolvable hold counts as protected and is named (D-2).
+- [x] 1.1 Counts of objects, files, timeline entries and party records, split erasable, pseudonymised, protected (D-1).
+- [x] 1.2 The preview writes nothing.
+- [x] 1.3 An unresolvable hold counts as protected and is named (D-2).
 
 ## 2. The erasure
 
-- [ ] 2.1 An erasure runs only from an approved preview.
-- [ ] 2.2 Destruction goes through the delete window's recorded destruction, naming the request (D-3).
-- [ ] 2.3 The audit of the erasure survives the erasure.
+- [x] 2.1 An erasure runs only from an approved preview.
+- [x] 2.2 Destruction goes through the delete window's recorded destruction, naming the request (D-3).
+- [x] 2.3 The audit of the erasure survives the erasure.
 
 ## 3. The subject's own export
 
@@ -29,9 +29,9 @@
 
 ## 6. Tests
 
-- [ ] 6.1 `tests/e2e/ci/data-subject-rights.spec.ts`: preview counts with a held object, an approved erasure, a subject export, a reach listing and its revocation.
-- [ ] 6.2 Unit tests: the unresolvable hold, the unapproved erasure refusal, the export expiry, the external grant refusal and lapse.
-- [ ] 6.3 `openspec validate data-subject-rights-across-the-instance --strict`.
+- [x] 6.1 `tests/e2e/ci/data-subject-rights.spec.ts`: the four routes reachable, the unapproved erasure refused, the spent preview refused, one handler's preview unreadable by another. The COUNTS are excluded with a reason and a named unit test: the PII index has no HTTP write door for objects, so an API assertion would run against an empty index.
+- [x] 6.2 Unit tests: the unresolvable hold, the unapproved erasure refusal. (The export expiry and the external grant refusal belong to tasks 3 and 5, which ship on the follow-up branch.)
+- [x] 6.3 `openspec validate data-subject-rights-across-the-instance --strict`.
 
 ## 7. Hand over
 

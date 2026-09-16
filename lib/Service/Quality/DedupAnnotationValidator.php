@@ -42,6 +42,17 @@ class DedupAnnotationValidator {
 	private const VALID_METHODS = ['exact', 'normalized', 'levenshtein'];
 
 	/**
+	 * Recognised `onCreate` policies.
+	 *
+	 * `warn` is the default and means the check is advisory: the endpoint
+	 * answers, and the save path does nothing. `block` refuses a create that
+	 * strongly matches, unless the caller is in an override group.
+	 *
+	 * @var array<int, string>
+	 */
+	public const VALID_ON_CREATE = ['warn', 'block'];
+
+	/**
 	 * Validate the `x-openregister-dedup` annotation in a schema shape.
 	 *
 	 * @param array<string, mixed> $schema Shape with `properties` and `x-openregister-dedup`.
@@ -84,8 +95,67 @@ class DedupAnnotationValidator {
 			$errors[] = ['code' => 'dedup.bad-blocking-keys', 'message' => 'x-openregister-dedup "blockingKeys" must be an array.'];
 		}
 
-		return $errors;
+		return array_merge($errors, $this->validateCreatePolicy(annotation: $annotation));
 	}//end validate()
+
+	/**
+	 * Validate the create-time policy: `onCreate` and `overrideGroups`.
+	 *
+	 * Both are optional, and their absence means the advisory default. A
+	 * misspelled `onCreate` is reported rather than ignored: a schema that
+	 * meant `block` and wrote `blocking` would otherwise save clean and let
+	 * every duplicate through, which is the failure the declaration exists to
+	 * prevent and the one hardest to notice.
+	 *
+	 * `overrideGroups` without `block` is NOT an error. It names who may
+	 * override if the schema ever blocks, and refusing it would make turning
+	 * blocking on a two-step edit for no gain.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-dedup` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	private function validateCreatePolicy(array $annotation): array {
+		$errors = [];
+
+		$onCreate = ($annotation['onCreate'] ?? null);
+		if ($onCreate !== null && in_array($onCreate, self::VALID_ON_CREATE, true) === false) {
+			$valid = implode(', ', self::VALID_ON_CREATE);
+			$errors[] = [
+				'code' => 'dedup.unknown-on-create',
+				'message' => sprintf('x-openregister-dedup "onCreate" must be one of: %s.', $valid),
+			];
+		}
+
+		$overrideGroups = ($annotation['overrideGroups'] ?? null);
+		if ($overrideGroups === null) {
+			return $errors;
+		}
+
+		if (is_array($overrideGroups) === false) {
+			$errors[] = [
+				'code' => 'dedup.bad-override-groups',
+				'message' => 'x-openregister-dedup "overrideGroups" must be an array of group ids.',
+			];
+
+			return $errors;
+		}
+
+		foreach ($overrideGroups as $index => $group) {
+			if (is_string($group) === true && $group !== '') {
+				continue;
+			}
+
+			$errors[] = [
+				'code' => 'dedup.bad-override-group',
+				'message' => sprintf('x-openregister-dedup "overrideGroups" entry #%d must be a non-empty group id.', (int)$index),
+			];
+		}
+
+		return $errors;
+	}//end validateCreatePolicy()
 
 	/**
 	 * Validate a single match rule.

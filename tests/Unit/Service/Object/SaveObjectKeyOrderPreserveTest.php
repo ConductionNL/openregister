@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * Pins REQ-OBJ-KO-01 (openspec/changes/put-preserve-key-order): the object
@@ -61,6 +62,8 @@ use Twig\Loader\ArrayLoader;
  * of, plus the pure encode/decode symmetry MagicMapper relies on.
  */
 class SaveObjectKeyOrderPreserveTest extends TestCase {
+	use BuildsStateFieldRuleResolver;
+
 	private SaveObject $handler;
 	private SchemaMapper $schemaMapper;
 
@@ -87,7 +90,8 @@ class SaveObjectKeyOrderPreserveTest extends TestCase {
 				$this->createMock(IUserSession::class),
 				$this->createMock(IGroupManager::class),
 				$this->createMock(ConditionMatcher::class),
-				$this->createMock(LoggerInterface::class)
+				$this->createMock(LoggerInterface::class),
+				self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))
 			),
 			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),

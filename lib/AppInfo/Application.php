@@ -125,6 +125,7 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\WatcherPruneListener;
@@ -560,6 +561,14 @@ class Application extends App implements IBootstrap {
 		// names the field and lists the filterable ones, instead of the opaque
 		// driver-level 500 an unresolvable column name used to produce.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
+
+		// Register the ApiVersionMiddleware (api-as-a-versioned-surface): names
+		// the contract version that answered on every API response, carries the
+		// RFC 8594 end date when that version is deprecated, and refuses a call
+		// naming a withdrawn version with 410 or an undeclared one with 400.
+		// It decorates and refuses; it never changes which controller runs, so a
+		// deprecated version keeps exactly the behaviour it had before.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
 
 		// Bind the dormant Path B PDF anonymisation fallback bridge to its
 		// null implementation. Tenants enabling Path B replace this binding
@@ -2876,6 +2885,17 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectCreatingEvent::class, GeneratedIdentifierListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, GeneratedIdentifierListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
+
+		// Per-state field rules — see x-openregister-lifecycle.states.<state>.fields.
+		// Registered AFTER LifecycleInitialStateListener, which stamps the
+		// initial state onto a create: reading the state before that listener
+		// has run would resolve a create against no state at all and let a
+		// required field through. On an update it runs after
+		// LifecycleValidationListener for the same reason the approval gate
+		// does — a transition nobody declared is not worth asking field
+		// questions about.
+		$context->registerEventListener(ObjectCreatingEvent::class, StateFieldRuleListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, StateFieldRuleListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
