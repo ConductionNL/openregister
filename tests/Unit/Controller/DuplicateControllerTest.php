@@ -174,6 +174,143 @@ class DuplicateControllerTest extends TestCase {
 	}//end testIndexMapsRuntimeExceptionToNotFound()
 
 	/**
+	 * The check endpoint carries the same auth posture as the listing: signed
+	 * in, never public. It reads a register's objects, so an anonymous caller
+	 * asking "is there already one like this" would be a disclosure channel.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	public function testCheckCarriesAuthAnnotations(): void {
+		$reflection = new ReflectionClass(DuplicateController::class);
+		$doc = $reflection->getMethod('check')->getDocComment();
+
+		$this->assertNotFalse($doc);
+		$this->assertStringContainsString('@NoAdminRequired', $doc);
+		$this->assertStringContainsString('@NoCSRFRequired', $doc);
+		$this->assertStringNotContainsString('@PublicPage', $doc);
+	}//end testCheckCarriesAuthAnnotations()
+
+	/**
+	 * The candidate is the posted body minus the routing and metadata keys,
+	 * so a form can post the shape it would have created and get an answer
+	 * about that shape rather than about `_route`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	public function testCheckStripsRoutingKeysFromTheCandidate(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'register' => 'reg',
+				'schema' => 'sch',
+				'_route' => 'openregister.duplicate.check',
+				'id' => 'should-not-travel',
+				'requester' => 'bsn:123',
+				'subject' => 'Kapvergunning',
+			]
+		);
+		$this->request->method('getParam')->willReturnArgument(1);
+
+		$matches = [
+			[
+				'uuid' => 'stored-1',
+				'score' => 0.97,
+				'matchedOn' => ['requester'],
+				'matchedRules' => [['field' => 'requester', 'method' => 'exact', 'similarity' => 1.0]],
+			],
+		];
+
+		$this->duplicates->expects($this->once())
+			->method('checkCandidate')
+			->with('reg', 'sch', ['requester' => 'bsn:123', 'subject' => 'Kapvergunning'], null, null)
+			->willReturn($matches);
+		$this->duplicates->method('effectiveThreshold')->willReturn(0.85);
+
+		$response = $this->controller->check('reg', 'sch');
+		$body = $response->getData();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame($matches, $body['matches']);
+		$this->assertSame(1, $body['total']);
+		$this->assertSame(0.85, $body['threshold']);
+	}//end testCheckStripsRoutingKeysFromTheCandidate()
+
+	/**
+	 * A caller-supplied threshold reaches the scorer and is not mistaken for
+	 * a candidate field. It is `_threshold` rather than `threshold` so that a
+	 * schema declaring a property of that name is not silently robbed of it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	public function testCheckPassesThresholdThroughAndKeepsItOutOfTheCandidate(): void {
+		$this->request->method('getParams')->willReturn(['_threshold' => '0.9', 'requester' => 'bsn:123']);
+		$this->request->method('getParam')->willReturnMap([['_threshold', null, '0.9']]);
+
+		$this->duplicates->expects($this->once())
+			->method('checkCandidate')
+			->with('reg', 'sch', ['requester' => 'bsn:123'], null, 0.9)
+			->willReturn([]);
+		$this->duplicates->method('effectiveThreshold')->willReturn(0.9);
+
+		$response = $this->controller->check('reg', 'sch');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(0, $response->getData()['total']);
+	}//end testCheckPassesThresholdThroughAndKeepsItOutOfTheCandidate()
+
+	/**
+	 * CONTROL for the rename above: a schema property that happens to be
+	 * called `threshold` reaches the scorer as data. If the control key were
+	 * `threshold`, this value would vanish from the comparison and the
+	 * endpoint would answer confidently about a body it never fully read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	public function testAPropertyNamedThresholdIsStillCandidateData(): void {
+		$this->request->method('getParams')->willReturn(['threshold' => '30 dagen', 'requester' => 'bsn:123']);
+		$this->request->method('getParam')->willReturnArgument(1);
+
+		$this->duplicates->expects($this->once())
+			->method('checkCandidate')
+			->with('reg', 'sch', ['threshold' => '30 dagen', 'requester' => 'bsn:123'], null, null)
+			->willReturn([]);
+		$this->duplicates->method('effectiveThreshold')->willReturn(0.85);
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->check('reg', 'sch')->getStatus());
+	}//end testAPropertyNamedThresholdIsStillCandidateData()
+
+	/**
+	 * A refusal to read is a 403, and an unresolvable register/schema a 404,
+	 * matching the listing rather than inventing a second dialect.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 */
+	public function testCheckMapsFailuresLikeTheListing(): void {
+		$this->request->method('getParams')->willReturn(['requester' => 'bsn:123']);
+		$this->request->method('getParam')->willReturnArgument(1);
+
+		$this->duplicates->method('checkCandidate')->willThrowException(
+			new NotAuthorizedException(message: 'denied')
+		);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->check('reg', 'sch')->getStatus());
+
+		$other = $this->createMock(DuplicateDetectionService::class);
+		$other->method('checkCandidate')->willThrowException(new RuntimeException('missing'));
+		$controller = new DuplicateController('openregister', $this->request, $other);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->check('reg', 'sch')->getStatus());
+	}//end testCheckMapsFailuresLikeTheListing()
+
+	/**
 	 * Side-effect-free contract: the controller has no injected write/merge
 	 * collaborator at all — DuplicateDetectionService is read-only and the
 	 * controller only ever calls findDuplicates(). Reflection guards against

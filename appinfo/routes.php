@@ -542,6 +542,13 @@ return [
         ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
         // MDM read-only surface — duplicate-candidate listing.
         ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+        // Duplicate check at intake: score an UNSAVED body against what is stored.
+        //
+        // ORDER MATTERS. `objects#postPatch` is POST /api/objects/{register}/{schema}/{id}
+        // and would otherwise match this URL with `dedup-check` as the id, turning a
+        // read-only check into a patch of a non-existent object. It is registered far
+        // below (the objects block), so this entry must stay ABOVE it, here.
+        ['name' => 'duplicate#check', 'url' => '/api/objects/{register}/{schema}/dedup-check', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
         ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
         ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
