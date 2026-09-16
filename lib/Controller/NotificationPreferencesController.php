@@ -10,16 +10,21 @@
  * `(schema, notification)` override in Nextcloud per-user app config.
  *
  *   GET /api/notification-preferences
+ *       optional query: ?scope=<scope>
  *       → every notification the current user's accessible schemas declare,
- *         merged with that user's overrides, tagged by source. Each entry
+ *         merged over the three layers — schema default, group default, the
+ *         user's own value — with `source` naming the layer that decided and
+ *         `layers` carrying the trace behind it. Each entry
  *         also carries `application` (the owning app id, e.g. "pipelinq",
  *         or null when the schema has no known owning app) so a consuming
  *         settings UI can scope the list to the currently open app.
  *
  *   PUT /api/notification-preferences
- *       body: { schema, notification, enabled?, channels?, reset? }
+ *       body: { schema, notification, enabled?, channels?, scope?, reset? }
  *       → record (or, with `reset: true`, clear) one override for the
- *         current user only.
+ *         current user only. With a `scope` the value applies to that
+ *         register, schema or declared domain only, and the caller's global
+ *         value is left untouched.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -63,10 +68,12 @@ class NotificationPreferencesController extends Controller {
 	}//end __construct()
 
 	/**
-	 * Return the effective notifications (schema default ⊕ user override)
-	 * for the current user.
+	 * Return the effective notifications for the current user, merged over the
+	 * three layers and tagged with the one that decided.
 	 *
 	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -77,7 +84,17 @@ class NotificationPreferencesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		$items = $this->preferenceService->getEffectiveForUser(userId: $userId);
+		// An optional `scope` answers the same list AS IT APPLIES in one
+		// register, schema or declared domain, so a screen that is showing one
+		// case domain shows the preference that domain actually gets rather
+		// than the reader's global one.
+		$scopes = [];
+		$scope = $this->nonEmptyString(value: $this->request->getParam('scope'));
+		if ($scope !== null) {
+			$scopes[] = $scope;
+		}
+
+		$items = $this->preferenceService->getEffectiveForUser(userId: $userId, scopes: $scopes);
 		return new JSONResponse(data: ['results' => $items, 'total' => count($items)]);
 	}//end index()
 
@@ -92,6 +109,8 @@ class NotificationPreferencesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function update(): JSONResponse {
 		$userId = $this->resolveUserId();
@@ -110,16 +129,28 @@ class NotificationPreferencesController extends Controller {
 			);
 		}
 
-		// Clearing the override restores the schema default.
+		// An optional scope pins this value to one register, one schema or one
+		// domain a leaf app declares, leaving the caller's global value alone.
+		// Absent means global, which is what every stored preference is.
+		$scope = $this->nonEmptyString(value: ($params['scope'] ?? null));
+
+		// Clearing the override restores the layer below: the group default
+		// when the user's groups hold one, else the schema default.
 		if (($params['reset'] ?? false) === true || ($params['reset'] ?? null) === 'true') {
 			$this->preferenceService->setOverride(
 				userId: $userId,
 				schemaSlug: $schema,
 				notificationKey: $notification,
-				override: null
+				override: null,
+				scope: $scope
 			);
 			return new JSONResponse(
-				data: ['schema' => $schema, 'notification' => $notification, 'override' => null]
+				data: [
+					'schema' => $schema,
+					'notification' => $notification,
+					'scope' => ($scope ?? 'global'),
+					'override' => null,
+				]
 			);
 		}
 
@@ -132,17 +163,20 @@ class NotificationPreferencesController extends Controller {
 			userId: $userId,
 			schemaSlug: $schema,
 			notificationKey: $notification,
-			override: $override
+			override: $override,
+			scope: $scope
 		);
 
 		return new JSONResponse(
 			data: [
 				'schema' => $schema,
 				'notification' => $notification,
+				'scope' => ($scope ?? 'global'),
 				'override' => $this->preferenceService->getOverride(
 					userId: $userId,
 					schemaSlug: $schema,
-					notificationKey: $notification
+					notificationKey: $notification,
+					scope: $scope
 				),
 			]
 		);
