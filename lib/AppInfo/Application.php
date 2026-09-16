@@ -569,6 +569,18 @@ class Application extends App implements IBootstrap {
 		// deprecated version keeps exactly the behaviour it had before.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
 
+		// Register the ApiCallerMiddleware (api-as-a-versioned-surface): binds a
+		// caller to its administered source addresses, bounds it to its
+		// administered ceiling, and records which route and version it called.
+		// Registered AFTER ApiVersionMiddleware so the version this call speaks
+		// is already resolvable when the record is written.
+		//
+		// An instance that has administered neither a ceiling nor a binding
+		// behaves exactly as it did before: the limiter fails open, the binding
+		// only refuses a caller an administrator actually bound, and the record
+		// swallows its own failures.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
+
 		// Bind the dormant Path B PDF anonymisation fallback bridge to its
 		// null implementation. Tenants enabling Path B replace this binding
 		// with a concrete NcOfficeConverterInterface implementation that

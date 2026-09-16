@@ -1430,6 +1430,15 @@ return [
             'verb'         => 'GET',
             'requirements' => ['version' => '[0-9]{1,3}'],
         ],
+
+        // Who called what, and the declaration an administrator edits to
+        // deprecate it. Both administrator-only, checked in the method body:
+        // the caller record names every principal that integrates with this
+        // gemeente, and #[NoAdminRequired] answers "is anyone logged in", which
+        // is not the question.
+        ['name' => 'apiCallers#index', 'url' => '/api/callers', 'verb' => 'GET'],
+        ['name' => 'apiCallers#readDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'GET'],
+        ['name' => 'apiCallers#writeDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'PUT'],
         // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
         ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
         ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],
