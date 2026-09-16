@@ -294,7 +294,7 @@ class SharedMasterDataServiceTest extends TestCase {
 
 	public function testASelfShareIsNotADeclaration(): void {
 		// A row that lists its own holder as a consumer declares nothing. Left
-		// unfiltered it would make `isConsumedShare` true for the holder and
+		// unfiltered it would make the holder read as a consumer of its own row and
 		// refuse the holder's own write — the feature locking out the only
 		// organisation entitled to change the data.
 		$service = $this->service(
@@ -411,18 +411,27 @@ class SharedMasterDataServiceTest extends TestCase {
 
 	}//end testAnOrganisationWithNoActiveContextResolvesToNothing()
 
-	public function testIsConsumedShareDistinguishesHolderFromConsumer(): void {
-		$service = $this->service(rowsByTable: $this->codeListSharedWithB());
+	public function testClearCacheMakesTheNextReadSeeARevokedShare(): void {
+		// The declarations are read once per request. A holder that revokes a
+		// share and re-reads in the same request must not still see it, which is
+		// why the write path drops the cache.
+		$rows = $this->codeListSharedWithB();
+		$service = $this->service(rowsByTable: $rows);
 
-		$this->assertTrue(
-			$service->isConsumedShare(table: SharedMasterDataService::REGISTERS, id: 7, activeOrgUuids: [self::ORG_B])
-		);
-		$this->assertFalse(
-			$service->isConsumedShare(table: SharedMasterDataService::REGISTERS, id: 7, activeOrgUuids: [self::ORG_A])
-		);
-		$this->assertFalse(
-			$service->isConsumedShare(table: SharedMasterDataService::REGISTERS, id: null, activeOrgUuids: [self::ORG_B])
+		$this->assertSame(
+			[7],
+			$service->sharedIds(table: SharedMasterDataService::REGISTERS, consumerOrgUuids: [self::ORG_B])
 		);
 
-	}//end testIsConsumedShareDistinguishesHolderFromConsumer()
+		// Revoke it behind the service, the way a write to the row would.
+		$rows[SharedMasterDataService::REGISTERS][0]['shared_with'] = null;
+		$service = $this->service(rowsByTable: $rows);
+		$service->clearCache();
+
+		$this->assertSame(
+			[],
+			$service->sharedIds(table: SharedMasterDataService::REGISTERS, consumerOrgUuids: [self::ORG_B])
+		);
+
+	}//end testClearCacheMakesTheNextReadSeeARevokedShare()
 }//end class

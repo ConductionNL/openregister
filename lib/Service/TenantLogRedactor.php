@@ -43,6 +43,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCP\IAppConfig;
+use RuntimeException;
+use Stringable;
 use Throwable;
 
 /**
@@ -232,14 +234,14 @@ class TenantLogRedactor {
 	 *
 	 * @return mixed The cleaned value.
 	 *
-	 * @throws \RuntimeException When the value cannot be established as clean.
+	 * @throws RuntimeException When the value cannot be established as clean.
 	 */
 	private function walk(mixed $value, int $depth): mixed {
 		if ($depth > self::MAX_DEPTH) {
-			throw new \RuntimeException('log context nests deeper than the redactor reads');
+			throw new RuntimeException('log context nests deeper than the redactor reads');
 		}
 
-		if ($value === null || is_bool($value) === true || is_int($value) === true || is_float($value) === true) {
+		if ($this->isPlainScalar(value: $value) === true) {
 			return $value;
 		}
 
@@ -248,28 +250,63 @@ class TenantLogRedactor {
 		}
 
 		if (is_array($value) === true) {
-			$clean = [];
-			foreach ($value as $key => $item) {
-				if ($this->isSecretKey(key: (string)$key) === true) {
-					$clean[$key] = self::REDACTED;
-					continue;
-				}
+			return $this->walkArray(value: $value, depth: $depth);
+		}
 
-				$clean[$key] = $this->walk(value: $item, depth: ($depth + 1));
-			}
-
-			return $clean;
-		}//end if
-
-		if (is_object($value) === true && ($value instanceof \Stringable) === true) {
+		if ($value instanceof Stringable) {
 			return $this->redactString(value: (string)$value);
 		}
 
 		// A resource, a closure, or an object with no safe string form. This
 		// class cannot read it, so it cannot say it is clean, so the line goes.
-		throw new \RuntimeException('log context holds a value the redactor cannot read');
+		throw new RuntimeException('log context holds a value the redactor cannot read');
 
 	}//end walk()
+
+	/**
+	 * Whether a value is a scalar that carries no text to redact.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return boolean True when the value passes through untouched.
+	 */
+	private function isPlainScalar(mixed $value): bool {
+		return ($value === null
+			|| is_bool($value) === true
+			|| is_int($value) === true
+			|| is_float($value) === true);
+
+	}//end isPlainScalar()
+
+	/**
+	 * Walk one array, redacting a secret KEY outright and descending into the rest.
+	 *
+	 * A key that names a secret is replaced without reading its value at all.
+	 * Whatever `password` holds, this class has nothing to gain from inspecting
+	 * it and everything to lose from getting the inspection wrong.
+	 *
+	 * @param array<array-key, mixed> $value The array.
+	 * @param integer $depth How deep the walk already is.
+	 *
+	 * @return array<array-key, mixed> The cleaned array.
+	 *
+	 * @throws RuntimeException When a member cannot be established as clean.
+	 */
+	private function walkArray(array $value, int $depth): array {
+		$clean = [];
+
+		foreach ($value as $key => $item) {
+			if ($this->isSecretKey(key: (string)$key) === true) {
+				$clean[$key] = self::REDACTED;
+				continue;
+			}
+
+			$clean[$key] = $this->walk(value: $item, depth: ($depth + 1));
+		}
+
+		return $clean;
+
+	}//end walkArray()
 
 	/**
 	 * Redact the secrets inside one string.
@@ -278,20 +315,20 @@ class TenantLogRedactor {
 	 *
 	 * @return string The redacted string.
 	 *
-	 * @throws \RuntimeException When the string is not valid UTF-8.
+	 * @throws RuntimeException When the string is not valid UTF-8.
 	 */
 	private function redactString(string $value): string {
 		if ($value !== '' && mb_check_encoding($value, 'UTF-8') === false) {
 			// Binary, or a broken encoding. A pattern cannot be matched against
 			// it reliably, so it cannot be cleared.
-			throw new \RuntimeException('log context holds a string the redactor cannot decode');
+			throw new RuntimeException('log context holds a string the redactor cannot decode');
 		}
 
 		$redacted = $value;
 		foreach (self::SECRET_VALUE_PATTERNS as $pattern) {
 			$result = preg_replace($pattern, self::REDACTED, $redacted);
 			if ($result === null) {
-				throw new \RuntimeException('redaction pattern failed against this value');
+				throw new RuntimeException('redaction pattern failed against this value');
 			}
 
 			$redacted = $result;

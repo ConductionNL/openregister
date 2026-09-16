@@ -61,7 +61,7 @@ trait MultiTenancyTrait {
 	/**
 	 * The shared master data resolver, built on first use.
 	 *
-	 * NOT constructor-injected, and that is a deliberate trade. Twelve mappers
+	 * NOT constructor-injected, and that is a deliberate trade. Eleven mappers
 	 * mix this trait in, each with its own constructor and its own unit tests
 	 * building it by hand; threading one more argument through all of them to
 	 * reach a class that reads two columns would be a large, purely mechanical
@@ -604,34 +604,7 @@ trait MultiTenancyTrait {
 		$isAdmin = $this->isUserAdmin(user: $user);
 
 		if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
-			// Audit log the admin cross-tenant override.
-			if (isset($this->logger) === true) {
-				$hasGetUid = ($user !== null && method_exists($user, 'getUID'));
-				$userId = 'unknown';
-				if ($hasGetUid === true) {
-					$userId = $user->getUID();
-				}
-
-				// REQ-SLE-003: the tenant, not the person. An admin override on
-				// a shared instance is read by whoever operates that instance,
-				// and the line's job is to say that a cross-organisation read
-				// happened, never who in particular made it.
-				$redactor = $this->tenantLogRedactor();
-				$line = $redactor->line(
-					context: [
-						'type' => 'cross_tenant_access_admin_override',
-						'actor' => $redactor->pseudonym(userId: $userId),
-					]
-				);
-
-				if ($line !== null) {
-					$this->logger->info(
-						'[MultiTenancyTrait] Admin override: cross-organisation access granted',
-						$line
-					);
-				}
-			}
-
+			$this->logAdminOverride(user: $user);
 			return;
 		}
 
@@ -688,6 +661,45 @@ trait MultiTenancyTrait {
 
 		$qb->andWhere($qb->expr()->orX(...$orgPredicates));
 	}//end applyActiveOrgFilter()
+
+	/**
+	 * Record that an admin read across the organisation boundary.
+	 *
+	 * REQ-SLE-003: the tenant, not the person. An admin override on a shared
+	 * back office is read by whoever operates that instance, and the line's job
+	 * is to say that a cross-organisation read happened, never who in
+	 * particular made it.
+	 *
+	 * @param mixed $user The session user, which may be null or may not expose a UID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function logAdminOverride(mixed $user): void {
+		if (isset($this->logger) === false) {
+			return;
+		}
+
+		$userId = 'unknown';
+		if ($user !== null && method_exists($user, 'getUID') === true) {
+			$userId = $user->getUID();
+		}
+
+		$redactor = $this->tenantLogRedactor();
+		$line = $redactor->line(
+			context: [
+				'type' => 'cross_tenant_access_admin_override',
+				'actor' => $redactor->pseudonym(userId: $userId),
+			]
+		);
+
+		if ($line === null) {
+			return;
+		}
+
+		$this->logger->info('[MultiTenancyTrait] Admin override: cross-organisation access granted', $line);
+	}//end logAdminOverride()
 
 	/**
 	 * Build the organisation predicates for the active organisation(s).
@@ -991,6 +1003,13 @@ trait MultiTenancyTrait {
 
 			throw $refusal;
 		}//end try
+
+		// The write about to happen may BE a declaration change: `shared_with`
+		// lives on the same row. The resolver caches every declaration for the
+		// request, so a holder that revokes a share and re-reads in the same
+		// request would otherwise still see it. Dropping the cache here costs
+		// one query on a path that already writes.
+		$resolver->clearCache();
 	}//end refuseSharedMasterDataWrite()
 
 	/**

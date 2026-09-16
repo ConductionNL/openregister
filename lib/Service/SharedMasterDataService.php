@@ -83,13 +83,6 @@ class SharedMasterDataService {
 	private ?array $declarations = null;
 
 	/**
-	 * Organisation names, resolved lazily and only for a refusal message.
-	 *
-	 * @var array<string, string|null>
-	 */
-	private array $holderNames = [];
-
-	/**
 	 * Build the resolver.
 	 *
 	 * @param IDBConnection $db The database connection.
@@ -111,7 +104,6 @@ class SharedMasterDataService {
 	 */
 	public function clearCache(): void {
 		$this->declarations = null;
-		$this->holderNames = [];
 
 	}//end clearCache()
 
@@ -131,13 +123,9 @@ class SharedMasterDataService {
 		}
 
 		$this->declarations = [
-			self::REGISTERS => [],
-			self::SCHEMAS => [],
+			self::REGISTERS => $this->readDeclarations(table: self::REGISTERS),
+			self::SCHEMAS => $this->readDeclarations(table: self::SCHEMAS),
 		];
-
-		foreach ([self::REGISTERS, self::SCHEMAS] as $table) {
-			$this->declarations[$table] = $this->readDeclarations(table: $table);
-		}
 
 		return $this->declarations;
 
@@ -202,23 +190,7 @@ class SharedMasterDataService {
 			return null;
 		}
 
-		$raw = ($row['shared_with'] ?? null);
-		if (is_string($raw) === false || trim($raw) === '') {
-			return null;
-		}
-
-		$decoded = json_decode($raw, true);
-		if (is_array($decoded) === false) {
-			return null;
-		}
-
-		$consumers = [];
-		foreach ($decoded as $consumer) {
-			if (is_string($consumer) === true && $consumer !== '' && $consumer !== $holder) {
-				$consumers[] = $consumer;
-			}
-		}
-
+		$consumers = $this->parseConsumers(raw: ($row['shared_with'] ?? null), holder: $holder);
 		if ($consumers === []) {
 			return null;
 		}
@@ -231,11 +203,48 @@ class SharedMasterDataService {
 		return [
 			'id' => (int)($row['id'] ?? 0),
 			'holder' => $holder,
-			'consumers' => array_values(array_unique($consumers)),
+			'consumers' => $consumers,
 			'title' => $title,
 		];
 
 	}//end parseRow()
+
+	/**
+	 * Read the consumer list out of one raw `shared_with` value.
+	 *
+	 * Everything that is not a non-empty string is dropped rather than
+	 * rejected: a declaration is a list of organisation UUIDs, and anything
+	 * else in it is noise somebody wrote by hand. The HOLDER is dropped too,
+	 * because a row that names its own holder as a consumer declares nothing,
+	 * and reading it literally would refuse the holder's own writes. That is
+	 * the feature locking out the only organisation entitled to change the
+	 * data.
+	 *
+	 * @param mixed $raw The raw column value.
+	 * @param string $holder The holding organisation UUID.
+	 *
+	 * @return array<int, string> The consumer UUIDs, deduplicated.
+	 */
+	private function parseConsumers(mixed $raw, string $holder): array {
+		if (is_string($raw) === false || trim($raw) === '') {
+			return [];
+		}
+
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		$consumers = [];
+		foreach ($decoded as $consumer) {
+			if (is_string($consumer) === true && $consumer !== '' && $consumer !== $holder) {
+				$consumers[] = $consumer;
+			}
+		}
+
+		return array_values(array_unique($consumers));
+
+	}//end parseConsumers()
 
 	/**
 	 * The ids in one table that the given organisations may read through a share.
@@ -328,47 +337,57 @@ class SharedMasterDataService {
 	 * @return array<int, string> Zero or one holder UUID.
 	 */
 	private function holdersOf(string $table, int $id, array $consumerOrgUuids): array {
+		$declaration = $this->consumedDeclaration(table: $table, id: $id, orgUuids: $consumerOrgUuids);
+
+		if ($declaration === null) {
+			return [];
+		}
+
+		return [$declaration['holder']];
+
+	}//end holdersOf()
+
+	/**
+	 * The declaration for one row, but only when the given organisations CONSUME it.
+	 *
+	 * One lookup behind both the read widening and the write refusal, so the two
+	 * cannot drift into disagreeing about who is a consumer. They asked the same
+	 * three questions in the same order in two places before this existed, which
+	 * is exactly the shape that drifts.
+	 *
+	 * Returns null in all three of the cases that are not a consumed share: the
+	 * row carries no declaration, the caller HOLDS it (the ordinary organisation
+	 * filter already lets them read it, and it must keep letting them write it),
+	 * or the caller was never named a consumer.
+	 *
+	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
+	 * @param integer $id The row id.
+	 * @param array<int, string> $orgUuids The acting organisation and its parents.
+	 *
+	 * @return array{id: int, holder: string, consumers: array<int, string>, title: ?string}|null The declaration.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function consumedDeclaration(string $table, int $id, array $orgUuids): ?array {
 		foreach (($this->declarations()[$table] ?? []) as $declaration) {
 			if ($declaration['id'] !== $id) {
 				continue;
 			}
 
-			if (in_array($declaration['holder'], $consumerOrgUuids, true) === true) {
-				// They hold it. The ordinary filter already lets them read it,
-				// and it must keep letting them WRITE it.
-				return [];
+			if (in_array($declaration['holder'], $orgUuids, true) === true) {
+				return null;
 			}
 
-			if (array_intersect($declaration['consumers'], $consumerOrgUuids) !== []) {
-				return [$declaration['holder']];
+			if (array_intersect($declaration['consumers'], $orgUuids) === []) {
+				return null;
 			}
 
-			return [];
+			return $declaration;
 		}//end foreach
 
-		return [];
+		return null;
 
-	}//end holdersOf()
-
-	/**
-	 * Whether a row is reached through a share rather than held.
-	 *
-	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
-	 * @param integer|null $id The row id.
-	 * @param array<int, string> $activeOrgUuids The acting organisation and its parents.
-	 *
-	 * @return boolean True when the acting organisation only consumes this row.
-	 *
-	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
-	 */
-	public function isConsumedShare(string $table, ?int $id, array $activeOrgUuids): bool {
-		if ($id === null) {
-			return false;
-		}
-
-		return $this->holdersOf(table: $table, id: $id, consumerOrgUuids: $activeOrgUuids) !== [];
-
-	}//end isConsumedShare()
+	}//end consumedDeclaration()
 
 	/**
 	 * Refuse a write to shared master data the acting organisation only consumes.
@@ -393,31 +412,22 @@ class SharedMasterDataService {
 			return;
 		}
 
-		foreach (($this->declarations()[$table] ?? []) as $declaration) {
-			if ($declaration['id'] !== $id) {
-				continue;
-			}
+		$declaration = $this->consumedDeclaration(table: $table, id: $id, orgUuids: $activeOrgUuids);
+		if ($declaration === null) {
+			return;
+		}
 
-			if (in_array($declaration['holder'], $activeOrgUuids, true) === true) {
-				return;
-			}
+		$resourceType = 'register';
+		if ($table === self::SCHEMAS) {
+			$resourceType = 'schema';
+		}
 
-			if (array_intersect($declaration['consumers'], $activeOrgUuids) === []) {
-				return;
-			}
-
-			$resourceType = 'register';
-			if ($table === self::SCHEMAS) {
-				$resourceType = 'schema';
-			}
-
-			throw new SharedMasterDataWriteException(
-				holderUuid: $declaration['holder'],
-				holderName: $this->holderName(uuid: $declaration['holder']),
-				resourceType: $resourceType,
-				resourceTitle: $declaration['title']
-			);
-		}//end foreach
+		throw new SharedMasterDataWriteException(
+			holderUuid: $declaration['holder'],
+			holderName: $this->holderName(uuid: $declaration['holder']),
+			resourceType: $resourceType,
+			resourceTitle: $declaration['title']
+		);
 
 	}//end assertWritable()
 
@@ -435,12 +445,10 @@ class SharedMasterDataService {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	public function holderName(string $uuid): ?string {
-		if (array_key_exists($uuid, $this->holderNames) === true) {
-			return $this->holderNames[$uuid];
-		}
-
-		$this->holderNames[$uuid] = null;
-
+		// Not memoised, deliberately. This is reached only when a write is
+		// ALREADY being refused, which is a rare path, and a cache that exists
+		// to save a query nobody makes twice is a cache that only adds a way to
+		// be stale.
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('name')
@@ -451,15 +459,15 @@ class SharedMasterDataService {
 			$result = $qb->executeQuery();
 			$name = $result->fetchOne();
 			$result->closeCursor();
-
-			if (is_string($name) === true && $name !== '') {
-				$this->holderNames[$uuid] = $name;
-			}
 		} catch (Throwable $e) {
 			return null;
 		}
 
-		return $this->holderNames[$uuid];
+		if (is_string($name) === false || $name === '') {
+			return null;
+		}
+
+		return $name;
 
 	}//end holderName()
 }//end class

@@ -505,17 +505,13 @@ class MagicSearchHandler {
 		);
 
 		// Apply multi-tenancy and RBAC access control filters.
-		if ($registerId === null) {
-			$registerId = $this->registerIdFromQuery(query: $query);
-		}
-
 		$this->applyAccessControlFilters(
 			qb: $queryBuilder,
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
 			multitenancyExplicit: $multitenancyExplicit,
-			registerId: $registerId
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
 		);
 
 		// Apply metadata filters.
