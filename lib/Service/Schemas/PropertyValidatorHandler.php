@@ -744,11 +744,11 @@ class PropertyValidatorHandler {
 		// top-level property and appends for every level under it.
 		$isTopLevel = (substr_count($path, '/') <= 1);
 		if (isset($property['type']) === false) {
-			if ($isTopLevel === true) {
+			// A `$ref` relation and a nested schema both derive their type (and, for a relation, their UUID column) elsewhere; only a bare top-level property is refused.
+			if ($isTopLevel === true && isset($property['$ref']) === false) {
 				throw new Exception("Property at '$path' must have a 'type' field");
 			}
 
-			// Untyped nested schema: nothing further here is type-dependent.
 			return true;
 		}
 

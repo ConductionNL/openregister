@@ -51,6 +51,18 @@ class PropertyValidatorHandlerTest extends TestCase {
 	}
 
 	/**
+	 * A single-valued relation is a `$ref` and carries no `type` of its own:
+	 * JSON Schema resolves its shape from the referenced schema. Requiring a
+	 * `type` here refused every such relation and made a schema that declared
+	 * one un-saveable (400 "must have a 'type' field").
+	 */
+	public function testValidatePropertyAcceptsTopLevelRefWithoutType(): void {
+		$result = $this->validator->validateProperty(['$ref' => 'some-schema', 'title' => 'Owner']);
+
+		$this->assertTrue($result);
+	}
+
+	/**
 	 * @dataProvider validTypesProvider
 	 */
 	public function testValidatePropertyAcceptsValidTypes(string $type): void {
