@@ -769,4 +769,113 @@ class LifecycleAnnotationValidatorTest extends TestCase {
 		$codes = array_column($errors, 'code');
 		$this->assertContains('lifecycle-graph-allowedmoves-invalid', $codes);
 	}
+
+	/**
+	 * The reference form of `final` is accepted and NOT enum-checked.
+	 *
+	 * The dossiq case shape: `status` is a `$ref` to a `statusType` row, so the
+	 * ends are rows, and a list written in the schema could only name uuids
+	 * that do not exist yet.
+	 */
+	public function testFinalByReferenceIsAcceptedInProviderMode(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+				'final' => ['from' => 'statusType', 'field' => 'isFinal'],
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['status' => ['type' => 'string', '$ref' => 'statusType']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	public function testFinalByReferenceIsAcceptedBesideAStaticEnum(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'final' => ['from' => 'statusType', 'field' => 'isFinal'],
+				'transitions' => ['x' => ['from' => ['draft'], 'to' => 'open']],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'open']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertNotContains('lifecycle-final-not-in-enum', $codes);
+		$this->assertNotContains('lifecycle-final-malformed', $codes);
+	}
+
+	public function testFinalByReferenceIsAcceptedInGraphMode(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'final' => ['from' => 'statustype', 'field' => 'isFinal'],
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * Half a reference is refused naming the SHAPE, not the enum.
+	 *
+	 * An author who wrote `{ from: "statusType" }` has not written a list with
+	 * a bad entry, and `lifecycle-final-not-in-enum` would send them to the
+	 * enum instead of to the missing key.
+	 */
+	public function testHalfAFinalReferenceIsRefusedNamingTheShape(): void {
+		foreach (
+			[
+				['from' => 'statusType'],
+				['field' => 'isFinal'],
+				['from' => 'statusType', 'field' => ''],
+				['from' => '  ', 'field' => 'isFinal'],
+			] as $broken
+		) {
+			$errors = $this->v->validate([
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'final' => $broken,
+					'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				],
+				'properties' => ['status' => ['type' => 'string']],
+			]);
+			$codes = array_column($errors, 'code');
+			$this->assertContains('lifecycle-final-malformed', $codes);
+			$this->assertNotContains('lifecycle-final-not-in-enum', $codes);
+		}
+
+		$this->assertStringContainsString(
+			'the schema the lifecycle field references',
+			$this->v->validate([
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'final' => ['from' => 'statusType'],
+					'provider' => 'p',
+				],
+				'properties' => ['status' => ['type' => 'string']],
+			])[0]['message']
+		);
+	}
+
+	public function testAScalarFinalIsRefused(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'final' => 'afgehandeld',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-final-malformed', $codes);
+	}
 }
