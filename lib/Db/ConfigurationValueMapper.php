@@ -148,6 +148,33 @@ class ConfigurationValueMapper extends QBMapper {
 	}//end findAtLayer()
 
 	/**
+	 * Every recorded value at one layer, across every reference.
+	 *
+	 * Its own method rather than a null reference on findAtLayer(). There,
+	 * null means the instance address, the same way it does everywhere else in
+	 * this capability, so reusing it for "any reference" would give one
+	 * spelling two meanings and the caller asking for all bundles would get
+	 * the rows that belong to no bundle at all.
+	 *
+	 * @param string $layer The layer.
+	 *
+	 * @return ConfigurationValue[] The value rows.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAllAtLayer(string $layer): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
+			->orderBy('layer_ref', 'ASC')
+			->addOrderBy('config_key', 'ASC');
+
+		return $this->findEntities(query: $qb);
+
+	}//end findAllAtLayer()
+
+	/**
 	 * Create a value row, assigning a uuid and timestamps.
 	 *
 	 * @param array<string, mixed> $data The value fields.

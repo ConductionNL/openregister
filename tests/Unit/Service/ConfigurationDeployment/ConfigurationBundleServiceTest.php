@@ -83,17 +83,17 @@ final class ConfigurationBundleServiceTest extends TestCase {
 	private function valueMapper(array $rows): ConfigurationValueMapper&MockObject {
 		$mapper = $this->createMock(ConfigurationValueMapper::class);
 
+		// The double models the REAL mapper's semantics, including the one that
+		// bit: on findAtLayer a null reference means the instance address, not
+		// "any reference". A double that read null as "any" would have let
+		// listBundles() pass here while finding no bundle at all in a database.
 		$mapper->method('findAtLayer')->willReturnCallback(
 			static function (string $layer, ?string $ref, ?string $prefix = null) use ($rows): array {
 				return array_values(
 					array_filter(
 						$rows,
 						static function (ConfigurationValue $row) use ($layer, $ref, $prefix): bool {
-							if ($row->getLayer() !== $layer) {
-								return false;
-							}
-
-							if ($ref !== null && $row->getLayerRef() !== $ref) {
+							if ($row->getLayer() !== $layer || $row->getLayerRef() !== $ref) {
 								return false;
 							}
 
@@ -106,6 +106,12 @@ final class ConfigurationBundleServiceTest extends TestCase {
 					)
 				);
 			}
+		);
+
+		$mapper->method('findAllAtLayer')->willReturnCallback(
+			static fn (string $layer): array => array_values(
+				array_filter($rows, static fn (ConfigurationValue $row): bool => $row->getLayer() === $layer)
+			)
 		);
 
 		$mapper->method('findAtAddress')->willReturnCallback(

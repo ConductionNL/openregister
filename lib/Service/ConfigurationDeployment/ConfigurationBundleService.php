@@ -257,7 +257,7 @@ class ConfigurationBundleService {
 			$names[(string)$binding->getBundle()] = true;
 		}
 
-		foreach ($this->values->findAtLayer(layer: ConfigurationLayer::BUNDLE, layerRef: null) as $row) {
+		foreach ($this->values->findAllAtLayer(layer: ConfigurationLayer::BUNDLE) as $row) {
 			$names[(string)$row->getLayerRef()] = true;
 		}
 
