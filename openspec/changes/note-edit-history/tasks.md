@@ -20,8 +20,8 @@
 - [x] 2.2 "Edited" marker and a versions drawer on the notes leaf.
       Built in `nextcloud-vue`, where the notes leaf lives: `CnNotesTab` gains
       the marker and the action, `CnNoteHistoryDialog` is the drawer.
-      ConductionNL/nextcloud-vue branch `feat/note-edit-history`. It reaches
-      users once that release is consumed here.
+      ConductionNL/nextcloud-vue#1189. It reaches users once that release is
+      consumed here.
 
 ## 3. Tests
 
