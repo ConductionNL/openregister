@@ -117,85 +117,185 @@ class CodedValueGuard {
 		$heldBySchemeGroup = [];
 
 		foreach ($declarations as $property => $declaration) {
-			if (array_key_exists($property, $object) === false) {
-				continue;
-			}
-
-			$values = $this->valuesOf(value: $object[$property]);
-			if ($values === []) {
-				continue;
-			}
-
-			$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
-			if ($conceptsByUri === []) {
-				// An unreadable or unseeded scheme refuses nothing: a
-				// vocabulary outage must not become a write outage.
-				continue;
-			}
-
-			foreach ($values as $value) {
-				$concept = $this->concepts->resolve(
-					value: $value,
-					schemeUri: $declaration->scheme,
-					store: $declaration->store
-				);
-				if ($concept === null) {
-					// Membership of the scheme is the dependency change's
-					// refusal (`property-code-list-from-concept-scheme`), not
-					// this one's. Saying it twice would give one mistake two
-					// different messages.
-					continue;
-				}
-
-				$uri = (string)($concept['uri'] ?? $value);
-
-				if ($this->lifecycle->isWithinWindow(concept: $concept, at: $instant) === false) {
-					$errors[$property] = sprintf(
-						'The value "%s" on "%s" is outside its validity window (%s) and can no longer be chosen.',
-						$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-						$property,
-						$this->lifecycle->describeWindow(concept: $concept)
-					);
-					continue;
-				}
-
-				if ($declaration->leafOnly === true
-					&& $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $conceptsByUri) === false
-				) {
-					$errors[$property] = sprintf(
-						'The value "%s" on "%s" has narrower values under it, and this field accepts only the most specific value.',
-						$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-						$property
-					);
-					continue;
-				}
-
-				$group = $this->lifecycle->exclusiveGroupOf(concept: $concept);
-				if ($group === null) {
-					continue;
-				}
-
-				$key = $declaration->scheme . "\0" . $group;
-				$already = ($heldBySchemeGroup[$key] ?? null);
-				if ($already === null) {
-					$heldBySchemeGroup[$key] = [
-						'property' => $property,
-						'label' => $this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-					];
-					continue;
-				}
-
-				$errors[$property] = sprintf(
-					'The values "%s" and "%s" both belong to the group "%s", of which only one may be held.',
-					$already['label'],
-					$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-					$group
-				);
-			}//end foreach
+			$this->collectPropertyViolations(
+				property: $property,
+				declaration: $declaration,
+				object: $object,
+				instant: $instant,
+				heldBySchemeGroup: $heldBySchemeGroup,
+				errors: $errors
+			);
 		}//end foreach
 
 		return $errors;
 	}//end collectViolations()
+
+	/**
+	 * Collect the refusals a single coded property's submitted values earn.
+	 *
+	 * Extracted from {@see self::collectViolations()} so the per-property
+	 * guards (present, non-empty, scheme readable) read as one block and the
+	 * per-value judgement lives behind a single call.
+	 *
+	 * @param string                    $property          The property name being judged.
+	 * @param CodedPropertyDeclaration  $declaration       The property's coded declaration.
+	 * @param array<string,mixed>       $object            The submitted object data.
+	 * @param DateTimeInterface         $instant           The instant to judge windows at.
+	 * @param array<string,array<string,string>> $heldBySchemeGroup Groups already held, by scheme+group key.
+	 * @param array<string,string>      $errors            The refusals accumulated so far, keyed by property.
+	 *
+	 * @return void
+	 */
+	private function collectPropertyViolations(
+		string $property,
+		CodedPropertyDeclaration $declaration,
+		array $object,
+		DateTimeInterface $instant,
+		array &$heldBySchemeGroup,
+		array &$errors
+	): void {
+		if (array_key_exists($property, $object) === false) {
+			return;
+		}
+
+		$values = $this->valuesOf(value: $object[$property]);
+		if ($values === []) {
+			return;
+		}
+
+		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
+		if ($conceptsByUri === []) {
+			// An unreadable or unseeded scheme refuses nothing: a
+			// vocabulary outage must not become a write outage.
+			return;
+		}
+
+		foreach ($values as $value) {
+			$concept = $this->concepts->resolve(
+				value: $value,
+				schemeUri: $declaration->scheme,
+				store: $declaration->store
+			);
+			if ($concept === null) {
+				// Membership of the scheme is the dependency change's
+				// refusal (`property-code-list-from-concept-scheme`), not
+				// this one's. Saying it twice would give one mistake two
+				// different messages.
+				continue;
+			}
+
+			$violation = $this->violationForConcept(
+				property: $property,
+				declaration: $declaration,
+				concept: $concept,
+				value: $value,
+				conceptsByUri: $conceptsByUri,
+				instant: $instant,
+				heldBySchemeGroup: $heldBySchemeGroup
+			);
+			if ($violation !== null) {
+				$errors[$property] = $violation;
+			}
+		}//end foreach
+	}//end collectPropertyViolations()
+
+	/**
+	 * The refusal one resolved concept earns on a property, or null when none.
+	 *
+	 * Runs the three write refusals in order — validity window, leaf-only,
+	 * exclusive group — and returns the first message that applies. The
+	 * exclusive-group bookkeeping is delegated so this method stays a plain
+	 * sequence of guards.
+	 *
+	 * @param string                   $property          The property name being judged.
+	 * @param CodedPropertyDeclaration $declaration       The property's coded declaration.
+	 * @param array<string,mixed>      $concept           The resolved concept's data.
+	 * @param string                   $value             The submitted value that resolved it.
+	 * @param array<string,mixed>      $conceptsByUri     The scheme's concepts, keyed by uri.
+	 * @param DateTimeInterface        $instant           The instant to judge windows at.
+	 * @param array<string,array<string,string>> $heldBySchemeGroup Groups already held, by scheme+group key.
+	 *
+	 * @return string|null The refusal message, or null when the value is allowed.
+	 */
+	private function violationForConcept(
+		string $property,
+		CodedPropertyDeclaration $declaration,
+		array $concept,
+		string $value,
+		array $conceptsByUri,
+		DateTimeInterface $instant,
+		array &$heldBySchemeGroup
+	): ?string {
+		if ($this->lifecycle->isWithinWindow(concept: $concept, at: $instant) === false) {
+			return sprintf(
+				'The value "%s" on "%s" is outside its validity window (%s) and can no longer be chosen.',
+				$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
+				$property,
+				$this->lifecycle->describeWindow(concept: $concept)
+			);
+		}
+
+		$uri = (string)($concept['uri'] ?? $value);
+		if ($declaration->leafOnly === true
+			&& $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $conceptsByUri) === false
+		) {
+			return sprintf(
+				'The value "%s" on "%s" has narrower values under it, and this field accepts only the most specific value.',
+				$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
+				$property
+			);
+		}
+
+		return $this->exclusiveGroupViolation(
+			property: $property,
+			declaration: $declaration,
+			concept: $concept,
+			heldBySchemeGroup: $heldBySchemeGroup
+		);
+	}//end violationForConcept()
+
+	/**
+	 * The refusal an exclusive-group clash earns, recording the first holder.
+	 *
+	 * A concept with no exclusive group refuses nothing. The first concept
+	 * seen for a scheme+group is remembered; a later one in the same group is
+	 * the clash this refuses.
+	 *
+	 * @param string                   $property          The property name being judged.
+	 * @param CodedPropertyDeclaration $declaration       The property's coded declaration.
+	 * @param array<string,mixed>      $concept           The resolved concept's data.
+	 * @param array<string,array<string,string>> $heldBySchemeGroup Groups already held, by scheme+group key.
+	 *
+	 * @return string|null The refusal message, or null when nothing clashes.
+	 */
+	private function exclusiveGroupViolation(
+		string $property,
+		CodedPropertyDeclaration $declaration,
+		array $concept,
+		array &$heldBySchemeGroup
+	): ?string {
+		$group = $this->lifecycle->exclusiveGroupOf(concept: $concept);
+		if ($group === null) {
+			return null;
+		}
+
+		$key = $declaration->scheme . "\0" . $group;
+		$already = ($heldBySchemeGroup[$key] ?? null);
+		if ($already === null) {
+			$heldBySchemeGroup[$key] = [
+				'property' => $property,
+				'label' => $this->hierarchy->labelOf(concept: $concept, language: 'nl'),
+			];
+			return null;
+		}
+
+		return sprintf(
+			'The values "%s" and "%s" both belong to the group "%s", of which only one may be held.',
+			$already['label'],
+			$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
+			$group
+		);
+	}//end exclusiveGroupViolation()
 
 	/**
 	 * The rolled-up scores a schema's coded properties declare, keyed by the

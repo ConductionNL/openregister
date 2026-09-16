@@ -449,16 +449,13 @@ class MagicSearchHandler {
 	 */
 	public function buildFilteredQuery(array $query, Schema $schema, string $tableName): IQueryBuilder {
 		// Extract options from query (prefixed with _).
-		$search = $query['_search'] ?? null;
 		// Coerce to bool: query-string params arrive as strings (e.g.
 		// "_includeDeleted=true" → "true"). applyBasicFilters() is bool-typed
 		// under strict_types, so passing the raw string raised a TypeError →
 		// HTTP 500 on any list call with _includeDeleted=true.
 		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
-		$ids = $query['_ids'] ?? null;
 		$_rbac = $query['_rbac'] ?? true;
 		$_multitenancy = $query['_multitenancy'] ?? true;
-		$relationsContains = $query['_relations_contains'] ?? null;
 
 		// Resolve multitenancy flag based on public schema access and explicit request.
 		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
@@ -466,24 +463,6 @@ class MagicSearchHandler {
 			_multitenancy: $_multitenancy,
 			multitenancyExplicit: $multitenancyExplicit,
 			schema: $schema
-		);
-
-		// Extract and clean filters from the query.
-		//
-		// Reserved params (e.g. `register`, `schema`, `registers`, `schemas`,
-		// `extend`) carry query CONTEXT, not object-field filters. They are NOT
-		// underscore-prefixed, so without this guard they leak into
-		// applyObjectFilters(), which treats them as unknown schema properties
-		// and emits a `1 = 0` condition — silently returning ZERO results. This
-		// is why `ObjectService::findAll(['filters' => ['register' => …,
-		// 'schema' => …, …]])` (which always injects register/schema into the
-		// filters) could not surface a just-written object in-request. Mirror
-		// the raw-SQL UNION path, which already excludes getReservedParams().
-		$metadataFilters = $query['@self'] ?? [];
-		$objectFilters = array_filter(
-			$query,
-			fn ($key): bool => $this->isObjectFieldFilterKey(key: $key),
-			ARRAY_FILTER_USE_KEY
 		);
 
 		$queryBuilder = $this->db->getQueryBuilder();
@@ -505,44 +484,103 @@ class MagicSearchHandler {
 			multitenancyExplicit: $multitenancyExplicit
 		);
 
+		// Apply metadata, object-field and ID filters.
+		$this->applyContentFilters(qb: $queryBuilder, query: $query, schema: $schema);
+
+		// Apply the unread / favourites / recent lenses, full-text search and
+		// relation filters.
+		$this->applyLensAndSearchFilters(qb: $queryBuilder, query: $query, schema: $schema);
+
+		return $queryBuilder;
+	}//end buildFilteredQuery()
+
+	/**
+	 * Apply metadata, object-field and ID filters to the query.
+	 *
+	 * Extracted from {@see buildFilteredQuery()} as a cohesive block; each filter
+	 * guards itself so no-op filters add no conditions.
+	 *
+	 * Reserved params (e.g. `register`, `schema`, `registers`, `schemas`,
+	 * `extend`) carry query CONTEXT, not object-field filters. They are NOT
+	 * underscore-prefixed, so without the {@see isObjectFieldFilterKey()} guard
+	 * they leak into applyObjectFilters(), which treats them as unknown schema
+	 * properties and emits a `1 = 0` condition — silently returning ZERO results.
+	 * This is why `ObjectService::findAll(['filters' => ['register' => …,
+	 * 'schema' => …, …]])` (which always injects register/schema into the
+	 * filters) could not surface a just-written object in-request. Mirror the
+	 * raw-SQL UNION path, which already excludes getReservedParams().
+	 *
+	 * @param IQueryBuilder $qb     The query builder to mutate.
+	 * @param array         $query  Search parameters including filters.
+	 * @param Schema        $schema The schema for property filtering.
+	 *
+	 * @return void
+	 */
+	private function applyContentFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
+		// Extract and clean filters from the query.
+		$metadataFilters = $query['@self'] ?? [];
+		$objectFilters = array_filter(
+			$query,
+			fn ($key): bool => $this->isObjectFieldFilterKey(key: $key),
+			ARRAY_FILTER_USE_KEY
+		);
+		$ids = $query['_ids'] ?? null;
+
 		// Apply metadata filters.
 		if (empty($metadataFilters) === false) {
-			$this->applyMetadataFilters(qb: $queryBuilder, filters: $metadataFilters);
+			$this->applyMetadataFilters(qb: $qb, filters: $metadataFilters);
 		}
 
 		// Apply object field filters (schema-specific columns).
 		if (empty($objectFilters) === false) {
-			$this->applyObjectFilters(qb: $queryBuilder, filters: $objectFilters, schema: $schema);
+			$this->applyObjectFilters(qb: $qb, filters: $objectFilters, schema: $schema);
 		}
 
 		// Apply ID filtering if provided.
 		if ($ids !== null && empty($ids) === false) {
-			$this->applyIdFilters(qb: $queryBuilder, ids: $ids);
+			$this->applyIdFilters(qb: $qb, ids: $ids);
 		}
+	}//end applyContentFilters()
 
+	/**
+	 * Apply the personal lenses, full-text search and relation filters.
+	 *
+	 * Extracted from {@see buildFilteredQuery()} as a cohesive block. The lenses
+	 * are resolved IN the query so the page, the total and the facets cannot
+	 * disagree about what was excluded; each filter guards itself so this method
+	 * keeps its branch count and no-op filters add no conditions.
+	 *
+	 * @param IQueryBuilder $qb     The query builder to mutate.
+	 * @param array         $query  Search parameters including filters.
+	 * @param Schema        $schema The schema for full-text search.
+	 *
+	 * @return void
+	 */
+	private function applyLensAndSearchFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
 		// The unread lens, resolved IN the query so the page, the total and the
 		// facets cannot disagree about what was excluded.
-		$this->applyUnreadFilter(qb: $queryBuilder, userId: ($query['_unreadFor'] ?? null));
+		$this->applyUnreadFilter(qb: $qb, userId: ($query['_unreadFor'] ?? null));
 
 		// The favourites and recent lenses, resolved in the query for the same
 		// reason, and each guarding itself so this method keeps its branch count.
 		$this->applyPersonalLensFilter(
-			qb: $queryBuilder,
+			qb: $qb,
 			table: ObjectFavouriteMapper::TABLE,
 			userId: ($query['_favouriteFor'] ?? null)
 		);
 		$this->applyPersonalLensFilter(
-			qb: $queryBuilder,
+			qb: $qb,
 			table: ObjectViewMapper::TABLE,
 			userId: ($query['_recentFor'] ?? null)
 		);
 
 		// Apply full-text search if provided.
 		// Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
+		$search = $query['_search'] ?? null;
 		if ($search !== null && trim($search) !== '') {
 			$fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
 			$this->applyFullTextSearch(
-				qb: $queryBuilder,
+				qb: $qb,
 				search: trim($search),
 				schema: $schema,
 				fuzzyEnabled: $fuzzyEnabled
@@ -550,15 +588,14 @@ class MagicSearchHandler {
 		}
 
 		// Apply relations contains filter if provided.
+		$relationsContains = $query['_relations_contains'] ?? null;
 		if ($relationsContains !== null && empty($relationsContains) === false) {
-			$this->applyRelationsContainsFilter(qb: $queryBuilder, uuid: $relationsContains);
+			$this->applyRelationsContainsFilter(qb: $qb, uuid: $relationsContains);
 		}
 
 		// Apply dotted relation-field filters: `_relations.<field>` => <id>.
-		$this->applyRelationFieldFilters(qb: $queryBuilder, query: $query);
-
-		return $queryBuilder;
-	}//end buildFilteredQuery()
+		$this->applyRelationFieldFilters(qb: $qb, query: $query);
+	}//end applyLensAndSearchFilters()
 
 	/**
 	 * Decide whether a query key is a genuine object-field filter.

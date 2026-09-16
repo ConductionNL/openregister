@@ -60,6 +60,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterLookupHelper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -869,7 +870,8 @@ class Application extends App implements IBootstrap {
 					// argument omitted here is never supplied at all. That is how
 					// RegisterMapper ran with four dead logging branches
 					// (openregister#2820).
-					logger: $container->get('Psr\Log\LoggerInterface')
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					lookupHelper: $container->get(RegisterLookupHelper::class)
 				);
 			}
 		);

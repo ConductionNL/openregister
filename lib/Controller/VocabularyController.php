@@ -41,11 +41,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
-use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
-use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory;
+use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -102,8 +100,8 @@ class VocabularyController extends Controller {
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param ObjectService $objectService OR object read path (findAll, real API only).
-	 * @param SchemaMapper $schemaMapper Reads the schema a coded property is declared on.
 	 * @param CodedOptionsBuilder $options Builds a coded property's option list or option tree.
+	 * @param VocabularyDeclarationResolver $declarationResolver Resolves the coded declaration a read is about.
 	 *
 	 * @return void
 	 */
@@ -111,9 +109,8 @@ class VocabularyController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
 		private readonly CodedOptionsBuilder $options,
-		private readonly CodedPropertyDeclarationFactory $declarationFactory,
+		private readonly VocabularyDeclarationResolver $declarationResolver,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -156,7 +153,7 @@ class VocabularyController extends Controller {
 			);
 		}
 
-		$declaration = $this->resolveDeclaration(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri);
+		$declaration = $this->declarationResolver->resolveDeclaration(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri);
 		if ($declaration === null) {
 			return $this->notFound();
 		}
@@ -203,88 +200,6 @@ class VocabularyController extends Controller {
 			]
 		);
 	}//end propertyOptions()
-
-	/**
-	 * The coded declaration this read is about, saved or not yet saved.
-	 *
-	 * Two sources, in order. A saved property is read off its schema. A scheme
-	 * named on its own is read off the query instead, because the schema editor
-	 * has to show the hierarchy of a scheme the property is not yet bound to:
-	 * the person choosing a branch is choosing it FROM that tree, so they need
-	 * it before the save rather than after.
-	 *
-	 * @param string $schemaRef The schema id or slug, empty when none was given.
-	 * @param string $property The property name, empty when none was given.
-	 * @param string $schemeUri The scheme uri for the unsaved path, empty when none was given.
-	 *
-	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
-	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
-	 */
-	private function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
-		if ($schemaRef !== '' && $property !== '') {
-			try {
-				$schema = $this->schemaMapper->find(id: $schemaRef);
-			} catch (Throwable $missing) {
-				return null;
-			}
-
-			$properties = ($schema->getProperties() ?? []);
-			$declaration = $this->declarationFactory->fromProperty(property: ($properties[$property] ?? null));
-			if ($declaration !== null) {
-				return $declaration;
-			}
-		}
-
-		if ($schemeUri === '') {
-			return null;
-		}
-
-		return $this->declarationFactory->fromProperty(
-			property: [
-				CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
-			]
-		);
-	}//end resolveDeclaration()
-
-	/**
-	 * Build a declaration from the query, for a property that is not saved yet.
-	 *
-	 * @param string $scheme The scheme's uri.
-	 *
-	 * @return array<string,mixed> The declaration.
-	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
-	 */
-	private function declarationFromQuery(string $scheme): array {
-		$declaration = ['scheme' => $scheme];
-
-		$branch = trim((string)$this->request->getParam('branch', ''));
-		if ($branch !== '') {
-			$declaration['branch'] = $branch;
-		}
-
-		$store = trim((string)$this->request->getParam('store', ''));
-		if ($store !== '') {
-			$declaration['store'] = $store;
-		}
-
-		$maxDepth = $this->request->getParam('maxDepth', null);
-		if (is_numeric($maxDepth) === true) {
-			$declaration['maxDepth'] = (int)$maxDepth;
-		}
-
-		$declaration['leafOnly'] = filter_var(
-			$this->request->getParam('leafOnly', false),
-			FILTER_VALIDATE_BOOLEAN
-		);
-		$declaration['allowDeprecated'] = filter_var(
-			$this->request->getParam('allowDeprecated', false),
-			FILTER_VALIDATE_BOOLEAN
-		);
-
-		return $declaration;
-	}//end declarationFromQuery()
 
 	/**
 	 * The language the caller asked for, defaulting to Dutch.

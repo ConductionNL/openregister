@@ -131,39 +131,62 @@ class ConceptDeleteGuard {
 				continue;
 			}
 
-			$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
-			foreach ($declarations as $property => $declaration) {
-				if ($declaration->scheme !== $schemeUri) {
-					continue;
-				}
-
-				$stored = $uri;
-				if ($declaration->store === 'notation') {
-					$stored = $notation;
-				}
-
-				if ($stored === '') {
-					continue;
-				}
-
-				$count = $this->countHolders(schema: $schema, property: $property, value: $stored);
-				if ($count === 0) {
-					continue;
-				}
-
-				$total += $count;
+			foreach ($this->holdersInSchema(schema: $schema, schemeUri: $schemeUri, uri: $uri, notation: $notation) as $holder) {
+				$total += $holder['count'];
 				if (count($holders) < self::BLOCKER_SAMPLE) {
-					$holders[] = [
-						'schema' => (string)$schema->getSlug(),
-						'property' => $property,
-						'count' => $count,
-					];
+					$holders[] = $holder;
 				}
-			}//end foreach
+			}
 		}//end foreach
 
 		return ['count' => $total, 'holders' => $holders];
 	}//end usage()
+
+	/**
+	 * The holding properties of one schema, each with its object count.
+	 *
+	 * Extracted from {@see self::usage()} so the per-schema work — pick the
+	 * properties bound to the scheme, pick the stored value for each, count
+	 * its holders — reads as one block and the caller only accumulates.
+	 *
+	 * @param Schema $schema    The schema to inspect.
+	 * @param string $schemeUri The uri of the scheme the concept belongs to.
+	 * @param string $uri       The concept's uri, used when the property stores uris.
+	 * @param string $notation  The concept's notation, used when the property stores notations.
+	 *
+	 * @return array<int,array{schema:string,property:string,count:int}> The non-empty holders.
+	 */
+	private function holdersInSchema(Schema $schema, string $schemeUri, string $uri, string $notation): array {
+		$holders = [];
+		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+		foreach ($declarations as $property => $declaration) {
+			if ($declaration->scheme !== $schemeUri) {
+				continue;
+			}
+
+			$stored = $uri;
+			if ($declaration->store === 'notation') {
+				$stored = $notation;
+			}
+
+			if ($stored === '') {
+				continue;
+			}
+
+			$count = $this->countHolders(schema: $schema, property: $property, value: $stored);
+			if ($count === 0) {
+				continue;
+			}
+
+			$holders[] = [
+				'schema' => (string)$schema->getSlug(),
+				'property' => $property,
+				'count' => $count,
+			];
+		}//end foreach
+
+		return $holders;
+	}//end holdersInSchema()
 
 	/**
 	 * The refusal, in words, naming the count.
