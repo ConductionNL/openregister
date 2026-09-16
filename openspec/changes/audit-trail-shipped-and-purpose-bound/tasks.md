@@ -13,8 +13,8 @@
 
 ## 3. Token attribution
 
-- [ ] 3.1 Token, owner and consumer on the audit entry of a write made with a token (D-4).
-- [ ] 3.2 No request or response payload stored, with a test that asserts the absence.
+- [x] 3.1 Token, owner and consumer on the audit entry of a write made with a token (D-4).
+- [x] 3.2 No request or response payload stored, with a test that asserts the absence.
 
 ## 4. Reported content
 
