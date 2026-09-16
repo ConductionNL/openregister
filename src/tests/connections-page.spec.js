@@ -123,17 +123,34 @@ describe('the Connections menu entry', () => {
 	})
 })
 
+/**
+ * The formatter registry the page renders with, built the way CnAppRoot builds
+ * it: `{ ...BUILT_IN_FORMATTERS, ...formatters }`. A local map that main.js
+ * passes under a built-in's name wins, so a copy that predates a status shows
+ * that status as its raw word.
+ *
+ * @return {Object<string, Function>} Formatter name to formatter.
+ */
+function pageFormatters() {
+	const local = /\bformatters: \w+/.test(mainJs)
+		? require(path.join(ROOT, 'src', 'services', 'connectionFormatters.js'))
+			.default
+		: {}
+	return { ...BUILT_IN_FORMATTERS, ...local }
+}
+
 describe('the connection formatters', () => {
 	it('label a switched-off connection through the nextcloud-vue built-in', () => {
+		expect(pageFormatters().connectionStatus('disabled')).toBe('Switched off')
 		// CnAppRoot lets an app formatter win over a built-in, so a local copy
 		// passed to the shell would shadow the library's labels.
 		expect(appVue).not.toMatch(/:formatters=/)
-		expect(BUILT_IN_FORMATTERS.connectionStatus('disabled')).toBe('Switched off')
 	})
 
 	it('resolve every formatter the page names', () => {
+		const formatters = pageFormatters()
 		for (const column of page.config.columns.filter((c) => c.formatter)) {
-			expect(typeof BUILT_IN_FORMATTERS[column.formatter]).toBe('function')
+			expect(typeof formatters[column.formatter]).toBe('function')
 		}
 	})
 
