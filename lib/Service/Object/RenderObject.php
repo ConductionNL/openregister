@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
@@ -2209,6 +2210,13 @@ class RenderObject {
 		// last because it reads the retention block the two calls above fill.
 		$this->applyRetentionClocks(entity: $entity);
 
+		// The links out of this record, built from its own values. Runs after
+		// everything that can change those values (translation resolution,
+		// decryption, virtual calculations) so a template may name a computed
+		// or translated property and get the value the reader is actually
+		// looking at, not the one on disk.
+		$this->applyExternalLinks(entity: $entity, schema: $renderSchema);
+
 		return $entity;
 	}//end renderEntity()
 
@@ -2516,6 +2524,71 @@ class RenderObject {
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
+	/**
+	 * Attach the links out of this record, under `@self.externalLinks`.
+	 *
+	 * A link whose placeholders cannot all be filled is not offered, and a
+	 * schema declaring no links attaches nothing at all rather than an empty
+	 * list: a consumer that has to distinguish "no links declared" from "links
+	 * declared, none applicable" can, and one that does not is not handed a key
+	 * it must remember to ignore.
+	 *
+	 * Failure here is swallowed to a debug line for the same reason every other
+	 * tail-of-render block swallows: a link is an ornament on a record, and a
+	 * record the caseworker cannot read at all is a far worse outcome than a
+	 * record missing its shortcut to the BAG viewer.
+	 *
+	 * @param ObjectEntity $entity The rendered object.
+	 * @param Schema|null $schema Its schema, when one is resolvable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 */
+	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
+		if ($schema === null) {
+			return;
+		}
+
+		$configuration = ($schema->getConfiguration() ?? []);
+		$declarations = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
+		if (is_array($declarations) === false || $declarations === []) {
+			return;
+		}
+
+		try {
+			$objectData = $entity->getObject();
+			if (is_array($objectData) === false) {
+				$objectData = [];
+			}
+
+			$links = (new ExternalLinkResolver())->resolve(
+				declarations: $declarations,
+				object: $objectData
+			);
+
+			if ($links === []) {
+				return;
+			}
+
+			$objectData['@self'] = ($objectData['@self'] ?? []);
+			if (is_array($objectData['@self']) === false) {
+				$objectData['@self'] = [];
+			}
+
+			$objectData['@self']['externalLinks'] = $links;
+			$entity->setObject($objectData);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] external link resolution failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}//end try
+	}//end applyExternalLinks()
+
 	private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void {
 		if ($schema === null) {
 			return;

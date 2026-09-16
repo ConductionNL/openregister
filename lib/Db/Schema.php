@@ -2789,6 +2789,18 @@ class Schema extends Entity implements JsonSerializable {
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// The links out of a record, each a title plus a URL template whose
+		// placeholders fill from the object's own values
+		// (api-as-a-versioned-surface, ADR-031). Read by
+		// ExternalLinkResolver and refused at save by
+		// ExternalLinkAnnotationValidator.
+		//
+		// ⚠️ Absent from this list setConfiguration() drops it, and the drop is
+		// invisible in the worst way this feature has: a declaration that is
+		// gone and a declaration whose placeholder cannot be filled both render
+		// as no link at all. An author would read a 200, see nothing on the
+		// object, and conclude their template was wrong.
+		'x-openregister-external-links',
 		// Whether this schema's objects can be archived by hand:
 		// `{"enabled": true}`. Distinct from `x-openregister-archival` above,
 		// which is about legal retention. Absent from this list
