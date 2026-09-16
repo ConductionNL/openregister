@@ -2883,7 +2883,7 @@ OC.L10N.register(
     "Working calendar {slug}" : "Radni kalendar {slug}",
     "Working calendars" : "Radni kalendari",
     "Working hours in one working day. Makes hours and businessDays commensurable." : "Radni sati u jednom radnom danu. Čini sate i radne dane usporedivima.",
-    "Working week" : "Radni sedmica",
+    "Working week" : "Radna sedmica",
     "Working weekdays" : "Radni dani u sedmici",
     "Wrap webhook payload in CloudEvents format for better interoperability" : "Omotaj korisni teret webhooka u CloudEvents format za bolju interoperabilnost",
     "Wrap webhook payload in cloudevents format for better interoperability" : "Omotaj korisni teret webhooka u cloudevents format za bolju interoperabilnost",
