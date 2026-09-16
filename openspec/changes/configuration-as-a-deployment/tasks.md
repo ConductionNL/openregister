@@ -35,10 +35,25 @@ or not bundles exist yet. Sections 4 and 5, and task 1.3, continue on
 chain all carry the bundle layer already, so a bundle is a binding to write
 rather than a model to add.
 
-- [ ] 4.1 A named bundle of permissions, notification rules and lifecycle settings, bound to many schemas (D-5).
-- [ ] 4.2 A subject override recorded and listed as an exception.
-- [ ] 4.3 Integration configuration inherited from instance or register, overridable, explained.
-- [ ] 4.4 A transition or permission matrix copied onto another role or schema as a draft (D-6).
+- [x] 4.1 A named bundle of permissions, notification rules and lifecycle
+  settings, bound to many schemas (D-5). The values are rows at the bundle layer
+  of `openregister_config_values`, which already existed. The only new table is
+  `openregister_config_bindings`, and its unique index is on the subject: a
+  subject follows one bundle, because the chain has one bundle slot.
+- [x] 4.2 A subject override recorded and listed as an exception.
+  `bindingsOf()` names every bound subject that answers one of the bundle's keys
+  for itself, and the key it answers. The override wins by precedence, which the
+  same test asserts through the explainer.
+- [x] 4.3 Integration configuration inherited from instance or register,
+  overridable, explained. The explainer resolves a subject's bundle from its
+  binding, so a caller naming only the schema gets the whole chain. A caller
+  that had to pass the bundle could pass the wrong one and get a confident
+  answer about a bundle the subject never followed.
+- [x] 4.4 A transition or permission matrix copied onto another role or schema
+  as a draft (D-6). `copyMatrix()` drafts every key under a prefix onto the
+  target and writes no live value. A prefix not ending in a dot is refused,
+  because "permission" would also take "permissions_legacy" and a copy that
+  takes more than it was asked for cannot be reviewed against what was asked.
 
 ## 5. Seeding
 

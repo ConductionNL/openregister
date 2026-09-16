@@ -48,6 +48,7 @@ use OCA\OpenRegister\Controller\CaseTokenController;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ConfigurationBindingMapper;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
@@ -174,6 +175,7 @@ use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportH
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationBundleService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
@@ -1314,7 +1316,20 @@ class Application extends App implements IBootstrap {
 			function (ContainerInterface $container) {
 				return new ConfigurationExplainer(
 					store: $container->get(ConfigurationValueStore::class),
-					deployments: $container->get(ConfigurationDeploymentMapper::class)
+					deployments: $container->get(ConfigurationDeploymentMapper::class),
+					bindings: $container->get(ConfigurationBindingMapper::class)
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationBundleService::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationBundleService(
+					bindings: $container->get(ConfigurationBindingMapper::class),
+					values: $container->get(ConfigurationValueMapper::class),
+					drafts: $container->get(ConfigurationDraftService::class),
+					session: $container->get('OCP\IUserSession')
 				);
 			}
 		);

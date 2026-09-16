@@ -105,6 +105,49 @@ class ConfigurationValueMapper extends QBMapper {
 	}//end findByKey()
 
 	/**
+	 * Every recorded value at one layer address, optionally under one prefix.
+	 *
+	 * Below the instance layer the rows ARE the values, so this is the read a
+	 * bundle's contents and a subject's overrides come from. At the instance
+	 * layer the rows are only the provenance, and reading them as values would
+	 * report a key app config no longer holds: callers wanting instance values
+	 * read app config through ConfigurationValueStore instead.
+	 *
+	 * @param string      $layer    The layer.
+	 * @param string|null $layerRef The layer reference, null at instance level.
+	 * @param string|null $prefix   Only keys starting with this, when given.
+	 *
+	 * @return ConfigurationValue[] The value rows, by key.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAtLayer(string $layer, ?string $layerRef, ?string $prefix = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
+			->orderBy('config_key', 'ASC');
+
+		if ($layerRef === null) {
+			$qb->andWhere($qb->expr()->isNull('layer_ref'));
+		} else {
+			$qb->andWhere($qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef)));
+		}
+
+		if ($prefix !== null && $prefix !== '') {
+			$qb->andWhere(
+				$qb->expr()->like(
+					'config_key',
+					$qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%')
+				)
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+
+	}//end findAtLayer()
+
+	/**
 	 * Create a value row, assigning a uuid and timestamps.
 	 *
 	 * @param array<string, mixed> $data The value fields.

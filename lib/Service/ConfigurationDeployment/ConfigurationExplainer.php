@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
+use OCA\OpenRegister\Db\ConfigurationBindingMapper;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -57,12 +58,14 @@ class ConfigurationExplainer {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationValueStore       $store       The live values.
-	 * @param ConfigurationDeploymentMapper $deployments The append-only history.
+	 * @param ConfigurationValueStore         $store       The live values.
+	 * @param ConfigurationDeploymentMapper   $deployments The append-only history.
+	 * @param ConfigurationBindingMapper|null $bindings    The bundle bindings, when the instance has them.
 	 */
 	public function __construct(
 		private readonly ConfigurationValueStore $store,
-		private readonly ConfigurationDeploymentMapper $deployments
+		private readonly ConfigurationDeploymentMapper $deployments,
+		private readonly ?ConfigurationBindingMapper $bindings = null
 	) {
 
 	}//end __construct()
@@ -156,7 +159,7 @@ class ConfigurationExplainer {
 		$references = [
 			ConfigurationLayer::INSTANCE => null,
 			ConfigurationLayer::REGISTER => $register,
-			ConfigurationLayer::BUNDLE => $bundle,
+			ConfigurationLayer::BUNDLE => ($bundle ?? $this->boundBundle(subject: $subject)),
 			ConfigurationLayer::SUBJECT => $subject,
 		];
 
@@ -176,6 +179,29 @@ class ConfigurationExplainer {
 		return $chain;
 
 	}//end chainFor()
+
+	/**
+	 * The bundle a subject follows, when the caller did not name one.
+	 *
+	 * A caller asking about a schema should not have to know which bundle it
+	 * follows: that is the binding's job, and a caller that had to pass it
+	 * could pass the wrong one and get a confident answer about a bundle the
+	 * subject never followed.
+	 *
+	 * @param string|null $subject The subject, when there is one.
+	 *
+	 * @return string|null The bundle name, or null.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function boundBundle(?string $subject): ?string {
+		if ($subject === null || $this->bindings === null) {
+			return null;
+		}
+
+		return $this->bindings->findBySubject(subject: $subject)?->getBundle();
+
+	}//end boundBundle()
 
 	/**
 	 * The deployment that last moved a value, rendered for a reader.

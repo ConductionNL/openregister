@@ -491,6 +491,19 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
             'verb' => 'GET'],
+        // Configuration bundles. A bundle is a binding, not a model: its values
+        // live at the bundle layer of openregister_config_values and these
+        // routes address it by name. Administrator only, same as above.
+        ['name' => 'configurationBundle#index', 'url' => '/api/configuration/bundles',
+            'verb' => 'GET'],
+        ['name' => 'configurationBundle#show', 'url' => '/api/configuration/bundles/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#bind', 'url' => '/api/configuration/bundles/{id}/bindings',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#unbind', 'url' => '/api/configuration/bundles/{id}/bindings/{subject}',
+            'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'subject' => '[^/]+']],
+        ['name' => 'configurationBundle#copy', 'url' => '/api/configuration/draft-sets/{id}/copy',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
