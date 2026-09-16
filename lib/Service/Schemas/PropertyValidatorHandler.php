@@ -500,7 +500,29 @@ class PropertyValidatorHandler {
 		'iri' => ['value' => 'string', 'description' => 'The vocabulary term this property means.'],
 		'domains' => ['value' => 'array', 'description' => 'The classes this property may be used on.'],
 		'ranges' => ['value' => 'array', 'description' => 'The classes this property may point at.'],
+		'authorization' => ['value' => 'object', 'description' => 'Which roles or groups may read and write this one property.'],
+		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
+		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
+		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
 	];
+
+	/**
+	 * The modifier keys that take a language suffix, and the shape it has.
+	 *
+	 * `title` and `description` carry prose a person reads, so a schema written
+	 * for more than one audience spells them `title:nl` and `description:en`
+	 * beside the unsuffixed pair. Nothing else is prose, and the tag is matched
+	 * rather than waved through (BCP 47's common shapes: `en`, `pt-BR`,
+	 * `zh-Hans`), so `order:en` and `title:englisch` stay the mistakes they are.
+	 *
+	 * @var array<int, string> The base keys a language suffix may follow.
+	 */
+	public const LOCALISED_KEYS = ['title', 'description'];
+
+	/**
+	 * @var string A PCRE matching the part after the colon.
+	 */
+	public const LANGUAGE_TAG_PATTERN = '/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/';
 
 	/**
 	 * Keys that are stored and handed on, but not enforced here.
@@ -590,6 +612,29 @@ class PropertyValidatorHandler {
 	}//end vocabularyKeys()
 
 	/**
+	 * Whether a key is one of the prose keys carrying a language suffix.
+	 *
+	 * @param string $key The property key to look at.
+	 *
+	 * @return bool True when the key is a localised spelling of a prose modifier.
+	 *
+	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 */
+	public static function isLocalisedKey(string $key): bool {
+		$colon = strpos($key, ':');
+		if ($colon === false) {
+			return false;
+		}
+
+		$base = substr($key, 0, $colon);
+		if (in_array($base, self::LOCALISED_KEYS, true) === false) {
+			return false;
+		}
+
+		return preg_match(self::LANGUAGE_TAG_PATTERN, substr($key, ($colon + 1))) === 1;
+	}//end isLocalisedKey()
+
+	/**
 	 * Refuse a property key the vocabulary does not hold.
 	 *
 	 * A key starting with `x-` is a vendor extension and passes through: that
@@ -616,6 +661,10 @@ class PropertyValidatorHandler {
 			}
 
 			if (in_array($key, $known, true) === true) {
+				continue;
+			}
+
+			if (self::isLocalisedKey(key: $key) === true) {
 				continue;
 			}
 
