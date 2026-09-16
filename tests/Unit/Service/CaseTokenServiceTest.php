@@ -45,6 +45,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Service\CaseTokenService;
+use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -116,6 +117,57 @@ class CaseTokenServiceTest extends TestCase {
 	 * @param array<string,mixed>|null $rendered Rendered object (null = not found).
 	 * @param bool $expectRbac Assert _rbac:true on find().
 	 */
+	/**
+	 * A stand-in for TimelineEntryService that records the filter it was asked
+	 * for, and answers entities that serialise to the seeded rows.
+	 *
+	 * @param array<int, array<string,mixed>> $rows   The entries to answer.
+	 * @param boolean                         $throws Whether the read blows up.
+	 *
+	 * @return object The stand-in.
+	 */
+	private function buildTimelineReader(array $rows, bool $throws = false): object {
+		return new class($rows, $throws) {
+			/**
+			 * Every visibility this stand-in was asked for.
+			 *
+			 * @var array<int, string|null>
+			 */
+			public array $asked = [];
+
+			public function __construct(
+				private array $rows,
+				private bool $throws,
+			) {
+			}//end __construct()
+
+			public function listForObject(
+				object $object,
+				?string $visibility = null,
+				int $limit = 50,
+				int $offset = 0,
+			): array {
+				if ($this->throws === true) {
+					throw new RuntimeException('the timeline tables are not migrated');
+				}
+
+				$this->asked[] = $visibility;
+
+				return array_map(
+					static fn (array $row): object => new class($row) {
+						public function __construct(private array $row) {
+						}//end __construct()
+
+						public function jsonSerialize(): array {
+							return $this->row;
+						}//end jsonSerialize()
+					},
+					$this->rows
+				);
+			}//end listForObject()
+		};
+	}//end buildTimelineReader()
+
 	private function buildObjectService(?array $rendered, bool $expectRbac = true): object {
 		return new class($rendered, $expectRbac) {
 			public bool $findRbac = false;
@@ -267,7 +319,116 @@ class CaseTokenServiceTest extends TestCase {
 		$this->assertSame(['title' => 'Public View', 'status' => 'open'], $result['object']);
 		$this->assertTrue($objectService->findRbac, 'find() must run with _rbac:true (RBAC-respecting)');
 		$this->assertTrue($objectService->renderRbac, 'renderEntity() must run with _rbac:true (RBAC-respecting)');
+		$this->assertSame([], $result['timeline'], 'an instance with no timeline service still resolves');
 	}//end testResolveReturnsPublicSafeViewWithRbac()
+
+	/**
+	 * resolve() carries the object's PUBLIC timeline, and asks for it by name.
+	 *
+	 * THE ASSERTION ON THE FILTER IS THE WHOLE TEST. Everything else here
+	 * passes just as well when the reader is handed the unfiltered feed: the
+	 * shape is identical, the count is plausible, and the failure is an
+	 * internal note on a citizen's screen. So the stand-in records what it was
+	 * asked for, and the test reads it back.
+	 *
+	 * The projection is asserted key by key for the same reason. An entry
+	 * carries the author's user id and the entry's own visibility, and both
+	 * travelling would be a leak that renders perfectly.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function testResolveCarriesThePublicTimeline(): void {
+		$token = new CaseToken();
+		$token->setToken('GOOD');
+		$token->setObjectUuid('obj-1');
+		$token->setLabel('Your case');
+		$token->setRevokedAt(null);
+		$token->setExpiresAt(null);
+
+		$mapper = $this->createMock(CaseTokenMapper::class);
+		$mapper->method('findByToken')->with('GOOD')->willReturn($token);
+
+		$reader = $this->buildTimelineReader([
+			[
+				'id' => 'e1',
+				'kind' => 'beschikking-verzonden',
+				'message' => 'Beschikking verzonden',
+				'author' => 'handler-42',
+				'visibility' => 'public',
+				'fields' => ['channel' => 'berichtenbox'],
+				'created' => '2026-05-04T09:12:00+02:00',
+			],
+		]);
+
+		$service = new CaseTokenService(
+			mapper: $mapper,
+			secureRandom: $this->buildSecureRandom('x'),
+			userSession: $this->buildUserSession(null),
+			urlGenerator: $this->buildUrlGenerator(),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([
+				'OCA\\OpenRegister\\Service\\ObjectService' => $this->buildObjectService(['title' => 'Public View']),
+				TimelineEntryService::class => $reader,
+			]),
+		);
+
+		$result = $service->resolve('GOOD');
+
+		$this->assertSame(['public'], $reader->asked, 'the reader must be asked for the public entries');
+		$this->assertCount(1, $result['timeline']);
+		$this->assertSame(
+			['id', 'kind', 'message', 'fields', 'occurredAt'],
+			array_keys($result['timeline'][0]),
+			'only the whitelisted keys leave the building'
+		);
+		$this->assertSame('Beschikking verzonden', $result['timeline'][0]['message']);
+		$this->assertSame('2026-05-04T09:12:00+02:00', $result['timeline'][0]['occurredAt']);
+	}//end testResolveCarriesThePublicTimeline()
+
+	/**
+	 * A reader that blows up leaves the status page standing.
+	 *
+	 * The status page shipped before the timeline did. An instance whose
+	 * timeline tables are not migrated yet must show the status rather than a
+	 * uniform 404, which a citizen reads as a revoked link.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function testAFailingTimelineStillResolvesTheStatus(): void {
+		$token = new CaseToken();
+		$token->setToken('GOOD');
+		$token->setObjectUuid('obj-1');
+		$token->setLabel('Your case');
+		$token->setRevokedAt(null);
+		$token->setExpiresAt(null);
+
+		$mapper = $this->createMock(CaseTokenMapper::class);
+		$mapper->method('findByToken')->with('GOOD')->willReturn($token);
+
+		$reader = $this->buildTimelineReader([], throws: true);
+
+		$service = new CaseTokenService(
+			mapper: $mapper,
+			secureRandom: $this->buildSecureRandom('x'),
+			userSession: $this->buildUserSession(null),
+			urlGenerator: $this->buildUrlGenerator(),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([
+				'OCA\\OpenRegister\\Service\\ObjectService' => $this->buildObjectService(['title' => 'Public View']),
+				TimelineEntryService::class => $reader,
+			]),
+		);
+
+		$result = $service->resolve('GOOD');
+
+		$this->assertNotNull($result);
+		$this->assertSame(['title' => 'Public View'], $result['object']);
+		$this->assertSame([], $result['timeline']);
+	}//end testAFailingTimelineStillResolvesTheStatus()
 
 	/**
 	 * resolve() returns null for an unknown token (no oracle).

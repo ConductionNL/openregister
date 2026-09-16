@@ -45,6 +45,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
+use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
@@ -69,6 +71,18 @@ class CaseTokenService {
 	 * @var int
 	 */
 	private const TOKEN_LENGTH = 43;
+
+	/**
+	 * How many public entries a resolved token carries at most.
+	 *
+	 * A public page is read on a phone and the newest entries are the ones
+	 * that answer "what is happening with my case". A case with a longer
+	 * history is not an error, it is a case that needs paging, and paging an
+	 * anonymous endpoint is a separate decision.
+	 *
+	 * @var int
+	 */
+	private const PUBLIC_TIMELINE_LIMIT = 50;
 
 	/**
 	 * Constructor.
@@ -170,6 +184,15 @@ class CaseTokenService {
 	 *
 	 * @param string $token The opaque token.
 	 *
+	 * THE VIEW CARRIES THE OBJECT'S PUBLIC TIMELINE. A citizen following a
+	 * "track your case" link came to find out what has happened, and a status
+	 * with no history answers half the question. The entries are filtered on
+	 * `public` HERE, on the server, by the same service the signed-in timeline
+	 * reads: nothing that says `internal` crosses this boundary, and no caller
+	 * can ask this method for a different filter.
+	 *
+	 * @param string $token The opaque token.
+	 *
 	 * @return array<string,mixed>|null The public-safe object view, or
 	 *                                  null when the token cannot be
 	 *                                  resolved.
@@ -229,6 +252,7 @@ class CaseTokenService {
 				'token' => $row->getToken(),
 				'label' => $row->getLabel(),
 				'object' => $rendered,
+				'timeline' => $this->publicTimeline(entity: $entity),
 			];
 		} catch (Throwable $e) {
 			// RBAC-denied / not-found / any read failure → 404 (null).
@@ -240,6 +264,58 @@ class CaseTokenService {
 			return null;
 		}//end try
 	}//end resolve()
+
+	/**
+	 * The public entries on one object, cut down to what a stranger may read.
+	 *
+	 * SOFT BY DESIGN. A timeline that cannot be read answers the empty list,
+	 * never an exception: the status page existed before the timeline did, and
+	 * an instance whose timeline tables are not migrated yet must still show
+	 * the status rather than a uniform 404 that reads as a revoked link.
+	 *
+	 * THE PROJECTION IS A WHITELIST, NOT A BLACKLIST. `TimelineEntry` carries
+	 * the author's user id, the raw source of an intake mail and the entry's
+	 * own visibility, and a projection that removed those three by name would
+	 * hand out the fourth one somebody adds later. Only the five keys named
+	 * below leave the building.
+	 *
+	 * @param object $entity The object the timeline hangs on.
+	 *
+	 * @return array<int, array<string,mixed>> The public entries, newest first.
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	private function publicTimeline(object $entity): array {
+		try {
+			$entries = $this->container
+				->get(TimelineEntryService::class)
+				->listForObject(
+					object: $entity,
+					visibility: TimelineVisibilityService::PUBLIC_ENTRY,
+					limit: self::PUBLIC_TIMELINE_LIMIT
+				);
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				'[CaseTokenService] no public timeline for a resolved token',
+				['exception' => $e]
+			);
+			return [];
+		}
+
+		$public = [];
+		foreach ($entries as $entry) {
+			$row = $entry->jsonSerialize();
+			$public[] = [
+				'id' => ($row['id'] ?? ''),
+				'kind' => ($row['kind'] ?? ''),
+				'message' => ($row['message'] ?? ''),
+				'fields' => ($row['fields'] ?? []),
+				'occurredAt' => ($row['created'] ?? ''),
+			];
+		}
+
+		return $public;
+	}//end publicTimeline()
 
 	/**
 	 * Revoke a token so it can no longer be resolved.
