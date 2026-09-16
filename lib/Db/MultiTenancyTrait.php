@@ -142,13 +142,36 @@ trait MultiTenancyTrait {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
 	private function tenantLogRedactor(): TenantLogRedactor {
-		$appConfig = null;
-		if (isset($this->appConfig) === true) {
-			$appConfig = $this->appConfig;
+		return new TenantLogRedactor(appConfig: $this->tenancyAppConfig());
+	}//end tenantLogRedactor()
+
+	/**
+	 * The host's app config, or null when this host does not carry one.
+	 *
+	 * The trait's header has always called `$appConfig` OPTIONAL, and it means
+	 * it: six of the eleven mappers using this trait declare no such property.
+	 * So the probe is real, and psalm reporting it as redundant is psalm
+	 * analysing the trait in the context of one class that happens to have it.
+	 * Four identical probes are already carried in psalm-baseline.xml for
+	 * exactly this reason.
+	 *
+	 * This accessor exists so that number does not grow. A fifth probe would
+	 * have needed a fifth baseline entry, and a baseline that grows every time
+	 * somebody reads an optional property is a baseline nobody can read a
+	 * regression out of. `isSaasMode()` now routes through here too, so the
+	 * count is unchanged.
+	 *
+	 * @return IAppConfig|null The app config, or null.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function tenancyAppConfig(): ?IAppConfig {
+		if (isset($this->appConfig) === false) {
+			return null;
 		}
 
-		return new TenantLogRedactor(appConfig: $appConfig);
-	}//end tenantLogRedactor()
+		return $this->appConfig;
+	}//end tenancyAppConfig()
 
 	/**
 	 * Get the active organisation UUID from the session.
@@ -527,11 +550,12 @@ trait MultiTenancyTrait {
 	 * @return bool True if SaaS mode is enabled
 	 */
 	protected function isSaasMode(): bool {
-		if (isset($this->appConfig) === false) {
+		$appConfig = $this->tenancyAppConfig();
+		if ($appConfig === null) {
 			return false;
 		}
 
-		$multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+		$multitenancyConfig = $appConfig->getValueString('openregister', 'multitenancy', '');
 		if (empty($multitenancyConfig) === true) {
 			return false;
 		}
