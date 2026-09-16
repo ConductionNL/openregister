@@ -54,21 +54,45 @@ use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\Webhook;
 use OCP\AppFramework\Db\Entity;
+use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * A minimal host for the trait, standing in for the twelve mappers that use it.
+ * A minimal host for the trait, standing in for the eleven mappers that use it.
  *
  * Only the session lookup is overridden — verifyOrganisationAccess() itself is
  * the real trait code.
+ *
+ * It supplies the two members the trait's header has always required of its
+ * host, `$db` and `getTableName()`, which a real mapper inherits from QBMapper.
+ * It did not before the shared master data change, and the trait carried probes
+ * for that absence which phpstan could prove dead in the context of every real
+ * mapper. A stand-in that supplies what the real thing supplies removes the
+ * need for the probe, and is the more faithful stand-in.
+ *
+ * `getTableName()` deliberately answers a name that is NEITHER the registers
+ * nor the schemas table: those two are the only tables that can carry a shared
+ * master data declaration, so this host keeps exercising exactly the generic
+ * cross-tenant refusal it was written for, and nothing else.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Db
  */
 final class TenancyGuardHost {
 	use MultiTenancyTrait;
+
+	/**
+	 * The connection a real mapper inherits from QBMapper.
+	 *
+	 * Never used by the guard under test: the shared master data resolver is
+	 * only reached for the registers and schemas tables, and this host reports
+	 * neither.
+	 *
+	 * @var IDBConnection
+	 */
+	protected IDBConnection $db;
 
 	/**
 	 * Logger the trait audit branch writes to; the trait checks isset() first.
@@ -112,6 +136,15 @@ final class TenancyGuardHost {
 	public function verify(Entity $entity): void {
 		$this->verifyOrganisationAccess(entity: $entity);
 	}//end verify()
+
+	/**
+	 * A table that is neither the registers nor the schemas table.
+	 *
+	 * @return string The table name.
+	 */
+	public function getTableName(): string {
+		return 'openregister_tenancy_guard_host';
+	}//end getTableName()
 }//end class
 
 /**

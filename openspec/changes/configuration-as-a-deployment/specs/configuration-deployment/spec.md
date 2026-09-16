@@ -20,6 +20,7 @@ a principal other than the author before the set can be deployed.
 - **GIVEN** an instance requiring an approver other than the author
 - **WHEN** the author tries to deploy their own draft set
 - **THEN** it is refused, naming the requirement
+- @e2e exclude {the requirement is the instance flag configuration_four_eyes, which is deliberately reserved so it cannot travel inside a deployment and therefore has no HTTP door to switch on; asserted in tests/Unit/Service/ConfigurationDeployment/ConfigurationDraftServiceTest.php::testFourEyesAreRequired and tests/Unit/Service/ConfigurationDeployment/DeploymentServiceTest.php::testUnderFourEyesAnAuthorCannotDeployTheirOwnSet}
 
 ### Requirement: A deployment applies a draft set as one named unit, and a rollback is a deployment (REQ-CAD-002)
 
@@ -60,6 +61,7 @@ first deployment SHALL be answered as such rather than as unknown.
 - **GIVEN** a value never changed by a deployment
 - **WHEN** the explainer is asked
 - **THEN** it names the value and says it predates the first deployment
+- @e2e exclude {over HTTP every value this suite can reach is one it created, so the assertion would be about its own fixture rather than about an older instance; asserted in tests/Unit/Service/ConfigurationDeployment/ConfigurationExplainerTest.php::testAnOlderValueIsNamedHonestly}
 
 ### Requirement: A configuration bundle binds one set to many subjects (REQ-CAD-004)
 
