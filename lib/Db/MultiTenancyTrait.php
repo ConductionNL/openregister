@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Db;
 
 use Exception;
+use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -55,6 +56,74 @@ use Symfony\Component\HttpFoundation\Response;
  * @package OCA\OpenRegister\Db
  */
 trait MultiTenancyTrait {
+
+	/**
+	 * The shared master data resolver, built on first use.
+	 *
+	 * NOT constructor-injected, and that is a deliberate trade. Twelve mappers
+	 * mix this trait in, each with its own constructor and its own unit tests
+	 * building it by hand; threading one more argument through all of them to
+	 * reach a class that reads two columns would be a large, purely mechanical
+	 * diff over code this change has no other reason to touch. The resolver
+	 * takes exactly one dependency, `$this->db`, which the trait already
+	 * documents as required, and holds no state beyond a per-request cache.
+	 *
+	 * @var SharedMasterDataService|null
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md
+	 */
+	private ?SharedMasterDataService $sharedMasterData = null;
+
+	/**
+	 * The shared master data resolver for this mapper, or null when unavailable.
+	 *
+	 * @return SharedMasterDataService|null The resolver.
+	 */
+	private function sharedMasterData(): ?SharedMasterDataService {
+		if ($this->sharedMasterData !== null) {
+			return $this->sharedMasterData;
+		}
+
+		if (isset($this->db) === false) {
+			return null;
+		}
+
+		$this->sharedMasterData = new SharedMasterDataService(db: $this->db);
+
+		return $this->sharedMasterData;
+	}//end sharedMasterData()
+
+	/**
+	 * Which rows of THIS mapper's table the caller may read through a declared share.
+	 *
+	 * Only registers and schemas can be declared shared master data, so every
+	 * other mapper using this trait resolves an empty list and its query is
+	 * untouched, byte for byte.
+	 *
+	 * @param array<int, string> $activeOrgUuids The caller's organisation and its parents.
+	 *
+	 * @return array<int, int> Row ids readable through a share.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function sharedMasterDataIds(array $activeOrgUuids): array {
+		if ($activeOrgUuids === [] || method_exists($this, 'getTableName') === false) {
+			return [];
+		}
+
+		$table = $this->getTableName();
+		if ($table !== SharedMasterDataService::REGISTERS && $table !== SharedMasterDataService::SCHEMAS) {
+			return [];
+		}
+
+		$resolver = $this->sharedMasterData();
+		if ($resolver === null) {
+			return [];
+		}
+
+		return $resolver->sharedIds(table: $table, consumerOrgUuids: $activeOrgUuids);
+	}//end sharedMasterDataIds()
+
 	/**
 	 * Get the active organisation UUID from the session.
 	 *
@@ -278,6 +347,14 @@ trait MultiTenancyTrait {
 		$activeOrgUuids = $this->getActiveOrganisationUuids();
 		$organisationColumn = $this->buildQualifiedColumnName(columnName: $columnName, tableAlias: $tableAlias);
 
+		// Shared master data (REQ-SLE-001): rows held by ANOTHER organisation
+		// that declared this one a consumer. They are OR-ed into the same
+		// predicate the caller's own rows are matched by, by ROW ID rather than
+		// by organisation, so a consumer of one code list gains that code list
+		// and nothing else the holder owns.
+		$sharedIds = $this->sharedMasterDataIds(activeOrgUuids: $activeOrgUuids);
+		$sharedIdColumn = $this->buildQualifiedColumnName(columnName: 'id', tableAlias: $tableAlias);
+
 		if (empty($activeOrgUuids) === true) {
 			$this->applyNoActiveOrgFilter(
 				qb: $qb,
@@ -293,7 +370,9 @@ trait MultiTenancyTrait {
 			user: $user,
 			activeOrgUuids: $activeOrgUuids,
 			allowNullOrg: $allowNullOrg,
-			organisationColumn: $organisationColumn
+			organisationColumn: $organisationColumn,
+			sharedIds: $sharedIds,
+			sharedIdColumn: $sharedIdColumn
 		);
 	}//end applyOrganisationFilter()
 
@@ -478,10 +557,14 @@ trait MultiTenancyTrait {
 	 * @param array $activeOrgUuids Active organisation UUIDs
 	 * @param bool $allowNullOrg Allow NULL organisation
 	 * @param string $organisationColumn Organisation column name
+	 * @param array $sharedIds Row ids readable through a shared master data declaration
+	 * @param string $sharedIdColumn The qualified id column those ids are matched against
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	private function applyActiveOrgFilter(
 		IQueryBuilder $qb,
@@ -489,6 +572,8 @@ trait MultiTenancyTrait {
 		array $activeOrgUuids,
 		bool $allowNullOrg,
 		string $organisationColumn,
+		array $sharedIds = [],
+		string $sharedIdColumn = 'id',
 	): void {
 		$isAdmin = $this->isUserAdmin(user: $user);
 
@@ -523,6 +608,17 @@ trait MultiTenancyTrait {
 		// This is used for system-wide resources like Registers and Schemas.
 		if ($allowNullOrg === true) {
 			$orgPredicates[] = $qb->expr()->isNull($organisationColumn);
+		}
+
+		// Shared master data (REQ-SLE-001). Matching by row id is what keeps the
+		// widening honest: adding the holder's UUID to the organisation
+		// predicate would hand the consumer EVERY row the holder owns in this
+		// table, which is a cross-tenant hole wearing the shape of a feature.
+		if ($sharedIds !== []) {
+			$orgPredicates[] = $qb->expr()->in(
+				$sharedIdColumn,
+				$qb->createNamedParameter($sharedIds, IQueryBuilder::PARAM_INT_ARRAY)
+			);
 		}
 
 		// Guard: OCP\DB\QueryBuilder\IExpressionBuilder::orX() documents that calling it
