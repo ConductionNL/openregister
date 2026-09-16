@@ -187,9 +187,53 @@ class NoteService {
 			throw new Exception('No user logged in');
 		}
 
+		return $this->createNoteAs(
+			objectUuid: $objectUuid,
+			message: $message,
+			actorType: 'users',
+			actorId: $user->getUID(),
+			visibility: $visibility
+		);
+	}//end createNote()
+
+	/**
+	 * Create a note attributed to a principal that is not a session user.
+	 *
+	 * An access link is not an account, and the whole value of the audit trail
+	 * is that a comment left through a link says so. Nextcloud's comments carry
+	 * an actor TYPE beside the actor id for exactly this reason, so the note is
+	 * written as the link rather than as whoever minted it.
+	 *
+	 * The actor is an argument rather than something this method reaches for:
+	 * the identity that will sit on the note is decided by the caller and is
+	 * visible at that call site.
+	 *
+	 * @param string $objectUuid The UUID of the OpenRegister object
+	 * @param string $message The note message content
+	 * @param string $actorType The comment actor type, e.g. `users` or `openregister_links`
+	 * @param string $actorId The actor id within that type
+	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
+	 *
+	 * @return array The created note in JSON-friendly format
+	 *
+	 * @throws Exception When the actor is not named.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
+	 */
+	public function createNoteAs(
+		string $objectUuid,
+		string $message,
+		string $actorType,
+		string $actorId,
+		?string $visibility = null,
+	): array {
+		if (trim($actorType) === '' || trim($actorId) === '') {
+			throw new Exception('A note needs an actor');
+		}
+
 		$comment = $this->commentsManager->create(
-			'users',
-			$user->getUID(),
+			trim($actorType),
+			trim($actorId),
 			self::OBJECT_TYPE,
 			$objectUuid
 		);
@@ -200,7 +244,7 @@ class NoteService {
 		$this->commentsManager->save($comment);
 
 		return $this->commentToArray(comment: $comment);
-	}//end createNote()
+	}//end createNoteAs()
 
 	/**
 	 * Update an existing note's message.

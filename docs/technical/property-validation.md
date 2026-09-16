@@ -24,6 +24,13 @@ list is how an app ends up offering eight of the types the layer validates.
 A key the vocabulary does not hold fails the schema save with a 422 naming it.
 A key starting with `x-` is a vendor extension and passes through.
 
+The two prose keys may be written once per language, as `title:nl` and
+`description:en`. Only those two take a suffix, and only a language tag may
+follow the colon, so `title:englisch` and `order:en` are refused rather than
+quietly stored. The payload publishes the rule under `localisation`, so an
+editor reads which keys take a suffix and what may follow it instead of
+guessing.
+
 An app whose own form lets an administrator author properties declares which
 vocabulary keys that form forwards, with `x-openregister-extends-form`. Read
 the declared narrowings, and what each form leaves out, at
@@ -169,6 +176,17 @@ the declared narrowings, and what each form leaves out, at
 | `hideOnForm` | boolean | true, false | testPropertyHideOnForm |
 | `readOnly` | boolean | true, false | testPropertyReadOnly |
 | `writeOnly` | boolean | true, false | testPropertyWriteOnly |
+| `authorization` | object | `{"read": ["authenticated"], "update": ["admin"]}` | testAPropertyAuthorizationSaves |
+| `table` | object | `{"default": true}` | testTheKeysTheFleetAlreadyWritesAreHeld |
+| `widget` | string | `"switch"`, `"icon"` | testTheKeysTheFleetAlreadyWritesAreHeld |
+| `defaultBehavior` | string | `"always"`, `"falsy"` | testTheKeysTheFleetAlreadyWritesAreHeld |
+| `title:<lang>` | string | `title:nl`, `title:pt-BR` | testAProseKeyTakesALanguageSuffixAndNothingElseDoes |
+| `description:<lang>` | string | `description:en` | testAProseKeyTakesALanguageSuffixAndNothingElseDoes |
+
+`authorization` is the one this layer acts on itself: `Schema::hasPropertyAuthorization()`
+reads it to decide whether a property carries its own read and write rules. The
+other three are read by the apps that write them, and are held here so a
+shipped schema imports.
 
 ### 9. Schema-Level Tests
 
