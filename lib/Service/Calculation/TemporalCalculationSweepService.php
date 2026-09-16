@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -71,6 +72,7 @@ class TemporalCalculationSweepService {
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param ObjectService $objectService The normal object write path (events + audit).
 	 * @param LoggerInterface $logger Structured logging.
+	 * @param LifecycleDeclarationForms $finalForm Owns the shape rules for `initial` and `final`.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -80,6 +82,7 @@ class TemporalCalculationSweepService {
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly ObjectService $objectService,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleDeclarationForms $finalForm = new LifecycleDeclarationForms(),
 	) {
 
 	}//end __construct()
@@ -382,8 +385,13 @@ class TemporalCalculationSweepService {
 			return [null, []];
 		}
 
+		// `final` also takes the reference form `{ from, field }`, whose ends are
+		// rows in another schema. This sweep compares stored strings, so it has
+		// nothing to compare them with and says so by naming no terminals,
+		// rather than stringifying the declaration into two states no object
+		// will ever be in. See LifecycleDeclarationForms.
 		$final = ($lifecycle['final'] ?? []);
-		if (is_array($final) === false) {
+		if (is_array($final) === false || $this->finalForm->isReferenceForm($final) === true) {
 			$final = [];
 		}
 

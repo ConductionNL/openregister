@@ -5486,7 +5486,8 @@ class MagicMapper extends AbstractObjectMapper {
 				qb: $qb,
 				schema: $schema,
 				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
+				_multitenancy: $_multitenancy,
+				registerId: $register->getId()
 			);
 		}
 
@@ -5842,7 +5843,8 @@ class MagicMapper extends AbstractObjectMapper {
 					qb: $accessQb,
 					schema: $schema,
 					_rbac: $_rbac,
-					_multitenancy: $_multitenancy
+					_multitenancy: $_multitenancy,
+					registerId: $register?->getId()
 				);
 
 				$accessResult = $accessQb->executeQuery();
