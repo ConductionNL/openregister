@@ -64,6 +64,12 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     1,336 lines against a
+ *   threshold of 1,000. The growth is the per-property choice, the readability
+ *   refusal and the helpers they need, and it lands here for the same reason
+ *   the complexity below does: a merge that a human decided and a merge the
+ *   resolver computed have to be ONE path, or the screen and the write can
+ *   disagree about what survived. A second class would be a second path.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class owns the full
  *   reversible-merge lifecycle (preview / execute / reverse / snapshot /
  *   recompute) as one server-authoritative unit of work per the spec; splitting
@@ -242,6 +248,13 @@ class MergeService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) One atomic unit of work
 	 *   (snapshot -> relink -> recompute -> status flip -> persist -> event);
 	 *   splitting it would scatter a single server-authoritative transaction.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Same unit of work, now
+	 *   with the optional decision map folded into it. Every branch is a step
+	 *   of the one transaction, and pulling any of them into a helper would
+	 *   move a write outside the block that guarantees the others ran.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)        Same rationale. The path
+	 *   count is the product of independent optional steps (reverse-FK or
+	 *   embedded, decisions or none), not nested decision-making.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
 	 */

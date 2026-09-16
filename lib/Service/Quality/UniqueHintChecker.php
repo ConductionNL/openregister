@@ -209,6 +209,12 @@ class UniqueHintChecker {
 	 * @return array<int, ObjectEntity> The holders.
 	 *
 	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$scoped` does not select
+	 *   between two behaviours, it selects the PRINCIPAL the same read runs as.
+	 *   The spec needs both answers from one query to tell "nobody holds this"
+	 *   from "somebody you may not see holds this", and two methods would be
+	 *   two copies of one filter drifting apart.
 	 */
 	private function holdersOf(string $property, $value, $register, $schema, bool $scoped = true): array {
 		try {

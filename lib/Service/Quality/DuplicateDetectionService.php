@@ -419,8 +419,17 @@ class DuplicateDetectionService {
 	 * @return array<int, array<string, mixed>> The pairs still worth offering.
 	 *
 	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `DismissedPairStore::key()` is a pure
+	 *   function of two uuids with nothing to inject, and it has to be the SAME
+	 *   function the store writes with: a second implementation of the canonical
+	 *   order is a dismissal looked up under a key nothing ever stored it at.
 	 */
 	private function withoutDismissedPairs(array $pairs, array $objects, array $rules, $register, $schema): array {
+		// @SuppressWarnings below covers DismissedPairStore::key(): it is a pure
+		// function of two uuids with no state to inject, and it MUST be the same
+		// function the store writes with, or a dismissal would be looked up
+		// under a key nothing ever stored it at.
 		if (count($pairs) === 0) {
 			return $pairs;
 		}

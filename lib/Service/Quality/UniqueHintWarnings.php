@@ -60,6 +60,12 @@ class UniqueHintWarnings {
 	 * @return void
 	 *
 	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$visible` is part of the
+	 *   warning, not a switch over how to record it: the spec asks for a
+	 *   collision the caller may not see to be reported WITHOUT naming the
+	 *   object, and the reader has to be able to tell that from an empty match
+	 *   list that means something else.
 	 */
 	public function record(string $property, array $matches, bool $visible = true): void {
 		$this->warnings[] = [
