@@ -1,7 +1,10 @@
 <?php
 
 /**
- * Access links: one public surface for the holder, four owner endpoints beside it.
+ * Access links: three endpoints the holder uses, four the owner does.
+ *
+ * The holder reads, comments and uploads; the owner mints, lists, switches off
+ * and revokes.
  *
  * The public endpoints are public in the Nextcloud sense only. They carry no
  * session, so they are reachable without one, and what they serve is decided by

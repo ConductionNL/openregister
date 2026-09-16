@@ -9,6 +9,12 @@
  * resolves to a user account, so a forwarded link never borrows anybody's
  * rights and the audit trail can say that the act was the link's.
  *
+ * Minting and revoking are deliberately NOT audit actions. They are recorded on
+ * the link row itself, in `created_by`, `created` and `revoked_at`, which is
+ * where an owner reviewing what they published looks. The audit trail carries
+ * the USES, which is what the spec asks for and what a wrong publication is
+ * reconstructed from.
+ *
  * Four refusals live here, and they are the whole point of the class:
  *
  *   - a mint with no expiry is refused, naming the requirement;
@@ -95,20 +101,6 @@ class AccessLinkService {
 	 * @var string
 	 */
 	public const ACT_UPLOAD = 'accesslink.upload';
-
-	/**
-	 * The audit action written when a link is minted.
-	 *
-	 * @var string
-	 */
-	public const ACT_MINTED = 'accesslink.minted';
-
-	/**
-	 * The audit action written when a link is revoked.
-	 *
-	 * @var string
-	 */
-	public const ACT_REVOKED = 'accesslink.revoked';
 
 	/**
 	 * Constructor.
