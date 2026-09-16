@@ -123,13 +123,25 @@ class ObjectPermissionsController extends Controller {
 			return $refusal;
 		}
 
-		return new JSONResponse(
-			$this->report->setFor(
-				object: $object,
-				registerRef: $this->objectService->getRegister(),
-				schemaRef: $this->objectService->getSchema()
-			)
-		);
+		try {
+			return new JSONResponse(
+				$this->report->setFor(
+					object: $object,
+					registerRef: $this->objectService->getRegister(),
+					schemaRef: $this->objectService->getSchema()
+				)
+			);
+		} catch (\Throwable $e) {
+			// An access set that could not be assembled is reported as exactly
+			// that. Left to the framework it is a 500 carrying a stack trace, on
+			// an endpoint a non-admin owner may call, and an empty set in its
+			// place would read as "nobody holds any right on this", which is
+			// the one answer an auditor must not be given by accident.
+			return new JSONResponse(
+				['message' => 'The access set for this object could not be assembled'],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 	}//end index()
 
 	/**

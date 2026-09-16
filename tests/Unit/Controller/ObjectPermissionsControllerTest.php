@@ -75,6 +75,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 	 * @param string                 $owner   The object's owner.
 	 * @param array<int, AuditTrail> $trail   The object's audit trail.
 	 * @param boolean                $schemaDeclaresRules Whether the schema's cascade writes any rules down.
+	 * @param boolean                $registerUnset       Whether ObjectService lost its register after resolving the object.
 	 *
 	 * @return ObjectPermissionsController The controller under test.
 	 */
@@ -85,6 +86,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		string $owner = 'bea',
 		array $trail = [],
 		bool $schemaDeclaresRules = true,
+		bool $registerUnset = false,
 	): ObjectPermissionsController {
 		$object = new ObjectEntity();
 		$object->setUuid(self::UUID);
@@ -105,7 +107,11 @@ class ObjectPermissionsControllerTest extends TestCase {
 
 		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->method('getObject')->willReturn($object);
-		$objectService->method('getRegister')->willReturn(1);
+		if ($registerUnset === true) {
+			$objectService->method('getRegister')->willThrowException(new \RuntimeException('Register not set in ObjectService.'));
+		} else {
+			$objectService->method('getRegister')->willReturn(1);
+		}
 		$objectService->method('getSchema')->willReturn(7);
 		$objectService->method('getPermissionHandler')->willReturn($permissionHandler);
 
@@ -216,6 +222,27 @@ class ObjectPermissionsControllerTest extends TestCase {
 		// whether it is biting yet.
 		$this->assertSame('waarnemers', $body['denied'][0]['principal']);
 	}//end testTheOwnerReadsTheAccessSetWithItsShape()
+
+	/**
+	 * An access set that cannot be assembled is a translated 500, not a stack trace.
+	 *
+	 * `ObjectService::getRegister()` throws a RuntimeException when no register
+	 * is set. Uncaught, that reached the framework as a raw 500 on an endpoint a
+	 * non-admin owner may call. The caller here is the owner, so the guard lets
+	 * the request through and the failure is the only thing under test.
+	 *
+	 * @return void
+	 */
+	public function testAnAccessSetThatCannotBeAssembledIsReportedAsSuch(): void {
+		$response = $this->controllerFor(userId: 'bea', owner: 'bea', registerUnset: true)
+			->index('zaken', 'zaak', self::UUID);
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(
+			['message' => 'The access set for this object could not be assembled'],
+			$response->getData()
+		);
+	}//end testAnAccessSetThatCannotBeAssembledIsReportedAsSuch()
 
 	/**
 	 * A caller holding `manage` reads it too, without owning the object.
