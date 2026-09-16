@@ -92,9 +92,9 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 	 *
 	 * @return Schema The schema double.
 	 */
-	private function makeSchema(): Schema {
+	private function makeSchema(?array $properties = null): Schema {
 		$schema = $this->createMock(Schema::class);
-		$schema->method('getProperties')->willReturn(['omschrijving' => ['type' => 'string']]);
+		$schema->method('getProperties')->willReturn($properties ?? ['omschrijving' => ['type' => 'string']]);
 
 		return $schema;
 	}//end makeSchema()
@@ -118,14 +118,14 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 	 *
 	 * @return string The generated SQL condition.
 	 */
-	private function unionSql(string $search): string {
+	private function unionSql(string $search, ?array $properties = null): string {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
 		$method->setAccessible(true);
 
 		return (string)$method->invoke(
 			$this->handler,
 			$search,
-			$this->makeSchema(),
+			$this->makeSchema(properties: $properties),
 			[],
 			$this->makeConnection(),
 			true,
@@ -197,10 +197,16 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 	 *
 	 * @return string The captured predicate.
 	 */
-	private function queryBuilderSql(string $search): string {
+	private function queryBuilderSql(string $search, ?array $properties = null): string {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyFullTextSearch');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $search, $this->makeSchema(), false);
+		$method->invoke(
+			$this->handler,
+			$this->makeQueryBuilder(),
+			$search,
+			$this->makeSchema(properties: $properties),
+			false
+		);
 
 		return implode(' ', $this->captured);
 	}//end queryBuilderSql()
@@ -358,5 +364,124 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 		$this->assertSame($nested, $lifted);
 		$this->assertArrayNotHasKey('filter', $lifted);
 	}//end testTheMissingBucketFilterMeansTheSameInBothSpellings()
+
+	/**
+	 * The spec scenario: an identifier column that declares `exact` does not
+	 * answer to half an identifier.
+	 *
+	 * The declaration has to beat the term, not merely sit beside it. If the
+	 * column kept its `%term%` comparison the search would still return the
+	 * object, and the declaration would look exactly like it was working.
+	 *
+	 * @return void
+	 */
+	public function testAnExactPropertyComparesTheWholeValue(): void {
+		$properties = ['zaaknummer' => ['type' => 'string', 'matchType' => 'exact']];
+
+		$sql = $this->unionSql('Z-2026 AND geweigerd', $properties);
+		$this->assertStringContainsString("COALESCE(\"zaaknummer\"::text, '') ILIKE 'z-2026'", $sql);
+		$this->assertStringNotContainsString("COALESCE(\"zaaknummer\"::text, '') ILIKE '%z-2026%'", $sql);
+
+		// The metadata columns keep the substring pattern, because `_name` and
+		// its siblings declare nothing. The declaration governs the column that
+		// carries it, not the whole scan.
+		$this->assertStringContainsString("COALESCE(_name::text, '') ILIKE '%z-2026%'", $sql);
+
+		$this->captured = [];
+		$qbSql = $this->queryBuilderSql('Z-2026 AND geweigerd', $properties);
+		$this->assertStringContainsString('LOWER(COALESCE(t."zaaknummer", \'\')) LIKE z-2026', $qbSql);
+	}//end testAnExactPropertyComparesTheWholeValue()
+
+	/**
+	 * A property declaring `prefix` anchors the start of the value, whatever
+	 * the caller typed around the term.
+	 *
+	 * @return void
+	 */
+	public function testAPrefixPropertyAnchorsTheStart(): void {
+		$properties = ['kenmerk' => ['type' => 'string', 'matchType' => 'prefix']];
+
+		$sql = $this->unionSql('zaak AND open', $properties);
+		$this->assertStringContainsString("COALESCE(\"kenmerk\"::text, '') ILIKE 'zaak%'", $sql);
+	}//end testAPrefixPropertyAnchorsTheStart()
+
+	/**
+	 * A property declaring `range` is a pair of bounds, not a term, so the
+	 * free-text scan leaves its column out entirely.
+	 *
+	 * @return void
+	 */
+	public function testARangePropertyIsNotScannedForATerm(): void {
+		$properties = [
+			'omschrijving' => ['type' => 'string'],
+			'bedrag' => ['type' => 'string', 'matchType' => 'range'],
+		];
+
+		$sql = $this->unionSql('dakkapel AND open', $properties);
+		$this->assertStringContainsString('omschrijving', $sql);
+		$this->assertStringNotContainsString('bedrag', $sql);
+	}//end testARangePropertyIsNotScannedForATerm()
+
+	/**
+	 * A property declaring `fuzzy` is compared by similarity rather than by
+	 * LIKE, on the platform that has pg_trgm.
+	 *
+	 * @return void
+	 */
+	public function testAFuzzyPropertyUsesSimilarity(): void {
+		$properties = ['naam' => ['type' => 'string', 'matchType' => 'fuzzy']];
+
+		$sql = $this->unionSql('jansen AND open', $properties);
+		$this->assertStringContainsString('similarity(', $sql);
+		$this->assertStringContainsString("'jansen'", $sql);
+	}//end testAFuzzyPropertyUsesSimilarity()
+
+	/**
+	 * A declaration can pull a column into the scan that the old rule left out.
+	 * That is the point of declaring one, and it is also the only way a
+	 * declaration is allowed to widen the scan.
+	 *
+	 * @return void
+	 */
+	public function testADeclarationCanPullANonStringColumnIn(): void {
+		$properties = ['jaar' => ['type' => 'integer', 'matchType' => 'exact']];
+
+		$sql = $this->unionSql('2026 AND open', $properties);
+		$this->assertStringContainsString('jaar', $sql);
+	}//end testADeclarationCanPullANonStringColumnIn()
+
+	/**
+	 * The regression, at the SQL level: a schema whose properties declare
+	 * nothing produces the same scan it produced before the match types
+	 * existed. A date-formatted string stays out, a plain string stays in, and
+	 * both keep the two sided substring pattern.
+	 *
+	 * @return void
+	 */
+	public function testAnUndeclaredSchemaScansExactlyWhatItScannedBefore(): void {
+		$properties = [
+			'omschrijving' => ['type' => 'string'],
+			'startdatum' => ['type' => 'string', 'format' => 'date'],
+			'aantal' => ['type' => 'integer'],
+			'spoed' => ['type' => 'boolean'],
+		];
+
+		$sql = $this->unionSql('dakkapel geweigerd', $properties);
+
+		$this->assertStringContainsString("ILIKE '%dakkapel geweigerd%'", $sql);
+		$this->assertStringContainsString('omschrijving', $sql);
+
+		// `spoed` is the one that catches a participation rule quietly widened
+		// to the auto-detected type: a boolean auto-detects as `exact`, and
+		// `exact` is not `range`, so a rule phrased that way would pull a column
+		// into the scan that no search has ever read.
+		foreach (['startdatum', 'aantal', 'spoed'] as $column) {
+			$this->assertStringNotContainsString(
+				$column,
+				$sql,
+				"An undeclared {$column} was not scanned before this change."
+			);
+		}
+	}//end testAnUndeclaredSchemaScansExactlyWhatItScannedBefore()
 
 }//end class
