@@ -1101,28 +1101,14 @@ class Schema extends Entity implements JsonSerializable {
 		$reservedFlags = ['inheritFromPublic'];
 
 		foreach ($authorization as $action => $rules) {
-			// Reserved flags are validated as booleans, not action rule arrays.
-			if (in_array($action, $reservedFlags, true) === true) {
-				if (is_bool($rules) === false) {
-					throw new InvalidArgumentException(
-						"Authorization flag '{$action}' in {$context} must be a boolean"
-					);
-				}
-
-				continue;
-			}
-
-			// The default object scope for this schema.
-			if ($action === ObjectScopeResolver::SCOPE_KEY) {
-				$this->validateScopeValue(scope: $rules, context: $context);
-				continue;
-			}
-
-			// The role-to-groups assignment. Reserved rather than an action,
-			// because it grants nothing: it names who holds a role so that a rule
-			// can address the role instead of the groups.
-			if ($action === self::ROLES_KEY) {
-				$this->validateRolesAssignment(roles: $rules, context: $context);
+			// Reserved keys are behaviour, not action rule sets, and each is
+			// validated against its own shape.
+			if ($this->validateReservedKey(
+				action: (string)$action,
+				value: $rules,
+				reservedFlags: $reservedFlags,
+				context: $context
+			) === true) {
 				continue;
 			}
 
@@ -1146,6 +1132,53 @@ class Schema extends Entity implements JsonSerializable {
 			}
 		}//end foreach
 	}//end validateAuthorizationRules()
+
+	/**
+	 * Validate one reserved authorization key, if this is one.
+	 *
+	 * Reserved keys are cascade flags, the schema's default object scope, and the
+	 * role-to-groups assignment. None of them is an action rule set: none grants
+	 * anything. Keeping them in one place is what lets the ACTION vocabulary stay
+	 * closed, which is the property that makes a typo an error rather than a rule
+	 * that silently protects nothing.
+	 *
+	 * @param string            $action        The authorization key.
+	 * @param mixed             $value         Its value.
+	 * @param array<int,string> $reservedFlags The boolean cascade flags.
+	 * @param string            $context       Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When a reserved key carries the wrong shape.
+	 *
+	 * @return bool TRUE when the key was reserved and has been validated.
+	 */
+	private function validateReservedKey(
+		string $action,
+		mixed $value,
+		array $reservedFlags,
+		string $context
+	): bool {
+		if (in_array($action, $reservedFlags, true) === true) {
+			if (is_bool($value) === false) {
+				throw new InvalidArgumentException(
+					"Authorization flag '{$action}' in {$context} must be a boolean"
+				);
+			}
+
+			return true;
+		}
+
+		if ($action === ObjectScopeResolver::SCOPE_KEY) {
+			$this->validateScopeValue(scope: $value, context: $context);
+			return true;
+		}
+
+		if ($action === self::ROLES_KEY) {
+			$this->validateRolesAssignment(roles: $value, context: $context);
+			return true;
+		}
+
+		return false;
+	}//end validateReservedKey()
 
 	/**
 	 * Validate a schema's role-to-groups assignment.
@@ -1182,21 +1215,36 @@ class Schema extends Entity implements JsonSerializable {
 				);
 			}
 
-			if (is_array($groups) === false || $groups === []) {
+			$this->validateRoleGroups(roleName: $roleName, groups: $groups, context: $context);
+		}
+	}//end validateRolesAssignment()
+
+	/**
+	 * Validate the groups one role is assigned.
+	 *
+	 * @param string $roleName The role.
+	 * @param mixed  $groups   The group ids it is assigned.
+	 * @param string $context  Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When the groups are not a non-empty list of group ids.
+	 *
+	 * @return void
+	 */
+	private function validateRoleGroups(string $roleName, mixed $groups, string $context): void {
+		if (is_array($groups) === false || $groups === []) {
+			throw new InvalidArgumentException(
+				"Role '{$roleName}' in {$context} must list at least one group id"
+			);
+		}
+
+		foreach ($groups as $group) {
+			if (is_string($group) === false || trim($group) === '') {
 				throw new InvalidArgumentException(
-					"Role '{$roleName}' in {$context} must list at least one group id"
+					"Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
 				);
 			}
-
-			foreach ($groups as $group) {
-				if (is_string($group) === false || trim($group) === '') {
-					throw new InvalidArgumentException(
-						"Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
-					);
-				}
-			}
-		}//end foreach
-	}//end validateRolesAssignment()
+		}
+	}//end validateRoleGroups()
 
 	/**
 	 * Validate a schema's default object scope.
