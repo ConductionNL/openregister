@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.29-unstable.20260915204500</version>
+    <version>2.1.29-unstable.20260916111500</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -429,6 +429,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<command>OCA\OpenRegister\Command\SearchIndexCommand</command>
 		<!-- The sanctioned administrative purge. Every HTTP delete route refuses an
 		     archival record; this is the one path that can still destroy one, and it
 		     needs shell access plus an explicit force flag. -->

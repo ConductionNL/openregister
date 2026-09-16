@@ -496,6 +496,32 @@ class SecurityService {
 	}//end checkAuthRateLimit()
 
 	/**
+	 * The inbound-API authentication ceiling, as a published shape.
+	 *
+	 * Reads the very constants {@see checkAuthRateLimit} and
+	 * {@see recordFailedAuthAttempt} apply, so the number an integrator reads
+	 * out of the capabilities answer and the number that locks them out are
+	 * the same number. Publishing a separately-maintained copy is how a
+	 * documented limit quietly stops describing the enforced one.
+	 *
+	 * Safe to read without a session: it names a ceiling, not a secret, and a
+	 * client that knows the ceiling is a client that can back off before
+	 * hitting it.
+	 *
+	 * @return array<string, int> The attempt ceilings, window and lockout, in seconds.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 */
+	public function describeAuthRateLimit(): array {
+		return [
+			'attemptsPerIdentity' => self::AUTH_RATE_LIMIT_ATTEMPTS,
+			'attemptsPerAddress' => self::AUTH_RATE_LIMIT_IP_ATTEMPTS,
+			'windowSeconds' => self::AUTH_RATE_LIMIT_WINDOW,
+			'lockoutSeconds' => self::AUTH_LOCKOUT_DURATION,
+		];
+	}//end describeAuthRateLimit()
+
+	/**
 	 * Record a failed inbound-API authentication attempt.
 	 *
 	 * Increments the composite (identity+IP) counter and a coarse per-IP
