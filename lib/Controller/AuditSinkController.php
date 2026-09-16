@@ -85,12 +85,19 @@ class AuditSinkController extends Controller {
 		$configured = $this->sink->isConfigured();
 		$status = $this->status->read();
 
+		// Null, not false. An instance that ships nothing has not been found
+		// unhealthy, it has not been asked.
+		$healthy = null;
+		if ($configured === true) {
+			$healthy = $status['healthy'];
+		}
+
 		return new JSONResponse(
 			data: [
 				'configured' => $configured,
 				'path' => $this->sink->path(),
 				'format' => $this->sink->format(),
-				'healthy' => ($configured === false ? null : $status['healthy']),
+				'healthy' => $healthy,
 				'lastSuccessAt' => $status['lastSuccessAt'],
 				'lastFailureAt' => $status['lastFailureAt'],
 				'lastError' => $status['lastError'],

@@ -44,7 +44,12 @@ final class AuditSinkControllerTest extends TestCase {
 	): AuditSinkController {
 		$sink = $this->createMock(AuditSink::class);
 		$sink->method('isConfigured')->willReturn($configured);
-		$sink->method('path')->willReturn($configured === true ? '/var/log/openregister/audit.jsonl' : null);
+		$path = null;
+		if ($configured === true) {
+			$path = '/var/log/openregister/audit.jsonl';
+		}
+
+		$sink->method('path')->willReturn($path);
 		$sink->method('format')->willReturn(AuditSink::FORMAT_JSONL);
 
 		if ($statusService === null) {
@@ -70,7 +75,12 @@ final class AuditSinkControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$groups = $this->createMock(IGroupManager::class);
-		$groups->method('getUserGroupIds')->willReturn($admin === true ? ['admin'] : ['users']);
+		$memberships = ['users'];
+		if ($admin === true) {
+			$memberships = ['admin'];
+		}
+
+		$groups->method('getUserGroupIds')->willReturn($memberships);
 
 		return new AuditSinkController(
 			'openregister',

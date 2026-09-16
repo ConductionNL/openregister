@@ -76,7 +76,12 @@ final class ProcessingPurposeControllerTest extends TestCase {
 
 	private function groupManager(bool $admin): IGroupManager {
 		$groups = $this->createMock(IGroupManager::class);
-		$groups->method('getUserGroupIds')->willReturn($admin === true ? ['admin'] : ['users']);
+		$memberships = ['users'];
+		if ($admin === true) {
+			$memberships = ['admin'];
+		}
+
+		$groups->method('getUserGroupIds')->willReturn($memberships);
 
 		return $groups;
 	}//end groupManager()

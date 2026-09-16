@@ -88,6 +88,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFlowStep(?int $flowStep)
  * @method string|null getPurpose()
  * @method void setPurpose(?string $purpose)
+ * @method string|null getProcessingActivityId()
+ * @method void setProcessingActivityId(?string $processingActivityId)
  * @method string|null getVersion()
  * @method void setVersion(?string $version)
  *

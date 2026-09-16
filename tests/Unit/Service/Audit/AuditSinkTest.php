@@ -36,6 +36,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 final class AuditSinkTest extends TestCase {
+	/**
+	 * The throwaway directory each test writes its sink into.
+	 *
+	 * @var string
+	 */
 	private string $dir = '';
 
 	protected function setUp(): void {
@@ -45,7 +50,12 @@ final class AuditSinkTest extends TestCase {
 	}//end setUp()
 
 	protected function tearDown(): void {
-		foreach ((glob($this->dir . '/*') ?: []) as $file) {
+		$files = glob($this->dir . '/*');
+		if (is_array($files) === false) {
+			$files = [];
+		}
+
+		foreach ($files as $file) {
 			@unlink($file);
 		}
 
@@ -56,6 +66,10 @@ final class AuditSinkTest extends TestCase {
 	/**
 	 * An in-memory IAppConfig, because the sink reads five keys and a mock
 	 * with five willReturnMap entries says less about the test than a store.
+	 *
+	 * @param array $values The keys the sink should read back.
+	 *
+	 * @return IAppConfig The fake, with one store behind get and set.
 	 */
 	private function appConfig(array $values): IAppConfig {
 		// ONE store behind both the reads and the writes. A fake whose setter

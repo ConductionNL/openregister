@@ -175,7 +175,7 @@ class AuditTrailMapper extends QBMapper {
 		// flow attribution is, and before the INSERT for the same reason again:
 		// the sealed half of it lives in `resultSummary`, which is inside the
 		// canonical JSON.
-		(new PurposeAttribution($this->container))->apply(auditTrail: $auditTrail);
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
 		$inserted = $this->insert(entity: $auditTrail);
 
@@ -672,7 +672,7 @@ class AuditTrailMapper extends QBMapper {
 		// reason the flow attribution is: `insertAuditTrails()` builds its rows
 		// here, and stamping only the inserts would leave every bulk write
 		// silently unattributed to the purpose it ran under.
-		(new PurposeAttribution($this->container))->apply(auditTrail: $auditTrail);
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));

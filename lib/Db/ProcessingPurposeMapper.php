@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -178,7 +177,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	/**
 	 * Insert a purpose, filling the uuid and the timestamps.
 	 *
-	 * @param Entity $entity The purpose to insert.
+	 * @param ProcessingPurpose $entity The purpose to insert.
 	 *
 	 * @return ProcessingPurpose The persisted purpose.
 	 *
@@ -186,7 +185,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
 	 */
-	public function insert(Entity $entity): ProcessingPurpose {
+	public function insert($entity): ProcessingPurpose {
 		if ($entity->getUuid() === null || $entity->getUuid() === '') {
 			$entity->setUuid((string)Uuid::v4());
 		}
@@ -198,21 +197,21 @@ class ProcessingPurposeMapper extends QBMapper {
 
 		$entity->setUpdated($now);
 
-		return parent::insert($entity);
+		return parent::insert(entity: $entity);
 	}//end insert()
 
 	/**
 	 * Update a purpose, moving its change time.
 	 *
-	 * @param Entity $entity The purpose to update.
+	 * @param ProcessingPurpose $entity The purpose to update.
 	 *
 	 * @return ProcessingPurpose The persisted purpose.
 	 *
 	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
 	 */
-	public function update(Entity $entity): ProcessingPurpose {
+	public function update($entity): ProcessingPurpose {
 		$entity->setUpdated(new DateTime());
 
-		return parent::update($entity);
+		return parent::update(entity: $entity);
 	}//end update()
 }//end class
