@@ -34,7 +34,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -201,6 +203,11 @@ class SearchIndexMaintenance {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The walk is tables, then indexes, then the
 	 *                                              dry-run and failure branches.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same walk, counted the other way.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  `$apply` is the dry-run switch every
+	 *                                              maintenance command in this app carries, and
+	 *                                              splitting it into two methods would let a
+	 *                                              caller reach the writing one by accident.
 	 */
 	public function rebuild(?int $registerId = null, bool $apply = false, ?callable $progress = null): array {
 		$startedAt = date('c');
@@ -324,7 +331,7 @@ class SearchIndexMaintenance {
 
 		$written = file_put_contents($path, json_encode($snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 		if ($written === false) {
-			throw new \RuntimeException("Could not write the index snapshot to '{$path}'.");
+			throw new RuntimeException("Could not write the index snapshot to '{$path}'.");
 		}
 
 		return [
@@ -348,16 +355,19 @@ class SearchIndexMaintenance {
 	 * @return array<string, mixed> The report: what was missing, created and refused.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The same dry-run switch as rebuild(), for the
+	 *                                             same reason.
 	 */
 	public function restore(string $path, bool $apply = false): array {
 		$raw = file_get_contents($path);
 		if ($raw === false) {
-			throw new \RuntimeException("Could not read the index snapshot at '{$path}'.");
+			throw new RuntimeException("Could not read the index snapshot at '{$path}'.");
 		}
 
 		$snapshot = json_decode($raw, true);
 		if (is_array($snapshot) === false || is_array($snapshot['tables'] ?? null) === false) {
-			throw new \RuntimeException("'{$path}' is not an index snapshot this version can read.");
+			throw new RuntimeException("'{$path}' is not an index snapshot this version can read.");
 		}
 
 		$missing = [];
@@ -496,7 +506,7 @@ class SearchIndexMaintenance {
 	 */
 	private function quoteIdentifier(string $name): string {
 		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name) !== 1) {
-			throw new \InvalidArgumentException("Refusing to act on the index name '{$name}'.");
+			throw new InvalidArgumentException("Refusing to act on the index name '{$name}'.");
 		}
 
 		return '"' . $name . '"';

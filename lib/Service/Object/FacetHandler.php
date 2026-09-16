@@ -1293,6 +1293,10 @@ class FacetHandler {
 	 * @psalm-return array{'@self': array, object_fields: array, non_aggregated_fields: array}
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and
+	 *                                      holds no state; the search paths read it the same
+	 *                                      way, which is what keeps the declaration single.
 	 */
 	private function getFacetableFieldsFromSchemas(array $schemas): array {
 		$facetableFields = [

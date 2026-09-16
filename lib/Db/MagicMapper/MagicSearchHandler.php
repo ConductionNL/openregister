@@ -778,6 +778,13 @@ class MagicSearchHandler {
 	 * @psalm-param array<int, string>|null $existingColumns
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)    PropertySearchProfile reads a property array and
+	 *                                         holds no state. Injecting it would add a
+	 *                                         constructor argument to two classes to satisfy a
+	 *                                         linter, not to make anything substitutable.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) One branch per match type, plus the column rules
+	 *                                         the two platforms need.
 	 */
 	private function buildSearchLeafSql(
 		string $pattern,
@@ -875,6 +882,10 @@ class MagicSearchHandler {
 	 * @return string The pattern to compare this column against.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchTermNode::likeEscape() is a pure function over a
+	 *                                      string, shared so a declared match type escapes a
+	 *                                      user's `%` exactly as a parsed term does.
 	 */
 	private function patternForMatchType(string $matchType, string $pattern, string $literal): string {
 		if ($matchType === PropertySearchProfile::MATCH_EXACT) {
@@ -2491,6 +2502,9 @@ class MagicSearchHandler {
 	 * @param bool          $fuzzyEnabled Whether `_fuzzy=true` was requested.
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Same pure reader as buildSearchLeafSql(), and it has
+	 *                                      to be the same one or the two paths could disagree.
 	 */
 	private function buildSearchLeafQbSql(
 		IQueryBuilder $qb,

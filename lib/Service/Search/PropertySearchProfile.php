@@ -233,9 +233,7 @@ final class PropertySearchProfile {
 			return strtolower(trim($declared));
 		}
 
-		$matchType = self::matchTypeFor(property: $property);
-
-		if ($matchType === self::MATCH_RANGE) {
+		if (self::matchTypeFor(property: $property) === self::MATCH_RANGE) {
 			if (self::isDate(property: $property) === true) {
 				return 'date-range';
 			}
@@ -243,24 +241,37 @@ final class PropertySearchProfile {
 			return 'range';
 		}
 
-		if (strtolower((string)($property['type'] ?? '')) === 'boolean') {
+		return self::controlFromShape(property: $property);
+	}//end inputControlFor()
+
+	/**
+	 * The control a property's own shape asks for, once ranges are settled.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @phpstan-param array<string, mixed> $property
+	 *
+	 * @psalm-param array<string, mixed> $property
+	 *
+	 * @return string One of the INPUT_CONTROLS values.
+	 */
+	private static function controlFromShape(array $property): string {
+		$type = strtolower((string)($property['type'] ?? ''));
+
+		if ($type === 'boolean') {
 			return 'boolean';
 		}
 
-		if (isset($property['enum']) === true && is_array($property['enum']) === true) {
-			if (strtolower((string)($property['type'] ?? '')) === 'array') {
-				return 'multiselect';
-			}
-
-			return 'select';
-		}
-
-		if (strtolower((string)($property['type'] ?? '')) === 'array') {
+		if ($type === 'array') {
 			return 'multiselect';
 		}
 
+		if (isset($property['enum']) === true && is_array($property['enum']) === true) {
+			return 'select';
+		}
+
 		return 'text';
-	}//end inputControlFor()
+	}//end controlFromShape()
 
 	/**
 	 * Whether the property carries a date-ish format.
