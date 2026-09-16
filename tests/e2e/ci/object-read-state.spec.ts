@@ -171,15 +171,24 @@ test.describe('object read state over HTTP', () => {
 			const seen = await ctx.put(
 				`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
 			)
-			expect(seen.ok(), `marking read failed: ${await seen.text()}`).toBeTruthy()
+			expect(
+				seen.ok(),
+				`marking read failed: ${await seen.text()}`,
+			).toBeTruthy()
 			expect((await seen.json()).unread).toBe(false)
 		}
 
 		// The owner changes a DECLARED property.
-		const write = await owner.put(`${API}/objects/${registerId}/${schemaId}/${objectUuid}`, {
-			data: { key: 'read-state-object-changed', note: 'first' },
-		})
-		expect(write.ok(), `object update failed: ${await write.text()}`).toBeTruthy()
+		const write = await owner.put(
+			`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
+			{
+				data: { key: 'read-state-object-changed', note: 'first' },
+			},
+		)
+		expect(
+			write.ok(),
+			`object update failed: ${await write.text()}`,
+		).toBeTruthy()
 
 		const forOther = await other.get(
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
@@ -203,27 +212,37 @@ test.describe('object read state over HTTP', () => {
 	test('a change to a property the schema did not declare is not news', async () => {
 		// Both read it again, so both start from read.
 		for (const ctx of [owner, other]) {
-			await ctx.put(`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`)
+			await ctx.put(
+				`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
+			)
 		}
 
 		// `note` is not in `x-openregister-read-state.properties`.
-		const write = await owner.put(`${API}/objects/${registerId}/${schemaId}/${objectUuid}`, {
-			data: { key: 'read-state-object-changed', note: 'second' },
-		})
-		expect(write.ok(), `object update failed: ${await write.text()}`).toBeTruthy()
+		const write = await owner.put(
+			`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
+			{
+				data: { key: 'read-state-object-changed', note: 'second' },
+			},
+		)
+		expect(
+			write.ok(),
+			`object update failed: ${await write.text()}`,
+		).toBeTruthy()
 
 		const forOther = await other.get(
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
 		)
 		expect(
 			(await forOther.json()).unread,
-			'an undeclared property changing must not light up anybody\'s badge',
+			"an undeclared property changing must not light up anybody's badge",
 		).toBe(false)
 	})
 
 	test('marking back to unread works, and only for the user who asked', async () => {
 		for (const ctx of [owner, other]) {
-			await ctx.put(`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`)
+			await ctx.put(
+				`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
+			)
 		}
 
 		const back = await other.delete(
@@ -242,9 +261,13 @@ test.describe('object read state over HTTP', () => {
 	})
 
 	test('the object read carries the unread marker for the reader', async () => {
-		await other.delete(`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`)
+		await other.delete(
+			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
+		)
 
-		const read = await other.get(`${API}/objects/${registerId}/${schemaId}/${objectUuid}`)
+		const read = await other.get(
+			`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
+		)
 		expect(read.ok()).toBeTruthy()
 		const self = (await read.json())['@self']
 		expect(
@@ -260,10 +283,16 @@ test.describe('object read state over HTTP', () => {
 		// that creates 120 objects to prove it is a slow test with no extra
 		// evidence in it.
 		for (let i = 0; i < 12; i++) {
-			const obj = await owner.post(`${API}/objects/${registerId}/${schemaId}`, {
-				data: { key: `page-${i}`, note: 'page' },
-			})
-			expect(obj.ok(), `page object ${i} create failed: ${await obj.text()}`).toBeTruthy()
+			const obj = await owner.post(
+				`${API}/objects/${registerId}/${schemaId}`,
+				{
+					data: { key: `page-${i}`, note: 'page' },
+				},
+			)
+			expect(
+				obj.ok(),
+				`page object ${i} create failed: ${await obj.text()}`,
+			).toBeTruthy()
 			const body = await obj.json()
 			pageUuids.push(String(body['@self']?.id ?? body.id ?? body.uuid))
 		}
@@ -274,7 +303,10 @@ test.describe('object read state over HTTP', () => {
 			const res = await other.put(
 				`${API}/objects/${registerId}/${schemaId}/${uuid}/read-state`,
 			)
-			expect(res.ok(), `marking ${uuid} read failed: ${await res.text()}`).toBeTruthy()
+			expect(
+				res.ok(),
+				`marking ${uuid} read failed: ${await res.text()}`,
+			).toBeTruthy()
 		}
 
 		// Seven of the thirteen objects in this register are unread for them.
@@ -303,7 +335,9 @@ test.describe('object read state over HTTP', () => {
 			(row: Record<string, any>) => String(row['@self']?.id ?? row.id),
 		)
 		for (const uuid of returned) {
-			expect(seen.has(uuid), `page contained a read object: ${uuid}`).toBe(false)
+			expect(seen.has(uuid), `page contained a read object: ${uuid}`).toBe(
+				false,
+			)
 		}
 
 		// And the two pages together are the whole answer, with no row twice.
@@ -316,7 +350,10 @@ test.describe('object read state over HTTP', () => {
 		const before = await other.get(
 			`${API}/notification-history?objectUuid=${objectUuid}&unreadOnly=true`,
 		)
-		expect(before.ok(), `notification list failed: ${await before.text()}`).toBeTruthy()
+		expect(
+			before.ok(),
+			`notification list failed: ${await before.text()}`,
+		).toBeTruthy()
 		const beforeBody = await before.json()
 		expect(Array.isArray(beforeBody.results)).toBe(true)
 
@@ -325,11 +362,16 @@ test.describe('object read state over HTTP', () => {
 		// dispatch rules are not this spec's subject: what IS this spec's
 		// subject is that the endpoint exists, answers, and never grows the
 		// unread set by being called.
-		await other.delete(`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`)
+		await other.delete(
+			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
+		)
 		const opened = await other.put(
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/read-state`,
 		)
-		expect(opened.ok(), `marking read failed: ${await opened.text()}`).toBeTruthy()
+		expect(
+			opened.ok(),
+			`marking read failed: ${await opened.text()}`,
+		).toBeTruthy()
 		const openedBody = await opened.json()
 		expect(
 			openedBody,
@@ -350,7 +392,10 @@ test.describe('object read state over HTTP', () => {
 		const typed = await other.get(
 			`${API}/notification-history?subjectType=e2e-nothing-${RUN}`,
 		)
-		expect(typed.ok(), `subject-type list failed: ${await typed.text()}`).toBeTruthy()
+		expect(
+			typed.ok(),
+			`subject-type list failed: ${await typed.text()}`,
+		).toBeTruthy()
 		const typedBody = await typed.json()
 
 		expect(
@@ -373,7 +418,7 @@ test.describe('object read state over HTTP', () => {
 		)
 		expect(
 			probe.status(),
-			'asking about somebody else\'s read state must be refused, not answered about yourself',
+			"asking about somebody else's read state must be refused, not answered about yourself",
 		).toBe(403)
 	})
 })
