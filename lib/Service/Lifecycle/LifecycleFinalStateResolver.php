@@ -69,19 +69,19 @@ class LifecycleFinalStateResolver {
 	 *
 	 * @param MagicMapper                $objects     Loads the referenced row.
 	 * @param LoggerInterface            $logger      Where an unresolvable reference is reported.
-	 * @param LifecycleFinalDeclaration  $declaration Tells the two forms of `final` apart.
+	 * @param LifecycleDeclarationForms  $declaration Tells the two forms of `final` apart.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objects,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleFinalDeclaration $declaration = new LifecycleFinalDeclaration(),
+		private readonly LifecycleDeclarationForms $declaration = new LifecycleDeclarationForms(),
 	) {
 	}//end __construct()
 
 	/**
 	 * Is this value the reference form of `final` rather than a list of states?
 	 *
-	 * Delegates to {@see LifecycleFinalDeclaration}, which owns the shape rule
+	 * Delegates to {@see LifecycleDeclarationForms}, which owns the shape rule
 	 * for every reader of `final`. Kept here so a caller that already holds the
 	 * resolver does not have to wire a second collaborator to ask.
 	 *

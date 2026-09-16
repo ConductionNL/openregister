@@ -1,13 +1,15 @@
 <?php
 
 /**
- * What `x-openregister-lifecycle.final` is allowed to say.
+ * What a lifecycle's endpoint declarations are allowed to say.
  *
- * `final` has two forms and three readers: the schema-save validator, the
- * archival nomination service and the temporal sweep. Keeping the shape rule
- * here rather than in any one of them is the point: a form the validator
- * accepts and a reader does not recognise is a schema that saves and then does
- * nothing, which is the class of silence this whole change exists to end.
+ * `initial` and `final` are the same idea twice: each names either a literal
+ * state or a `{ from, field }` reference to a row that carries the answer. The
+ * shape rule lives here rather than in any one reader, because `final` has
+ * three of them (the schema-save validator, the archival nomination service and
+ * the temporal sweep), and a form the validator accepts while a reader does not
+ * recognise it is a schema that saves and then does nothing. That is the class
+ * of silence this whole change exists to end.
  *
  * Instance methods, not statics, so every reader declares the dependency and
  * a test can substitute one.
@@ -34,11 +36,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 /**
- * Tells the two accepted forms of `final` apart, and refuses the rest.
+ * Tells the accepted forms of `initial` and `final` apart, and refuses the rest.
  *
  * @psalm-suppress UnusedClass
  */
-class LifecycleFinalDeclaration {
+class LifecycleDeclarationForms {
 
 	/**
 	 * Is this value the reference form rather than a list of states?
@@ -106,7 +108,7 @@ class LifecycleFinalDeclaration {
 			return $malformed;
 		}
 
-		if ($this->isReferenceForm($final) === false) {
+		if ($this->isReferenceForm(final: $final) === false) {
 			return null;
 		}
 
@@ -120,4 +122,47 @@ class LifecycleFinalDeclaration {
 
 		return null;
 	}//end validateForm()
+
+	/**
+	 * Shape-check the `initial` value in its two accepted forms.
+	 *
+	 * Valid: a non-empty string (literal form) or an object with non-empty
+	 * string `from` and `field` keys (object form). Returns a single structured
+	 * error on violation, or null when valid.
+	 *
+	 * ⚠️ Unlike `final.from`, `initial.from` names a reference declared in
+	 * `x-openregister-references`: at creation there is no value yet, so
+	 * something has to be followed to reach the related object.
+	 *
+	 * @param mixed $initial The raw `initial` value off the annotation.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when valid.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function validateInitialForm(mixed $initial): ?array {
+		if (is_string($initial) === true) {
+			return null;
+		}
+
+		if (is_array($initial) === true) {
+			$from = ($initial['from'] ?? null);
+			$field = ($initial['field'] ?? null);
+			if (is_string($from) === false || $from === ''
+				|| is_string($field) === false || $field === ''
+			) {
+				return [
+					'code' => 'lifecycle-initial-malformed',
+					'message' => 'x-openregister-lifecycle.initial object form must declare non-empty "from" and "field" strings.',
+				];
+			}
+
+			return null;
+		}
+
+		return [
+			'code' => 'lifecycle-initial-malformed',
+			'message' => 'x-openregister-lifecycle.initial must be a string or an object with "from" and "field".',
+		];
+	}//end validateInitialForm()
 }//end class
