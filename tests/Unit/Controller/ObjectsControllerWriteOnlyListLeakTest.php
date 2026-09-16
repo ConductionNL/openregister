@@ -62,12 +62,15 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  */
 class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
+	use BuildsStateFieldRuleResolver;
+
 	private const SECRET_TOP = 'SECRET_APIKEY_MUST_NOT_LEAK';
 	private const SECRET_NESTED = 'SECRET_CLIENT_SECRET_MUST_NOT_LEAK';
 
@@ -190,7 +193,8 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
 			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))
 		);
 
 		return new RenderObject(
