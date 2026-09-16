@@ -4639,6 +4639,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
 	 */
 	private function exportRefusalFor(Schema $schema, Register $register): ?JSONResponse {
+		$rightService = null;
 		try {
 			$rightService = $this->container->get(ExportRightService::class);
 		} catch (\Throwable $e) {
@@ -4646,7 +4647,13 @@ class ObjectsController extends Controller {
 				message: '[ObjectsController] Export right service unresolvable, refusing the export',
 				context: ['error' => $e->getMessage()]
 			);
+		}
 
+		// A container that answers with something other than the service is the
+		// same situation as one that throws, and it must end the same way. The
+		// alternative is an export that runs with no verb check and nothing to
+		// say one was missing, which is the hole this whole change closes.
+		if (($rightService instanceof ExportRightService) === false) {
 			return new JSONResponse(
 				data: [
 					'error' => 'EXPORT_REFUSED',

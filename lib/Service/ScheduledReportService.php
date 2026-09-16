@@ -141,6 +141,7 @@ class ScheduledReportService {
 	 * @param LoggerInterface $logger Logger.
 	 * @param IMailer $mailer Sends the email-delivery leg (deliveryMode email|both).
 	 * @param IConfig $config Resolves the instance's default mail sender.
+	 * @param ExportProfileService|null $profileService Runs a named export profile, when the schedule names one.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies — IMailer/IConfig are the
 	 *     two email-delivery additions on top of the original 9; each is a distinct, testable collaborator

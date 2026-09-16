@@ -31,6 +31,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+// phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed PHPUnit doubles, the type IS the documentation.
+
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ScheduledReport;

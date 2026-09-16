@@ -317,7 +317,10 @@ class PermissionCatalogueTest extends TestCase {
 		$dispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('listener exploded'));
 		$catalogue = new PermissionCatalogue($dispatcher);
 
-		$this->assertSame(['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage'], $catalogue->verbs());
+		$this->assertSame(
+			expected: ['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage'],
+			actual: $catalogue->verbs()
+		);
 		$this->assertArrayHasKey('*', $catalogue->rejectedDeclarations());
 	}//end testAFailedDeclarationRoundLeavesTheCanonicalVerbs()
 

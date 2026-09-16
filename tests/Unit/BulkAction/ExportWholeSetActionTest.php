@@ -26,6 +26,7 @@ namespace Unit\BulkAction;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+// phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed PHPUnit doubles, the type IS the documentation.
 
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Db\BulkJobMember;

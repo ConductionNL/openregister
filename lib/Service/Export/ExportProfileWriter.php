@@ -244,7 +244,11 @@ class ExportProfileWriter {
 		}
 
 		if (is_bool($value) === true) {
-			return ($value === true ? 'true' : 'false');
+			if ($value === true) {
+				return 'true';
+			}
+
+			return 'false';
 		}
 
 		if (is_array($value) === true || is_object($value) === true) {
@@ -269,7 +273,11 @@ class ExportProfileWriter {
 		}
 
 		if (is_bool($value) === true) {
-			return ($value === true ? 'yes' : 'no');
+			if ($value === true) {
+				return 'yes';
+			}
+
+			return 'no';
 		}
 
 		if (is_array($value) === true) {

@@ -44,6 +44,8 @@ use Throwable;
  * Idempotent: a schema that already declares `export` is left exactly as it is,
  * including one an administrator has already narrowed. Never throws, because a
  * single unreadable schema must not abort an app upgrade.
+ *
+ * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
  */
 class GrantExportWhereReadIsGranted implements IRepairStep {
 

@@ -277,6 +277,8 @@ class ExportProfileService {
 	 * @param ExportProfile $profile The profile.
 	 *
 	 * @return Register|null The register.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
 	 */
 	public function registerOf(ExportProfile $profile): ?Register {
 		if ($profile->getRegisterId() === null) {
@@ -296,6 +298,8 @@ class ExportProfileService {
 	 * @param ExportProfile $profile The profile.
 	 *
 	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
 	 */
 	public function schemaOf(ExportProfile $profile): ?Schema {
 		if ($profile->getSchemaId() === null) {
@@ -378,7 +382,12 @@ class ExportProfileService {
 		}
 
 		if (array_key_exists('description', $data) === true) {
-			$profile->setDescription($data['description'] === null ? null : (string)$data['description']);
+			$description = null;
+			if ($data['description'] !== null) {
+				$description = (string)$data['description'];
+			}
+
+			$profile->setDescription($description);
 		}
 
 		if (isset($data['registerId']) === true) {
@@ -386,7 +395,12 @@ class ExportProfileService {
 		}
 
 		if (array_key_exists('schemaId', $data) === true) {
-			$profile->setSchemaId($data['schemaId'] === null ? null : (int)$data['schemaId']);
+			$schemaId = null;
+			if ($data['schemaId'] !== null) {
+				$schemaId = (int)$data['schemaId'];
+			}
+
+			$profile->setSchemaId($schemaId);
 		}
 
 		if (isset($data['fields']) === true) {
@@ -397,7 +411,12 @@ class ExportProfileService {
 		$profile->setFormat((string)($data['format'] ?? $profile->getFormat() ?? 'csv'));
 
 		if (array_key_exists('filters', $data) === true) {
-			$profile->setFilters($data['filters'] === null ? null : (string)json_encode($data['filters']));
+			$filters = null;
+			if ($data['filters'] !== null) {
+				$filters = (string)json_encode($data['filters']);
+			}
+
+			$profile->setFilters($filters);
 		}
 
 		if (array_key_exists('wholeSet', $data) === true) {
