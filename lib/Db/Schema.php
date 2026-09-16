@@ -812,6 +812,20 @@ class Schema extends Entity implements JsonSerializable {
 	public const NOT_SUPPLIED_REASONS_ANNOTATION = 'x-openregister-not-supplied-reasons';
 
 	/**
+	 * The authorization key that assigns each role name its groups.
+	 *
+	 * A role is the schema's own vocabulary, and the map says which Nextcloud
+	 * groups hold it. It is not an action rule set: nothing is granted by
+	 * declaring a role. The notification dispatcher reads this map to turn
+	 * `{"kind": "role", "role": "behandelaar"}` into the people to tell, and a
+	 * lifecycle transition reads the same map, so the assignment changes in one
+	 * place rather than in every rule that names the role.
+	 *
+	 * @var string
+	 */
+	public const ROLES_KEY = 'roles';
+
+	/**
 	 * The lens annotation: properties that read a referenced record's field live.
 	 *
 	 * Keyed by the property name the lens renders as, each entry naming the
@@ -1151,20 +1165,14 @@ class Schema extends Entity implements JsonSerializable {
 		$reservedFlags = ['inheritFromPublic'];
 
 		foreach ($authorization as $action => $rules) {
-			// Reserved flags are validated as booleans, not action rule arrays.
-			if (in_array($action, $reservedFlags, true) === true) {
-				if (is_bool($rules) === false) {
-					throw new InvalidArgumentException(
-						"Authorization flag '{$action}' in {$context} must be a boolean"
-					);
-				}
-
-				continue;
-			}
-
-			// The default object scope for this schema.
-			if ($action === ObjectScopeResolver::SCOPE_KEY) {
-				$this->validateScopeValue(scope: $rules, context: $context);
+			// Reserved keys are behaviour, not action rule sets, and each is
+			// validated against its own shape.
+			if ($this->validateReservedKey(
+				action: (string)$action,
+				value: $rules,
+				reservedFlags: $reservedFlags,
+				context: $context
+			) === true) {
 				continue;
 			}
 
@@ -1188,6 +1196,119 @@ class Schema extends Entity implements JsonSerializable {
 			}
 		}//end foreach
 	}//end validateAuthorizationRules()
+
+	/**
+	 * Validate one reserved authorization key, if this is one.
+	 *
+	 * Reserved keys are cascade flags, the schema's default object scope, and the
+	 * role-to-groups assignment. None of them is an action rule set: none grants
+	 * anything. Keeping them in one place is what lets the ACTION vocabulary stay
+	 * closed, which is the property that makes a typo an error rather than a rule
+	 * that silently protects nothing.
+	 *
+	 * @param string            $action        The authorization key.
+	 * @param mixed             $value         Its value.
+	 * @param array<int,string> $reservedFlags The boolean cascade flags.
+	 * @param string            $context       Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When a reserved key carries the wrong shape.
+	 *
+	 * @return bool TRUE when the key was reserved and has been validated.
+	 */
+	private function validateReservedKey(
+		string $action,
+		mixed $value,
+		array $reservedFlags,
+		string $context
+	): bool {
+		if (in_array($action, $reservedFlags, true) === true) {
+			if (is_bool($value) === false) {
+				throw new InvalidArgumentException(
+					"Authorization flag '{$action}' in {$context} must be a boolean"
+				);
+			}
+
+			return true;
+		}
+
+		if ($action === ObjectScopeResolver::SCOPE_KEY) {
+			$this->validateScopeValue(scope: $value, context: $context);
+			return true;
+		}
+
+		if ($action === self::ROLES_KEY) {
+			$this->validateRolesAssignment(roles: $value, context: $context);
+			return true;
+		}
+
+		return false;
+	}//end validateReservedKey()
+
+	/**
+	 * Validate a schema's role-to-groups assignment.
+	 *
+	 * The shape is a map of role name to a list of Nextcloud group ids. Every
+	 * other shape is refused at authoring time, because a malformed assignment
+	 * reads at dispatch as a role nobody holds: the rule addressing it resolves
+	 * to nobody and records `recipient-unresolved`, which is a notification that
+	 * silently stopped rather than an error anybody sees.
+	 *
+	 * An EMPTY map is accepted. It says the schema assigns no roles yet, which is
+	 * what a schema that never declared the key already says.
+	 *
+	 * @param mixed  $roles   The declared assignment.
+	 * @param string $context Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When the assignment is not a map of role name to group ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
+	 */
+	private function validateRolesAssignment(mixed $roles, string $context): void {
+		if (is_array($roles) === false) {
+			throw new InvalidArgumentException(
+				"Authorization '" . self::ROLES_KEY . "' in {$context} must be a map of role name to group ids"
+			);
+		}
+
+		foreach ($roles as $roleName => $groups) {
+			if (is_string($roleName) === false || trim($roleName) === '') {
+				throw new InvalidArgumentException(
+					"Authorization '" . self::ROLES_KEY . "' in {$context} names a role with no name"
+				);
+			}
+
+			$this->validateRoleGroups(roleName: $roleName, groups: $groups, context: $context);
+		}
+	}//end validateRolesAssignment()
+
+	/**
+	 * Validate the groups one role is assigned.
+	 *
+	 * @param string $roleName The role.
+	 * @param mixed  $groups   The group ids it is assigned.
+	 * @param string $context  Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When the groups are not a non-empty list of group ids.
+	 *
+	 * @return void
+	 */
+	private function validateRoleGroups(string $roleName, mixed $groups, string $context): void {
+		if (is_array($groups) === false || $groups === []) {
+			throw new InvalidArgumentException(
+				"Role '{$roleName}' in {$context} must list at least one group id"
+			);
+		}
+
+		foreach ($groups as $group) {
+			if (is_string($group) === false || trim($group) === '') {
+				throw new InvalidArgumentException(
+					"Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
+				);
+			}
+		}
+	}//end validateRoleGroups()
 
 	/**
 	 * Validate a schema's default object scope.
@@ -2870,6 +2991,12 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-object-source',
 		'x-openregister-quality',
 		'x-openregister-dedup',
+		// Which properties a schema nominates as effectively unique, so a save
+		// whose value already exists elsewhere warns. Read by
+		// UniqueHintChecker. Absent from this list it would be dropped in
+		// silence and the alert would simply never fire — the same trap the
+		// comments above this list record three separate times.
+		'x-openregister-unique-hint',
 		'x-openregister-flows',
 		'x-openregister-survivorship',
 		'x-openregister-merge',

@@ -73,9 +73,7 @@ test.describe('working-calendar-admin', () => {
 		})
 		if (!resp.ok()) return null
 		const body = await resp.json()
-		return (
-			(body.results ?? []).find((row: any) => row.slug === CAL_SLUG) ?? null
-		)
+		return (body.results ?? []).find((row: any) => row.slug === CAL_SLUG) ?? null
 	}
 
 	test.beforeAll(async ({ request }) => {
@@ -169,7 +167,10 @@ test.describe('working-calendar-admin', () => {
 		// The read-back is the assertion. A form that closes is not a form
 		// that stored anything.
 		const stored = await findOurCalendar(request)
-		expect(stored, 'the calendar is still readable after the save').not.toBeNull()
+		expect(
+			stored,
+			'the calendar is still readable after the save',
+		).not.toBeNull()
 		const dates = (stored?.exceptions ?? []).map((entry: any) => entry.date)
 		expect(dates, 'the closure day landed').toContain(CLOSURE_DATE)
 	})

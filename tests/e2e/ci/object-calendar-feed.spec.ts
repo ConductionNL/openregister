@@ -88,10 +88,7 @@ async function anonymousContext(): Promise<APIRequestContext> {
  * seed that silently did not run says so here rather than surfacing later as a
  * confusing authorization error inside a feed assertion.
  */
-async function assertSeededUser(
-	ctx: APIRequestContext,
-	uid: string,
-): Promise<void> {
+async function assertSeededUser(ctx: APIRequestContext, uid: string): Promise<void> {
 	const res = await ctx.get(`${API}/registers`)
 	expect(
 		res.status(),
@@ -166,7 +163,11 @@ test.describe('object dates as a calendar feed', () => {
 				description: 'e2e',
 				properties: {
 					title: { type: 'string', title: 'Title', maxLength: 255 },
-					beslistermijn: { type: 'string', format: 'date', title: 'Beslistermijn' },
+					beslistermijn: {
+						type: 'string',
+						format: 'date',
+						title: 'Beslistermijn',
+					},
 				},
 				authorization: {
 					read: ['authenticated'],
@@ -200,9 +201,14 @@ test.describe('object dates as a calendar feed', () => {
 		const shared = await owner.post(`${API}/objects/${registerId}/${schemaId}`, {
 			data: { title: `Bezwaar gedeeld ${RUN}`, beslistermijn: FIRST_DEADLINE },
 		})
-		expect(shared.ok(), `object create failed: ${await shared.text()}`).toBeTruthy()
+		expect(
+			shared.ok(),
+			`object create failed: ${await shared.text()}`,
+		).toBeTruthy()
 		const sharedBody = await shared.json()
-		sharedUuid = String(sharedBody['@self']?.id ?? sharedBody.id ?? sharedBody.uuid)
+		sharedUuid = String(
+			sharedBody['@self']?.id ?? sharedBody.id ?? sharedBody.uuid,
+		)
 		expect(sharedUuid, 'no uuid came back from the object create').toBeTruthy()
 
 		const priv = await owner.post(`${API}/objects/${registerId}/${schemaId}`, {
@@ -222,7 +228,9 @@ test.describe('object dates as a calendar feed', () => {
 
 		for (const uuid of [sharedUuid, privateUuid]) {
 			if (uuid) {
-				await admin.delete(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+				await admin.delete(
+					`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+				)
 				await admin.delete(`${API}/deleted/${uuid}`)
 			}
 		}
@@ -240,7 +248,9 @@ test.describe('object dates as a calendar feed', () => {
 		const url = await mintSchemaFeed(owner, `owner feed ${RUN}`)
 		const body = await readFeed(url)
 
-		expect(body, 'the body is not an iCalendar object').toContain('BEGIN:VCALENDAR')
+		expect(body, 'the body is not an iCalendar object').toContain(
+			'BEGIN:VCALENDAR',
+		)
 		expect(body).toContain('BEGIN:VEVENT')
 
 		// All-day, on the declared date, with an exclusive end on the next day.
@@ -269,10 +279,16 @@ test.describe('object dates as a calendar feed', () => {
 		const moved = await owner.put(
 			`${API}/objects/${registerId}/${schemaId}/${sharedUuid}`,
 			{
-				data: { title: `Bezwaar gedeeld ${RUN}`, beslistermijn: MOVED_DEADLINE },
+				data: {
+					title: `Bezwaar gedeeld ${RUN}`,
+					beslistermijn: MOVED_DEADLINE,
+				},
 			},
 		)
-		expect(moved.ok(), `moving the deadline failed: ${await moved.text()}`).toBeTruthy()
+		expect(
+			moved.ok(),
+			`moving the deadline failed: ${await moved.text()}`,
+		).toBeTruthy()
 
 		const after = await readFeed(url)
 
@@ -296,7 +312,10 @@ test.describe('object dates as a calendar feed', () => {
 			`${API}/objects/${registerId}/${schemaId}/${privateUuid}/scope`,
 			{ data: { scope: 'private' } },
 		)
-		expect(put.ok(), `owner could not set the scope: ${await put.text()}`).toBeTruthy()
+		expect(
+			put.ok(),
+			`owner could not set the scope: ${await put.text()}`,
+		).toBeTruthy()
 
 		const ownerUrl = await mintSchemaFeed(owner, `owner private feed ${RUN}`)
 		const otherUrl = await mintSchemaFeed(other, `other feed ${RUN}`)

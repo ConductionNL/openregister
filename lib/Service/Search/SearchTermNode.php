@@ -179,6 +179,26 @@ final class SearchTermNode {
 	}//end not()
 
 	/**
+	 * Lowercase a literal and escape what LIKE would otherwise read as a wildcard.
+	 *
+	 * Shared with the per-property match types, so `exact` and `prefix` escape a
+	 * user's `%` the same way a parsed term does.
+	 *
+	 * @param string $value The literal text.
+	 *
+	 * @return string The lowercased, escaped literal.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	public static function likeEscape(string $value): string {
+		return str_replace(
+			['\\', '%', '_'],
+			['\\\\', '\\%', '\\_'],
+			mb_strtolower($value)
+		);
+	}//end likeEscape()
+
+	/**
 	 * The SQL LIKE pattern for a term node.
 	 *
 	 * A term with no wildcard keeps the substring match this search has always
@@ -192,11 +212,7 @@ final class SearchTermNode {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function likePattern(): string {
-		$escaped = str_replace(
-			['\\', '%', '_'],
-			['\\\\', '\\%', '\\_'],
-			mb_strtolower($this->value)
-		);
+		$escaped = self::likeEscape(value: $this->value);
 
 		// No wildcard at all means the historical substring match on both sides.
 		$hasWildcard = ($this->leadingWildcard === true || $this->trailingWildcard === true);

@@ -739,8 +739,7 @@ export default {
 		relationsTotalPages() {
 			return (
 				Math.ceil(
-					(objectStore.used?.total || 0)
-						/ this.pagination.relations.limit,
+					(objectStore.used?.total || 0) / this.pagination.relations.limit,
 				) || 1
 			)
 		},

@@ -91,11 +91,16 @@ async function auditCount(
 	schemaId: string,
 	uuid: string,
 ): Promise<number> {
-	const res = await ctx.get(`${API}/objects/${registerId}/${schemaId}/${uuid}/audit-trails`)
+	const res = await ctx.get(
+		`${API}/objects/${registerId}/${schemaId}/${uuid}/audit-trails`,
+	)
 	expect(res.ok(), `audit trail read failed: ${await res.text()}`).toBeTruthy()
 	const body = await res.json()
 	const rows = body.results ?? body.data ?? body
-	expect(Array.isArray(rows), 'the audit trail did not come back as a list').toBeTruthy()
+	expect(
+		Array.isArray(rows),
+		'the audit trail did not come back as a list',
+	).toBeTruthy()
 
 	return rows.length
 }
@@ -160,10 +165,16 @@ test.describe('favourites and recently opened over HTTP', () => {
 		// Five cases, three open and two closed, so a lens and an ordinary
 		// filter have something to disagree about if they are composed wrongly.
 		for (let i = 0; i < 5; i++) {
-			const res = await owner.post(`${API}/objects/${registerId}/${schemaId}`, {
-				data: { key: `case-${i}`, status: i < 3 ? 'open' : 'closed' },
-			})
-			expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
+			const res = await owner.post(
+				`${API}/objects/${registerId}/${schemaId}`,
+				{
+					data: { key: `case-${i}`, status: i < 3 ? 'open' : 'closed' },
+				},
+			)
+			expect(
+				res.ok(),
+				`object create failed: ${await res.text()}`,
+			).toBeTruthy()
 			const body = await res.json()
 			const uuid = String(body['@self']?.id ?? body.id ?? body.uuid)
 			expect(uuid, 'no uuid came back from the object create').toBeTruthy()
@@ -199,7 +210,9 @@ test.describe('favourites and recently opened over HTTP', () => {
 		)
 		expect(star.ok(), `starring failed: ${await star.text()}`).toBeTruthy()
 
-		const read = await owner.get(`${API}/objects/${registerId}/${schemaId}/${target}`)
+		const read = await owner.get(
+			`${API}/objects/${registerId}/${schemaId}/${target}`,
+		)
 		expect(read.ok(), `object read failed: ${await read.text()}`).toBeTruthy()
 		const body = await read.json()
 
@@ -215,7 +228,7 @@ test.describe('favourites and recently opened over HTTP', () => {
 		).toBe(before)
 	})
 
-	test('a star is one person\'s, and starring twice is starring once', async () => {
+	test("a star is one person's, and starring twice is starring once", async () => {
 		const target = uuids[0]
 
 		// Already starred above. Starring again must not fail and must not
@@ -226,7 +239,9 @@ test.describe('favourites and recently opened over HTTP', () => {
 		expect(again.ok(), `re-starring failed: ${await again.text()}`).toBeTruthy()
 		expect((await again.json()).favourite).toBe(true)
 
-		const forOther = await other.get(`${API}/objects/${registerId}/${schemaId}/${target}`)
+		const forOther = await other.get(
+			`${API}/objects/${registerId}/${schemaId}/${target}`,
+		)
 		expect(forOther.ok()).toBeTruthy()
 		expect(
 			(await forOther.json())['@self']?.favourite,
@@ -247,7 +262,10 @@ test.describe('favourites and recently opened over HTTP', () => {
 		const list = await owner.get(
 			`${API}/objects/${registerId}/${schemaId}?_favourite=true&status=open`,
 		)
-		expect(list.ok(), `favourites list failed: ${await list.text()}`).toBeTruthy()
+		expect(
+			list.ok(),
+			`favourites list failed: ${await list.text()}`,
+		).toBeTruthy()
 		const body = await list.json()
 		const returned = uuidsOf(body)
 
@@ -269,7 +287,10 @@ test.describe('favourites and recently opened over HTTP', () => {
 		const list = await other.get(
 			`${API}/objects/${registerId}/${schemaId}?_favourite=true`,
 		)
-		expect(list.ok(), `favourites list failed: ${await list.text()}`).toBeTruthy()
+		expect(
+			list.ok(),
+			`favourites list failed: ${await list.text()}`,
+		).toBeTruthy()
 		const returned = uuidsOf(await list.json())
 
 		// The silent-widening failure: a lens that loses its restriction answers
@@ -280,7 +301,7 @@ test.describe('favourites and recently opened over HTTP', () => {
 		).toEqual([])
 	})
 
-	test('unstarring removes only the caller\'s own star', async () => {
+	test("unstarring removes only the caller's own star", async () => {
 		const target = uuids[4]
 
 		const gone = await owner.delete(
@@ -289,14 +310,18 @@ test.describe('favourites and recently opened over HTTP', () => {
 		expect(gone.ok(), `unstarring failed: ${await gone.text()}`).toBeTruthy()
 		expect((await gone.json()).favourite).toBe(false)
 
-		const read = await owner.get(`${API}/objects/${registerId}/${schemaId}/${target}`)
+		const read = await owner.get(
+			`${API}/objects/${registerId}/${schemaId}/${target}`,
+		)
 		expect((await read.json())['@self']?.favourite).toBe(false)
 
 		// The other two stars are untouched.
 		const list = await owner.get(
 			`${API}/objects/${registerId}/${schemaId}?_favourite=true`,
 		)
-		expect(uuidsOf(await list.json()).sort()).toEqual([uuids[0], uuids[1]].sort())
+		expect(uuidsOf(await list.json()).sort()).toEqual(
+			[uuids[0], uuids[1]].sort(),
+		)
 	})
 
 	test('opening objects fills the recent lens, most recently opened first', async () => {
@@ -304,11 +329,15 @@ test.describe('favourites and recently opened over HTTP', () => {
 		// built here from scratch and cannot inherit the owner's.
 		const opened = [uuids[2], uuids[3], uuids[0]]
 		for (const uuid of opened) {
-			const res = await other.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+			const res = await other.get(
+				`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+			)
 			expect(res.ok(), `object read failed: ${await res.text()}`).toBeTruthy()
 		}
 
-		const list = await other.get(`${API}/objects/${registerId}/${schemaId}?_recent=true`)
+		const list = await other.get(
+			`${API}/objects/${registerId}/${schemaId}?_recent=true`,
+		)
 		expect(list.ok(), `recent list failed: ${await list.text()}`).toBeTruthy()
 		const returned = uuidsOf(await list.json())
 
@@ -328,7 +357,9 @@ test.describe('favourites and recently opened over HTTP', () => {
 	})
 
 	test('the recent lens is per user too', async () => {
-		const list = await owner.get(`${API}/objects/${registerId}/${schemaId}?_recent=true`)
+		const list = await owner.get(
+			`${API}/objects/${registerId}/${schemaId}?_recent=true`,
+		)
 		expect(list.ok(), `recent list failed: ${await list.text()}`).toBeTruthy()
 		const returned = uuidsOf(await list.json())
 
@@ -336,17 +367,22 @@ test.describe('favourites and recently opened over HTTP', () => {
 		// is not empty; what matters is that it is not the OTHER user's.
 		expect(
 			returned,
-			'one user\'s history must never be answered to another',
+			"one user's history must never be answered to another",
 		).not.toEqual([uuids[2], uuids[3], uuids[0]])
 	})
 
 	test('an anonymous caller gets an empty page, never the whole register', async () => {
 		const anon = await pwRequest.newContext({
 			baseURL: BASE,
-			extraHTTPHeaders: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
+				Accept: 'application/json',
+			},
 		})
 
-		const list = await anon.get(`${API}/objects/${registerId}/${schemaId}?_favourite=true`)
+		const list = await anon.get(
+			`${API}/objects/${registerId}/${schemaId}?_favourite=true`,
+		)
 
 		// Either the request is refused outright or it answers nothing. What it
 		// must never do is drop the restriction and answer every object, which
