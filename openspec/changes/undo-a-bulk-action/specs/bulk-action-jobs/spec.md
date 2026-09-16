@@ -21,7 +21,6 @@ save with HTTP 422 naming the action.
 - **GIVEN** a schema declaring a destruction action as reversible
 - **WHEN** the schema is saved
 - **THEN** the save fails with HTTP 422 naming the action
-- @e2e exclude {annotation validator, covered by unit tests}
 
 ### Requirement: A reversible job records the prior value of every property it changes (REQ-UBA-002)
 
@@ -60,12 +59,14 @@ original write and the reversal as two acts with their own actors.
 - **WHEN** it is reversed inside its window
 - **THEN** a new job runs restoring the recorded prior value on each member
 - **AND** the new job names the original as its cause
+- @e2e exclude {needs the background worker to have walked the original's members, which no HTTP call can guarantee; asserted in tests/Unit/Service/BulkJob/BulkJobReversalTest.php::testAHundredCasesGoBackAsOneJobNamingTheOriginal and tests/Unit/BulkAction/RestorePriorValuesActionTest.php::testTheRecordedPriorValueIsWrittenBack}
 
 #### Scenario: the reversal is authorised for the person doing it
 
 - **GIVEN** a completed job created by an administrator
 - **WHEN** a caller without write access to the members requests the reversal
 - **THEN** the reversal is refused and nothing is written
+- @e2e exclude {needs a completed job, so the same worker dependency; asserted in tests/Unit/Controller/BulkJobsControllerTest.php::testACallerWhoCannotReadTheJobCannotUndoIt and ::testTheReversalRunsAsThePersonAskingForItNotTheOriginalActor}
 
 #### Scenario: a reversal outside the window is refused
 
@@ -87,6 +88,7 @@ a later change.
 - **WHEN** the job is reversed
 - **THEN** nine objects are restored
 - **AND** the tenth is reported as not reversible, naming the later change
+- @e2e exclude {needs the background worker to have walked both jobs; asserted in tests/Unit/BulkAction/RestorePriorValuesActionTest.php::testALaterEditIsReportedByNameAndNeverOverwritten}
 
 #### Scenario: the report is readable after the reversal
 

@@ -320,4 +320,67 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->service->method('retry')->willReturn($job);
 		$this->assertSame(202, $this->controller()->retry(5)->getStatus());
 	}
+
+	public function testTheReversalRunsAsThePersonAskingForItNotTheOriginalActor(): void {
+		// The original was created by an administrator. Fatima asks to undo
+		// it, and the reversal must be authorised for HER: the per-object
+		// write rules are re-checked against the uid handed to the service,
+		// never inherited from the job being undone.
+		$this->signIn('fatima', true);
+		$original = $this->job('administrator');
+		$this->jobMapper->method('find')->willReturn($original);
+		$this->params['justification'] = 'De filter stond verkeerd.';
+
+		$seen = [];
+		$this->service->expects($this->once())
+			->method('reverse')
+			->willReturnCallback(
+				function (BulkJob $job, string $actorUid, ?string $justification) use (&$seen): BulkJob {
+					$seen = ['actor' => $actorUid, 'reason' => $justification];
+
+					return $this->job('fatima');
+				}
+			);
+
+		$response = $this->controller()->reverse(5);
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame('fatima', $seen['actor']);
+		$this->assertSame('De filter stond verkeerd.', $seen['reason']);
+	}
+
+	public function testACallerWhoCannotReadTheJobCannotUndoIt(): void {
+		// Not 403: a job the caller may not read must not be distinguishable
+		// from one that does not exist, and nothing is written either way.
+		$this->signIn('fatima');
+		$this->jobMapper->method('find')->willReturn($this->job('administrator'));
+		$this->service->expects($this->never())->method('reverse');
+
+		$this->assertSame(404, $this->controller()->reverse(5)->getStatus());
+	}
+
+	public function testAReversalRefusedByTheServiceCarriesItsReasonAndNumbers(): void {
+		$this->signIn('coordinator');
+		$this->jobMapper->method('find')->willReturn($this->job());
+		$this->service->method('reverse')->willThrowException(
+			new BulkJobRefusedException(
+				'The action openregister:assign is not reversible.',
+				'not-reversible',
+				['action' => 'openregister:assign']
+			)
+		);
+
+		$response = $this->controller()->reverse(5);
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame('not-reversible', $response->getData()['reason']);
+		$this->assertSame('openregister:assign', $response->getData()['details']['action']);
+	}
+
+	public function testAMissingJobCannotBeUndone(): void {
+		$this->signIn('coordinator');
+		$this->jobMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
+
+		$this->assertSame(404, $this->controller()->reverse(5)->getStatus());
+	}
 }
