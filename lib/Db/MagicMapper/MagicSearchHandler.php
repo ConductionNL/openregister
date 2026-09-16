@@ -52,6 +52,8 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
@@ -842,6 +844,13 @@ class MagicSearchHandler {
 	 * @psalm-param array<int, string>|null $existingColumns
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)    PropertySearchProfile reads a property array and
+	 *                                         holds no state. Injecting it would add a
+	 *                                         constructor argument to two classes to satisfy a
+	 *                                         linter, not to make anything substitutable.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) One branch per match type, plus the column rules
+	 *                                         the two platforms need.
 	 */
 	private function buildSearchLeafSql(
 		string $pattern,
@@ -857,26 +866,45 @@ class MagicSearchHandler {
 		$likePattern = $connection->quote($pattern);
 		$quotedTerm = $connection->quote($literal);
 
-		// Search in schema string properties (ILIKE/LIKE only for performance).
+		// Which properties the scan reads, and how each one compares, is the
+		// property's own business. A property that declares nothing is judged by
+		// the rule this scan has always used, so its SQL is unchanged.
 		$properties = $schema->getProperties() ?? [];
 		foreach ($properties as $propName => $propDef) {
-			$type = $propDef['type'] ?? 'string';
-			if ($type === 'string') {
-				$columnName = $this->sanitizeColumnName(name: $propName);
-				// In UNION contexts, only search columns that actually exist in this table.
-				if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
-					continue;
+			if (is_array($propDef) === false
+				|| PropertySearchProfile::participatesInFreeText(property: $propDef) === false
+			) {
+				continue;
+			}
+
+			$columnName = $this->sanitizeColumnName(name: $propName);
+			// In UNION contexts, only search columns that actually exist in this table.
+			if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
+				continue;
+			}
+
+			// Quote column name to handle reserved words (e.g., 'case', 'status').
+			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propDef);
+
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
+				$column = $quotedCol;
+				if ($nullSafe === true) {
+					$column = "COALESCE({$quotedCol}::text, '')";
 				}
 
-				// Quote column name to handle reserved words (e.g., 'case', 'status').
-				$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-				$searchConditions[] = $this->columnMatchSql(
-					column: $quotedCol,
-					likePattern: $likePattern,
-					isPostgres: $isPostgres,
-					nullSafe: $nullSafe
-				);
-			}//end if
+				$searchConditions[] = "similarity({$column}, {$quotedTerm}) > 0.1";
+				continue;
+			}
+
+			$searchConditions[] = $this->columnMatchSql(
+				column: $quotedCol,
+				likePattern: $connection->quote(
+					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
+				),
+				isPostgres: $isPostgres,
+				nullSafe: $nullSafe
+			);
 		}//end foreach
 
 		// Search in metadata text fields.
@@ -904,6 +932,38 @@ class MagicSearchHandler {
 		// never empty here and the old null return was unreachable.
 		return '(' . implode(' OR ', $searchConditions) . ')';
 	}//end buildSearchLeafSql()
+
+	/**
+	 * The LIKE pattern one property wants for this term.
+	 *
+	 * `fulltext` keeps the pattern the term itself produced, wildcards and all.
+	 * `exact` and `prefix` are the property speaking over the term: an
+	 * identifier column that declares `exact` should not answer to half an
+	 * identifier, whatever the caller typed around it.
+	 *
+	 * @param string $matchType The resolved match type.
+	 * @param string $pattern   The pattern the parsed term produced.
+	 * @param string $literal   The literal text of the term.
+	 *
+	 * @return string The pattern to compare this column against.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchTermNode::likeEscape() is a pure function over a
+	 *                                      string, shared so a declared match type escapes a
+	 *                                      user's `%` exactly as a parsed term does.
+	 */
+	private function patternForMatchType(string $matchType, string $pattern, string $literal): string {
+		if ($matchType === PropertySearchProfile::MATCH_EXACT) {
+			return SearchTermNode::likeEscape(value: $literal);
+		}
+
+		if ($matchType === PropertySearchProfile::MATCH_PREFIX) {
+			return SearchTermNode::likeEscape(value: $literal) . '%';
+		}
+
+		return $pattern;
+	}//end patternForMatchType()
 
 	/**
 	 * Match one column against a LIKE pattern, per platform.
@@ -2732,6 +2792,9 @@ class MagicSearchHandler {
 	 * @param bool          $fuzzyEnabled Whether `_fuzzy=true` was requested.
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Same pure reader as buildSearchLeafSql(), and it has
+	 *                                      to be the same one or the two paths could disagree.
 	 */
 	private function buildSearchLeafQbSql(
 		IQueryBuilder $qb,
@@ -2744,24 +2807,34 @@ class MagicSearchHandler {
 		$patternParam = $qb->createNamedParameter($pattern);
 		$conditions = [];
 
-		// Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
-		$dateFormats = ['date', 'date-time', 'time'];
 		foreach (($schema->getProperties() ?? []) as $field => $propertyConfig) {
-			// Encrypted properties get no dedicated magic-table column, so a LIKE
-			// over one either hits a missing column or scans ciphertext.
-			if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
-				continue;
-			}
-
-			if (($propertyConfig['type'] ?? '') !== 'string'
-				|| in_array($propertyConfig['format'] ?? '', $dateFormats, true) === true
+			// Encrypted properties get no dedicated magic-table column, and a
+			// range is a pair of bounds rather than a term. Both are decided by
+			// the property, in one place, for both search paths.
+			if (is_array($propertyConfig) === false
+				|| PropertySearchProfile::participatesInFreeText(property: $propertyConfig) === false
 			) {
 				continue;
 			}
 
 			$columnName = $this->sanitizeColumnName(name: $field);
 			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$patternParam}";
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propertyConfig);
+
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
+				$fuzzyParam = $qb->createNamedParameter($literal);
+				$conditions[] = "similarity(COALESCE(t.{$quotedCol}::text, ''), {$fuzzyParam}) > 0.1";
+				continue;
+			}
+
+			$columnPattern = $patternParam;
+			if ($matchType !== PropertySearchProfile::MATCH_FULLTEXT) {
+				$columnPattern = $qb->createNamedParameter(
+					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
+				);
+			}
+
+			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$columnPattern}";
 		}//end foreach
 
 		foreach (['_name', '_description', '_summary'] as $metadataColumn) {

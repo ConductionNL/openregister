@@ -51,8 +51,17 @@ test.describe('rules-engine-operability admin ui', () => {
 				title: SCHEMA_SLUG,
 				slug: SCHEMA_SLUG,
 				properties: {
-					ontvangstdatum: { type: 'string', format: 'date', title: 'Date of receipt', description: 'When the objection came in.' },
-					bedrag: { type: 'number', title: 'Amount', description: 'The amount under objection.' },
+					ontvangstdatum: {
+						type: 'string',
+						format: 'date',
+						title: 'Date of receipt',
+						description: 'When the objection came in.',
+					},
+					bedrag: {
+						type: 'number',
+						title: 'Amount',
+						description: 'The amount under objection.',
+					},
 				},
 				configuration: {
 					'x-openregister-calculations': { uiterlijkeDatum: CALCULATION },
@@ -73,23 +82,33 @@ test.describe('rules-engine-operability admin ui', () => {
 	async function openRulesTab(page: Page): Promise<void> {
 		await page.goto(`/index.php/apps/openregister/schemas/${schemaId}`)
 		await page.getByRole('button', { name: 'Rules' }).click()
-		await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible()
+		await expect(
+			page.getByRole('heading', { name: 'Rules', exact: true }),
+		).toBeVisible()
 	}
 
-	test('the rules a schema declares are listed in evaluation order', async ({ page }) => {
+	test('the rules a schema declares are listed in evaluation order', async ({
+		page,
+	}) => {
 		await openRulesTab(page)
 
 		const rows = page.locator('.ruleTable tbody tr')
 		await expect(rows).toHaveCount(1)
 		await expect(rows.first()).toContainText('uiterlijkeDatum')
-		await expect(rows.first()).toContainText(`calculation:${SCHEMA_SLUG}:uiterlijkeDatum`)
+		await expect(rows.first()).toContainText(
+			`calculation:${SCHEMA_SLUG}:uiterlijkeDatum`,
+		)
 	})
 
-	test('a trial names the operand that decided, not just the verdict', async ({ page }) => {
+	test('a trial names the operand that decided, not just the verdict', async ({
+		page,
+	}) => {
 		await openRulesTab(page)
 		await page.getByRole('button', { name: 'Open' }).first().click()
 
-		await page.locator('#ruleTrialSample').fill('{"ontvangstdatum": "2026-01-01"}')
+		await page
+			.locator('#ruleTrialSample')
+			.fill('{"ontvangstdatum": "2026-01-01"}')
 		await page.getByRole('button', { name: 'Run it' }).click()
 
 		await expect(page.locator('.ruleTrace')).toContainText('fired')
@@ -109,19 +128,28 @@ test.describe('rules-engine-operability admin ui', () => {
 		await expect(page.locator('.ruleTrace')).not.toContainText('fired')
 	})
 
-	test('an operator no engine holds is refused before the request is made', async ({ page }) => {
+	test('an operator no engine holds is refused before the request is made', async ({
+		page,
+	}) => {
 		await openRulesTab(page)
 		await page.getByRole('button', { name: 'Open' }).first().click()
 
-		await page.locator('#ruleConditionDraft').fill('{"isVerySure": [{"prop": "bedrag"}]}')
+		await page
+			.locator('#ruleConditionDraft')
+			.fill('{"isVerySure": [{"prop": "bedrag"}]}')
 
-		await expect(page.locator('.ruleEditor .refusal')).toContainText('isVerySure')
+		await expect(page.locator('.ruleEditor .refusal')).toContainText(
+			'isVerySure',
+		)
 	})
 
 	test('switching a rule off changes what the list says', async ({ page }) => {
 		await openRulesTab(page)
 
-		const toggle = page.locator('.ruleTable tbody tr').first().getByRole('checkbox')
+		const toggle = page
+			.locator('.ruleTable tbody tr')
+			.first()
+			.getByRole('checkbox')
 		await toggle.click()
 
 		await expect(toggle).not.toBeChecked()
@@ -130,13 +158,19 @@ test.describe('rules-engine-operability admin ui', () => {
 		// state the schema now carries rather than an optimistic flip.
 		await page.reload()
 		await page.getByRole('button', { name: 'Rules' }).click()
-		await expect(page.locator('.ruleTable tbody tr').first().getByRole('checkbox')).not.toBeChecked()
+		await expect(
+			page.locator('.ruleTable tbody tr').first().getByRole('checkbox'),
+		).not.toBeChecked()
 	})
 
-	test('the run log says what it is when there is nothing in it', async ({ page }) => {
+	test('the run log says what it is when there is nothing in it', async ({
+		page,
+	}) => {
 		await openRulesTab(page)
 		await page.getByRole('button', { name: 'Open' }).first().click()
 
-		await expect(page.locator('.ruleRuns')).toContainText('A dry run writes none')
+		await expect(page.locator('.ruleRuns')).toContainText(
+			'A dry run writes none',
+		)
 	})
 })

@@ -28,12 +28,14 @@ declare(strict_types=1);
 namespace Unit\Service\Merge;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
@@ -53,6 +55,8 @@ class MergeServiceTest extends TestCase {
 
 	private LoggerInterface&MockObject $logger;
 
+	private PropertyRbacHandler&MockObject $propertyRbac;
+
 	private MergeService $service;
 
 	protected function setUp(): void {
@@ -61,6 +65,13 @@ class MergeServiceTest extends TestCase {
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
+		// No property authorization on these fixtures, so the readability guard
+		// short-circuits before it ever asks. Stubbed to allow anyway, so that a
+		// fixture that later grows an `authorization` block fails on the merge
+		// under test and not on an unexpected refusal from a bare mock.
+		$this->propertyRbac = $this->createMock(PropertyRbacHandler::class);
+		$this->propertyRbac->method('canReadProperty')->willReturn(true);
+
 		$this->service = new MergeService(
 			$this->objectService,
 			$this->schemaMapper,
@@ -68,7 +79,9 @@ class MergeServiceTest extends TestCase {
 			new TrustTierResolver(),
 			new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->logger),
 			$this->eventDispatcher,
-			$this->logger
+			$this->logger,
+			$this->propertyRbac,
+			$this->createMock(AuditTrailMapper::class)
 		);
 	}//end setUp()
 

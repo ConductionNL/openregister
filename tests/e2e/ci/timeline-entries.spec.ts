@@ -186,7 +186,10 @@ test.describe('timeline entries are records, over HTTP', () => {
 				slug: CONTACT_KIND,
 				title: 'Contact moment',
 				properties: {
-					channel: { type: 'string', enum: ['telefoon', 'balie', 'email'] },
+					channel: {
+						type: 'string',
+						enum: ['telefoon', 'balie', 'email'],
+					},
 					direction: { type: 'string', enum: ['inkomend', 'uitgaand'] },
 				},
 				required: ['channel', 'direction'],
@@ -197,7 +200,10 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const callback = await admin.post(`${API}/timeline/kinds`, {
 			data: { slug: CALLBACK_KIND, title: 'Callback request', followUp: true },
 		})
-		expect(callback.ok(), `callback kind declare failed: ${await callback.text()}`).toBeTruthy()
+		expect(
+			callback.ok(),
+			`callback kind declare failed: ${await callback.text()}`,
+		).toBeTruthy()
 
 		const pattern = await admin.post(`${API}/timeline/reference-patterns`, {
 			data: {
@@ -209,7 +215,10 @@ test.describe('timeline entries are records, over HTTP', () => {
 				urlTemplate: '/apps/openregister/objects/{code}',
 			},
 		})
-		expect(pattern.ok(), `pattern declare failed: ${await pattern.text()}`).toBeTruthy()
+		expect(
+			pattern.ok(),
+			`pattern declare failed: ${await pattern.text()}`,
+		).toBeTruthy()
 	})
 
 	// @e2e object-interactions::a-contact-moment-carries-a-channel-and-a-direction
@@ -221,10 +230,15 @@ test.describe('timeline entries are records, over HTTP', () => {
 				fields: { channel: 'telefoon', direction: 'inkomend' },
 			},
 		})
-		expect(created.ok(), `entry create failed: ${await created.text()}`).toBeTruthy()
+		expect(
+			created.ok(),
+			`entry create failed: ${await created.text()}`,
+		).toBeTruthy()
 
 		const entry = (await created.json()) as EntryRow
-		expect(entry.kind, 'the entry carries the kind it was written as').toBe(CONTACT_KIND)
+		expect(entry.kind, 'the entry carries the kind it was written as').toBe(
+			CONTACT_KIND,
+		)
 		expect(entry.fields.channel).toBe('telefoon')
 		expect(entry.fields.direction).toBe('inkomend')
 		expect(entry.id, 'an entry has a stable id a link can point at').toBeTruthy()
@@ -261,10 +275,16 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const plain = await handler.post(timelinePath(cases[0]), {
 			data: { message: `plain entry ${RUN}` },
 		})
-		expect(plain.ok(), `plain entry create failed: ${await plain.text()}`).toBeTruthy()
+		expect(
+			plain.ok(),
+			`plain entry create failed: ${await plain.text()}`,
+		).toBeTruthy()
 
 		const entry = (await plain.json()) as EntryRow
-		expect(entry.kind, 'an entry with no kind behaves as a plain note').toBeNull()
+		expect(
+			entry.kind,
+			'an entry with no kind behaves as a plain note',
+		).toBeNull()
 		expect(entry.fields).toEqual({})
 		expect(entry.followUp).toBeNull()
 		expect(entry.pinned).toBe(false)
@@ -283,10 +303,15 @@ test.describe('timeline entries are records, over HTTP', () => {
 		expect(body.message).toBe(`note endpoint ${RUN}`)
 		expect(body.visibility).toBe('internal')
 		// And the record is there beside it, so the entry search can find it.
-		expect(body.entryId, 'a note written the old way still gets a record').toBeTruthy()
+		expect(
+			body.entryId,
+			'a note written the old way still gets a record',
+		).toBeTruthy()
 
 		const onTimeline = await handler.get(timelinePath(cases[0]))
-		const messages = ((await onTimeline.json()).results as EntryRow[]).map((row) => row.message)
+		const messages = ((await onTimeline.json()).results as EntryRow[]).map(
+			(row) => row.message,
+		)
 		expect(messages).toContain(`note endpoint ${RUN}`)
 	})
 
@@ -295,7 +320,10 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const written = await handler.post(timelinePath(cases[1]), {
 			data: { message: `pin me ${RUN}` },
 		})
-		expect(written.ok(), `entry create failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`entry create failed: ${await written.text()}`,
+		).toBeTruthy()
 		const entry = (await written.json()) as EntryRow
 		expect(entry.pinned, 'a new entry is not pinned').toBe(false)
 
@@ -303,7 +331,10 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const later = await handler.post(timelinePath(cases[1]), {
 			data: { message: `written later ${RUN}` },
 		})
-		expect(later.ok(), `second entry create failed: ${await later.text()}`).toBeTruthy()
+		expect(
+			later.ok(),
+			`second entry create failed: ${await later.text()}`,
+		).toBeTruthy()
 
 		const pinned = await handler.patch(`${timelinePath(cases[1])}/${entry.id}`, {
 			data: { pinned: true },
@@ -344,10 +375,15 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const written = await handler.post(timelinePath(cases[2]), {
 			data: { message: `terugbellen over ${SUBJECT}`, kind: CALLBACK_KIND },
 		})
-		expect(written.ok(), `callback create failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`callback create failed: ${await written.text()}`,
+		).toBeTruthy()
 
 		const entry = (await written.json()) as EntryRow
-		expect(entry.followUp, 'a kind that declares a follow-up opens one').toBe('open')
+		expect(entry.followUp, 'a kind that declares a follow-up opens one').toBe(
+			'open',
+		)
 		expect(entry.closedBy).toBeNull()
 
 		const closed = await handler.patch(`${timelinePath(cases[2])}/${entry.id}`, {
@@ -365,27 +401,43 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const written = await handler.post(timelinePath(cases[2]), {
 			data: {
 				message: `brief van ${SUBJECT}`,
-				rawSource: 'Received: from mail.example\r\nDate: Mon, 14 Sep 2026 09:12:00 +0200\r\n\r\nbody',
+				rawSource:
+					'Received: from mail.example\r\nDate: Mon, 14 Sep 2026 09:12:00 +0200\r\n\r\nbody',
 				rawHeaders: { Date: 'Mon, 14 Sep 2026 09:12:00 +0200' },
 			},
 		})
-		expect(written.ok(), `entry create failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`entry create failed: ${await written.text()}`,
+		).toBeTruthy()
 
 		const entry = (await written.json()) as EntryRow & { hasSource: boolean }
 		// The list payload says a source EXISTS without carrying a mailbox
 		// down the wire to draw a timeline.
 		expect(entry.hasSource, 'the entry says it has a source').toBe(true)
-		expect((entry as unknown as { rawSource?: string }).rawSource).toBeUndefined()
+		expect(
+			(entry as unknown as { rawSource?: string }).rawSource,
+		).toBeUndefined()
 
-		const source = await handler.get(`${timelinePath(cases[2])}/${entry.id}/source`)
-		expect(source.ok(), `source read failed: ${await source.text()}`).toBeTruthy()
+		const source = await handler.get(
+			`${timelinePath(cases[2])}/${entry.id}/source`,
+		)
+		expect(
+			source.ok(),
+			`source read failed: ${await source.text()}`,
+		).toBeTruthy()
 
-		const body = (await source.json()) as { source: string, headers: Record<string, string> }
+		const body = (await source.json()) as {
+			source: string
+			headers: Record<string, string>
+		}
 		expect(body.source).toContain('Received: from mail.example')
 		expect(body.headers.Date).toBe('Mon, 14 Sep 2026 09:12:00 +0200')
 
 		// And a reader of this internal entry is not handed the envelope.
-		const refused = await reader.get(`${timelinePath(cases[2])}/${entry.id}/source`)
+		const refused = await reader.get(
+			`${timelinePath(cases[2])}/${entry.id}/source`,
+		)
 		expect(refused.status(), await refused.text()).toBe(404)
 	})
 
@@ -396,8 +448,12 @@ test.describe('timeline entries are records, over HTTP', () => {
 		// The before-state, so "they were already watching" cannot be mistaken
 		// for the mention working.
 		const before = await handler.get(watchersPath)
-		expect(before.ok(), `watcher read failed: ${await before.text()}`).toBeTruthy()
-		const beforeUids = ((await before.json()).results ?? await before.json()) as Array<{ userId: string }>
+		expect(
+			before.ok(),
+			`watcher read failed: ${await before.text()}`,
+		).toBeTruthy()
+		const beforeUids = ((await before.json()).results
+			?? (await before.json())) as Array<{ userId: string }>
 		expect(
 			beforeUids.map((row) => row.userId),
 			'the reader does not follow this case yet',
@@ -406,14 +462,17 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const written = await handler.post(timelinePath(cases[2]), {
 			data: { message: `graag jouw blik hierop @${READER}` },
 		})
-		expect(written.ok(), `entry create failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`entry create failed: ${await written.text()}`,
+		).toBeTruthy()
 
 		const after = await handler.get(watchersPath)
 		expect(after.ok(), `watcher read failed: ${await after.text()}`).toBeTruthy()
 		const afterBody = await after.json()
-		const afterUids = ((afterBody.results ?? afterBody) as Array<{ userId: string }>).map(
-			(row) => row.userId,
-		)
+		const afterUids = (
+			(afterBody.results ?? afterBody) as Array<{ userId: string }>
+		).map((row) => row.userId)
 		expect(afterUids, 'naming somebody subscribes them').toContain(READER)
 	})
 
@@ -425,7 +484,9 @@ test.describe('timeline entries are records, over HTTP', () => {
 			data: {
 				title: `e2e closed schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					read: [GROUP],
 					create: [GROUP],
@@ -434,18 +495,31 @@ test.describe('timeline entries are records, over HTTP', () => {
 				},
 			},
 		})
-		expect(closed.ok(), `closed schema create failed: ${await closed.text()}`).toBeTruthy()
+		expect(
+			closed.ok(),
+			`closed schema create failed: ${await closed.text()}`,
+		).toBeTruthy()
 		const closedSchemaId = String((await closed.json()).id)
 
-		const obj = await admin.post(`${API}/objects/${registerId}/${closedSchemaId}`, {
-			data: { key: `closed-case-${RUN}` },
-		})
-		expect(obj.ok(), `closed object create failed: ${await obj.text()}`).toBeTruthy()
+		const obj = await admin.post(
+			`${API}/objects/${registerId}/${closedSchemaId}`,
+			{
+				data: { key: `closed-case-${RUN}` },
+			},
+		)
+		expect(
+			obj.ok(),
+			`closed object create failed: ${await obj.text()}`,
+		).toBeTruthy()
 		const closedBody = await obj.json()
-		const closedUuid = String(closedBody['@self']?.id ?? closedBody.id ?? closedBody.uuid)
+		const closedUuid = String(
+			closedBody['@self']?.id ?? closedBody.id ?? closedBody.uuid,
+		)
 
 		// The control: the reader really cannot reach this case.
-		const denied = await reader.get(`${API}/objects/${registerId}/${closedSchemaId}/${closedUuid}`)
+		const denied = await reader.get(
+			`${API}/objects/${registerId}/${closedSchemaId}/${closedUuid}`,
+		)
 		expect(
 			denied.status(),
 			'the control: the reader must not be able to read the closed case',
@@ -455,16 +529,22 @@ test.describe('timeline entries are records, over HTTP', () => {
 			`${API}/objects/${registerId}/${closedSchemaId}/${closedUuid}/timeline`,
 			{ data: { message: `kijk jij hier even naar @${READER}` } },
 		)
-		expect(written.ok(), `entry create failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`entry create failed: ${await written.text()}`,
+		).toBeTruthy()
 
 		const watchers = await handler.get(
 			`${API}/objects/${registerId}/${closedSchemaId}/${closedUuid}/watchers`,
 		)
-		expect(watchers.ok(), `watcher read failed: ${await watchers.text()}`).toBeTruthy()
+		expect(
+			watchers.ok(),
+			`watcher read failed: ${await watchers.text()}`,
+		).toBeTruthy()
 		const watcherBody = await watchers.json()
-		const uids = ((watcherBody.results ?? watcherBody) as Array<{ userId: string }>).map(
-			(row) => row.userId,
-		)
+		const uids = (
+			(watcherBody.results ?? watcherBody) as Array<{ userId: string }>
+		).map((row) => row.userId)
 		expect(uids, 'a mention cannot grant access').not.toContain(READER)
 
 		// And the case is still out of reach: naming somebody changed nothing
@@ -483,7 +563,10 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const written = await handler.post(timelinePath(cases[0]), {
 			data: { message: `zie ${cases[1]} voor de achtergrond` },
 		})
-		expect(written.ok(), `entry create failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`entry create failed: ${await written.text()}`,
+		).toBeTruthy()
 		const entry = (await written.json()) as EntryRow
 
 		const read = await handler.get(`${timelinePath(cases[0])}/${entry.id}`)
@@ -497,7 +580,9 @@ test.describe('timeline entries are records, over HTTP', () => {
 		// only recorded when the declared pattern actually matched it. Either
 		// way the shape is asserted rather than the count guessed at.
 		for (const reference of references) {
-			expect(reference.sourceUuid, 'the writing end is this object').toBe(cases[0])
+			expect(reference.sourceUuid, 'the writing end is this object').toBe(
+				cases[0],
+			)
 		}
 	})
 
@@ -506,12 +591,20 @@ test.describe('timeline entries are records, over HTTP', () => {
 		// One subject, on all three cases, written as the handler.
 		for (const uuid of cases) {
 			const written = await handler.post(timelinePath(uuid), {
-				data: { message: `dossier van ${SUBJECT} besproken`, visibility: 'public' },
+				data: {
+					message: `dossier van ${SUBJECT} besproken`,
+					visibility: 'public',
+				},
 			})
-			expect(written.ok(), `entry create failed: ${await written.text()}`).toBeTruthy()
+			expect(
+				written.ok(),
+				`entry create failed: ${await written.text()}`,
+			).toBeTruthy()
 		}
 
-		const found = await handler.get(`${API}/timeline/search?q=${SUBJECT}&limit=50`)
+		const found = await handler.get(
+			`${API}/timeline/search?q=${SUBJECT}&limit=50`,
+		)
 		expect(found.ok(), `search failed: ${await found.text()}`).toBeTruthy()
 
 		const hits = (await found.json()).results as EntryRow[]
@@ -533,20 +626,31 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const written = await handler.post(timelinePath(cases[0]), {
 			data: { message: `intern over ${secret}`, visibility: 'internal' },
 		})
-		expect(written.ok(), `entry create failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`entry create failed: ${await written.text()}`,
+		).toBeTruthy()
 
 		// The handler finds it, which is the control: without this, a reader
 		// finding nothing would prove only that the term matches nothing.
 		const asHandler = await handler.get(`${API}/timeline/search?q=${secret}`)
-		expect(asHandler.ok(), `handler search failed: ${await asHandler.text()}`).toBeTruthy()
+		expect(
+			asHandler.ok(),
+			`handler search failed: ${await asHandler.text()}`,
+		).toBeTruthy()
 		expect(
 			((await asHandler.json()).results as EntryRow[]).length,
 			'the control: the handler does find the internal entry',
 		).toBeGreaterThan(0)
 
 		// The same term, asked for the public view, holds nothing.
-		const asPublic = await reader.get(`${API}/timeline/search?q=${secret}&visibility=public`)
-		expect(asPublic.ok(), `reader search failed: ${await asPublic.text()}`).toBeTruthy()
+		const asPublic = await reader.get(
+			`${API}/timeline/search?q=${secret}&visibility=public`,
+		)
+		expect(
+			asPublic.ok(),
+			`reader search failed: ${await asPublic.text()}`,
+		).toBeTruthy()
 		expect(
 			((await asPublic.json()).results as EntryRow[]).length,
 			"an internal entry is not in a public reader's results",
@@ -558,15 +662,22 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const written = await handler.post(timelinePath(cases[0]), {
 			data: {
 				message: `afstemmingsverslag ${RUN}`,
-				relatedObjects: [{ register: registerId, schema: schemaId, id: cases[1] }],
+				relatedObjects: [
+					{ register: registerId, schema: schemaId, id: cases[1] },
+				],
 			},
 		})
-		expect(written.ok(), `multi-object write failed: ${await written.text()}`).toBeTruthy()
+		expect(
+			written.ok(),
+			`multi-object write failed: ${await written.text()}`,
+		).toBeTruthy()
 
-		const results = (await written.json()).results as Array<EntryRow & {
-			objectUuid: string
-			siblings: Array<{ entry: string, objectUuid: string }>
-		}>
+		const results = (await written.json()).results as Array<
+			EntryRow & {
+				objectUuid: string
+				siblings: Array<{ entry: string; objectUuid: string }>
+			}
+		>
 		expect(results, 'one write, two entries').toHaveLength(2)
 
 		const [first, second] = results
@@ -589,15 +700,23 @@ test.describe('timeline entries are records, over HTTP', () => {
 				schema: schemaId,
 			},
 		})
-		expect(block.ok(), `text block declare failed: ${await block.text()}`).toBeTruthy()
+		expect(
+			block.ok(),
+			`text block declare failed: ${await block.text()}`,
+		).toBeTruthy()
 
 		// A handler can see what they may insert, without being an administrator.
 		const listed = await handler.get(
 			`${API}/timeline/text-blocks?register=${registerId}&schema=${schemaId}`,
 		)
-		expect(listed.ok(), `text block list failed: ${await listed.text()}`).toBeTruthy()
 		expect(
-			((await listed.json()).results as Array<{ slug: string }>).map((row) => row.slug),
+			listed.ok(),
+			`text block list failed: ${await listed.text()}`,
+		).toBeTruthy()
+		expect(
+			((await listed.json()).results as Array<{ slug: string }>).map(
+				(row) => row.slug,
+			),
 		).toContain(slug)
 
 		const written = await handler.post(timelinePath(cases[0]), {
@@ -617,7 +736,9 @@ test.describe('timeline entries are records, over HTTP', () => {
 		const listed = await reader.get(`${API}/timeline/kinds`)
 		expect(listed.ok(), `kind list failed: ${await listed.text()}`).toBeTruthy()
 		expect(
-			((await listed.json()).results as Array<{ slug: string }>).map((row) => row.slug),
+			((await listed.json()).results as Array<{ slug: string }>).map(
+				(row) => row.slug,
+			),
 			'a handler writing an entry needs the list of kinds',
 		).toContain(CONTACT_KIND)
 
