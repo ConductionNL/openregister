@@ -174,23 +174,6 @@ final class SettingsDomainMap {
 	}//end knows()
 
 	/**
-	 * The configuration keys one domain writes.
-	 *
-	 * @param string $domain The domain name.
-	 *
-	 * @return array<int, string> The keys, in the order the handler writes them.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
-	 */
-	public function keysOf(string $domain): array {
-		return array_map(
-			static fn (array $entry): string => (string)$entry['key'],
-			(self::DOMAINS[$domain] ?? [])
-		);
-
-	}//end keysOf()
-
-	/**
 	 * The addresses and values one settings write would produce.
 	 *
 	 * A section the payload does not carry is skipped rather than drafted as

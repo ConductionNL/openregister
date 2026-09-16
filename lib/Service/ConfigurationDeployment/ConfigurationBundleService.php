@@ -67,15 +67,6 @@ use OCP\IUserSession;
 class ConfigurationBundleService {
 
 	/**
-	 * The key prefixes a bundle carries. REQ-CAD-004 names three: permissions,
-	 * notification rules and lifecycle settings. An integration configured on
-	 * a bundle rides along, because REQ-CAD-005 inherits it down the same chain.
-	 *
-	 * @var array<int, string>
-	 */
-	public const BUNDLE_PREFIXES = ['permission.', 'notification.', 'lifecycle.', 'integration.'];
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ConfigurationBindingMapper $bindings The bindings.
