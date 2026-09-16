@@ -1188,15 +1188,6 @@ class Application extends App implements IBootstrap {
 	}//end registerConfigurationServices()
 
 	/**
-	 * Register settings-related services including handlers.
-	 *
-	 * @param IRegistrationContext $context The registration context
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
-	 */
-	/**
 	 * Register the configuration deployment lifecycle.
 	 *
 	 * Registered explicitly rather than autowired: every class here takes the
@@ -1275,6 +1266,15 @@ class Application extends App implements IBootstrap {
 
 	}//end registerConfigurationDeploymentServices()
 
+	/**
+	 * Register settings-related services including handlers.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
 	private function registerSettingsServices(IRegistrationContext $context): void {
 		$context->registerService(
 			ValidationOperationsHandler::class,
