@@ -106,6 +106,7 @@ use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\FlowNodePreflightListener;
+use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\GrantableRightsInvalidationListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
@@ -560,6 +561,14 @@ class Application extends App implements IBootstrap {
 		// names the field and lists the filterable ones, instead of the opaque
 		// driver-level 500 an unresolvable column name used to produce.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
+
+		// Register the ApiVersionMiddleware (api-as-a-versioned-surface): names
+		// the contract version that answered on every API response, carries the
+		// RFC 8594 end date when that version is deprecated, and refuses a call
+		// naming a withdrawn version with 410 or an undeclared one with 400.
+		// It decorates and refuses; it never changes which controller runs, so a
+		// deprecated version keeps exactly the behaviour it had before.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
 
 		// Bind the dormant Path B PDF anonymisation fallback bridge to its
 		// null implementation. Tenants enabling Path B replace this binding
@@ -2866,6 +2875,15 @@ class Application extends App implements IBootstrap {
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
+
+		// The generated identifier (`generated-identifier`). Registered beside the
+		// lifecycle initial state and for the same reason: the value has to be in
+		// the object's body BEFORE it is written, or the object's first version is
+		// the one without a number. The same listener freezes it on update, because
+		// a frozen identifier that is not frozen fails in the quietest way there
+		// is: the number in the letter stops matching the record, and nothing errors.
+		$context->registerEventListener(ObjectCreatingEvent::class, GeneratedIdentifierListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, GeneratedIdentifierListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
 		// Per-state field rules — see x-openregister-lifecycle.states.<state>.fields.

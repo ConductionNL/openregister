@@ -125,22 +125,23 @@ class SequenceService {
 	 * @param int $registerId The register the sequence is scoped to.
 	 * @param int $schemaId The schema the sequence is scoped to.
 	 * @param string $scopeKey The scope discriminator.
+	 * @param int $nextValue What to store as the NEXT hand-out, so the value reserved is one below it.
 	 *
 	 * @return int The reserved running number.
 	 *
 	 * @throws DbException When the fallback increment cannot read the row.
 	 */
-	private function seedScope(int $registerId, int $schemaId, string $scopeKey): int {
+	private function seedScope(int $registerId, int $schemaId, string $scopeKey, int $nextValue = 2): int {
 		$entity = new Sequence();
 		$entity->setRegisterId($registerId);
 		$entity->setSchemaId($schemaId);
 		$entity->setScopeKey($scopeKey);
-		// Storing 2 means value 1 has just been reserved.
-		$entity->setNextValue(2);
+		// Storing n+1 means value n has just been reserved.
+		$entity->setNextValue($nextValue);
 
 		try {
 			$this->mapper->insert($entity);
-			return 1;
+			return ($nextValue - 1);
 		} catch (DbException $e) {
 			// Lost the insert race — the row now exists; increment it instead.
 			$this->mapper->incrementScope(
@@ -157,4 +158,73 @@ class SequenceService {
 			return ($next - 1);
 		}//end try
 	}//end seedScope()
+
+	/**
+	 * Push a counter past a number that is already printed on a record.
+	 *
+	 * An import that supplies `Z-2026-00120` has to leave the counter above 120,
+	 * or the next create issues `Z-2026-00001` and the collision does not
+	 * surface until the hundred-and-twentieth create. By then the import looks
+	 * like it worked.
+	 *
+	 * Never moves a counter DOWN. `raiseTo()` carries the `<` clause that keeps
+	 * that true even when an import of old numbers runs beside live creates.
+	 *
+	 * @param int $registerId The register the sequence is scoped to.
+	 * @param int $schemaId The schema the sequence is scoped to.
+	 * @param string $scopeKey The scope discriminator.
+	 * @param int $reserved The number already issued elsewhere.
+	 *
+	 * @return void
+	 *
+	 * @throws DbException When the counter cannot be read or written.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function advanceTo(int $registerId, int $schemaId, string $scopeKey, int $reserved): void {
+		if ($reserved < 1) {
+			return;
+		}
+
+		$target = ($reserved + 1);
+
+		$moved = $this->mapper->raiseTo(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			scopeKey: $scopeKey,
+			minNextValue: $target
+		);
+		if ($moved > 0) {
+			return;
+		}
+
+		// Either the counter is already past this number, or it does not exist
+		// yet. Only the second needs anything doing, and the two are told apart
+		// by reading the row rather than by assuming which one it was.
+		$row = $this->mapper->findForScope(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			scopeKey: $scopeKey
+		);
+		if ($row !== null) {
+			return;
+		}
+
+		try {
+			$this->seedScope(
+				registerId: $registerId,
+				schemaId: $schemaId,
+				scopeKey: $scopeKey,
+				nextValue: $target
+			);
+		} catch (Throwable $e) {
+			// Lost the seed race. The row exists now, so raise it instead.
+			$this->mapper->raiseTo(
+				registerId: $registerId,
+				schemaId: $schemaId,
+				scopeKey: $scopeKey,
+				minNextValue: $target
+			);
+		}//end try
+	}//end advanceTo()
 }//end class
