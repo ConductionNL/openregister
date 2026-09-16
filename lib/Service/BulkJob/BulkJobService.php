@@ -280,7 +280,12 @@ class BulkJobService {
 			return $this->jobMapper->save($job);
 		}
 
-		if ($job->getState() === BulkJob::STATE_PREVIEWED) {
+		// A previewed job has never run and a paused one has no batch in
+		// flight, so neither needs the `cancelling` handshake: there is no
+		// runner to notice it. Cancelling straight through matters because
+		// the alternative is returning the job unchanged, which reads on the
+		// console as a cancel that worked and did nothing.
+		if (in_array($job->getState(), [BulkJob::STATE_PREVIEWED, BulkJob::STATE_PAUSED], true) === true) {
 			$job->setState(BulkJob::STATE_CANCELLED);
 
 			return $this->jobMapper->save($job);
@@ -288,6 +293,72 @@ class BulkJobService {
 
 		return $job;
 	}//end cancel()
+
+	/**
+	 * Hold a running job where it stands, keeping its cursor.
+	 *
+	 * The batch already in flight finishes; the runner then reads a state
+	 * that is not `running` and does not re-enqueue itself, which is what
+	 * makes the pause hold rather than merely being recorded. Nothing is
+	 * rolled back, so resuming carries on at the same member.
+	 *
+	 * A pause is not a cancel: the members that were never walked stay
+	 * pending, and the job keeps its place in `ACTIVE_STATES`.
+	 *
+	 * @param BulkJob $job The running job.
+	 *
+	 * @return BulkJob The paused job.
+	 *
+	 * @throws BulkJobRefusedException When the job is not running.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function pause(BulkJob $job): BulkJob {
+		if ($job->getState() !== BulkJob::STATE_RUNNING) {
+			throw new BulkJobRefusedException(
+				message: 'Only a running job can be paused. This one is '.$job->getState().'.',
+				reason: 'not-pausable',
+				details: ['state' => $job->getState()]
+			);
+		}
+
+		$job->setState(BulkJob::STATE_PAUSED);
+
+		return $this->jobMapper->save($job);
+	}//end pause()
+
+	/**
+	 * Set a paused job running again from the member it stopped at.
+	 *
+	 * The cursor is left alone on purpose: a resume continues, it does not
+	 * restart, so an applied member is never walked twice. Re-enqueueing is
+	 * the half that matters, because pausing took the job out of the queue by
+	 * letting the runner fall through without adding itself back.
+	 *
+	 * @param BulkJob $job The paused job.
+	 *
+	 * @return BulkJob The running job.
+	 *
+	 * @throws BulkJobRefusedException When the job is not paused.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function resume(BulkJob $job): BulkJob {
+		if ($job->getState() !== BulkJob::STATE_PAUSED) {
+			throw new BulkJobRefusedException(
+				message: 'Only a paused job can be resumed. This one is '.$job->getState().'.',
+				reason: 'not-resumable',
+				details: ['state' => $job->getState()]
+			);
+		}
+
+		$job->setState(BulkJob::STATE_RUNNING);
+		$saved = $this->jobMapper->save($job);
+
+		$this->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+
+		return $saved;
+	}//end resume()
 
 	/**
 	 * Retry a job that stopped part way, without repeating a member.

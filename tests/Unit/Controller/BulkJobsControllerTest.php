@@ -320,4 +320,75 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->service->method('retry')->willReturn($job);
 		$this->assertSame(202, $this->controller()->retry(5)->getStatus());
 	}
+
+	/**
+	 * The console's two new verbs reach the service and answer the wire.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function testPauseAndResumeReachTheService(): void {
+		$this->signIn('coordinator');
+		$job = $this->job();
+		$this->jobMapper->method('find')->willReturn($job);
+
+		$this->service->expects($this->once())->method('pause')->willReturn($job);
+		$this->assertSame(200, $this->controller()->pause(5)->getStatus());
+
+		$this->service->expects($this->once())->method('resume')->willReturn($job);
+		$this->assertSame(202, $this->controller()->resume(5)->getStatus());
+	}
+
+	/**
+	 * Pausing somebody else's job is refused the same way reading it is.
+	 *
+	 * The interesting half is that it never reaches the service: an
+	 * ownership check that ran after the act would stop nothing.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function testAnotherUsersJobCannotBePausedOrResumed(): void {
+		$this->signIn('handler', false);
+		$this->jobMapper->method('find')->willReturn($this->job('coordinator'));
+		$this->service->expects($this->never())->method('pause');
+		$this->service->expects($this->never())->method('resume');
+
+		$this->assertSame(404, $this->controller()->pause(5)->getStatus());
+		$this->assertSame(404, $this->controller()->resume(5)->getStatus());
+	}
+
+	/**
+	 * An administrator drives the console over anybody's job.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function testAnAdministratorMayPauseSomebodyElsesJob(): void {
+		$this->signIn('admin', true);
+		$job = $this->job('coordinator');
+		$this->jobMapper->method('find')->willReturn($job);
+		$this->service->expects($this->once())->method('pause')->willReturn($job);
+
+		$this->assertSame(200, $this->controller()->pause(5)->getStatus());
+	}
+
+	/**
+	 * A refusal from the state machine reaches the caller as a 422 with its code.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function testPausingAJobThatIsNotRunningAnswersTheRefusal(): void {
+		$this->signIn('coordinator');
+		$this->jobMapper->method('find')->willReturn($this->job());
+		$this->service->method('pause')->willThrowException(
+			new BulkJobRefusedException(
+				message: 'Only a running job can be paused. This one is completed.',
+				reason: 'not-pausable',
+				details: ['state' => BulkJob::STATE_COMPLETED]
+			)
+		);
+
+		$response = $this->controller()->pause(5);
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame('not-pausable', $response->getData()['reason']);
+	}
 }

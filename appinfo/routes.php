@@ -1095,6 +1095,10 @@ return [
         ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        // Pause and resume — a hold that keeps the cursor, against cancel,
+        // which throws it away. The operations console drives both.
+        ['name' => 'bulkJobs#pause', 'url' => '/api/bulk-jobs/{id}/pause', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#resume', 'url' => '/api/bulk-jobs/{id}/resume', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.

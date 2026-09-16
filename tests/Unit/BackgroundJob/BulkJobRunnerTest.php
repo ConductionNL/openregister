@@ -116,6 +116,26 @@ final class BulkJobRunnerTest extends TestCase {
 		$this->assertSame([], $this->queued);
 	}
 
+	/**
+	 * A pause is only a pause if the queue stops.
+	 *
+	 * Writing `paused` on the row is the easy half; the half that decides
+	 * whether an administrator's pause means anything is here, where the
+	 * runner either re-enqueues itself or does not. Without this assertion a
+	 * paused job would keep walking its members and the console would show a
+	 * state nothing honours.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function testAPausedJobIsNotWalkedAndNotRequeued(): void {
+		$this->jobMapper->method('find')->willReturn($this->job(BulkJob::STATE_PAUSED));
+		$this->service->expects($this->never())->method('processBatch');
+
+		$this->invoke($this->runner(), ['job_id' => 3]);
+
+		$this->assertSame([], $this->queued);
+	}
+
 	public function testARunningJobWithMoreMembersRequeuesItself(): void {
 		$this->jobMapper->method('find')->willReturn($this->job(BulkJob::STATE_RUNNING));
 		$this->service->method('processBatch')->willReturn(true);
