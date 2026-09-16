@@ -275,6 +275,108 @@ class PropertyVocabularyTest extends TestCase {
 	}
 
 	/**
+	 * The keys the fleet already writes are in the vocabulary.
+	 *
+	 * 🔴 These four are named rather than derived on purpose. The strict key
+	 * check shipped with them missing, and the cost was not a warning: eight
+	 * apps' CI seeding failed at schema import because their shipped schemas
+	 * were refused. `authorization` is the sharpest of the four, because
+	 * OpenRegister itself reads it in `Schema::hasPropertyAuthorization()`, so
+	 * the layer refused a key its own model acts on. A derived assertion here
+	 * would pass again the moment somebody removes one.
+	 *
+	 * @return void
+	 */
+	public function testTheKeysTheFleetAlreadyWritesAreHeld(): void {
+		foreach (['authorization', 'table', 'widget', 'defaultBehavior'] as $key) {
+			$this->assertTrue(
+				condition: $this->vocabulary->hasKey(key: $key),
+				message: "'{$key}' is written in shipped schemas across the fleet and the vocabulary drops it"
+			);
+		}
+	}//end testTheKeysTheFleetAlreadyWritesAreHeld()
+
+	/**
+	 * A property authorization saves, because the model reads it back.
+	 *
+	 * The control the test above cannot give: publishing a key and refusing it
+	 * at save time would be the contract lying in the expensive direction.
+	 *
+	 * @return void
+	 */
+	public function testAPropertyAuthorizationSaves(): void {
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: [
+					'type' => 'string',
+					'authorization' => ['read' => ['authenticated'], 'update' => ['admin']],
+				],
+				path: '/interneAnnotatie'
+			)
+		);
+	}//end testAPropertyAuthorizationSaves()
+
+	/**
+	 * Prose keys may be written per language, and only prose keys may.
+	 *
+	 * `title:en` is the same key as `title`, written for one audience. Waving
+	 * through anything with a colon would make `title:englisch` a fourteenth
+	 * language instead of the typo it is, and `order:en` a setting nothing
+	 * reads. Both halves are asserted so the rule cannot quietly widen.
+	 *
+	 * @return void
+	 */
+	public function testAProseKeyTakesALanguageSuffixAndNothingElseDoes(): void {
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: [
+					'type' => 'string',
+					'title:en' => 'Time entry',
+					'title:nl' => 'Urenregel',
+					'description:en' => 'The hours booked on this entry.',
+					'title:pt-BR' => 'Lancamento de horas',
+				],
+				path: '/timeEntry'
+			),
+			message: 'a localised title was refused, so a multilingual schema cannot be imported'
+		);
+
+		foreach (['title:englisch', 'titel:en', 'order:en'] as $key) {
+			try {
+				$this->validator->validateProperty(property: ['type' => 'string', $key => 'x'], path: '/probe');
+				$this->fail(message: "'{$key}' was accepted, so the language suffix is waving anything through");
+			} catch (PropertyVocabularyException $refusal) {
+				$this->assertStringContainsString(needle: $key, haystack: $refusal->getMessage());
+			}
+		}
+	}//end testAProseKeyTakesALanguageSuffixAndNothingElseDoes()
+
+	/**
+	 * The localisation rule is published, not left to be guessed.
+	 *
+	 * An editor generated from this endpoint has to know both which keys take
+	 * a suffix and what the suffix may look like.
+	 *
+	 * @return void
+	 */
+	public function testTheLocalisationRuleIsPublished(): void {
+		$rule = $this->vocabulary->all()['localisation'];
+
+		$this->assertSame(expected: ['title', 'description'], actual: $rule['keys']);
+		$this->assertSame(expected: ':', actual: $rule['separator']);
+		$this->assertSame(expected: 1, actual: preg_match($rule['languageTagPattern'], 'nl'));
+		$this->assertSame(expected: 0, actual: preg_match($rule['languageTagPattern'], 'englisch'));
+
+		foreach ($rule['keys'] as $key) {
+			$this->assertContains(
+				needle: $key,
+				haystack: $this->vocabulary->keys(),
+				message: "'{$key}' takes a language suffix but is not itself a published key"
+			);
+		}
+	}//end testTheLocalisationRuleIsPublished()
+
+	/**
 	 * The payload the endpoint answers with carries its own counts.
 	 *
 	 * @return void

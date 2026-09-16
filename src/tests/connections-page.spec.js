@@ -13,16 +13,17 @@
  * @copyright 2026 Conduction B.V.
  */
 
+import { BUILT_IN_FORMATTERS } from '@conduction/nextcloud-vue/src/utils/builtInFormatters.js'
+
+// The built-ins reach @nextcloud/auth through the library's filter tokens, and
+// the browser-storage stub this suite uses cannot build its guest store.
+jest.mock('@nextcloud/auth', () => ({ getCurrentUser: () => null }))
 import fs from 'fs'
 import path from 'path'
 import customComponents, {
 	INTEGRIQ_CONNECTIONS_PATH,
 	openIntegriqConnections,
 } from '../customComponents.js'
-import {
-	connectionSettingsLabel,
-	connectionStatus,
-} from '../services/connectionFormatters.js'
 
 const ROOT = path.resolve(__dirname, '..', '..')
 const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8')
@@ -97,11 +98,9 @@ describe('the Connections page', () => {
 		)
 	})
 
-	it('reaches CnAppRoot with its handler and formatters', () => {
+	it('reaches CnAppRoot with its handler', () => {
 		expect(appVue).toMatch(/:customComponents="customComponents"/)
-		expect(appVue).toMatch(/:formatters="formatters"/)
 		expect(mainJs).toMatch(/customComponents: customComponentsProp/)
-		expect(mainJs).toMatch(/formatters: formattersProp/)
 	})
 })
 
@@ -124,44 +123,39 @@ describe('the Connections menu entry', () => {
 	})
 })
 
+/**
+ * The formatter registry the page renders with, built the way CnAppRoot builds
+ * it: `{ ...BUILT_IN_FORMATTERS, ...formatters }`. A local map that main.js
+ * passes under a built-in's name wins, so a copy that predates a status shows
+ * that status as its raw word.
+ *
+ * @return {Object<string, Function>} Formatter name to formatter.
+ */
+function pageFormatters() {
+	const local = /\bformatters: \w+/.test(mainJs)
+		? require(path.join(ROOT, 'src', 'services', 'connectionFormatters.js'))
+				.default
+		: {}
+	return { ...BUILT_IN_FORMATTERS, ...local }
+}
+
 describe('the connection formatters', () => {
-	it('name each of the six statuses', () => {
-		expect(connectionStatus('configured')).toBe('Configured')
-		expect(connectionStatus('limited')).toBe('Limited')
-		expect(connectionStatus('unconfigured')).toBe('Not configured')
-		expect(connectionStatus('simulated')).toBe('Simulated')
-		expect(connectionStatus('unavailable')).toBe('Not available')
-		expect(connectionStatus('error')).toBe('Error')
+	it('label a switched-off connection through the nextcloud-vue built-in', () => {
+		expect(pageFormatters().connectionStatus('disabled')).toBe('Switched off')
+		// CnAppRoot lets an app formatter win over a built-in, so a local copy
+		// passed to the shell would shadow the library's labels.
+		expect(appVue).not.toMatch(/:formatters=/)
 	})
 
-	it('render an unknown value as itself and a missing one as empty', () => {
-		expect(connectionStatus('degraded')).toBe('degraded')
-		expect(connectionStatus('toString')).toBe('toString')
-		expect(connectionStatus(undefined)).toBe('')
-		expect(connectionStatus(null)).toBe('')
+	it('resolve every formatter the page names', () => {
+		const formatters = pageFormatters()
+		for (const column of page.config.columns.filter((c) => c.formatter)) {
+			expect(typeof formatters[column.formatter]).toBe('function')
+		}
 	})
 
-	it('offer Open settings only when there is somewhere to go', () => {
-		expect(
-			connectionSettingsLabel('/settings/admin/openregister#section-llm'),
-		).toBe('Open settings')
-		expect(connectionSettingsLabel('')).toBe('')
-		expect(connectionSettingsLabel(undefined)).toBe('')
-	})
-
-	it('are translated into Dutch', () => {
-		for (const source of [
-			'Configured',
-			'Limited',
-			'Not configured',
-			'Simulated',
-			'Not available',
-			'Error',
-			'Open settings',
-			'Add integration',
-			'Connections',
-			'Last checked',
-		]) {
+	it('leave the page its own labels in Dutch', () => {
+		for (const source of ['Add integration', 'Connections', 'Last checked']) {
 			expect(en[source]).toBe(source)
 			expect(nl[source]).toBeTruthy()
 			expect(nl[source]).not.toBe(source)

@@ -1,6 +1,13 @@
 module.exports = {
 	transform: {
 		'^.+\\.vue$': '@vue/vue3-jest',
+		// .babelrc is file-relative, so it never reaches node_modules. The
+		// connection formatter spec imports a nextcloud-vue built-in from the
+		// package's ESM source, which needs its own preset.
+		'/node_modules/@conduction/nextcloud-vue/src/.+\\.js$': [
+			'babel-jest',
+			{ presets: ['@babel/preset-env'] },
+		],
 		'^.+\\.[cm]?js$': 'babel-jest',
 		'^.+\\.ts$': 'ts-jest',
 		'.+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$':

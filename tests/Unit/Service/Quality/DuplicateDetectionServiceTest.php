@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Service\Quality\SimilarityCalculator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,17 +26,29 @@ class DuplicateDetectionServiceTest extends TestCase {
 
 	private $registerMapper;
 
+	/**
+	 * Dismissed pairs. Answers "none" throughout this class, so every pair the
+	 * scorer finds is offered: the exclusion itself is asserted in
+	 * DuplicateDismissalExclusionTest, where both sides can be controlled.
+	 *
+	 * @var DismissedPairStore&MockObject
+	 */
+	private $dismissals;
+
 	private DuplicateDetectionService $service;
 
 	protected function setUp(): void {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->dismissals = $this->createMock(DismissedPairStore::class);
+		$this->dismissals->method('activeFor')->willReturn([]);
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
 			$this->schemaMapper,
 			$this->registerMapper,
 			new SimilarityCalculator(),
+			$this->dismissals,
 			$this->createMock(LoggerInterface::class)
 		);
 	}

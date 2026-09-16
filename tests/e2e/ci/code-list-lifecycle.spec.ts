@@ -44,7 +44,10 @@ const URI_SPOED = `urn:e2e:${RUN_ID}:spoed`
 const URI_REGULIER = `urn:e2e:${RUN_ID}:regulier`
 const URI_SYSTEM = `urn:e2e:${RUN_ID}:systeem`
 
-const JSON_HEADERS = { Accept: 'application/json', 'Content-Type': 'application/json' }
+const JSON_HEADERS = {
+	Accept: 'application/json',
+	'Content-Type': 'application/json',
+}
 
 test.describe.configure({ mode: 'serial' })
 
@@ -111,9 +114,21 @@ test.describe('code-list-lifecycle', () => {
 			notation: 'ING',
 			validFrom: '2019-01-01',
 		})
-		await concept({ uri: URI_SPOED, prefLabel: { nl: 'Spoed' }, exclusiveGroup: 'urgentie' })
-		await concept({ uri: URI_REGULIER, prefLabel: { nl: 'Regulier' }, exclusiveGroup: 'urgentie' })
-		await concept({ uri: URI_SYSTEM, prefLabel: { nl: 'Systeemwaarde' }, systemDefined: true })
+		await concept({
+			uri: URI_SPOED,
+			prefLabel: { nl: 'Spoed' },
+			exclusiveGroup: 'urgentie',
+		})
+		await concept({
+			uri: URI_REGULIER,
+			prefLabel: { nl: 'Regulier' },
+			exclusiveGroup: 'urgentie',
+		})
+		await concept({
+			uri: URI_SYSTEM,
+			prefLabel: { nl: 'Systeemwaarde' },
+			systemDefined: true,
+		})
 
 		// A schema whose properties bind to that scheme, declare a semantic
 		// role, and declare both uniqueness actions.
@@ -141,8 +156,16 @@ test.describe('code-list-lifecycle', () => {
 			},
 			configuration: {
 				uniqueConstraints: [
-					{ name: 'een-bezwaar', properties: ['besluit', 'indiener'], action: 'refuse' },
-					{ name: 'dubbel-adres', properties: ['email'], action: 'report' },
+					{
+						name: 'een-bezwaar',
+						properties: ['besluit', 'indiener'],
+						action: 'refuse',
+					},
+					{
+						name: 'dubbel-adres',
+						properties: ['email'],
+						action: 'report',
+					},
 				],
 			},
 		})
@@ -152,7 +175,9 @@ test.describe('code-list-lifecycle', () => {
 	test.afterAll(async ({ request }) => {
 		for (const id of objectIds) {
 			await request
-				.delete(`${API}/objects/vocabulary/${caseSchemaId}/${id}`, { headers: JSON_HEADERS })
+				.delete(`${API}/objects/vocabulary/${caseSchemaId}/${id}`, {
+					headers: JSON_HEADERS,
+				})
 				.catch(() => undefined)
 		}
 		for (const id of Object.values(conceptIds)) {
@@ -173,7 +198,9 @@ test.describe('code-list-lifecycle', () => {
 	})
 
 	// @e2e skos-concept-registers::a-retired-value-keeps-working-on-old-records
-	test('a record written while the value was live keeps reading it back', async ({ request }) => {
+	test('a record written while the value was live keeps reading it back', async ({
+		request,
+	}) => {
 		const objects = `${API}/objects/vocabulary/${caseSchemaId}`
 
 		// 1. The value is live, so the record can be written. Asserted, not
@@ -200,17 +227,20 @@ test.describe('code-list-lifecycle', () => {
 		).toContain(URI_INGETROKKEN)
 
 		// 2. The gemeente retires the value by closing its window.
-		const retire = await request.put(`${VOCAB_CONCEPTS}/${conceptIds[URI_INGETROKKEN]}`, {
-			headers: JSON_HEADERS,
-			data: {
-				uri: URI_INGETROKKEN,
-				prefLabel: { nl: 'Ingetrokken' },
-				notation: 'ING',
-				inScheme: schemeId,
-				validFrom: '2019-01-01',
-				validUntil: '2020-12-31',
+		const retire = await request.put(
+			`${VOCAB_CONCEPTS}/${conceptIds[URI_INGETROKKEN]}`,
+			{
+				headers: JSON_HEADERS,
+				data: {
+					uri: URI_INGETROKKEN,
+					prefLabel: { nl: 'Ingetrokken' },
+					notation: 'ING',
+					inScheme: schemeId,
+					validFrom: '2019-01-01',
+					validUntil: '2020-12-31',
+				},
 			},
-		})
+		)
 		expect(retire.status(), await retire.text()).toBeLessThan(300)
 
 		// 3. The old record still reads the value back, with its label.
@@ -233,17 +263,22 @@ test.describe('code-list-lifecycle', () => {
 			{ headers: { Accept: 'application/json' } },
 		)
 		expect(afterRetiring.ok()).toBeTruthy()
-		const offered = ((await afterRetiring.json()).results ?? []).map((row: any) => row.value)
+		const offered = ((await afterRetiring.json()).results ?? []).map(
+			(row: any) => row.value,
+		)
 		expect(offered).not.toContain(URI_INGETROKKEN)
 		expect(offered, 'and the rest of the scheme is untouched').toContain(URI_KAP)
 	})
 
 	// @e2e skos-concept-registers::a-retired-value-cannot-be-written-today
 	test('a retired value cannot be written today', async ({ request }) => {
-		const resp = await request.post(`${API}/objects/vocabulary/${caseSchemaId}`, {
-			headers: JSON_HEADERS,
-			data: { onderwerp: 'Nieuw dossier', categorie: URI_INGETROKKEN },
-		})
+		const resp = await request.post(
+			`${API}/objects/vocabulary/${caseSchemaId}`,
+			{
+				headers: JSON_HEADERS,
+				data: { onderwerp: 'Nieuw dossier', categorie: URI_INGETROKKEN },
+			},
+		)
 
 		expect(resp.status()).toBe(422)
 		const body = await resp.text()
@@ -253,10 +288,13 @@ test.describe('code-list-lifecycle', () => {
 
 	// @e2e skos-concept-registers::two-concepts-of-one-exclusive-group-are-refused
 	test('two values of one exclusive group are refused', async ({ request }) => {
-		const resp = await request.post(`${API}/objects/vocabulary/${caseSchemaId}`, {
-			headers: JSON_HEADERS,
-			data: { onderwerp: 'Beide', urgentie: [URI_SPOED, URI_REGULIER] },
-		})
+		const resp = await request.post(
+			`${API}/objects/vocabulary/${caseSchemaId}`,
+			{
+				headers: JSON_HEADERS,
+				data: { onderwerp: 'Beide', urgentie: [URI_SPOED, URI_REGULIER] },
+			},
+		)
 
 		expect(resp.status()).toBe(422)
 		const body = await resp.text()
@@ -287,7 +325,9 @@ test.describe('code-list-lifecycle', () => {
 	})
 
 	// @e2e skos-concept-registers::one-property-serves-two-case-types-with-different-values
-	test('one property serves two case types with different values', async ({ request }) => {
+	test('one property serves two case types with different values', async ({
+		request,
+	}) => {
 		const read = async (context: string) => {
 			const resp = await request.get(
 				`${API}/vocabulary/options?schema=${caseSchemaId}&property=categorie&context=${context}`,
@@ -365,7 +405,10 @@ test.describe('code-list-lifecycle', () => {
 			headers: JSON_HEADERS,
 			data: { onderwerp: 'Tweede', email },
 		})
-		expect(second.status(), 'a report constraint never blocks the intake').toBeLessThan(300)
+		expect(
+			second.status(),
+			'a report constraint never blocks the intake',
+		).toBeLessThan(300)
 
 		const created = await second.json()
 		const secondId = created.id ?? created['@self']?.id
@@ -377,31 +420,48 @@ test.describe('code-list-lifecycle', () => {
 		expect(readBack.ok()).toBeTruthy()
 		const body = await readBack.json()
 		const breaches = body['@self']?.validation?.uniqueness ?? []
-		expect(breaches.length, 'the breach is recorded where it can be read').toBeGreaterThan(0)
+		expect(
+			breaches.length,
+			'the breach is recorded where it can be read',
+		).toBeGreaterThan(0)
 		expect(breaches[0].constraint).toBe('dubbel-adres')
 	})
 
 	// @e2e runtime-schema-api::an-administrator-sees-what-a-conversion-would-cost
-	test('an administrator sees what a conversion would cost', async ({ request }) => {
-		const resp = await request.post(`${SCHEMAS}/${caseSchemaId}/conversions/preview`, {
-			headers: JSON_HEADERS,
-			data: { property: 'onderwerp', to: 'number' },
-		})
+	test('an administrator sees what a conversion would cost', async ({
+		request,
+	}) => {
+		const resp = await request.post(
+			`${SCHEMAS}/${caseSchemaId}/conversions/preview`,
+			{
+				headers: JSON_HEADERS,
+				data: { property: 'onderwerp', to: 'number' },
+			},
+		)
 
 		expect(resp.ok()).toBeTruthy()
 		const body = await resp.json()
 		expect(body.supported).toBe(true)
 		expect(body.total).toBeGreaterThan(0)
-		expect(body.rejected, 'the subjects written above are not numeric').toBeGreaterThan(0)
+		expect(
+			body.rejected,
+			'the subjects written above are not numeric',
+		).toBeGreaterThan(0)
 		expect(Array.isArray(body.samples)).toBe(true)
-		expect(body.samples.length, 'and the ones that do not convert are named').toBeGreaterThan(0)
+		expect(
+			body.samples.length,
+			'and the ones that do not convert are named',
+		).toBeGreaterThan(0)
 	})
 
 	// @e2e skos-concept-registers::a-system-defined-value-cannot-be-deleted
 	test('a system-defined value cannot be deleted', async ({ request }) => {
-		const resp = await request.delete(`${VOCAB_CONCEPTS}/${conceptIds[URI_SYSTEM]}`, {
-			headers: JSON_HEADERS,
-		})
+		const resp = await request.delete(
+			`${VOCAB_CONCEPTS}/${conceptIds[URI_SYSTEM]}`,
+			{
+				headers: JSON_HEADERS,
+			},
+		)
 
 		expect(resp.status()).toBeGreaterThanOrEqual(400)
 		const body = await resp.text()
@@ -413,9 +473,12 @@ test.describe('code-list-lifecycle', () => {
 		request,
 	}) => {
 		// The kapvergunning object created above still holds this value.
-		const resp = await request.delete(`${VOCAB_CONCEPTS}/${conceptIds[URI_KAP]}`, {
-			headers: JSON_HEADERS,
-		})
+		const resp = await request.delete(
+			`${VOCAB_CONCEPTS}/${conceptIds[URI_KAP]}`,
+			{
+				headers: JSON_HEADERS,
+			},
+		)
 
 		expect(resp.status()).toBeGreaterThanOrEqual(400)
 		const body = await resp.text()
