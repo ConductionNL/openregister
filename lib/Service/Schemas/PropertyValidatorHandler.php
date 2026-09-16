@@ -902,9 +902,14 @@ class PropertyValidatorHandler {
 	 */
 	private function validateRepeatingGroupDeclaration(array $property, string $path): void {
 		$isGroup = (($property['repeatingGroup'] ?? false) === true);
+		// Present AND non-null, which is what every other check in this class
+		// asks. A null says the key is spelled correctly and asserts nothing
+		// about its value, and `PropertyVocabularyTest` probes the whole
+		// published vocabulary that way: reading a null as a declaration made
+		// two published keys impossible to save on their own.
 		$hasGroupKey = (
-			array_key_exists('groupOrdered', $property) === true
-			|| array_key_exists('groupLabel', $property) === true
+			($property['groupOrdered'] ?? null) !== null
+			|| ($property['groupLabel'] ?? null) !== null
 		);
 
 		if ($isGroup === false) {
