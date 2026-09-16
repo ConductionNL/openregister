@@ -75,8 +75,8 @@ class NotificationHistoryController extends Controller {
 	 *
 	 * Supported query string params: `ruleId`, `channel`, `recipient`,
 	 * `objectUuid`, `schemaId`, `registerId`, `status`, `subjectType`,
-	 * `subjectId`, `unreadOnly`, `includeArchived`, `includeSnoozed`, `limit`,
-	 * `offset`.
+	 * `subjectId`, `eventId`, `unreadOnly`, `includeArchived`,
+	 * `includeSnoozed`, `limit`, `offset`.
 	 *
 	 * An archived notice is absent unless asked for, and a notice snoozed into
 	 * the future is absent until that moment: both leave the list without being
@@ -248,6 +248,10 @@ class NotificationHistoryController extends Controller {
 			// question as which schema's rule produced it.
 			'subjectType',
 			'subjectId',
+			// One firing's transports, read together. The in-app notice and the
+			// outbound call that came from the same event share this id, which
+			// is the only way to ask "what else happened when this fired".
+			'eventId',
 			// The three list-state switches. Present as strings and read as
 			// booleans by the mapper, so `?unreadOnly=true` works from a plain
 			// query string.

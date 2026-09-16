@@ -91,4 +91,33 @@ class SequenceMapper extends QBMapper {
 
 		return $qb->executeStatement();
 	}//end incrementScope()
+
+	/**
+	 * Raise a scope row's `next_value` so it is at least the given number.
+	 *
+	 * Conditional on purpose: the `next_value < ?` clause is what makes this safe
+	 * to run beside a concurrent reservation. A plain SET would let an import
+	 * that supplied an OLD number push the counter backwards, and the next create
+	 * would then re-issue a number already printed on a record.
+	 *
+	 * @param int $registerId The register the sequence is scoped to.
+	 * @param int $schemaId The schema the sequence is scoped to.
+	 * @param string $scopeKey The scope discriminator.
+	 * @param int $minNextValue The value `next_value` must reach.
+	 *
+	 * @return int Affected rows: 1 when the row moved, 0 when it was already high enough or absent.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function raiseTo(int $registerId, int $schemaId, string $scopeKey, int $minNextValue): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('next_value', $qb->createNamedParameter($minNextValue, IQueryBuilder::PARAM_INT))
+			->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('scope_key', $qb->createNamedParameter($scopeKey)))
+			->andWhere($qb->expr()->lt('next_value', $qb->createNamedParameter($minNextValue, IQueryBuilder::PARAM_INT)));
+
+		return $qb->executeStatement();
+	}//end raiseTo()
 }//end class
