@@ -110,11 +110,16 @@ test.describe('configuration as a deployment over HTTP', () => {
 	}
 
 	/** Draft one value into a set, at the run's own register address. */
-	async function draft(setUuid: string, value: Record<string, unknown>): Promise<void> {
+	async function draft(
+		setUuid: string,
+		value: Record<string, unknown>,
+	): Promise<void> {
 		const res = await admin.post(`${SETS}/${setUuid}/values`, {
 			data: { layer: 'register', layerRef: LAYER_REF, key: KEY, value },
 		})
-		expect(res.status(), `drafting a value failed: ${await res.text()}`).toBe(201)
+		expect(res.status(), `drafting a value failed: ${await res.text()}`).toBe(
+			201,
+		)
 	}
 
 	/** What the explainer answers for the run's address. */
@@ -145,7 +150,9 @@ test.describe('configuration as a deployment over HTTP', () => {
 
 		/* THE WHOLE POINT. The draft exists, and the live configuration has not
 		 * moved: nothing sets this address yet. */
-		expect(answer.found, 'a draft was applied to the live configuration').toBe(false)
+		expect(answer.found, 'a draft was applied to the live configuration').toBe(
+			false,
+		)
 		expect(answer.value, 'a draft leaked into the effective value').toBeNull()
 
 		/* And the set still holds the pending value, so "not applied" is not
@@ -154,7 +161,9 @@ test.describe('configuration as a deployment over HTTP', () => {
 		const body = (await read.json()) as Record<string, unknown>
 		const drafts = body.drafts as Array<Record<string, unknown>>
 		expect(drafts, 'the set lost its pending value').toHaveLength(1)
-		expect((drafts[0].value as Record<string, unknown>).relay).toBe('drafted-never-deployed')
+		expect((drafts[0].value as Record<string, unknown>).relay).toBe(
+			'drafted-never-deployed',
+		)
 	})
 
 	test('a preview says what would change, and a deployment records both sides', async () => {
@@ -165,27 +174,49 @@ test.describe('configuration as a deployment over HTTP', () => {
 		const preview = (await previewRes.json()) as Record<string, unknown>
 		const counts = preview.counts as Record<string, number>
 
-		expect(preview.deployable, `the preview refused: ${JSON.stringify(preview.refusals)}`).toBe(true)
+		expect(
+			preview.deployable,
+			`the preview refused: ${JSON.stringify(preview.refusals)}`,
+		).toBe(true)
 		expect(counts.toChange, 'the preview does not count the change').toBe(1)
 		expect(counts.refused).toBe(0)
 
 		const changes = preview.changes as Array<Record<string, unknown>>
-		expect(changes[0].status, 'a key nothing held yet is a create, not a change').toBe('create')
+		expect(
+			changes[0].status,
+			'a key nothing held yet is a create, not a change',
+		).toBe('create')
 
 		const deployRes = await admin.post(`${SETS}/${setUuid}/deploy`, {
 			data: { name: `e2e first deployment ${RUN}` },
 		})
-		expect(deployRes.status(), `deploy failed: ${await deployRes.text()}`).toBe(201)
+		expect(deployRes.status(), `deploy failed: ${await deployRes.text()}`).toBe(
+			201,
+		)
 
 		const deployment = (await deployRes.json()) as Record<string, unknown>
 		const recorded = deployment.changes as Array<Record<string, unknown>>
 
-		expect(String(deployment.uuid ?? ''), 'the deployment was not recorded').toMatch(/[0-9a-f-]{36}/)
-		expect(deployment.deployedBy, 'the deployment does not name who deployed it').toBeTruthy()
-		expect(deployment.deployedAt, 'the deployment does not carry a time').toBeTruthy()
-		expect(recorded, 'the deployment did not record the value it moved').toHaveLength(1)
+		expect(
+			String(deployment.uuid ?? ''),
+			'the deployment was not recorded',
+		).toMatch(/[0-9a-f-]{36}/)
+		expect(
+			deployment.deployedBy,
+			'the deployment does not name who deployed it',
+		).toBeTruthy()
+		expect(
+			deployment.deployedAt,
+			'the deployment does not carry a time',
+		).toBeTruthy()
+		expect(
+			recorded,
+			'the deployment did not record the value it moved',
+		).toHaveLength(1)
 		/* The half a rollback is made of: what was there BEFORE. */
-		expect(recorded[0].previousPresent, 'the address held nothing before').toBe(false)
+		expect(recorded[0].previousPresent, 'the address held nothing before').toBe(
+			false,
+		)
 		expect((recorded[0].value as Record<string, unknown>).relay).toBe('smtp-one')
 	})
 
@@ -195,7 +226,9 @@ test.describe('configuration as a deployment over HTTP', () => {
 		expect(answer.found).toBe(true)
 		expect((answer.value as Record<string, unknown>).relay).toBe('smtp-one')
 		/* All three answers from one read (D-4): value, layer and deployment. */
-		expect(answer.layer, 'the explainer does not name the layer').toBe('register')
+		expect(answer.layer, 'the explainer does not name the layer').toBe(
+			'register',
+		)
 		expect(answer.layerRef).toBe(LAYER_REF)
 		expect(
 			answer.predatesFirstDeployment,
@@ -204,7 +237,9 @@ test.describe('configuration as a deployment over HTTP', () => {
 
 		const deployment = answer.deployment as Record<string, unknown>
 		expect(deployment, 'the explainer does not name the deployment').toBeTruthy()
-		expect(String(deployment.name ?? ''), 'the deployment is unnamed').toContain(RUN)
+		expect(String(deployment.name ?? ''), 'the deployment is unnamed').toContain(
+			RUN,
+		)
 		expect(String(answer.explanation ?? '')).toContain('register')
 	})
 
@@ -222,21 +257,33 @@ test.describe('configuration as a deployment over HTTP', () => {
 		expect(interloperDeploy.status()).toBe(201)
 
 		/* The first set now refuses, and says which value refused. */
-		const preview = (await (await admin.get(`${SETS}/${staleSet}/preview`)).json()) as Record<string, unknown>
+		const preview = (await (
+			await admin.get(`${SETS}/${staleSet}/preview`)
+		).json()) as Record<string, unknown>
 		const refusals = preview.refusals as Array<Record<string, unknown>>
 
-		expect(preview.deployable, 'a set taken against a moved value must not deploy').toBe(false)
+		expect(
+			preview.deployable,
+			'a set taken against a moved value must not deploy',
+		).toBe(false)
 		expect(refusals, 'the preview names no refusal').toHaveLength(1)
 		expect(refusals[0].refusal).toBe('stale-draft')
 		expect(refusals[0].key).toBe(KEY)
 
-		const deployRes = await admin.post(`${SETS}/${staleSet}/deploy`, { data: {} })
+		const deployRes = await admin.post(`${SETS}/${staleSet}/deploy`, {
+			data: {},
+		})
 		const body = (await deployRes.json()) as Record<string, unknown>
 
-		expect(deployRes.status(), 'a refused deployment must not answer 2xx').toBe(409)
+		expect(deployRes.status(), 'a refused deployment must not answer 2xx').toBe(
+			409,
+		)
 		expect(body.error).toBe('value-refused')
 		expect(body.applied, 'a refused deployment reports values applied').toBe(0)
-		expect(String(body.message ?? ''), 'the refusal does not name the value').toContain(KEY)
+		expect(
+			String(body.message ?? ''),
+			'the refusal does not name the value',
+		).toContain(KEY)
 
 		/* NOTHING was applied: the interloper's value is still the live one. */
 		const answer = await effective()
@@ -244,20 +291,37 @@ test.describe('configuration as a deployment over HTTP', () => {
 	})
 
 	test('a broken weekend is undone in one act', async () => {
-		const history = (await (await admin.get(DEPLOYMENTS)).json()) as Record<string, unknown>
+		const history = (await (await admin.get(DEPLOYMENTS)).json()) as Record<
+			string,
+			unknown
+		>
 		const results = history.results as Array<Record<string, unknown>>
-		const interloper = results.find((row) => String(row.name ?? '') === `e2e interloper ${RUN}`)
+		const interloper = results.find(
+			(row) => String(row.name ?? '') === `e2e interloper ${RUN}`,
+		)
 
-		expect(interloper, 'the interloper deployment is not in the history').toBeTruthy()
+		expect(
+			interloper,
+			'the interloper deployment is not in the history',
+		).toBeTruthy()
 
 		const before = results.length
 
-		const rollbackRes = await admin.post(`${DEPLOYMENTS}/${interloper!.uuid}/rollback`, { data: {} })
-		expect(rollbackRes.status(), `rollback failed: ${await rollbackRes.text()}`).toBe(201)
+		const rollbackRes = await admin.post(
+			`${DEPLOYMENTS}/${interloper!.uuid}/rollback`,
+			{ data: {} },
+		)
+		expect(
+			rollbackRes.status(),
+			`rollback failed: ${await rollbackRes.text()}`,
+		).toBe(201)
 
 		const rollback = (await rollbackRes.json()) as Record<string, unknown>
 		expect(rollback.isRollback).toBe(true)
-		expect(rollback.restores, 'the rollback does not name what it restores').toBe(interloper!.uuid)
+		expect(
+			rollback.restores,
+			'the rollback does not name what it restores',
+		).toBe(interloper!.uuid)
 
 		/* The earlier value is live again. */
 		const answer = await effective()
@@ -265,9 +329,14 @@ test.describe('configuration as a deployment over HTTP', () => {
 
 		/* APPEND-ONLY: the history GREW. Undoing did not remove the row that
 		 * recorded the change, which is the record of what happened. */
-		const after = (await (await admin.get(DEPLOYMENTS)).json()) as Record<string, unknown>
+		const after = (await (await admin.get(DEPLOYMENTS)).json()) as Record<
+			string,
+			unknown
+		>
 		const afterResults = after.results as Array<Record<string, unknown>>
-		expect(afterResults.length, 'the rollback shortened the history').toBe(before + 1)
+		expect(afterResults.length, 'the rollback shortened the history').toBe(
+			before + 1,
+		)
 		expect(
 			afterResults.find((row) => row.uuid === interloper!.uuid),
 			'the rolled-back deployment was removed from the history',
@@ -275,9 +344,14 @@ test.describe('configuration as a deployment over HTTP', () => {
 	})
 
 	test('a deployed set cannot be deployed or edited again', async () => {
-		const history = (await (await admin.get(DEPLOYMENTS)).json()) as Record<string, unknown>
+		const history = (await (await admin.get(DEPLOYMENTS)).json()) as Record<
+			string,
+			unknown
+		>
 		const results = history.results as Array<Record<string, unknown>>
-		const first = results.find((row) => String(row.name ?? '') === `e2e first deployment ${RUN}`)
+		const first = results.find(
+			(row) => String(row.name ?? '') === `e2e first deployment ${RUN}`,
+		)
 		const setUuid = String(first!.setUuid)
 
 		const again = await admin.post(`${SETS}/${setUuid}/deploy`, { data: {} })
@@ -285,19 +359,28 @@ test.describe('configuration as a deployment over HTTP', () => {
 		expect((await again.json()).error).toBe('state')
 
 		const edit = await admin.post(`${SETS}/${setUuid}/values`, {
-			data: { layer: 'register', layerRef: LAYER_REF, key: KEY, value: { relay: 'late' } },
+			data: {
+				layer: 'register',
+				layerRef: LAYER_REF,
+				key: KEY,
+				value: { relay: 'late' },
+			},
 		})
 		expect(edit.status(), 'a deployed set took another value').toBe(409)
 	})
 
 	test('an unknown set and a keyless explainer refuse by name', async () => {
-		const unknown = await admin.get(`${SETS}/00000000-0000-0000-0000-000000000000`)
+		const unknown = await admin.get(
+			`${SETS}/00000000-0000-0000-0000-000000000000`,
+		)
 		expect(unknown.status()).toBe(404)
 		expect((await unknown.json()).error).toBe('unknown')
 
 		const keyless = await admin.get(EFFECTIVE)
 		expect(keyless.status()).toBe(400)
-		expect(String((await keyless.json()).message ?? '')).toContain('key is required')
+		expect(String((await keyless.json()).message ?? '')).toContain(
+			'key is required',
+		)
 	})
 })
 
