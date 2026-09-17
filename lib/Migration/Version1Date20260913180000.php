@@ -32,9 +32,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
+use Doctrine\DBAL\Schema\Table;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -45,6 +45,25 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260913180000 extends SimpleMigrationStep {
 
+	/*
+	 * NO NATIVE TYPE HINT on the $table parameters below, deliberately.
+	 *
+	 * ISchemaWrapper hands out `Doctrine\DBAL\Schema\Table` on NC 32-34 and
+	 * `OCP\DB\Schema\ITable` on NC 35 — and ITable does not exist at all
+	 * before 35 (lib/public/DB/Schema/ITable.php is absent on stable33 and
+	 * stable34). A native hint for EITHER type is therefore a TypeError on the
+	 * other half of the range this app declares, and it fires during
+	 * `occ app:enable` -> Installer::installApp() -> MigrationService::migrate(),
+	 * so the app does not install at all rather than failing a test:
+	 *
+	 *   TypeError: addColumns(): Argument #1 ($table) must be of type
+	 *   OCP\DB\Schema\ITable, Doctrine\DBAL\Schema\Table given
+	 *
+	 * The docblocks name the Doctrine type because that is what psalm resolves
+	 * against `nextcloud/ocp: ^34.0`; both objects carry the same
+	 * addColumn/addIndex/hasIndex surface these helpers use. Widen the docblock
+	 * to a union when this app's ocp dev dependency moves to ^35.
+	 */
 	/**
 	 * The contact link table.
 	 */
@@ -117,7 +136,7 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	 *
 	 * @return bool Whether anything was added.
 	 */
-	private function addColumns(Table $table): bool {
+	private function addColumns($table): bool {
 		$changed = false;
 		foreach (self::COLUMNS as $name => [$type, $options]) {
 			if ($table->hasColumn($name) === true) {
@@ -138,7 +157,7 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	 *
 	 * @return bool Whether anything was relaxed.
 	 */
-	private function relaxColumns(Table $table): bool {
+	private function relaxColumns($table): bool {
 		$changed = false;
 		foreach (self::RELAXED as $name) {
 			if ($table->hasColumn($name) === false) {
@@ -164,7 +183,7 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	 *
 	 * @return bool Whether an index changed.
 	 */
-	private function moveIndexes(Table $table): bool {
+	private function moveIndexes($table): bool {
 		$changed = false;
 		if ($table->hasIndex(self::OLD_UNIQUE) === true) {
 			$table->dropIndex(self::OLD_UNIQUE);
