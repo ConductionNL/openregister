@@ -321,6 +321,51 @@ class StateFieldRuleListenerTest extends TestCase {
 	}
 
 	/**
+	 * A required field recorded as not supplied lets the move through.
+	 *
+	 * The union between this rule and recorded incompleteness: the rule asks
+	 * whether somebody answered, and a not-supplied marker with an administered
+	 * reason is an answer. Without this, a state rule is the one place left
+	 * where "onbekend" has to be typed into the field.
+	 *
+	 * @return void
+	 */
+	public function testNotSuppliedSatisfiesAFieldRequiredByState(): void {
+		$listener = $this->listenerFor($this->annotation());
+		$event = new ObjectUpdatingEvent(
+			$this->entity(
+				[
+					'status' => 'closed',
+					'@notSupplied' => ['outcome' => 'onbekend_bij_aanvrager'],
+				]
+			),
+			$this->entity(['status' => 'open'])
+		);
+
+		$listener->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+	}
+
+	/**
+	 * An empty marker is not a marker.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyNotSuppliedReasonDoesNotSatisfyARequiredField(): void {
+		$listener = $this->listenerFor($this->annotation());
+		$event = new ObjectUpdatingEvent(
+			$this->entity(['status' => 'closed', '@notSupplied' => ['outcome' => '']]),
+			$this->entity(['status' => 'open'])
+		);
+
+		$listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+	}
+
+	/**
 	 * @return void
 	 */
 	public function testAFalseValueSatisfiesARequiredField(): void {

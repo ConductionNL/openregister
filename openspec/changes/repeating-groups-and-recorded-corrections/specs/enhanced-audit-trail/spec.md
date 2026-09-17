@@ -45,7 +45,6 @@ SHALL name how many edits it covers.
 - **GIVEN** a window of five minutes
 - **WHEN** one actor makes three edits inside it
 - **THEN** one entry is recorded, naming three edits
-- @e2e exclude {aggregation over time, covered by unit tests with a clock fixture}
 
 ### Requirement: A record's file metadata is corrected in one form (REQ-RGC-005)
 

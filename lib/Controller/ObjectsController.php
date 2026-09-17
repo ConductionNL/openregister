@@ -121,6 +121,21 @@ class ObjectsController extends Controller {
 	private readonly ImportService $importService;
 
 	/**
+	 * The `@`-prefixed body keys a client is allowed to send.
+	 *
+	 * Everything else starting with `@` is server-managed metadata and is
+	 * dropped here. The list exists because dropping is SILENT: a key nobody
+	 * allows through is not refused, it simply never reaches the save, and the
+	 * caller reads a 200 on a field that was never stored. `@notSupplied` was
+	 * exactly that on its first day: the handler enforced it, the validator
+	 * excused it, the object stored it, and this filter removed it from every
+	 * create, update and patch before any of that ran.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
+
+	/**
 	 * Constructor for the ObjectsController
 	 *
 	 * @param string $appName The name of the app
@@ -2965,7 +2980,7 @@ class ObjectsController extends Controller {
 		$object = array_filter(
 			$object,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3173,7 +3188,7 @@ class ObjectsController extends Controller {
 		$object = array_filter(
 			$object,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3408,7 +3423,7 @@ class ObjectsController extends Controller {
 		$patchData = array_filter(
 			$patchData,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3681,7 +3696,7 @@ class ObjectsController extends Controller {
 		$patchData = array_filter(
 			$patchData,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema', 'id']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
