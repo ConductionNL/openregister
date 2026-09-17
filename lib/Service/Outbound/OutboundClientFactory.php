@@ -65,13 +65,13 @@ class OutboundClientFactory implements IClientService {
 	/**
 	 * A client whose every request goes through the administered proxy.
 	 *
-	 * @inheritDoc
-	 *
 	 * @param callable|null $handler An optional Guzzle handler, forwarded to the
 	 *                               inner client. Nextcloud 35 widened
 	 *                               IClientService::newClient() with this
 	 *                               parameter, so the implementation must carry
 	 *                               it or PHP fatals on the signature mismatch.
+	 *
+	 * @inheritDoc
 	 *
 	 * @return IClient The client.
 	 *
