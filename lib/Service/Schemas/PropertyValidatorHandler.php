@@ -35,6 +35,10 @@ use OCA\OpenRegister\Service\Search\PropertySearchProfile;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is the TYPES and STRING_FORMATS
+ *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
+ *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
+ *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
  */
 class PropertyValidatorHandler {
 
@@ -761,11 +765,13 @@ class PropertyValidatorHandler {
 		// top-level property and appends for every level under it.
 		$isTopLevel = (substr_count($path, '/') <= 1);
 		if (isset($property['type']) === false) {
-			if ($isTopLevel === true) {
+			// A `$ref` relation and a nested schema both derive their type (and,
+			// for a relation, their UUID column) elsewhere; only a bare top-level
+			// property is refused.
+			if ($isTopLevel === true && isset($property['$ref']) === false) {
 				throw new Exception("Property at '$path' must have a 'type' field");
 			}
 
-			// Untyped nested schema: nothing further here is type-dependent.
 			return true;
 		}
 

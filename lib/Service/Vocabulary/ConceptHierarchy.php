@@ -191,17 +191,9 @@ class ConceptHierarchy {
 	public function labelOf(array $concept, string $language): string {
 		$labels = ($concept['prefLabel'] ?? null);
 		if (is_array($labels) === true) {
-			foreach ([$language, substr($language, 0, 2), 'nl'] as $tag) {
-				$candidate = ($labels[$tag] ?? null);
-				if (is_string($candidate) === true && trim($candidate) !== '') {
-					return $candidate;
-				}
-			}
-
-			foreach ($labels as $candidate) {
-				if (is_string($candidate) === true && trim($candidate) !== '') {
-					return $candidate;
-				}
+			$label = $this->preferredLabelFromMap(labels: $labels, language: $language);
+			if ($label !== null) {
+				return $label;
 			}
 		}
 
@@ -212,6 +204,36 @@ class ConceptHierarchy {
 
 		return (string)($concept['uri'] ?? '');
 	}//end labelOf()
+
+	/**
+	 * Pick the best label from a decoded `prefLabel` map.
+	 *
+	 * The asked-for tag wins, then its two-letter base, then Dutch (which the
+	 * concept schema requires), then the first non-empty label present. A blank
+	 * or non-string value is skipped rather than returned, so a half-filled map
+	 * never yields an empty label.
+	 *
+	 * @param array<string,mixed> $labels The decoded `prefLabel` map.
+	 * @param string $language The BCP-47 tag asked for.
+	 *
+	 * @return string|null The chosen label, or null when the map holds none.
+	 */
+	private function preferredLabelFromMap(array $labels, string $language): ?string {
+		foreach ([$language, substr($language, 0, 2), 'nl'] as $tag) {
+			$candidate = ($labels[$tag] ?? null);
+			if (is_string($candidate) === true && trim($candidate) !== '') {
+				return $candidate;
+			}
+		}
+
+		foreach ($labels as $candidate) {
+			if (is_string($candidate) === true && trim($candidate) !== '') {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end preferredLabelFromMap()
 
 	/**
 	 * One tree node, recursing into its narrower concepts.
@@ -327,24 +349,43 @@ class ConceptHierarchy {
 
 		$uris = [];
 		foreach ($value as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$uris[] = $entry;
-				continue;
-			}
-
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			foreach (['uri', 'id', 'uuid', '@id'] as $key) {
-				$candidate = ($entry[$key] ?? null);
-				if (is_string($candidate) === true && $candidate !== '') {
-					$uris[] = $candidate;
-					break;
-				}
+			$uri = $this->uriFromRelationEntry(entry: $entry);
+			if ($uri !== null) {
+				$uris[] = $uri;
 			}
 		}//end foreach
 
 		return $uris;
 	}//end relationUris()
+
+	/**
+	 * Read a single uri out of one relation-list entry.
+	 *
+	 * An entry is either a bare uri string or a `{uri: ...}`/`{id: ...}` map;
+	 * for a map the first non-empty of `uri`, `id`, `uuid`, `@id` wins. An empty
+	 * string, or a map holding none of those keys, yields null so the caller
+	 * drops it.
+	 *
+	 * @param mixed $entry The raw relation-list entry.
+	 *
+	 * @return string|null The referenced uri, or null when the entry names none.
+	 */
+	private function uriFromRelationEntry(mixed $entry): ?string {
+		if (is_string($entry) === true && $entry !== '') {
+			return $entry;
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		foreach (['uri', 'id', 'uuid', '@id'] as $key) {
+			$candidate = ($entry[$key] ?? null);
+			if (is_string($candidate) === true && $candidate !== '') {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end uriFromRelationEntry()
 }//end class

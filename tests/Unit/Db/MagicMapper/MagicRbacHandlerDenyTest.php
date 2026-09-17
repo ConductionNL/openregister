@@ -33,10 +33,12 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -107,9 +109,11 @@ class MagicRbacHandlerDenyTest extends TestCase {
 			$this->conditionMatcher,
 			$this->createMock(ContainerInterface::class),
 			new NullLogger(),
-			null,
-			null,
-			new DenyResolver(),
+			new RbacResolvers(
+				objectScopeResolver: null,
+				objectGrantResolver: null,
+				denyResolver: new DenyResolver(new DenyEntryMatcher())
+			),
 			$this->modeFixedAt($mode)
 		);
 	}//end handlerInMode()
