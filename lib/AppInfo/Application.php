@@ -239,6 +239,7 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
@@ -579,6 +580,49 @@ class Application extends App implements IBootstrap {
 		// It decorates and refuses; it never changes which controller runs, so a
 		// deprecated version keeps exactly the behaviour it had before.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
+
+		// Register the ApiCallerMiddleware (api-as-a-versioned-surface): binds a
+		// caller to its administered source addresses, bounds it to its
+		// administered ceiling, and records which route and version it called.
+		// Registered AFTER ApiVersionMiddleware so the version this call speaks
+		// is already resolvable when the record is written.
+		//
+		// An instance that has administered neither a ceiling nor a binding
+		// behaves exactly as it did before: the limiter fails open, the binding
+		// only refuses a caller an administrator actually bound, and the record
+		// swallows its own failures.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
+
+		// Every outbound call this app makes goes through the administered
+		// proxy (api-as-a-versioned-surface, design D-6). Most gemeenten have
+		// no direct egress, so a call that bypasses the proxy does not fail
+		// visibly: it works on a developer's laptop and times out in
+		// production.
+		//
+		// 🔑 BOUND UNDER `IClientService` RATHER THAN MIGRATING CALL SITES.
+		// This app creates clients from fourteen files across twenty call
+		// sites. Editing all twenty would leave the guarantee resting on
+		// nobody ever adding a twenty-first, which is exactly the failure D-6
+		// names. Overriding the binding means every existing call site is
+		// untouched and every future one is covered by construction.
+		//
+		// The override is scoped to this app's container: nothing resolved
+		// outside OpenRegister sees it.
+		$context->registerService(
+			\OCP\Http\Client\IClientService::class,
+			static function ($container): \OCP\Http\Client\IClientService {
+				// 🔴 The inner client comes from the SERVER container, not from
+				// `$container`. Asking the app container for `IClientService`
+				// here would resolve to this very closure and recurse until the
+				// stack runs out. `OCP\Server::get()` is the public accessor
+				// for the server's own binding, and it is what reaches past
+				// the override we are installing.
+				return new OutboundClientFactory(
+					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
+					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettings::class),
+				);
+			}
+		);
 
 		// Bind the dormant Path B PDF anonymisation fallback bridge to its
 		// null implementation. Tenants enabling Path B replace this binding

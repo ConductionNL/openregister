@@ -270,31 +270,69 @@ class ApiVersionCatalogue {
 	 * @return array<string, ApiVersion> The resolved versions.
 	 */
 	private function resolve(): array {
-		$this->rejected = [];
+		$rejected = [];
 
-		$administered = $this->readAdministered();
+		$administered = $this->readAdministered(rejected: $rejected);
 		if ($administered !== []) {
-			$candidate = $this->buildVersions(declarations: $administered);
-			if ($this->isUsable(versions: $candidate) === true) {
+			$candidate = $this->buildVersions(declarations: $administered, rejected: $rejected);
+			if ($this->isUsable(versions: $candidate, rejected: $rejected) === true) {
+				$this->rejected = $rejected;
 				return $candidate;
 			}
 
 			$this->logger->error(
 				'OpenRegister: the administered API version declaration is not usable; falling back to the built-in contract.',
-				['rejections' => $this->rejected]
+				['rejections' => $rejected]
 			);
 		}
 
-		return $this->buildVersions(declarations: self::BUILT_IN);
+		$this->rejected = $rejected;
+
+		return $this->buildVersions(declarations: self::BUILT_IN, rejected: $rejected);
 
 	}//end resolve()
 
 	/**
+	 * Why a candidate declaration could not be served, without storing it.
+	 *
+	 * The administration surface needs this before it writes: the read path
+	 * deliberately falls back to the built-in contract when a stored
+	 * declaration is unusable, which is right at read time and wrong at write
+	 * time. An administrator who saved a broken declaration would get a 200,
+	 * see the built-in contract come back, and have no idea their edit did
+	 * nothing.
+	 *
+	 * Touches no memo and no field, so asking does not change what this
+	 * instance serves.
+	 *
+	 * @param array<int, mixed> $declarations The candidate declarations.
+	 *
+	 * @return array<string, string> The refusals, keyed by the version they concern.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 */
+	public function inspect(array $declarations): array {
+		$rejected = [];
+		$usable = array_values(array_filter($declarations, 'is_array'));
+		if (count($usable) !== count($declarations)) {
+			$rejected['*'] = 'Every entry must be a version declaration object.';
+		}
+
+		$versions = $this->buildVersions(declarations: $usable, rejected: $rejected);
+		$this->isUsable(versions: $versions, rejected: $rejected);
+
+		return $rejected;
+
+	}//end inspect()
+
+	/**
 	 * Read and decode the administered declaration.
+	 *
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
 	 *
 	 * @return array<int, array<string, mixed>> The declarations, or an empty list.
 	 */
-	private function readAdministered(): array {
+	private function readAdministered(array &$rejected): array {
 		try {
 			$raw = trim((string)$this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, ''));
 		} catch (Throwable $e) {
@@ -311,7 +349,7 @@ class ApiVersionCatalogue {
 
 		$decoded = json_decode($raw, true);
 		if (is_array($decoded) === false || $decoded === []) {
-			$this->rejected['*'] = 'The api_versions configuration is not a JSON list of version declarations.';
+			$rejected['*'] = 'The api_versions configuration is not a JSON list of version declarations.';
 			return [];
 		}
 
@@ -323,22 +361,23 @@ class ApiVersionCatalogue {
 	 * Turn declarations into versions, recording each refusal.
 	 *
 	 * @param array<int, array<string, mixed>> $declarations The raw declarations.
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
 	 *
 	 * @return array<string, ApiVersion> Versions keyed by identifier.
 	 */
-	private function buildVersions(array $declarations): array {
+	private function buildVersions(array $declarations, array &$rejected): array {
 		$versions = [];
 		foreach ($declarations as $index => $declaration) {
 			try {
 				$version = ApiVersion::fromArray(declaration: $declaration);
 			} catch (InvalidArgumentException $e) {
 				$claimed = (string)($declaration['id'] ?? ('#' . $index));
-				$this->rejected[$claimed] = $e->getMessage();
+				$rejected[$claimed] = $e->getMessage();
 				continue;
 			}
 
 			if (isset($versions[$version->id]) === true) {
-				$this->rejected[$version->id] = 'Declared twice; a version an administrator cannot tell apart cannot be deprecated.';
+				$rejected[$version->id] = 'Declared twice; a version an administrator cannot tell apart cannot be deprecated.';
 				continue;
 			}
 
@@ -360,17 +399,18 @@ class ApiVersionCatalogue {
 	 * sends an integrator somewhere that refuses them too.
 	 *
 	 * @param array<string, ApiVersion> $versions The candidate set.
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
 	 *
 	 * @return bool True when the set can be served.
 	 */
-	private function isUsable(array $versions): bool {
+	private function isUsable(array $versions, array &$rejected): bool {
 		$supported = array_filter(
 			$versions,
 			static fn (ApiVersion $version): bool => ($version->status === ApiVersion::STATUS_SUPPORTED)
 		);
 
 		if ($supported === []) {
-			$this->rejected['*'] = 'No version is supported; a caller naming no version would have nothing to be answered with.';
+			$rejected['*'] = 'No version is supported; a caller naming no version would have nothing to be answered with.';
 			return false;
 		}
 
@@ -381,7 +421,7 @@ class ApiVersionCatalogue {
 
 			$successor = ($versions[$version->successor] ?? null);
 			if ($successor === null || $successor->isServed() === false) {
-				$this->rejected[$version->id] = 'Its successor ' . $version->successor . ' is not a version this instance serves.';
+				$rejected[$version->id] = 'Its successor ' . $version->successor . ' is not a version this instance serves.';
 				return false;
 			}
 		}
