@@ -102,7 +102,7 @@ class CronFileTextExtractionJobTest extends TestCase {
 
 		$this->textExtractor
 			->expects($this->never())
-			->method('extractFile');
+			->method('extractPendingFiles');
 
 		$this->runJob();
 	}
@@ -114,7 +114,7 @@ class CronFileTextExtractionJobTest extends TestCase {
 
 		$this->textExtractor
 			->expects($this->never())
-			->method('extractFile');
+			->method('extractPendingFiles');
 
 		$this->runJob();
 	}
@@ -127,7 +127,7 @@ class CronFileTextExtractionJobTest extends TestCase {
 
 		$this->textExtractor
 			->expects($this->never())
-			->method('extractFile');
+			->method('extractPendingFiles');
 
 		$this->runJob();
 	}
@@ -136,44 +136,40 @@ class CronFileTextExtractionJobTest extends TestCase {
 	// Empty pending files list
 	// -------------------------------------------------------------------------
 
-	public function testRunReturnsEarlyWhenNoPendingFiles(): void {
-		$this->settingsService
-			->method('getFileSettingsOnly')
-			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
-
-		$this->fileMapper
-			->method('findUntrackedFiles')
-			->willReturn([]);
-
-		$this->textExtractor
-			->expects($this->never())
-			->method('extractFile');
-
-		$this->runJob();
-	}
 
 	// -------------------------------------------------------------------------
 	// Happy path: files processed
 	// -------------------------------------------------------------------------
 
-	public function testRunProcessesPendingFiles(): void {
+
+
+
+	// -------------------------------------------------------------------------
+	// Per-file exception handling
+	// -------------------------------------------------------------------------
+
+
+	// -------------------------------------------------------------------------
+	// The selection loop lives in TextExtractionService (WOO-576)
+	// -------------------------------------------------------------------------
+
+	public function testRunDelegatesTheBatchToTheWindowedExtractor(): void {
 		$this->settingsService
 			->method('getFileSettingsOnly')
-			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
-
+			->willReturn(['extractionMode' => 'cron', 'batchSize' => 25]);
+		// The job no longer takes one window of findUntrackedFiles() and walks it
+		// itself: that window filled up with the same unreadable low-fileid files
+		// on every run, and a newer upload was never reached. The windowed loop
+		// in extractPendingFiles() steps past failures, so the job hands the whole
+		// batch to it and never touches the mapper directly.
 		$this->fileMapper
-			->method('findUntrackedFiles')
-			->with(limit: 10)
-			->willReturn([
-				['fileid' => 1, 'name' => 'doc1.pdf'],
-				['fileid' => 2, 'name' => 'doc2.pdf'],
-			]);
-
+			->expects($this->never())
+			->method('findUntrackedFiles');
 		$this->textExtractor
-			->expects($this->exactly(2))
-			->method('extractFile')
-			->with($this->isType('int'), forceReExtract: false);
-
+			->expects($this->once())
+			->method('extractPendingFiles')
+			->with(limit: 25)
+			->willReturn(['processed' => 2, 'failed' => 0, 'total' => 2]);
 		$this->runJob();
 	}
 
@@ -181,70 +177,70 @@ class CronFileTextExtractionJobTest extends TestCase {
 		$this->settingsService
 			->method('getFileSettingsOnly')
 			->willReturn(['extractionMode' => 'cron']);
-
-		$this->fileMapper
+		$this->textExtractor
 			->expects($this->once())
-			->method('findUntrackedFiles')
+			->method('extractPendingFiles')
 			->with(limit: 10)  // DEFAULT_BATCH_SIZE = 10
-			->willReturn([]);
-
+			->willReturn(['processed' => 0, 'failed' => 0, 'total' => 0]);
 		$this->runJob();
 	}
 
-	public function testRunSkipsFilesWithZeroFileId(): void {
+	public function testRunReportsNothingPendingWithoutACompletionLine(): void {
 		$this->settingsService
 			->method('getFileSettingsOnly')
 			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
-
-		$this->fileMapper
-			->method('findUntrackedFiles')
-			->willReturn([
-				['fileid' => 0, 'name' => 'bad.pdf'],
-				['fileid' => 5, 'name' => 'good.pdf'],
-			]);
-
-		// Only the file with id=5 should be extracted.
 		$this->textExtractor
-			->expects($this->once())
-			->method('extractFile')
-			->with(fileId: 5, forceReExtract: false);
-
-		$this->runJob();
-	}
-
-	// -------------------------------------------------------------------------
-	// Per-file exception handling
-	// -------------------------------------------------------------------------
-
-	public function testRunContinuesProcessingAfterPerFileException(): void {
-		$this->settingsService
-			->method('getFileSettingsOnly')
-			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
-
-		$this->fileMapper
-			->method('findUntrackedFiles')
-			->willReturn([
-				['fileid' => 10, 'name' => 'fail.pdf'],
-				['fileid' => 11, 'name' => 'ok.pdf'],
-			]);
-
-		$callCount = 0;
-		$this->textExtractor
-			->method('extractFile')
-			->willReturnCallback(static function (int $fileId) use (&$callCount): void {
-				$callCount++;
-				if ($fileId === 10) {
-					throw new \Exception('Extraction failed for file 10');
-				}
+			->method('extractPendingFiles')
+			->willReturn(['processed' => 0, 'failed' => 0, 'total' => 0]);
+		$messages = [];
+		$this->logger
+			->method('info')
+			->willReturnCallback(static function (string $message, array $context = []) use (&$messages): void {
+				$messages[] = $message;
 			});
+		$this->runJob();
+		$this->assertContains('[CronFileTextExtractionJob] No pending files found for cron extraction', $messages);
+		$this->assertNotContains('[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed', $messages);
+	}
 
+	public function testRunDoesNotPropagateExtractorException(): void {
+		$this->settingsService
+			->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'cron', 'batchSize' => 5]);
+		$this->textExtractor
+			->method('extractPendingFiles')
+			->willThrowException(new \Exception('DB query failed'));
 		$this->logger
 			->expects($this->atLeastOnce())
 			->method('error');
-
+		// Must not rethrow for recurring jobs.
 		$this->runJob();
+		$this->assertTrue(true);
+	}
 
-		$this->assertSame(2, $callCount, 'Both files should be attempted');
+	// -------------------------------------------------------------------------
+	// Completion logging
+	// -------------------------------------------------------------------------
+
+	public function testRunLogsCompletionWithProcessedAndFailedCounts(): void {
+		$this->settingsService
+			->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
+		$this->textExtractor
+			->method('extractPendingFiles')
+			->willReturn(['processed' => 1, 'failed' => 1, 'total' => 2]);
+		$completionContext = null;
+		$this->logger
+			->method('info')
+			->willReturnCallback(static function (string $message, array $context = []) use (&$completionContext): void {
+				if (isset($context['files_processed'], $context['files_failed'])) {
+					$completionContext = $context;
+				}
+			});
+		$this->runJob();
+		$this->assertNotNull($completionContext);
+		$this->assertSame(1, $completionContext['files_processed']);
+		$this->assertSame(1, $completionContext['files_failed']);
 	}
 
 	// -------------------------------------------------------------------------
@@ -265,61 +261,9 @@ class CronFileTextExtractionJobTest extends TestCase {
 		$this->assertTrue(true);
 	}
 
-	public function testRunDoesNotPropagateFileMapperException(): void {
-		$this->settingsService
-			->method('getFileSettingsOnly')
-			->willReturn(['extractionMode' => 'cron', 'batchSize' => 5]);
-
-		$this->fileMapper
-			->method('findUntrackedFiles')
-			->willThrowException(new \Exception('DB query failed'));
-
-		// getPendingFiles catches the exception and returns [], so no files extracted.
-		$this->textExtractor
-			->expects($this->never())
-			->method('extractFile');
-
-		$this->runJob();
-		$this->assertTrue(true);
-	}
 
 	// -------------------------------------------------------------------------
 	// Completion logging
 	// -------------------------------------------------------------------------
 
-	public function testRunLogsCompletionWithProcessedAndFailedCounts(): void {
-		$this->settingsService
-			->method('getFileSettingsOnly')
-			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
-
-		$this->fileMapper
-			->method('findUntrackedFiles')
-			->willReturn([
-				['fileid' => 1, 'name' => 'a.pdf'],
-				['fileid' => 2, 'name' => 'b.pdf'],
-			]);
-
-		$this->textExtractor
-			->method('extractFile')
-			->willReturnCallback(static function (int $fileId): void {
-				if ($fileId === 2) {
-					throw new \Exception('fail');
-				}
-			});
-
-		$completionContext = null;
-		$this->logger
-			->method('info')
-			->willReturnCallback(static function (string $message, array $context = []) use (&$completionContext): void {
-				if (isset($context['files_processed'], $context['files_failed'])) {
-					$completionContext = $context;
-				}
-			});
-
-		$this->runJob();
-
-		$this->assertNotNull($completionContext);
-		$this->assertSame(1, $completionContext['files_processed']);
-		$this->assertSame(1, $completionContext['files_failed']);
-	}
 }
