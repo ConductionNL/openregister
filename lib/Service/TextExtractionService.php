@@ -1197,6 +1197,7 @@ class TextExtractionService {
 		$seen = 0;
 		$offset = 0;
 		$windows = 0;
+		$untrackedFiles = [];
 
 		// A file that fails keeps matching findUntrackedFiles(): nothing records the
 		// failure, and the query orders by fileid ASC with a fixed window. So a
