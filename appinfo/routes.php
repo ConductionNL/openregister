@@ -370,6 +370,15 @@ return [
         ['name' => 'Settings\SecuritySettings#clearIpRateLimits', 'url' => '/api/settings/security/unblock-ip', 'verb' => 'POST'],
         ['name' => 'Settings\SecuritySettings#clearUserRateLimits', 'url' => '/api/settings/security/unblock-user', 'verb' => 'POST'],
         ['name' => 'Settings\SecuritySettings#clearAllRateLimits', 'url' => '/api/settings/security/unblock', 'verb' => 'POST'],
+        // Instance hardening - the controls an administrator switches and sees.
+        // Administrator-only on purpose: the report names the security posture of
+        // one gemeente's installation, and a caller that may read it may read what
+        // is NOT switched on. The write paths answer 409 when a change would take a
+        // control below the floor this instance declared for itself.
+        ['name' => 'hardening#report', 'url' => '/api/hardening/report', 'verb' => 'GET'],
+        ['name' => 'hardening#floors', 'url' => '/api/hardening/floors', 'verb' => 'GET'],
+        ['name' => 'hardening#updateControls', 'url' => '/api/hardening/controls', 'verb' => 'PUT'],
+        ['name' => 'hardening#updateFloors', 'url' => '/api/hardening/floors', 'verb' => 'PUT'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],

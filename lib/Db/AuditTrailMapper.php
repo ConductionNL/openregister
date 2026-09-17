@@ -2914,4 +2914,70 @@ class AuditTrailMapper extends QBMapper {
 
 		$this->insert(entity: $gap);
 	}//end recordSinkGap()
+
+	/**
+	 * Record one change to a security control, or one refused attempt at a change.
+	 *
+	 * WHY THE REFUSAL IS AUDITED TOO. A weakening that was refused is the most
+	 * interesting row on the page: somebody tried to turn the lockout down, and
+	 * the instance said no. An audit trail that only holds the changes that
+	 * succeeded cannot tell a security officer that anybody tried.
+	 *
+	 * No object, no register and no schema: a control is instance-wide, and
+	 * attaching it to an arbitrary object would put it on that object's timeline
+	 * where it does not belong. Same shape as
+	 * {@see createPartyQueryRefusalEntry()}.
+	 *
+	 * @param string $control The control identifier.
+	 * @param int|string|array $before The value before the change.
+	 * @param int|string|array $after The value asked for.
+	 * @param bool $accepted Whether the change was made.
+	 * @param string $refusal The refusal, when the change was not made.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 */
+	public function createHardeningChangeEntry(
+		string $control,
+		int|string|array $before,
+		int|string|array $after,
+		bool $accepted,
+		string $refusal = '',
+	): AuditTrail {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$action = 'hardening.refused';
+		if ($accepted === true) {
+			$action = 'hardening.changed';
+		}
+
+		$summary = [
+			'control' => $control,
+			'before' => $before,
+			'after' => $after,
+			'accepted' => $accepted,
+		];
+		if ($refusal !== '') {
+			$summary['refusal'] = $refusal;
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction($action);
+		$auditTrail->setResultSummary($summary);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createHardeningChangeEntry()
 }//end class
