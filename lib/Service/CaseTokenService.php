@@ -45,8 +45,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
@@ -264,18 +264,19 @@ class CaseTokenService {
 	}//end resolve()
 
 	/**
-	 * The public entries on one object, cut down to what a stranger may read.
+	 * The public entries on one object, as a stranger may read them.
 	 *
-	 * SOFT BY DESIGN. A timeline that cannot be read answers the empty list,
-	 * never an exception: the status page existed before the timeline did, and
-	 * an instance whose timeline tables are not migrated yet must still show
-	 * the status rather than a uniform 404 that reads as a revoked link.
+	 * The read and the five-key projection are {@see PublicTimeline}'s, the
+	 * same class the access-link reader asks. Two anonymous surfaces that each
+	 * decided for themselves what leaves would come to disagree, and the
+	 * disagreement would be a handler's name on a citizen's screen.
 	 *
-	 * THE PROJECTION IS A WHITELIST, NOT A BLACKLIST. `TimelineEntry` carries
-	 * the author's user id, the raw source of an intake mail and the entry's
-	 * own visibility, and a projection that removed those three by name would
-	 * hand out the fourth one somebody adds later. Only the five keys named
-	 * below leave the building.
+	 * SOFT BY DESIGN. A timeline that cannot be read answers the empty list:
+	 * the status page shipped before the timeline did, and an instance that
+	 * cannot build the reader must still show the status rather than a uniform
+	 * 404 a citizen reads as a revoked link. `PublicTimeline` already softens a
+	 * failed read per source; this catch covers the container failing to build
+	 * it at all, and anything that is not an entity has no timeline to read.
 	 *
 	 * @param object $entity The object the timeline hangs on.
 	 *
@@ -284,35 +285,20 @@ class CaseTokenService {
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
 	private function publicTimeline(object $entity): array {
+		if (($entity instanceof ObjectEntity) === false) {
+			return [];
+		}
+
 		try {
-			$entries = $this->container
-				->get(TimelineEntryService::class)
-				->listForObject(
-					object: $entity,
-					visibility: TimelineVisibilityService::PUBLIC_ENTRY,
-					limit: self::PUBLIC_TIMELINE_LIMIT
-				);
+			$reader = $this->container->get(PublicTimeline::class);
 		} catch (Throwable $e) {
-			$this->logger->debug(
-				'[CaseTokenService] no public timeline for a resolved token',
-				['exception' => $e]
+			$this->logger->warning(
+				'[CaseTokenService] the public timeline reader could not be built: ' . $e->getMessage()
 			);
 			return [];
 		}
 
-		$public = [];
-		foreach ($entries as $entry) {
-			$row = $entry->jsonSerialize();
-			$public[] = [
-				'id' => ($row['id'] ?? ''),
-				'kind' => ($row['kind'] ?? ''),
-				'message' => ($row['message'] ?? ''),
-				'fields' => ($row['fields'] ?? []),
-				'occurredAt' => ($row['created'] ?? ''),
-			];
-		}
-
-		return $public;
+		return $reader->forObject(object: $entity, limit: self::PUBLIC_TIMELINE_LIMIT);
 	}//end publicTimeline()
 
 	/**
