@@ -84,6 +84,14 @@ final class SystemOperationContext {
 	 * @return bool True when executing inside run().
 	 */
 	public static function isActive(): bool {
+		// Narrowing wins over elevating: an operation that asked to be judged
+		// as an anonymous caller (WOO-578) must not be trusted as the system
+		// at the same time, or every guard that yields to this scope would
+		// widen the very result set that scope exists to clamp.
+		if (AnonymousEvaluationContext::isActive() === true) {
+			return false;
+		}
+
 		return self::$depth > 0;
 	}//end isActive()
 }//end class

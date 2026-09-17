@@ -1072,8 +1072,9 @@ trait MultiTenancyTrait {
 		$userId = $this->getCurrentUserId();
 		if ($userId === null) {
 			// CLI context (occ commands, repair steps, cron jobs, system listeners) —
-			// no user session exists. These are trusted system operations.
-			if (PHP_SAPI === 'cli') {
+			// no user session exists. These are trusted system operations —
+			// unless the call asked to be judged as an anonymous caller (WOO-578).
+			if (PHP_SAPI === 'cli' && \OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === false) {
 				return true;
 			}
 
@@ -1215,8 +1216,9 @@ trait MultiTenancyTrait {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			// CLI context (occ commands, repair steps, cron jobs) — no user session exists.
-			// These are trusted system operations that must always succeed.
-			if (PHP_SAPI === 'cli') {
+			// These are trusted system operations that must always succeed —
+			// unless the call asked to be judged as an anonymous caller (WOO-578).
+			if (PHP_SAPI === 'cli' && \OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === false) {
 				return true;
 			}
 

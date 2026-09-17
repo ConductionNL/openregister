@@ -351,6 +351,12 @@ class MagicOrganizationHandler {
 			return false;
 		}
 
+		// A forced-anonymous evaluation (WOO-578) has no user on purpose; it is
+		// the one CLI case that is a caller, not the system.
+		if (\OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === true) {
+			return false;
+		}
+
 		return true;
 	}//end isSystemContext()
 

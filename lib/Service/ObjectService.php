@@ -545,6 +545,50 @@ class ObjectService implements ObjectServiceInterface
         }
     }//end runAs()
 
+
+    /**
+     * Run a callable AS AN ANONYMOUS CALLER, whatever the session holds.
+     *
+     * The narrowing counterpart of runAs(): the subject is cleared instead of
+     * replaced. Every reader of `IUserSession::getUser()` in the RBAC and
+     * organisation layers then sees no user — no admin bypass, no `_owner`
+     * grant, no group rules, no `inheritFromPublic` widening — and only the
+     * `public` group's rules decide what comes back. The permission caches
+     * are keyed by UID and so stay correct by construction, as with runAs().
+     *
+     * Clearing the subject is not enough on its own. Two guards trust a call
+     * WITHOUT a user: the CLI bypass in the RBAC filters and
+     * {@see SystemOperationContext}. Under occ or PHPUnit an empty session
+     * would therefore be judged as the system, which is the opposite of what
+     * is asked. {@see AnonymousEvaluationContext} closes both doors for the
+     * duration of the call.
+     *
+     * This exists for public endpoints whose contract is uniform visibility —
+     * OpenCatalogi's `/api/search` (SCH-PFTS-001, WOO-536) — where a signed-in
+     * administrator must see exactly what an anonymous caller sees. It is a
+     * server-side primitive only: nothing in the request can switch it on or
+     * off (WOO-578). It restores the previous subject in a `finally`, so
+     * nesting composes and a throw never leaks the cleared identity forward.
+     *
+     * @param callable $operation The operation to execute as an anonymous caller.
+     *
+     * @return mixed Whatever the callable returns.
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
+     */
+    public function runAsAnonymous(callable $operation)
+    {
+        $previousUser = $this->userSession->getUser();
+        $this->userSession->setVolatileActiveUser(null);
+
+        try {
+            return AnonymousEvaluationContext::run($operation);
+        } finally {
+            // ALWAYS restore, including on a throw — see runAs().
+            $this->userSession->setVolatileActiveUser($previousUser);
+        }
+    }//end runAsAnonymous()
+
     /**
      * Set the current register context.
      *

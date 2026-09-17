@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -493,7 +494,9 @@ class MagicRbacHandler {
 		// CLI bypass in MultiTenancyTrait::hasRbacPermission(). Without this a
 		// schema with explicit authorization rules would clamp every CLI query
 		// to `1 = 0` and hide all rows from background calcs / list views.
-		if ($user === null && PHP_SAPI === 'cli') {
+		// A forced-anonymous evaluation (WOO-578) is the one no-session case
+		// that must NOT be trusted: it asked to be filtered as nobody.
+		if ($user === null && PHP_SAPI === 'cli' && AnonymousEvaluationContext::isActive() === false) {
 			return;
 		}
 
