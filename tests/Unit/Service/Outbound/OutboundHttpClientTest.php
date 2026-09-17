@@ -147,8 +147,10 @@ class OutboundHttpClientTest extends TestCase {
 	}//end testACallerThatDeliberatelyOverridesTheProxyIsBelieved()
 
 	public function testEveryClientMethodIsDecorated(): void {
+		$declared = [];
 		$undecorated = [];
 		foreach ((new ReflectionClass(IClient::class))->getMethods() as $method) {
+			$declared[] = $method->getName();
 			$name = $method->getName();
 			$body = (new ReflectionClass(OutboundHttpClient::class))->getMethod($name);
 			$source = implode(
@@ -167,8 +169,16 @@ class OutboundHttpClientTest extends TestCase {
 
 		sort($undecorated);
 
+		// The exemptions are the two below, but only where the installed
+		// IClient declares them. From Nextcloud 34 IClient extends PSR-18 and
+		// carries sendRequest; on 32 and 33 it does not, so the method is not
+		// part of the contract there and cannot be a hole in it. Intersecting
+		// keeps the assertion exact on every major: an undecorated method that
+		// is NOT one of these two still fails it.
+		$exempt = array_values(array_intersect(['getResponseFromThrowable', 'sendRequest'], $declared));
+
 		$this->assertSame(
-			['getResponseFromThrowable', 'sendRequest'],
+			$exempt,
 			$undecorated,
 			'A decorator is a guarantee only if it covers every method. These two are exempt on purpose: '
 				. 'sendRequest takes a built PSR-7 request with nowhere to put a transport option, and '
