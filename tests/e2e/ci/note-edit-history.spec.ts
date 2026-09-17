@@ -113,7 +113,10 @@ test.describe('note edit history over HTTP', () => {
 	/** Write a note as the admin and hand back its id. */
 	async function writeNote(message: string): Promise<string> {
 		const created = await admin.post(notesPath(), { data: { message } })
-		expect(created.ok(), `note create failed: ${await created.text()}`).toBeTruthy()
+		expect(
+			created.ok(),
+			`note create failed: ${await created.text()}`,
+		).toBeTruthy()
 
 		const noteId = String((await created.json()).id)
 		expect(noteId, 'no id came back from the note create').toBeTruthy()
@@ -179,7 +182,9 @@ test.describe('note edit history over HTTP', () => {
 
 	test.afterAll(async () => {
 		if (objectUuid) {
-			await admin.delete(`${API}/objects/${registerId}/${schemaId}/${objectUuid}`)
+			await admin.delete(
+				`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
+			)
 			await admin.delete(`${API}/deleted/${objectUuid}?force=true`)
 		}
 
@@ -214,12 +219,20 @@ test.describe('note edit history over HTTP', () => {
 		expect(after.editedAt, 'the note names when it changed').toBeTruthy()
 
 		const history = await admin.get(`${notesPath()}/${noteId}/versions`)
-		expect(history.ok(), `versions read failed: ${await history.text()}`).toBeTruthy()
+		expect(
+			history.ok(),
+			`versions read failed: ${await history.text()}`,
+		).toBeTruthy()
 
-		const versions = (await history.json()).results as Array<Record<string, unknown>>
+		const versions = (await history.json()).results as Array<
+			Record<string, unknown>
+		>
 		expect(versions, 'one version for one edit').toHaveLength(1)
 		expect(versions[0].message).toBe(`Applicant called ${RUN}`)
-		expect(versions[0].author, 'the version names the author of the text it holds').toBe(ADMIN)
+		expect(
+			versions[0].author,
+			'the version names the author of the text it holds',
+		).toBe(ADMIN)
 		expect(versions[0].editedBy).toBe(ADMIN)
 	})
 
@@ -234,9 +247,14 @@ test.describe('note edit history over HTTP', () => {
 		}
 
 		const history = await admin.get(`${notesPath()}/${noteId}/versions`)
-		expect(history.ok(), `versions read failed: ${await history.text()}`).toBeTruthy()
+		expect(
+			history.ok(),
+			`versions read failed: ${await history.text()}`,
+		).toBeTruthy()
 
-		const versions = (await history.json()).results as Array<Record<string, unknown>>
+		const versions = (await history.json()).results as Array<
+			Record<string, unknown>
+		>
 		expect(versions, 'two edits, two versions').toHaveLength(2)
 		expect(versions[0].message, 'newest first').toBe(`Second ${RUN}`)
 		expect(versions[1].message).toBe(`First ${RUN}`)
@@ -273,7 +291,10 @@ test.describe('note edit history over HTTP', () => {
 
 		const before = await admin.get(`${notesPath()}/${noteId}/versions`)
 		expect(before.ok()).toBeTruthy()
-		expect((await before.json()).total, 'the history exists before the delete').toBe(1)
+		expect(
+			(await before.json()).total,
+			'the history exists before the delete',
+		).toBe(1)
 
 		const removed = await admin.delete(`${notesPath()}/${noteId}`)
 		expect(removed.ok(), `delete failed: ${await removed.text()}`).toBeTruthy()
