@@ -3137,7 +3137,22 @@
         "When": "When",
         "when its condition holds": "when its condition holds",
         "Which objects, as a JSON query": "Which objects, as a JSON query",
-        "Why you are doing this": "Why you are doing this"
+        "Why you are doing this": "Why you are doing this",
+        "Dismissed Pair": "Dismissed Pair",
+        "Uuid of the first object, in canonical (string-sorted) order.": "Uuid of the first object, in canonical (string-sorted) order.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "Uuid of the second object, in canonical (string-sorted) order.",
+        "Register the pair was reviewed in.": "Register the pair was reviewed in.",
+        "Schema the pair was reviewed under.": "Schema the pair was reviewed under.",
+        "Fingerprint": "Fingerprint",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.",
+        "Why the reviewer decided the two are not the same.": "Why the reviewer decided the two are not the same.",
+        "Dismissed By": "Dismissed By",
+        "Uid of the person who made the judgement.": "Uid of the person who made the judgement.",
+        "Dismissed At": "Dismissed At",
+        "When the judgement was made.": "When the judgement was made.",
+        "Uid of the person who undid the dismissal, when one has.": "Uid of the person who undid the dismissal, when one has.",
+        "When the dismissal was undone, when it has been.": "When the dismissal was undone, when it has been.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Millal",
         "when its condition holds": "kui selle tingimus on täidetud",
         "Which objects, as a JSON query": "Millised objektid, JSON-päringuna",
-        "Why you are doing this": "Miks te seda teete"
+        "Why you are doing this": "Miks te seda teete",
+        "Dismissed Pair": "Tagasi lükatud paar",
+        "Uuid of the first object, in canonical (string-sorted) order.": "Esimese objekti UUID kanoonilises (stringi järgi sorditud) järjekorras.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "Teise objekti UUID kanoonilises (stringi järgi sorditud) järjekorras.",
+        "Register the pair was reviewed in.": "Register, milles paari hinnati.",
+        "Schema the pair was reviewed under.": "Skeem, mille alusel paari hinnati.",
+        "Fingerprint": "Sõrmejälg",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Otsuse hetkel võrreldud omaduste normaliseeritud väärtuste räsi. Niipea kui see enam ei ühti, pakub hindaja paari uuesti.",
+        "Why the reviewer decided the two are not the same.": "Miks hindaja otsustas, et need kaks ei ole samad.",
+        "Dismissed By": "Tagasi lükkas",
+        "Uid of the person who made the judgement.": "Otsuse teinud isiku UID.",
+        "Dismissed At": "Tagasi lükatud",
+        "When the judgement was made.": "Millal otsus tehti.",
+        "Uid of the person who undid the dismissal, when one has.": "Tagasilükkamise tühistanud isiku UID, kui keegi on seda teinud.",
+        "When the dismissal was undone, when it has been.": "Millal tagasilükkamine tühistati, kui see on toimunud.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Väär, kui tagasilükkamine on tühistatud. Rida säilitatakse kustutamise asemel, et jääks alles auditijälg selle kohta, kes mida otsustas ja kes selle tühistas."
     },
     "nplurals=2; plural=(n != 1);"
 )

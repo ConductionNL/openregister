@@ -3139,7 +3139,22 @@
         "When": "Milloin",
         "when its condition holds": "kun sen ehto on voimassa",
         "Which objects, as a JSON query": "Mitkä objektit, JSON-kyselynä",
-        "Why you are doing this": "Miksi teet tämän"
+        "Why you are doing this": "Miksi teet tämän",
+        "Dismissed Pair": "Hylätty pari",
+        "Uuid of the first object, in canonical (string-sorted) order.": "Ensimmäisen objektin UUID kanonisessa (merkkijonon mukaan lajitellussa) järjestyksessä.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "Toisen objektin UUID kanonisessa (merkkijonon mukaan lajitellussa) järjestyksessä.",
+        "Register the pair was reviewed in.": "Rekisteri, jossa pari tarkistettiin.",
+        "Schema the pair was reviewed under.": "Skeema, jonka mukaan pari tarkistettiin.",
+        "Fingerprint": "Sormenjälki",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Tiiviste vertailtujen ominaisuuksien normalisoiduista arvoista päätöksen hetkellä. Heti kun se ei enää täsmää, pisteyttäjä tarjoaa parin uudelleen.",
+        "Why the reviewer decided the two are not the same.": "Miksi tarkastaja päätti, että nämä kaksi eivät ole samat.",
+        "Dismissed By": "Hylkääjä",
+        "Uid of the person who made the judgement.": "Päätöksen tehneen henkilön UID.",
+        "Dismissed At": "Hylätty",
+        "When the judgement was made.": "Milloin päätös tehtiin.",
+        "Uid of the person who undid the dismissal, when one has.": "Hylkäyksen peruneen henkilön UID, jos joku on perunut.",
+        "When the dismissal was undone, when it has been.": "Milloin hylkäys peruttiin, jos näin on tapahtunut.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Epätosi, kun hylkäys on peruttu. Rivi säilytetään poistamisen sijaan, jotta jää tarkastusjälki siitä, kuka päätti mitä ja kuka perui sen."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

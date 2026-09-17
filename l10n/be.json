@@ -3173,7 +3173,22 @@
         "When": "Калі",
         "when its condition holds": "калі яго ўмова выконваецца",
         "Which objects, as a JSON query": "Якія аб'екты, у выглядзе запыту JSON",
-        "Why you are doing this": "Навошта вы гэта робіце"
+        "Why you are doing this": "Навошта вы гэта робіце",
+        "Dismissed Pair": "Адхіленая пара",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID першага аб'екта ў кананічным (адсартаваным па радку) парадку.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID другога аб'екта ў кананічным (адсартаваным па радку) парадку.",
+        "Register the pair was reviewed in.": "Рэестр, у якім пара была разгледжана.",
+        "Schema the pair was reviewed under.": "Схема, па якой пара была разгледжана.",
+        "Fingerprint": "Адбітак",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Хэш нармалізаваных значэнняў параўноўваных уласцівасцей на момант рашэння. Як толькі ён перастае супадаць, ацэншчык зноў прапануе пару.",
+        "Why the reviewer decided the two are not the same.": "Чаму рэцэнзент вырашыў, што гэтыя два не аднолькавыя.",
+        "Dismissed By": "Адхілена",
+        "Uid of the person who made the judgement.": "UID асобы, якая прыняла рашэнне.",
+        "Dismissed At": "Адхілена на",
+        "When the judgement was made.": "Калі было прынята рашэнне.",
+        "Uid of the person who undid the dismissal, when one has.": "UID асобы, якая адмяніла адхіленне, калі такое было.",
+        "When the dismissal was undone, when it has been.": "Калі адхіленне было адменена, калі гэта адбылося.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Хлусня пасля адмены адхілення. Радок захоўваецца, а не выдаляецца, каб захаваўся аўдытарскі след таго, хто што вырашыў і хто гэта адмяніў."
     },
     "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {

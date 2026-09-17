@@ -3139,7 +3139,22 @@
         "When": "Cura",
         "when its condition holds": "cur che sia cundiziun è ademplida",
         "Which objects, as a JSON query": "Tge objects, sco dumonda JSON",
-        "Why you are doing this": "Pertge che ti fas quai"
+        "Why you are doing this": "Pertge che ti fas quai",
+        "Dismissed Pair": "Pèr refusà",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID dal emprim object, en urden canonic (tschernì tenor la lingaditga).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID dal segund object, en urden canonic (tschernì tenor la lingaditga).",
+        "Register the pair was reviewed in.": "Register en il qual il pèr è vegnì examinà.",
+        "Schema the pair was reviewed under.": "Schema sut il qual il pèr è vegnì examinà.",
+        "Fingerprint": "Improuta dal det",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash da las valurs normalisadas da las caracteristicas cumparegliadas al mument da la decisiun. Uschespert ch'ella na correspunda betg pli, porscha il scorader il pèr danovamain.",
+        "Why the reviewer decided the two are not the same.": "Pertge che l'examinader ha decidì che ils dus na èn betg il medem.",
+        "Dismissed By": "Refusà da",
+        "Uid of the person who made the judgement.": "UID da la persuna che ha prendì la decisiun.",
+        "Dismissed At": "Refusà ils",
+        "When the judgement was made.": "Cura che la decisiun è vegnida prendida.",
+        "Uid of the person who undid the dismissal, when one has.": "UID da la persuna che ha revocà la refusa, sch'ina l'ha fatg.",
+        "When the dismissal was undone, when it has been.": "Cura che la refusa è vegnida revocada, sche quai è capità.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Fals uschespert che la refusa è vegnida revocada. La lingia vegn tegnida enstagl da la stizzar, uschè che la traccia da revisiun da tgi che ha decidì tge, e tgi che l'ha revocà, resta."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

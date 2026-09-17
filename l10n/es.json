@@ -3156,7 +3156,22 @@
         "When": "Cuándo",
         "when its condition holds": "cuando su condición se cumple",
         "Which objects, as a JSON query": "Qué objetos, como una consulta JSON",
-        "Why you are doing this": "Por qué lo estás haciendo"
+        "Why you are doing this": "Por qué lo estás haciendo",
+        "Dismissed Pair": "Par descartado",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID del primer objeto, en orden canónico (ordenado por cadena).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID del segundo objeto, en orden canónico (ordenado por cadena).",
+        "Register the pair was reviewed in.": "Registro en el que se revisó el par.",
+        "Schema the pair was reviewed under.": "Esquema bajo el que se revisó el par.",
+        "Fingerprint": "Huella",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash de los valores normalizados de las propiedades comparadas en el momento de la decisión. El evaluador vuelve a ofrecer el par en cuanto este deja de coincidir.",
+        "Why the reviewer decided the two are not the same.": "Por qué el revisor decidió que los dos no son iguales.",
+        "Dismissed By": "Descartado por",
+        "Uid of the person who made the judgement.": "UID de la persona que tomó la decisión.",
+        "Dismissed At": "Descartado el",
+        "When the judgement was made.": "Cuándo se tomó la decisión.",
+        "Uid of the person who undid the dismissal, when one has.": "UID de la persona que deshizo el descarte, si la hubo.",
+        "When the dismissal was undone, when it has been.": "Cuándo se deshizo el descarte, si se hizo.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falso una vez que se ha revertido el descarte. La fila se conserva en lugar de eliminarse para que perdure el registro de auditoría de quién decidió qué y quién lo deshizo."
     },
     "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

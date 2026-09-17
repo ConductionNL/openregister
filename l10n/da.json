@@ -3139,7 +3139,22 @@
         "When": "Når",
         "when its condition holds": "når dens betingelse holder",
         "Which objects, as a JSON query": "Hvilke objekter, som en JSON-forespørgsel",
-        "Why you are doing this": "Hvorfor du gør dette"
+        "Why you are doing this": "Hvorfor du gør dette",
+        "Dismissed Pair": "Afvist par",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID for det første objekt, i kanonisk (strengsorteret) rækkefølge.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID for det andet objekt, i kanonisk (strengsorteret) rækkefølge.",
+        "Register the pair was reviewed in.": "Register, hvor parret blev gennemgået.",
+        "Schema the pair was reviewed under.": "Skema, som parret blev gennemgået under.",
+        "Fingerprint": "Fingeraftryk",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash af de normaliserede værdier for de sammenlignede egenskaber på beslutningstidspunktet. Scoreren tilbyder parret igen, så snart denne ikke længere stemmer.",
+        "Why the reviewer decided the two are not the same.": "Hvorfor bedømmeren besluttede, at de to ikke er ens.",
+        "Dismissed By": "Afvist af",
+        "Uid of the person who made the judgement.": "UID for den person, der traf beslutningen.",
+        "Dismissed At": "Afvist den",
+        "When the judgement was made.": "Hvornår beslutningen blev truffet.",
+        "Uid of the person who undid the dismissal, when one has.": "UID for den person, der fortrød afvisningen, hvis nogen har.",
+        "When the dismissal was undone, when it has been.": "Hvornår afvisningen blev fortrudt, hvis det er sket.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falsk, når afvisningen er blevet tilbageført. Rækken bevares i stedet for at blive slettet, så revisionssporet over, hvem der besluttede hvad, og hvem der fortrød det, bevares."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

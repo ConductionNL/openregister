@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Wéini",
         "when its condition holds": "wann seng Bedingung erfëllt ass",
         "Which objects, as a JSON query": "Wéi eng Objeten, als JSON-Ufro",
-        "Why you are doing this": "Firwat s du dëst méchs"
+        "Why you are doing this": "Firwat s du dëst méchs",
+        "Dismissed Pair": "Ofgeleent Puer",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID vum éischten Objet, an kanonescher (no String zortéierter) Reiefolleg.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID vum zweeten Objet, an kanonescher (no String zortéierter) Reiefolleg.",
+        "Register the pair was reviewed in.": "Register an deem d'Puer iwwerpréift gouf.",
+        "Schema the pair was reviewed under.": "Schema ënner deem d'Puer iwwerpréift gouf.",
+        "Fingerprint": "Fangerofdrock",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash vun den normaliséierte Wäerter vun de verglachenen Eegeschaften am Moment vun der Entscheedung. Soubal dësen net méi iwwereneestëmmt, bitt de Scorer d'Puer erëm un.",
+        "Why the reviewer decided the two are not the same.": "Firwat den Iwwerpréifer entscheet huet, datt déi zwee net d'selwecht sinn.",
+        "Dismissed By": "Ofgeleent vun",
+        "Uid of the person who made the judgement.": "UID vun der Persoun déi d'Entscheedung getraff huet.",
+        "Dismissed At": "Ofgeleent den",
+        "When the judgement was made.": "Wéini d'Entscheedung getraff gouf.",
+        "Uid of the person who undid the dismissal, when one has.": "UID vun der Persoun déi d'Oflehnung réckgängeg gemaach huet, wann eng et gemaach huet.",
+        "When the dismissal was undone, when it has been.": "Wéini d'Oflehnung réckgängeg gemaach gouf, wann et geschitt ass.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falsch soubal d'Oflehnung réckgängeg gemaach gouf. D'Zeil gëtt behal amplaz geläscht ze ginn, sou datt d'Auditspur vun deem wien wat entscheet huet, a wien et réckgängeg gemaach huet, bestoe bleift."
     },
     "nplurals=2; plural=(n != 1);"
 )

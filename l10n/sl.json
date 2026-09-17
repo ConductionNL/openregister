@@ -3173,7 +3173,22 @@
         "When": "Kdaj",
         "when its condition holds": "ko velja njegov pogoj",
         "Which objects, as a JSON query": "Kateri objekti, kot poizvedba JSON",
-        "Why you are doing this": "Zakaj to počnete"
+        "Why you are doing this": "Zakaj to počnete",
+        "Dismissed Pair": "Zavrnjen par",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID prvega predmeta v kanoničnem (nizovno urejenem) vrstnem redu.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID drugega predmeta v kanoničnem (nizovno urejenem) vrstnem redu.",
+        "Register the pair was reviewed in.": "Register, v katerem je bil par pregledan.",
+        "Schema the pair was reviewed under.": "Shema, po kateri je bil par pregledan.",
+        "Fingerprint": "Prstni odtis",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Zgoščena vrednost normaliziranih vrednosti primerjanih lastnosti v trenutku odločitve. Takoj ko se ta ne ujema več, ocenjevalnik par ponudi znova.",
+        "Why the reviewer decided the two are not the same.": "Zakaj je pregledovalec odločil, da par ni enak.",
+        "Dismissed By": "Zavrnil",
+        "Uid of the person who made the judgement.": "UID osebe, ki je sprejela odločitev.",
+        "Dismissed At": "Zavrnjeno dne",
+        "When the judgement was made.": "Kdaj je bila sprejeta odločitev.",
+        "Uid of the person who undid the dismissal, when one has.": "UID osebe, ki je razveljavila zavrnitev, če je do tega prišlo.",
+        "When the dismissal was undone, when it has been.": "Kdaj je bila zavrnitev razveljavljena, če se je to zgodilo.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Neresnično, ko je zavrnitev razveljavljena. Vrstica se ohrani, namesto da bi bila izbrisana, tako da revizijska sled o tem, kdo je kaj odločil in kdo je to razveljavil, ostane."
     },
     "pluralForm": "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);",
     "plurals": {

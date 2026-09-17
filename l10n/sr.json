@@ -3156,7 +3156,22 @@
         "When": "Када",
         "when its condition holds": "када његов услов важи",
         "Which objects, as a JSON query": "Који објекти, као JSON упит",
-        "Why you are doing this": "Зашто ово радите"
+        "Why you are doing this": "Зашто ово радите",
+        "Dismissed Pair": "Одбијени пар",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID првог објекта у каноничном (стринг-сортираном) редоследу.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID другог објекта у каноничном (стринг-сортираном) редоследу.",
+        "Register the pair was reviewed in.": "Регистар у ком је пар прегледан.",
+        "Schema the pair was reviewed under.": "Шема под којом је пар прегледан.",
+        "Fingerprint": "Отисак",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Хеш нормализованих вредности упоређиваних својстава у тренутку одлуке. Чим престане да се поклапа, оцењивач поново нуди пар.",
+        "Why the reviewer decided the two are not the same.": "Зашто је прегледач одлучио да та два нису иста.",
+        "Dismissed By": "Одбио",
+        "Uid of the person who made the judgement.": "UID особе која је донела одлуку.",
+        "Dismissed At": "Одбијено дана",
+        "When the judgement was made.": "Када је одлука донета.",
+        "Uid of the person who undid the dismissal, when one has.": "UID особе која је поништила одбијање, ако је до тога дошло.",
+        "When the dismissal was undone, when it has been.": "Када је одбијање поништено, ако се десило.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Нетачно када је одбијање поништено. Ред се чува уместо да се брише како би остао ревизиони траг о томе ко је шта одлучио и ко је то поништио."
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {

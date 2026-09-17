@@ -3199,7 +3199,22 @@
         "When": "Wanneer",
         "when its condition holds": "wanneer de voorwaarde ervan waar is",
         "Which objects, as a JSON query": "Welke objecten, als een JSON-query",
-        "Why you are doing this": "Waarom je dit doet"
+        "Why you are doing this": "Waarom je dit doet",
+        "Dismissed Pair": "Afgewezen paar",
+        "Uuid of the first object, in canonical (string-sorted) order.": "Uuid van het eerste object, in canonieke (op tekst gesorteerde) volgorde.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "Uuid van het tweede object, in canonieke (op tekst gesorteerde) volgorde.",
+        "Register the pair was reviewed in.": "Register waarin het paar is beoordeeld.",
+        "Schema the pair was reviewed under.": "Schema waaronder het paar is beoordeeld.",
+        "Fingerprint": "Vingerafdruk",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash van de genormaliseerde waarden van de vergeleken eigenschappen op het moment van de beoordeling. Zodra deze niet meer overeenkomt, biedt de scorer het paar opnieuw aan.",
+        "Why the reviewer decided the two are not the same.": "Waarom de beoordelaar besloot dat de twee niet hetzelfde zijn.",
+        "Dismissed By": "Afgewezen door",
+        "Uid of the person who made the judgement.": "Uid van de persoon die de beoordeling heeft gemaakt.",
+        "Dismissed At": "Afgewezen op",
+        "When the judgement was made.": "Wanneer de beoordeling is gemaakt.",
+        "Uid of the person who undid the dismissal, when one has.": "Uid van de persoon die de afwijzing ongedaan heeft gemaakt, indien van toepassing.",
+        "When the dismissal was undone, when it has been.": "Wanneer de afwijzing ongedaan is gemaakt, indien dat is gebeurd.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Onwaar zodra de afwijzing is teruggedraaid. De rij wordt bewaard in plaats van verwijderd, zodat het controlespoor van wie wat besloot, en wie het ongedaan maakte, behouden blijft."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

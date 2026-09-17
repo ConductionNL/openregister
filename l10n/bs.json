@@ -3156,7 +3156,22 @@
         "When": "Kada",
         "when its condition holds": "kada njegov uvjet vrijedi",
         "Which objects, as a JSON query": "Koji objekti, kao JSON upit",
-        "Why you are doing this": "Zašto ovo radite"
+        "Why you are doing this": "Zašto ovo radite",
+        "Dismissed Pair": "Odbijeni par",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID prvog objekta u kanonskom (nizovno sortiranom) redoslijedu.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID drugog objekta u kanonskom (nizovno sortiranom) redoslijedu.",
+        "Register the pair was reviewed in.": "Registar u kojem je par pregledan.",
+        "Schema the pair was reviewed under.": "Šema pod kojom je par pregledan.",
+        "Fingerprint": "Otisak",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash normaliziranih vrijednosti upoređivanih svojstava u trenutku odluke. Čim prestane odgovarati, ocjenjivač ponovo nudi par.",
+        "Why the reviewer decided the two are not the same.": "Zašto je pregledač odlučio da ta dva nisu ista.",
+        "Dismissed By": "Odbio",
+        "Uid of the person who made the judgement.": "UID osobe koja je donijela odluku.",
+        "Dismissed At": "Odbijeno dana",
+        "When the judgement was made.": "Kada je odluka donesena.",
+        "Uid of the person who undid the dismissal, when one has.": "UID osobe koja je poništila odbijanje, ako je do toga došlo.",
+        "When the dismissal was undone, when it has been.": "Kada je odbijanje poništeno, ako se dogodilo.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Neistina kada je odbijanje poništeno. Red se čuva umjesto da se briše kako bi ostao revizijski trag o tome ko je šta odlučio i ko je to poništio."
     },
     "pluralForm": "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;",
     "plurals": {

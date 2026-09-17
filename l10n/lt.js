@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Kai",
         "when its condition holds": "kai galioja jos sąlyga",
         "Which objects, as a JSON query": "Kurie objektai, kaip JSON užklausa",
-        "Why you are doing this": "Kodėl tai darote"
+        "Why you are doing this": "Kodėl tai darote",
+        "Dismissed Pair": "Atmesta pora",
+        "Uuid of the first object, in canonical (string-sorted) order.": "Pirmojo objekto UUID kanonine (pagal eilutę surūšiuota) tvarka.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "Antrojo objekto UUID kanonine (pagal eilutę surūšiuota) tvarka.",
+        "Register the pair was reviewed in.": "Registras, kuriame pora buvo peržiūrėta.",
+        "Schema the pair was reviewed under.": "Schema, pagal kurią pora buvo peržiūrėta.",
+        "Fingerprint": "Atspaudas",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Palygintų savybių normalizuotų reikšmių maiša sprendimo momentu. Kai tik ji nustoja sutapti, vertintojas vėl siūlo porą.",
+        "Why the reviewer decided the two are not the same.": "Kodėl peržiūrintysis nusprendė, kad šie du nėra tokie patys.",
+        "Dismissed By": "Atmetė",
+        "Uid of the person who made the judgement.": "Sprendimą priėmusio asmens UID.",
+        "Dismissed At": "Atmesta",
+        "When the judgement was made.": "Kada buvo priimtas sprendimas.",
+        "Uid of the person who undid the dismissal, when one has.": "Asmens, atšaukusio atmetimą, UID, jei toks yra.",
+        "When the dismissal was undone, when it has been.": "Kada atmetimas buvo atšauktas, jei tai įvyko.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Klaidinga, kai atmetimas atšaukiamas. Eilutė išsaugoma, o ne ištrinama, kad išliktų audito pėdsakas, kas ką nusprendė ir kas tai atšaukė."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

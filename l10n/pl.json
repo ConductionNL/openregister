@@ -3173,7 +3173,22 @@
         "When": "Kiedy",
         "when its condition holds": "gdy jego warunek jest spełniony",
         "Which objects, as a JSON query": "Które obiekty, jako zapytanie JSON",
-        "Why you are doing this": "Dlaczego to robisz"
+        "Why you are doing this": "Dlaczego to robisz",
+        "Dismissed Pair": "Odrzucona para",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID pierwszego obiektu w kanonicznej (posortowanej tekstowo) kolejności.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID drugiego obiektu w kanonicznej (posortowanej tekstowo) kolejności.",
+        "Register the pair was reviewed in.": "Rejestr, w którym para została oceniona.",
+        "Schema the pair was reviewed under.": "Schemat, w ramach którego para została oceniona.",
+        "Fingerprint": "Odcisk",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Skrót znormalizowanych wartości porównywanych właściwości w momencie decyzji. Gdy tylko przestanie się zgadzać, oceniający ponownie proponuje parę.",
+        "Why the reviewer decided the two are not the same.": "Dlaczego recenzent uznał, że te dwa nie są takie same.",
+        "Dismissed By": "Odrzucone przez",
+        "Uid of the person who made the judgement.": "UID osoby, która podjęła decyzję.",
+        "Dismissed At": "Odrzucono dnia",
+        "When the judgement was made.": "Kiedy podjęto decyzję.",
+        "Uid of the person who undid the dismissal, when one has.": "UID osoby, która cofnęła odrzucenie, jeśli taka była.",
+        "When the dismissal was undone, when it has been.": "Kiedy cofnięto odrzucenie, jeśli to nastąpiło.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Fałsz po cofnięciu odrzucenia. Wiersz jest zachowywany zamiast usuwany, aby zachować ścieżkę audytu, kto co zdecydował i kto to cofnął."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);",
     "plurals": {

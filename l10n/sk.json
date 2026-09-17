@@ -3173,7 +3173,22 @@
         "When": "Kedy",
         "when its condition holds": "keď platí jeho podmienka",
         "Which objects, as a JSON query": "Ktoré objekty, ako dotaz JSON",
-        "Why you are doing this": "Prečo to robíte"
+        "Why you are doing this": "Prečo to robíte",
+        "Dismissed Pair": "Zamietnutá dvojica",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID prvého objektu v kanonickom (reťazcovo zoradenom) poradí.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID druhého objektu v kanonickom (reťazcovo zoradenom) poradí.",
+        "Register the pair was reviewed in.": "Register, v ktorom bola dvojica posúdená.",
+        "Schema the pair was reviewed under.": "Schéma, podľa ktorej bola dvojica posúdená.",
+        "Fingerprint": "Odtlačok",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash normalizovaných hodnôt porovnávaných vlastností v okamihu rozhodnutia. Hneď ako prestane zodpovedať, hodnotiteľ dvojicu ponúkne znova.",
+        "Why the reviewer decided the two are not the same.": "Prečo posudzovateľ rozhodol, že sa tieto dve nezhodujú.",
+        "Dismissed By": "Zamietol",
+        "Uid of the person who made the judgement.": "UID osoby, ktorá rozhodnutie urobila.",
+        "Dismissed At": "Zamietnuté dňa",
+        "When the judgement was made.": "Kedy bolo rozhodnutie urobené.",
+        "Uid of the person who undid the dismissal, when one has.": "UID osoby, ktorá zamietnutie zrušila, ak k tomu došlo.",
+        "When the dismissal was undone, when it has been.": "Kedy bolo zamietnutie zrušené, ak sa tak stalo.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Nepravda po zrušení zamietnutia. Riadok sa uchováva namiesto odstránenia, aby zostala zachovaná auditná stopa o tom, kto čo rozhodol a kto to zrušil."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);",
     "plurals": {

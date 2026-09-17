@@ -3139,7 +3139,22 @@
         "When": "Πότε",
         "when its condition holds": "όταν ισχύει η συνθήκη του",
         "Which objects, as a JSON query": "Ποια αντικείμενα, ως ερώτημα JSON",
-        "Why you are doing this": "Γιατί το κάνετε αυτό"
+        "Why you are doing this": "Γιατί το κάνετε αυτό",
+        "Dismissed Pair": "Απορριφθέν ζεύγος",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID του πρώτου αντικειμένου, σε κανονική (ταξινομημένη κατά συμβολοσειρά) σειρά.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID του δεύτερου αντικειμένου, σε κανονική (ταξινομημένη κατά συμβολοσειρά) σειρά.",
+        "Register the pair was reviewed in.": "Μητρώο στο οποίο εξετάστηκε το ζεύγος.",
+        "Schema the pair was reviewed under.": "Σχήμα υπό το οποίο εξετάστηκε το ζεύγος.",
+        "Fingerprint": "Αποτύπωμα",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Κατακερματισμός των κανονικοποιημένων τιμών των συγκρινόμενων ιδιοτήτων τη στιγμή της κρίσης. Μόλις αυτός πάψει να ταιριάζει, ο βαθμολογητής προσφέρει ξανά το ζεύγος.",
+        "Why the reviewer decided the two are not the same.": "Γιατί ο αξιολογητής αποφάσισε ότι τα δύο δεν είναι ίδια.",
+        "Dismissed By": "Απορρίφθηκε από",
+        "Uid of the person who made the judgement.": "UID του ατόμου που έλαβε την απόφαση.",
+        "Dismissed At": "Απορρίφθηκε στις",
+        "When the judgement was made.": "Πότε ελήφθη η απόφαση.",
+        "Uid of the person who undid the dismissal, when one has.": "UID του ατόμου που ανέτρεψε την απόρριψη, εάν υπάρχει.",
+        "When the dismissal was undone, when it has been.": "Πότε ανατράπηκε η απόρριψη, εάν συνέβη.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Ψευδές μόλις ανατραπεί η απόρριψη. Η γραμμή διατηρείται αντί να διαγραφεί, ώστε να παραμείνει το ίχνος ελέγχου του ποιος αποφάσισε τι και ποιος το ανέτρεψε."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

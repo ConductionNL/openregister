@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Kur",
         "when its condition holds": "kur kushti i tij vlen",
         "Which objects, as a JSON query": "Cilat objekte, si një kërkesë JSON",
-        "Why you are doing this": "Pse po e bëni këtë"
+        "Why you are doing this": "Pse po e bëni këtë",
+        "Dismissed Pair": "Çift i refuzuar",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID i objektit të parë, në renditje kanonike (të renditur sipas vargut).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID i objektit të dytë, në renditje kanonike (të renditur sipas vargut).",
+        "Register the pair was reviewed in.": "Regjistri në të cilin u shqyrtua çifti.",
+        "Schema the pair was reviewed under.": "Skema nën të cilën u shqyrtua çifti.",
+        "Fingerprint": "Gjurmë gishti",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash i vlerave të normalizuara të vetive të krahasuara në momentin e vendimit. Sapo ky nuk përputhet më, vlerësuesi e ofron çiftin sërish.",
+        "Why the reviewer decided the two are not the same.": "Pse shqyrtuesi vendosi që të dyja nuk janë të njëjta.",
+        "Dismissed By": "Refuzuar nga",
+        "Uid of the person who made the judgement.": "UID i personit që mori vendimin.",
+        "Dismissed At": "Refuzuar më",
+        "When the judgement was made.": "Kur u mor vendimi.",
+        "Uid of the person who undid the dismissal, when one has.": "UID i personit që zhbëri refuzimin, nëse dikush e ka bërë.",
+        "When the dismissal was undone, when it has been.": "Kur u zhbë refuzimi, nëse ka ndodhur.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "E rreme sapo refuzimi të jetë kthyer. Rreshti ruhet në vend që të fshihet, që gjurma e auditimit se kush vendosi çfarë dhe kush e zhbëri të mbetet."
     },
     "nplurals=2; plural=(n != 1);"
 )

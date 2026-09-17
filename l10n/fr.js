@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Quand",
         "when its condition holds": "lorsque sa condition est vérifiée",
         "Which objects, as a JSON query": "Quels objets, sous forme de requête JSON",
-        "Why you are doing this": "Pourquoi vous faites cela"
+        "Why you are doing this": "Pourquoi vous faites cela",
+        "Dismissed Pair": "Paire rejetée",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID du premier objet, dans l'ordre canonique (trié par chaîne).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID du second objet, dans l'ordre canonique (trié par chaîne).",
+        "Register the pair was reviewed in.": "Registre dans lequel la paire a été examinée.",
+        "Schema the pair was reviewed under.": "Schéma sous lequel la paire a été examinée.",
+        "Fingerprint": "Empreinte",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hachage des valeurs normalisées des propriétés comparées au moment de la décision. Le calculateur propose à nouveau la paire dès que celui-ci ne correspond plus.",
+        "Why the reviewer decided the two are not the same.": "Pourquoi le relecteur a décidé que les deux ne sont pas identiques.",
+        "Dismissed By": "Rejetée par",
+        "Uid of the person who made the judgement.": "UID de la personne qui a rendu la décision.",
+        "Dismissed At": "Rejetée le",
+        "When the judgement was made.": "Quand la décision a été rendue.",
+        "Uid of the person who undid the dismissal, when one has.": "UID de la personne qui a annulé le rejet, le cas échéant.",
+        "When the dismissal was undone, when it has been.": "Quand le rejet a été annulé, si cela a eu lieu.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Faux une fois le rejet annulé. La ligne est conservée plutôt que supprimée afin que la piste d'audit indiquant qui a décidé quoi, et qui l'a annulé, subsiste."
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

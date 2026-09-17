@@ -3173,7 +3173,22 @@
         "When": "Когда",
         "when its condition holds": "когда его условие выполняется",
         "Which objects, as a JSON query": "Какие объекты, в виде запроса JSON",
-        "Why you are doing this": "Зачем вы это делаете"
+        "Why you are doing this": "Зачем вы это делаете",
+        "Dismissed Pair": "Отклонённая пара",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID первого объекта в каноническом (отсортированном по строке) порядке.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID второго объекта в каноническом (отсортированном по строке) порядке.",
+        "Register the pair was reviewed in.": "Реестр, в котором пара была рассмотрена.",
+        "Schema the pair was reviewed under.": "Схема, по которой пара была рассмотрена.",
+        "Fingerprint": "Отпечаток",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Хеш нормализованных значений сравниваемых свойств на момент решения. Как только он перестаёт совпадать, оценщик снова предлагает пару.",
+        "Why the reviewer decided the two are not the same.": "Почему проверяющий решил, что эти два объекта не совпадают.",
+        "Dismissed By": "Отклонил",
+        "Uid of the person who made the judgement.": "UID лица, принявшего решение.",
+        "Dismissed At": "Отклонено",
+        "When the judgement was made.": "Когда было принято решение.",
+        "Uid of the person who undid the dismissal, when one has.": "UID лица, отменившего отклонение, если таковое было.",
+        "When the dismissal was undone, when it has been.": "Когда отклонение было отменено, если это произошло.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Ложь после отмены отклонения. Строка сохраняется, а не удаляется, чтобы сохранился аудиторский след того, кто что решил и кто это отменил."
     },
     "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {

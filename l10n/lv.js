@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Kad",
         "when its condition holds": "kad tā nosacījums ir spēkā",
         "Which objects, as a JSON query": "Kuri objekti, kā JSON vaicājums",
-        "Why you are doing this": "Kāpēc jūs to darāt"
+        "Why you are doing this": "Kāpēc jūs to darāt",
+        "Dismissed Pair": "Noraidīts pāris",
+        "Uuid of the first object, in canonical (string-sorted) order.": "Pirmā objekta UUID kanoniskā (pēc virknes sakārtotā) secībā.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "Otrā objekta UUID kanoniskā (pēc virknes sakārtotā) secībā.",
+        "Register the pair was reviewed in.": "Reģistrs, kurā pāris tika izskatīts.",
+        "Schema the pair was reviewed under.": "Shēma, saskaņā ar kuru pāris tika izskatīts.",
+        "Fingerprint": "Nospiedums",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Salīdzināto īpašību normalizēto vērtību jaucējkods lēmuma pieņemšanas brīdī. Tiklīdz tas vairs nesakrīt, vērtētājs piedāvā pāri atkārtoti.",
+        "Why the reviewer decided the two are not the same.": "Kāpēc vērtētājs nolēma, ka abi nav vienādi.",
+        "Dismissed By": "Noraidīja",
+        "Uid of the person who made the judgement.": "Lēmumu pieņēmušās personas UID.",
+        "Dismissed At": "Noraidīts",
+        "When the judgement was made.": "Kad lēmums tika pieņemts.",
+        "Uid of the person who undid the dismissal, when one has.": "Personas, kura atcēla noraidījumu, UID, ja tāda ir.",
+        "When the dismissal was undone, when it has been.": "Kad noraidījums tika atcelts, ja tas ir noticis.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Aplams, tiklīdz noraidījums ir atcelts. Rinda tiek saglabāta, nevis dzēsta, lai saglabātos audita pēdas par to, kas ko izlēma un kas to atcēla."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

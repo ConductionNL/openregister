@@ -3139,7 +3139,22 @@
         "When": "Mikor",
         "when its condition holds": "amikor a feltétele teljesül",
         "Which objects, as a JSON query": "Mely objektumok, JSON lekérdezésként",
-        "Why you are doing this": "Miért csinálod ezt"
+        "Why you are doing this": "Miért csinálod ezt",
+        "Dismissed Pair": "Elutasított pár",
+        "Uuid of the first object, in canonical (string-sorted) order.": "Az első objektum UUID-je kanonikus (karakterlánc szerint rendezett) sorrendben.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "A második objektum UUID-je kanonikus (karakterlánc szerint rendezett) sorrendben.",
+        "Register the pair was reviewed in.": "A nyilvántartás, amelyben a párt felülvizsgálták.",
+        "Schema the pair was reviewed under.": "A séma, amely alapján a párt felülvizsgálták.",
+        "Fingerprint": "Ujjlenyomat",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Az összehasonlított tulajdonságok normalizált értékeinek kivonata a döntés pillanatában. Amint ez már nem egyezik, az értékelő újra felkínálja a párt.",
+        "Why the reviewer decided the two are not the same.": "Miért döntött úgy a felülvizsgáló, hogy a kettő nem azonos.",
+        "Dismissed By": "Elutasította",
+        "Uid of the person who made the judgement.": "A döntést hozó személy UID-je.",
+        "Dismissed At": "Elutasítva ekkor",
+        "When the judgement was made.": "Mikor született a döntés.",
+        "Uid of the person who undid the dismissal, when one has.": "Az elutasítást visszavonó személy UID-je, ha volt ilyen.",
+        "When the dismissal was undone, when it has been.": "Mikor vonták vissza az elutasítást, ha megtörtént.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Hamis, miután az elutasítást visszavonták. A sor törlés helyett megmarad, hogy fennmaradjon az audit nyom arról, ki mit döntött és ki vonta vissza."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

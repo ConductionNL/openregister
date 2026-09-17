@@ -3139,7 +3139,22 @@
         "When": "Hvenær",
         "when its condition holds": "þegar skilyrði hennar stenst",
         "Which objects, as a JSON query": "Hvaða hlutir, sem JSON-fyrirspurn",
-        "Why you are doing this": "Af hverju þú ert að gera þetta"
+        "Why you are doing this": "Af hverju þú ert að gera þetta",
+        "Dismissed Pair": "Hafnað par",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID fyrsta hlutarins í staðlaðri (strengja-raðaðri) röð.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID annars hlutarins í staðlaðri (strengja-raðaðri) röð.",
+        "Register the pair was reviewed in.": "Skrá sem parið var yfirfarið í.",
+        "Schema the pair was reviewed under.": "Skema sem parið var yfirfarið undir.",
+        "Fingerprint": "Fingrafar",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Tætigildi normuðu gildanna á samanburðareiginleikunum á ákvörðunarstundu. Um leið og það passar ekki lengur, býður matsaðilinn parið aftur.",
+        "Why the reviewer decided the two are not the same.": "Hvers vegna yfirferðaraðilinn ákvað að þau tvö séu ekki eins.",
+        "Dismissed By": "Hafnað af",
+        "Uid of the person who made the judgement.": "UID einstaklingsins sem tók ákvörðunina.",
+        "Dismissed At": "Hafnað þann",
+        "When the judgement was made.": "Hvenær ákvörðunin var tekin.",
+        "Uid of the person who undid the dismissal, when one has.": "UID einstaklingsins sem afturkallaði höfnunina, ef einhver hefur gert það.",
+        "When the dismissal was undone, when it has been.": "Hvenær höfnunin var afturkölluð, ef það hefur gerst.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Ósatt þegar höfnunin hefur verið afturkölluð. Röðin er varðveitt í stað þess að eyða henni svo að endurskoðunarslóðin um hver ákvað hvað og hver afturkallaði það haldist."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

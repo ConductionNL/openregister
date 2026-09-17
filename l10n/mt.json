@@ -3173,7 +3173,22 @@
         "When": "Meta",
         "when its condition holds": "meta l-kundizzjoni tiegħu tgħodd",
         "Which objects, as a JSON query": "Liema oġġetti, bħala mistoqsija JSON",
-        "Why you are doing this": "Għaliex qed tagħmel dan"
+        "Why you are doing this": "Għaliex qed tagħmel dan",
+        "Dismissed Pair": "Par imwarrab",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID tal-ewwel oġġett, f'ordni kanonika (issortjata skont il-string).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID tat-tieni oġġett, f'ordni kanonika (issortjata skont il-string).",
+        "Register the pair was reviewed in.": "Ir-reġistru li fih ġie rivedut il-par.",
+        "Schema the pair was reviewed under.": "L-iskema li taħtha ġie rivedut il-par.",
+        "Fingerprint": "Marka tas-swaba'",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash tal-valuri normalizzati tal-proprjetajiet imqabbla fil-mument tal-ġudizzju. Malli dan ma jibqax jaqbel, l-iskorer joffri l-par mill-ġdid.",
+        "Why the reviewer decided the two are not the same.": "Għaliex ir-reviżur iddeċieda li t-tnejn mhumiex l-istess.",
+        "Dismissed By": "Imwarrab minn",
+        "Uid of the person who made the judgement.": "UID tal-persuna li għamlet il-ġudizzju.",
+        "Dismissed At": "Imwarrab fi",
+        "When the judgement was made.": "Meta sar il-ġudizzju.",
+        "Uid of the person who undid the dismissal, when one has.": "UID tal-persuna li reġgħet lura t-twarrib, jekk saret.",
+        "When the dismissal was undone, when it has been.": "Meta ġie mreġġa' lura t-twarrib, jekk seħħ.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falz ladarba t-twarrib jiġi mreġġa' lura. Ir-ringiela tinżamm minflok titħassar biex it-traċċa tal-awditjar ta' min iddeċieda xiex, u min reġa' lura, tibqa'."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

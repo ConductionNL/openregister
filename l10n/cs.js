@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Kdy",
         "when its condition holds": "když platí jeho podmínka",
         "Which objects, as a JSON query": "Které objekty, jako dotaz JSON",
-        "Why you are doing this": "Proč to děláte"
+        "Why you are doing this": "Proč to děláte",
+        "Dismissed Pair": "Zamítnutá dvojice",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID prvního objektu v kanonickém (řetězcově seřazeném) pořadí.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID druhého objektu v kanonickém (řetězcově seřazeném) pořadí.",
+        "Register the pair was reviewed in.": "Registr, ve kterém byla dvojice posouzena.",
+        "Schema the pair was reviewed under.": "Schéma, podle kterého byla dvojice posouzena.",
+        "Fingerprint": "Otisk",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash normalizovaných hodnot porovnávaných vlastností v okamžiku rozhodnutí. Jakmile přestane odpovídat, hodnotitel dvojici nabídne znovu.",
+        "Why the reviewer decided the two are not the same.": "Proč posuzovatel rozhodl, že se tyto dva neshodují.",
+        "Dismissed By": "Zamítl",
+        "Uid of the person who made the judgement.": "UID osoby, která rozhodnutí učinila.",
+        "Dismissed At": "Zamítnuto dne",
+        "When the judgement was made.": "Kdy bylo rozhodnutí učiněno.",
+        "Uid of the person who undid the dismissal, when one has.": "UID osoby, která zamítnutí zrušila, pokud k tomu došlo.",
+        "When the dismissal was undone, when it has been.": "Kdy bylo zamítnutí zrušeno, pokud se tak stalo.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Nepravda, jakmile bylo zamítnutí zrušeno. Řádek se uchovává, místo aby byl smazán, aby zůstala zachována auditní stopa o tom, kdo co rozhodl a kdo to zrušil."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

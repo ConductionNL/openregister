@@ -3139,7 +3139,22 @@
         "When": "Quan",
         "when its condition holds": "quan la seva condició es compleix",
         "Which objects, as a JSON query": "Quins objectes, com a consulta JSON",
-        "Why you are doing this": "Per què ho estàs fent"
+        "Why you are doing this": "Per què ho estàs fent",
+        "Dismissed Pair": "Parell descartat",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID del primer objecte, en ordre canònic (ordenat per cadena).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID del segon objecte, en ordre canònic (ordenat per cadena).",
+        "Register the pair was reviewed in.": "Registre en què s'ha revisat el parell.",
+        "Schema the pair was reviewed under.": "Esquema sota el qual s'ha revisat el parell.",
+        "Fingerprint": "Empremta",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash dels valors normalitzats de les propietats comparades en el moment de la decisió. L'avaluador torna a oferir el parell tan aviat com aquest deixa de coincidir.",
+        "Why the reviewer decided the two are not the same.": "Per què el revisor va decidir que els dos no són iguals.",
+        "Dismissed By": "Descartat per",
+        "Uid of the person who made the judgement.": "UID de la persona que va prendre la decisió.",
+        "Dismissed At": "Descartat el",
+        "When the judgement was made.": "Quan es va prendre la decisió.",
+        "Uid of the person who undid the dismissal, when one has.": "UID de la persona que va desfer el descart, si n'hi ha.",
+        "When the dismissal was undone, when it has been.": "Quan es va desfer el descart, si es va fer.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Fals un cop s'ha revertit el descart. La fila es conserva en lloc d'eliminar-se perquè perduri el rastre d'auditoria de qui va decidir què i qui ho va desfer."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

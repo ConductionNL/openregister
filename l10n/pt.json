@@ -3139,7 +3139,22 @@
         "When": "Quando",
         "when its condition holds": "quando a sua condição se verifica",
         "Which objects, as a JSON query": "Que objetos, como consulta JSON",
-        "Why you are doing this": "Porque está a fazer isto"
+        "Why you are doing this": "Porque está a fazer isto",
+        "Dismissed Pair": "Par rejeitado",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID do primeiro objeto, em ordem canónica (ordenada por cadeia).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID do segundo objeto, em ordem canónica (ordenada por cadeia).",
+        "Register the pair was reviewed in.": "Registo em que o par foi revisto.",
+        "Schema the pair was reviewed under.": "Esquema sob o qual o par foi revisto.",
+        "Fingerprint": "Impressão digital",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash dos valores normalizados das propriedades comparadas no momento da decisão. O avaliador oferece o par novamente assim que este deixa de corresponder.",
+        "Why the reviewer decided the two are not the same.": "Por que o revisor decidiu que os dois não são iguais.",
+        "Dismissed By": "Rejeitado por",
+        "Uid of the person who made the judgement.": "UID da pessoa que tomou a decisão.",
+        "Dismissed At": "Rejeitado em",
+        "When the judgement was made.": "Quando a decisão foi tomada.",
+        "Uid of the person who undid the dismissal, when one has.": "UID da pessoa que desfez a rejeição, se houve.",
+        "When the dismissal was undone, when it has been.": "Quando a rejeição foi desfeita, se aconteceu.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falso quando a rejeição é revertida. A linha é mantida em vez de eliminada para que o rasto de auditoria de quem decidiu o quê, e quem o desfez, permaneça."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

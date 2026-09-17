@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Кога",
         "when its condition holds": "когато условието му е изпълнено",
         "Which objects, as a JSON query": "Кои обекти, като заявка JSON",
-        "Why you are doing this": "Защо правите това"
+        "Why you are doing this": "Защо правите това",
+        "Dismissed Pair": "Отхвърлена двойка",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID на първия обект в каноничен (сортиран по низ) ред.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID на втория обект в каноничен (сортиран по низ) ред.",
+        "Register the pair was reviewed in.": "Регистър, в който двойката е прегледана.",
+        "Schema the pair was reviewed under.": "Схема, по която двойката е прегледана.",
+        "Fingerprint": "Отпечатък",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Хеш на нормализираните стойности на сравняваните свойства към момента на решението. Веднага щом той престане да съвпада, оценителят предлага двойката отново.",
+        "Why the reviewer decided the two are not the same.": "Защо проверяващият е решил, че двете не са еднакви.",
+        "Dismissed By": "Отхвърлено от",
+        "Uid of the person who made the judgement.": "UID на лицето, взело решението.",
+        "Dismissed At": "Отхвърлено на",
+        "When the judgement was made.": "Кога е взето решението.",
+        "Uid of the person who undid the dismissal, when one has.": "UID на лицето, отменило отхвърлянето, ако има такова.",
+        "When the dismissal was undone, when it has been.": "Кога е отменено отхвърлянето, ако е станало.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Невярно, след като отхвърлянето е отменено. Редът се запазва, вместо да се изтрива, за да остане одитната следа кой какво е решил и кой го е отменил."
     },
     "nplurals=2; plural=(n != 1);"
 )

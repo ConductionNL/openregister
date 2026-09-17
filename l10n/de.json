@@ -3139,7 +3139,22 @@
         "When": "Wenn",
         "when its condition holds": "wenn seine Bedingung zutrifft",
         "Which objects, as a JSON query": "Welche Objekte, als JSON-Abfrage",
-        "Why you are doing this": "Warum du das tust"
+        "Why you are doing this": "Warum du das tust",
+        "Dismissed Pair": "Verworfenes Paar",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID des ersten Objekts, in kanonischer (nach Zeichenkette sortierter) Reihenfolge.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID des zweiten Objekts, in kanonischer (nach Zeichenkette sortierter) Reihenfolge.",
+        "Register the pair was reviewed in.": "Register, in dem das Paar geprüft wurde.",
+        "Schema the pair was reviewed under.": "Schema, unter dem das Paar geprüft wurde.",
+        "Fingerprint": "Fingerabdruck",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash der normalisierten Werte der verglichenen Eigenschaften zum Zeitpunkt der Entscheidung. Sobald dieser nicht mehr übereinstimmt, bietet der Scorer das Paar erneut an.",
+        "Why the reviewer decided the two are not the same.": "Warum die prüfende Person entschied, dass die beiden nicht identisch sind.",
+        "Dismissed By": "Verworfen von",
+        "Uid of the person who made the judgement.": "UID der Person, die die Entscheidung getroffen hat.",
+        "Dismissed At": "Verworfen am",
+        "When the judgement was made.": "Wann die Entscheidung getroffen wurde.",
+        "Uid of the person who undid the dismissal, when one has.": "UID der Person, die die Verwerfung rückgängig gemacht hat, falls vorhanden.",
+        "When the dismissal was undone, when it has been.": "Wann die Verwerfung rückgängig gemacht wurde, falls dies geschehen ist.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falsch, sobald die Verwerfung rückgängig gemacht wurde. Die Zeile wird beibehalten statt gelöscht, damit der Prüfpfad, wer was entschieden und wer es rückgängig gemacht hat, erhalten bleibt."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

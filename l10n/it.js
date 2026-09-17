@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Quando",
         "when its condition holds": "quando la sua condizione è soddisfatta",
         "Which objects, as a JSON query": "Quali oggetti, come query JSON",
-        "Why you are doing this": "Perché lo stai facendo"
+        "Why you are doing this": "Perché lo stai facendo",
+        "Dismissed Pair": "Coppia respinta",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID del primo oggetto, in ordine canonico (ordinato per stringa).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID del secondo oggetto, in ordine canonico (ordinato per stringa).",
+        "Register the pair was reviewed in.": "Registro in cui la coppia è stata esaminata.",
+        "Schema the pair was reviewed under.": "Schema in base al quale la coppia è stata esaminata.",
+        "Fingerprint": "Impronta",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash dei valori normalizzati delle proprietà confrontate al momento della decisione. Il valutatore ripropone la coppia non appena questo non corrisponde più.",
+        "Why the reviewer decided the two are not the same.": "Perché il revisore ha deciso che i due non sono uguali.",
+        "Dismissed By": "Respinta da",
+        "Uid of the person who made the judgement.": "UID della persona che ha preso la decisione.",
+        "Dismissed At": "Respinta il",
+        "When the judgement was made.": "Quando è stata presa la decisione.",
+        "Uid of the person who undid the dismissal, when one has.": "UID della persona che ha annullato il rifiuto, se presente.",
+        "When the dismissal was undone, when it has been.": "Quando il rifiuto è stato annullato, se è avvenuto.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falso una volta annullato il rifiuto. La riga viene conservata anziché eliminata affinché rimanga la traccia di controllo di chi ha deciso cosa e chi l'ha annullato."
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

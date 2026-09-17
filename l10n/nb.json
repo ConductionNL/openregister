@@ -3139,7 +3139,22 @@
         "When": "Når",
         "when its condition holds": "når betingelsen holder",
         "Which objects, as a JSON query": "Hvilke objekter, som en JSON-spørring",
-        "Why you are doing this": "Hvorfor du gjør dette"
+        "Why you are doing this": "Hvorfor du gjør dette",
+        "Dismissed Pair": "Avvist par",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID for det første objektet, i kanonisk (strengsortert) rekkefølge.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID for det andre objektet, i kanonisk (strengsortert) rekkefølge.",
+        "Register the pair was reviewed in.": "Register der paret ble gjennomgått.",
+        "Schema the pair was reviewed under.": "Skjema paret ble gjennomgått under.",
+        "Fingerprint": "Fingeravtrykk",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash av de normaliserte verdiene til de sammenlignede egenskapene på beslutningstidspunktet. Poenggiveren tilbyr paret på nytt så snart denne ikke lenger stemmer.",
+        "Why the reviewer decided the two are not the same.": "Hvorfor den som vurderte, bestemte at de to ikke er like.",
+        "Dismissed By": "Avvist av",
+        "Uid of the person who made the judgement.": "UID-en til personen som gjorde vurderingen.",
+        "Dismissed At": "Avvist den",
+        "When the judgement was made.": "Når vurderingen ble gjort.",
+        "Uid of the person who undid the dismissal, when one has.": "UID-en til personen som angret avvisningen, hvis noen har.",
+        "When the dismissal was undone, when it has been.": "Når avvisningen ble angret, hvis det har skjedd.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Usann når avvisningen er tilbakestilt. Raden beholdes i stedet for å slettes, slik at revisjonssporet over hvem som bestemte hva, og hvem som angret det, bevares."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

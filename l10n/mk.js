@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Кога",
         "when its condition holds": "кога неговиот услов важи",
         "Which objects, as a JSON query": "Кои објекти, како JSON барање",
-        "Why you are doing this": "Зошто го правите ова"
+        "Why you are doing this": "Зошто го правите ова",
+        "Dismissed Pair": "Отфрлен пар",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID на првиот објект во канонски (сортиран по низа) редослед.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID на вториот објект во канонски (сортиран по низа) редослед.",
+        "Register the pair was reviewed in.": "Регистар во кој е прегледан парот.",
+        "Schema the pair was reviewed under.": "Шема под која е прегледан парот.",
+        "Fingerprint": "Отпечаток",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Хеш на нормализираните вредности на споредуваните својства во моментот на одлуката. Штом престане да се совпаѓа, оценувачот повторно го нуди парот.",
+        "Why the reviewer decided the two are not the same.": "Зошто прегледувачот одлучил дека двете не се исти.",
+        "Dismissed By": "Отфрлено од",
+        "Uid of the person who made the judgement.": "UID на лицето што ја донело одлуката.",
+        "Dismissed At": "Отфрлено на",
+        "When the judgement was made.": "Кога е донесена одлуката.",
+        "Uid of the person who undid the dismissal, when one has.": "UID на лицето што го поништило отфрлањето, ако има такво.",
+        "When the dismissal was undone, when it has been.": "Кога е поништено отфрлањето, ако се случило.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Неточно откако отфрлањето е поништено. Редот се чува наместо да се избрише за да остане ревизиската трага за тоа кој што одлучил и кој го поништил."
     },
     "nplurals=2; plural=(n != 1);"
 )

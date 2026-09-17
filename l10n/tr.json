@@ -3139,7 +3139,22 @@
         "When": "Ne zaman",
         "when its condition holds": "koşulu sağlandığında",
         "Which objects, as a JSON query": "Hangi nesneler, JSON sorgusu olarak",
-        "Why you are doing this": "Bunu neden yaptığınız"
+        "Why you are doing this": "Bunu neden yaptığınız",
+        "Dismissed Pair": "Reddedilen çift",
+        "Uuid of the first object, in canonical (string-sorted) order.": "İlk nesnenin, kanonik (dizeye göre sıralanmış) sıradaki UUID'si.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "İkinci nesnenin, kanonik (dizeye göre sıralanmış) sıradaki UUID'si.",
+        "Register the pair was reviewed in.": "Çiftin incelendiği kayıt.",
+        "Schema the pair was reviewed under.": "Çiftin altında incelendiği şema.",
+        "Fingerprint": "Parmak izi",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Karar anında karşılaştırılan özelliklerin normalleştirilmiş değerlerinin karması. Bu artık eşleşmediğinde puanlayıcı çifti yeniden sunar.",
+        "Why the reviewer decided the two are not the same.": "İnceleyicinin ikisinin aynı olmadığına neden karar verdiği.",
+        "Dismissed By": "Reddeden",
+        "Uid of the person who made the judgement.": "Kararı veren kişinin UID'si.",
+        "Dismissed At": "Reddedilme tarihi",
+        "When the judgement was made.": "Kararın ne zaman verildiği.",
+        "Uid of the person who undid the dismissal, when one has.": "Varsa reddi geri alan kişinin UID'si.",
+        "When the dismissal was undone, when it has been.": "Reddin ne zaman geri alındığı, geri alınmışsa.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Reddin geri alınmasından sonra yanlış. Kimin neye karar verdiğine ve kimin geri aldığına dair denetim izi korunsun diye satır silinmek yerine saklanır."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -3190,7 +3190,22 @@
         "When": "Cathain",
         "when its condition holds": "nuair a sheasann a choinníoll",
         "Which objects, as a JSON query": "Cé na réada, mar cheist JSON",
-        "Why you are doing this": "Cén fáth a bhfuil tú á dhéanamh seo"
+        "Why you are doing this": "Cén fáth a bhfuil tú á dhéanamh seo",
+        "Dismissed Pair": "Péire diúltaithe",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID an chéad réada, in ord canónach (sórtáilte de réir teaghráin).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID an dara réada, in ord canónach (sórtáilte de réir teaghráin).",
+        "Register the pair was reviewed in.": "An clár inar athbhreithníodh an péire.",
+        "Schema the pair was reviewed under.": "An scéimre faoinar athbhreithníodh an péire.",
+        "Fingerprint": "Méarlorg",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hais de na luachanna normalaithe de na hairíonna a cuireadh i gcomparáid ag nóiméad an bhreithiúnais. A luaithe nach mbíonn sé ag meaitseáil a thuilleadh, tairgeann an scórálaí an péire arís.",
+        "Why the reviewer decided the two are not the same.": "Cén fáth ar chinn an t-athbhreithneoir nach ionann an dá cheann.",
+        "Dismissed By": "Diúltaithe ag",
+        "Uid of the person who made the judgement.": "UID an duine a rinne an breithiúnas.",
+        "Dismissed At": "Diúltaithe ar",
+        "When the judgement was made.": "Cathain a rinneadh an breithiúnas.",
+        "Uid of the person who undid the dismissal, when one has.": "UID an duine a chuir an diúltú ar ceal, má rinne duine é.",
+        "When the dismissal was undone, when it has been.": "Cathain a cuireadh an diúltú ar ceal, má tharla sé.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Bréagach a luaithe a chuirtear an diúltú ar ceal. Coinnítear an ró seachas é a scriosadh ionas go maireann an rian iniúchta faoi cé a chinn cad é agus cé a chuir ar ceal é."
     },
     "pluralForm": "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);",
     "plurals": {

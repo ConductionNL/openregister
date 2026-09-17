@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "När",
         "when its condition holds": "när dess villkor uppfylls",
         "Which objects, as a JSON query": "Vilka objekt, som en JSON-fråga",
-        "Why you are doing this": "Varför du gör detta"
+        "Why you are doing this": "Varför du gör detta",
+        "Dismissed Pair": "Avfärdat par",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID för det första objektet, i kanonisk (strängsorterad) ordning.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID för det andra objektet, i kanonisk (strängsorterad) ordning.",
+        "Register the pair was reviewed in.": "Register där paret granskades.",
+        "Schema the pair was reviewed under.": "Schema som paret granskades under.",
+        "Fingerprint": "Fingeravtryck",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash av de normaliserade värdena för de jämförda egenskaperna vid tidpunkten för bedömningen. Poängsättaren erbjuder paret igen så snart detta inte längre stämmer.",
+        "Why the reviewer decided the two are not the same.": "Varför granskaren beslutade att de två inte är desamma.",
+        "Dismissed By": "Avfärdat av",
+        "Uid of the person who made the judgement.": "UID för personen som gjorde bedömningen.",
+        "Dismissed At": "Avfärdat den",
+        "When the judgement was made.": "När bedömningen gjordes.",
+        "Uid of the person who undid the dismissal, when one has.": "UID för personen som ångrade avfärdandet, om någon har gjort det.",
+        "When the dismissal was undone, when it has been.": "När avfärdandet ångrades, om det har skett.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Falskt när avfärdandet har återställts. Raden behålls i stället för att raderas så att granskningsloggen över vem som beslutade vad, och vem som ångrade det, bevaras."
     },
     "nplurals=2; plural=(n != 1);"
 )

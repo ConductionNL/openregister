@@ -3089,7 +3089,22 @@ OC.L10N.register(
         "When": "Când",
         "when its condition holds": "când condiția sa este îndeplinită",
         "Which objects, as a JSON query": "Ce obiecte, ca interogare JSON",
-        "Why you are doing this": "De ce faci asta"
+        "Why you are doing this": "De ce faci asta",
+        "Dismissed Pair": "Pereche respinsă",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID-ul primului obiect, în ordine canonică (sortată ca șir).",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID-ul celui de-al doilea obiect, în ordine canonică (sortată ca șir).",
+        "Register the pair was reviewed in.": "Registrul în care a fost examinată perechea.",
+        "Schema the pair was reviewed under.": "Schema sub care a fost examinată perechea.",
+        "Fingerprint": "Amprentă",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Hash-ul valorilor normalizate ale proprietăților comparate în momentul deciziei. Evaluatorul oferă din nou perechea de îndată ce acesta nu mai corespunde.",
+        "Why the reviewer decided the two are not the same.": "De ce evaluatorul a decis că cele două nu sunt identice.",
+        "Dismissed By": "Respinsă de",
+        "Uid of the person who made the judgement.": "UID-ul persoanei care a luat decizia.",
+        "Dismissed At": "Respinsă la",
+        "When the judgement was made.": "Când a fost luată decizia.",
+        "Uid of the person who undid the dismissal, when one has.": "UID-ul persoanei care a anulat respingerea, dacă există.",
+        "When the dismissal was undone, when it has been.": "Când a fost anulată respingerea, dacă s-a întâmplat.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Fals odată ce respingerea a fost anulată. Rândul este păstrat în loc să fie șters, astfel încât urma de audit privind cine ce a decis și cine a anulat să rămână."
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

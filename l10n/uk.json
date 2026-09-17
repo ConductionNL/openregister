@@ -3173,7 +3173,22 @@
         "When": "Коли",
         "when its condition holds": "коли його умова виконується",
         "Which objects, as a JSON query": "Які об'єкти, у вигляді запиту JSON",
-        "Why you are doing this": "Навіщо ви це робите"
+        "Why you are doing this": "Навіщо ви це робите",
+        "Dismissed Pair": "Відхилена пара",
+        "Uuid of the first object, in canonical (string-sorted) order.": "UUID першого об'єкта в канонічному (відсортованому за рядком) порядку.",
+        "Uuid of the second object, in canonical (string-sorted) order.": "UUID другого об'єкта в канонічному (відсортованому за рядком) порядку.",
+        "Register the pair was reviewed in.": "Реєстр, у якому пару було розглянуто.",
+        "Schema the pair was reviewed under.": "Схема, за якою пару було розглянуто.",
+        "Fingerprint": "Відбиток",
+        "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.": "Хеш нормалізованих значень порівнюваних властивостей на момент рішення. Щойно він перестає збігатися, оцінювач знову пропонує пару.",
+        "Why the reviewer decided the two are not the same.": "Чому рецензент вирішив, що ці два об'єкти не однакові.",
+        "Dismissed By": "Відхилив",
+        "Uid of the person who made the judgement.": "UID особи, яка прийняла рішення.",
+        "Dismissed At": "Відхилено",
+        "When the judgement was made.": "Коли було прийнято рішення.",
+        "Uid of the person who undid the dismissal, when one has.": "UID особи, яка скасувала відхилення, якщо таке було.",
+        "When the dismissal was undone, when it has been.": "Коли відхилення було скасовано, якщо це сталося.",
+        "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.": "Хибно після скасування відхилення. Рядок зберігається, а не видаляється, щоб зберігся аудиторський слід того, хто що вирішив і хто це скасував."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);",
     "plurals": {
