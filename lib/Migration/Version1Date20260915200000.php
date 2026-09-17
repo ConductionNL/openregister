@@ -92,7 +92,7 @@ class Version1Date20260915200000 extends SimpleMigrationStep {
 
 		if ($changed === 0) {
 			$output->info('notification routing: event id and broadcast tables already present, nothing to do');
-			return null;
+			return $schema;
 		}
 
 		return $schema;

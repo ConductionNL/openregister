@@ -85,7 +85,7 @@ class Version1Date20260915061500 extends SimpleMigrationStep {
 
 		if ($changed === 0) {
 			$output->info('favourites and recent: both tables already present, nothing to do');
-			return null;
+			return $schema;
 		}
 
 		return $schema;

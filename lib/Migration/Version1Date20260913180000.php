@@ -115,7 +115,7 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
@@ -123,7 +123,7 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 		$changed = $this->relaxColumns(table: $table) || $changed;
 		$changed = $this->moveIndexes(table: $table) || $changed;
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;

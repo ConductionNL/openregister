@@ -83,7 +83,7 @@ class Version1Date20260524130000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_form_links') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(tableName: 'openregister_form_links');

@@ -64,12 +64,12 @@ class Version1Date20260907170000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::RUNS) === false) {
-			return null;
+			return $schema;
 		}
 
 		$runs = $schema->getTable(self::RUNS);
 		if ($runs->hasColumn('subjects') === true) {
-			return null;
+			return $schema;
 		}
 
 		$runs->addColumn('subjects', Types::JSON, ['notnull' => false, 'default' => null]);

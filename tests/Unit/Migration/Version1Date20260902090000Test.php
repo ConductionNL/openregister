@@ -91,21 +91,22 @@ class Version1Date20260902090000Test extends TestCase {
 		self::assertSame([['on_timeout', 'string', false], ['on_reject', 'string', false]], $added);
 	}//end testAddsBothColumnsAndTheExpiryIndexWhenMissing()
 
-	public function testARerunAgainstAMigratedTableChangesNothingAndReturnsNull(): void {
+	public function testARerunAgainstAMigratedTableChangesNothingButHandsTheSchemaBack(): void {
 		$table = $this->createMock(Table::class);
 		$table->method('hasColumn')->willReturn(true);
 		$table->method('hasIndex')->willReturn(true);
 		$table->expects($this->never())->method('addColumn');
 		$table->expects($this->never())->method('addIndex');
 
-		self::assertNull($this->apply(schema: $this->schemaWith(table: $table)));
-	}//end testARerunAgainstAMigratedTableChangesNothingAndReturnsNull()
+		$schema = $this->schemaWith(table: $table);
+		self::assertSame($schema, $this->apply(schema: $schema));
+	}//end testARerunAgainstAMigratedTableChangesNothingButHandsTheSchemaBack()
 
 	public function testAnAbsentTasksTableIsLeftAlone(): void {
 		$schema = $this->createMock(ISchemaWrapper::class);
 		$schema->method('hasTable')->willReturn(false);
 		$schema->expects($this->never())->method('getTable');
 
-		self::assertNull($this->apply(schema: $schema));
+		self::assertSame($schema, $this->apply(schema: $schema));
 	}//end testAnAbsentTasksTableIsLeftAlone()
 }//end class

@@ -229,7 +229,7 @@ class Version1Date20260809000000Test extends TestCase {
 
 		$result = $this->migration->changeSchema($this->createMock(IOutput::class), fn () => $schema, []);
 
-		$this->assertNull($result, 'An unchanged schema must be reported as null, not returned.');
+		$this->assertSame($schema, $result, 'An unchanged run must still hand the schema back so migrateSchemaOnly() reuses one snapshot.');
 	}//end testIsIdempotentWhenBothTablesAlreadyExist()
 
 	/**

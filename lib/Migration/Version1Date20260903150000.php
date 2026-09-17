@@ -156,7 +156,7 @@ class Version1Date20260903150000 extends SimpleMigrationStep {
 		}
 
 		if ($dropped === []) {
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: 'External workflow engine tables dropped: ' . implode(', ', $dropped));

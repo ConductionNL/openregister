@@ -73,7 +73,7 @@ class Version1Date20260903100000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE_FILES) === false) {
 			$output->warning(message: 'openregister_files is absent; skipping the publication window');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE_FILES);
@@ -109,7 +109,7 @@ class Version1Date20260903100000 extends SimpleMigrationStep {
 		}
 
 		if ($added === []) {
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: 'File publication window added: ' . implode(', ', $added));
