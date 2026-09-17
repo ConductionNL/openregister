@@ -468,6 +468,8 @@ class MagicRbacHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function applyRbacFilters(
 		IQueryBuilder $qb,

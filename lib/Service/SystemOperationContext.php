@@ -82,6 +82,11 @@ final class SystemOperationContext {
 	 * Whether a system-operation scope is currently active.
 	 *
 	 * @return bool True when executing inside run().
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AnonymousEvaluationContext is an ambient-context marker
+	 *   like this class; a static read is the whole point of it.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public static function isActive(): bool {
 		// Narrowing wins over elevating: an operation that asked to be judged

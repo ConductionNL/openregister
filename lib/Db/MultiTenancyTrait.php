@@ -1061,6 +1061,8 @@ trait MultiTenancyTrait {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       RBAC permission checking requires many conditional paths
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	protected function hasRbacPermission(string $action, string $entityType): bool {
 		// Admins always have all permissions.
