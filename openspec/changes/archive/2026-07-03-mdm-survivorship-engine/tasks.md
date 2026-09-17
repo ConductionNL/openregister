@@ -21,7 +21,7 @@
 
 ## 6. Compliance headers + spec tags (gate-16)
 
-- [x] 6.1 Add SPDX headers (`SPDX-License-Identifier: EUPL-1.2` in the file docblock) and `@spec openspec/changes/mdm-survivorship-engine/specs/mdm-survivorship/spec.md` tags to every new PHP file + changed method.
+- [x] 6.1 Add SPDX headers (`SPDX-License-Identifier` line (EUPL-1.2) in the file docblock) and `@spec openspec/changes/mdm-survivorship-engine/specs/mdm-survivorship/spec.md` tags to every new PHP file + changed method.
 
 ## 7. Tests (PHPUnit, CI way)
 
