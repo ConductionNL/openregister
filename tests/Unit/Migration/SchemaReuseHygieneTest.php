@@ -51,17 +51,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Migration\Version1Date20260812100000;
 use OCP\DB\ISchemaWrapper;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * Tests that every migration step hands its schema snapshot back.
  */
 class SchemaReuseHygieneTest extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	/**
 	 * Absolute path to the app's lib/Migration/ directory.
@@ -242,7 +244,7 @@ class SchemaReuseHygieneTest extends TestCase {
 	 * @return void
 	 */
 	public function testGuardOnExistingColumnReturnsTheSameSchemaInstance(): void {
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(true);
 		$table->expects($this->never())->method('addColumn');
 

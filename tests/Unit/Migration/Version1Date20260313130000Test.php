@@ -22,11 +22,14 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * Tests for the published/depublished column drop migration.
  */
 class Version1Date20260313130000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 	/** @var LoggerInterface&MockObject */
 	private LoggerInterface $logger;
 
@@ -65,7 +68,7 @@ class Version1Date20260313130000Test extends TestCase {
 		$output = $this->createMock(IOutput::class);
 		$schema = $this->createMock(ISchemaWrapper::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')
 			->willReturnMap([
 				['_published', true],
@@ -93,7 +96,7 @@ class Version1Date20260313130000Test extends TestCase {
 		$output = $this->createMock(IOutput::class);
 		$schema = $this->createMock(ISchemaWrapper::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(false);
 		$table->method('hasIndex')->willReturn(false);
 		$table->expects($this->never())->method('dropColumn');

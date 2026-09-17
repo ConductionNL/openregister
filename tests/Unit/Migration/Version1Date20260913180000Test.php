@@ -9,13 +9,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Column;
-use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use OCA\OpenRegister\Migration\Version1Date20260913180000;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * The people-on-objects migration widens the contact link table.
@@ -23,6 +22,8 @@ use PHPUnit\Framework\TestCase;
  * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
  */
 class Version1Date20260913180000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	/**
 	 * A fresh table: four columns added, two made nullable, the unique key moved, the user index added.
@@ -34,22 +35,22 @@ class Version1Date20260913180000Test extends TestCase {
 		$relaxed = [];
 		$indexes = ['dropped' => [], 'unique' => [], 'plain' => []];
 
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturnCallback(
 			static fn (string $name): bool => in_array($name, ['addressbook_id', 'contact_uri'], true)
 		);
 		$table->method('addColumn')->willReturnCallback(
-			function (string $name, string $type, array $options) use (&$added): Column {
+			function (string $name, string $type, array $options) use (&$added) {
 				$added[$name] = ['type' => $type, 'options' => $options];
-				return $this->createMock(Column::class);
+				return $this->createColumnMock();
 			}
 		);
 		$table->method('getColumn')->willReturnCallback(
-			function (string $name) use (&$relaxed): Column {
-				$column = $this->createMock(Column::class);
+			function (string $name) use (&$relaxed) {
+				$column = $this->createColumnMock();
 				$column->method('getNotnull')->willReturn(true);
 				$column->method('setNotnull')->willReturnCallback(
-					static function (bool $notnull) use (&$relaxed, $name, $column): Column {
+					static function (bool $notnull) use (&$relaxed, $name, $column) {
 						$relaxed[$name] = $notnull;
 						return $column;
 					}
@@ -61,18 +62,20 @@ class Version1Date20260913180000Test extends TestCase {
 			static fn (string $name): bool => $name === 'idx_contact_object_uid_uniq'
 		);
 		$table->method('dropIndex')->willReturnCallback(
-			static function (string $name) use (&$indexes): void {
+			function (string $name) use (&$indexes, $table) {
 				$indexes['dropped'][] = $name;
+
+				return $table;
 			}
 		);
 		$table->method('addUniqueIndex')->willReturnCallback(
-			function (array $columns, string $name) use (&$indexes, $table): Table {
+			function (array $columns, string $name) use (&$indexes, $table) {
 				$indexes['unique'][$name] = $columns;
 				return $table;
 			}
 		);
 		$table->method('addIndex')->willReturnCallback(
-			function (array $columns, string $name) use (&$indexes, $table): Table {
+			function (array $columns, string $name) use (&$indexes, $table) {
 				$indexes['plain'][$name] = $columns;
 				return $table;
 			}
@@ -111,9 +114,9 @@ class Version1Date20260913180000Test extends TestCase {
 	 * @return void
 	 */
 	public function testASecondRunChangesNothing(): void {
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(true);
-		$column = $this->createMock(Column::class);
+		$column = $this->createColumnMock();
 		$column->method('getNotnull')->willReturn(false);
 		$table->method('getColumn')->willReturn($column);
 		$table->method('hasIndex')->willReturnCallback(
