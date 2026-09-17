@@ -33,8 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Doctrine\DBAL\Schema\Table;
 use OCP\DB\ISchemaWrapper;
+use Doctrine\DBAL\Schema\Table;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -45,6 +45,25 @@ use OCP\Migration\SimpleMigrationStep;
  * @package OCA\OpenRegister\Migration
  */
 class Version1Date20260524130000 extends SimpleMigrationStep {
+	/*
+	 * NO NATIVE TYPE HINT on the $table parameters below, deliberately.
+	 *
+	 * ISchemaWrapper hands out `Doctrine\DBAL\Schema\Table` on NC 32-34 and
+	 * `OCP\DB\Schema\ITable` on NC 35 — and ITable does not exist at all
+	 * before 35 (lib/public/DB/Schema/ITable.php is absent on stable33 and
+	 * stable34). A native hint for EITHER type is therefore a TypeError on the
+	 * other half of the range this app declares, and it fires during
+	 * `occ app:enable` -> Installer::installApp() -> MigrationService::migrate(),
+	 * so the app does not install at all rather than failing a test:
+	 *
+	 *   TypeError: addColumns(): Argument #1 ($table) must be of type
+	 *   OCP\DB\Schema\ITable, Doctrine\DBAL\Schema\Table given
+	 *
+	 * The docblocks name the Doctrine type because that is what psalm resolves
+	 * against `nextcloud/ocp: ^34.0`; both objects carry the same
+	 * addColumn/addIndex/hasIndex surface these helpers use. Widen the docblock
+	 * to a union when this app's ocp dev dependency moves to ^35.
+	 */
 	/**
 	 * Change the database schema.
 	 *
@@ -94,7 +113,7 @@ class Version1Date20260524130000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 */
-	private function addColumns(Table $table): void {
+	private function addColumns($table): void {
 		$columns = [
 			['id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]],
 			['object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]],
@@ -123,7 +142,7 @@ class Version1Date20260524130000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 */
-	private function addIndexes(Table $table): void {
+	private function addIndexes($table): void {
 		$table->setPrimaryKey(['id']);
 		$table->addIndex(['object_uuid'], 'or_form_links_object_idx');
 		$table->addIndex(['form_id'], 'or_form_links_form_idx');
