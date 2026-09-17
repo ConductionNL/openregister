@@ -74,6 +74,8 @@ final class ConfigurationSeedServiceTest extends TestCase {
 	 * A store where the named keys are already set on the instance.
 	 *
 	 * @param array<int, string> $alreadySet The keys this instance holds.
+	 *
+	 * @return ConfigurationValueStore&MockObject The double.
 	 */
 	private function store(array $alreadySet = []): ConfigurationValueStore&MockObject {
 		$store = $this->createMock(ConfigurationValueStore::class);

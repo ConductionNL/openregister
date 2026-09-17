@@ -109,6 +109,8 @@ final class SettingsStraightThroughTest extends TestCase {
 
 	/**
 	 * A gate on an instance that has not switched drafting on.
+	 *
+	 * @return SettingsDraftGate The gate.
 	 */
 	private function gateWithDraftingOff(): SettingsDraftGate {
 		$appConfig = $this->createMock(IAppConfig::class);
@@ -148,6 +150,14 @@ final class SettingsStraightThroughTest extends TestCase {
 	}//end updateMethods()
 
 	/**
+	 * Every update method, one case each.
+	 *
+	 * @param string $facadeMethod  The facade method under test.
+	 * @param string $handler       The handler double it delegates to.
+	 * @param string $handlerMethod The handler method it calls.
+	 *
+	 * @return void
+	 *
 	 * @dataProvider updateMethods
 	 */
 	public function testWithNoGateWiredEveryDomainWritesStraightThrough(
@@ -169,6 +179,14 @@ final class SettingsStraightThroughTest extends TestCase {
 	}//end testWithNoGateWiredEveryDomainWritesStraightThrough()
 
 	/**
+	 * Every update method, one case each.
+	 *
+	 * @param string $facadeMethod  The facade method under test.
+	 * @param string $handler       The handler double it delegates to.
+	 * @param string $handlerMethod The handler method it calls.
+	 *
+	 * @return void
+	 *
 	 * @dataProvider updateMethods
 	 */
 	public function testWithDraftingOffEveryDomainWritesStraightThrough(
@@ -193,6 +211,8 @@ final class SettingsStraightThroughTest extends TestCase {
 
 	/**
 	 * A gate on an instance that has switched drafting on.
+	 *
+	 * @return SettingsDraftGate The gate.
 	 */
 	private function gateWithDraftingOn(): SettingsDraftGate {
 		$appConfig = $this->createMock(IAppConfig::class);
@@ -229,6 +249,12 @@ final class SettingsStraightThroughTest extends TestCase {
 	 * This is the case the straight-through test cannot see: with drafting off
 	 * a method that forgot to ask the gate behaves identically to one that
 	 * asked. With drafting on it does not, because its handler still runs.
+	 *
+	 * @param string $facadeMethod  The facade method under test.
+	 * @param string $handler       The handler double it delegates to.
+	 * @param string $handlerMethod The handler method it calls.
+	 *
+	 * @return void
 	 *
 	 * @dataProvider updateMethods
 	 */

@@ -79,6 +79,8 @@ final class ConfigurationBundleServiceTest extends TestCase {
 	 * A value mapper answering from an in-memory table of rows.
 	 *
 	 * @param array<int, ConfigurationValue> $rows The rows this instance holds.
+	 *
+	 * @return ConfigurationValueMapper&MockObject The double.
 	 */
 	private function valueMapper(array $rows): ConfigurationValueMapper&MockObject {
 		$mapper = $this->createMock(ConfigurationValueMapper::class);
@@ -343,7 +345,7 @@ final class ConfigurationBundleServiceTest extends TestCase {
 
 		$bundles = array_column($this->service($rows, $bindings)->listBundles(), null, 'name');
 
-		// zaaktype-licht has no binding yet and is still a bundle, because a
+		// The bundle zaaktype-licht has no binding yet and is still a bundle, because a
 		// bundle you cannot see until somebody follows it is a bundle nobody
 		// can bind anything to.
 		$this->assertArrayHasKey('zaaktype-licht', $bundles);
