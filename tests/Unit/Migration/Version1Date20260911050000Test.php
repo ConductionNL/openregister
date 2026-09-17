@@ -19,17 +19,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Migration\Version1Date20260911050000;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * Locks the column's shape and the step's idempotency.
  */
 class Version1Date20260911050000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	/**
 	 * The column is added nullable, with no default, when it is absent.
@@ -41,7 +43,7 @@ class Version1Date20260911050000Test extends TestCase {
 	 */
 	public function testTheColumnIsAddedNullableWithNoDefault(): void {
 		$added = [];
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(false);
 		$table->method('addColumn')->willReturnCallback(
 			function (string $name, string $type, array $options) use (&$added) {
@@ -73,7 +75,7 @@ class Version1Date20260911050000Test extends TestCase {
 	 * @return void
 	 */
 	public function testAnExistingColumnIsLeftAlone(): void {
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->with('legal_name')->willReturn(true);
 		$table->expects($this->never())->method('addColumn');
 

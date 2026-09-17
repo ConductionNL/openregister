@@ -65,9 +65,15 @@ class FlowRunStepOrderingMapperTest extends TestCase {
 		$this->qb->method('executeQuery')->willReturnCallback(function (): IResult {
 			$result = $this->createMock(IResult::class);
 			$queue = $this->rows;
-			$result->method('fetch')->willReturnCallback(static function () use (&$queue): mixed {
+			$next = static function () use (&$queue): mixed {
 				return array_shift($queue) ?? false;
-			});
+			};
+
+			// Both reader names, one queue: QBMapper calls `fetchAssociative()`
+			// from NC 35 and `fetch()` up to NC 34, and both are declared on
+			// OCP\DB\IResult across that whole range.
+			$result->method('fetch')->willReturnCallback($next);
+			$result->method('fetchAssociative')->willReturnCallback($next);
 			return $result;
 		});
 		$this->db->method('getQueryBuilder')->willReturn($this->qb);

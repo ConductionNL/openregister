@@ -163,16 +163,35 @@ trait FluentQueryBuilderTrait {
 
 		$result = $this->createMock(originalClassName: IResult::class);
 		$queue = $rows;
-		$result->method('fetch')->willReturnCallback(
-			static function () use (&$queue): array|false {
-				if ($queue === []) {
-					return false;
-				}
 
-				return array_shift($queue);
+		// BOTH SPELLINGS OF THE ROW READER ARE STUBBED, sharing ONE queue.
+		//
+		// QBMapper calls the result differently per server major: up to NC 34
+		// `findOneQuery()`/`findEntities()` call `fetch()`/`fetchAll()`, and from
+		// NC 35 they call `fetchAssociative()`/`fetchAllAssociative()` (the forms
+		// IResult has recommended since 33.0.0). Stubbing only the older pair
+		// left every mapper test on stable35 reading an EMPTY result from a
+		// builder that had rows: 6 x `DoesNotExistException: Did expect one
+		// result but found none`, a run of `Call to a member function getUuid()
+		// on null`, and 16 `actual size 0 matches expected size 1`.
+		//
+		// Both names are declared on OCP\DB\IResult in 34 AND 35, so
+		// configuring both is safe across the whole declared range rather than
+		// something to switch on the version. They share `$queue` by reference
+		// so a test that reads twice gets two different rows whichever name the
+		// server under test happens to call.
+		$next = static function () use (&$queue): array|false {
+			if ($queue === []) {
+				return false;
 			}
-		);
+
+			return array_shift($queue);
+		};
+
+		$result->method('fetch')->willReturnCallback($next);
+		$result->method('fetchAssociative')->willReturnCallback($next);
 		$result->method('fetchAll')->willReturn($rows);
+		$result->method('fetchAllAssociative')->willReturn($rows);
 		$qb->method('executeQuery')->willReturn($result);
 		$qb->method('getTableName')->willReturn('openregister_tasks');
 

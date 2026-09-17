@@ -26,6 +26,7 @@ use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * Smoke-test the bases / skip_anonymization migration.
@@ -34,6 +35,8 @@ use PHPUnit\Framework\TestCase;
  * idempotency / table-absent branches at the schema-wrapper API level.
  */
 class Version1Date20260512120000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	private Version1Date20260512120000 $migration;
 
@@ -45,7 +48,7 @@ class Version1Date20260512120000Test extends TestCase {
 	public function testChangeSchemaAddsBothColumnsWhenMissing(): void {
 		$output = $this->createMock(IOutput::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturnMap(
 			[
 				['bases', false],
@@ -85,7 +88,7 @@ class Version1Date20260512120000Test extends TestCase {
 	public function testChangeSchemaIsIdempotentWhenBothColumnsAlreadyExist(): void {
 		$output = $this->createMock(IOutput::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturnMap(
 			[
 				['bases', true],
@@ -105,7 +108,7 @@ class Version1Date20260512120000Test extends TestCase {
 	public function testChangeSchemaAddsOnlyMissingColumn(): void {
 		$output = $this->createMock(IOutput::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		// `bases` already present, `skip_anonymization` missing — only
 		// the missing one MUST be added (the migration is per-column
 		// idempotent, not all-or-nothing).

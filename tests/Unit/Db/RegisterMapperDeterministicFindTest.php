@@ -134,15 +134,22 @@ class RegisterMapperDeterministicFindTest extends TestCase {
 			function (): IResult {
 				$fetched = false;
 				$result = $this->createMock(IResult::class);
-				$result->method('fetch')->willReturnCallback(
-					function () use (&$fetched) {
-						if ($fetched === true) {
-							return false;
-						}
-						$fetched = true;
-						return ['id' => 1, 'uuid' => 'uuid-1', 'slug' => 'shared-slug'];
+
+				// One callback behind BOTH reader names: QBMapper calls
+				// `fetchAssociative()` from NC 35 and `fetch()` up to NC 34, and
+				// `$fetched` is what makes the second read return false. Binding
+				// them separately would give each name its own flag and the guard
+				// fetch would hand back the row a second time.
+				$row = function () use (&$fetched) {
+					if ($fetched === true) {
+						return false;
 					}
-				);
+					$fetched = true;
+					return ['id' => 1, 'uuid' => 'uuid-1', 'slug' => 'shared-slug'];
+				};
+
+				$result->method('fetch')->willReturnCallback($row);
+				$result->method('fetchAssociative')->willReturnCallback($row);
 				$result->method('closeCursor')->willReturn(true);
 				return $result;
 			}

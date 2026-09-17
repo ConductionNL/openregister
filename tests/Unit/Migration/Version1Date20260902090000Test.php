@@ -29,6 +29,7 @@ use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * The migration.
@@ -36,11 +37,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Migration\Version1Date20260902090000
  */
 class Version1Date20260902090000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	/**
 	 * A schema wrapper answering for the tasks table.
 	 *
-	 * @param Table&MockObject $table The table the wrapper serves.
+	 * @param MockObject $table The table the wrapper serves.
 	 *
 	 * @return ISchemaWrapper&MockObject The wrapper.
 	 */
@@ -72,16 +75,16 @@ class Version1Date20260902090000Test extends TestCase {
 	}//end apply()
 
 	public function testAddsBothColumnsAndTheExpiryIndexWhenMissing(): void {
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(false);
 		$table->method('hasIndex')->willReturn(false);
 
 		$added = [];
 		$table->expects($this->exactly(2))->method('addColumn')->willReturnCallback(
-			function (string $name, string $type, array $options) use (&$added): Table {
+			function (string $name, string $type, array $options) use (&$added) {
 				$added[] = [$name, $type, $options['notnull']];
 
-				return $this->createMock(Table::class);
+				return $this->createTableMock();
 			}
 		);
 		$table->expects($this->once())->method('addIndex')->with(['is_terminal', 'expires_at'], 'or_tasks_open_expiry');
@@ -92,7 +95,7 @@ class Version1Date20260902090000Test extends TestCase {
 	}//end testAddsBothColumnsAndTheExpiryIndexWhenMissing()
 
 	public function testARerunAgainstAMigratedTableChangesNothingButHandsTheSchemaBack(): void {
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(true);
 		$table->method('hasIndex')->willReturn(true);
 		$table->expects($this->never())->method('addColumn');
