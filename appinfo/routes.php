@@ -426,6 +426,18 @@ return [
         ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/processing-activities/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/processing-activities/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#accountability', 'url' => '/api/avg/accountability',               'verb' => 'GET'],
+        // Doelbinding: the administered purposes a read may be made under, and
+        // the count of entries per purpose. `report` is registered ABOVE
+        // `show` so the literal segment wins over the {id} placeholder.
+        ['name' => 'processingPurpose#index',   'url' => '/api/avg/purposes',        'verb' => 'GET'],
+        ['name' => 'processingPurpose#report',  'url' => '/api/avg/purposes/report', 'verb' => 'GET'],
+        ['name' => 'processingPurpose#show',    'url' => '/api/avg/purposes/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'processingPurpose#create',  'url' => '/api/avg/purposes',        'verb' => 'POST'],
+        ['name' => 'processingPurpose#update',  'url' => '/api/avg/purposes/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'processingPurpose#destroy', 'url' => '/api/avg/purposes/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // Whether the audit trail is actually reaching the organisation's log platform.
+        ['name' => 'auditSink#show',        'url' => '/api/audit/sink',             'verb' => 'GET'],
+        ['name' => 'auditSink#acknowledge', 'url' => '/api/audit/sink/acknowledge', 'verb' => 'POST'],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#access',         'url' => '/api/avg/access',         'verb' => 'GET'],
         ['name' => 'dsar#portability',    'url' => '/api/avg/portability',    'verb' => 'GET'],
@@ -1537,6 +1549,23 @@ return [
             'verb'         => 'GET',
             'requirements' => ['version' => '[0-9]{1,3}'],
         ],
+
+        // Who called what, and the declaration an administrator edits to
+        // deprecate it. Both administrator-only, checked in the method body:
+        // the caller record names every principal that integrates with this
+        // gemeente, and #[NoAdminRequired] answers "is anyone logged in", which
+        // is not the question.
+        ['name' => 'apiCallers#index', 'url' => '/api/callers', 'verb' => 'GET'],
+        ['name' => 'apiCallers#readDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'GET'],
+        ['name' => 'apiCallers#writeDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'PUT'],
+
+        // The well-known discovery paths, security.txt first. Served under the
+        // app's own prefix: an app cannot claim /.well-known for the whole
+        // instance, and the contact for the platform is the administrator's to
+        // publish. The index names the one rewrite that points the server root
+        // here, so the instruction sits where somebody looking will be.
+        ['name' => 'wellKnown#index', 'url' => '/.well-known', 'verb' => 'GET'],
+        ['name' => 'wellKnown#securityTxt', 'url' => '/.well-known/security.txt', 'verb' => 'GET'],
         // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
         ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
         ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],

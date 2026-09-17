@@ -163,6 +163,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService Optional recovery-window service (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
 	 *
 	 * @return void
 	 *
@@ -194,6 +195,7 @@ class ObjectsController extends Controller {
 		private readonly ?\OCP\IURLGenerator $relationUrlGenerator = null,
 		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService = null,
 		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
+		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->exportService = $exportService;
@@ -1088,6 +1090,46 @@ class ObjectsController extends Controller {
 	}//end crossTableSearch()
 
 	/**
+	 * Refuse a read that has to name a purpose and does not.
+	 *
+	 * Returns null in the two cases that must stay exactly as they were: no
+	 * guard wired (an older container), and a schema that does not ask for
+	 * doelbinding. That null is the backwards-compatibility promise, and an
+	 * instance that administers no purposes reads precisely as it did before.
+	 *
+	 * 403, not 404. The RBAC denials above return 404 so a caller cannot learn
+	 * that an object exists; this refusal leaks nothing, because the caller
+	 * already knows the schema and is being told to name a grondslag. Hiding it
+	 * as a 404 would send an integrator hunting for a missing record instead of
+	 * setting one header.
+	 *
+	 * @param array $resolved The resolved register and schema entities.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the read may proceed.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	private function refuseUnboundPurpose(array $resolved): ?JSONResponse {
+		if ($this->purposeGuard === null) {
+			return null;
+		}
+
+		try {
+			$this->purposeGuard->enforce(
+				register: ($resolved['registerEntity'] ?? null),
+				schema: ($resolved['schemaEntity'] ?? null)
+			);
+		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+			return new JSONResponse(
+				data: $refusal->toResponseBody(),
+				statusCode: $refusal->getStatusCode()
+			);
+		}
+
+		return null;
+	}//end refuseUnboundPurpose()
+
+	/**
 	 * Resolve a register/schema path pair to numeric ids.
 	 *
 	 * Delegates to ResolvesRegisterAndSchemaTrait so this controller and
@@ -1307,6 +1349,15 @@ class ObjectsController extends Controller {
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		// Doelbinding. A list over a schema that asks for a declared purpose is
+		// a registry query like any other: the person search the requirement was
+		// written for IS a list, so guarding only the single read would leave
+		// the case it exists for open.
+		$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		// Extract filtering parameters from request.
@@ -2569,6 +2620,14 @@ class ObjectsController extends Controller {
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		// Doelbinding, before the object is fetched. A refused read must not
+		// have happened at all, so the guard runs ahead of the read rather than
+		// filtering what came back.
+		$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		// Get request parameters for filtering and searching.
