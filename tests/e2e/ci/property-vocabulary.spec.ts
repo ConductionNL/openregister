@@ -82,7 +82,9 @@ test.describe('property-vocabulary', () => {
 		]) {
 			const existing = await findBySlug(request, slug)
 			if (existing) {
-				await request.delete(`${SCHEMAS}/${String(existing.id ?? existing.uuid)}`)
+				await request.delete(
+					`${SCHEMAS}/${String(existing.id ?? existing.uuid)}`,
+				)
 			}
 		}
 	})
@@ -102,28 +104,55 @@ test.describe('property-vocabulary', () => {
 		// The study counted eight types in a leaf editor against this layer.
 		// Anything near eight here means the endpoint is answering a shorter
 		// list than the validator holds, which is the bug it exists to close.
-		expect(types.length, 'the vocabulary is the full list, not an editor short list').toBeGreaterThan(15)
+		expect(
+			types.length,
+			'the vocabulary is the full list, not an editor short list',
+		).toBeGreaterThan(15)
 
 		const names = types.map((row: any) => row.type)
 		// One per family, so a vocabulary that lost a whole category fails here
 		// rather than looking merely shorter.
-		for (const type of ['string', 'integer', 'array', 'object', 'file', 'geo', 'color', 'NcFile']) {
+		for (const type of [
+			'string',
+			'integer',
+			'array',
+			'object',
+			'file',
+			'geo',
+			'color',
+			'NcFile',
+		]) {
 			expect(names, `the vocabulary offers ${type}`).toContain(type)
 		}
 
 		for (const row of types) {
-			expect(Array.isArray(row.constraints), `${row.type} declares its constraint keys`).toBe(true)
-			expect(row.constraints.length, `${row.type} takes at least one constraint key`).toBeGreaterThan(0)
-			expect(Array.isArray(row.formats), `${row.type} declares its formats`).toBe(true)
+			expect(
+				Array.isArray(row.constraints),
+				`${row.type} declares its constraint keys`,
+			).toBe(true)
+			expect(
+				row.constraints.length,
+				`${row.type} takes at least one constraint key`,
+			).toBeGreaterThan(0)
+			expect(
+				Array.isArray(row.formats),
+				`${row.type} declares its formats`,
+			).toBe(true)
 			expect(
 				['supported', 'conditional', 'unsupported'],
 				`${row.type} says what converting a populated property to it costs`,
 			).toContain(row.conversion)
-			expect(String(row.description).length, `${row.type} carries a sentence`).toBeGreaterThan(5)
+			expect(
+				String(row.description).length,
+				`${row.type} carries a sentence`,
+			).toBeGreaterThan(5)
 		}
 
 		const stringRow = types.find((row: any) => row.type === 'string')
-		expect(stringRow.formats, 'string offers the formats the validator takes').toContain('bsn')
+		expect(
+			stringRow.formats,
+			'string offers the formats the validator takes',
+		).toContain('bsn')
 		expect(stringRow.constraints, 'string takes pattern').toContain('pattern')
 
 		expect(body.keys, 'the flat key list is published too').toContain('pattern')
@@ -145,7 +174,10 @@ test.describe('property-vocabulary', () => {
 			},
 		})
 
-		expect(resp.status(), 'the save is refused, not silently stored as text').toBe(422)
+		expect(
+			resp.status(),
+			'the save is refused, not silently stored as text',
+		).toBe(422)
 		const body = await resp.json()
 		expect(
 			JSON.stringify(body),
@@ -161,12 +193,16 @@ test.describe('property-vocabulary', () => {
 		request,
 	}) => {
 		const vocabulary = await (
-			await request.get(VOCABULARY, { headers: { Accept: 'application/json' } })
+			await request.get(VOCABULARY, {
+				headers: { Accept: 'application/json' },
+			})
 		).json()
 
 		// Author the property the way a generated editor would: take the key
 		// from the published list rather than from a hand-written one.
-		expect(vocabulary.keys, 'pattern is a key the editor may offer').toContain('pattern')
+		expect(vocabulary.keys, 'pattern is a key the editor may offer').toContain(
+			'pattern',
+		)
 
 		const created = await request.post(SCHEMAS, {
 			headers: { 'Content-Type': 'application/json' },
@@ -174,11 +210,18 @@ test.describe('property-vocabulary', () => {
 				title: `E2E zaaktype ${RUN_ID}`,
 				slug: SCHEMA_SLUG,
 				properties: {
-					kenmerk: { type: 'string', pattern: '^ZAAK-[0-9]{4}$', title: 'Kenmerk' },
+					kenmerk: {
+						type: 'string',
+						pattern: '^ZAAK-[0-9]{4}$',
+						title: 'Kenmerk',
+					},
 				},
 			},
 		})
-		expect(created.status(), 'a property using a published key is accepted').toBeLessThan(300)
+		expect(
+			created.status(),
+			'a property using a published key is accepted',
+		).toBeLessThan(300)
 
 		const objects = `${API}/objects/${SCHEMA_SLUG}/${SCHEMA_SLUG}`
 		const refused = await request.post(objects, {
@@ -243,7 +286,9 @@ test.describe('property-vocabulary', () => {
 			'required',
 			'default',
 		])
-		expect(ours.app, 'the declaration names the app that forwards').toBe('dossiq')
+		expect(ours.app, 'the declaration names the app that forwards').toBe(
+			'dossiq',
+		)
 
 		// The narrowing is the number the study was counting.
 		expect(ours.counts.forwards).toBe(6)
@@ -251,7 +296,10 @@ test.describe('property-vocabulary', () => {
 			ours.counts.narrows,
 			'what the form leaves out is derivable, not guessed',
 		).toBe(ours.counts.vocabulary - 6)
-		expect(ours.narrows, 'pattern is one of the keys this form leaves out').toContain('pattern')
+		expect(
+			ours.narrows,
+			'pattern is one of the keys this form leaves out',
+		).toContain('pattern')
 	})
 
 	// @e2e runtime-schema-api::a-narrower-editor-is-a-stated-narrowing

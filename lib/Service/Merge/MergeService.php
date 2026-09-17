@@ -41,11 +41,15 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
+use OCA\OpenRegister\Exception\MergeDecisionException;
+use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
@@ -60,6 +64,12 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     1,336 lines against a
+ *   threshold of 1,000. The growth is the per-property choice, the readability
+ *   refusal and the helpers they need, and it lands here for the same reason
+ *   the complexity below does: a merge that a human decided and a merge the
+ *   resolver computed have to be ONE path, or the screen and the write can
+ *   disagree about what survived. A second class would be a second path.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class owns the full
  *   reversible-merge lifecycle (preview / execute / reverse / snapshot /
  *   recompute) as one server-authoritative unit of work per the spec; splitting
@@ -123,6 +133,14 @@ class MergeService {
 	private const DEFAULT_MERGED_STATUS = 'merged-into-other';
 
 	/**
+	 * Audit action recorded on both objects when a merge is refused because
+	 * the caller cannot read everything it would touch.
+	 *
+	 * @var string
+	 */
+	public const MERGE_REFUSED_ACTION = 'merge.refused';
+
+	/**
 	 * Wire collaborators.
 	 *
 	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
@@ -132,6 +150,8 @@ class MergeService {
 	 * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
 	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire `ObjectsMergedEvent`.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param PropertyRbacHandler $propertyRbac Field-level security, to refuse a merge the caller cannot fully see.
+	 * @param AuditTrailMapper $auditTrailMapper Audit writer for a refused merge attempt.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
 	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.1
@@ -144,6 +164,8 @@ class MergeService {
 		private readonly SourceRecordResolver $sourceRecordResolver,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly PropertyRbacHandler $propertyRbac,
+		private readonly AuditTrailMapper $auditTrailMapper,
 	) {
 	}//end __construct()
 
@@ -159,8 +181,10 @@ class MergeService {
 	 * @return array<string, mixed> Preview payload.
 	 *
 	 * @throws RuntimeException When the uuids are equal or either object is unreadable.
+	 * @throws MergeNotFullyReadableException When either object carries a property the caller may not read.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function previewMerge(string $from, string $into): array {
 		if ($from === $into) {
@@ -172,6 +196,8 @@ class MergeService {
 
 		$schema = $this->loadSchema(object: $intoObject);
 		$config = $this->getMergeConfig(schema: $schema);
+
+		$this->guardFullyReadable(fromObject: $fromObject, intoObject: $intoObject, schema: $schema);
 
 		$resolution = $this->recomputeSurvivor(
 			fromObject: $fromObject,
@@ -187,6 +213,13 @@ class MergeService {
 			'into' => $into,
 			'postMergeGoldenRecord' => $resolution['goldenRecord'],
 			'attributeProvenance' => $resolution['attributeProvenance'],
+			'fieldChoices' => $this->fieldChoices(
+				fromData: ($fromObject->getObject() ?? []),
+				intoData: ($intoObject->getObject() ?? []),
+				config: $config,
+				survivorshipConfig: $this->getSurvivorshipConfig(schema: $schema),
+				goldenRecord: $resolution['goldenRecord']
+			),
 			'reversalDeadline' => $this->reversalDeadline(mergedAt: $now->format(DATE_ATOM), config: $config),
 		];
 	}//end previewMerge()
@@ -201,18 +234,37 @@ class MergeService {
 	 * @param string $into Uuid of the surviving object.
 	 * @param string $reason Steward-supplied merge reason.
 	 * @param string $mergedBy Acting user uid.
+	 * @param array<string, mixed>|null $decisions Per-property choices (`property => 'from' | 'into'`).
+	 *                                            Null keeps the pre-existing behaviour exactly: the
+	 *                                            resolver's proposal applies and no payload property
+	 *                                            is rewritten.
 	 *
 	 * @return array<string, mixed> The persisted `mergeOperation` row.
 	 *
 	 * @throws RuntimeException When self-merge, already-merged, or the survivor is not active.
+	 * @throws MergeDecisionException When the decision map does not describe the preview it approves.
+	 * @throws MergeNotFullyReadableException When either object carries a property the caller may not read.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) One atomic unit of work
 	 *   (snapshot -> relink -> recompute -> status flip -> persist -> event);
 	 *   splitting it would scatter a single server-authoritative transaction.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Same unit of work, now
+	 *   with the optional decision map folded into it. Every branch is a step
+	 *   of the one transaction, and pulling any of them into a helper would
+	 *   move a write outside the block that guarantees the others ran.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)        Same rationale. The path
+	 *   count is the product of independent optional steps (reverse-FK or
+	 *   embedded, decisions or none), not nested decision-making.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
 	 */
-	public function executeMerge(string $from, string $into, string $reason, string $mergedBy): array {
+	public function executeMerge(
+		string $from,
+		string $into,
+		string $reason,
+		string $mergedBy,
+		?array $decisions = null,
+	): array {
 		if ($from === $into) {
 			throw new RuntimeException('Cannot merge an object into itself.');
 		}
@@ -222,6 +274,8 @@ class MergeService {
 
 		$schema = $this->loadSchema(object: $intoObject);
 		$config = $this->getMergeConfig(schema: $schema);
+
+		$this->guardFullyReadable(fromObject: $fromObject, intoObject: $intoObject, schema: $schema);
 
 		$statusField = (string)($config['statusField'] ?? self::DEFAULT_STATUS_FIELD);
 		$survivorStatus = (string)($config['survivorStatus'] ?? self::DEFAULT_SURVIVOR_STATUS);
@@ -240,6 +294,36 @@ class MergeService {
 
 		$snapshot = $this->buildSnapshot(from: $fromObject, into: $intoObject);
 		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
+
+		// A decision map is turned into resolver OVERRIDES, which is the whole
+		// of design D-1: `SurvivorshipResolver::resolveGoldenRecord()` has
+		// always taken an `$overrides` argument and nothing ever passed one, so
+		// the human's choice rides the mechanism that already existed rather
+		// than a second execution path beside it. The overrides are also
+		// written onto the survivor's own payload, so the record and its golden
+		// record agree about what survived.
+		$decidedOverrides = null;
+		if ($decisions !== null) {
+			$preMergeResolution = $this->recomputeSurvivor(
+				fromObject: $fromObject,
+				intoObject: $intoObject,
+				schema: $schema,
+				config: $config
+			);
+
+			$decidedOverrides = $this->overridesFromDecisions(
+				choices: $this->fieldChoices(
+					fromData: $fromData,
+					intoData: $intoData,
+					config: $config,
+					survivorshipConfig: $survivorshipConfig,
+					goldenRecord: $preMergeResolution['goldenRecord']
+				),
+				decisions: $decisions,
+				decidedBy: $mergedBy,
+				reason: $reason
+			);
+		}//end if
 
 		// 1. Relink the losing object's source records onto the survivor.
 		// Reverse-FK: rewrite each losing source object's back-reference to the
@@ -285,8 +369,15 @@ class MergeService {
 			intoObject: $intoObject,
 			schema: $schema,
 			config: $config,
-			intoDataOverride: $intoData
+			intoDataOverride: $intoData,
+			overrides: $decidedOverrides
 		);
+
+		if ($decidedOverrides !== null) {
+			foreach ($decidedOverrides as $property => $override) {
+				$intoData[$property] = $override['value'];
+			}
+		}
 
 		$goldenField = (string)($survivorshipConfig['goldenRecordField'] ?? 'goldenRecord');
 		$provenanceField = (string)($survivorshipConfig['provenanceField'] ?? 'attributeProvenance');
@@ -312,6 +403,12 @@ class MergeService {
 			'reversible' => true,
 			'mergedAt' => $now->format(DATE_ATOM),
 		];
+
+		// The decisions go ON the operation row, so a reversal and an audit
+		// both read what a person actually chose rather than re-deriving it.
+		if ($decisions !== null) {
+			$mergeOperation['fieldDecisions'] = $decisions;
+		}
 		$savedOperation = $this->objectService->saveObject(
 			object: $mergeOperation,
 			register: self::MERGE_REGISTER,
@@ -692,6 +789,7 @@ class MergeService {
 	 * @param Schema|null $schema Resolved schema (for survivorship config + trust rows).
 	 * @param array<string, mixed> $config `x-openregister-merge` annotation.
 	 * @param array<string, mixed>|null $intoDataOverride Already-relinked survivor payload, when available.
+	 * @param mixed $overrides Per-property decisions, forwarded to the resolver's own override map.
 	 *
 	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
 	 *
@@ -703,6 +801,7 @@ class MergeService {
 		?Schema $schema,
 		array $config,
 		?array $intoDataOverride = null,
+		mixed $overrides = null,
 	): array {
 		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
 
@@ -742,7 +841,8 @@ class MergeService {
 			config: $survivorshipConfig,
 			trustRows: $trustRows,
 			trustResolver: $this->trustResolver,
-			asOf: new DateTimeImmutable()
+			asOf: new DateTimeImmutable(),
+			overrides: $overrides
 		);
 	}//end recomputeSurvivor()
 
@@ -868,6 +968,328 @@ class MergeService {
 
 		return '';
 	}//end sourceUuidOf()
+
+	/**
+	 * Refuse a merge whose objects carry properties the caller may not read.
+	 *
+	 * THE FAILURE THIS CLOSES IS SILENT. `loadReadable()` reads through the
+	 * rendering path, and rendering STRIPS properties field-level security says
+	 * the caller may not read. So before this guard a handler without the
+	 * medical domain could merge two client records and the medical field
+	 * simply was not in the payload the merge worked from: no error, no
+	 * warning, and a domain quietly decided by somebody who could not see it.
+	 *
+	 * The check therefore reads the objects UNRENDERED — row-level RBAC still
+	 * applies, so an object the caller cannot open at all is still refused
+	 * upstream — and compares what they actually carry against what the caller
+	 * may read. The refusal names the properties and never their values.
+	 *
+	 * @param ObjectEntity $fromObject The object that would be merged away.
+	 * @param ObjectEntity $intoObject The object that would survive.
+	 * @param Schema|null $schema The schema both are read under.
+	 *
+	 * @return void
+	 *
+	 * @throws MergeNotFullyReadableException When either object carries an unreadable property.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 */
+	private function guardFullyReadable(ObjectEntity $fromObject, ObjectEntity $intoObject, ?Schema $schema): void {
+		if ($schema === null || $schema->hasPropertyAuthorization() === false) {
+			return;
+		}
+
+		$unreadable = array_merge(
+			$this->unreadablePropertiesOf(object: $fromObject, schema: $schema),
+			$this->unreadablePropertiesOf(object: $intoObject, schema: $schema)
+		);
+
+		$unreadable = array_values(array_unique($unreadable));
+		if (count($unreadable) === 0) {
+			return;
+		}
+
+		sort($unreadable, SORT_STRING);
+
+		// Recorded on BOTH objects: a supervisor looking at either record has
+		// to be able to see that somebody tried to merge it and was refused,
+		// and an attempt recorded only on the loser is invisible from the one
+		// that survived.
+		$this->auditAttemptedMerge(
+			fromObject: $fromObject,
+			intoObject: $intoObject,
+			properties: $unreadable
+		);
+
+		throw new MergeNotFullyReadableException(
+			message: sprintf(
+				'This merge touches properties you may not read: %s.',
+				implode(', ', $unreadable)
+			),
+			properties: $unreadable
+		);
+	}//end guardFullyReadable()
+
+	/**
+	 * The properties one object carries that the caller may not read.
+	 *
+	 * @param ObjectEntity $object The object to inspect.
+	 * @param Schema $schema The schema it is read under.
+	 *
+	 * @return array<int, string> Property names, never values.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 */
+	private function unreadablePropertiesOf(ObjectEntity $object, Schema $schema): array {
+		$raw = $this->loadUnrendered(uuid: (string)$object->getUuid());
+		if ($raw === null) {
+			return [];
+		}
+
+		$data = ($raw->getObject() ?? []);
+
+		$unreadable = [];
+		foreach (array_keys($data) as $property) {
+			if (is_string($property) === false || $property === '') {
+				continue;
+			}
+
+			if ($this->propertyRbac->canReadProperty(schema: $schema, property: $property, object: $data) === true) {
+				continue;
+			}
+
+			$unreadable[] = $property;
+		}
+
+		return $unreadable;
+	}//end unreadablePropertiesOf()
+
+	/**
+	 * Load an object WITHOUT the rendering pass, so field-level security has
+	 * not yet stripped anything from it.
+	 *
+	 * Row-level RBAC and tenancy still apply: this widens what is visible
+	 * about an object the caller may already open, never which objects they
+	 * may open.
+	 *
+	 * @param string $uuid Object uuid.
+	 *
+	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 */
+	private function loadUnrendered(string $uuid): ?ObjectEntity {
+		try {
+			return $this->objectService->find(
+				id: $uuid,
+				_rbac: true,
+				_multitenancy: true,
+				_render: false
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning('[MergeService] unrendered read failed: ' . $e->getMessage());
+			return null;
+		}
+	}//end loadUnrendered()
+
+	/**
+	 * Record a refused merge on both objects' audit trails.
+	 *
+	 * Best-effort: the merge is refused either way, and an audit writer that
+	 * is briefly unavailable must not turn a clean refusal into a 500.
+	 *
+	 * @param ObjectEntity $fromObject The object that would have been merged away.
+	 * @param ObjectEntity $intoObject The object that would have survived.
+	 * @param array<int, string> $properties The properties that caused the refusal.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 */
+	private function auditAttemptedMerge(ObjectEntity $fromObject, ObjectEntity $intoObject, array $properties): void {
+		$context = [
+			'from' => (string)$fromObject->getUuid(),
+			'into' => (string)$intoObject->getUuid(),
+			'refusedProperties' => $properties,
+		];
+
+		foreach ([$fromObject, $intoObject] as $subject) {
+			try {
+				$this->auditTrailMapper->createAuditTrailEntry(
+					object: $subject,
+					action: self::MERGE_REFUSED_ACTION,
+					context: $context
+				);
+			} catch (Throwable $e) {
+				$this->logger->warning('[MergeService] attempted-merge audit failed: ' . $e->getMessage());
+			}
+		}
+	}//end auditAttemptedMerge()
+
+	/**
+	 * Build the per-property choice a reviewer is offered.
+	 *
+	 * For every property either object declares a value for, it returns what
+	 * each holds and what `SurvivorshipResolver` proposes. The proposal is the
+	 * resolver's golden-record value where it produced one, and otherwise the
+	 * surviving object's own value — which is exactly what a merge does today,
+	 * so the column a reviewer sees marked "proposed" is a true description of
+	 * what happens if they approve without changing anything.
+	 *
+	 * The merge machinery's own fields are excluded. Offering a reviewer a
+	 * choice between two `attributeProvenance` blobs, or two values of the
+	 * status field the merge is about to overwrite anyway, is noise that makes
+	 * the real choices harder to find.
+	 *
+	 * @param array<string, mixed> $fromData The losing object's payload.
+	 * @param array<string, mixed> $intoData The surviving object's payload.
+	 * @param array<string, mixed> $config The `x-openregister-merge` block.
+	 * @param array<string, mixed> $survivorshipConfig The `x-openregister-survivorship` block.
+	 * @param array<string, mixed> $goldenRecord The resolver's computed record.
+	 *
+	 * @return array<string, array{from: mixed, into: mixed, proposed: mixed, proposedFrom: string}>
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 */
+	private function fieldChoices(
+		array $fromData,
+		array $intoData,
+		array $config,
+		array $survivorshipConfig,
+		array $goldenRecord,
+	): array {
+		$excluded = $this->machineryFields(config: $config, survivorshipConfig: $survivorshipConfig);
+
+		$properties = array_unique(array_merge(array_keys($fromData), array_keys($intoData)));
+		sort($properties, SORT_STRING);
+
+		$choices = [];
+		foreach ($properties as $property) {
+			if (is_string($property) === false || $property === '' || in_array($property, $excluded, true) === true) {
+				continue;
+			}
+
+			$proposed = ($intoData[$property] ?? null);
+			$proposedFrom = 'into';
+			if (array_key_exists($property, $goldenRecord) === true) {
+				$proposed = $goldenRecord[$property];
+				$proposedFrom = 'resolver';
+			}
+
+			$choices[$property] = [
+				'from' => ($fromData[$property] ?? null),
+				'into' => ($intoData[$property] ?? null),
+				'proposed' => $proposed,
+				'proposedFrom' => $proposedFrom,
+			];
+		}//end foreach
+
+		return $choices;
+	}//end fieldChoices()
+
+	/**
+	 * The payload keys the merge owns and a reviewer is therefore not offered.
+	 *
+	 * @param array<string, mixed> $config The `x-openregister-merge` block.
+	 * @param array<string, mixed> $survivorshipConfig The `x-openregister-survivorship` block.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 */
+	private function machineryFields(array $config, array $survivorshipConfig): array {
+		return array_values(
+			array_unique(
+				array_filter(
+					[
+						// IDENTITY IS NOT A CHOICE, and this is not theoretical:
+						// `ObjectEntity::getObject()` prepends `id => uuid` to
+						// EVERY payload it returns, so without this the preview
+						// asked a reviewer which record's identity should
+						// survive, and every decision map that sensibly ignored
+						// the question was refused as incomplete. The survivor's
+						// identity is decided by which object is `into`.
+						'id',
+						'uuid',
+						'@self',
+						(string)($config['statusField'] ?? self::DEFAULT_STATUS_FIELD),
+						(string)($config['sourceLinkField'] ?? ''),
+						(string)($survivorshipConfig['sourceLinkField'] ?? ''),
+						(string)($survivorshipConfig['goldenRecordField'] ?? 'goldenRecord'),
+						(string)($survivorshipConfig['provenanceField'] ?? 'attributeProvenance'),
+					],
+					static fn (string $field): bool => ($field !== '')
+				)
+			)
+		);
+	}//end machineryFields()
+
+	/**
+	 * Refuse a decision map that does not describe the preview it claims to
+	 * approve, and otherwise turn it into resolver overrides.
+	 *
+	 * A map that names a property the preview never offered, or omits one it
+	 * did, is refused with 422 naming the properties, and nothing is written.
+	 * That strictness is the feature: a screen that showed a reviewer five
+	 * properties and then wrote a sixth they never saw is worse than no screen
+	 * at all, and the only way to know the two agreed is to insist that they
+	 * describe the same set.
+	 *
+	 * @param array<string, array<string, mixed>> $choices The preview's per-property offer.
+	 * @param array<string, mixed> $decisions The reviewer's map: property => 'from' | 'into'.
+	 * @param string $decidedBy Acting uid, recorded as the override's author.
+	 * @param string $reason The merge reason, recorded as the override's rationale.
+	 *
+	 * @return array<string, array{value: mixed, overriddenBy: string, rationale: string}> Resolver overrides.
+	 *
+	 * @throws MergeDecisionException When the map and the preview disagree.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 */
+	private function overridesFromDecisions(array $choices, array $decisions, string $decidedBy, string $reason): array {
+		$unknown = array_values(array_diff(array_keys($decisions), array_keys($choices)));
+		if (count($unknown) > 0) {
+			sort($unknown, SORT_STRING);
+			throw new MergeDecisionException(
+				message: 'The decision map names properties this merge does not offer: ' . implode(', ', $unknown) . '.',
+				properties: $unknown
+			);
+		}
+
+		$missing = array_values(array_diff(array_keys($choices), array_keys($decisions)));
+		if (count($missing) > 0) {
+			sort($missing, SORT_STRING);
+			throw new MergeDecisionException(
+				message: 'The decision map omits properties this merge offers: ' . implode(', ', $missing) . '.',
+				properties: $missing
+			);
+		}
+
+		$overrides = [];
+		$invalid = [];
+		foreach ($decisions as $property => $side) {
+			if (in_array($side, ['from', 'into'], true) === false) {
+				$invalid[] = (string)$property;
+				continue;
+			}
+
+			$overrides[(string)$property] = [
+				'value' => $choices[$property][$side],
+				'overriddenBy' => $decidedBy,
+				'rationale' => $reason,
+			];
+		}
+
+		if (count($invalid) > 0) {
+			sort($invalid, SORT_STRING);
+			throw new MergeDecisionException(
+				message: 'A decision must name "from" or "into"; these did not: ' . implode(', ', $invalid) . '.',
+				properties: $invalid
+			);
+		}
+
+		return $overrides;
+	}//end overridesFromDecisions()
 
 	/**
 	 * Load a readable object by uuid, RBAC + tenant scoped.

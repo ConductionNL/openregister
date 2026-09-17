@@ -17,7 +17,7 @@ per sequence and period and SHALL never be reused after a rollback.
 - **GIVEN** schema `case` whose `identifier` declares sequence `case`, format `Z-{year}-{seq:5}`, `resetOn: year`
 - **WHEN** two cases are created in 2026 without an identifier
 - **THEN** their identifiers are `Z-2026-00001` and `Z-2026-00002`
-- @e2e exclude {proposal only; task 3.2 adds tests/e2e/api-direct/generated-identifier.spec.ts when the listener ships}
+- @e2e tests/e2e/api-direct/generated-identifier.spec.ts
 
 #### Scenario: parallel creates never collide
 
@@ -37,7 +37,7 @@ sequence to at least the `{seq}` parsed from that value.
 - **GIVEN** a case with identifier `Z-2026-00001`
 - **WHEN** a user updates the case with identifier `Z-2026-00009`
 - **THEN** the update is refused with 422 and the identifier is unchanged
-- @e2e exclude {proposal only; task 3.2 adds tests/e2e/api-direct/generated-identifier.spec.ts when the guard ships}
+- @e2e tests/e2e/api-direct/generated-identifier.spec.ts
 
 #### Scenario: an imported value advances the counter
 

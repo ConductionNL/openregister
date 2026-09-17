@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 
 /**
  * Class PropertyValidatorHandler
@@ -34,6 +35,10 @@ use Exception;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is the TYPES and STRING_FORMATS
+ *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
+ *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
+ *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
  */
 class PropertyValidatorHandler {
 
@@ -475,9 +480,14 @@ class PropertyValidatorHandler {
 		'readOnly' => ['value' => 'boolean', 'description' => 'Show the value, refuse a write.'],
 		'writeOnly' => ['value' => 'boolean', 'description' => 'Accept a write, never read it back.'],
 		'immutable' => ['value' => 'boolean', 'description' => 'Accept the first answer, refuse every change after it.'],
+		'repeatingGroup' => ['value' => 'boolean', 'description' => 'Rows a person adds and removes. Set items to the shape of one row.'],
+		'groupOrdered' => ['value' => 'boolean', 'description' => 'Keep the order the rows were authored in. Needs repeatingGroup.'],
+		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
 		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
+		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
+		'inputControl' => ['value' => 'string', 'description' => 'The control a list surface should render to filter on this field.'],
 		'aggregated' => ['value' => 'boolean', 'description' => 'Count the field in aggregations.'],
 		'translatable' => ['value' => 'boolean', 'description' => 'Store one value per language.'],
 		'sourceLanguage' => ['value' => 'string', 'description' => 'Which language the authored value is in. Needs translatable.'],
@@ -500,7 +510,29 @@ class PropertyValidatorHandler {
 		'iri' => ['value' => 'string', 'description' => 'The vocabulary term this property means.'],
 		'domains' => ['value' => 'array', 'description' => 'The classes this property may be used on.'],
 		'ranges' => ['value' => 'array', 'description' => 'The classes this property may point at.'],
+		'authorization' => ['value' => 'object', 'description' => 'Which roles or groups may read and write this one property.'],
+		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
+		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
+		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
 	];
+
+	/**
+	 * The modifier keys that take a language suffix, and the shape it has.
+	 *
+	 * `title` and `description` carry prose a person reads, so a schema written
+	 * for more than one audience spells them `title:nl` and `description:en`
+	 * beside the unsuffixed pair. Nothing else is prose, and the tag is matched
+	 * rather than waved through (BCP 47's common shapes: `en`, `pt-BR`,
+	 * `zh-Hans`), so `order:en` and `title:englisch` stay the mistakes they are.
+	 *
+	 * @var array<int, string> The base keys a language suffix may follow.
+	 */
+	public const LOCALISED_KEYS = ['title', 'description'];
+
+	/**
+	 * @var string A PCRE matching the part after the colon.
+	 */
+	public const LANGUAGE_TAG_PATTERN = '/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/';
 
 	/**
 	 * Keys that are stored and handed on, but not enforced here.
@@ -558,6 +590,16 @@ class PropertyValidatorHandler {
 	private array $validStringFormats;
 
 	/**
+	 * The save-time rules a repeating group's declaration has to satisfy.
+	 *
+	 * Its own class: the rules are about one keyword, they read better
+	 * together, and this file is the one every property-shaped change edits.
+	 *
+	 * @var RepeatingGroupDeclarationValidator
+	 */
+	private RepeatingGroupDeclarationValidator $repeatingGroups;
+
+	/**
 	 * Read the two allowlists off the published vocabulary.
 	 *
 	 * @return void
@@ -565,6 +607,7 @@ class PropertyValidatorHandler {
 	public function __construct() {
 		$this->validTypes = array_map('strval', array_keys(self::TYPES));
 		$this->validStringFormats = self::STRING_FORMATS;
+		$this->repeatingGroups = new RepeatingGroupDeclarationValidator();
 	}//end __construct()
 
 	/**
@@ -588,6 +631,29 @@ class PropertyValidatorHandler {
 			)
 		);
 	}//end vocabularyKeys()
+
+	/**
+	 * Whether a key is one of the prose keys carrying a language suffix.
+	 *
+	 * @param string $key The property key to look at.
+	 *
+	 * @return bool True when the key is a localised spelling of a prose modifier.
+	 *
+	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 */
+	public static function isLocalisedKey(string $key): bool {
+		$colon = strpos($key, ':');
+		if ($colon === false) {
+			return false;
+		}
+
+		$base = substr($key, 0, $colon);
+		if (in_array($base, self::LOCALISED_KEYS, true) === false) {
+			return false;
+		}
+
+		return preg_match(self::LANGUAGE_TAG_PATTERN, substr($key, ($colon + 1))) === 1;
+	}//end isLocalisedKey()
 
 	/**
 	 * Refuse a property key the vocabulary does not hold.
@@ -616,6 +682,10 @@ class PropertyValidatorHandler {
 			}
 
 			if (in_array($key, $known, true) === true) {
+				continue;
+			}
+
+			if (self::isLocalisedKey(key: $key) === true) {
 				continue;
 			}
 
@@ -651,6 +721,9 @@ class PropertyValidatorHandler {
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
+	 * @SuppressWarnings(PHPMD.StaticAccess)         `fromProperty()` is a named constructor on a
+	 *                                              value object; a factory injected here would
+	 *                                              answer one question and hold no state.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
@@ -660,6 +733,12 @@ class PropertyValidatorHandler {
 		// nobody defines is a typo, and a typo that passes is a constraint
 		// that silently constrains nothing for as long as nobody counts.
 		$this->assertKeysAreInTheVocabulary(property: $property, path: $path);
+
+		// A generated identifier is checked where every other property key is.
+		// The refusal extends PropertyVocabularyException, so every schema-save
+		// path already answers it as a 422 naming the property, and no controller
+		// had to learn about this annotation to do it.
+		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
 
 		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {
@@ -686,11 +765,13 @@ class PropertyValidatorHandler {
 		// top-level property and appends for every level under it.
 		$isTopLevel = (substr_count($path, '/') <= 1);
 		if (isset($property['type']) === false) {
-			if ($isTopLevel === true) {
+			// A `$ref` relation and a nested schema both derive their type (and,
+			// for a relation, their UUID column) elsewhere; only a bare top-level
+			// property is refused.
+			if ($isTopLevel === true && isset($property['$ref']) === false) {
 				throw new Exception("Property at '$path' must have a 'type' field");
 			}
 
-			// Untyped nested schema: nothing further here is type-dependent.
 			return true;
 		}
 
@@ -742,6 +823,13 @@ class PropertyValidatorHandler {
 				);
 			}
 		}
+
+		// A repeating group is an array of objects that somebody authors row by
+		// row, so the declaration has to hold together before any object is
+		// written against it. Checked here rather than at save time because a
+		// group whose members nobody declared is a schema mistake, and the
+		// schema author is the only person who can fix it.
+		$this->repeatingGroups->validate(property: $property, path: $path);
 
 		// Validate array items if type is array.
 		$hasItems = ($property['items'] ?? null) !== null;
@@ -840,8 +928,54 @@ class PropertyValidatorHandler {
 			}
 		}
 
+		// Validate the declared search profile if present. An unknown match type
+		// is refused here rather than ignored at query time: ignoring it leaves
+		// the property matching the way it did before, which looks exactly like
+		// the declaration working.
+		$this->validateSearchProfile(property: $property, path: $path);
+
 		return true;
 	}//end validateProperty()
+
+	/**
+	 * Refuse an unknown match type or input control, naming the property.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @phpstan-param array<string, mixed> $property
+	 *
+	 * @psalm-param array<string, mixed> $property
+	 *
+	 * @throws Exception When a declared value is outside its vocabulary.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function validateSearchProfile(array $property, string $path): void {
+		$declarations = [
+			'matchType' => PropertySearchProfile::MATCH_TYPES,
+			'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+		];
+
+		foreach ($declarations as $key => $allowed) {
+			$declared = ($property[$key] ?? null);
+			if ($declared === null) {
+				continue;
+			}
+
+			if (is_string($declared) === false
+				|| in_array(strtolower(trim($declared)), $allowed, true) === false
+			) {
+				$rendered = json_encode($declared);
+				$allowedList = implode(', ', $allowed);
+				throw new Exception(
+					"Invalid {$key} {$rendered} at '$path'. Must be one of: {$allowedList}"
+				);
+			}
+		}
+	}//end validateSearchProfile()
 
 	/**
 	 * Validate an entire properties object

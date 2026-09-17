@@ -777,7 +777,7 @@ class RegisterMapper extends QBMapper {
 		// Set or update the version.
 		if (isset($object['version']) === false) {
 			$currentVersion = $register->getVersion() ?? '0.0.0';
-			$register->setVersion($this->bumpPatchVersion(version: $currentVersion));
+			$register->setVersion((new RegisterMapperHelper())->bumpPatchVersion(version: $currentVersion));
 		}
 
 		$register->hydrate(object: $object);
@@ -789,36 +789,6 @@ class RegisterMapper extends QBMapper {
 
 		return $register;
 	}//end updateFromArray()
-
-	/**
-	 * Increment the patch component of a semantic version string.
-	 *
-	 * BUG-DB-12: the previous naive `explode('.')` + `(int)` bump turned a
-	 * pre-release like `1.0.0-beta` into `1.0.1`, silently dropping the
-	 * `-beta` suffix. This parser preserves any pre-release/build suffix and
-	 * pads missing segments so a bare `1` or `1.2` still bumps cleanly.
-	 *
-	 * @param string $version The current version string (e.g. `1.0.0-beta`).
-	 *
-	 * @return string The version with its patch component incremented.
-	 */
-	private function bumpPatchVersion(string $version): string {
-		// Capture: major.minor.patch followed by an optional -prerelease/+build suffix.
-		if (preg_match('/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(.*)$/', trim($version), $matches) === 1) {
-			$major = (int)$matches[1];
-			// Groups 2-4 are always present: the trailing `(.*)` always matches,
-			// so PHP fills the earlier optional groups with '' rather than
-			// omitting them. (int)'' is 0, so the old `?? 0` was a no-op.
-			$minor = (int)$matches[2];
-			$patch = (int)$matches[3];
-			$suffix = $matches[4];
-
-			return $major . '.' . $minor . '.' . ($patch + 1) . $suffix;
-		}
-
-		// Fall back to a safe default when the version is unparsable.
-		return '0.0.1';
-	}//end bumpPatchVersion()
 
 	/**
 	 * Delete a register only if no objects are attached
@@ -967,7 +937,7 @@ class RegisterMapper extends QBMapper {
 		$matches = [];
 
 		foreach ($candidates as $row) {
-			$schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));
+			$schemas = (new RegisterMapperHelper())->decodeSchemasField(raw: ($row['schemas'] ?? null));
 			foreach ($schemas as $candidate) {
 				if ((string)$candidate === $needle) {
 					$matches[] = (int)$row['id'];
@@ -980,35 +950,6 @@ class RegisterMapper extends QBMapper {
 
 		return $matches;
 	}//end getAllRegisterIdsWithSchema()
-
-	/**
-	 * Decode the persisted `schemas` column into a flat ID list.
-	 *
-	 * Accepts the column's raw value (typically a JSON array) and
-	 * returns the contained schema IDs. Tolerates legacy shapes
-	 * (comma-separated string) and unexpected types by returning [].
-	 *
-	 * @param mixed $raw The raw column value
-	 *
-	 * @return array<int,int|string>
-	 */
-	private function decodeSchemasField(mixed $raw): array {
-		if (is_array($raw) === true) {
-			return $raw;
-		}
-
-		if (is_string($raw) === true && $raw !== '') {
-			$decoded = json_decode($raw, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-
-			// Legacy comma-separated fallback.
-			return array_filter(array_map('trim', explode(',', $raw)));
-		}
-
-		return [];
-	}//end decodeSchemasField()
 
 	/**
 	 * Check if a register has a schema with a specific title

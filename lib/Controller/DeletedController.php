@@ -32,20 +32,14 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Exception\ArchivalImmutableException;
-use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
-use OCA\OpenRegister\Service\Deletion\DestroyRightService;
-use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
+use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DeletionWindow;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
-use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
-use OCA\OpenRegister\Service\Deletion\RetentionClockService;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -71,16 +65,10 @@ class DeletedController extends Controller {
 	 * @param IRequest $request The request object
 	 * @param MagicMapper $objectEntityMapper The object entity mapper
 	 * @param RegisterMapper $registerMapper The register mapper
-	 * @param SchemaMapper $schemaMapper The schema mapper
 	 * @param IUserSession $userSession The user session
-	 * @param IGroupManager $groupManager The group manager for admin checks
-	 * @param PermissionHandler $permissionHandler Handler for per-schema RBAC checks
-	 * @param DeletionWindowService $windowService Publishes the recovery window
-	 * @param DestroyRightService $destroyRightService Decides whether the caller may destroy
-	 * @param DestructionScopeService $scopeService Previews and carries out the declared scope
-	 * @param DestructionRecorder $destructionRecorder Writes the record that survives the object
-	 * @param RetentionClockService $clockService Reads the AVG and Archiefwet clocks
 	 * @param AuditTrailMapper $auditTrailMapper Reads back a destruction record and records a restore
+	 * @param DeletionServiceBundle $deletion The destruction-pipeline collaborators (window, right, scope, recorder, clock)
+	 * @param DeletedObjectAuthorizer $authorizer Answers the authorization and schema-resolution questions
 	 *
 	 * @return void
 	 */
@@ -89,148 +77,13 @@ class DeletedController extends Controller {
 		IRequest $request,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly DeletionWindowService $windowService,
-		private readonly DestroyRightService $destroyRightService,
-		private readonly DestructionScopeService $scopeService,
-		private readonly DestructionRecorder $destructionRecorder,
-		private readonly RetentionClockService $clockService,
 		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly DeletionServiceBundle $deletion,
+		private readonly DeletedObjectAuthorizer $authorizer,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
-
-	/**
-	 * Check if the current user is an admin
-	 *
-	 * @return bool True if the user is in the admin group, false otherwise.
-	 */
-	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return (bool)$this->groupManager->isAdmin($user->getUID());
-	}//end isCurrentUserAdmin()
-
-	/**
-	 * Resolve a soft-deleted object's schema and check the caller has the
-	 * required action permission.
-	 *
-	 * Refuses the call (returns false) when:
-	 *  - no user is authenticated, OR
-	 *  - the object lacks a resolvable register/schema context, OR
-	 *  - PermissionHandler denies the action for the caller.
-	 *
-	 * Admin users always pass. This mirrors the fail-closed write-RBAC
-	 * pattern from #1949: when register/schema context cannot be derived,
-	 * the destructive operation is refused.
-	 *
-	 * @param ObjectEntity $object The soft-deleted object being acted on.
-	 * @param string $action The action to authorize ('delete'|'update').
-	 *
-	 * @return bool True if the caller may perform the action on this object.
-	 */
-	private function userMayActOnDeletedObject(ObjectEntity $object, string $action): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		// Admin bypass.
-		if ($this->isCurrentUserAdmin() === true) {
-			return true;
-		}
-
-		$schemaId = $object->getSchema();
-		if ($schemaId === null || $schemaId === '') {
-			// Fail-closed: cannot resolve schema, refuse.
-			return false;
-		}
-
-		try {
-			$schema = $this->schemaMapper->find((int)$schemaId);
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		try {
-			return $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: $action,
-				userId: $user->getUID(),
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
-			);
-		} catch (\Throwable $e) {
-			return false;
-		}
-	}//end userMayActOnDeletedObject()
-
-	/**
-	 * Resolve a soft-deleted object's schema, or null when it cannot be found.
-	 *
-	 * @param ObjectEntity $object The object whose schema to resolve.
-	 *
-	 * @return Schema|null The schema, or null when it cannot be resolved.
-	 */
-	private function resolveSchema(ObjectEntity $object): ?Schema {
-		$schemaId = $object->getSchema();
-		if ($schemaId === null || $schemaId === '') {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find((int)$schemaId);
-		} catch (\Throwable $e) {
-			return null;
-		}
-	}//end resolveSchema()
-
-	/**
-	 * Refuse a purge when the object is a legally retained archival record.
-	 *
-	 * `DELETE /api/objects/{register}/{schema}/{id}` rejects a delete on an
-	 * archival schema with 403 SCHEMA_ARCHIVAL_IMMUTABLE
-	 * ({@see \OCA\OpenRegister\Service\ObjectService::deleteObject()}). Purging
-	 * is strictly more destructive than deleting, so it answers on the same
-	 * terms, from the same definition ({@see Schema::hasArchivalAnnotation()}) —
-	 * otherwise the trash is a second door onto the records the first door
-	 * exists to protect.
-	 *
-	 * Fails CLOSED: an object whose schema cannot be resolved is refused, since
-	 * an unresolvable schema is exactly the case where the annotation cannot be
-	 * read and the row might be retained.
-	 *
-	 * @param ObjectEntity $object The object being purged.
-	 *
-	 * @return ArchivalImmutableException|null The refusal, or null when the purge may proceed.
-	 *
-	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
-	 */
-	private function archivalRefusal(ObjectEntity $object): ?ArchivalImmutableException {
-		$schema = $this->resolveSchema(object: $object);
-		if ($schema === null) {
-			return new ArchivalImmutableException(
-				schemaIdentifier: (string)($object->getSchema() ?? 'unknown'),
-				operation: 'purge'
-			);
-		}
-
-		if ($schema->hasArchivalAnnotation() === false) {
-			return null;
-		}
-
-		return new ArchivalImmutableException(
-			schemaIdentifier: ($schema->getSlug() ?? (string)$schema->getId()),
-			operation: 'purge'
-		);
-	}//end archivalRefusal()
 
 	/**
 	 * Helper method to extract request parameters for deleted objects
@@ -336,9 +189,9 @@ class DeletedController extends Controller {
 		$rows = [];
 		foreach ($objects as $object) {
 			$row = $object->jsonSerialize();
-			$window = $this->windowService->windowFor(
+			$window = $this->deletion->window->windowFor(
 				object: $object,
-				schema: $this->resolveSchema(object: $object)
+				schema: $this->authorizer->resolveSchema(object: $object)
 			);
 
 			$row['deletionWindow'] = null;
@@ -480,7 +333,7 @@ class DeletedController extends Controller {
 	public function topDeleters(): JSONResponse {
 		// SEC-CTRL: admin-only — cross-user deletion analytics (usernames are
 		// PII); a tenant-wide management surface, not per-user data.
-		if ($this->isCurrentUserAdmin() === false) {
+		if ($this->authorizer->isCurrentUserAdmin() === false) {
 			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
 		}
 
@@ -542,16 +395,16 @@ class DeletedController extends Controller {
 			// since the wave-3 C4 finding; the single-object endpoint beside it
 			// never did, so the bulk door was locked and the single door was
 			// open.
-			if ($this->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
+			if ($this->authorizer->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
 				return new JSONResponse(
 					data: ['error' => 'User does not have permission to restore this object'],
 					statusCode: 403
 				);
 			}
 
-			$window = $this->windowService->windowFor(
+			$window = $this->deletion->window->windowFor(
 				object: $object,
-				schema: $this->resolveSchema(object: $object)
+				schema: $this->authorizer->resolveSchema(object: $object)
 			);
 
 			// Restore via MagicMapper: objects live in per-register/schema magic
@@ -698,7 +551,7 @@ class DeletedController extends Controller {
 					// permission on the resolved schema (admins bypass).
 					// Cross-tenant restores are silently dropped (counted
 					// as failed) rather than aborting the whole batch.
-					if ($this->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
+					if ($this->authorizer->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
 						$failed++;
 						continue;
 					}
@@ -764,106 +617,27 @@ class DeletedController extends Controller {
 		try {
 			$object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
 
-			// An archival record is refused here on the same terms the normal
-			// delete path refuses it. Answered BEFORE the trash check, so a
-			// caller holding a live archival record is told the record is
-			// immutable rather than "not deleted yet" — which would read as an
-			// invitation to soft-delete it first and come back.
-			$refusal = $this->archivalRefusal(object: $object);
+			// An archival record is refused BEFORE the trash check, so a caller
+			// holding a live archival record is told the record is immutable
+			// rather than "not deleted yet". Then a purge only empties the
+			// trash, never a live object.
+			$refusal = $this->refuseUndestroyable(object: $object);
 			if ($refusal !== null) {
-				return new JSONResponse(
-					data: $refusal->toResponseBody(),
-					statusCode: 403
-				);
+				return $refusal;
 			}
 
-			// A purge empties the TRASH. `getDeleted() === null` never answered
-			// that question — the property defaults to `[]` and a live row keeps
-			// that default — so this guard let every live object through and
-			// destroyed it. See ObjectEntity::isSoftDeleted().
-			if ($object->isSoftDeleted() === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Object is not deleted',
-					],
-					statusCode: 400
-				);
-			}
-
-			$schema = $this->resolveSchema(object: $object);
-
-			// DESTROYING IS A RIGHT, NOT AN ADMIN CHECK. The refusal names the
-			// rule that refused, because "Forbidden" with no rule leaves an
-			// operator guessing about a destructive act.
-			$refusal = $this->destroyRightService->refusalFor(object: $object, schema: $schema);
-			if ($refusal !== null) {
-				return new JSONResponse(
-					data: $refusal->toResponseBody(),
-					statusCode: $refusal->getStatusCode()
-				);
-			}
-
-			// A HOLD OUTRANKS BOTH CLOCKS, and two clocks that disagree refuse
-			// rather than pick a winner in silence.
-			$clockRefusal = $this->clockService->refusalFor(object: $object);
-			if ($clockRefusal !== null) {
-				return new JSONResponse(
-					data: $clockRefusal->toResponseBody(),
-					statusCode: $clockRefusal->getStatusCode()
-				);
-			}
-
-			// THE WINDOW IS A REFUSAL, NOT DECORATION. Inside it the object can
-			// still come back, so destroying it needs the window waived
-			// explicitly, and the refusal says how long is left.
-			$window = $this->windowService->windowFor(object: $object, schema: $schema);
+			$schema = $this->authorizer->resolveSchema(object: $object);
+			$window = $this->deletion->window->windowFor(object: $object, schema: $schema);
 			$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
-			if ($window !== null && $window->hasLapsed() === false && $force === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'DESTRUCTION_REFUSED',
-						'rule' => 'recovery-window-open',
-						'message' => 'This object can still be restored until '
-							. $window->destroyableFrom()->format('Y-m-d') . '. Destroying it before then '
-							. 'requires the window to be waived explicitly.',
-						'deletionWindow' => $window->toArray(),
-					],
-					statusCode: 409
-				);
+
+			// The right, both retention clocks and the open recovery window each
+			// refuse in turn, naming the rule that refused.
+			$refusal = $this->refuseDestruction(object: $object, schema: $schema, window: $window, force: $force);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
-			// The scope is previewed, then destroyed, then reported. An
-			// unclear scope refuses before anything is touched.
-			try {
-				$scopeReport = $this->scopeService->destroy(object: $object, schema: $schema);
-				$record = $this->destructionRecorder->record(
-					object: $object,
-					scope: $scopeReport,
-					rule: 'destroy-right-granted',
-					context: [
-						'deletionWindow' => $window?->toArray(),
-						'windowWaived' => ($force === true),
-					]
-				);
-			} catch (DestructionRefusedException $e) {
-				return new JSONResponse(
-					data: $e->toResponseBody(),
-					statusCode: $e->getStatusCode()
-				);
-			}
-
-			// Permanently delete the object. The record above is already
-			// written, so a crash here leaves an over-recorded destruction
-			// rather than an unrecorded one.
-			$this->objectEntityMapper->delete($object);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Object permanently deleted',
-					'destruction' => $record,
-				]
-			);
+			return $this->performDestruction(object: $object, schema: $schema, window: $window, force: $force);
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: [
@@ -873,6 +647,144 @@ class DeletedController extends Controller {
 			);
 		}//end try
 	}//end destroy()
+
+	/**
+	 * Refuse a purge of an object that is not a destroyable trash row.
+	 *
+	 * Two refusals, in order: an archival record is immutable, and a purge only
+	 * empties the trash so a row that is not soft-deleted is never destroyed.
+	 * `getDeleted() === null` never answered the trash question — the property
+	 * defaults to `[]` and a live row keeps that default — so the check goes
+	 * through ObjectEntity::isSoftDeleted().
+	 *
+	 * @param ObjectEntity $object The object being purged.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the purge may proceed.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function refuseUndestroyable(ObjectEntity $object): ?JSONResponse {
+		$refusal = $this->authorizer->archivalRefusal(object: $object);
+		if ($refusal !== null) {
+			return new JSONResponse(
+				data: $refusal->toResponseBody(),
+				statusCode: 403
+			);
+		}
+
+		if ($object->isSoftDeleted() === false) {
+			return new JSONResponse(
+				data: [
+					'error' => 'Object is not deleted',
+				],
+				statusCode: 400
+			);
+		}
+
+		return null;
+	}//end refuseUndestroyable()
+
+	/**
+	 * Refuse a destruction that the right, the clocks or the window forbid.
+	 *
+	 * Three refusals, in order: DESTROYING IS A RIGHT, NOT AN ADMIN CHECK, so a
+	 * caller lacking it is refused with the rule named; A HOLD OUTRANKS BOTH
+	 * CLOCKS, and two clocks that disagree refuse rather than pick a winner in
+	 * silence; and THE WINDOW IS A REFUSAL, NOT DECORATION — inside it the
+	 * object can still come back, so destroying it needs the window waived
+	 * explicitly and the refusal says how long is left.
+	 *
+	 * @param ObjectEntity $object The object being purged.
+	 * @param Schema|null $schema The object's resolved schema.
+	 * @param DeletionWindow|null $window The published recovery window.
+	 * @param bool $force Whether the caller explicitly waived the window.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the destruction may proceed.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function refuseDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindow $window, bool $force): ?JSONResponse {
+		$refusal = $this->deletion->destroyRight->refusalFor(object: $object, schema: $schema);
+		if ($refusal !== null) {
+			return new JSONResponse(
+				data: $refusal->toResponseBody(),
+				statusCode: $refusal->getStatusCode()
+			);
+		}
+
+		$clockRefusal = $this->deletion->clock->refusalFor(object: $object);
+		if ($clockRefusal !== null) {
+			return new JSONResponse(
+				data: $clockRefusal->toResponseBody(),
+				statusCode: $clockRefusal->getStatusCode()
+			);
+		}
+
+		if ($window !== null && $window->hasLapsed() === false && $force === false) {
+			return new JSONResponse(
+				data: [
+					'error' => 'DESTRUCTION_REFUSED',
+					'rule' => 'recovery-window-open',
+					'message' => 'This object can still be restored until '
+						. $window->destroyableFrom()->format('Y-m-d') . '. Destroying it before then '
+						. 'requires the window to be waived explicitly.',
+					'deletionWindow' => $window->toArray(),
+				],
+				statusCode: 409
+			);
+		}
+
+		return null;
+	}//end refuseDestruction()
+
+	/**
+	 * Preview the scope, record the destruction, then carry it out.
+	 *
+	 * The record is written before the object is deleted, so a crash between
+	 * them leaves an over-recorded destruction rather than an unrecorded one. A
+	 * scope this instance cannot honour refuses before anything is touched.
+	 *
+	 * @param ObjectEntity $object The object being purged.
+	 * @param Schema|null $schema The object's resolved schema.
+	 * @param DeletionWindow|null $window The published recovery window.
+	 * @param bool $force Whether the caller explicitly waived the window.
+	 *
+	 * @return JSONResponse The destruction record, or the scope refusal.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindow $window, bool $force): JSONResponse {
+		try {
+			$scopeReport = $this->deletion->scope->destroy(object: $object, schema: $schema);
+			$record = $this->deletion->recorder->record(
+				object: $object,
+				scope: $scopeReport,
+				rule: 'destroy-right-granted',
+				context: [
+					'deletionWindow' => $window?->toArray(),
+					'windowWaived' => ($force === true),
+				]
+			);
+		} catch (DestructionRefusedException $e) {
+			return new JSONResponse(
+				data: $e->toResponseBody(),
+				statusCode: $e->getStatusCode()
+			);
+		}
+
+		// Permanently delete the object. The record above is already
+		// written, so a crash here leaves an over-recorded destruction
+		// rather than an unrecorded one.
+		$this->objectEntityMapper->delete($object);
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Object permanently deleted',
+				'destruction' => $record,
+			]
+		);
+	}//end performDestruction()
 
 	/**
 	 * Preview what a destruction would take with the object.
@@ -902,9 +814,9 @@ class DeletedController extends Controller {
 
 		try {
 			$object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
-			$schema = $this->resolveSchema(object: $object);
+			$schema = $this->authorizer->resolveSchema(object: $object);
 
-			$refusal = $this->destroyRightService->refusalFor(object: $object, schema: $schema);
+			$refusal = $this->deletion->destroyRight->refusalFor(object: $object, schema: $schema);
 			if ($refusal !== null) {
 				return new JSONResponse(
 					data: $refusal->toResponseBody(),
@@ -912,14 +824,14 @@ class DeletedController extends Controller {
 				);
 			}
 
-			$window = $this->windowService->windowFor(object: $object, schema: $schema);
+			$window = $this->deletion->window->windowFor(object: $object, schema: $schema);
 
 			return new JSONResponse(
 				data: [
 					'objectUuid' => (string)$object->getUuid(),
-					'preview' => $this->scopeService->preview(object: $object, schema: $schema),
+					'preview' => $this->deletion->scope->preview(object: $object, schema: $schema),
 					'deletionWindow' => $window?->toArray(),
-					'clocks' => $this->clockService->clocksFor(object: $object),
+					'clocks' => $this->deletion->clock->clocksFor(object: $object),
 				]
 			);
 		} catch (\Exception $e) {
@@ -1040,7 +952,7 @@ class DeletedController extends Controller {
 					// An archival record is never purged, in bulk or singly.
 					// Counted as failed rather than aborting the batch, so one
 					// retained row does not strand the rest of the cleanup.
-					if ($this->archivalRefusal(object: $object) !== null) {
+					if ($this->authorizer->archivalRefusal(object: $object) !== null) {
 						$failed++;
 						continue;
 					}
@@ -1053,7 +965,7 @@ class DeletedController extends Controller {
 
 					// Per-object RBAC gate: caller must have `delete`
 					// permission on the resolved schema (admins bypass).
-					if ($this->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
+					if ($this->authorizer->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
 						$failed++;
 						continue;
 					}

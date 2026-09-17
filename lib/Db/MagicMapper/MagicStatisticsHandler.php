@@ -639,6 +639,8 @@ class MagicStatisticsHandler {
 							'authorization',
 							'validation',
 							'deleted',
+							'archived',
+							'frozen',
 							'geo',
 							'retention',
 							'groups',

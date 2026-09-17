@@ -86,6 +86,8 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Service\Object\NotSuppliedHandler;
+use OCA\OpenRegister\Service\Object\RepeatingGroupValidator;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -239,6 +241,27 @@ class ObjectService implements ObjectServiceInterface
      * @var array<string, array{register: Register|null, schema: Schema}>
      */
     private array $uuidScopeCache = [];
+
+    /**
+     * The row-by-row repeating-group validator, constructed on first use.
+     *
+     * Not injected. This class takes forty-odd constructor arguments and a
+     * long tail of unit tests build it positionally, so a new argument is a
+     * bigger change than it looks. Both validators below are pure and have no
+     * dependencies of their own, which is what makes constructing them here
+     * safe: there is no wiring that can be missing, so there is no
+     * configuration under which the enforcement quietly stops running.
+     *
+     * @var RepeatingGroupValidator|null
+     */
+    private ?RepeatingGroupValidator $repeatingGroupValidator = null;
+
+    /**
+     * The recorded-incompleteness handler, constructed on first use.
+     *
+     * @var NotSuppliedHandler|null
+     */
+    private ?NotSuppliedHandler $notSuppliedHandler = null;
 
     // **REMOVED**: Distributed caching mechanisms removed since SOLR is now our index.
     // **REMOVED**: Cache TTL constants removed since SOLR is now our index.
@@ -1552,6 +1575,9 @@ class ObjectService implements ObjectServiceInterface
      *                                                Non-HTTP callers (cron, import pipelines, event listeners)
      *                                                MUST pass an explicit user to avoid the
      *                                                default-deny fall-through on every folder-bound save.
+     * @param bool                     $_dedupOverride Save through a blocking duplicate match, when the caller is
+     *                                                entitled to. Read from the RAW request by ObjectsController,
+     *                                                because the body filter there strips `_`-prefixed keys.
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1579,7 +1605,8 @@ class ObjectService implements ObjectServiceInterface
         ?array $uploadedFiles=null,
         ?IUser $currentUser=null,
         bool $failIfExists=false,
-        bool $_unowned=false
+        bool $_unowned=false,
+        bool $_dedupOverride=false
     ): ObjectEntity {
         // A SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         //
@@ -1730,6 +1757,12 @@ class ObjectService implements ObjectServiceInterface
 
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
 
+            // The declared bounds hold on every write, hard validation or not.
+            // Ordered before the validator so a caller who sent four rows into
+            // a group of three reads that sentence rather than a JSON-pointer
+            // complaint about the same array.
+            $this->enforceDeclaredShapes(object: $object);
+
             // Validate if hard validation is enabled.
             $this->validateObjectIfRequired(object: $object);
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
@@ -1772,7 +1805,8 @@ class ObjectService implements ObjectServiceInterface
                 uploadedFiles: $uploadedFiles,
                 currentUser: $currentUser,
                 failIfExists: $failIfExists,
-                _unowned: $_unowned
+                _unowned: $_unowned,
+                _dedupOverride: $_dedupOverride
             );
 
             // Invalidate contact matching cache for objects with email properties.
@@ -2169,9 +2203,16 @@ class ObjectService implements ObjectServiceInterface
 
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
+            // A property recorded as not supplied carries no value and is
+            // excused from the required rule, so the validator sees neither
+            // the record nor the properties it names. The record itself stays
+            // on the body that gets stored, which is how it reads back.
+            $notSupplied = $this->notSupplied()->declared(object: $object);
+
             $result = $this->validateHandler->validateObject(
-                object: $object,
-                schema: $this->currentSchema
+                object: $this->notSupplied()->stripForValidation(object: $object),
+                schema: $this->currentSchema,
+                notSupplied: $notSupplied
             );
 
             if ($result->isValid() === false) {
@@ -2182,7 +2223,101 @@ class ObjectService implements ObjectServiceInterface
     }//end validateObjectIfRequired()
 
     /**
-     * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
+     * The repeating-group validator, constructed on first use.
+     *
+     * @return RepeatingGroupValidator The validator.
+     *
+     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     */
+    private function repeatingGroups(): RepeatingGroupValidator
+    {
+        if ($this->repeatingGroupValidator === null) {
+            $this->repeatingGroupValidator = new RepeatingGroupValidator();
+        }
+
+        return $this->repeatingGroupValidator;
+    }//end repeatingGroups()
+
+    /**
+     * The recorded-incompleteness handler, constructed on first use.
+     *
+     * @return NotSuppliedHandler The handler.
+     *
+     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     */
+    private function notSupplied(): NotSuppliedHandler
+    {
+        if ($this->notSuppliedHandler === null) {
+            $this->notSuppliedHandler = new NotSuppliedHandler();
+        }
+
+        return $this->notSuppliedHandler;
+    }//end notSupplied()
+
+    /**
+     * Enforce the declared repeating groups and the not-supplied record.
+     *
+     * Runs on CREATE as well as UPDATE, and whether or not the schema has hard
+     * validation switched on. Both are declarations about what the register
+     * holds rather than opt-in conveniences: a group with a maximum of three
+     * that accepts four rows on the schemas whose administrator left hard
+     * validation off is a bound that does not bind.
+     *
+     * The refusal names the row and the member, which is the whole difference
+     * between an authorable repeating group and an array (D-2).
+     *
+     * @param array $object The candidate object body.
+     *
+     * @return void
+     *
+     * @throws ValidationException When a group or the not-supplied record is refused.
+     *
+     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     */
+    private function enforceDeclaredShapes(array $object): void
+    {
+        if ($this->currentSchema === null) {
+            return;
+        }
+
+        $messages = [];
+
+        $incompleteness = $this->notSupplied()->validate(object: $object, schema: $this->currentSchema);
+        foreach ($incompleteness as $violation) {
+            $messages[] = $violation['message'];
+        }
+
+        $groups = $this->repeatingGroups()->validate(object: $object, schema: $this->currentSchema);
+        foreach ($groups as $violation) {
+            $messages[] = $violation['message'];
+        }
+
+        if ($messages === []) {
+            return;
+        }
+
+        $this->logger->info(
+            message: '[ObjectService] repeating-group / not-supplied enforcement rejected the write',
+            context: [
+                'file'           => __FILE__,
+                'line'           => __LINE__,
+                'schemaId'       => $this->currentSchema->getId(),
+                'groups'         => $groups,
+                'incompleteness' => $incompleteness,
+            ]
+        );
+
+        throw new ValidationException(message: implode(' ', $messages));
+    }//end enforceDeclaredShapes()
+
+    /**
+     * Enforce JSON-Schema `readOnly: true` and `immutable: true` on the
+     * UPDATE write path.
+     *
+     * Both rules need the same previously-stored record, so they share one
+     * load here. They are not the same rule: `readOnly` refuses every value
+     * that differs from what is stored, `immutable` accepts the first value
+     * and refuses every later change.
      *
      * No-op on CREATE (uuid === null). On UPDATE:
      *  1. Strip `@self` from the incoming payload (it is not a user-controllable
@@ -2211,38 +2346,13 @@ class ObjectService implements ObjectServiceInterface
             return;
         }
 
-        // Load the existing record. Anything that prevents load (not found,
-        // RBAC reject, multitenancy filter) means we're not in a true UPDATE
-        // and the engine's normal CREATE path will run — no readOnly check
-        // applies.
-        //
-        // Pass the already-resolved register/schema so find() takes the scoped
-        // register/schema-table path directly. Omitting them leaves find() to
-        // rely on the request's URL scope; under a stale scope it falls back to
-        // the deliberate cross-table search (see the resolution-cache note above,
-        // openregister#1520). We are on the save path with both already resolved,
-        // so there is no reason to risk that fallback here.
-        try {
-            $existing = $this->objectMapper->find(
-                $uuid,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _rbac: false,
-                _multitenancy: false
-            );
-        } catch (\Throwable $e) {
+        $existingData = $this->storedDataForWriteRules(object: $object, uuid: $uuid);
+        if ($existingData === null) {
             return;
         }
 
-        $existingData = $existing->getObject();
-        // Drop the synthesised `id` key getObject() prepends — readOnly applies
-        // to schema properties, not the engine-stamped identifier.
-        if (isset($existingData['id']) === true && isset($object['id']) === false) {
-            unset($existingData['id']);
-        }
-
-        // Strip @self from the incoming payload before comparing — readOnly
-        // is for business properties only.
+        // Strip @self from the incoming payload before comparing — the rules
+        // are for business properties only.
         $candidate = $object;
         unset($candidate['@self']);
 
@@ -2252,20 +2362,34 @@ class ObjectService implements ObjectServiceInterface
             schema: $this->currentSchema
         );
 
-        if ($violations === []) {
+        // `immutable: true` is checked here rather than in a second private
+        // method so it reuses the record this one already loaded. Two methods
+        // would mean two `find()` calls on every update, and the second would
+        // eventually be the one somebody forgot to call.
+        $immutableViolations = $this->validateHandler->validateImmutableConstraints(
+            incomingObject: $candidate,
+            existingObject: $existingData,
+            schema: $this->currentSchema
+        );
+
+        if ($violations === [] && $immutableViolations === []) {
             return;
         }
 
-        $properties = array_map(static fn (array $v): string => $v['property'], $violations);
-        $suffix     = 'ies';
-        if (count($violations) === 1) {
-            $suffix = 'y';
+        $parts = [];
+        if ($violations !== []) {
+            $parts[] = $this->describeViolations(violations: $violations, verb: 'modify readOnly');
         }
 
-        $message = 'Cannot modify readOnly propert'.$suffix.': '.implode(', ', $properties);
+        if ($immutableViolations !== []) {
+            $parts[]    = $this->describeViolations(violations: $immutableViolations, verb: 'change immutable');
+            $violations = array_merge($violations, $immutableViolations);
+        }
+
+        $message = implode('. ', $parts);
 
         $this->logger->info(
-            message: '[ObjectService] readOnly enforcement rejected UPDATE',
+            message: '[ObjectService] readOnly / immutable enforcement rejected UPDATE',
             context: [
                 'file'       => __FILE__,
                 'line'       => __LINE__,
@@ -2280,6 +2404,79 @@ class ObjectService implements ObjectServiceInterface
         // log entry carry the violation detail.
         throw new ValidationException(message: $message);
     }//end enforceReadOnlyOnUpdate()
+
+    /**
+     * Load the stored business data the write rules compare against.
+     *
+     * Returns null when this is not a true UPDATE. Anything that prevents the
+     * load (not found, RBAC reject, multitenancy filter) means the engine's
+     * normal CREATE path will run, and neither `readOnly` nor `immutable`
+     * applies to a record that does not exist yet.
+     *
+     * Passes the already-resolved register and schema so `find()` takes the
+     * scoped register/schema-table path directly. Omitting them leaves it to
+     * rely on the request's URL scope; under a stale scope it falls back to the
+     * deliberate cross-table search (openregister#1520). We are on the save
+     * path with both resolved, so there is no reason to risk that fallback.
+     *
+     * @param array       $object The incoming payload, read only for its `id` key.
+     * @param string      $uuid   The object being updated.
+     *
+     * @return array|null The stored business data, or null when this is not an update.
+     *
+     * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+     */
+    private function storedDataForWriteRules(array $object, string $uuid): ?array
+    {
+        try {
+            $existing = $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $existingData = $existing->getObject();
+
+        // Drop the synthesised `id` key getObject() prepends — the rules apply
+        // to schema properties, not to the engine-stamped identifier.
+        if (isset($existingData['id']) === true && isset($object['id']) === false) {
+            unset($existingData['id']);
+        }
+
+        return $existingData;
+    }//end storedDataForWriteRules()
+
+    /**
+     * Name the properties a write rule refused, in one sentence.
+     *
+     * Extracted so `enforceReadOnlyOnUpdate()` reads as two rules and a
+     * message rather than two rules and two copies of the same pluralisation.
+     * The copies were also what pushed that method's NPath complexity past the
+     * threshold when the second rule arrived.
+     *
+     * @param array $violations The violation rows, each carrying a `property`.
+     * @param string $verb What the caller tried to do, for the message.
+     *
+     * @return string The sentence.
+     *
+     * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+     */
+    private function describeViolations(array $violations, string $verb): string
+    {
+        $properties = array_map(static fn (array $v): string => $v['property'], $violations);
+
+        $suffix = 'ies';
+        if (count($violations) === 1) {
+            $suffix = 'y';
+        }
+
+        return 'Cannot '.$verb.' propert'.$suffix.': '.implode(', ', $properties);
+    }//end describeViolations()
 
     /**
      * Refuse a write that names a lens property.

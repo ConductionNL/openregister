@@ -14,7 +14,7 @@ SHALL carry `@self.favourite` for the current user.
 - **GIVEN** an object with three audit entries
 - **WHEN** a user stars it and reads it back
 - **THEN** `@self.favourite` is true and the object still has three audit entries
-- @e2e exclude {proposal only; task 4.2 adds tests/e2e/ci/favourites-and-recent.spec.ts when the endpoints ship}
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts
 
 ### Requirement: Opening an object records a per-user view
 
@@ -41,4 +41,4 @@ other filter.
 - **GIVEN** a user who starred two of five cases
 - **WHEN** the index page queries with `_favourite=true` and `status=open`
 - **THEN** only the starred cases with status open are returned
-- @e2e exclude {proposal only; task 4.2 adds tests/e2e/ci/favourites-and-recent.spec.ts when the lenses ship}
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts

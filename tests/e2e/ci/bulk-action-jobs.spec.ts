@@ -118,7 +118,11 @@ test.describe('a bulk action is one previewed job', () => {
 		return String((await res.json()).id)
 	}
 
-	async function createObject(schemaId: string, key: string, status: string): Promise<string> {
+	async function createObject(
+		schemaId: string,
+		key: string,
+		status: string,
+	): Promise<string> {
 		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
 			data: { key, status },
 		})
@@ -133,7 +137,9 @@ test.describe('a bulk action is one previewed job', () => {
 	}
 
 	async function statusOf(schemaId: string, uuid: string): Promise<string> {
-		const res = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const res = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		expect(res.ok(), `object read failed: ${await res.text()}`).toBeTruthy()
 
 		return String((await res.json()).status ?? '')
@@ -143,7 +149,7 @@ test.describe('a bulk action is one previewed job', () => {
 	async function createJob(
 		ctx: APIRequestContext,
 		body: Record<string, unknown>,
-	): Promise<{ status: number, json: Record<string, unknown> }> {
+	): Promise<{ status: number; json: Record<string, unknown> }> {
 		const res = await ctx.post(`${API}/bulk-jobs`, { data: body })
 		const json = (await res.json()) as Record<string, unknown>
 
@@ -154,7 +160,10 @@ test.describe('a bulk action is one previewed job', () => {
 		return { status: res.status(), json }
 	}
 
-	async function membersOf(ctx: APIRequestContext, jobId: string): Promise<Array<Record<string, unknown>>> {
+	async function membersOf(
+		ctx: APIRequestContext,
+		jobId: string,
+	): Promise<Array<Record<string, unknown>>> {
 		const res = await ctx.get(`${API}/bulk-jobs/${jobId}/members?limit=500`)
 		expect(res.ok(), `member listing failed: ${await res.text()}`).toBeTruthy()
 
@@ -173,7 +182,9 @@ test.describe('a bulk action is one previewed job', () => {
 		expect(reg.ok(), `register create failed: ${await reg.text()}`).toBeTruthy()
 		registerId = String((await reg.json()).id)
 
-		openSchemaId = await createSchema('e2e bulk jobs open schema', ['authenticated'])
+		openSchemaId = await createSchema('e2e bulk jobs open schema', [
+			'authenticated',
+		])
 		lockedSchemaId = await createSchema('e2e bulk jobs locked schema', ['admin'])
 	})
 
@@ -200,21 +211,36 @@ test.describe('a bulk action is one previewed job', () => {
 
 	test('the catalogue names each action, its guards and whether it needs a reason', async () => {
 		const res = await admin.get(`${API}/bulk-actions`)
-		expect(res.ok(), `the action catalogue is not reachable: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`the action catalogue is not reachable: ${await res.text()}`,
+		).toBeTruthy()
 
 		const body = await res.json()
 		const byId = Object.fromEntries(
-			(body.results as Array<Record<string, unknown>>).map((row) => [String(row.id), row]),
+			(body.results as Array<Record<string, unknown>>).map((row) => [
+				String(row.id),
+				row,
+			]),
 		)
 
-		expect(byId['openregister:set-properties'], 'the attribute write is not registered').toBeTruthy()
+		expect(
+			byId['openregister:set-properties'],
+			'the attribute write is not registered',
+		).toBeTruthy()
 		expect(byId['openregister:set-properties'].guards).toContain('homogeneity')
 		expect(byId['openregister:set-properties'].requiresJustification).toBe(false)
 
-		expect(byId['openregister:assign'], 'the redistribution is not registered').toBeTruthy()
+		expect(
+			byId['openregister:assign'],
+			'the redistribution is not registered',
+		).toBeTruthy()
 		expect(byId['openregister:assign'].requiresJustification).toBe(true)
 
-		expect(Number(body.ceiling), 'the instance ceiling is not published').toBeGreaterThan(0)
+		expect(
+			Number(body.ceiling),
+			'the instance ceiling is not published',
+		).toBeGreaterThan(0)
 	})
 
 	test('a job created from every match records the query and the whole count', async () => {
@@ -227,7 +253,9 @@ test.describe('a bulk action is one previewed job', () => {
 			`${API}/objects/${registerId}/${openSchemaId}?status=open&_limit=2`,
 		)
 		expect(page.ok(), `paged listing failed: ${await page.text()}`).toBeTruthy()
-		expect((await page.json()).results.length, 'the page should hold two').toBe(2)
+		expect((await page.json()).results.length, 'the page should hold two').toBe(
+			2,
+		)
 
 		const { status, json } = await createJob(admin, {
 			action: 'openregister:set-properties',
@@ -238,9 +266,17 @@ test.describe('a bulk action is one previewed job', () => {
 		})
 
 		expect(status, `job create failed: ${JSON.stringify(json)}`).toBe(201)
-		expect(json.selectionType, 'the job does not say the selection is a query').toBe('query')
-		expect(json.total, 'the job recorded the page rather than the whole result set').toBe(5)
-		expect((json.selection as Record<string, unknown>).query).toEqual({ status: 'open' })
+		expect(
+			json.selectionType,
+			'the job does not say the selection is a query',
+		).toBe('query')
+		expect(
+			json.total,
+			'the job recorded the page rather than the whole result set',
+		).toBe(5)
+		expect((json.selection as Record<string, unknown>).query).toEqual({
+			status: 'open',
+		})
 
 		const report = json.report as Record<string, Record<string, unknown>>
 		expect(report.selection.kind).toBe('query')
@@ -249,7 +285,11 @@ test.describe('a bulk action is one previewed job', () => {
 
 	test('the preview names what would be skipped, and modifies nothing', async () => {
 		const willApply = await createObject(openSchemaId, `skip-${RUN}-a`, 'open')
-		const alreadyThere = await createObject(openSchemaId, `skip-${RUN}-b`, 'closed')
+		const alreadyThere = await createObject(
+			openSchemaId,
+			`skip-${RUN}-b`,
+			'closed',
+		)
 
 		const { status, json } = await createJob(admin, {
 			action: 'openregister:set-properties',
@@ -260,7 +300,9 @@ test.describe('a bulk action is one previewed job', () => {
 		})
 
 		expect(status, `job create failed: ${JSON.stringify(json)}`).toBe(201)
-		expect(json.state, 'a new job should be previewed, not running').toBe('previewed')
+		expect(json.state, 'a new job should be previewed, not running').toBe(
+			'previewed',
+		)
 
 		const counts = json.counts as Record<string, number>
 		expect(counts.applied, 'the preview miscounted what it would apply').toBe(1)
@@ -280,7 +322,10 @@ test.describe('a bulk action is one previewed job', () => {
 
 		// And the whole outcome is downloadable, skipped members included.
 		const file = await admin.get(`${API}/bulk-jobs/${json.id}/download`)
-		expect(file.ok(), `the outcome file is not reachable: ${file.status()}`).toBeTruthy()
+		expect(
+			file.ok(),
+			`the outcome file is not reachable: ${file.status()}`,
+		).toBeTruthy()
 
 		const csv = await file.text()
 		expect(csv).toContain(willApply)
@@ -328,7 +373,9 @@ test.describe('a bulk action is one previewed job', () => {
 		})
 		expect(status, `job create failed: ${JSON.stringify(json)}`).toBe(201)
 
-		const res = await admin.post(`${API}/bulk-jobs/${json.id}/commit`, { data: {} })
+		const res = await admin.post(`${API}/bulk-jobs/${json.id}/commit`, {
+			data: {},
+		})
 		expect(res.status(), 'a commit with no reason should be refused').toBe(422)
 
 		const body = await res.json()
@@ -339,9 +386,15 @@ test.describe('a bulk action is one previewed job', () => {
 
 		// With a reason, the same commit is accepted and queued.
 		const accepted = await admin.post(`${API}/bulk-jobs/${json.id}/commit`, {
-			data: { justification: 'Hans left on the 30th, his caseload moves to Fatima.' },
+			data: {
+				justification:
+					'Hans left on the 30th, his caseload moves to Fatima.',
+			},
 		})
-		expect(accepted.status(), `the commit was refused: ${await accepted.text()}`).toBe(202)
+		expect(
+			accepted.status(),
+			`the commit was refused: ${await accepted.text()}`,
+		).toBe(202)
 		expect((await accepted.json()).state).toBe('running')
 	})
 

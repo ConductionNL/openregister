@@ -90,11 +90,21 @@ test.describe('archiving-process', () => {
 		reviewer = await currentUser(request)
 
 		dossierRegister = await createRegister(request, `${RUN}-dos`)
-		dossierSchema = await createSchema(request, RUN, 'dossier', DOSSIER_PROPERTIES)
+		dossierSchema = await createSchema(
+			request,
+			RUN,
+			'dossier',
+			DOSSIER_PROPERTIES,
+		)
 		await linkSchemaToRegister(request, dossierRegister, [dossierSchema.id])
 
 		listRegister = await createRegister(request, `${RUN}-lst`)
-		listSchema = await createSchema(request, RUN, 'destructionlist', LIST_PROPERTIES)
+		listSchema = await createSchema(
+			request,
+			RUN,
+			'destructionlist',
+			LIST_PROPERTIES,
+		)
 		await linkSchemaToRegister(request, listRegister, [listSchema.id])
 
 		const a = await createObject(request, dossierRegister.id, dossierSchema.id, {
@@ -120,7 +130,10 @@ test.describe('archiving-process', () => {
 				reviewReminderFrequency: 'P7D',
 			},
 		})
-		expect(patched.status(), 'point the settings at the fixture register').toBeLessThan(300)
+		expect(
+			patched.status(),
+			'point the settings at the fixture register',
+		).toBeLessThan(300)
 
 		const list = await createObject(request, listRegister.id, listSchema.id, {
 			status: 'in_review',
@@ -165,31 +178,42 @@ test.describe('archiving-process', () => {
 	})
 
 	// @e2e retention-management::an-unassigned-entry-is-named
-	test('a list with unassigned entries names them, and says it is configured', async ({ request }) => {
+	test('a list with unassigned entries names them, and says it is configured', async ({
+		request,
+	}) => {
 		const index = await request.get(`${API}/archival/destruction-lists`)
 		expect(index.status(), 'list the destruction lists').toBe(200)
 		const indexBody = await index.json()
 
 		// The stub this replaced answered `configured` not at all and `results`
 		// always empty, which reads identically to an instance with no work.
-		expect(indexBody.configured, 'the instance reports that it is configured').toBe(true)
+		expect(
+			indexBody.configured,
+			'the instance reports that it is configured',
+		).toBe(true)
 		expect(
 			indexBody.results.map((row: Record<string, unknown>) => row.uuid),
 			'our seeded list is in the index',
 		).toContain(listId)
 
-		const detail = await request.get(`${API}/archival/destruction-lists/${listId}`)
+		const detail = await request.get(
+			`${API}/archival/destruction-lists/${listId}`,
+		)
 		expect(detail.status(), 'read the seeded list').toBe(200)
 		const body = await detail.json()
 
 		expect(
-			body.unassignedEntries.map((entry: Record<string, unknown>) => entry.uuid),
+			body.unassignedEntries.map(
+				(entry: Record<string, unknown>) => entry.uuid,
+			),
 			'both entries are named as unassigned, not merely counted',
 		).toEqual([dossierA, dossierB])
 	})
 
 	// @e2e retention-management::a-reviewer-sees-what-is-waiting-on-them
-	test('an assigned entry appears on that reviewer worklist', async ({ request }) => {
+	test('an assigned entry appears on that reviewer worklist', async ({
+		request,
+	}) => {
 		const assigned = await request.put(
 			`${API}/archival/destruction-lists/${listId}/entries/${dossierA}/reviewer`,
 			{
@@ -199,9 +223,13 @@ test.describe('archiving-process', () => {
 		)
 		expect(assigned.status(), 'assign the first entry').toBe(200)
 		const assignedBody = await assigned.json()
-		expect(assignedBody.entry.reviewer, 'the entry names its reviewer').toBe(reviewer)
+		expect(assignedBody.entry.reviewer, 'the entry names its reviewer').toBe(
+			reviewer,
+		)
 		expect(
-			assignedBody.unassignedEntries.map((entry: Record<string, unknown>) => entry.uuid),
+			assignedBody.unassignedEntries.map(
+				(entry: Record<string, unknown>) => entry.uuid,
+			),
 			'only the second entry is still unassigned',
 		).toEqual([dossierB])
 
@@ -221,7 +249,9 @@ test.describe('archiving-process', () => {
 	})
 
 	// @e2e retention-management::retaining-moves-the-date-and-says-why
-	test('retaining moves the archiefactiedatum and records the reason', async ({ request }) => {
+	test('retaining moves the archiefactiedatum and records the reason', async ({
+		request,
+	}) => {
 		const decided = await request.post(
 			`${API}/archival/destruction-lists/${listId}/entries/${dossierA}/decision`,
 			{
@@ -237,7 +267,9 @@ test.describe('archiving-process', () => {
 		const body = await decided.json()
 
 		expect(body.decision.answer).toBe('retain')
-		expect(body.decision.reviewer, 'the decision names who took it').toBe(reviewer)
+		expect(body.decision.reviewer, 'the decision names who took it').toBe(
+			reviewer,
+		)
 		expect(body.decision.reason).toBe('Lopende bezwaarprocedure')
 		expect(body.decision.newArchiefactiedatum).toBe('2031-03-01')
 
@@ -247,7 +279,9 @@ test.describe('archiving-process', () => {
 		)
 		expect(object.status(), 'read the dossier back').toBe(200)
 		const retention = (await object.json())?.['@self']?.retention ?? {}
-		expect(retention.archiefactiedatum, 'the record carries the new date').toBe('2031-03-01')
+		expect(retention.archiefactiedatum, 'the record carries the new date').toBe(
+			'2031-03-01',
+		)
 
 		// And the entry has left the worklist, which is the half a decision
 		// recorded somewhere else would not do.
@@ -260,7 +294,9 @@ test.describe('archiving-process', () => {
 	})
 
 	// @e2e retention-management::transfer-is-a-decision-not-a-separate-errand
-	test('transfer is answered on the list and recorded in the same history', async ({ request }) => {
+	test('transfer is answered on the list and recorded in the same history', async ({
+		request,
+	}) => {
 		const assigned = await request.put(
 			`${API}/archival/destruction-lists/${listId}/entries/${dossierB}/reviewer`,
 			{
@@ -290,18 +326,29 @@ test.describe('archiving-process', () => {
 		).toBeTruthy()
 
 		// ONE history, not two: both answers sit on the same list.
-		const detail = await request.get(`${API}/archival/destruction-lists/${listId}`)
+		const detail = await request.get(
+			`${API}/archival/destruction-lists/${listId}`,
+		)
 		const detailBody = await detail.json()
 		expect(
-			detailBody.decisions.map((decision: Record<string, unknown>) => decision.answer),
+			detailBody.decisions.map(
+				(decision: Record<string, unknown>) => decision.answer,
+			),
 			'destroy, retain and transfer land in one decision history',
 		).toEqual(['retain', 'transfer'])
 	})
 
-	test('an entry nobody is accountable for refuses rather than falling open', async ({ request }) => {
-		const fresh = await createObject(request, dossierRegister!.id, dossierSchema!.id, {
-			title: 'Bezwaar 2019/116',
-		})
+	test('an entry nobody is accountable for refuses rather than falling open', async ({
+		request,
+	}) => {
+		const fresh = await createObject(
+			request,
+			dossierRegister!.id,
+			dossierSchema!.id,
+			{
+				title: 'Bezwaar 2019/116',
+			},
+		)
 
 		const refused = await request.post(
 			`${API}/archival/destruction-lists/${listId}/entries/${fresh.id}/decision`,
@@ -312,7 +359,10 @@ test.describe('archiving-process', () => {
 		)
 
 		// Not on the list at all: 404, and nothing was destroyed.
-		expect(refused.status(), 'a record that is not on this list cannot be answered').toBe(404)
+		expect(
+			refused.status(),
+			'a record that is not on this list cannot be answered',
+		).toBe(404)
 	})
 })
 
@@ -378,7 +428,10 @@ test.describe('archiving-nomination', () => {
 						initial: 'in_behandeling',
 						final: ['afgehandeld'],
 						transitions: {
-							afhandelen: { from: ['in_behandeling'], to: 'afgehandeld' },
+							afhandelen: {
+								from: ['in_behandeling'],
+								to: 'afgehandeld',
+							},
 						},
 					},
 				},
@@ -429,12 +482,17 @@ test.describe('archiving-nomination', () => {
 
 	// @e2e retention-management::closing-an-object-writes-its-archival-future
 	// @e2e retention-management::a-handler-answering-a-woo-request-sees-the-basis
-	test('closing a case writes its nomination, its date and the row they came from', async ({ request }) => {
+	test('closing a case writes its nomination, its date and the row they came from', async ({
+		request,
+	}) => {
 		const closed = await request.post(`${API}/objects/${zaakId}/transition`, {
 			headers: { 'Content-Type': 'application/json' },
 			data: { action: 'afhandelen' },
 		})
-		expect(closed.status(), 'close the case through the declared transition').toBeLessThan(300)
+		expect(
+			closed.status(),
+			'close the case through the declared transition',
+		).toBeLessThan(300)
 
 		const read = await request.get(
 			`${API}/objects/${zaakRegister!.id}/${zaakSchema!.id}/${zaakId}`,
@@ -443,21 +501,39 @@ test.describe('archiving-nomination', () => {
 		const retention = (await read.json())?.['@self']?._retention ?? {}
 
 		// The nomination, the date and WHICH ROW decided, all on the object.
-		expect(retention.appraisal, 'the selectielijst row decided the appraisal').toBe('destroy')
+		expect(
+			retention.appraisal,
+			'the selectielijst row decided the appraisal',
+		).toBe('destroy')
 		expect(retention.disposalDate, 'a disposal date was derived').toBeTruthy()
-		expect(retention.selectionListRow, 'the row that decided is named').toBe(CATEGORY)
-		expect(retention.source, 'and which list it came from').toBe('Selectielijst gemeenten 2020')
-		expect(retention.basis, 'the basis is the selection list, not a schema guess').toBe('selection_list')
-		expect(retention.nomination?.status, 'the nomination reports itself').toBe('nominated')
-		expect(retention.nomination?.trigger, 'and says the closure caused it').toBe('closure')
+		expect(retention.selectionListRow, 'the row that decided is named').toBe(
+			CATEGORY,
+		)
+		expect(retention.source, 'and which list it came from').toBe(
+			'Selectielijst gemeenten 2020',
+		)
+		expect(
+			retention.basis,
+			'the basis is the selection list, not a schema guess',
+		).toBe('selection_list')
+		expect(retention.nomination?.status, 'the nomination reports itself').toBe(
+			'nominated',
+		)
+		expect(retention.nomination?.trigger, 'and says the closure caused it').toBe(
+			'closure',
+		)
 	})
 
-	test('recomputing a nomination is refused without a reason and recorded with one', async ({ request }) => {
+	test('recomputing a nomination is refused without a reason and recorded with one', async ({
+		request,
+	}) => {
 		const refused = await request.post(
 			`${API}/archival/objects/${zaakId}/nomination/recompute`,
 			{ headers: { 'Content-Type': 'application/json' }, data: {} },
 		)
-		expect(refused.status(), 'a recomputation with no reason is refused').toBe(400)
+		expect(refused.status(), 'a recomputation with no reason is refused').toBe(
+			400,
+		)
 
 		const done = await request.post(
 			`${API}/archival/objects/${zaakId}/nomination/recompute`,
@@ -468,7 +544,9 @@ test.describe('archiving-nomination', () => {
 		)
 		expect(done.status(), 'a recomputation with a reason is recorded').toBe(200)
 		const recomputed = await done.json()
-		expect(recomputed.nomination?.trigger, 'the act names itself').toBe('recompute')
+		expect(recomputed.nomination?.trigger, 'the act names itself').toBe(
+			'recompute',
+		)
 
 		const read = await request.get(
 			`${API}/objects/${zaakRegister!.id}/${zaakSchema!.id}/${zaakId}`,
@@ -519,7 +597,9 @@ test.describe('archiving-element-mapping', () => {
 	})
 
 	// @e2e retention-management::an-unmapped-mandatory-element-stops-the-transfer-here
-	test('a mapping that leaves a mandatory element unfilled is refused at schema save', async ({ request }) => {
+	test('a mapping that leaves a mandatory element unfilled is refused at schema save', async ({
+		request,
+	}) => {
 		const incomplete = { ...COMPLETE_MAPPING }
 		delete (incomplete as Record<string, unknown>).archiefvormer
 
@@ -537,13 +617,18 @@ test.describe('archiving-element-mapping', () => {
 			},
 		})
 
-		expect(refused.status(), 'a mapping missing a mandatory element is refused').toBe(400)
+		expect(
+			refused.status(),
+			'a mapping missing a mandatory element is refused',
+		).toBe(400)
 		const body = await refused.text()
 		expect(body, 'and the refusal names the element').toContain('archiefvormer')
 	})
 
 	// @e2e retention-management::an-unmapped-mandatory-element-stops-the-transfer-here
-	test('a complete mapping survives the save and reads back', async ({ request }) => {
+	test('a complete mapping survives the save and reads back', async ({
+		request,
+	}) => {
 		schema = await createSchema(
 			request,
 			RUN,

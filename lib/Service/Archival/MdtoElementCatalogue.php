@@ -170,9 +170,25 @@ class MdtoElementCatalogue {
 			);
 		}
 
+		// Read the bytes first, then parse the string.
+		//
+		// `DOMDocument::load()` goes through libxml's external entity loader,
+		// and Nextcloud's `lib/base.php` replaces that loader with one that
+		// returns null. The replacement does not distinguish the primary
+		// document from an entity it references, so `load()` returns false for
+		// a perfectly readable local file the moment the Nextcloud bootstrap is
+		// in the process, reporting "Failed to load external entity because the
+		// resolver function returned null". `loadXML()` on a string never asks
+		// the resolver. Same reason `MdtoXmlGenerator` uses
+		// `schemaValidateSource()` rather than `schemaValidate()`.
+		$source = file_get_contents($path);
+		if ($source === false) {
+			throw new RuntimeException('The vendored MDTO schema at ' . $path . ' could not be read');
+		}
+
 		$document = new DOMDocument();
 		$previous = libxml_use_internal_errors(true);
-		$loaded = $document->load($path);
+		$loaded = $document->loadXML((string)$source);
 		libxml_clear_errors();
 		libxml_use_internal_errors($previous);
 

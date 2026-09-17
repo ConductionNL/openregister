@@ -97,52 +97,7 @@ class ConceptDeleteGuardListener implements IEventListener {
 		}
 
 		try {
-			$object = $event->getObject();
-			$reference = $object->getSchema();
-			if ($reference === null || $reference === '') {
-				return;
-			}
-
-			$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-			if ($this->guard->isConcept(schema: $schema) === false) {
-				return;
-			}
-
-			$concept = $object->getObject();
-			if (is_array($concept) === false) {
-				return;
-			}
-
-			if ($this->guard->isSystemDefined(concept: $concept) === true) {
-				$this->refuse(
-					event: $event,
-					code: self::ERROR_CODE_SYSTEM,
-					message: $this->guard->systemDefinedMessage(concept: $concept),
-					detail: ['concept' => (string)($concept['uri'] ?? ''), 'systemDefined' => true]
-				);
-				return;
-			}
-
-			$schemeUri = $this->schemeUriOf(concept: $concept);
-			if ($schemeUri === null) {
-				return;
-			}
-
-			$usage = $this->guard->usage(concept: $concept, schemeUri: $schemeUri);
-			if ($usage['count'] === 0) {
-				return;
-			}
-
-			$this->refuse(
-				event: $event,
-				code: self::ERROR_CODE_IN_USE,
-				message: $this->guard->inUseMessage(concept: $concept, usage: $usage),
-				detail: [
-					'concept' => (string)($concept['uri'] ?? ''),
-					'inUse' => $usage['count'],
-					'holders' => $usage['holders'],
-				]
-			);
+			$this->guardDelete(event: $event);
 		} catch (Throwable $failure) {
 			// A guard that cannot read the holding tables must not also become
 			// the reason nothing can be deleted. The delete proceeds and the
@@ -154,6 +109,65 @@ class ConceptDeleteGuardListener implements IEventListener {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Refuse the delete when the concept is system-defined or still held.
+	 *
+	 * The checks live here so {@see handle()} is only the event guard and the
+	 * fail-open try/catch: a guard that throws must not itself block deletes.
+	 *
+	 * @param ObjectDeletingEvent $event The delete event.
+	 *
+	 * @return void
+	 */
+	private function guardDelete(ObjectDeletingEvent $event): void {
+		$object = $event->getObject();
+		$reference = $object->getSchema();
+		if ($reference === null || $reference === '') {
+			return;
+		}
+
+		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		if ($this->guard->isConcept(schema: $schema) === false) {
+			return;
+		}
+
+		$concept = $object->getObject();
+		if (is_array($concept) === false) {
+			return;
+		}
+
+		if ($this->guard->isSystemDefined(concept: $concept) === true) {
+			$this->refuse(
+				event: $event,
+				code: self::ERROR_CODE_SYSTEM,
+				message: $this->guard->systemDefinedMessage(concept: $concept),
+				detail: ['concept' => (string)($concept['uri'] ?? ''), 'systemDefined' => true]
+			);
+			return;
+		}
+
+		$schemeUri = $this->schemeUriOf(concept: $concept);
+		if ($schemeUri === null) {
+			return;
+		}
+
+		$usage = $this->guard->usage(concept: $concept, schemeUri: $schemeUri);
+		if ($usage['count'] === 0) {
+			return;
+		}
+
+		$this->refuse(
+			event: $event,
+			code: self::ERROR_CODE_IN_USE,
+			message: $this->guard->inUseMessage(concept: $concept, usage: $usage),
+			detail: [
+				'concept' => (string)($concept['uri'] ?? ''),
+				'inUse' => $usage['count'],
+				'holders' => $usage['holders'],
+			]
+		);
+	}//end guardDelete()
 
 	/**
 	 * Stop the delete, carrying the refusal and its 409.

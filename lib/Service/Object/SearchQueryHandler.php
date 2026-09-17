@@ -84,6 +84,18 @@ class SearchQueryHandler {
 	private const NO_UNREAD_READER = '__no-unread-reader__';
 
 	/**
+	 * The id a `_favourite=true` or `_recent=true` query falls back to when
+	 * there is no caller.
+	 *
+	 * Anonymous has starred nothing and opened nothing, so an unguarded lens
+	 * would drop its own restriction and answer the WHOLE register. Guarded the
+	 * same way as the two above: a literal no object can carry.
+	 *
+	 * @var string
+	 */
+	private const NO_PERSONAL_LENS_USER = '__no-personal-lens-user__';
+
+	/**
 	 * Memoized effective search-trail recording mode for this request.
 	 *
 	 * The recording mode is read from settings once per request instead of
@@ -272,6 +284,62 @@ class SearchQueryHandler {
 
 		return $query;
 	}//end applyUnreadLens()
+
+	/**
+	 * Resolve `_favourite=true` and `_recent=true` into the uid they read.
+	 *
+	 * Both are resolved INSIDE the query rather than applied to a fetched page,
+	 * for the reason spelled out on the unread lens above: a post-filter gives a
+	 * first page of 25 against a total of 120 and a second page that skips rows,
+	 * which reads as a paging bug and is not one. The mapper turns `_favouriteFor`
+	 * into a correlated `EXISTS` and `_recentFor` into the same plus the ordering
+	 * by last view, so the page, the total and the facets see one restriction.
+	 *
+	 * Both are handled in ONE method, and the two names are a loop rather than
+	 * two copies of the same eight lines, because the difference between them is
+	 * entirely in the mapper: here they are the same question, "which user".
+	 *
+	 * Identity is resolved HERE, at the edge, never in the query builder:
+	 * ADR-005 wants the principal named where the request arrives, and it also
+	 * means the mapper can be tested with a uid rather than a session.
+	 *
+	 * @param array<string, mixed> $query The query built so far.
+	 *
+	 * @return array<string, mixed> The query, carrying the resolved user.
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyPersonalLenses(array $query): array {
+		// Asked-for flag to the key the mapper reads.
+		$lenses = [
+			'_favourite' => '_favouriteFor',
+			'_recent' => '_recentFor',
+		];
+
+		foreach ($lenses as $flag => $resolved) {
+			if (array_key_exists($flag, $query) === false) {
+				continue;
+			}
+
+			$asked = filter_var($query[$flag], FILTER_VALIDATE_BOOLEAN);
+			unset($query[$flag]);
+			if ($asked === false) {
+				continue;
+			}
+
+			$uid = $this->userSession?->getUser()?->getUID();
+			if ($uid === null || $uid === '') {
+				// No user, so nothing can be theirs. An honest empty page,
+				// never the whole register.
+				$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
+				continue;
+			}
+
+			$query[$resolved] = $uid;
+		}//end foreach
+
+		return $query;
+	}//end applyPersonalLenses()
 
 	/**
 	 * Whether the target schema is served by an external object-source (DBAL
@@ -579,6 +647,11 @@ class SearchQueryHandler {
 		// The `_unread=true` lens, after the watching lens so that "unread among
 		// what I follow" narrows twice rather than one overwriting the other.
 		$query = $this->applyUnreadLens(query: $query);
+
+		// The `_favourite=true` and `_recent=true` lenses, last, so that every
+		// earlier lens has already narrowed `_ids` and these two compose with it
+		// rather than replacing it.
+		$query = $this->applyPersonalLenses(query: $query);
 
 		return $query;
 	}//end buildSearchQuery()

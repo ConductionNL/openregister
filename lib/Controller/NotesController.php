@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
@@ -244,7 +245,7 @@ class NotesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
 	 */
 	public function update(
 		string $register,
@@ -273,8 +274,20 @@ class NotesController extends Controller {
 			$note = $this->noteService->updateNote(
 				noteId: (int)$noteId,
 				message: $write['message'],
-				visibility: $write['visibility']
+				visibility: $write['visibility'],
+				mayManage: $this->visibility->mayManageObject(object: $object)
 			);
+
+			if ($write['message'] !== null) {
+				// The trail records that the note changed and who changed it;
+				// the text it used to carry stays in the versions, which is
+				// what keeps the trail small and readable.
+				$this->noteService->auditEdit(
+					object: $object,
+					noteId: (int)$noteId,
+					versions: (int)($note['versionCount'] ?? 0)
+				);
+			}
 
 			// Keep the record and its references in step with the text that
 			// was just rewritten: an index answering with yesterday's sentence
@@ -298,10 +311,114 @@ class NotesController extends Controller {
 			return new JSONResponse(data: $note);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (NoteWriteRefusedException $e) {
+			// Caught ahead of the generic Exception below, which it extends:
+			// a locked note answers 423 and a note the caller may not rewrite
+			// answers 403, each legible as what it is rather than as a bad
+			// request. The refusal carries its own status.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: $e->getHttpStatus()
+			);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end update()
+
+	/**
+	 * Update a note, reached over PATCH.
+	 *
+	 * The canonical verb for changing part of a note: a caller sends only the
+	 * message, or only the visibility, and leaves the rest alone. The PUT
+	 * route stays where it is so no existing client breaks, and both land on
+	 * the same handler so the two verbs can never drift apart.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema The schema slug or identifier
+	 * @param string $id The ID of the object
+	 * @param string $noteId The ID of the note to update
+	 *
+	 * @return JSONResponse JSON response with the updated note
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function patch(
+		string $register,
+		string $schema,
+		string $id,
+		string $noteId,
+	): JSONResponse {
+		return $this->update(register: $register, schema: $schema, id: $id, noteId: $noteId);
+	}//end patch()
+
+	/**
+	 * List what a note used to say.
+	 *
+	 * Reading the history is reading the note: the list is served to anyone
+	 * the note list itself would serve, which for a caller without `update` on
+	 * the object means the note has to be a public one.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema The schema slug or identifier
+	 * @param string $id The ID of the object
+	 * @param string $noteId The ID of the note whose history is read
+	 *
+	 * @return JSONResponse JSON response with the versions, newest first
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function versions(
+		string $register,
+		string $schema,
+		string $id,
+		string $noteId,
+	): JSONResponse {
+		try {
+			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			if ($object === null) {
+				return new JSONResponse(
+					data: ['error' => 'Object not found'],
+					statusCode: 404
+				);
+			}
+
+			try {
+				$note = $this->noteService->getNote(noteId: (int)$noteId);
+			} catch (Exception $e) {
+				// A note that is not there is a 404, not the 400 a generic
+				// failure would give: the caller asked for something absent,
+				// it did not ask wrongly.
+				return new JSONResponse(data: ['error' => 'Note not found'], statusCode: 404);
+			}
+
+			// The same filter the note list applies, asked of one note: a
+			// reader who may not see an internal note may not read the texts
+			// it replaced either.
+			$filter = $this->visibility->effectiveFilter(object: $object, requested: null);
+			if (count($this->visibility->filterRows(rows: [$note], filter: $filter)) === 0) {
+				return new JSONResponse(data: ['error' => 'Note not found'], statusCode: 404);
+			}
+
+			$versions = $this->noteService->noteVersions(noteId: (int)$noteId);
+
+			return new JSONResponse(
+				data: [
+					'results' => $versions,
+					'total' => count($versions),
+				]
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end versions()
 
 	/**
 	 * Delete a note.

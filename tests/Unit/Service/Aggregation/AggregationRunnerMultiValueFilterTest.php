@@ -451,13 +451,13 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 
 		$isTags = ($schema !== null && $schema->getSlug() === 'tagged-items');
 		if ($isTags === true) {
-			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_organisation" TEXT, "id" INTEGER, "tags" TEXT)');
+			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_archived" TEXT, "_organisation" TEXT, "id" INTEGER, "tags" TEXT)');
 			$insert = $pdo->prepare('INSERT INTO "oc_register_1_schema_x" ("_deleted", "_organisation", "id", "tags") VALUES (NULL, ?, ?, ?)');
 			foreach ($dataset as $row) {
 				$insert->execute(['__no_active_org__', $row['id'], json_encode($row['tags'])]);
 			}
 		} else {
-			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_organisation" TEXT, "status" TEXT, "region" TEXT, "amount" INTEGER)');
+			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_archived" TEXT, "_organisation" TEXT, "status" TEXT, "region" TEXT, "amount" INTEGER)');
 			$insert = $pdo->prepare('INSERT INTO "oc_register_1_schema_x" ("_deleted", "_organisation", "status", "region", "amount") VALUES (NULL, ?, ?, ?, ?)');
 			foreach ($dataset as $row) {
 				$insert->execute(['__no_active_org__', $row['status'], ($row['region'] ?? null), $row['amount']]);

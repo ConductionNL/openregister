@@ -60,7 +60,8 @@
 		"Slug": "URL-slug term, used unchanged in Slovenian developer language.",
 		"Webhook": "Protocol term, used unchanged in Slovenian technical language.",
 		"Status": "Slovenian uses the Latin loan 'status' with exactly this meaning, and this bundle already writes it: 'Status' is the value for the Status column and 'Stanje' is reserved for the different sense (health/state) it renders elsewhere.",
-		"https://api.your-dolphin-instance.com": "Example URL for the Dolphin API host; a literal placeholder value, not prose. Restored in this pass — the bundle had 'https://api.your-dolphin-primerka.com', a machine translation that rewrote 'instance' inside a URL."
+		"https://api.your-dolphin-instance.com": "Example URL for the Dolphin API host; a literal placeholder value, not prose. Restored in this pass — the bundle had 'https://api.your-dolphin-primerka.com', a machine translation that rewrote 'instance' inside a URL.",
+		"Operator": "The engine's comparison/logic operator. Slovenian uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists."
 	},
 	"corrections": {
 		"Audit trail #{id}": "Pre-existing value was 'Revizijski trag #{id}'. 'Trag' is CROATIAN/Serbian for a trace; the Slovenian word is 'sled', which this bundle itself uses in all 14 of its other audit-trail keys ('Revizijske sledi', 'Podrobnosti revizijske sledi'). The gender agreement was wrong as a consequence too, since 'sled' is feminine. Corrected to 'Revizijska sled #{id}'. Worth noting the neighbourhood: openbuild ships a Croatian catalogue under sl.json, so a Croatian word appearing in a Slovenian bundle is not a coincidence to shrug at.",
