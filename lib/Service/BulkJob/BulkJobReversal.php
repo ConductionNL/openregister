@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -78,6 +79,7 @@ class BulkJobReversal {
 	 * @return BulkJob The previewed reversal.
 	 *
 	 * @throws BulkJobRefusedException When the job cannot be undone, naming the reason.
+	 * @throws InvalidArgumentException When the job names no register or schema, which the create path refuses.
 	 *
 	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
 	 */
