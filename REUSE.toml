@@ -47,7 +47,7 @@ SPDX-PackageDownloadLocation = "https://github.com/ConductionNL/openregister"
 # AGPL-3.0-or-later.txt. The three `patches/*.patch` are Conduction's own
 # changes to MIT-licensed upstream code (LLPhant, PhpSpreadsheet); the added
 # lines are ours and the context lines quote upstream under MIT, which permits
-# that. They stay EUPL-1.2 under this blanket. The 92 files that say
+# that. They stay EUPL-1.2 under this blanket. The files that say
 # "Open Register Contributors" instead of "Conduction B.V." keep their own
 # header too — the copyright text differs, the licence does not.
 [[annotations]]
