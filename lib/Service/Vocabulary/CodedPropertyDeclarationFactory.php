@@ -57,7 +57,10 @@ class CodedPropertyDeclarationFactory {
 			return null;
 		}
 
-		$store = (trim((string)($raw['store'] ?? 'uri')) === 'notation') ? 'notation' : 'uri';
+		$store = 'uri';
+		if (trim((string)($raw['store'] ?? 'uri')) === 'notation') {
+			$store = 'notation';
+		}
 
 		return new CodedPropertyDeclaration(
 			scheme: $scheme,
@@ -112,7 +115,11 @@ class CodedPropertyDeclarationFactory {
 			$raw = (array)$raw;
 		}
 
-		return (is_array($raw) === true) ? $raw : null;
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		return null;
 	}//end rawAnnotation()
 
 	/**
@@ -124,7 +131,11 @@ class CodedPropertyDeclarationFactory {
 	 */
 	private function nonEmpty(mixed $value): ?string {
 		$string = trim((string)($value ?? ''));
-		return ($string === '') ? null : $string;
+		if ($string === '') {
+			return null;
+		}
+
+		return $string;
 	}//end nonEmpty()
 
 	/**

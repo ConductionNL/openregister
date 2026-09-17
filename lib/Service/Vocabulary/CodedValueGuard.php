@@ -51,6 +51,7 @@ class CodedValueGuard {
 	 * @param ConceptRepository $concepts Reads schemes and their concepts.
 	 * @param ConceptLifecycle $lifecycle Answers window, group and weight.
 	 * @param ConceptHierarchy $hierarchy Walks broader/narrower.
+	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
 		private readonly ConceptRepository $concepts,

@@ -60,6 +60,7 @@ class ConceptDeleteGuard {
 	 * @param ConceptLifecycle $lifecycle Answers whether a value is system-defined.
 	 * @param SchemaMapper $schemas Finds the schemas whose properties bind to a scheme.
 	 * @param MagicMapper $objects Counts the objects holding a value.
+	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
 		private readonly ConceptLifecycle $lifecycle,

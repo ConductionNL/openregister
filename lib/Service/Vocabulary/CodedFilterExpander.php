@@ -66,6 +66,7 @@ class CodedFilterExpander {
 	 * @param ConceptRepository $concepts Reads the scheme's concepts.
 	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
 	 * @param SchemaMapper $schemas Resolves the schema being queried.
+	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
 		private readonly ConceptRepository $concepts,
