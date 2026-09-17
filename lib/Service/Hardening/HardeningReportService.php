@@ -118,12 +118,28 @@ class HardeningReportService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function controls(): array {
-		$password = $this->platform->passwordPolicy();
-		$session = $this->platform->sessionPolicy();
-		$bruteForce = $this->platform->bruteForceState();
-		$authLimit = $this->policy->authRateLimit();
+		return array_merge(
+			$this->passwordRows(),
+			$this->sessionRows(),
+			$this->rateLimitRows(),
+			$this->bruteForceRows(),
+			$this->originRows(),
+			$this->uploadRows(),
+		);
 
-		$unreadable = 'Nextcloud owns this control. It reads as unknown when the policy app is not running, and an unknown control fails its floor.';
+	}//end controls()
+
+	/**
+	 * Nextcloud's password policy, as the policy app enforces it.
+	 *
+	 * @return array<int, HardeningControl> The rows.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function passwordRows(): array {
+		$password = $this->platform->passwordPolicy();
+		$unreadable = 'Nextcloud owns this control. It reads as unknown when the policy app '
+			. 'is not running, and an unknown control fails its floor.';
 
 		return [
 			$this->row(
@@ -151,6 +167,21 @@ class HardeningReportService {
 				value: $password['checksBreachDatabase'],
 				unit: 'switch',
 			),
+		];
+
+	}//end passwordRows()
+
+	/**
+	 * Nextcloud's session policy, as the system configuration sets it.
+	 *
+	 * @return array<int, HardeningControl> The rows.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function sessionRows(): array {
+		$session = $this->platform->sessionPolicy();
+
+		return [
 			$this->row(
 				id: 'session.lifetimeSeconds',
 				title: 'A session lasts no longer than this',
@@ -176,6 +207,21 @@ class HardeningReportService {
 				unit: 'switch',
 				note: 'Nextcloud enforces the factor instance-wide. Declaring it per register is REQ-IHC-003 and is not built yet.',
 			),
+		];
+
+	}//end sessionRows()
+
+	/**
+	 * The inbound and interactive ceilings, read from what applies them.
+	 *
+	 * @return array<int, HardeningControl> The rows.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function rateLimitRows(): array {
+		$authLimit = $this->policy->authRateLimit();
+
+		return [
 			$this->row(
 				id: 'auth.rateLimit.attemptsPerIdentity',
 				title: 'One identity may fail this many times before it is locked out',
@@ -232,6 +278,25 @@ class HardeningReportService {
 				value: SecurityService::LOGIN_LOCKOUT_DURATION,
 				unit: 'seconds',
 			),
+		];
+
+	}//end rateLimitRows()
+
+	/**
+	 * The platform throttler, and the surfaces that feed it.
+	 *
+	 * @return array<int, HardeningControl> The rows.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The catalogue is a constant and its readers are
+	 * pure functions over it. Injecting a stateless lookup would add a constructor argument
+	 * to every caller and change nothing about what the lookup can answer.
+	 */
+	private function bruteForceRows(): array {
+		$bruteForce = $this->platform->bruteForceState();
+
+		return [
 			$this->row(
 				id: 'bruteForce.platformThrottlerEnabled',
 				title: 'Nextcloud delays a client that keeps guessing',
@@ -248,6 +313,19 @@ class HardeningReportService {
 				value: ThrottledSurfaces::count(),
 				unit: 'surfaces',
 			),
+		];
+
+	}//end bruteForceRows()
+
+	/**
+	 * Who may read a public answer from a browser on another website.
+	 *
+	 * @return array<int, HardeningControl> The rows.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function originRows(): array {
+		return [
 			$this->row(
 				id: 'origins.allowlistEntries',
 				title: 'Websites that may read a public answer from a browser',
@@ -258,6 +336,19 @@ class HardeningReportService {
 				note: 'An empty allowlist reflects whichever origin asks, which is how this instance '
 					. 'behaved before the control existed. Declare a floor of 1 to require a list.',
 			),
+		];
+
+	}//end originRows()
+
+	/**
+	 * The largest file the running configuration accepts.
+	 *
+	 * @return array<int, HardeningControl> The rows.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function uploadRows(): array {
+		return [
 			$this->row(
 				id: 'upload.ceilingBytes',
 				title: 'The largest file somebody may push in',
@@ -269,7 +360,7 @@ class HardeningReportService {
 			),
 		];
 
-	}//end controls()
+	}//end uploadRows()
 
 	/**
 	 * Build one row, taking the floor and the comparator from the policy.
@@ -283,6 +374,10 @@ class HardeningReportService {
 	 * @param string $note Why the value reads as it does.
 	 *
 	 * @return HardeningControl The row.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The catalogue is a constant and its readers are
+	 * pure functions over it. Injecting a stateless lookup would add a constructor argument
+	 * to every caller and change nothing about what the lookup can answer.
 	 */
 	private function row(
 		string $id,

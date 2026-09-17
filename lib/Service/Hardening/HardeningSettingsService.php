@@ -162,6 +162,10 @@ class HardeningSettingsService {
 	 * @throws HardeningFloorException When the floor would be weaker than the shipped baseline.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The catalogue is a constant and its readers are
+	 * pure functions over it. Injecting a stateless lookup would add a constructor argument
+	 * to every caller and change nothing about what the lookup can answer.
 	 */
 	public function setFloor(string $control, int $floor): int {
 		if (HardeningPolicy::isKnown(control: $control) === false) {
@@ -226,10 +230,9 @@ class HardeningSettingsService {
 			throw new InvalidArgumentException('An origin is http or https.');
 		}
 
-		foreach (['path', 'query', 'fragment', 'user', 'pass'] as $unwanted) {
-			if (isset($parts[$unwanted]) === true && $parts[$unwanted] !== '') {
-				throw new InvalidArgumentException('An origin carries no path, query or credentials.');
-			}
+		$extras = array_intersect_key($parts, array_flip(['path', 'query', 'fragment', 'user', 'pass']));
+		if (array_filter($extras, static fn ($value): bool => ($value !== '' && $value !== null)) !== []) {
+			throw new InvalidArgumentException('An origin carries no path, query or credentials.');
 		}
 
 		$normalised = ($parts['scheme'] . '://' . $parts['host']);

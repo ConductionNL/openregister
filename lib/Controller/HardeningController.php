@@ -118,6 +118,10 @@ class HardeningController extends Controller {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The catalogue is a constant and its readers are
+	 * pure functions over it. Injecting a stateless lookup would add a constructor argument
+	 * to every caller and change nothing about what the lookup can answer.
 	 */
 	#[NoCSRFRequired]
 	public function floors(): JSONResponse {

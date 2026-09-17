@@ -237,23 +237,6 @@ class HardeningPolicy {
 	}//end administered()
 
 	/**
-	 * Every administered control and the value in force.
-	 *
-	 * @return array<string, int> Control identifier to value.
-	 *
-	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
-	 */
-	public function administeredValues(): array {
-		$values = [];
-		foreach (array_keys(self::CONTROLS) as $control) {
-			$values[$control] = $this->administered(control: $control);
-		}
-
-		return $values;
-
-	}//end administeredValues()
-
-	/**
 	 * The floor in force for one control.
 	 *
 	 * @param string $control The control identifier.

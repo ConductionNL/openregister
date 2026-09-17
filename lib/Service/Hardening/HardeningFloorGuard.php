@@ -70,6 +70,10 @@ class HardeningFloorGuard {
 	 * @throws HardeningFloorException When the value would weaken the control.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The catalogue is a constant and its readers are
+	 * pure functions over it. Injecting a stateless lookup would add a constructor argument
+	 * to every caller and change nothing about what the lookup can answer.
 	 */
 	public function assertValue(string $control, int $proposed): void {
 		$floor = $this->policy->floor(control: $control);
@@ -100,6 +104,10 @@ class HardeningFloorGuard {
 	 * @throws HardeningFloorException When the floor would be weaker than the baseline.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The catalogue is a constant and its readers are
+	 * pure functions over it. Injecting a stateless lookup would add a constructor argument
+	 * to every caller and change nothing about what the lookup can answer.
 	 */
 	public function assertFloor(string $control, int $proposed): void {
 		$baseline = HardeningPolicy::baseline(control: $control);
