@@ -47,7 +47,7 @@ class Version1Date20260902090000Test extends TestCase {
 	 *
 	 * @return ISchemaWrapper&MockObject The wrapper.
 	 */
-	private function schemaWith(Table&MockObject $table): ISchemaWrapper&MockObject {
+	private function schemaWith(MockObject $table): ISchemaWrapper&MockObject {
 		$schema = $this->createMock(ISchemaWrapper::class);
 		$schema->method('hasTable')->willReturnCallback(
 			static fn (string $name): bool => $name === 'openregister_tasks'
@@ -84,7 +84,7 @@ class Version1Date20260902090000Test extends TestCase {
 			function (string $name, string $type, array $options) use (&$added) {
 				$added[] = [$name, $type, $options['notnull']];
 
-				return $this->createTableMock();
+				return $this->createColumnMock();
 			}
 		);
 		$table->expects($this->once())->method('addIndex')->with(['is_terminal', 'expires_at'], 'or_tasks_open_expiry');

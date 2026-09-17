@@ -36,6 +36,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 
 /**
  * Env churn can leave several `openregister_registers` rows sharing a slug.
@@ -47,6 +48,8 @@ use Psr\Log\LoggerInterface;
  * resolution query.
  */
 class RegisterMapperDeterministicFindTest extends TestCase {
+	use ResultRowReaderTrait;
+
 
 	private IDBConnection&MockObject $db;
 
@@ -148,8 +151,7 @@ class RegisterMapperDeterministicFindTest extends TestCase {
 					return ['id' => 1, 'uuid' => 'uuid-1', 'slug' => 'shared-slug'];
 				};
 
-				$result->method('fetch')->willReturnCallback($row);
-				$result->method('fetchAssociative')->willReturnCallback($row);
+				$this->stubRowReader($result, $row);
 				$result->method('closeCursor')->willReturn(true);
 				return $result;
 			}

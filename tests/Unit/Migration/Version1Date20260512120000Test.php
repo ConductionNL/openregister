@@ -60,11 +60,13 @@ class Version1Date20260512120000Test extends TestCase {
 		$table->expects($this->exactly(2))
 			->method('addColumn')
 			->willReturnCallback(
-				function (string $name, string $type, array $options) use (&$addedColumns): void {
+				function (string $name, string $type, array $options) use (&$addedColumns) {
 					$addedColumns[$name] = [
 						'type' => $type,
 						'options' => $options,
 					];
+
+					return $this->createColumnMock();
 				}
 			);
 
@@ -123,8 +125,10 @@ class Version1Date20260512120000Test extends TestCase {
 		$table->expects($this->once())
 			->method('addColumn')
 			->willReturnCallback(
-				function (string $name) use (&$addedColumns): void {
+				function (string $name) use (&$addedColumns) {
 					$addedColumns[] = $name;
+
+					return $this->createColumnMock();
 				}
 			);
 

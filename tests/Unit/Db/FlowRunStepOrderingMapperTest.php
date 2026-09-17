@@ -31,11 +31,14 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 
 /**
  * Ordering and locking reads.
  */
 class FlowRunStepOrderingMapperTest extends TestCase {
+	use ResultRowReaderTrait;
+
 
 	private IDBConnection&MockObject $db;
 
@@ -72,8 +75,7 @@ class FlowRunStepOrderingMapperTest extends TestCase {
 			// Both reader names, one queue: QBMapper calls `fetchAssociative()`
 			// from NC 35 and `fetch()` up to NC 34, and both are declared on
 			// OCP\DB\IResult across that whole range.
-			$result->method('fetch')->willReturnCallback($next);
-			$result->method('fetchAssociative')->willReturnCallback($next);
+			$this->stubRowReader($result, $next);
 			return $result;
 		});
 		$this->db->method('getQueryBuilder')->willReturn($this->qb);

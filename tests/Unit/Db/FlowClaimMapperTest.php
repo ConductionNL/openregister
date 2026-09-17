@@ -35,11 +35,14 @@ use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 
 /**
  * Claims mapper.
  */
 class FlowClaimMapperTest extends TestCase {
+	use ResultRowReaderTrait;
+
 
 	private IDBConnection&MockObject $db;
 
@@ -96,8 +99,7 @@ class FlowClaimMapperTest extends TestCase {
 		// QBMapper calls the former from NC 35 and the latter up to NC 34.
 		// Both are declared on OCP\DB\IResult in 34 and 35, so this is one
 		// stub for the whole declared range, not a version switch.
-		$result->method('fetch')->willReturnCallback($next);
-		$result->method('fetchAssociative')->willReturnCallback($next);
+		$this->stubRowReader($result, $next);
 		$result->method('fetchOne')->willReturn($one);
 
 		return $result;

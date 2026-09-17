@@ -35,11 +35,14 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
+use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 
 /**
  * Builds a recording, fluent query builder and a connection that serves it.
  */
 trait FluentQueryBuilderTrait {
+	use ResultRowReaderTrait;
+
 
 	/**
 	 * Every raw SQL fragment handed to createFunction(), in order.
@@ -188,10 +191,8 @@ trait FluentQueryBuilderTrait {
 			return array_shift($queue);
 		};
 
-		$result->method('fetch')->willReturnCallback($next);
-		$result->method('fetchAssociative')->willReturnCallback($next);
-		$result->method('fetchAll')->willReturn($rows);
-		$result->method('fetchAllAssociative')->willReturn($rows);
+		$this->stubRowReader($result, $next);
+		$this->stubAllRowsReader($result, $rows);
 		$qb->method('executeQuery')->willReturn($result);
 		$qb->method('getTableName')->willReturn('openregister_tasks');
 

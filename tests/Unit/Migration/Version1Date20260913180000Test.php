@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Types\Types;
 use OCA\OpenRegister\Migration\Version1Date20260913180000;
 use OCP\DB\ISchemaWrapper;
@@ -41,17 +40,17 @@ class Version1Date20260913180000Test extends TestCase {
 			static fn (string $name): bool => in_array($name, ['addressbook_id', 'contact_uri'], true)
 		);
 		$table->method('addColumn')->willReturnCallback(
-			function (string $name, string $type, array $options) use (&$added): Column {
+			function (string $name, string $type, array $options) use (&$added) {
 				$added[$name] = ['type' => $type, 'options' => $options];
-				return $this->createMock(Column::class);
+				return $this->createColumnMock();
 			}
 		);
 		$table->method('getColumn')->willReturnCallback(
-			function (string $name) use (&$relaxed): Column {
-				$column = $this->createMock(Column::class);
+			function (string $name) use (&$relaxed) {
+				$column = $this->createColumnMock();
 				$column->method('getNotnull')->willReturn(true);
 				$column->method('setNotnull')->willReturnCallback(
-					static function (bool $notnull) use (&$relaxed, $name, $column): Column {
+					static function (bool $notnull) use (&$relaxed, $name, $column) {
 						$relaxed[$name] = $notnull;
 						return $column;
 					}
@@ -63,8 +62,10 @@ class Version1Date20260913180000Test extends TestCase {
 			static fn (string $name): bool => $name === 'idx_contact_object_uid_uniq'
 		);
 		$table->method('dropIndex')->willReturnCallback(
-			static function (string $name) use (&$indexes): void {
+			function (string $name) use (&$indexes, $table) {
 				$indexes['dropped'][] = $name;
+
+				return $table;
 			}
 		);
 		$table->method('addUniqueIndex')->willReturnCallback(
@@ -115,7 +116,7 @@ class Version1Date20260913180000Test extends TestCase {
 	public function testASecondRunChangesNothing(): void {
 		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(true);
-		$column = $this->createMock(Column::class);
+		$column = $this->createColumnMock();
 		$column->method('getNotnull')->willReturn(false);
 		$table->method('getColumn')->willReturn($column);
 		$table->method('hasIndex')->willReturnCallback(

@@ -52,6 +52,33 @@ trait SchemaTableMockTrait {
 	}//end createTableMock()
 
 	/**
+	 * A column double the server under test will accept.
+	 *
+	 * Same split one level down: NC 35's ITable declares
+	 * `addColumn(...): IColumn` and `getColumn(...): IColumn`, so a Doctrine
+	 * Column double is refused there exactly as a Doctrine Table double is
+	 * refused by the wrapper.
+	 *
+	 * @return MockObject The double, typed for this server.
+	 */
+	private function createColumnMock(): MockObject {
+		return $this->createMock($this->schemaColumnClass());
+	}//end createColumnMock()
+
+	/**
+	 * The column type this server's tables deal in.
+	 *
+	 * @return class-string The interface on NC 35+, the Doctrine class below it.
+	 */
+	private function schemaColumnClass(): string {
+		if (interface_exists('\OCP\DB\Schema\IColumn') === true) {
+			return '\OCP\DB\Schema\IColumn';
+		}
+
+		return '\Doctrine\DBAL\Schema\Column';
+	}//end schemaColumnClass()
+
+	/**
 	 * The table type this server's ISchemaWrapper deals in.
 	 *
 	 * @return class-string The interface on NC 35+, the Doctrine class below it.

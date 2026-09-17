@@ -48,7 +48,7 @@ class Version1Date20260911050000Test extends TestCase {
 		$table->method('addColumn')->willReturnCallback(
 			function (string $name, string $type, array $options) use (&$added) {
 				$added[] = ['name' => $name, 'type' => $type, 'options' => $options];
-				return $this->createMock(\Doctrine\DBAL\Schema\Column::class);
+				return $this->createColumnMock();
 			}
 		);
 

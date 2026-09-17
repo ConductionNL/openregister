@@ -109,7 +109,7 @@ class Version1Date20260809000000Test extends TestCase {
 				$table->method('addColumn')->willReturnCallback(
 					function (string $column) use ($name) {
 						$this->columns[$name][] = $column;
-						return $this->createTableMock();
+						return $this->createColumnMock();
 					}
 				);
 
