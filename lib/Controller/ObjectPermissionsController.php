@@ -123,13 +123,24 @@ class ObjectPermissionsController extends Controller {
 			return $refusal;
 		}
 
-		return new JSONResponse(
-			$this->report->setFor(
-				object: $object,
-				registerRef: $this->objectService->getRegister(),
-				schemaRef: $this->objectService->getSchema()
-			)
-		);
+		try {
+			return new JSONResponse(
+				$this->report->setFor(
+					object: $object,
+					registerRef: $this->objectService->getRegister(),
+					schemaRef: $this->objectService->getSchema()
+				)
+			);
+		} catch (\Throwable $e) {
+			// A defended endpoint answers an unreadable access set as
+			// unreadable, rather than letting the service exception become a
+			// framework 500 with a stack trace that a #[NoAdminRequired] caller
+			// would see.
+			return new JSONResponse(
+				['message' => 'The access set for this object could not be read'],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 	}//end index()
 
 	/**
