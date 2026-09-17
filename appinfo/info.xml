@@ -119,14 +119,13 @@ Vrij en open source onder de EUPL-licentie.
              the rest of the fleet can then follow without a clean NC35 occ
              upgrade disabling OpenRegister underneath them.
 
-             Trade-offs, recorded here because this file is the decision record:
-             - The CI matrix has no stable35 entry yet, so this ceiling is not
-               exercised in CI; it rests on the in-practice NC35 use above.
-             - openregister#3776 (the schema-introspection migration OOMs at the
-               default 512M memory_limit on NC35) is open and self-described
-               release-blocking; its fix is in progress (openregister#3779).
-               Raising the ceiling ahead of that fix is a deliberate ordering
-               choice, tracked in those issues. -->
+             This ceiling is exercised in CI, and this element is what
+             exercises it: the PHPUnit matrix is derived from the range declared
+             here rather than pinned in code-quality.yml, so declaring 35 is
+             precisely what creates the stable35 leg. The tested range and the
+             declared range cannot drift apart. An earlier revision of this
+             paragraph recorded the opposite, which was true only while the
+             workflow still pinned a list of its own. -->
         <nextcloud min-version="32" max-version="35"/>
     </dependencies>
 
