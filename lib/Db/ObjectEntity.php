@@ -96,6 +96,10 @@ use OCP\IUserSession;
  * @method void setQuality(?array $quality)
  * @method array|null getDeleted()
  * @method void setDeleted(?array $deleted)
+ * @method array|null getArchived()
+ * @method void setArchived(?array $archived)
+ * @method array|null getFrozen()
+ * @method void setFrozen(?array $frozen)
  * @method array|null getGeo()
  * @method void setGeo(?array $geo)
  * @method array|null getRetention()
@@ -147,6 +151,14 @@ use OCP\IUserSession;
  * column surface plus the transient render fields, not an API design choice.
  * The class already sat at the threshold, so any accessor trips it; splitting
  * ObjectEntity is owned by the debt sweep, not by a feature that adds one field.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) The state verbs live here for
+ * the same reason `delete()` and `isSoftDeleted()` do: a marker on the record
+ * is written and read through the record. `archive`/`unarchive`,
+ * `freeze`/`unfreeze` and the two predicates that go with them are six methods
+ * that took the class from seven to thirteen. Moving them to a helper would
+ * put the write next to neither the field it writes nor the guard that reads
+ * it, which is how `getDeleted() === null` became a guard that does not guard.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -303,6 +315,37 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var array|null Array describing deletion details
 	 */
 	protected ?array $deleted = [];
+
+	/**
+	 * Archive details if the object has been archived.
+	 *
+	 * The archive is not the trash. A soft-deleted object is a mistake on its
+	 * way out; an archived object is a finished result that stays whole and
+	 * stays findable on purpose. They get separate markers so a report can
+	 * never put an archived case in somebody's recycle bin.
+	 *
+	 * ⚠️ Defaults to `[]` for the same reason {@see self::$deleted} does: the
+	 * row hydrator skips NULL columns rather than calling the setter, so
+	 * `getArchived() === null` is false for every object. Ask
+	 * {@see self::isArchived()}.
+	 *
+	 * @var array|null Array describing the archive: `by`, `at` and `reason`
+	 */
+	protected ?array $archived = [];
+
+	/**
+	 * Freeze details if the object has been frozen.
+	 *
+	 * Frozen and archived are two states, not one flag with a switch. A frozen
+	 * object stays in the working lists and in search and refuses writes to
+	 * its data; an archived object refuses writes and leaves the lists. A zaak
+	 * in bezwaar has to be findable and unchangeable at the same time.
+	 *
+	 * ⚠️ Defaults to `[]`; ask {@see self::isFrozen()}, never `=== null`.
+	 *
+	 * @var array|null Array describing the freeze: `by`, `at`, `reason` and `state`
+	 */
+	protected ?array $frozen = [];
 
 	/**
 	 * Geographical details for the object.
@@ -594,6 +637,24 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $registryState = null;
 
 	/**
+	 * The lifecycle state's field rules for this object and reader
+	 * (`field-rules-by-state`).
+	 *
+	 * Transient property populated by the render layer from
+	 * `PropertyRbacHandler::stateFieldRulesFor()` — shape:
+	 *   `['state' => 'closed', 'hidden' => [...], 'readOnly' => [...],
+	 *      'required' => [...]]`.
+	 * Not persisted on this entity: the rules are declared on the SCHEMA and
+	 * re-resolved per read, because they depend on who is asking and on the
+	 * object's own values. Exposed in @self as `fieldRules`, and omitted
+	 * entirely for a schema that declares no `x-openregister-lifecycle.states`
+	 * block.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $fieldRules = null;
+
+	/**
 	 * Whether the current user follows this object (`object-watchers`).
 	 *
 	 * Transient property populated by the render layer from
@@ -643,6 +704,21 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var array<string, int>|null
 	 */
 	protected ?array $unreadCounts = null;
+
+	/**
+	 * Whether the current user has starred this object (`favourites-and-recent`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `FavouriteService::isStarredByCaller()`. Not persisted: a star is
+	 * per-user, per-object state living in `openregister_favourites`, which is
+	 * what keeps starring an object out of its own audit trail and versions.
+	 * Exposed in @self as `favourite`, and omitted for an anonymous read, where
+	 * there is no "you" to answer for and a hard false would read as "you have
+	 * not starred this", which is a different claim.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $favourite = null;
 
 	/**
 	 * AVG / GDPR Art 30 processing-activity override.
@@ -834,10 +910,36 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @param array<string, mixed>|null $state The subscription state mirror.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
 	 */
 	public function setRegistryState(?array $state): void {
 		$this->registryState = $state;
 	}//end setRegistryState()
+
+	/**
+	 * Get the lifecycle state's field rules, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	public function getFieldRules(): ?array {
+		return $this->fieldRules;
+	}//end getFieldRules()
+
+	/**
+	 * Write the lifecycle state's field rules.
+	 *
+	 * Surfaced in the @self envelope as `fieldRules` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $rules The resolved hidden, read-only and required lists.
+	 *
+	 * @return void
+	 */
+	public function setFieldRules(?array $rules): void {
+		$this->fieldRules = $rules;
+	}//end setFieldRules()
 
 	/**
 	 * Write the current user's follow marker.
@@ -914,6 +1016,26 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setUnreadCounts()
 
 	/**
+	 * Write the current user's favourite marker.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `favourite` by getObjectArray().
+	 *
+	 * @param boolean|null $favourite Whether the current user has starred the object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	public function setFavourite(?bool $favourite): void {
+		$this->favourite = $favourite;
+	}//end setFavourite()
+
+	/**
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
@@ -935,6 +1057,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->addType(fieldName: 'validation', type: 'json');
 		$this->addType(fieldName: 'quality', type: 'json');
 		$this->addType(fieldName: 'deleted', type: 'json');
+		$this->addType(fieldName: 'archived', type: 'json');
+		$this->addType(fieldName: 'frozen', type: 'json');
 		$this->addType(fieldName: 'geo', type: 'json');
 		$this->addType(fieldName: 'retention', type: 'json');
 		$this->addType(fieldName: 'tmlo', type: 'json');
@@ -979,6 +1103,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'validation',
 			'quality',
 			'deleted',
+			'archived',
+			'frozen',
 			'groups',
 			'geo',
 			'retention',
@@ -1253,6 +1379,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'updated' => $this->getFormattedDate(date: $this->updated),
 			'created' => $this->getFormattedDate(date: $this->created),
 			'deleted' => $this->getDeleted(),
+			'archived' => $this->getArchived(),
+			'frozen' => $this->getFrozen(),
 			'source' => $this->source,
 			'mail' => $this->getMail(),
 			'contacts' => $this->getContacts(),
@@ -1329,11 +1457,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   into one date.
 		// - registry: the registry subscription state, absent for an object
 		//   that never requested one.
+		// - fieldRules: what the object's lifecycle state hides, freezes and
+		//   demands for this reader, absent when the schema declares none.
 		// - watching, watcherCount: the reader's own follow state and the size
 		//   of the audience (`object-watchers`).
 		// - unread: whether the reader has seen this object since it last
 		//   changed (`object-read-state`). Absent for an anonymous read, where
 		//   there is no "you" to answer for.
+		// - favourite: whether the reader has starred this object
+		//   (`favourites-and-recent`). Absent for an anonymous read, for the
+		//   same reason unread is.
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
@@ -1344,9 +1477,11 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'_retention'              => $this->archivalRetention,
 			'_clocks'                 => $this->retentionClocks,
 			'registry'                => $this->registryState,
+			'fieldRules'              => $this->fieldRules,
 			'watching'                => $this->watching,
 			'watcherCount'            => $this->watcherCount,
 			'unread'                  => $this->unread,
+			'favourite'               => $this->favourite,
 		];
 
 		foreach ($transient as $key => $value) {
@@ -1826,6 +1961,153 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function isSoftDeleted(): bool {
 		return $this->deleted !== null && $this->deleted !== [];
 	}//end isSoftDeleted()
+
+	/**
+	 * Whether this object has been archived.
+	 *
+	 * The one honest answer to "is this archived?", for the same reason
+	 * {@see self::isSoftDeleted()} exists: the property defaults to `[]` and
+	 * the row hydrator never overwrites that default for a row whose
+	 * `_archived` column is NULL, so `getArchived() === null` is false for
+	 * every object that has ever existed. Every guard that means "already
+	 * archived" MUST call this.
+	 *
+	 * @return bool True when the object carries archive metadata.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isArchived(): bool {
+		return $this->archived !== null && $this->archived !== [];
+	}//end isArchived()
+
+	/**
+	 * Whether this object has been frozen.
+	 *
+	 * Same trap as {@see self::isArchived()}: never compare `getFrozen()` with
+	 * null.
+	 *
+	 * @return bool True when the object carries freeze metadata.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isFrozen(): bool {
+		return $this->frozen !== null && $this->frozen !== [];
+	}//end isFrozen()
+
+	/**
+	 * Archive the object.
+	 *
+	 * Writes the marker beside the object's data, never into it: the data is
+	 * what the audit trail and the versions are about, so archiving leaves it
+	 * and its version history exactly as they were.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param string|null $reason Why the object was archived.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function archive(IUserSession $userSession, ?string $reason = null): static {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$now = new DateTime();
+
+		$this->setArchived(
+			[
+				'by' => $currentUser->getUID(),
+				'at' => $now->format('c'),
+				'reason' => $reason,
+			]
+		);
+
+		return $this;
+	}//end archive()
+
+	/**
+	 * Restore the object from the archive.
+	 *
+	 * Clears the marker outright rather than flipping an `active` key, so
+	 * "is this archived?" stays a single question with a single answer. The
+	 * archive and the restore both live on the audit trail, which is where the
+	 * history belongs.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unarchive(): static {
+		$this->setArchived(null);
+
+		return $this;
+	}//end unarchive()
+
+	/**
+	 * Freeze the object.
+	 *
+	 * A frozen object stays in every working view and in search, and refuses
+	 * every write to its data. `$state` names the lifecycle state that froze
+	 * it when a state declared the freeze, and is null when a person did.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param string|null $reason Why the object was frozen.
+	 * @param string|null $state The lifecycle state that declared the freeze.
+	 * @param string|null $actor Explicit actor, for a freeze declared by a
+	 *                           lifecycle transition running without a session.
+	 *
+	 * @throws Exception If no user is logged in and no actor was named.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freeze(
+		IUserSession $userSession,
+		?string $reason = null,
+		?string $state = null,
+		?string $actor = null,
+	): static {
+		$userId = $actor;
+		if ($userId === null) {
+			$currentUser = $userSession->getUser();
+			if ($currentUser === null) {
+				throw new Exception('No user logged in');
+			}
+
+			$userId = $currentUser->getUID();
+		}
+
+		$now = new DateTime();
+
+		$this->setFrozen(
+			[
+				'by' => $userId,
+				'at' => $now->format('c'),
+				'reason' => $reason,
+				'state' => $state,
+			]
+		);
+
+		return $this;
+	}//end freeze()
+
+	/**
+	 * Unfreeze the object.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unfreeze(): static {
+		$this->setFrozen(null);
+
+		return $this;
+	}//end unfreeze()
 
 	/**
 	 * Get the last log entry for this object (runtime only)

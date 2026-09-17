@@ -1,5 +1,18 @@
 # Tasks: instance-hardening-controls
 
+## 0. The hardening report and the floors (shipped)
+
+- [x] 0.1 `HardeningPolicy`: the administered controls, the declared floors and the shipped baselines, read from app configuration (REQ-IHC-006).
+- [x] 0.2 `PlatformSecurityReader`: Nextcloud's password policy, session policy and brute-force state, read never written.
+- [x] 0.3 `HardeningReportService`: every control with its value, its source, its floor and whether the two agree; an unreadable control fails.
+- [x] 0.4 `HardeningFloorGuard`: a change below the floor is refused, and a floor below the baseline is refused.
+- [x] 0.5 `HardeningSettingsService`: the write path, with an audit row on the change and on the refusal.
+- [x] 0.6 `GET /api/hardening/report`, `GET|PUT /api/hardening/floors`, `PUT /api/hardening/controls`, administrator-only.
+- [x] 0.7 `SecurityService` reads the inbound ceiling through the policy, so the published number is the enforced one.
+- [x] 0.8 `PublicApiCorsMiddleware` reflects an origin only when the allowlist is empty or holds it.
+- [x] 0.9 `ThrottledSurfaces`: the six throttler actions named once, referenced by the six controllers.
+- [x] 0.10 Unit tests for the policy, the guard, the report, the settings writer, the controller and the middleware.
+
 ## 1. The accepted statement
 
 - [ ] 1.1 A statement with a version, published by an administrator (D-1).

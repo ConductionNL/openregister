@@ -43,13 +43,17 @@ use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
 use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
@@ -1108,6 +1112,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
 		$this->validateDedupAnnotation(schema: $schema);
+		$this->validateUniqueHintAnnotation(schema: $schema);
 		$this->validateHingeAnnotations(schema: $schema);
 		$this->validateSurvivorshipAnnotation(schema: $schema);
 		$this->validateMergeAnnotation(schema: $schema);
@@ -1119,6 +1124,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateHandoffContractBinding(schema: $schema);
 		$this->validateMcpAnnotation(schema: $schema);
 		$this->validateRegistryAnnotation(schema: $schema);
+		$this->validateExternalLinksAnnotation(schema: $schema);
 		$this->validateExtendingFormAnnotation(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
@@ -1722,6 +1728,50 @@ class SchemaMapper extends QBMapper {
 	}//end validateHingeAnnotations()
 
 	/**
+	 * Validate the optional `x-openregister-unique-hint` annotation.
+	 *
+	 * FATAL, unlike {@see validateDedupAnnotation()} one method above, which
+	 * degrades a malformed block to a logged warning. The difference is the
+	 * cost of being wrong. A malformed dedup block costs a duplicate sweep you
+	 * can re-run; a nomination of a property that does not exist costs a
+	 * uniqueness alert that silently never fires, and the only symptom is a
+	 * second case on the same KvK number found months later or never. The
+	 * administrator who typed the name is the one person who can fix it, and
+	 * they are still holding the form.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws UniqueHintException When a nomination names a property the schema does not declare.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function validateUniqueHintAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		if (array_key_exists('x-openregister-unique-hint', $configuration) === false) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			'x-openregister-unique-hint' => $configuration['x-openregister-unique-hint'],
+		];
+
+		$errors = (new UniqueHintAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $errors);
+
+		throw new UniqueHintException(
+			message: 'x-openregister-unique-hint: ' . implode(' ', $messages),
+			errors: $errors
+		);
+	}//end validateUniqueHintAnnotation()
+
+	/**
 	 * Validate the optional `x-openregister-survivorship` annotation.
 	 *
 	 * @param Schema $schema Schema to validate.
@@ -1954,6 +2004,46 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
+
+	/**
+	 * Refuse a broken `x-openregister-external-links` declaration at save.
+	 *
+	 * This one throws rather than warns, and the reason is the feature's own
+	 * failure mode. A link whose placeholder cannot be filled is HIDDEN by
+	 * design, because a URL with `{bagId}` still in it is a broken link that
+	 * looks like a working one. That makes a misspelt placeholder and an object
+	 * with no value indistinguishable at render: an author would read a 200,
+	 * see no link, and have no way to tell which of the two happened. The save
+	 * is the only moment the two can be told apart, so it is the only moment
+	 * worth refusing at.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a declaration cannot produce a link.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 */
+	private function validateExternalLinksAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
+		if ($annotation === null) {
+			return;
+		}
+
+		$shape = [
+			'properties' => ($schema->getProperties() ?? []),
+			ExternalLinkResolver::ANNOTATION => $annotation,
+		];
+
+		$errors = (new ExternalLinkAnnotationValidator())->validate($shape);
+		if (count($errors) === 0) {
+			return;
+		}
+
+		throw new Exception(ExternalLinkResolver::ANNOTATION . ': ' . implode(' ', $errors));
+	}//end validateExternalLinksAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-handoff` annotation (ADR-051).

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -70,27 +71,11 @@ class SecurityService {
 	/**
 	 * Rate limiting configuration constants
 	 */
-	private const RATE_LIMIT_ATTEMPTS = 5;
-	private const RATE_LIMIT_WINDOW = 900;
-	private const LOCKOUT_DURATION = 3600;
+	public const LOGIN_RATE_LIMIT_ATTEMPTS = 5;
+	public const LOGIN_RATE_LIMIT_WINDOW = 900;
+	public const LOGIN_LOCKOUT_DURATION = 3600;
 	private const PROGRESSIVE_DELAY_BASE = 2;
 	private const MAX_PROGRESSIVE_DELAY = 60;
-
-	/**
-	 * Inbound-API brute-force configuration constants.
-	 *
-	 * These are intentionally MORE generous than the interactive-login
-	 * constants above. Inbound API auth is wired into a middleware that
-	 * sees every authenticated request, so a tight threshold risks locking
-	 * out legitimate automated traffic (mis-configured token in a cron job,
-	 * a single client behind a shared NAT, etc). The composite identity+IP
-	 * key (see checkAuthRateLimit) keeps a single bad actor from poisoning a
-	 * shared IP, so we can afford a higher per-IP fallback ceiling.
-	 */
-	private const AUTH_RATE_LIMIT_ATTEMPTS = 20;
-	private const AUTH_RATE_LIMIT_IP_ATTEMPTS = 100;
-	private const AUTH_RATE_LIMIT_WINDOW = 900;
-	private const AUTH_LOCKOUT_DURATION = 900;
 
 	/**
 	 * Cache key prefixes for different security features
@@ -117,14 +102,34 @@ class SecurityService {
 	 *
 	 * @param ICacheFactory $cacheFactory Factory for creating cache instances
 	 * @param LoggerInterface $logger Logger for security event logging
+	 * @param HardeningPolicy $hardeningPolicy Resolves the administered inbound-auth ceiling
 	 */
 	public function __construct(
 		ICacheFactory $cacheFactory,
 		LoggerInterface $logger,
+		private readonly HardeningPolicy $hardeningPolicy,
 	) {
 		$this->cache = $cacheFactory->createDistributed('openregister_security');
 		$this->logger = $logger;
 	}//end __construct()
+
+	/**
+	 * The inbound-API ceiling in force, defaults and administered overrides resolved.
+	 *
+	 * 🔴 EVERY READ OF THE INBOUND CEILING GOES THROUGH HERE. An administrator
+	 * may tighten the four numbers, and the hardening report publishes what they
+	 * set. A path that still read a constant would enforce a different number
+	 * from the one the report shows, which is the one failure that makes a
+	 * hardening report worse than none.
+	 *
+	 * @return array{attemptsPerIdentity: int, attemptsPerAddress: int, windowSeconds: int, lockoutSeconds: int} The ceiling.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function authCeiling(): array {
+		return $this->hardeningPolicy->authRateLimit();
+
+	}//end authCeiling()
 
 	/**
 	 * Assert that a user-supplied URL is safe to fetch server-side (anti-SSRF).
@@ -261,12 +266,12 @@ class SecurityService {
 		$ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS . $ipAddress;
 		$ipAttempts = $this->cache->get($ipAttemptsKey) ?? 0;
 
-		if ($userAttempts >= self::RATE_LIMIT_ATTEMPTS || $ipAttempts >= self::RATE_LIMIT_ATTEMPTS) {
+		if ($userAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS || $ipAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) {
 			$delayKey = self::CACHE_PREFIX_PROGRESSIVE_DELAY . $username . '_' . $ipAddress;
 			$currentDelay = $this->cache->get($delayKey) ?? self::PROGRESSIVE_DELAY_BASE;
 
 			$nextDelay = min($currentDelay * 2, self::MAX_PROGRESSIVE_DELAY);
-			$this->cache->set($delayKey, $nextDelay, self::RATE_LIMIT_WINDOW);
+			$this->cache->set($delayKey, $nextDelay, self::LOGIN_RATE_LIMIT_WINDOW);
 
 			$this->logSecurityEvent(
 				event: 'rate_limit_exceeded',
@@ -306,16 +311,16 @@ class SecurityService {
 
 		$userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS . $username;
 		$userAttempts = ($this->cache->get($userAttemptsKey) ?? 0) + 1;
-		$this->cache->set($userAttemptsKey, $userAttempts, self::RATE_LIMIT_WINDOW);
+		$this->cache->set($userAttemptsKey, $userAttempts, self::LOGIN_RATE_LIMIT_WINDOW);
 
 		$ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS . $ipAddress;
 		$ipAttempts = ($this->cache->get($ipAttemptsKey) ?? 0) + 1;
-		$this->cache->set($ipAttemptsKey, $ipAttempts, self::RATE_LIMIT_WINDOW);
+		$this->cache->set($ipAttemptsKey, $ipAttempts, self::LOGIN_RATE_LIMIT_WINDOW);
 
-		if ($userAttempts >= self::RATE_LIMIT_ATTEMPTS) {
-			$lockoutUntil = time() + self::LOCKOUT_DURATION;
+		if ($userAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) {
+			$lockoutUntil = time() + self::LOGIN_LOCKOUT_DURATION;
 			$userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT . $username;
-			$this->cache->set($userLockoutKey, $lockoutUntil, self::LOCKOUT_DURATION);
+			$this->cache->set($userLockoutKey, $lockoutUntil, self::LOGIN_LOCKOUT_DURATION);
 
 			$this->logSecurityEvent(
 				event: 'user_locked_out',
@@ -328,10 +333,10 @@ class SecurityService {
 			);
 		}
 
-		if ($ipAttempts >= self::RATE_LIMIT_ATTEMPTS) {
-			$lockoutUntil = time() + self::LOCKOUT_DURATION;
+		if ($ipAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) {
+			$lockoutUntil = time() + self::LOGIN_LOCKOUT_DURATION;
 			$ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT . $ipAddress;
-			$this->cache->set($ipLockoutKey, $lockoutUntil, self::LOCKOUT_DURATION);
+			$this->cache->set($ipLockoutKey, $lockoutUntil, self::LOGIN_LOCKOUT_DURATION);
 
 			$this->logSecurityEvent(
 				event: 'ip_locked_out',
@@ -463,7 +468,7 @@ class SecurityService {
 	 *   counter of, other legitimate clients sharing that IP (issue #1834
 	 *   item 2). A much higher per-IP ceiling is kept purely as a
 	 *   coarse-grained backstop against a high-volume sprayer.
-	 * - Thresholds are generous (see AUTH_RATE_LIMIT_* constants) to avoid
+	 * - Thresholds are generous (see HardeningPolicy::CONTROLS) to avoid
 	 *   locking out legitimate automated traffic.
 	 *
 	 * The caller (middleware) MUST fail OPEN: if this method throws, the
@@ -496,6 +501,27 @@ class SecurityService {
 	}//end checkAuthRateLimit()
 
 	/**
+	 * The inbound-API authentication ceiling, as a published shape.
+	 *
+	 * Reads the very numbers {@see recordFailedAuthAttempt} applies, through
+	 * {@see authCeiling()}, so the number an integrator reads out of the
+	 * capabilities answer, the number the hardening report shows and the number
+	 * that locks them out are one number. Publishing a separately-maintained
+	 * copy is how a documented limit quietly stops describing the enforced one.
+	 *
+	 * Safe to read without a session: it names a ceiling, not a secret, and a
+	 * client that knows the ceiling is a client that can back off before
+	 * hitting it.
+	 *
+	 * @return array<string, int> The attempt ceilings, window and lockout, in seconds.
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 */
+	public function describeAuthRateLimit(): array {
+		return $this->authCeiling();
+	}//end describeAuthRateLimit()
+
+	/**
 	 * Record a failed inbound-API authentication attempt.
 	 *
 	 * Increments the composite (identity+IP) counter and a coarse per-IP
@@ -513,23 +539,24 @@ class SecurityService {
 	public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason = 'inbound_auth_failed'): void {
 		$compositeKey = $this->buildAuthCompositeKey(identity: $identity, ipAddress: $ipAddress);
 		$sanitizedIp = $this->sanitizeForCacheKey(input: $ipAddress);
+		$ceiling = $this->authCeiling();
 
 		// Composite (identity+IP) counter — primary gate.
 		$attemptsKey = self::CACHE_PREFIX_AUTH_ATTEMPTS . $compositeKey;
 		$attempts = ($this->cache->get($attemptsKey) ?? 0) + 1;
-		$this->cache->set($attemptsKey, $attempts, self::AUTH_RATE_LIMIT_WINDOW);
+		$this->cache->set($attemptsKey, $attempts, $ceiling['windowSeconds']);
 
 		// Coarse per-IP counter — high-ceiling backstop only.
 		$ipAttemptsKey = self::CACHE_PREFIX_AUTH_IP_ATTEMPTS . $sanitizedIp;
 		$ipAttempts = ($this->cache->get($ipAttemptsKey) ?? 0) + 1;
-		$this->cache->set($ipAttemptsKey, $ipAttempts, self::AUTH_RATE_LIMIT_WINDOW);
+		$this->cache->set($ipAttemptsKey, $ipAttempts, $ceiling['windowSeconds']);
 
 		$lockoutTriggered = false;
-		if ($attempts >= self::AUTH_RATE_LIMIT_ATTEMPTS || $ipAttempts >= self::AUTH_RATE_LIMIT_IP_ATTEMPTS) {
+		if ($attempts >= $ceiling['attemptsPerIdentity'] || $ipAttempts >= $ceiling['attemptsPerAddress']) {
 			$lockoutTriggered = true;
-			$lockoutUntil = time() + self::AUTH_LOCKOUT_DURATION;
+			$lockoutUntil = time() + $ceiling['lockoutSeconds'];
 			$lockoutKey = self::CACHE_PREFIX_AUTH_LOCKOUT . $compositeKey;
-			$this->cache->set($lockoutKey, $lockoutUntil, self::AUTH_LOCKOUT_DURATION);
+			$this->cache->set($lockoutKey, $lockoutUntil, $ceiling['lockoutSeconds']);
 
 			$this->logSecurityEvent(
 				event: 'auth_locked_out',

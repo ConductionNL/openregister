@@ -117,6 +117,8 @@ DOMAIN_ORDER=(
     "register-descriptors"
     "working-calendars"
     "object-watchers"
+    "dedup-check"
+    "duplicate-merge"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -178,6 +180,22 @@ declare -A DOMAIN_COLLECTIONS=(
     # cannot see any of those, and a route missing from appinfo/routes.php is a
     # 404 no PHPUnit test would notice.
     [object-watchers]="$REPO_ROOT/tests/newman/openregister-object-watchers.postman_collection.json"
+    # Duplicate check at intake — scoring an UNSAVED body against what is
+    # stored. Registered here rather than left to PHPUnit because the thing
+    # most likely to break is not the scoring: it is the route. The check
+    # sits at POST /api/objects/{register}/{schema}/dedup-check, one literal
+    # segment away from objects#postPatch, and if it ever loses its place in
+    # appinfo/routes.php the call silently becomes a patch of a non-existent
+    # object. No unit test can see that.
+    [dedup-check]="$REPO_ROOT/tests/newman/openregister-dedup-check.postman_collection.json"
+    # The merge choice, the dismissed pair and the soft uniqueness alert.
+    # Registered here because all three are HTTP-shaped: two new routes, a
+    # 422 at schema save, a 422 on a decision map that does not match the
+    # preview it claims to approve, and a warning that rides the create
+    # RESPONSE rather than the object. A unit suite can see none of those,
+    # and a route missing from appinfo/routes.php is a 404 no PHPUnit test
+    # would notice.
+    [duplicate-merge]="$REPO_ROOT/tests/newman/openregister-duplicate-merge.postman_collection.json"
     # Typed relations with declared inverses. Registered here because the
     # asymmetry IS the contract and it only exists over HTTP: the same link
     # reads "blocks" on /uses and "blocked by" on /used, and the two handler

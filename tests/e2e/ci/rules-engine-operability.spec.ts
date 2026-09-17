@@ -68,11 +68,17 @@ test.describe('rules-engine-operability', () => {
 				slug: SCHEMA_SLUG,
 				properties: {
 					ontvangstdatum: { type: 'string', format: 'date' },
-					uiterlijkeDatum: { type: 'string', format: 'date', calculation: CALCULATION },
+					uiterlijkeDatum: {
+						type: 'string',
+						format: 'date',
+						calculation: CALCULATION,
+					},
 				},
 			},
 		})
-		expect(resp.status(), 'the schema carrying the rule was saved').toBeLessThan(300)
+		expect(resp.status(), 'the schema carrying the rule was saved').toBeLessThan(
+			300,
+		)
 		const body = await resp.json()
 		schemaId = String(body.id ?? body.uuid)
 	})
@@ -102,8 +108,13 @@ test.describe('rules-engine-operability', () => {
 		expect(rule, 'the saved calculation appears in the inventory').toBeTruthy()
 		expect(rule.kind).toBe('calculation')
 		expect(rule.enabled, 'a saved rule is on').toBe(true)
-		expect(rule.actions, 'the entry says what the rule does').toContain('setValue')
-		expect(String(rule.source).length, 'the entry names its annotation').toBeGreaterThan(0)
+		expect(rule.actions, 'the entry says what the rule does').toContain(
+			'setValue',
+		)
+		expect(
+			String(rule.source).length,
+			'the entry names its annotation',
+		).toBeGreaterThan(0)
 		expect(rule.ranInsideWindow, 'a rule that has never run says so').toBe(false)
 	})
 
@@ -166,12 +177,17 @@ test.describe('rules-engine-operability', () => {
 		expect(body.rule.enabled, 'the rule reads as off').toBe(false)
 		expect(body.audit.from, 'the audit entry says what it was').toBe(true)
 		expect(body.audit.to, 'and what it became').toBe(false)
-		expect(String(body.audit.actor).length, 'the audit entry names the actor').toBeGreaterThan(0)
+		expect(
+			String(body.audit.actor).length,
+			'the audit entry names the actor',
+		).toBeGreaterThan(0)
 
 		const after = await request.get(`${SCHEMAS}/${SCHEMA_SLUG}/rules`, {
 			headers: { Accept: 'application/json' },
 		})
-		const rule = ((await after.json()).rules ?? []).find((row: any) => row.id === RULE_ID)
+		const rule = ((await after.json()).rules ?? []).find(
+			(row: any) => row.id === RULE_ID,
+		)
 		expect(rule.enabled, 'the inventory reports the rule off').toBe(false)
 	})
 
@@ -197,6 +213,9 @@ test.describe('rules-engine-operability', () => {
 			'refused',
 			'error',
 		])
-		expect(body.actions.length, 'every action carries a sentence').toBeGreaterThan(3)
+		expect(
+			body.actions.length,
+			'every action carries a sentence',
+		).toBeGreaterThan(3)
 	})
 })

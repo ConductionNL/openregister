@@ -48,7 +48,10 @@ const RUN = Math.random().toString(36).slice(2, 10)
 const API = '/index.php/apps/openregister/api'
 
 /** Build an API context authenticated as one user. */
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -73,12 +76,18 @@ test.describe('an import says what it would do before it writes', () => {
 	/** The column mapping's own slug, unique per run. */
 	const mappingSlug = `e2e-import-preview-${RUN}`
 
-	function csv(body: string): { name: string, mimeType: string, buffer: Buffer } {
-		return { name: 'personen.csv', mimeType: 'text/csv', buffer: Buffer.from(body, 'utf8') }
+	function csv(body: string): { name: string; mimeType: string; buffer: Buffer } {
+		return {
+			name: 'personen.csv',
+			mimeType: 'text/csv',
+			buffer: Buffer.from(body, 'utf8'),
+		}
 	}
 
 	async function createObject(bsn: string, naam: string): Promise<string> {
-		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, { data: { bsn, naam } })
+		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
+			data: { bsn, naam },
+		})
 		expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
 
 		const body = await res.json()
@@ -90,7 +99,9 @@ test.describe('an import says what it would do before it writes', () => {
 	}
 
 	async function countObjects(): Promise<number> {
-		const res = await admin.get(`${API}/objects/${registerId}/${schemaId}?limit=200`)
+		const res = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}?limit=200`,
+		)
 		expect(res.ok(), `object listing failed: ${await res.text()}`).toBeTruthy()
 
 		return ((await res.json()).results as unknown[]).length
@@ -101,7 +112,7 @@ test.describe('an import says what it would do before it writes', () => {
 		file: string,
 		policy: string,
 		extra: Record<string, string> = {},
-	): Promise<{ status: number, json: Record<string, unknown> }> {
+	): Promise<{ status: number; json: Record<string, unknown> }> {
 		const res = await admin.post(`${API}/import-previews`, {
 			multipart: {
 				file: csv(file),
@@ -113,22 +124,32 @@ test.describe('an import says what it would do before it writes', () => {
 			},
 		})
 
-		return { status: res.status(), json: (await res.json()) as Record<string, unknown> }
+		return {
+			status: res.status(),
+			json: (await res.json()) as Record<string, unknown>,
+		}
 	}
 
 	async function commit(
 		previewId: string,
 		file: string,
-	): Promise<{ status: number, json: Record<string, unknown> }> {
+	): Promise<{ status: number; json: Record<string, unknown> }> {
 		const res = await admin.post(`${API}/import-previews/${previewId}/commit`, {
 			multipart: { file: csv(file) },
 		})
 
-		return { status: res.status(), json: (await res.json()) as Record<string, unknown> }
+		return {
+			status: res.status(),
+			json: (await res.json()) as Record<string, unknown>,
+		}
 	}
 
-	async function rowsOf(previewId: string): Promise<Array<Record<string, unknown>>> {
-		const res = await admin.get(`${API}/import-previews/${previewId}/rows?limit=500`)
+	async function rowsOf(
+		previewId: string,
+	): Promise<Array<Record<string, unknown>>> {
+		const res = await admin.get(
+			`${API}/import-previews/${previewId}/rows?limit=500`,
+		)
 		expect(res.ok(), `row listing failed: ${await res.text()}`).toBeTruthy()
 
 		return (await res.json()).results as Array<Record<string, unknown>>
@@ -138,7 +159,10 @@ test.describe('an import says what it would do before it writes', () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
 
 		const reg = await admin.post(`${API}/registers`, {
-			data: { title: `e2e import preview register ${RUN}`, description: 'e2e' },
+			data: {
+				title: `e2e import preview register ${RUN}`,
+				description: 'e2e',
+			},
 		})
 		expect(reg.ok(), `register create failed: ${await reg.text()}`).toBeTruthy()
 		registerId = String((await reg.json()).id)
@@ -184,15 +208,28 @@ test.describe('an import says what it would do before it writes', () => {
 
 	test('the catalogue names the four policies and the default', async () => {
 		const res = await admin.get(`${API}/import-previews/policies`)
-		expect(res.ok(), `the policy catalogue is not reachable: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`the policy catalogue is not reachable: ${await res.text()}`,
+		).toBeTruthy()
 
 		const body = await res.json()
-		const ids = (body.results as Array<Record<string, unknown>>).map((row) => String(row.id))
+		const ids = (body.results as Array<Record<string, unknown>>).map((row) =>
+			String(row.id),
+		)
 
 		expect(ids).toEqual(
-			expect.arrayContaining(['create-only', 'update-only', 'upsert', 'refuse-on-conflict']),
+			expect.arrayContaining([
+				'create-only',
+				'update-only',
+				'upsert',
+				'refuse-on-conflict',
+			]),
 		)
-		expect(String(body.default), 'an import that declares no policy must still upsert').toBe('upsert')
+		expect(
+			String(body.default),
+			'an import that declares no policy must still upsert',
+		).toBe('upsert')
 	})
 
 	test('a migration is inspected before it lands, and then lands', async () => {
@@ -204,36 +241,57 @@ test.describe('an import says what it would do before it writes', () => {
 		const file = 'bsn,naam\n111,Jansen-Bakker\n222,De Vries\n333,Yilmaz\n'
 		const taken = await preview(file, 'upsert')
 
-		expect(taken.status, `preview failed: ${JSON.stringify(taken.json)}`).toBe(201)
+		expect(taken.status, `preview failed: ${JSON.stringify(taken.json)}`).toBe(
+			201,
+		)
 		expect(taken.json.state).toBe('previewed')
 		expect(taken.json.total).toBe(3)
 
 		const counts = taken.json.counts as Record<string, number>
-		expect(counts.updated, 'the two rows already in the register must read as updates').toBe(2)
-		expect(counts.created, 'the row not in the register must read as a create').toBe(1)
+		expect(
+			counts.updated,
+			'the two rows already in the register must read as updates',
+		).toBe(2)
+		expect(
+			counts.created,
+			'the row not in the register must read as a create',
+		).toBe(1)
 		expect(counts.refused).toBe(0)
 
 		// A preview writes nothing. Counted rather than assumed.
 		expect(await countObjects(), 'the preview changed the register').toBe(before)
 
 		const written = await commit(String(taken.json.id), file)
-		expect(written.status, `commit failed: ${JSON.stringify(written.json)}`).toBe(200)
+		expect(
+			written.status,
+			`commit failed: ${JSON.stringify(written.json)}`,
+		).toBe(200)
 		expect(written.json.state).toBe('committed')
 		expect(written.json.applied).toBe(3)
 
-		expect(await countObjects(), 'the commit did not create the one new row').toBe(before + 1)
+		expect(
+			await countObjects(),
+			'the commit did not create the one new row',
+		).toBe(before + 1)
 
-		const listed = await admin.get(`${API}/objects/${registerId}/${schemaId}?limit=200`)
+		const listed = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}?limit=200`,
+		)
 		const rows = (await listed.json()).results as Array<Record<string, unknown>>
 		for (const row of rows) {
-			const uuid = String((row['@self'] as Record<string, unknown>)?.id ?? row.id)
+			const uuid = String(
+				(row['@self'] as Record<string, unknown>)?.id ?? row.id,
+			)
 			if (created.includes(uuid) === false) {
 				created.push(uuid)
 			}
 		}
 
 		const renamed = rows.find((row) => String(row.bsn) === '111')
-		expect(String(renamed?.naam), 'the update in the preview did not reach the object').toBe('Jansen-Bakker')
+		expect(
+			String(renamed?.naam),
+			'the update in the preview did not reach the object',
+		).toBe('Jansen-Bakker')
 	})
 
 	test('a changed file is refused, and nothing is written', async () => {
@@ -243,22 +301,36 @@ test.describe('an import says what it would do before it writes', () => {
 
 		const before = await countObjects()
 
-		const refused = await commit(String(taken.json.id), 'bsn,naam\n444,Bakker\n555,Someone Else\n')
+		const refused = await commit(
+			String(taken.json.id),
+			'bsn,naam\n444,Bakker\n555,Someone Else\n',
+		)
 		expect(refused.status, 'a commit of a different file was accepted').toBe(409)
-		expect(String(refused.json.error)).toContain('changed since it was previewed')
+		expect(String(refused.json.error)).toContain(
+			'changed since it was previewed',
+		)
 
-		expect(await countObjects(), 'the refused commit wrote something').toBe(before)
+		expect(await countObjects(), 'the refused commit wrote something').toBe(
+			before,
+		)
 	})
 
 	test('a first migration refuses the row that unexpectedly matched', async () => {
-		const taken = await preview('bsn,naam\n111,Jansen\n666,Nieuw\n', 'create-only')
+		const taken = await preview(
+			'bsn,naam\n111,Jansen\n666,Nieuw\n',
+			'create-only',
+		)
 		expect(taken.status).toBe(201)
 
 		const counts = taken.json.counts as Record<string, number>
-		expect(counts.refused, 'create-only accepted a row that matches an existing object').toBe(1)
+		expect(
+			counts.refused,
+			'create-only accepted a row that matches an existing object',
+		).toBe(1)
 		expect(counts.created).toBe(1)
 
-		const refusals = (taken.json.report as Record<string, unknown>).refusals as Array<Record<string, unknown>>
+		const refusals = (taken.json.report as Record<string, unknown>)
+			.refusals as Array<Record<string, unknown>>
 		expect(refusals).toHaveLength(1)
 		expect(String(refusals[0].reason)).toContain('create-only')
 	})
@@ -273,17 +345,22 @@ test.describe('an import says what it would do before it writes', () => {
 		expect(taken.status).toBe(201)
 
 		const counts = taken.json.counts as Record<string, number>
-		expect(counts.refused, 'an ambiguous row was resolved instead of refused').toBe(1)
+		expect(
+			counts.refused,
+			'an ambiguous row was resolved instead of refused',
+		).toBe(1)
 		expect(counts.updated).toBe(0)
 
 		const rows = await rowsOf(String(taken.json.id))
 		expect(rows).toHaveLength(1)
 		expect(String(rows[0].decision)).toBe('refuse')
-		expect(rows[0].candidates as string[]).toEqual(expect.arrayContaining([first, second]))
+		expect(rows[0].candidates as string[]).toEqual(
+			expect.arrayContaining([first, second]),
+		)
 		expect(String(rows[0].reason)).toContain('more than one object')
 	})
 
-	test('a monthly correction reuses last month\'s saved mapping', async () => {
+	test("a monthly correction reuses last month's saved mapping", async () => {
 		const definition = {
 			id: mappingSlug,
 			name: `e2e import preview mapping ${RUN}`,
@@ -295,8 +372,13 @@ test.describe('an import says what it would do before it writes', () => {
 			],
 		}
 
-		const saved = await admin.post(`${API}/migration-packs`, { data: definition })
-		expect(saved.ok(), `mapping create failed: ${await saved.text()}`).toBeTruthy()
+		const saved = await admin.post(`${API}/migration-packs`, {
+			data: definition,
+		})
+		expect(
+			saved.ok(),
+			`mapping create failed: ${await saved.text()}`,
+		).toBeTruthy()
 		mappingId = String((await saved.json()).id)
 
 		// Two files, two months, the same columns and the same saved mapping:
@@ -306,10 +388,15 @@ test.describe('an import says what it would do before it writes', () => {
 
 		for (const file of [january, february]) {
 			const taken = await preview(file, 'upsert', { mapping: mappingSlug })
-			expect(taken.status, `preview through the saved mapping failed: ${JSON.stringify(taken.json)}`).toBe(201)
+			expect(
+				taken.status,
+				`preview through the saved mapping failed: ${JSON.stringify(taken.json)}`,
+			).toBe(201)
 
 			const counts = taken.json.counts as Record<string, number>
-			expect(counts.created, 'the saved mapping did not map the columns').toBe(1)
+			expect(counts.created, 'the saved mapping did not map the columns').toBe(
+				1,
+			)
 			expect(counts.refused).toBe(0)
 		}
 	})
@@ -324,11 +411,19 @@ test.describe('an import says what it would do before it writes', () => {
 		}
 
 		const saved = await admin.post(`${API}/migration-packs`, { data: strayed })
-		expect(saved.ok(), `mapping create failed: ${await saved.text()}`).toBeTruthy()
+		expect(
+			saved.ok(),
+			`mapping create failed: ${await saved.text()}`,
+		).toBeTruthy()
 		const strayId = String((await saved.json()).id)
 
-		const refused = await preview('BSN\n123\n', 'upsert', { mapping: `${mappingSlug}-stray` })
-		expect(refused.status, 'a mapping onto a property the schema lacks was accepted').toBe(400)
+		const refused = await preview('BSN\n123\n', 'upsert', {
+			mapping: `${mappingSlug}-stray`,
+		})
+		expect(
+			refused.status,
+			'a mapping onto a property the schema lacks was accepted',
+		).toBe(400)
 		expect(String(refused.json.error)).toContain('burgerservicenummer')
 
 		await admin.delete(`${API}/migration-packs/${strayId}`)

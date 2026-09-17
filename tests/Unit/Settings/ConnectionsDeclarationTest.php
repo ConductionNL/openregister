@@ -143,7 +143,20 @@ class ConnectionsDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheFileNamesThisApp(): void {
-		$infoXml = simplexml_load_file($this->root() . '/appinfo/info.xml');
+		// Read the bytes, then parse the string. `simplexml_load_file()` goes
+		// through libxml's external-entity loader, and Nextcloud's
+		// `lib/base.php` replaces that loader with one returning null. The
+		// replacement handles the primary document too, so loading by path
+		// returns false for a readable local file whenever the Nextcloud
+		// bootstrap is loaded, which is every cell of this suite.
+		// `ReconcileDeclaredBackgroundJobs` reads the same file the same way.
+		$raw = file_get_contents($this->root() . '/appinfo/info.xml');
+		$this->assertNotFalse(condition: $raw, message: 'appinfo/info.xml could not be read');
+
+		$previous = libxml_use_internal_errors(true);
+		$infoXml = simplexml_load_string((string)$raw);
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
 
 		$this->assertNotFalse(condition: $infoXml);
 		$this->assertSame(expected: (string)$infoXml->id, actual: $this->declaration()['app']);

@@ -40,6 +40,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
@@ -150,21 +152,30 @@ final class DeletedControllerWindowTest extends TestCase {
 
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->controller = new DeletedController(
-			'openregister',
-			$this->request,
-			$this->objectMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->schemaMapper,
-			$session,
-			$groups,
-			$this->createMock(PermissionHandler::class),
+		$deletion = new DeletionServiceBundle(
 			$this->windows,
 			$this->rights,
 			$this->scopes,
 			$this->recorder,
 			$this->clocks,
-			$this->auditTrails
+		);
+
+		$authorizer = new DeletedObjectAuthorizer(
+			$this->schemaMapper,
+			$session,
+			$groups,
+			$this->createMock(PermissionHandler::class),
+		);
+
+		$this->controller = new DeletedController(
+			'openregister',
+			$this->request,
+			$this->objectMapper,
+			$this->createMock(RegisterMapper::class),
+			$session,
+			$this->auditTrails,
+			$deletion,
+			$authorizer
 		);
 	}//end setUp()
 

@@ -44,8 +44,10 @@ use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
@@ -1697,6 +1699,16 @@ class RenderObject {
 		// Get the object data as an array for manipulation.
 		$objectData = $entity->getObject();
 
+		// The object BEFORE any caller-supplied projection. The lifecycle
+		// state's field rules are resolved against this, so `?fields=onderwerp`
+		// cannot change which rules apply by hiding the lifecycle field from
+		// the resolver: a form that projected would then be told a state
+		// demands nothing, and be refused on save anyway.
+		$unprojectedData = [];
+		if (is_array($objectData) === true) {
+			$unprojectedData = $objectData;
+		}
+
 		// Apply field filtering if specified.
 		if (empty($fields) === false) {
 			$fields[] = '@self';
@@ -2008,6 +2020,16 @@ class RenderObject {
 			}//end if
 		}//end if
 
+		// Publish the lifecycle state's field rules beside the object, so a form
+		// renders what this state hides, freezes and demands without a second
+		// call. It runs after the strip block because the two must agree: what
+		// was just removed is what `hidden` names. A form that ignores this is
+		// still refused on save by StateFieldRuleListener — the hint is a
+		// courtesy, never the enforcement.
+		if ($schema !== null) {
+			$this->attachFieldRules(entity: $entity, schema: $schema, stored: $unprojectedData);
+		}
+
 		// Decrypt properties flagged `x-openregister-encrypted: true` (field-level-
 		// object-encryption). This MUST run after the writeOnly/property-authorization
 		// strip block above, and nowhere earlier: a property that block just removed is
@@ -2165,6 +2187,11 @@ class RenderObject {
 		// for the marker rather than one per rendered row.
 		$this->applyReadStateMarkers(entity: $entity);
 
+		// The reader's own star (`favourites-and-recent`). Same lazy posture and
+		// same per-request memo as the two markers above, so a page of objects
+		// costs ONE query for the star rather than one per rendered row.
+		$this->applyFavouriteMarker(entity: $entity);
+
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
 		// effective retention for this row from the annotation's default +
@@ -2183,8 +2210,64 @@ class RenderObject {
 		// last because it reads the retention block the two calls above fill.
 		$this->applyRetentionClocks(entity: $entity);
 
+		// The links out of this record, built from its own values. Runs after
+		// everything that can change those values (translation resolution,
+		// decryption, virtual calculations) so a template may name a computed
+		// or translated property and get the value the reader is actually
+		// looking at, not the one on disk.
+		$this->applyExternalLinks(entity: $entity, schema: $renderSchema);
+
 		return $entity;
 	}//end renderEntity()
+
+	/**
+	 * Attach `@self.fieldRules` to a rendered object.
+	 *
+	 * The rules are resolved against the object as stored rather than against
+	 * what survived the strip above: a `hidden` field is gone from the payload
+	 * by this point, and resolving from the payload would make a rule whose
+	 * condition reads a hidden value silently stop applying.
+	 *
+	 * An object whose schema declares no state rules gets no key at all, so a
+	 * register that does not use them pays nothing and its responses do not
+	 * change shape.
+	 *
+	 * The rules ride the transient `@self` mechanism rather than being written
+	 * into the payload's own `@self` key, because `ObjectEntity::getObjectArray()`
+	 * rebuilds that envelope from the entity and keeps only a whitelist from
+	 * the payload: a key set on the array here would be dropped on serialisation,
+	 * silently, which is the same shape of no-op this change exists to refuse.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param Schema $schema The entity's schema.
+	 * @param array<string, mixed> $stored The object before any projection or strip.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	private function attachFieldRules(ObjectEntity $entity, Schema $schema, array $stored): void {
+		try {
+			$rules = $this->propertyRbacHandler->stateFieldRulesFor(schema: $schema, object: $stored);
+		} catch (\Throwable $e) {
+			// The hint is a courtesy on a read. Losing it must never cost the
+			// object, and the save path refuses the same write either way.
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] field rules could not be resolved for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+			return;
+		}
+
+		if ($rules->isEmpty() === true) {
+			return;
+		}
+
+		$entity->setFieldRules($rules->jsonSerialize());
+	}//end attachFieldRules()
 
 	/**
 	 * Attach `@self._clocks`: the AVG date and the Archiefwet date, each with
@@ -2339,6 +2422,53 @@ class RenderObject {
 	}//end applyReadStateMarkers()
 
 	/**
+	 * Attach `@self.favourite` for the reader.
+	 *
+	 * Resolved through the container rather than the constructor, for the same
+	 * reason as `applyReadStateMarkers()` above: the render layer does not
+	 * acquire a hard dependency on a primitive that resolves a session and
+	 * would otherwise close a construction cycle.
+	 *
+	 * Anonymous reads get no marker at all. A hard false would read as "you
+	 * have not starred this", which is a claim about a person who is not there.
+	 *
+	 * Failures are logged and swallowed: whether you have starred an object is
+	 * never worth failing the read of that object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	private function applyFavouriteMarker(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			$favourites = $this->container->get(FavouriteService::class);
+
+			if ($favourites->callerUid() === null) {
+				return;
+			}
+
+			$entity->setFavourite($favourites->isStarredByCaller(objectUuid: $uuid));
+		} catch (\Throwable $e) {
+			// A favourite lookup must never take out object rendering.
+			$this->logger->debug(
+				sprintf('[RenderObject] favourite marker skipped for %s: %s', $uuid, $e->getMessage())
+			);
+		}//end try
+
+	}//end applyFavouriteMarker()
+
+	/**
 	 * Attach the resolved `@self._retention` decision.
 	 *
 	 * The slot has been declared on the entity since add-archival-annotation-support
@@ -2375,6 +2505,71 @@ class RenderObject {
 			);
 		}//end try
 	}//end applyArchivalDecision()
+
+	/**
+	 * Attach the links out of this record, under `@self.externalLinks`.
+	 *
+	 * A link whose placeholders cannot all be filled is not offered, and a
+	 * schema declaring no links attaches nothing at all rather than an empty
+	 * list: a consumer that has to distinguish "no links declared" from "links
+	 * declared, none applicable" can, and one that does not is not handed a key
+	 * it must remember to ignore.
+	 *
+	 * Failure here is swallowed to a debug line for the same reason every other
+	 * tail-of-render block swallows: a link is an ornament on a record, and a
+	 * record the caseworker cannot read at all is a far worse outcome than a
+	 * record missing its shortcut to the BAG viewer.
+	 *
+	 * @param ObjectEntity $entity The rendered object.
+	 * @param Schema|null $schema Its schema, when one is resolvable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 */
+	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
+		if ($schema === null) {
+			return;
+		}
+
+		$configuration = ($schema->getConfiguration() ?? []);
+		$declarations = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
+		if (is_array($declarations) === false || $declarations === []) {
+			return;
+		}
+
+		try {
+			$objectData = $entity->getObject();
+			if (is_array($objectData) === false) {
+				$objectData = [];
+			}
+
+			$links = (new ExternalLinkResolver())->resolve(
+				declarations: $declarations,
+				object: $objectData
+			);
+
+			if ($links === []) {
+				return;
+			}
+
+			$objectData['@self'] = ($objectData['@self'] ?? []);
+			if (is_array($objectData['@self']) === false) {
+				$objectData['@self'] = [];
+			}
+
+			$objectData['@self']['externalLinks'] = $links;
+			$entity->setObject($objectData);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] external link resolution failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}//end try
+	}//end applyExternalLinks()
 
 	/**
 	 * Compute + attach the annotation-driven `_retention.annotation` block.

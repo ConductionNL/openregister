@@ -108,7 +108,7 @@ test.describe('an object is the hinge several cases turn on', () => {
 		key: string,
 		title: string,
 		properties: Record<string, unknown>,
-		options: { read?: string[], configuration?: Record<string, unknown> } = {},
+		options: { read?: string[]; configuration?: Record<string, unknown> } = {},
 	): Promise<string> {
 		const res = await admin.post(`${API}/schemas`, {
 			data: {
@@ -136,7 +136,9 @@ test.describe('an object is the hinge several cases turn on', () => {
 		schemaId: string,
 		data: Record<string, unknown>,
 	): Promise<string> {
-		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, { data })
+		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
+			data,
+		})
 		expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
 
 		const body = await res.json()
@@ -192,9 +194,18 @@ test.describe('an object is the hinge several cases turn on', () => {
 			{
 				onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
 				status: { type: 'string', title: 'Status', maxLength: 64 },
-				adres: { type: 'string', title: 'Adres', format: 'uuid', maxLength: 64 },
+				adres: {
+					type: 'string',
+					title: 'Adres',
+					format: 'uuid',
+					maxLength: 64,
+				},
 			},
-			{ configuration: { 'x-openregister-lifecycle': { field: 'status', initial: 'open' } } },
+			{
+				configuration: {
+					'x-openregister-lifecycle': { field: 'status', initial: 'open' },
+				},
+			},
 		)
 		await createSchema('inspectie', 'e2e hinge inspectie', {
 			onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
@@ -207,7 +218,12 @@ test.describe('an object is the hinge several cases turn on', () => {
 			'e2e hinge vergunning',
 			{
 				onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
-				adres: { type: 'string', title: 'Adres', format: 'uuid', maxLength: 64 },
+				adres: {
+					type: 'string',
+					title: 'Adres',
+					format: 'uuid',
+					maxLength: 64,
+				},
 			},
 			{ read: ['admin'] },
 		)
@@ -229,15 +245,23 @@ test.describe('an object is the hinge several cases turn on', () => {
 	})
 
 	test('an address has a history, and the reverse view obeys access', async () => {
-		const adres = await createObject(schemas.adres, { straat: `Dorpsstraat ${RUN}` })
+		const adres = await createObject(schemas.adres, {
+			straat: `Dorpsstraat ${RUN}`,
+		})
 
 		await createObject(schemas.melding, {
 			onderwerp: 'Melding over de stoep',
 			status: 'open',
 			adres,
 		})
-		await createObject(schemas.inspectie, { onderwerp: 'Inspectie ter plaatse', adres })
-		await createObject(schemas.vergunning, { onderwerp: 'Aanvraag dakkapel', adres })
+		await createObject(schemas.inspectie, {
+			onderwerp: 'Inspectie ter plaatse',
+			adres,
+		})
+		await createObject(schemas.vergunning, {
+			onderwerp: 'Aanvraag dakkapel',
+			adres,
+		})
 
 		const asAdmin = await referencedBy(admin, schemas.adres, adres)
 		const groups = asAdmin.groups as Array<Record<string, unknown>>
@@ -274,7 +298,7 @@ test.describe('an object is the hinge several cases turn on', () => {
 		expect(asOther.total).toBe(2)
 	})
 
-	test('the besluit\'s date shows on the bezwaar without a copy, and cannot be written', async () => {
+	test("the besluit's date shows on the bezwaar without a copy, and cannot be written", async () => {
 		// The besluit is admin-only on purpose: the same pair proves the lens
 		// resolves for a reader who may look through it and says withheld for
 		// one who may not.
@@ -292,12 +316,21 @@ test.describe('an object is the hinge several cases turn on', () => {
 			'e2e hinge bezwaar',
 			{
 				onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
-				besluit: { type: 'string', title: 'Besluit', format: 'uuid', maxLength: 64 },
+				besluit: {
+					type: 'string',
+					title: 'Besluit',
+					format: 'uuid',
+					maxLength: 64,
+				},
 			},
 			{
 				configuration: {
 					'x-openregister-lenses': {
-						besluitDatum: { through: 'besluit', property: 'datum', label: 'Datum besluit' },
+						besluitDatum: {
+							through: 'besluit',
+							property: 'datum',
+							label: 'Datum besluit',
+						},
 					},
 				},
 			},
@@ -316,10 +349,16 @@ test.describe('an object is the hinge several cases turn on', () => {
 		expect(before.besluitDatum).toBe('2026-09-01')
 
 		// Move the besluit. The bezwaar is not written, and reads differently.
-		const patched = await admin.put(`${API}/objects/${registerId}/${besluitSchema}/${besluit}`, {
-			data: { datum: '2026-09-08', geheim: `niet tonen ${RUN}` },
-		})
-		expect(patched.ok(), `besluit update failed: ${await patched.text()}`).toBeTruthy()
+		const patched = await admin.put(
+			`${API}/objects/${registerId}/${besluitSchema}/${besluit}`,
+			{
+				data: { datum: '2026-09-08', geheim: `niet tonen ${RUN}` },
+			},
+		)
+		expect(
+			patched.ok(),
+			`besluit update failed: ${await patched.text()}`,
+		).toBeTruthy()
 
 		const after = await readObject(admin, bezwaarSchema, bezwaar)
 		expect(after.besluitDatum).toBe('2026-09-08')
@@ -329,9 +368,16 @@ test.describe('an object is the hinge several cases turn on', () => {
 		).toBe((before['@self'] as Record<string, unknown>).updated)
 
 		// A write naming the lens is refused, and the refusal names it.
-		const refused = await admin.put(`${API}/objects/${registerId}/${bezwaarSchema}/${bezwaar}`, {
-			data: { onderwerp: 'Bezwaar tegen het besluit', besluit, besluitDatum: '2020-01-01' },
-		})
+		const refused = await admin.put(
+			`${API}/objects/${registerId}/${bezwaarSchema}/${bezwaar}`,
+			{
+				data: {
+					onderwerp: 'Bezwaar tegen het besluit',
+					besluit,
+					besluitDatum: '2020-01-01',
+				},
+			},
+		)
 		expect(refused.status(), await refused.text()).toBeGreaterThanOrEqual(400)
 		expect(await refused.text()).toContain('besluitDatum')
 
@@ -358,7 +404,12 @@ test.describe('an object is the hinge several cases turn on', () => {
 			{
 				configuration: {
 					'x-openregister-list': {
-						columns: ['onderwerp', { property: 'status', label: 'Stand van zaken' }, 'aanvrager', 'datum'],
+						columns: [
+							'onderwerp',
+							{ property: 'status', label: 'Stand van zaken' },
+							'aanvrager',
+							'datum',
+						],
 						searchFields: ['onderwerp', 'aanvrager'],
 					},
 				},
@@ -366,24 +417,32 @@ test.describe('an object is the hinge several cases turn on', () => {
 		)
 
 		const res = await admin.get(`${API}/schemas/${schemaId}/list-presentation`)
-		expect(res.ok(), `list presentation failed: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`list presentation failed: ${await res.text()}`,
+		).toBeTruthy()
 
 		const body = (await res.json()) as Record<string, unknown>
 		expect(body.declared).toBe(true)
-		expect((body.columns as Array<Record<string, unknown>>).map((c) => String(c.property))).toEqual([
-			'onderwerp',
-			'status',
-			'aanvrager',
-			'datum',
-		])
-		expect((body.columns as Array<Record<string, unknown>>)[1].label).toBe('Stand van zaken')
+		expect(
+			(body.columns as Array<Record<string, unknown>>).map((c) =>
+				String(c.property),
+			),
+		).toEqual(['onderwerp', 'status', 'aanvrager', 'datum'])
+		expect((body.columns as Array<Record<string, unknown>>)[1].label).toBe(
+			'Stand van zaken',
+		)
 		expect(body.searchFields).toEqual(['onderwerp', 'aanvrager'])
 
 		// A schema declaring none of it keeps today's columns and says so, so a
 		// surface with its own defaults can tell the two apart.
-		const plain = await admin.get(`${API}/schemas/${schemas.adres}/list-presentation`)
+		const plain = await admin.get(
+			`${API}/schemas/${schemas.adres}/list-presentation`,
+		)
 		expect(plain.ok()).toBeTruthy()
-		expect(((await plain.json()) as Record<string, unknown>).declared).toBe(false)
+		expect(((await plain.json()) as Record<string, unknown>).declared).toBe(
+			false,
+		)
 	})
 
 	test('the case shows the address it is about, naming the reference', async () => {
@@ -395,16 +454,28 @@ test.describe('an object is the hinge several cases turn on', () => {
 			'e2e hinge geozaak',
 			{
 				onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
-				adres: { type: 'string', title: 'Adres', format: 'uuid', maxLength: 64 },
+				adres: {
+					type: 'string',
+					title: 'Adres',
+					format: 'uuid',
+					maxLength: 64,
+				},
 			},
-			{ configuration: { 'x-openregister-geo-inheritance': { from: ['adres'] } } },
+			{
+				configuration: {
+					'x-openregister-geo-inheritance': { from: ['adres'] },
+				},
+			},
 		)
 
 		const adres = await createObject(adresSchema, {
 			straat: `Dorpsstraat ${RUN}`,
 			'@self': { geo: { type: 'Point', coordinates: [5.12, 52.09] } },
 		})
-		const zaak = await createObject(zaakSchema, { onderwerp: 'Zaak op dit adres', adres })
+		const zaak = await createObject(zaakSchema, {
+			onderwerp: 'Zaak op dit adres',
+			adres,
+		})
 
 		const res = await admin.get(
 			`${API}/objects/${registerId}/${zaakSchema}/${zaak}/geo-features`,
@@ -427,10 +498,17 @@ test.describe('an object is the hinge several cases turn on', () => {
 		// install and upgrade. Assert it is there first, so a skipped repair
 		// step reports itself rather than surfacing as a confusing 404.
 		const registers = await admin.get(`${API}/registers?limit=500`)
-		expect(registers.ok(), `register listing failed: ${await registers.text()}`).toBeTruthy()
+		expect(
+			registers.ok(),
+			`register listing failed: ${await registers.text()}`,
+		).toBeTruthy()
 
-		const results = ((await registers.json()).results ?? []) as Array<Record<string, unknown>>
-		const intake = results.find((entry) => String(entry.slug) === 'intake-sources')
+		const results = ((await registers.json()).results ?? []) as Array<
+			Record<string, unknown>
+		>
+		const intake = results.find(
+			(entry) => String(entry.slug) === 'intake-sources',
+		)
 		expect(
 			intake,
 			'the intake-sources register is absent: did SeedIntakeSourceRegister run?',
@@ -440,18 +518,37 @@ test.describe('an object is the hinge several cases turn on', () => {
 		const schemaRes = await admin.get(`${API}/schemas?limit=500`)
 		expect(schemaRes.ok()).toBeTruthy()
 
-		const schemaResults = ((await schemaRes.json()).results ?? []) as Array<Record<string, unknown>>
-		const intakeSchema = schemaResults.find((entry) => String(entry.slug) === 'intake-source')
+		const schemaResults = ((await schemaRes.json()).results ?? []) as Array<
+			Record<string, unknown>
+		>
+		const intakeSchema = schemaResults.find(
+			(entry) => String(entry.slug) === 'intake-source',
+		)
 		expect(intakeSchema, 'the intake-source schema is absent').toBeTruthy()
 
 		const intakeSchemaId = String((intakeSchema as Record<string, unknown>).id)
 		const sources: string[] = []
 
-		for (const [slug, enabled] of [[`e2e-postbus-1-${RUN}`, true], [`e2e-postbus-2-${RUN}`, true]] as Array<[string, boolean]>) {
-			const res = await admin.post(`${API}/objects/${intakeRegisterId}/${intakeSchemaId}`, {
-				data: { slug, title: slug, kind: 'mailbox', enabled, location: `${slug}@example.org` },
-			})
-			expect(res.ok(), `intake source create failed: ${await res.text()}`).toBeTruthy()
+		for (const [slug, enabled] of [
+			[`e2e-postbus-1-${RUN}`, true],
+			[`e2e-postbus-2-${RUN}`, true],
+		] as Array<[string, boolean]>) {
+			const res = await admin.post(
+				`${API}/objects/${intakeRegisterId}/${intakeSchemaId}`,
+				{
+					data: {
+						slug,
+						title: slug,
+						kind: 'mailbox',
+						enabled,
+						location: `${slug}@example.org`,
+					},
+				},
+			)
+			expect(
+				res.ok(),
+				`intake source create failed: ${await res.text()}`,
+			).toBeTruthy()
 
 			const uuid = String((await res.json())['@self']?.id)
 			created.push([intakeSchemaId, uuid])
@@ -465,23 +562,35 @@ test.describe('an object is the hinge several cases turn on', () => {
 		)
 		expect(listed.ok()).toBeTruthy()
 
-		const slugs = (((await listed.json()).results ?? []) as Array<Record<string, unknown>>).map(
-			(entry) => String(entry.slug),
-		)
+		const slugs = (
+			((await listed.json()).results ?? []) as Array<Record<string, unknown>>
+		).map((entry) => String(entry.slug))
 		expect(slugs).toContain(`e2e-postbus-1-${RUN}`)
 		expect(slugs).toContain(`e2e-postbus-2-${RUN}`)
 
 		// Switching one off leaves it listed, carrying the reason it is quiet.
 		const disabled = await admin.put(
 			`${API}/objects/${intakeRegisterId}/${intakeSchemaId}/${sources[1]}`,
-			{ data: { slug: `e2e-postbus-2-${RUN}`, title: `e2e-postbus-2-${RUN}`, kind: 'mailbox', enabled: false } },
+			{
+				data: {
+					slug: `e2e-postbus-2-${RUN}`,
+					title: `e2e-postbus-2-${RUN}`,
+					kind: 'mailbox',
+					enabled: false,
+				},
+			},
 		)
-		expect(disabled.ok(), `disable failed: ${await disabled.text()}`).toBeTruthy()
+		expect(
+			disabled.ok(),
+			`disable failed: ${await disabled.text()}`,
+		).toBeTruthy()
 
 		const afterRes = await admin.get(
 			`${API}/objects/${intakeRegisterId}/${intakeSchemaId}/${sources[1]}`,
 		)
 		expect(afterRes.ok()).toBeTruthy()
-		expect(((await afterRes.json()) as Record<string, unknown>).enabled).toBe(false)
+		expect(((await afterRes.json()) as Record<string, unknown>).enabled).toBe(
+			false,
+		)
 	})
 })

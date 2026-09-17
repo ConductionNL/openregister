@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Exception\MergeDecisionException;
+use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCP\AppFramework\Controller;
@@ -77,6 +79,17 @@ class MergeController extends Controller {
 
 		try {
 			$result = $this->mergeService->previewMerge(from: $from, into: $into);
+		} catch (MergeNotFullyReadableException $e) {
+			// MUST be caught before the RuntimeException below, which answers
+			// 404. A merge refused because the caller cannot read a restricted
+			// property is a permissions answer, and reporting it as "not found"
+			// would send a handler looking for a missing record instead of the
+			// group they are not in. The properties travel with it; their
+			// values never do.
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				Http::STATUS_FORBIDDEN
+			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (RuntimeException $e) {
@@ -105,12 +118,35 @@ class MergeController extends Controller {
 
 		$mergedBy = ((string)($this->userSession->getUser()?->getUID() ?? ''));
 
+		// Absent, the merge behaves exactly as it did before this change: the
+		// resolver's proposal applies and no payload property is rewritten.
+		$decisions = $this->request->getParam('decisions');
+		if (is_array($decisions) === false) {
+			$decisions = null;
+		}
+
 		try {
 			$result = $this->mergeService->executeMerge(
 				from: $from,
 				into: $into,
 				reason: $reason,
-				mergedBy: $mergedBy
+				mergedBy: $mergedBy,
+				decisions: $decisions
+			);
+		} catch (MergeDecisionException $e) {
+			// 422, not 404 and not 403: the objects exist and the caller may
+			// merge them, but the map they approved does not describe the merge
+			// they were shown. Naming the properties is the whole value of the
+			// refusal; "invalid decision map" would leave a reviewer guessing
+			// which of twenty fields they missed.
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		} catch (MergeNotFullyReadableException $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				Http::STATUS_FORBIDDEN
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);

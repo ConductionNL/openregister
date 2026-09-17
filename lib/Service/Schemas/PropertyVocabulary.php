@@ -226,10 +226,44 @@ final class PropertyVocabulary {
 	 * @return bool True when a property may carry this key.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the localisation rule because it is
+	 *                                       the thing that enforces it. Spelling the suffix check
+	 *                                       out again here would be the second list this class
+	 *                                       exists to remove.
 	 */
 	public function hasKey(string $key): bool {
-		return in_array($key, $this->keys(), true);
+		if (in_array($key, $this->keys(), true) === true) {
+			return true;
+		}
+
+		return PropertyValidatorHandler::isLocalisedKey(key: $key);
 	}//end hasKey()
+
+	/**
+	 * The keys that take a language suffix, and the shape the suffix has.
+	 *
+	 * A generated editor needs both halves: which keys may be written per
+	 * language, and what it may put after the colon. Publishing only the base
+	 * keys would leave every app guessing the tag format, and guessing is how
+	 * `title:english` gets written and then refused at import. It is reached
+	 * through {@see self::all()} rather than on its own, because the rule is
+	 * part of the published payload and not a second question.
+	 *
+	 * @return array{keys: array<int, string>, separator: string, languageTagPattern: string,
+	 *   example: string, description: string} The localisation rule.
+	 *
+	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 */
+	private function localisation(): array {
+		return [
+			'keys' => PropertyValidatorHandler::LOCALISED_KEYS,
+			'separator' => ':',
+			'languageTagPattern' => PropertyValidatorHandler::LANGUAGE_TAG_PATTERN,
+			'example' => 'title:nl',
+			'description' => 'The prose keys may be written once per language, as `<key>:<language tag>`.',
+		];
+	}//end localisation()
 
 	/**
 	 * The categories the vocabulary groups its types under.
@@ -269,6 +303,7 @@ final class PropertyVocabulary {
 			'modifiers' => $modifiers,
 			'passthrough' => $passthrough,
 			'keys' => $this->keys(),
+			'localisation' => $this->localisation(),
 			'vendorExtensionPrefix' => 'x-',
 			'counts' => [
 				'types' => count($types),

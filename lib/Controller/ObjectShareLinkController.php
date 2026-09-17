@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -71,7 +72,7 @@ class ObjectShareLinkController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const THROTTLE_ACTION = 'openregister_object_share_link';
+	public const THROTTLE_ACTION = ThrottledSurfaces::OBJECT_SHARE_LINK;
 
 
 	/**
