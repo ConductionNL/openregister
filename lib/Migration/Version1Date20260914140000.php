@@ -105,7 +105,7 @@ class Version1Date20260914140000 extends SimpleMigrationStep {
 
 		if ($changed === 0) {
 			$output->info('object read state: table and notification columns already present, nothing to do');
-			return null;
+			return $schema;
 		}
 
 		return $schema;

@@ -84,7 +84,7 @@ class Version1Date20260525200000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;

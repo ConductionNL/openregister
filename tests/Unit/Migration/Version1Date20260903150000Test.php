@@ -80,7 +80,7 @@ class Version1Date20260903150000Test extends TestCase {
 
 		$step = new Version1Date20260903150000($this->createMock(IDBConnection::class));
 
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), fn() => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), fn() => $schema, []));
 
 	}//end testAnAlreadyDroppedTableIsLeftAlone()
 

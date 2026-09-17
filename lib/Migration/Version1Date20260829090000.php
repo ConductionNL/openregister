@@ -81,7 +81,7 @@ class Version1Date20260829090000 extends SimpleMigrationStep {
 		$changed = ($definitions === true || $versions === true || $columns === true);
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;
