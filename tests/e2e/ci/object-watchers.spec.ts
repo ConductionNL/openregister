@@ -152,7 +152,9 @@ test.describe('object watchers over HTTP', () => {
 
 	test.afterAll(async () => {
 		if (objectUuid) {
-			await admin.delete(`${API}/objects/${registerId}/${schemaId}/${objectUuid}`)
+			await admin.delete(
+				`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
+			)
 			await admin.delete(`${API}/deleted/${objectUuid}`)
 		}
 
@@ -209,11 +211,19 @@ test.describe('object watchers over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
 		)
 		const afterBody = await after.json()
-		expect(afterBody['@self'].watching, 'the follower sees their own marker').toBe(true)
-		expect(afterBody['@self'].watcherCount, 'an editor sees the audience size').toBe(1)
+		expect(
+			afterBody['@self'].watching,
+			'the follower sees their own marker',
+		).toBe(true)
+		expect(
+			afterBody['@self'].watcherCount,
+			'an editor sees the audience size',
+		).toBe(1)
 		// The object itself is untouched: following is stored beside it, so the
 		// stored data is the same data.
-		expect(afterBody.key, 'following must not rewrite the object').toBe('followed-object')
+		expect(afterBody.key, 'following must not rewrite the object').toBe(
+			'followed-object',
+		)
 
 		// And it is somebody ELSE's marker, not a global flag: the owner does not
 		// follow the object and must not be told that they do.
@@ -235,18 +245,29 @@ test.describe('object watchers over HTTP', () => {
 		const list = await owner.get(
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/watchers`,
 		)
-		expect(list.ok(), `the watcher list failed: ${await list.text()}`).toBeTruthy()
-		expect((await list.json()).total, 'the second follow wrote no second row').toBe(1)
+		expect(
+			list.ok(),
+			`the watcher list failed: ${await list.text()}`,
+		).toBeTruthy()
+		expect(
+			(await list.json()).total,
+			'the second follow wrote no second row',
+		).toBe(1)
 	})
 
 	test('an editor lists who follows the object, with the time each subscribed', async () => {
 		const list = await owner.get(
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/watchers`,
 		)
-		expect(list.ok(), `the watcher list failed: ${await list.text()}`).toBeTruthy()
+		expect(
+			list.ok(),
+			`the watcher list failed: ${await list.text()}`,
+		).toBeTruthy()
 
 		const body = await list.json()
-		expect(body.results.map((w: { userId: string }) => w.userId)).toContain(OTHER)
+		expect(body.results.map((w: { userId: string }) => w.userId)).toContain(
+			OTHER,
+		)
 		expect(
 			body.results[0].created,
 			'the list says when, not only who',
@@ -276,7 +297,9 @@ test.describe('object watchers over HTTP', () => {
 			(o: Record<string, { id?: string }> & { id?: string }) =>
 				o['@self']?.id ?? o.id,
 		)
-		expect(afterIds, 'an unfollowed object leaves the lens').not.toContain(objectUuid)
+		expect(afterIds, 'an unfollowed object leaves the lens').not.toContain(
+			objectUuid,
+		)
 
 		const read = await other.get(
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}`,
@@ -292,7 +315,10 @@ test.describe('object watchers over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/scope`,
 			{ data: { scope: 'private' } },
 		)
-		expect(priv.ok(), `could not make the object private: ${await priv.text()}`).toBeTruthy()
+		expect(
+			priv.ok(),
+			`could not make the object private: ${await priv.text()}`,
+		).toBeTruthy()
 
 		try {
 			const attempt = await other.put(
@@ -308,7 +334,9 @@ test.describe('object watchers over HTTP', () => {
 			const list = await owner.get(
 				`${API}/objects/${registerId}/${schemaId}/${objectUuid}/watchers`,
 			)
-			expect((await list.json()).total, 'a refused follow writes no row').toBe(0)
+			expect((await list.json()).total, 'a refused follow writes no row').toBe(
+				0,
+			)
 		} finally {
 			await owner.put(
 				`${API}/objects/${registerId}/${schemaId}/${objectUuid}/scope`,

@@ -138,7 +138,11 @@ test.describe('parties on an object over HTTP', () => {
 				title: `e2e party case schema ${RUN}`,
 				description: 'e2e',
 				properties: {
-					onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
+					onderwerp: {
+						type: 'string',
+						title: 'Onderwerp',
+						maxLength: 255,
+					},
 				},
 				authorization: {
 					read: ['authenticated'],
@@ -147,7 +151,11 @@ test.describe('parties on an object over HTTP', () => {
 					delete: ['authenticated'],
 				},
 				partyKinds: [
-					{ key: 'person', label: 'Persoon', roles: ['aanvrager', 'gemachtigde'] },
+					{
+						key: 'person',
+						label: 'Persoon',
+						roles: ['aanvrager', 'gemachtigde'],
+					},
 				],
 				linkRoles: [
 					{ key: 'aanvrager', label: 'Aanvrager' },
@@ -165,8 +173,16 @@ test.describe('parties on an object over HTTP', () => {
 			data: {
 				naam: `Jan Jansen ${RUN}`,
 				adressen: [
-					{ kind: 'correspondence', type: 'email', value: `jan.${RUN}@example.org` },
-					{ kind: 'correspondence', type: 'email', value: `j.jansen.${RUN}@example.org` },
+					{
+						kind: 'correspondence',
+						type: 'email',
+						value: `jan.${RUN}@example.org`,
+					},
+					{
+						kind: 'correspondence',
+						type: 'email',
+						value: `j.jansen.${RUN}@example.org`,
+					},
 				],
 			},
 		})
@@ -177,7 +193,11 @@ test.describe('parties on an object over HTTP', () => {
 			data: {
 				naam: `Piet Pietersen ${RUN}`,
 				adressen: [
-					{ kind: 'correspondence', type: 'email', value: `piet.${RUN}@example.org` },
+					{
+						kind: 'correspondence',
+						type: 'email',
+						value: `piet.${RUN}@example.org`,
+					},
 				],
 			},
 		})
@@ -185,9 +205,12 @@ test.describe('parties on an object over HTTP', () => {
 		partyB = uuidOf(await b.json())
 
 		for (const subject of ['eerste zaak', 'tweede zaak']) {
-			const obj = await admin.post(`${API}/objects/${registerId}/${caseSchemaId}`, {
-				data: { onderwerp: `${subject} ${RUN}` },
-			})
+			const obj = await admin.post(
+				`${API}/objects/${registerId}/${caseSchemaId}`,
+				{
+					data: { onderwerp: `${subject} ${RUN}` },
+				},
+			)
 			expect(obj.ok(), `case create failed: ${await obj.text()}`).toBeTruthy()
 			const uuid = uuidOf(await obj.json())
 			if (subject === 'eerste zaak') {
@@ -243,12 +266,18 @@ test.describe('parties on an object over HTTP', () => {
 		const listed = await admin.get(
 			`${API}/objects/${registerId}/${caseSchemaId}/${caseOne}/parties`,
 		)
-		expect(listed.ok(), `listing parties failed: ${await listed.text()}`).toBeTruthy()
+		expect(
+			listed.ok(),
+			`listing parties failed: ${await listed.text()}`,
+		).toBeTruthy()
 
 		const body = await listed.json()
 		expect(body.byRole.gemachtigde).toHaveLength(2)
-		expect(body.byRole.gemachtigde.map((l: { validFrom: string }) => l.validFrom).sort())
-			.toEqual(['2026-01-01', '2026-06-01'])
+		expect(
+			body.byRole.gemachtigde
+				.map((l: { validFrom: string }) => l.validFrom)
+				.sort(),
+		).toEqual(['2026-01-01', '2026-06-01'])
 		// The vocabulary comes back beside the parties, so a picker reads one call.
 		expect(body.kinds.map((k: { key: string }) => k.key)).toEqual(['person'])
 	})
@@ -271,7 +300,10 @@ test.describe('parties on an object over HTTP', () => {
 			`${API}/objects/${registerId}/${caseSchemaId}/${caseOne}/parties/primary`,
 			{ data: { partyUuid: partyA, role: 'aanvrager' } },
 		)
-		expect(first.ok(), `setting the primary party failed: ${await first.text()}`).toBeTruthy()
+		expect(
+			first.ok(),
+			`setting the primary party failed: ${await first.text()}`,
+		).toBeTruthy()
 
 		const replaced = await admin.put(
 			`${API}/objects/${registerId}/${caseSchemaId}/${caseOne}/parties/primary`,
@@ -288,8 +320,13 @@ test.describe('parties on an object over HTTP', () => {
 		expect((await listed.json()).primary).toBe(partyB)
 
 		// The change is a fact on the chain, naming both parties.
-		const trail = await admin.get(`${API}/audit-trails?objectUuid=${caseOne}&limit=50`)
-		expect(trail.ok(), `reading the audit trail failed: ${await trail.text()}`).toBeTruthy()
+		const trail = await admin.get(
+			`${API}/audit-trails?objectUuid=${caseOne}&limit=50`,
+		)
+		expect(
+			trail.ok(),
+			`reading the audit trail failed: ${await trail.text()}`,
+		).toBeTruthy()
 		const entries = (await trail.json()).results ?? []
 		const replacement = entries.find(
 			(e: { action?: string }) => e.action === 'party.primary-replaced',
@@ -330,8 +367,16 @@ test.describe('parties on an object over HTTP', () => {
 				data: {
 					naam: `Jan Jansen ${RUN}`,
 					adressen: [
-						{ kind: 'correspondence', type: 'email', value: `jan.${RUN}@example.org` },
-						{ kind: 'correspondence', type: 'email', value: `j.jansen.${RUN}@example.org` },
+						{
+							kind: 'correspondence',
+							type: 'email',
+							value: `jan.${RUN}@example.org`,
+						},
+						{
+							kind: 'correspondence',
+							type: 'email',
+							value: `j.jansen.${RUN}@example.org`,
+						},
 					],
 					indicatoren: [
 						{
@@ -343,10 +388,16 @@ test.describe('parties on an object over HTTP', () => {
 				},
 			},
 		)
-		expect(updated.ok(), `setting the indicator failed: ${await updated.text()}`).toBeTruthy()
+		expect(
+			updated.ok(),
+			`setting the indicator failed: ${await updated.text()}`,
+		).toBeTruthy()
 
 		const party = await admin.get(`${API}/parties/${partyA}`)
-		expect(party.ok(), `reading the party failed: ${await party.text()}`).toBeTruthy()
+		expect(
+			party.ok(),
+			`reading the party failed: ${await party.text()}`,
+		).toBeTruthy()
 
 		const body = await party.json()
 		expect(body.indicators).toHaveLength(1)
@@ -362,12 +413,19 @@ test.describe('parties on an object over HTTP', () => {
 			{
 				data: {
 					name: `besluit-${RUN}.txt`,
-					content: Buffer.from('Naam en adres van de aanvrager.').toString('base64'),
+					content: Buffer.from('Naam en adres van de aanvrager.').toString(
+						'base64',
+					),
 				},
 			},
 		)
-		expect(created.ok(), `file create failed: ${await created.text()}`).toBeTruthy()
-		const fileId = Number((await created.json()).id ?? (await created.json()).fileId)
+		expect(
+			created.ok(),
+			`file create failed: ${await created.text()}`,
+		).toBeTruthy()
+		const fileId = Number(
+			(await created.json()).id ?? (await created.json()).fileId,
+		)
 		expect(fileId, 'no file id came back').toBeTruthy()
 
 		const published = await admin.post(
@@ -414,7 +472,10 @@ test.describe('parties on an object over HTTP', () => {
 	test('a query inside the cap answers with the parties', async () => {
 		const found = await admin.get(`${API}/parties/search?q=Pietersen`)
 
-		expect(found.ok(), `a query inside the cap failed: ${await found.text()}`).toBeTruthy()
+		expect(
+			found.ok(),
+			`a query inside the cap failed: ${await found.text()}`,
+		).toBeTruthy()
 		const body = await found.json()
 		expect(body.cap).toBeGreaterThan(0)
 		expect(Array.isArray(body.results)).toBeTruthy()
@@ -459,7 +520,7 @@ test.describe('parties on an object over HTTP', () => {
 		).toBeFalsy()
 		expect(
 			partiesAfter.some(
-				(l: { partyUuid: string, role: string }) =>
+				(l: { partyUuid: string; role: string }) =>
 					l.partyUuid === partyA && l.role === 'aanvrager',
 			),
 			'the survivor must hold the role the merged-away party held',

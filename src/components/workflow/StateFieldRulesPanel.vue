@@ -32,34 +32,65 @@
 				class="state-field-rules-panel__state">
 				<h4>
 					{{ entry.state }}
-					<span v-if="entry.enabled === false" class="state-field-rules-panel__off">
+					<span
+						v-if="entry.enabled === false"
+						class="state-field-rules-panel__off">
 						{{ t('openregister', 'switched off') }}
 					</span>
 				</h4>
 
 				<ul class="state-field-rules-panel__meta">
 					<li v-if="entry.entry">
-						{{ t('openregister', 'Entry condition: every path into this status is checked.') }}
+						{{
+							t(
+								'openregister',
+								'Entry condition: every path into this status is checked.',
+							)
+						}}
 					</li>
 					<li v-if="entry.exit">
-						{{ t('openregister', 'Exit condition: every path out of this status is checked.') }}
+						{{
+							t(
+								'openregister',
+								'Exit condition: every path out of this status is checked.',
+							)
+						}}
 					</li>
 					<li v-if="entry.condition">
-						{{ t('openregister', 'The whole block applies only when its condition holds.') }}
+						{{
+							t(
+								'openregister',
+								'The whole block applies only when its condition holds.',
+							)
+						}}
 					</li>
 				</ul>
 
-				<ul v-if="entry.rules.length > 0" class="state-field-rules-panel__rules">
-					<li v-for="rule in entry.rules" :key="`${entry.state}-${rule.id}`">
-						<span class="state-field-rules-panel__kind">{{ kindLabel(rule.kind) }}</span>
+				<ul
+					v-if="entry.rules.length > 0"
+					class="state-field-rules-panel__rules">
+					<li
+						v-for="rule in entry.rules"
+						:key="`${entry.state}-${rule.id}`">
+						<span class="state-field-rules-panel__kind">{{
+							kindLabel(rule.kind)
+						}}</span>
 						{{ rule.fields.join(', ') }}
-						<span v-if="rule.groups.length > 0" class="state-field-rules-panel__scope">
-							{{ t('openregister', 'for {groups}', { groups: rule.groups.join(', ') }) }}
+						<span
+							v-if="rule.groups.length > 0"
+							class="state-field-rules-panel__scope">
+							{{
+								t('openregister', 'for {groups}', {
+									groups: rule.groups.join(', '),
+								})
+							}}
 						</span>
 						<span v-else class="state-field-rules-panel__scope">
 							{{ t('openregister', 'for everyone') }}
 						</span>
-						<span v-if="rule.conditional" class="state-field-rules-panel__scope">
+						<span
+							v-if="rule.conditional"
+							class="state-field-rules-panel__scope">
 							{{ t('openregister', 'when its condition holds') }}
 						</span>
 					</li>
@@ -104,7 +135,8 @@ export default {
 		 */
 		stateEntries() {
 			const states =
-				this.schema?.configuration?.['x-openregister-lifecycle']?.states || {}
+				this.schema?.configuration?.['x-openregister-lifecycle']?.states
+				|| {}
 
 			return Object.entries(states)
 				.filter(([, block]) => block && typeof block === 'object')

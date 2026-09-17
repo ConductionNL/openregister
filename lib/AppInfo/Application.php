@@ -48,6 +48,10 @@ use OCA\OpenRegister\Controller\CaseTokenController;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationValueMapper;
 // Thirteen imports from OCA\OpenRegister\Service\Objects\ stood here — a
 // namespace that DOES NOT EXIST. Those classes live under Service\Object\
 // (singular); the plural was left behind by the rename. Every one was unused, so
@@ -170,6 +174,12 @@ use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportH
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
@@ -229,6 +239,7 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
@@ -570,6 +581,49 @@ class Application extends App implements IBootstrap {
 		// deprecated version keeps exactly the behaviour it had before.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
 
+		// Register the ApiCallerMiddleware (api-as-a-versioned-surface): binds a
+		// caller to its administered source addresses, bounds it to its
+		// administered ceiling, and records which route and version it called.
+		// Registered AFTER ApiVersionMiddleware so the version this call speaks
+		// is already resolvable when the record is written.
+		//
+		// An instance that has administered neither a ceiling nor a binding
+		// behaves exactly as it did before: the limiter fails open, the binding
+		// only refuses a caller an administrator actually bound, and the record
+		// swallows its own failures.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
+
+		// Every outbound call this app makes goes through the administered
+		// proxy (api-as-a-versioned-surface, design D-6). Most gemeenten have
+		// no direct egress, so a call that bypasses the proxy does not fail
+		// visibly: it works on a developer's laptop and times out in
+		// production.
+		//
+		// 🔑 BOUND UNDER `IClientService` RATHER THAN MIGRATING CALL SITES.
+		// This app creates clients from fourteen files across twenty call
+		// sites. Editing all twenty would leave the guarantee resting on
+		// nobody ever adding a twenty-first, which is exactly the failure D-6
+		// names. Overriding the binding means every existing call site is
+		// untouched and every future one is covered by construction.
+		//
+		// The override is scoped to this app's container: nothing resolved
+		// outside OpenRegister sees it.
+		$context->registerService(
+			\OCP\Http\Client\IClientService::class,
+			static function ($container): \OCP\Http\Client\IClientService {
+				// 🔴 The inner client comes from the SERVER container, not from
+				// `$container`. Asking the app container for `IClientService`
+				// here would resolve to this very closure and recurse until the
+				// stack runs out. `OCP\Server::get()` is the public accessor
+				// for the server's own binding, and it is what reaches past
+				// the override we are installing.
+				return new OutboundClientFactory(
+					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
+					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettings::class),
+				);
+			}
+		);
+
 		// Bind the dormant Path B PDF anonymisation fallback bridge to its
 		// null implementation. Tenants enabling Path B replace this binding
 		// with a concrete NcOfficeConverterInterface implementation that
@@ -727,6 +781,7 @@ class Application extends App implements IBootstrap {
 		$this->registerCacheAndFileHandlers(context: $context);
 		$this->registerConfigurationServices(context: $context);
 		$this->registerSettingsServices(context: $context);
+		$this->registerConfigurationDeploymentServices(context: $context);
 		$this->registerVectorizationService(context: $context);
 		$this->registerObjectInteractionServices(context: $context);
 		$this->registerIntegrationRegistry(context: $context);
@@ -1184,6 +1239,85 @@ class Application extends App implements IBootstrap {
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 	}//end registerConfigurationServices()
+
+	/**
+	 * Register the configuration deployment lifecycle.
+	 *
+	 * Registered explicitly rather than autowired: every class here takes the
+	 * app name as a defaulted string, and a container that resolves a scalar
+	 * by guessing is a container that silently builds the wrong object.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function registerConfigurationDeploymentServices(IRegistrationContext $context): void {
+		$context->registerService(
+			ConfigurationValueStore::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationValueStore(
+					values: $container->get(ConfigurationValueMapper::class),
+					appConfig: $container->get('OCP\IAppConfig'),
+					appName: 'openregister'
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationDraftService::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationDraftService(
+					sets: $container->get(ConfigurationDraftSetMapper::class),
+					drafts: $container->get(ConfigurationDraftMapper::class),
+					store: $container->get(ConfigurationValueStore::class),
+					registry: $container->get(ConfigurationKeyRegistry::class),
+					session: $container->get('OCP\IUserSession'),
+					appConfig: $container->get('OCP\IAppConfig'),
+					appName: 'openregister'
+				);
+			}
+		);
+
+		$context->registerService(
+			DeploymentPreviewService::class,
+			function (ContainerInterface $container) {
+				return new DeploymentPreviewService(
+					drafts: $container->get(ConfigurationDraftService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					registry: $container->get(ConfigurationKeyRegistry::class)
+				);
+			}
+		);
+
+		$context->registerService(
+			DeploymentService::class,
+			function (ContainerInterface $container) {
+				return new DeploymentService(
+					drafts: $container->get(ConfigurationDraftService::class),
+					previews: $container->get(DeploymentPreviewService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					deployments: $container->get(ConfigurationDeploymentMapper::class),
+					sets: $container->get(ConfigurationDraftSetMapper::class),
+					db: $container->get('OCP\IDBConnection'),
+					session: $container->get('OCP\IUserSession'),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationExplainer::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationExplainer(
+					store: $container->get(ConfigurationValueStore::class),
+					deployments: $container->get(ConfigurationDeploymentMapper::class)
+				);
+			}
+		);
+
+	}//end registerConfigurationDeploymentServices()
 
 	/**
 	 * Register settings-related services including handlers.

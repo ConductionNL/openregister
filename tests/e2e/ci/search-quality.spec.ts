@@ -40,8 +40,8 @@ test.describe('search quality', () => {
 
 	/** Read the ids out of a list response, whatever shape the row carries. */
 	function idsOf(body: any): string[] {
-		return (body.results ?? []).map(
-			(row: any) => String(row['@self']?.id ?? row.id ?? row.uuid),
+		return (body.results ?? []).map((row: any) =>
+			String(row['@self']?.id ?? row.id ?? row.uuid),
 		)
 	}
 
@@ -57,8 +57,16 @@ test.describe('search quality', () => {
 				title: `E2E zaak ${RUN}`,
 				description: 'e2e',
 				properties: {
-					resultType: { type: 'string', title: 'Result type', maxLength: 255 },
-					omschrijving: { type: 'string', title: 'Description', maxLength: 255 },
+					resultType: {
+						type: 'string',
+						title: 'Result type',
+						maxLength: 255,
+					},
+					omschrijving: {
+						type: 'string',
+						title: 'Description',
+						maxLength: 255,
+					},
 				},
 				authorization: {
 					read: ['authenticated'],
@@ -74,20 +82,32 @@ test.describe('search quality', () => {
 		// Five objects carry a result type, two do not. The descriptions carry
 		// the words the two term scenarios search for.
 		const rows = [
-			{ resultType: 'toegekend', omschrijving: 'dakkapel vergunning verleend' },
+			{
+				resultType: 'toegekend',
+				omschrijving: 'dakkapel vergunning verleend',
+			},
 			{ resultType: 'toegekend', omschrijving: 'dakkapel aanbouw' },
 			{ resultType: 'toegekend', omschrijving: 'dakkapel serre' },
 			{ resultType: 'afgewezen', omschrijving: 'dakkapel geweigerd' },
-			{ resultType: 'afgewezen', omschrijving: 'dakkapel geweigerd namens college' },
+			{
+				resultType: 'afgewezen',
+				omschrijving: 'dakkapel geweigerd namens college',
+			},
 			{ omschrijving: 'vergunning' },
 			{ omschrijving: 'vergunningaanvraag' },
 		]
 
 		for (const row of rows) {
-			const obj = await request.post(`${API}/objects/${registerId}/${schemaId}`, {
-				data: row,
-			})
-			expect(obj.ok(), `object create failed: ${await obj.text()}`).toBeTruthy()
+			const obj = await request.post(
+				`${API}/objects/${registerId}/${schemaId}`,
+				{
+					data: row,
+				},
+			)
+			expect(
+				obj.ok(),
+				`object create failed: ${await obj.text()}`,
+			).toBeTruthy()
 			const body = await obj.json()
 			const uuid = String(body['@self']?.id ?? body.id ?? body.uuid)
 			expect(uuid, 'no uuid came back from the object create').toBeTruthy()
@@ -133,7 +153,10 @@ test.describe('search quality', () => {
 		const valueKeys = (facet.buckets ?? []).map((bucket: any) => bucket.key)
 		expect(valueKeys, 'toegekend is still a value bucket').toContain('toegekend')
 		expect(valueKeys, 'toegekend is still a value bucket').toContain('afgewezen')
-		expect(valueKeys, 'the absent value is not also a value bucket').not.toContain(null)
+		expect(
+			valueKeys,
+			'the absent value is not also a value bucket',
+		).not.toContain(null)
 
 		// Selecting the bucket returns exactly the objects it counted. Both
 		// spellings of the filter mean the same thing here.
@@ -166,31 +189,40 @@ test.describe('search quality', () => {
 		expect(resp.status(), 'the search is readable').toBe(200)
 
 		const body = await resp.json()
-		const descriptions = (body.results ?? []).map(
-			(row: any) => String(row.omschrijving ?? ''),
+		const descriptions = (body.results ?? []).map((row: any) =>
+			String(row.omschrijving ?? ''),
 		)
 
-		expect(descriptions.length, 'the three dakkapel rows that are not geweigerd').toBe(3)
+		expect(
+			descriptions.length,
+			'the three dakkapel rows that are not geweigerd',
+		).toBe(3)
 		for (const description of descriptions) {
 			expect(description, 'every row matches dakkapel').toContain('dakkapel')
-			expect(description, 'no row matches geweigerd').not.toContain('geweigerd')
+			expect(description, 'no row matches geweigerd').not.toContain(
+				'geweigerd',
+			)
 		}
 	})
 
 	// @e2e zoeken-filteren::a-wildcard-matches-a-stem
-	test('a trailing wildcard matches the stem and what follows it', async ({ request }) => {
+	test('a trailing wildcard matches the stem and what follows it', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${schemaId}?_limit=50&_search=${encodeURIComponent('vergunning*')}`,
 			{ headers: { Accept: 'application/json' } },
 		)
 		expect(resp.status(), 'the wildcard search is readable').toBe(200)
 
-		const descriptions = ((await resp.json()).results ?? []).map(
-			(row: any) => String(row.omschrijving ?? ''),
+		const descriptions = ((await resp.json()).results ?? []).map((row: any) =>
+			String(row.omschrijving ?? ''),
 		)
 
 		expect(descriptions, 'the exact stem is returned').toContain('vergunning')
-		expect(descriptions, 'the longer word is returned too').toContain('vergunningaanvraag')
+		expect(descriptions, 'the longer word is returned too').toContain(
+			'vergunningaanvraag',
+		)
 
 		// The row whose description merely CONTAINS the word is not returned:
 		// a trailing wildcard anchors the start of the value, and without that
@@ -213,7 +245,9 @@ test.describe('search quality', () => {
 
 		const body = await resp.json()
 		expect(body.position, 'the refusal names the position of the fault').toBe(14)
-		expect(String(body.error), 'the message names it too').toContain('position 14')
+		expect(String(body.error), 'the message names it too').toContain(
+			'position 14',
+		)
 		expect(body.results, 'a refusal holds no results').toBeUndefined()
 	})
 })

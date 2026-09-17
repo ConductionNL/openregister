@@ -48,6 +48,7 @@ use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
+use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
@@ -58,10 +59,13 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
@@ -373,6 +377,179 @@ class SaveObject {
 		$this->twig = new Environment($arrayLoader);
 		$this->versionHandler = new ObjectVersionHandler();
 	}//end __construct()
+
+	/**
+	 * Refuse a write into a register or schema this organisation only consumes.
+	 *
+	 * Design D-2 is the argument: read-only to the consumer is a property of
+	 * the resolution, not of a screen. The read path hands a consumer the
+	 * holder's code list, so the write path is where "and you cannot change it"
+	 * has to be true, and the message names the holder so the caseworker knows
+	 * who to ask.
+	 *
+	 * 🔴 THE REFUSAL IS RECORDED. A cross-entity write attempt on a shared back
+	 * office is exactly the fact an auditor asks about later, and a 403 that
+	 * leaves no trace cannot answer them. It goes on the audit trail of the
+	 * organisation that attempted it, and the log line that accompanies it
+	 * carries the organisation UUID and a pseudonymous actor reference
+	 * (REQ-SLE-003), never a name.
+	 *
+	 * The recording is best-effort and the refusal is not: an audit write that
+	 * fails still leaves the write refused. A refusal that could be turned off
+	 * by breaking the audit table would be no refusal at all.
+	 *
+	 * @param int|null $registerId The register being written.
+	 * @param int|null $schemaId The schema being written.
+	 * @param string|null $uuid The object's uuid, when the caller named one.
+	 *
+	 * @return void
+	 *
+	 * @throws SharedMasterDataWriteException When the acting organisation only consumes the resource.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function refuseSharedMasterDataWrite(?int $registerId, ?int $schemaId, ?string $uuid): void {
+		$resolver = $this->resolveSharedMasterDataService();
+		if ($resolver === null) {
+			return;
+		}
+
+		$activeOrgUuids = [];
+		try {
+			$activeOrgUuids = $this->organisationService->getUserActiveOrganisations();
+		} catch (\Throwable $e) {
+			// No resolvable organisation means no share can be consumed, so
+			// there is nothing for this guard to refuse. The ordinary tenancy
+			// checks downstream still apply.
+			return;
+		}
+
+		if ($activeOrgUuids === []) {
+			return;
+		}
+
+		try {
+			$resolver->assertWritable(
+				table: SharedMasterDataService::REGISTERS,
+				id: $registerId,
+				activeOrgUuids: $activeOrgUuids
+			);
+			$resolver->assertWritable(
+				table: SharedMasterDataService::SCHEMAS,
+				id: $schemaId,
+				activeOrgUuids: $activeOrgUuids
+			);
+		} catch (SharedMasterDataWriteException $refusal) {
+			$this->recordSharedMasterDataRefusal(
+				refusal: $refusal,
+				registerId: $registerId,
+				schemaId: $schemaId,
+				uuid: $uuid,
+				activeOrgUuid: ($activeOrgUuids[0] ?? null)
+			);
+
+			throw $refusal;
+		}//end try
+	}//end refuseSharedMasterDataWrite()
+
+	/**
+	 * Record one refused cross-entity write, on the audit trail and in the log.
+	 *
+	 * @param SharedMasterDataWriteException $refusal The refusal.
+	 * @param int|null $registerId The register being written.
+	 * @param int|null $schemaId The schema being written.
+	 * @param string|null $uuid The object uuid, when the caller named one.
+	 * @param string|null $activeOrgUuid The organisation that attempted the write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function recordSharedMasterDataRefusal(
+		SharedMasterDataWriteException $refusal,
+		?int $registerId,
+		?int $schemaId,
+		?string $uuid,
+		?string $activeOrgUuid,
+	): void {
+		$redactor = new TenantLogRedactor(appConfig: $this->appConfig);
+
+		$actorId = null;
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$actorId = $user->getUID();
+		}
+
+		$context = [
+			'type' => 'shared_master_data_write_denied',
+			'sourceOrganisation' => $activeOrgUuid,
+			'holderOrganisation' => $refusal->getHolderUuid(),
+			'resourceType' => $refusal->getResourceType(),
+			'register' => $registerId,
+			'schema' => $schemaId,
+			'objectUuid' => $uuid,
+			'actor' => $redactor->pseudonym(userId: $actorId),
+		];
+
+		$line = $redactor->line(context: $context);
+		if ($line !== null) {
+			$this->logger->warning(
+				'[SaveObject] Refused a write to shared master data held by another organisation',
+				$line
+			);
+		}
+
+		try {
+			$this->auditTrailMapper->createSharedMasterDataRefusalEntry(
+				holderOrganisation: $refusal->getHolderUuid(),
+				sourceOrganisation: ($activeOrgUuid ?? ''),
+				resourceType: $refusal->getResourceType(),
+				context: $redactor->redact(context: $context),
+				register: $registerId,
+				schema: $schemaId,
+				objectUuid: $uuid,
+				actorId: $actorId,
+				actorReference: $redactor->pseudonym(userId: $actorId)
+			);
+		} catch (\Throwable $e) {
+			// Best effort by design: see the docblock on the caller. The write
+			// is refused whether or not the record could be written, and the
+			// log line above already carries the fact.
+			$this->logger->warning(
+				'[SaveObject] Could not record a shared master data refusal on the audit trail',
+				['file' => __FILE__, 'line' => __LINE__, 'cause' => $e::class]
+			);
+		}//end try
+	}//end recordSharedMasterDataRefusal()
+
+	/**
+	 * Resolve the shared master data service from the app container, or null.
+	 *
+	 * Lazily, through the INJECTED container and never the global server, for
+	 * the reason spelled out on resolveRetentionService() below: a global
+	 * lookup here autowires a mapper cycle that ate 19 GB in a unit-test run.
+	 *
+	 * @return SharedMasterDataService|null The resolver, or null when unavailable.
+	 */
+	private function resolveSharedMasterDataService(): ?SharedMasterDataService {
+		if ($this->container === null) {
+			return null;
+		}
+
+		try {
+			$service = $this->container->get(SharedMasterDataService::class);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] SharedMasterDataService not available: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($service instanceof SharedMasterDataService) {
+			return $service;
+		}
+
+		return null;
+	}//end resolveSharedMasterDataService()
 
 	/**
 	 * Resolve the retention service from the app container, or null when there is none.
@@ -2962,6 +3139,20 @@ class SaveObject {
 			register: $register
 		);
 
+		// Shared master data guard (REQ-SLE-001, design D-2): a register or
+		// schema this organisation only CONSUMES is read-only to it. The read
+		// side hands a consumer the holder's rows through the ordinary query
+		// path, so without this the consumer would be able to write into the
+		// holder's table and the share would silently become a second write
+		// path into somebody else's records.
+		//
+		// Placed here, beside the object-source guard, for the same reason that
+		// one is here: it is a property of the RESOURCE being written, decided
+		// before anything is prepared, validated or persisted.
+		if ($persist === true && $_multitenancy === true) {
+			$this->refuseSharedMasterDataWrite(registerId: $registerId, schemaId: $schemaId, uuid: $uuid);
+		}
+
 		// Read-only projection guard: a schema served from an external source
 		// (x-openregister-object-source) is read-only — the external system stays
 		// authoritative and OpenRegister must never become a second write path.
@@ -3189,6 +3380,20 @@ class SaveObject {
 			);
 		}
 
+		// SOFT UNIQUENESS, the create half. Unlike the guard above it never
+		// refuses: it records a warning the controller puts on the response
+		// beside the created object. A schema that needs a refusal declares
+		// `onCreate: "block"` instead, which is the guard above.
+		$uniqueHints = $this->resolveUniqueHintChecker();
+		if ($uniqueHints !== null) {
+			$uniqueHints->check(
+				configuration: ($schema->getConfiguration() ?? []),
+				register: $registerId,
+				schema: $schemaId,
+				data: $data
+			);
+		}
+
 		// Push the in-flight save onto the call stack so cascade
 		// descendants can detect cycles via `validateReferences()`.
 		// Popped in finally regardless of success/failure.
@@ -3234,6 +3439,38 @@ class SaveObject {
 	}//end saveObject()
 
 	/**
+	 * Resolve the soft-uniqueness checker from the app container, or null when
+	 * there is none.
+	 *
+	 * Lazily resolved for the same cycle reason {@see resolveDedupCreatePolicy()}
+	 * is: the checker reads through `ObjectService`, which owns this very
+	 * handler, so constructor injection would close the loop and the container
+	 * would refuse to build either end of it.
+	 *
+	 * @return UniqueHintChecker|null The checker, or null when unavailable.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function resolveUniqueHintChecker(): ?UniqueHintChecker {
+		if ($this->container === null) {
+			return null;
+		}
+
+		try {
+			$checker = $this->container->get(UniqueHintChecker::class);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] UniqueHintChecker not available: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($checker instanceof UniqueHintChecker) {
+			return $checker;
+		}
+
+		return null;
+	}//end resolveUniqueHintChecker()
+
+	/**
 	 * Resolve the create-time duplicate policy from the app container, or null
 	 * when there is none.
 	 *
@@ -3242,7 +3479,7 @@ class SaveObject {
 	 * through `ObjectService`, which owns this very handler. Constructor
 	 * injection would close that loop and Nextcloud's container would refuse
 	 * to build either end of it. Going through the INJECTED app container
-	 * rather than the global server is what keeps the lookup bounded — the
+	 * rather than the global server is what keeps the lookup bounded: the
 	 * global container knows nothing of this app's registrations and would
 	 * autowire the cycle instead of failing.
 	 *
@@ -3527,6 +3764,22 @@ class SaveObject {
 			throw new Exception(
 				'Cannot modify object: archival status is ' . $archStatus . ' (error: ' . $immutableMap[$archStatus] . ')',
 				409
+			);
+		}
+
+		// SOFT UNIQUENESS, the update half. The spec asks for the warning on
+		// create AND on update, and a create-only version would let every
+		// duplicate in through an edit instead. The object being written is
+		// excluded from its own matches, so re-saving a record that already
+		// holds the value is silent.
+		$uniqueHints = $this->resolveUniqueHintChecker();
+		if ($uniqueHints !== null) {
+			$uniqueHints->check(
+				configuration: ($schema->getConfiguration() ?? []),
+				register: $register->getId(),
+				schema: $schema->getId(),
+				data: $data,
+				selfUuid: ((string)$existingObject->getUuid())
 			);
 		}
 

@@ -328,7 +328,8 @@ class MagicSearchHandler {
 		$queryBuilder = $this->buildFilteredQuery(
 			query: $query,
 			schema: $schema,
-			tableName: $tableName
+			tableName: $tableName,
+			registerId: $register->getId()
 		);
 
 		// Check if fuzzy search is enabled for relevance scoring.
@@ -403,6 +404,7 @@ class MagicSearchHandler {
 	 * @param Schema $schema Schema for access-control rules.
 	 * @param bool $_rbac Whether to apply RBAC filtering.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param int|null $registerId The register of the table being read, for shared master data.
 	 *
 	 * @return void
 	 *
@@ -413,6 +415,7 @@ class MagicSearchHandler {
 		Schema $schema,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		?int $registerId = null,
 	): void {
 		// Mirror the list path: public schemas bypass multitenancy by default.
 		// No explicit multitenancy request exists on the single-object read path,
@@ -428,7 +431,8 @@ class MagicSearchHandler {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $resolvedMultitenancy,
-			multitenancyExplicit: false
+			multitenancyExplicit: false,
+			registerId: $registerId
 		);
 	}//end applyAccessControlToQuery()
 
@@ -446,10 +450,14 @@ class MagicSearchHandler {
 	 * @param array $query Search parameters including filters.
 	 * @param Schema $schema The schema for property filtering.
 	 * @param string $tableName The table to query.
+	 * @param int|null $registerId The register this table belongs to. When omitted it is
+	 *                             read from the query's reserved `register` key, which is
+	 *                             how the facet paths carry it. A register that cannot be
+	 *                             resolved simply yields no shared master data widening.
 	 *
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
-	public function buildFilteredQuery(array $query, Schema $schema, string $tableName): IQueryBuilder {
+	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
 		// Extract options from query (prefixed with _).
 		$search = $query['_search'] ?? null;
 		// Coerce to bool: query-string params arrive as strings (e.g.
@@ -504,7 +512,8 @@ class MagicSearchHandler {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			multitenancyExplicit: $multitenancyExplicit
+			multitenancyExplicit: $multitenancyExplicit,
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
 		);
 
 		// Apply metadata filters.
@@ -1677,6 +1686,35 @@ class MagicSearchHandler {
 	}//end resolveMultitenancyFlag()
 
 	/**
+	 * Read the register id out of a search query's reserved `register` key.
+	 *
+	 * The facet paths build their query from a base query rather than from a
+	 * Register entity, and that base query carries `register` as a reserved
+	 * parameter. Reading it here means a register-level shared master data
+	 * declaration is honoured by the facets as well as by the list, instead of
+	 * the two disagreeing about which rows exist.
+	 *
+	 * @param array $query The search query.
+	 *
+	 * @return int|null The register id, or null when the query does not name one.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function registerIdFromQuery(array $query): ?int {
+		$register = ($query['register'] ?? null);
+
+		if (is_int($register) === true) {
+			return $register;
+		}
+
+		if (is_string($register) === true && ctype_digit($register) === true) {
+			return (int)$register;
+		}
+
+		return null;
+	}//end registerIdFromQuery()
+
+	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
 	 *
 	 * Handles the interaction between RBAC and _multitenancy:
@@ -1689,8 +1727,11 @@ class MagicSearchHandler {
 	 * @param bool $_rbac Whether RBAC filtering is enabled
 	 * @param bool $_multitenancy Whether multitenancy filtering is enabled
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
+	 * @param int|null $registerId The register of the table being read, for shared master data
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	private function applyAccessControlFilters(
 		IQueryBuilder $qb,
@@ -1698,6 +1739,7 @@ class MagicSearchHandler {
 		bool $_rbac,
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
+		?int $registerId = null,
 	): void {
 		// Check if user qualifies for any RBAC rule (simple or conditional).
 		// When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
@@ -1741,9 +1783,16 @@ class MagicSearchHandler {
 			// Otherwise: user has RBAC access and didn't request _multi=true
 			// Skip multitenancy - let RBAC handle access control.
 			if ($applyMultitenancy === true) {
+				// The register+schema pair is handed down so the organisation
+				// handler can widen by a DECLARED shared master data holder
+				// (REQ-SLE-001). Each magic table is exactly one such pair, so
+				// the widening reaches this table and nothing else the holder
+				// owns. A pair that cannot be resolved widens by nothing.
 				$this->organizationHandler->applyOrganizationFilter(
 					qb: $qb,
-					adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
+					adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+					registerId: $registerId,
+					schemaId: $schema->getId()
 				);
 			}
 		}//end if

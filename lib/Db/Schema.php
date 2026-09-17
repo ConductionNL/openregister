@@ -85,6 +85,8 @@ use stdClass;
  * @method void setOrganisation(?string $organisation)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
+ * @method array|null getSharedWith()
+ * @method void setSharedWith(?array $sharedWith)
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
@@ -269,6 +271,23 @@ class Schema extends Entity implements JsonSerializable {
 	 * @var array|null JSON object describing authorizations
 	 */
 	protected ?array $authorization = [];
+
+	/**
+	 * The organisations that may READ this schema as shared master data.
+	 *
+	 * The `organisation` column is the HOLDER; this list is who else may read
+	 * it. A case type and a party are the two the corpus asks for at this
+	 * grain: every entity in the samenwerkingsverband reads one definition of
+	 * "vergunningaanvraag" rather than keeping a copy that drifts.
+	 *
+	 * NULL or an empty list means nothing is shared, which is what every row
+	 * written before this column existed says.
+	 *
+	 * @var array|null List of consumer organisation UUIDs
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	protected ?array $sharedWith = null;
 
 	/**
 	 * Deletion timestamp
@@ -491,6 +510,7 @@ class Schema extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'application', type: 'string');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'sharedWith', type: 'json');
 		$this->addType(fieldName: 'deleted', type: 'datetime');
 		$this->addType(fieldName: 'configuration', type: 'json');
 		$this->addType(fieldName: 'groups', type: 'json');
@@ -746,6 +766,20 @@ class Schema extends Entity implements JsonSerializable {
 	 * @var string
 	 */
 	public const IMMUTABLE_PROPERTY_KEYWORD = 'immutable';
+
+	/**
+	 * The authorization key that assigns each role name its groups.
+	 *
+	 * A role is the schema's own vocabulary, and the map says which Nextcloud
+	 * groups hold it. It is not an action rule set: nothing is granted by
+	 * declaring a role. The notification dispatcher reads this map to turn
+	 * `{"kind": "role", "role": "behandelaar"}` into the people to tell, and a
+	 * lifecycle transition reads the same map, so the assignment changes in one
+	 * place rather than in every rule that names the role.
+	 *
+	 * @var string
+	 */
+	public const ROLES_KEY = 'roles';
 
 	/**
 	 * The lens annotation: properties that read a referenced record's field live.
@@ -1087,20 +1121,14 @@ class Schema extends Entity implements JsonSerializable {
 		$reservedFlags = ['inheritFromPublic'];
 
 		foreach ($authorization as $action => $rules) {
-			// Reserved flags are validated as booleans, not action rule arrays.
-			if (in_array($action, $reservedFlags, true) === true) {
-				if (is_bool($rules) === false) {
-					throw new InvalidArgumentException(
-						"Authorization flag '{$action}' in {$context} must be a boolean"
-					);
-				}
-
-				continue;
-			}
-
-			// The default object scope for this schema.
-			if ($action === ObjectScopeResolver::SCOPE_KEY) {
-				$this->validateScopeValue(scope: $rules, context: $context);
+			// Reserved keys are behaviour, not action rule sets, and each is
+			// validated against its own shape.
+			if ($this->validateReservedKey(
+				action: (string)$action,
+				value: $rules,
+				reservedFlags: $reservedFlags,
+				context: $context
+			) === true) {
 				continue;
 			}
 
@@ -1124,6 +1152,119 @@ class Schema extends Entity implements JsonSerializable {
 			}
 		}//end foreach
 	}//end validateAuthorizationRules()
+
+	/**
+	 * Validate one reserved authorization key, if this is one.
+	 *
+	 * Reserved keys are cascade flags, the schema's default object scope, and the
+	 * role-to-groups assignment. None of them is an action rule set: none grants
+	 * anything. Keeping them in one place is what lets the ACTION vocabulary stay
+	 * closed, which is the property that makes a typo an error rather than a rule
+	 * that silently protects nothing.
+	 *
+	 * @param string            $action        The authorization key.
+	 * @param mixed             $value         Its value.
+	 * @param array<int,string> $reservedFlags The boolean cascade flags.
+	 * @param string            $context       Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When a reserved key carries the wrong shape.
+	 *
+	 * @return bool TRUE when the key was reserved and has been validated.
+	 */
+	private function validateReservedKey(
+		string $action,
+		mixed $value,
+		array $reservedFlags,
+		string $context
+	): bool {
+		if (in_array($action, $reservedFlags, true) === true) {
+			if (is_bool($value) === false) {
+				throw new InvalidArgumentException(
+					"Authorization flag '{$action}' in {$context} must be a boolean"
+				);
+			}
+
+			return true;
+		}
+
+		if ($action === ObjectScopeResolver::SCOPE_KEY) {
+			$this->validateScopeValue(scope: $value, context: $context);
+			return true;
+		}
+
+		if ($action === self::ROLES_KEY) {
+			$this->validateRolesAssignment(roles: $value, context: $context);
+			return true;
+		}
+
+		return false;
+	}//end validateReservedKey()
+
+	/**
+	 * Validate a schema's role-to-groups assignment.
+	 *
+	 * The shape is a map of role name to a list of Nextcloud group ids. Every
+	 * other shape is refused at authoring time, because a malformed assignment
+	 * reads at dispatch as a role nobody holds: the rule addressing it resolves
+	 * to nobody and records `recipient-unresolved`, which is a notification that
+	 * silently stopped rather than an error anybody sees.
+	 *
+	 * An EMPTY map is accepted. It says the schema assigns no roles yet, which is
+	 * what a schema that never declared the key already says.
+	 *
+	 * @param mixed  $roles   The declared assignment.
+	 * @param string $context Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When the assignment is not a map of role name to group ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
+	 */
+	private function validateRolesAssignment(mixed $roles, string $context): void {
+		if (is_array($roles) === false) {
+			throw new InvalidArgumentException(
+				"Authorization '" . self::ROLES_KEY . "' in {$context} must be a map of role name to group ids"
+			);
+		}
+
+		foreach ($roles as $roleName => $groups) {
+			if (is_string($roleName) === false || trim($roleName) === '') {
+				throw new InvalidArgumentException(
+					"Authorization '" . self::ROLES_KEY . "' in {$context} names a role with no name"
+				);
+			}
+
+			$this->validateRoleGroups(roleName: $roleName, groups: $groups, context: $context);
+		}
+	}//end validateRolesAssignment()
+
+	/**
+	 * Validate the groups one role is assigned.
+	 *
+	 * @param string $roleName The role.
+	 * @param mixed  $groups   The group ids it is assigned.
+	 * @param string $context  Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When the groups are not a non-empty list of group ids.
+	 *
+	 * @return void
+	 */
+	private function validateRoleGroups(string $roleName, mixed $groups, string $context): void {
+		if (is_array($groups) === false || $groups === []) {
+			throw new InvalidArgumentException(
+				"Role '{$roleName}' in {$context} must list at least one group id"
+			);
+		}
+
+		foreach ($groups as $group) {
+			if (is_string($group) === false || trim($group) === '') {
+				throw new InvalidArgumentException(
+					"Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
+				);
+			}
+		}
+	}//end validateRoleGroups()
 
 	/**
 	 * Validate a schema's default object scope.
@@ -1751,6 +1892,7 @@ class Schema extends Entity implements JsonSerializable {
 			'organisation' => $this->organisation,
 			'groups' => $this->groups,
 			'authorization' => $this->authorization,
+			'sharedWith' => ($this->sharedWith ?? []),
 			'deleted' => $deleted,
 			'configuration' => $this->configuration,
 			'allOf' => $this->allOf,
@@ -2783,12 +2925,32 @@ class Schema extends Entity implements JsonSerializable {
 		// the same bug five times over.
 		'x-openregister-relation-types',
 		'x-openregister-processing-activity',
+		// Doelbinding: whether a read of this schema has to name an
+		// administered purpose. Absent from this list setConfiguration() would
+		// silently DROP it, and a schema whose author had just turned
+		// doelbinding on would keep answering every unbound read with a 200 —
+		// which is precisely the lawful-basis gap the annotation exists to
+		// close, wearing the appearance of a saved setting. The comments around
+		// this list record that same loss six times over.
+		'x-openregister-purpose-required',
 		// Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
 		// dialect). Was absent from this list, so setConfiguration() silently
 		// DROPPED it and per-schema read-logging could never be enabled —
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// The links out of a record, each a title plus a URL template whose
+		// placeholders fill from the object's own values
+		// (api-as-a-versioned-surface, ADR-031). Read by
+		// ExternalLinkResolver and refused at save by
+		// ExternalLinkAnnotationValidator.
+		//
+		// ⚠️ Absent from this list setConfiguration() drops it, and the drop is
+		// invisible in the worst way this feature has: a declaration that is
+		// gone and a declaration whose placeholder cannot be filled both render
+		// as no link at all. An author would read a 200, see nothing on the
+		// object, and conclude their template was wrong.
+		'x-openregister-external-links',
 		// Whether this schema's objects can be archived by hand:
 		// `{"enabled": true}`. Distinct from `x-openregister-archival` above,
 		// which is about legal retention. Absent from this list
@@ -2806,6 +2968,12 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-object-source',
 		'x-openregister-quality',
 		'x-openregister-dedup',
+		// Which properties a schema nominates as effectively unique, so a save
+		// whose value already exists elsewhere warns. Read by
+		// UniqueHintChecker. Absent from this list it would be dropped in
+		// silence and the alert would simply never fire — the same trap the
+		// comments above this list record three separate times.
+		'x-openregister-unique-hint',
 		'x-openregister-flows',
 		'x-openregister-survivorship',
 		'x-openregister-merge',

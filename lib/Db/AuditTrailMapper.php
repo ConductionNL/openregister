@@ -28,6 +28,9 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Audit\AuditSink;
+use OCA\OpenRegister\Service\Audit\PurposeAttribution;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -38,6 +41,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * The AuditTrailMapper class handles audit trail operations and object reversions
@@ -59,6 +63,9 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
+ *   for the same reason: this is the one place an audit row is written, and every entry
+ *   point that writes one has to go through it or the hash chain has a second author.
  */
 class AuditTrailMapper extends QBMapper {
 
@@ -166,7 +173,18 @@ class AuditTrailMapper extends QBMapper {
 		// after insert would be outside the hash it is later given.
 		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
 
-		return $this->insert(entity: $auditTrail);
+		// The purpose the caller declared for the read that produced this row.
+		// Applied here as well as in buildAuditTrail() for the same reason the
+		// flow attribution is, and before the INSERT for the same reason again:
+		// the sealed half of it lives in `resultSummary`, which is inside the
+		// canonical JSON.
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		$inserted = $this->insert(entity: $auditTrail);
+
+		$this->shipToSink(entries: [$inserted]);
+
+		return $inserted;
 	}//end insertHashChained()
 
 	/**
@@ -653,6 +671,12 @@ class AuditTrailMapper extends QBMapper {
 		// left every bulk write in a flow silently unattributed.
 		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
 
+		// Doelbinding attribution, applied in the shared builder for the same
+		// reason the flow attribution is: `insertAuditTrails()` builds its rows
+		// here, and stamping only the inserts would leave every bulk write
+		// silently unattributed to the purpose it ran under.
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
 		$auditTrail->setSize(max($serializedSize, 14));
@@ -898,6 +922,11 @@ class AuditTrailMapper extends QBMapper {
 		// See insertHashChained() for why: one sealer means unsealed rows form a
 		// contiguous tail, which is the property that makes a fan-out
 		// impossible rather than merely unlikely.
+
+		// Shipped AFTER the ids are read back, so a line in the file can be
+		// pointed at the row it came from. A bulk write that shipped before the
+		// readback would put `"id":null` on every line of an import.
+		$this->shipToSink(entries: $chunk);
 	}//end insertAuditTrailChunk()
 
 	/**
@@ -2553,6 +2582,93 @@ class AuditTrailMapper extends QBMapper {
 	}//end findByActor()
 
 	/**
+	 * Create one immutable, hash-chained audit record for a write that was
+	 * refused because the resource is shared master data held by another
+	 * organisation.
+	 *
+	 * A gemeenschappelijke regeling shares its code lists, its case types and
+	 * its parties across several legal entities, and the read path now hands a
+	 * consumer the holder's rows. The moment a consumer can SEE the holder's
+	 * code list, "they tried to change it" becomes a question an auditor asks
+	 * and a 403 alone cannot answer. This is the answer.
+	 *
+	 * Object-less by construction, following
+	 * {@see createPartyQueryRefusalEntry()}: there is no object, because the
+	 * write never happened. `object` has been nullable since
+	 * Version1Date20260423100000 for exactly this shape of row.
+	 *
+	 * 🔑 THE ACTOR IS PSEUDONYMOUS AND THE CONTEXT IS REDACTED BEFORE IT
+	 * ARRIVES. This method persists what it is handed; REQ-SLE-003 is enforced
+	 * by {@see \OCA\OpenRegister\Service\TenantLogRedactor} at the call site,
+	 * because the same context also goes to the log and the two must not
+	 * disagree about what a line may carry.
+	 *
+	 * @param string $holderOrganisation UUID of the organisation that holds the shared resource.
+	 * @param string $sourceOrganisation UUID of the organisation that attempted the write.
+	 * @param string $resourceType Either `register` or `schema`.
+	 * @param array $context Already-redacted refusal context.
+	 * @param int|null $register Register id the write targeted, when known.
+	 * @param int|null $schema Schema id the write targeted, when known.
+	 * @param string|null $objectUuid Object uuid the caller named, when it named one.
+	 * @param string|null $actorId Acting user id, or null for a system context.
+	 * @param string|null $actorReference Pseudonymous actor reference for the `user_name` column.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	public function createSharedMasterDataRefusalEntry(
+		string $holderOrganisation,
+		string $sourceOrganisation,
+		string $resourceType,
+		array $context = [],
+		?int $register = null,
+		?int $schema = null,
+		?string $objectUuid = null,
+		?string $actorId = null,
+		?string $actorReference = null,
+	): AuditTrail {
+		$userId = $actorId;
+		if ($userId === null || $userId === '') {
+			$userId = 'system';
+		}
+
+		$userName = $actorReference;
+		if ($userName === null || $userName === '') {
+			$userName = $userId;
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('shared_master_data_write_denied');
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setObjectUuid($objectUuid);
+		$auditTrail->setOrganisationId($sourceOrganisation);
+		$auditTrail->setResultSummary(
+			array_merge(
+				$context,
+				[
+					'holderOrganisation' => $holderOrganisation,
+					'sourceOrganisation' => $sourceOrganisation,
+					'resourceType' => $resourceType,
+					'outcome' => 'refused',
+				]
+			)
+		);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+
+	}//end createSharedMasterDataRefusalEntry()
+
+	/**
 	 * Create one immutable, hash-chained audit record for a party query that
 	 * was refused for exceeding the administered cap.
 	 *
@@ -2604,6 +2720,200 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createPartyQueryRefusalEntry()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a read that was
+	 * refused because it named no usable purpose.
+	 *
+	 * The refusal is the interesting event, exactly as it is for a party query
+	 * over the cap: "who tried to read the BRP without naming a grondslag" is
+	 * a question the functionaris gegevensbescherming asks, and a refusal that
+	 * leaves no trace answers it with silence.
+	 *
+	 * The purpose is quoted back verbatim. It is a short administered code the
+	 * caller itself sent, not a record about a person.
+	 *
+	 * @param string      $rule     Which refusal it was, one of PurposeRefusedException's RULE_ constants.
+	 * @param string|null $purpose  The purpose the caller named, or null when none was.
+	 * @param int|null    $register The register that was being read, when known.
+	 * @param int|null    $schema   The schema that was being read, when known.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	public function createPurposeRefusalEntry(
+		string $rule,
+		?string $purpose = null,
+		?int $register = null,
+		?int $schema = null,
+	): AuditTrail {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction(PurposeGuard::ACTION_REFUSED);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary(
+			[
+				'rule' => $rule,
+				'declaredPurpose' => $purpose,
+				'refused' => true,
+			]
+		);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createPurposeRefusalEntry()
+
+	/**
+	 * Count audit rows per purpose over a period.
+	 *
+	 * This is the report the doelbinding requirement exists for: "a month of
+	 * queries under three purposes, each purpose carrying its own count". It
+	 * groups on the `purpose` COLUMN rather than on the sealed copy in
+	 * `result_summary`, because a `GROUP BY` inside a JSON document is not
+	 * portable across the databases this app supports, which is exactly why
+	 * the column exists.
+	 *
+	 * Rows with no purpose are counted too, under the key `null`. An
+	 * unattributed read is a finding, not a row to hide from the report.
+	 *
+	 * @param DateTime|null $from Start of the period, inclusive.
+	 * @param DateTime|null $to   End of the period, inclusive.
+	 *
+	 * @return array<string, int> Purpose code to count, unattributed rows under `null`.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	public function countByPurpose(?DateTime $from = null, ?DateTime $to = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('purpose')
+			->selectAlias($qb->createFunction('COUNT(*)'), 'entry_count')
+			->from($this->getTableName())
+			->groupBy('purpose');
+
+		if ($from !== null) {
+			$qb->andWhere(
+				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		if ($to !== null) {
+			$qb->andWhere(
+				$qb->expr()->lte('created', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$counts = [];
+		while (($row = $result->fetch()) !== false) {
+			$key = 'null';
+			if ($row['purpose'] !== null && $row['purpose'] !== '') {
+				$key = (string)$row['purpose'];
+			}
+
+			$counts[$key] = (int)$row['entry_count'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByPurpose()
+
+	/**
+	 * Hand freshly written rows to the configured file sink.
+	 *
+	 * Fail-soft, deliberately and completely. The database row IS the trail;
+	 * the file is a copy for something else to read (D-1). An audited write
+	 * that threw because a log directory was full would mean a filesystem
+	 * problem could stop people saving objects, which is a worse failure than
+	 * the one this exists to prevent. The gap is recorded instead, and the
+	 * operations console reports it.
+	 *
+	 * @param AuditTrail[] $entries The rows just written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function shipToSink(array $entries): void {
+		try {
+			/*
+			 * @var AuditSink $sink
+			 */
+
+			$sink = $this->container->get(AuditSink::class);
+		} catch (Throwable $e) {
+			// Not registered yet, e.g. during a migration before service
+			// registration completes.
+			return;
+		}
+
+		if (($sink instanceof AuditSink) === false || $sink->isConfigured() === false) {
+			return;
+		}
+
+		try {
+			$sink->setFailureRecorder(
+				function (AuditTrail $unshipped, string $error): void {
+					$this->recordSinkGap(unshipped: $unshipped, error: $error);
+				}
+			);
+			$sink->shipMany(entries: $entries);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[AuditSink] Shipping failed outright; the database entries are unaffected.',
+				context: ['error' => $e->getMessage()]
+			);
+		}
+	}//end shipToSink()
+
+	/**
+	 * Record on the trail that an entry did not reach the sink.
+	 *
+	 * Written straight through `insert()` rather than through
+	 * `insertHashChained()` on purpose: the chained path ships what it writes,
+	 * and shipping the record of a broken sink into that same broken sink is
+	 * how a failure becomes a loop.
+	 *
+	 * @param AuditTrail $unshipped The entry that did not ship.
+	 * @param string     $error     What went wrong.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function recordSinkGap(AuditTrail $unshipped, string $error): void {
+		$gap = new AuditTrail();
+		$gap->setUuid((string)Uuid::v4());
+		$gap->setAction(AuditSink::ACTION_SINK_FAILED);
+		$gap->setResultSummary(
+			[
+				'error' => $error,
+				'firstUnshippedUuid' => $unshipped->getUuid(),
+				'firstUnshippedId' => $unshipped->getId(),
+			]
+		);
+		$gap->setUser('system');
+		$gap->setUserName('System');
+		$gap->setCreated(new DateTime());
+
+		$this->insert(entity: $gap);
+	}//end recordSinkGap()
 
 	/**
 	 * Record one change to a security control, or one refused attempt at a change.

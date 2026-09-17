@@ -11,6 +11,9 @@ import type { APIRequestContext } from '@playwright/test'
  * archived into `openspec/specs/`:
  *
  * @e2e gdpr-data-subject-rights::an-unapproved-erasure-does-not-run
+ * @e2e gdpr-data-subject-rights::article-20-is-answered-without-a-database-export
+ * @e2e authorization-rbac::uitdiensttreding-is-one-act
+ * @e2e authorization-rbac::a-temporary-adviser-stays-temporary
  *
  * WHAT THIS FILE CAN PROVE, AND WHAT IT DELIBERATELY DOES NOT.
  *
@@ -51,14 +54,20 @@ import { resolveBaseUrl } from '../base-url.ts'
 
 const BASE = resolveBaseUrl()
 
-/* No admin context here, on purpose. An AVG request is handled by a HANDLER,
- * and every route under test is `@NoAdminRequired`. Driving it as the
+/* TWO ORDINARY ACCOUNTS AND ONE ADMINISTRATOR, and which is used where is the
+ * point. The AVG surfaces are `@NoAdminRequired` because a request is handled
+ * by a HANDLER, so they are driven as ordinary users: running them as the
  * administrator would pass the reach rule by privilege and prove nothing about
- * the rule itself, so both accounts below are ordinary users — and the reach
- * test needs two of them.
+ * the rule. Two ordinary accounts, because the reach tests need a stranger.
+ *
+ * The reach listing and the schema write are the exception. Both are an
+ * administrator's act, so they are driven as one, and the ordinary account is
+ * used to prove the surface refuses everybody else.
  *
  * The same fixed uids the sharing, watcher and delete-window specs use,
  * provisioned by the workflow's `playwright-seed-command` (tests/e2e/ci/seed.sh). */
+const ADMIN_USER = process.env.ADMIN_USER || process.env.OR_USER || 'admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 const OWNER = 'e2e-owner'
 const OTHER = 'e2e-other'
 const PASS = 'E2e-Share-Pass-123'
@@ -108,7 +117,10 @@ test.describe('the previewed erasure over HTTP', () => {
 		const res = await owner.post(PREVIEWS, {
 			data: { subject, eraseMode: 'whole-object', request: `DSR-${RUN}` },
 		})
-		expect(res.ok(), `preview failed: ${res.status()} ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`preview failed: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
 
 		return (await res.json()) as Record<string, unknown>
 	}
@@ -124,10 +136,20 @@ test.describe('the previewed erasure over HTTP', () => {
 	test('a preview comes back recorded, pending, and split three ways', async () => {
 		const preview = await takePreview(`preview-shape-${RUN}@example.org`)
 
-		expect(String(preview.uuid ?? ''), 'the preview was not recorded').toMatch(/[0-9a-f-]{36}/)
-		expect(preview.status, 'a fresh preview must not already be approved').toBe('pending')
-		expect(preview.requestId, 'the preview does not name the request it answers').toBe(`DSR-${RUN}`)
-		expect(String(preview.digest ?? ''), 'the preview carries no digest').toHaveLength(64)
+		expect(String(preview.uuid ?? ''), 'the preview was not recorded').toMatch(
+			/[0-9a-f-]{36}/,
+		)
+		expect(preview.status, 'a fresh preview must not already be approved').toBe(
+			'pending',
+		)
+		expect(
+			preview.requestId,
+			'the preview does not name the request it answers',
+		).toBe(`DSR-${RUN}`)
+		expect(
+			String(preview.digest ?? ''),
+			'the preview carries no digest',
+		).toHaveLength(64)
 
 		const report = preview.report as Record<string, unknown>
 		const counts = report.counts as Record<string, Record<string, number>>
@@ -136,8 +158,16 @@ test.describe('the previewed erasure over HTTP', () => {
 		// write "deels niet, en dit is waarom", so all three are present even
 		// when a bucket is empty.
 		for (const bucket of ['erasable', 'pseudonymised', 'protected']) {
-			expect(counts[bucket], `the preview has no ${bucket} bucket`).toBeTruthy()
-			for (const kind of ['objects', 'files', 'timelineEntries', 'partyRecords']) {
+			expect(
+				counts[bucket],
+				`the preview has no ${bucket} bucket`,
+			).toBeTruthy()
+			for (const kind of [
+				'objects',
+				'files',
+				'timelineEntries',
+				'partyRecords',
+			]) {
 				expect(
 					typeof counts[bucket][kind],
 					`${bucket}.${kind} is not counted`,
@@ -145,13 +175,21 @@ test.describe('the previewed erasure over HTTP', () => {
 			}
 		}
 
-		expect(Array.isArray(report.protected), 'protected records are not listed by name').toBeTruthy()
+		expect(
+			Array.isArray(report.protected),
+			'protected records are not listed by name',
+		).toBeTruthy()
 	})
 
 	test('a preview without a subject is refused', async () => {
-		const res = await owner.post(PREVIEWS, { data: { eraseMode: 'whole-object' } })
+		const res = await owner.post(PREVIEWS, {
+			data: { eraseMode: 'whole-object' },
+		})
 
-		expect(res.status(), 'a preview with no subject should be a bad request').toBe(400)
+		expect(
+			res.status(),
+			'a preview with no subject should be a bad request',
+		).toBe(400)
 	})
 
 	test('an unapproved erasure does not run', async () => {
@@ -164,9 +202,10 @@ test.describe('the previewed erasure over HTTP', () => {
 		// THE REFUSAL NAMES THE RULE. "Forbidden" with no rule leaves a handler
 		// guessing about an irreversible act.
 		expect(body.error).toBe('ERASURE_REFUSED')
-		expect(body.rule, `the refusal does not name its rule: ${JSON.stringify(body)}`).toBe(
-			'erasure-not-approved',
-		)
+		expect(
+			body.rule,
+			`the refusal does not name its rule: ${JSON.stringify(body)}`,
+		).toBe('erasure-not-approved')
 
 		// NOTHING WAS WRITTEN: the preview is still pending, not consumed.
 		const after = await owner.get(`${PREVIEWS}/${preview.uuid}`)
@@ -181,14 +220,22 @@ test.describe('the previewed erasure over HTTP', () => {
 
 		const approved = await approve.json()
 		expect(approved.status).toBe('approved')
-		expect(approved.approvedBy, 'the approval does not name who gave it').toBe(OWNER)
+		expect(approved.approvedBy, 'the approval does not name who gave it').toBe(
+			OWNER,
+		)
 
 		const run = await owner.post(`${PREVIEWS}/${preview.uuid}/run`)
-		expect(run.ok(), `run failed: ${run.status()} ${await run.text()}`).toBeTruthy()
+		expect(
+			run.ok(),
+			`run failed: ${run.status()} ${await run.text()}`,
+		).toBeTruthy()
 
 		const outcome = await run.json()
 		expect(outcome.preview).toBe(preview.uuid)
-		expect(outcome.request, 'the run does not carry the request it answers').toBe(`DSR-${RUN}`)
+		expect(
+			outcome.request,
+			'the run does not carry the request it answers',
+		).toBe(`DSR-${RUN}`)
 		expect(typeof outcome.destroyedCount).toBe('number')
 		expect(typeof outcome.complete).toBe('boolean')
 
@@ -201,7 +248,10 @@ test.describe('the previewed erasure over HTTP', () => {
 		const preview = await takePreview(`private-${RUN}@example.org`)
 
 		const read = await other.get(`${PREVIEWS}/${preview.uuid}`)
-		expect(read.status(), 'a stranger must not reach another handler\'s preview').toBe(404)
+		expect(
+			read.status(),
+			"a stranger must not reach another handler's preview",
+		).toBe(404)
 
 		const body = await read.json()
 		// ANSWERED AS UNKNOWN, NOT AS FORBIDDEN. "Forbidden" would confirm that
@@ -209,13 +259,255 @@ test.describe('the previewed erasure over HTTP', () => {
 		expect(body.rule).toBe('erasure-preview-unknown')
 
 		const run = await other.post(`${PREVIEWS}/${preview.uuid}/run`)
-		expect(run.status(), 'a stranger must not be able to run it either').toBe(404)
+		expect(run.status(), 'a stranger must not be able to run it either').toBe(
+			404,
+		)
 	})
 
 	test('an unknown preview id is refused rather than answered', async () => {
-		const res = await owner.get(`${PREVIEWS}/00000000-0000-4000-8000-000000000000`)
+		const res = await owner.get(
+			`${PREVIEWS}/00000000-0000-4000-8000-000000000000`,
+		)
 
 		expect(res.status()).toBe(404)
 		expect((await res.json()).rule).toBe('erasure-preview-unknown')
+	})
+})
+
+test.describe('the subject export over HTTP', () => {
+	let owner: APIRequestContext
+	let other: APIRequestContext
+
+	test.beforeAll(async () => {
+		owner = await contextFor(OWNER, PASS)
+		other = await contextFor(OTHER, PASS)
+		await assertSeededUser(owner, OWNER)
+		await assertSeededUser(other, OTHER)
+	})
+
+	test('a subject export is accepted, queued, and readable back', async () => {
+		const res = await owner.post(`${API}/gdpr/subject-exports`, {
+			data: { subject: `export-${RUN}@example.org`, request: `DSR-${RUN}` },
+		})
+		expect(
+			res.ok(),
+			`subject export request failed: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
+
+		const created = await res.json()
+		expect(String(created.uuid ?? ''), 'the request was not recorded').toMatch(
+			/[0-9a-f-]{36}/,
+		)
+		expect(created.requestedBy, 'the export does not name who asked').toBe(OWNER)
+		expect(created.subject, 'the export does not name the subject').toBe(
+			`export-${RUN}@example.org`,
+		)
+		expect(created.requestId).toBe(`DSR-${RUN}`)
+
+		// D-4: the assembly is a background job, so the request answers pending
+		// rather than making the caller wait for every register to be walked.
+		expect(created.status).toBe('pending')
+		expect(
+			created.downloadable,
+			'nothing is downloadable before it is ready',
+		).toBe(false)
+
+		const read = await owner.get(`${API}/gdpr/subject-exports/${created.uuid}`)
+		expect(read.ok()).toBeTruthy()
+		expect((await read.json()).uuid).toBe(created.uuid)
+	})
+
+	test('an export that is not ready is refused rather than serving half an answer', async () => {
+		const res = await owner.post(`${API}/gdpr/subject-exports`, {
+			data: { subject: `notready-${RUN}@example.org` },
+		})
+		const created = await res.json()
+
+		const download = await owner.get(
+			`${API}/gdpr/subject-exports/${created.uuid}/download`,
+		)
+		expect(download.status(), 'a pending export must not download').toBe(404)
+		expect((await download.json()).error).toBe('SUBJECT_EXPORT_UNAVAILABLE')
+	})
+
+	test('a subject export without a subject is refused', async () => {
+		const res = await owner.post(`${API}/gdpr/subject-exports`, { data: {} })
+		expect(res.status()).toBe(400)
+	})
+
+	test("another account cannot read or download someone else's export", async () => {
+		const res = await owner.post(`${API}/gdpr/subject-exports`, {
+			data: { subject: `private-${RUN}@example.org` },
+		})
+		const created = await res.json()
+
+		// Answered as absent, not forbidden: confirming the row exists confirms
+		// somebody asked about this data subject.
+		expect(
+			(
+				await other.get(`${API}/gdpr/subject-exports/${created.uuid}`)
+			).status(),
+		).toBe(404)
+		expect(
+			(
+				await other.get(
+					`${API}/gdpr/subject-exports/${created.uuid}/download`,
+				)
+			).status(),
+		).toBe(404)
+	})
+})
+
+test.describe('the reach listing and the one revocation act over HTTP', () => {
+	let admin: APIRequestContext
+	let owner: APIRequestContext
+
+	test.beforeAll(async () => {
+		admin = await contextFor(ADMIN_USER, ADMIN_PASSWORD)
+		owner = await contextFor(OWNER, PASS)
+		await assertSeededUser(owner, OWNER)
+	})
+
+	test('the reach listing names every source and what a revocation will not take', async () => {
+		const res = await admin.get(`${API}/rbac/reach/${OWNER}`)
+		expect(
+			res.ok(),
+			`reach listing failed: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
+
+		const listing = await res.json()
+		expect(listing.principal).toBe(OWNER)
+		expect(listing.exists, 'the seeded account should resolve').toBe(true)
+		expect(typeof listing.total).toBe('number')
+
+		// EVERY SOURCE IS COUNTED, even at zero. A bucket that disappears when
+		// empty makes an administrator read a partial answer as a whole one.
+		for (const source of ['authorization', 'group', 'derived', 'delegation']) {
+			expect(
+				typeof listing.bySource[source],
+				`bySource.${source} is missing`,
+			).toBe('number')
+		}
+
+		// ADR-010: the retained half is visible BEFORE the act, not discovered
+		// after it.
+		expect(listing.revocable + listing.retained).toBe(listing.total)
+	})
+
+	test("an ordinary handler cannot read another account's whole reach", async () => {
+		const res = await owner.get(`${API}/rbac/reach/${ADMIN_USER}`)
+		expect(
+			res.status(),
+			"the reach surface is an administrator's",
+		).toBeGreaterThanOrEqual(400)
+	})
+})
+
+test.describe('an external grant carries an end date', () => {
+	let admin: APIRequestContext
+	let registerId: string
+	const schemas: string[] = []
+
+	test.beforeAll(async () => {
+		admin = await contextFor(ADMIN_USER, ADMIN_PASSWORD)
+
+		const reg = await admin.post(`${API}/registers`, {
+			data: {
+				title: `e2e external grant register ${RUN}`,
+				description: 'e2e',
+			},
+		})
+		expect(reg.ok(), `register create failed: ${await reg.text()}`).toBeTruthy()
+		registerId = String((await reg.json()).id)
+	})
+
+	test.afterAll(async () => {
+		for (const id of schemas) {
+			await admin.delete(`${API}/schemas/${id}`)
+		}
+
+		if (registerId) {
+			await admin.delete(`${API}/registers/${registerId}`)
+		}
+	})
+
+	/** Create a schema this spec will clean up. */
+	async function createSchema(): Promise<string> {
+		const res = await admin.post(`${API}/schemas`, {
+			data: {
+				title: `e2e external grant schema ${RUN}-${schemas.length}`,
+				description: 'e2e',
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
+			},
+		})
+		expect(res.ok(), `schema create failed: ${await res.text()}`).toBeTruthy()
+
+		const id = String((await res.json()).id)
+		schemas.push(id)
+
+		return id
+	}
+
+	test('a temporary adviser stays temporary', async () => {
+		const id = await createSchema()
+
+		const res = await admin.put(`${API}/schemas/${id}`, {
+			data: {
+				authorization: { read: [{ name: 'adviseur', external: true }] },
+			},
+		})
+
+		expect(
+			res.status(),
+			'an external grant with no end date must be refused',
+		).toBe(400)
+
+		const body = await res.json()
+		expect(body.error).toBe('EXTERNAL_GRANT_REFUSED')
+		expect(body.rule).toBe('external-grant-needs-an-end')
+		// NAMING THE REQUIREMENT. A refusal that does not say what to add leaves
+		// the writer guessing at the grammar.
+		expect(String(body.grants[0].message)).toContain('until')
+		expect(body.grants[0].principal).toBe('adviseur')
+	})
+
+	test('the same grant with an end date is accepted', async () => {
+		const id = await createSchema()
+
+		const res = await admin.put(`${API}/schemas/${id}`, {
+			data: {
+				authorization: {
+					read: [
+						{
+							name: 'adviseur',
+							external: true,
+							until: '2027-01-01T00:00:00+00:00',
+						},
+					],
+				},
+			},
+		})
+
+		expect(
+			res.ok(),
+			`an external grant WITH an end must save: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
+	})
+
+	test('an ordinary grant is untouched by the rule', async () => {
+		const id = await createSchema()
+
+		const res = await admin.put(`${API}/schemas/${id}`, {
+			data: { authorization: { read: ['admin'] } },
+		})
+
+		// The grammar is additive: a rule written before this existed keeps
+		// meaning what it meant, or the guard is a migration in disguise.
+		expect(
+			res.ok(),
+			`an ordinary grant must still save: ${await res.text()}`,
+		).toBeTruthy()
 	})
 })
