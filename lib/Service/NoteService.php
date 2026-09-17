@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
 use OCP\Comments\IComment;
@@ -229,6 +230,25 @@ class NoteService {
 	}//end noteVersions()
 
 	/**
+	 * Record on the object that one of its notes was rewritten.
+	 *
+	 * The object is the caller's, which is why this is not folded into
+	 * {@see updateNote()}: the controller holds the object, this service holds
+	 * the history, and the audit entry needs both.
+	 *
+	 * @param ObjectEntity $object The object the note hangs on
+	 * @param int $noteId The note that was rewritten
+	 * @param int $versions The number of versions the note now has
+	 *
+	 * @return bool True when an audit entry was written
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
+		return $this->versions->auditEdit(object: $object, noteId: $noteId, versions: $versions);
+	}//end auditEdit()
+
+	/**
 	 * Merge each note's edit summary onto it.
 	 *
 	 * @param array<int, array<string, mixed>> $notes The notes to enrich
@@ -355,6 +375,8 @@ class NoteService {
 	 * @throws NoteLockedException If the note is locked
 	 * @throws NoteEditForbiddenException If the caller is neither the author nor a manager
 	 * @throws Exception If the note is not found or nobody is logged in
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $mayManage is a permission verdict the caller resolved, not a mode switch.
 	 *
 	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
 	 */
@@ -537,7 +559,8 @@ class NoteService {
 			}
 
 			$offset += self::SWEEP_PAGE;
-		} while (count($comments) === self::SWEEP_PAGE);
+			$pageSize = count($comments);
+		} while ($pageSize === self::SWEEP_PAGE);
 
 		return $ids;
 	}//end noteIdsForObject()

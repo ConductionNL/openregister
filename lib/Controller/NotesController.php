@@ -25,10 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Exception\NoteEditForbiddenException;
-use OCA\OpenRegister\Exception\NoteLockedException;
+use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\NoteVersionService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
@@ -73,7 +71,6 @@ class NotesController extends Controller {
 	 * @param TimelineVisibilityService $visibility Visibility guard, filter and audit
 	 * @param TimelineWriteService $timeline Projects a note into the entry record, so it is searchable
 	 * @param TimelineEntryService $entries Reads and forgets the record behind a note
-	 * @param NoteVersionService $versions Audits an edit on the object and lists what a note said before
 	 *
 	 * @return void
 	 */
@@ -85,7 +82,6 @@ class NotesController extends Controller {
 		private readonly TimelineVisibilityService $visibility,
 		private readonly TimelineWriteService $timeline,
 		private readonly TimelineEntryService $entries,
-		private readonly NoteVersionService $versions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -286,7 +282,7 @@ class NotesController extends Controller {
 				// The trail records that the note changed and who changed it;
 				// the text it used to carry stays in the versions, which is
 				// what keeps the trail small and readable.
-				$this->versions->auditEdit(
+				$this->noteService->auditEdit(
 					object: $object,
 					noteId: (int)$noteId,
 					versions: (int)($note['versionCount'] ?? 0)
@@ -315,18 +311,14 @@ class NotesController extends Controller {
 			return new JSONResponse(data: $note);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (NoteLockedException $e) {
+		} catch (NoteWriteRefusedException $e) {
 			// Caught ahead of the generic Exception below, which it extends:
-			// the whole point of a locked note is that the refusal is legible
-			// as a lock rather than as a bad request.
+			// a locked note answers 423 and a note the caller may not rewrite
+			// answers 403, each legible as what it is rather than as a bad
+			// request. The refusal carries its own status.
 			return new JSONResponse(
 				data: ['error' => $e->getMessage()],
-				statusCode: NoteLockedException::HTTP_STATUS
-			);
-		} catch (NoteEditForbiddenException $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: NoteEditForbiddenException::HTTP_STATUS
+				statusCode: $e->getHttpStatus()
 			);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);

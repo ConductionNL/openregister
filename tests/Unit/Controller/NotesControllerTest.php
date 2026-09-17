@@ -13,7 +13,6 @@ use Exception;
 use OCA\OpenRegister\Controller\NotesController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\NoteVersionService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
@@ -36,7 +35,6 @@ class NotesControllerTest extends TestCase {
 	private TimelineVisibilityService&MockObject $visibility;
 	private TimelineWriteService&MockObject $timeline;
 	private TimelineEntryService&MockObject $entries;
-	private NoteVersionService&MockObject $versions;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -58,7 +56,6 @@ class NotesControllerTest extends TestCase {
 		// exactly what task 1.3 asks for.
 		$this->timeline = $this->createMock(TimelineWriteService::class);
 		$this->entries = $this->createMock(TimelineEntryService::class);
-		$this->versions = $this->createMock(NoteVersionService::class);
 
 		$this->controller = new NotesController(
 			'openregister',
@@ -67,8 +64,7 @@ class NotesControllerTest extends TestCase {
 			$this->objectService,
 			$this->visibility,
 			$this->timeline,
-			$this->entries,
-			$this->versions
+			$this->entries
 		);
 	}
 
@@ -413,7 +409,7 @@ class NotesControllerTest extends TestCase {
 		$this->noteService->method('updateNote')
 			->willThrowException(new \OCA\OpenRegister\Exception\NoteLockedException(5));
 
-		$this->versions->expects($this->never())->method('auditEdit');
+		$this->noteService->expects($this->never())->method('auditEdit');
 
 		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
 
@@ -453,7 +449,7 @@ class NotesControllerTest extends TestCase {
 		$this->visibility->method('mayManageObject')->willReturn(true);
 		$this->noteService->method('updateNote')->willReturn(['id' => 5, 'versionCount' => 1]);
 
-		$this->versions->expects($this->once())
+		$this->noteService->expects($this->once())
 			->method('auditEdit')
 			->with($object, 5, 1)
 			->willReturn(true);
@@ -476,7 +472,7 @@ class NotesControllerTest extends TestCase {
 		$this->noteService->method('getNote')->willReturn(['id' => 5, 'visibility' => 'internal']);
 		$this->noteService->method('updateNote')->willReturn(['id' => 5, 'visibility' => 'public']);
 
-		$this->versions->expects($this->never())->method('auditEdit');
+		$this->noteService->expects($this->never())->method('auditEdit');
 
 		$this->assertSame(200, $this->controller->update('reg', 'schema', 'obj-id', '5')->getStatus());
 	}

@@ -493,6 +493,16 @@ class NoteServiceTest extends TestCase {
 		$this->service->deleteNotesForObject('obj-uuid');
 	}
 
+	public function testAnEditIsAuditedThroughTheHistory(): void {
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$this->versions->expects($this->once())
+			->method('auditEdit')
+			->with($object, 9, 2)
+			->willReturn(true);
+
+		$this->assertTrue($this->service->auditEdit($object, 9, 2));
+	}
+
 	public function testNoteVersionsRefusesANoteThatIsNotThere(): void {
 		$this->commentsManager->method('get')
 			->willThrowException(new CommentsNotFoundException());

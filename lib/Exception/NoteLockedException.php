@@ -28,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Exception;
 
-use Exception;
 use Throwable;
 
 /**
@@ -41,7 +40,7 @@ use Throwable;
  *
  * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
  */
-class NoteLockedException extends Exception {
+class NoteLockedException extends NoteWriteRefusedException {
 
 	/**
 	 * The HTTP status controllers MUST map this exception to.
