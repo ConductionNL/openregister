@@ -68,6 +68,8 @@ class DeletedObjectAuthorizer {
 	 * Check if the current user is an admin
 	 *
 	 * @return bool True if the user is in the admin group, false otherwise.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function isCurrentUserAdmin(): bool {
 		$user = $this->userSession->getUser();
@@ -95,6 +97,8 @@ class DeletedObjectAuthorizer {
 	 * @param string $action The action to authorize ('delete'|'update').
 	 *
 	 * @return bool True if the caller may perform the action on this object.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function userMayActOnDeletedObject(ObjectEntity $object, string $action): bool {
 		$user = $this->userSession->getUser();
@@ -139,6 +143,8 @@ class DeletedObjectAuthorizer {
 	 * @param ObjectEntity $object The object whose schema to resolve.
 	 *
 	 * @return Schema|null The schema, or null when it cannot be resolved.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function resolveSchema(ObjectEntity $object): ?Schema {
 		$schemaId = $object->getSchema();

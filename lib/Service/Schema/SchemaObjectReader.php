@@ -66,6 +66,8 @@ class SchemaObjectReader {
 	 * Whether stored values can be read (the object mapper is available).
 	 *
 	 * @return boolean True when a conversion preview can read stored values.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function canReadValues(): bool {
 		return ($this->objects !== null);
@@ -78,6 +80,8 @@ class SchemaObjectReader {
 	 * @param string $property The property name.
 	 *
 	 * @return array<int,mixed> The stored values, one per object.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function storedValues(int $schemaId, string $property): array {
 		if ($this->objects === null) {
@@ -125,6 +129,8 @@ class SchemaObjectReader {
 	 * @param int $schemaId The schema id.
 	 *
 	 * @return int|null A register id, or null when none contains the schema.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function resolveRegisterId(int $schemaId): ?int {
 		$explicit = $this->request->getParam('registerId');
