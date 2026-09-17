@@ -42,7 +42,10 @@ const RUN = Math.random().toString(36).slice(2, 10)
 const API = '/index.php/apps/openregister/api'
 
 /** Build an API context authenticated as one user. */
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -80,14 +83,19 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		expect(res.ok(), `audit trail read failed: ${await res.text()}`).toBeTruthy()
 		const body = await res.json()
 		const rows = body.results ?? body.data ?? body
-		expect(Array.isArray(rows), 'the audit trail did not come back as a list').toBeTruthy()
+		expect(
+			Array.isArray(rows),
+			'the audit trail did not come back as a list',
+		).toBeTruthy()
 
 		return rows as Array<Record<string, unknown>>
 	}
 
 	/** Create one object and remember it for teardown. */
 	async function createObject(data: Record<string, unknown>): Promise<string> {
-		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, { data })
+		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}`, {
+			data,
+		})
 		expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
 		const uuid = uuidOf(await res.json())
 		created.push(uuid)
@@ -101,7 +109,10 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 			method: 'PATCH',
 			data: { windowSeconds: seconds },
 		})
-		expect(res.ok(), `setting the aggregation window failed: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`setting the aggregation window failed: ${await res.text()}`,
+		).toBeTruthy()
 		expect(
 			(await res.json()).windowSeconds,
 			'the answer has to say what was stored, not what was asked for',
@@ -124,7 +135,11 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 				hardValidation: true,
 				required: ['bsn'],
 				properties: {
-					omschrijving: { type: 'string', title: 'Omschrijving', maxLength: 255 },
+					omschrijving: {
+						type: 'string',
+						title: 'Omschrijving',
+						maxLength: 255,
+					},
 					bsn: { type: 'string', title: 'Bsn', maxLength: 32 },
 					gemachtigden: {
 						type: 'array',
@@ -197,7 +212,10 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 				],
 			},
 		})
-		expect(res.ok(), `create with a repeating group failed: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`create with a repeating group failed: ${await res.text()}`,
+		).toBeTruthy()
 
 		const body = await res.json()
 		created.push(uuidOf(body))
@@ -220,10 +238,15 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 			},
 		})
 
-		expect(res.status(), 'a row missing a required member must be refused').toBe(400)
+		expect(res.status(), 'a row missing a required member must be refused').toBe(
+			400,
+		)
 
 		const message = await res.text()
-		expect(message, 'the refusal has to name the row, not just the property').toContain('Row 2')
+		expect(
+			message,
+			'the refusal has to name the row, not just the property',
+		).toContain('Row 2')
 		expect(message, 'the refusal has to name the member').toContain('naam')
 	})
 
@@ -242,8 +265,12 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 			},
 		})
 
-		expect(res.status(), 'four rows into a group of three must be refused').toBe(400)
-		expect(await res.text(), 'the refusal has to name the maximum').toContain('3')
+		expect(res.status(), 'four rows into a group of three must be refused').toBe(
+			400,
+		)
+		expect(await res.text(), 'the refusal has to name the maximum').toContain(
+			'3',
+		)
 	})
 
 	// @e2e runtime-schema-api::honest-incompleteness-beats-a-typed-onbekend
@@ -262,7 +289,9 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 		const uuid = uuidOf(await res.json())
 		created.push(uuid)
 
-		const read = await admin.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const read = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		expect(read.ok(), `read back failed: ${await read.text()}`).toBeTruthy()
 
 		expect(
@@ -301,18 +330,29 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 			data: { omschrijving: 'Aanvraag', '@notSupplied': { bsn: 'geen_zin' } },
 		})
 
-		expect(res.status(), 'a reason outside the schema list must be refused').toBe(400)
+		expect(
+			res.status(),
+			'a reason outside the schema list must be refused',
+		).toBe(400)
 	})
 
 	// @e2e enhanced-audit-trail::no-reason-no-correction
 	test('a correction with no reason is refused, naming the requirement', async () => {
 		const target = created[0]
-		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}/${target}/correct`, {
-			data: { values: { bsn: '111222333' } },
-		})
+		const res = await admin.post(
+			`${API}/objects/${registerId}/${schemaId}/${target}/correct`,
+			{
+				data: { values: { bsn: '111222333' } },
+			},
+		)
 
-		expect(res.status(), 'a correction without a reason must be refused').toBe(400)
-		expect(await res.text(), 'the refusal has to name what is missing').toContain('reason')
+		expect(res.status(), 'a correction without a reason must be refused').toBe(
+			400,
+		)
+		expect(
+			await res.text(),
+			'the refusal has to name what is missing',
+		).toContain('reason')
 	})
 
 	// @e2e enhanced-audit-trail::a-mis-registered-case-is-corrected-not-edited
@@ -323,7 +363,10 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 
 		// Ordinary updates first, so the filter below has something to
 		// separate the correction from.
-		for (const omschrijving of ['Bezwaar, aangevuld', 'Bezwaar, tweede aanvulling']) {
+		for (const omschrijving of [
+			'Bezwaar, aangevuld',
+			'Bezwaar, tweede aanvulling',
+		]) {
 			const patch = await admin.fetch(
 				`${API}/objects/${registerId}/${schemaId}/${target}`,
 				{ method: 'PATCH', data: { omschrijving } },
@@ -331,16 +374,23 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 			expect(patch.ok(), `update failed: ${await patch.text()}`).toBeTruthy()
 		}
 
-		const res = await admin.post(`${API}/objects/${registerId}/${schemaId}/${target}/correct`, {
-			data: {
-				reason: 'Overgetypt van het verkeerde formulier',
-				values: { bsn: '111222333' },
+		const res = await admin.post(
+			`${API}/objects/${registerId}/${schemaId}/${target}/correct`,
+			{
+				data: {
+					reason: 'Overgetypt van het verkeerde formulier',
+					values: { bsn: '111222333' },
+				},
 			},
-		})
+		)
 		expect(res.ok(), `correction failed: ${await res.text()}`).toBeTruthy()
 
-		const read = await admin.get(`${API}/objects/${registerId}/${schemaId}/${target}`)
-		expect((await read.json()).bsn, 'the corrected value has to be stored').toBe('111222333')
+		const read = await admin.get(
+			`${API}/objects/${registerId}/${schemaId}/${target}`,
+		)
+		expect((await read.json()).bsn, 'the corrected value has to be stored').toBe(
+			'111222333',
+		)
 
 		const corrections = await auditRows(target, 'correction')
 		expect(
@@ -348,14 +398,22 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 			'the trail filtered to corrections has to return exactly the correction',
 		).toHaveLength(1)
 
-		const changed = (corrections[0].changed ?? {}) as Record<string, Record<string, unknown>>
+		const changed = (corrections[0].changed ?? {}) as Record<
+			string,
+			Record<string, unknown>
+		>
 		expect(
 			changed.correction?.reason,
 			'the entry has to carry the reason, or an auditor still has to guess',
 		).toBe('Overgetypt van het verkeerde formulier')
 
-		const fields = (changed.correction?.fields ?? {}) as Record<string, Record<string, unknown>>
-		expect(fields.bsn?.new, 'the entry has to carry the corrected value').toBe('111222333')
+		const fields = (changed.correction?.fields ?? {}) as Record<
+			string,
+			Record<string, unknown>
+		>
+		expect(fields.bsn?.new, 'the entry has to carry the corrected value').toBe(
+			'111222333',
+		)
 		expect(
 			(await auditRows(target)).length,
 			'the correction replaces its update entry rather than adding a second one',
@@ -365,7 +423,10 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 	// @e2e enhanced-audit-trail::order-is-not-merged-away-by-default
 	test('two edits a moment apart are two entries when no window is set', async () => {
 		await setWindow(0)
-		const target = await createObject({ omschrijving: 'Ongemerged', bsn: '123456782' })
+		const target = await createObject({
+			omschrijving: 'Ongemerged',
+			bsn: '123456782',
+		})
 
 		const before = (await auditRows(target, 'update')).length
 
@@ -385,7 +446,10 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 
 	// @e2e enhanced-audit-trail::a-set-window-says-what-it-merged
 	test('three edits inside a set window are one entry, naming three', async () => {
-		const target = await createObject({ omschrijving: 'Gemerged', bsn: '123456782' })
+		const target = await createObject({
+			omschrijving: 'Gemerged',
+			bsn: '123456782',
+		})
 		const before = (await auditRows(target, 'update')).length
 
 		await setWindow(300)
@@ -396,7 +460,10 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 					`${API}/objects/${registerId}/${schemaId}/${target}`,
 					{ method: 'PATCH', data: { omschrijving } },
 				)
-				expect(patch.ok(), `update failed: ${await patch.text()}`).toBeTruthy()
+				expect(
+					patch.ok(),
+					`update failed: ${await patch.text()}`,
+				).toBeTruthy()
 			}
 
 			const updates = await auditRows(target, 'update')
@@ -405,7 +472,10 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 				'three edits inside the window are one entry, not three',
 			).toBe(1)
 
-			const changed = (updates[0].changed ?? {}) as Record<string, Record<string, unknown>>
+			const changed = (updates[0].changed ?? {}) as Record<
+				string,
+				Record<string, unknown>
+			>
 			expect(
 				changed.aggregation?.edits,
 				'a merged entry that does not say it merged is a lie of omission',
@@ -418,13 +488,19 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 	// @e2e enhanced-audit-trail::tidying-a-dossier-before-it-goes-out
 	// @e2e enhanced-audit-trail::nothing-changed-nothing-recorded
 	test('six files, three renamed together, three audit entries and no more', async () => {
-		const target = await createObject({ omschrijving: 'Dossier', bsn: '123456782' })
+		const target = await createObject({
+			omschrijving: 'Dossier',
+			bsn: '123456782',
+		})
 
 		const fileIds: number[] = []
 		for (let i = 0; i < 6; i++) {
-			const res = await admin.post(`${API}/objects/${registerId}/${schemaId}/${target}/files`, {
-				data: { name: `scan000${i}.txt`, content: `bestand ${i}` },
-			})
+			const res = await admin.post(
+				`${API}/objects/${registerId}/${schemaId}/${target}/files`,
+				{
+					data: { name: `scan000${i}.txt`, content: `bestand ${i}` },
+				},
+			)
 			expect(res.ok(), `file create failed: ${await res.text()}`).toBeTruthy()
 			fileIds.push(Number((await res.json()).id))
 		}
@@ -442,23 +518,40 @@ test.describe('repeating groups and recorded corrections over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}/${target}/files/metadata`,
 			{ method: 'PUT', data: { files: form } },
 		)
-		expect(saved.ok(), `the metadata form failed: ${await saved.text()}`).toBeTruthy()
+		expect(
+			saved.ok(),
+			`the metadata form failed: ${await saved.text()}`,
+		).toBeTruthy()
 
 		const result = await saved.json()
-		expect(result.changed, 'three badly-named files were renamed').toHaveLength(3)
-		expect(result.unchanged, 'the three the form left alone changed nothing').toHaveLength(3)
+		expect(result.changed, 'three badly-named files were renamed').toHaveLength(
+			3,
+		)
+		expect(
+			result.unchanged,
+			'the three the form left alone changed nothing',
+		).toHaveLength(3)
 		expect(result.failed, 'nothing should have been refused').toHaveLength(0)
 
 		const entries = await auditRows(target, 'file.metadata_corrected')
-		expect(entries, 'one entry per file actually changed, and no more').toHaveLength(3)
+		expect(
+			entries,
+			'one entry per file actually changed, and no more',
+		).toHaveLength(3)
 
 		// Nothing changed, nothing recorded: the same form saved again.
 		const again = await admin.fetch(
 			`${API}/objects/${registerId}/${schemaId}/${target}/files/metadata`,
 			{ method: 'PUT', data: { files: form } },
 		)
-		expect(again.ok(), `the second save failed: ${await again.text()}`).toBeTruthy()
-		expect((await again.json()).changed, 'a form saved with no edits changes nothing').toHaveLength(0)
+		expect(
+			again.ok(),
+			`the second save failed: ${await again.text()}`,
+		).toBeTruthy()
+		expect(
+			(await again.json()).changed,
+			'a form saved with no edits changes nothing',
+		).toHaveLength(0)
 
 		expect(
 			(await auditRows(target, 'file.metadata_corrected')).length,

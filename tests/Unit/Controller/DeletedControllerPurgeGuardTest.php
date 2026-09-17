@@ -29,6 +29,8 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
@@ -108,21 +110,30 @@ class DeletedControllerPurgeGuardTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new DeletedController(
-			'openregister',
-			$this->request,
-			$this->objectMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->schemaMapper,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(originalClassName: PermissionHandler::class),
+		$deletion = new DeletionServiceBundle(
 			$this->createMock(originalClassName: DeletionWindowService::class),
 			$this->createMock(originalClassName: DestroyRightService::class),
 			$this->createMock(originalClassName: DestructionScopeService::class),
 			$this->createMock(originalClassName: DestructionRecorder::class),
 			$this->createMock(originalClassName: RetentionClockService::class),
-			$this->createMock(originalClassName: AuditTrailMapper::class)
+		);
+
+		$authorizer = new DeletedObjectAuthorizer(
+			$this->schemaMapper,
+			$this->userSession,
+			$this->groupManager,
+			$this->createMock(originalClassName: PermissionHandler::class),
+		);
+
+		$this->controller = new DeletedController(
+			'openregister',
+			$this->request,
+			$this->objectMapper,
+			$this->createMock(RegisterMapper::class),
+			$this->userSession,
+			$this->createMock(originalClassName: AuditTrailMapper::class),
+			$deletion,
+			$authorizer
 		);
 
 		$user = $this->createMock(IUser::class);
