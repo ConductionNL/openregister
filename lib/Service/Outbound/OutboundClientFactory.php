@@ -67,13 +67,19 @@ class OutboundClientFactory implements IClientService {
 	 *
 	 * @inheritDoc
 	 *
+	 * @param callable|null $handler An optional Guzzle handler, forwarded to the
+	 *                               inner client. Nextcloud 35 widened
+	 *                               IClientService::newClient() with this
+	 *                               parameter, so the implementation must carry
+	 *                               it or PHP fatals on the signature mismatch.
+	 *
 	 * @return IClient The client.
 	 *
 	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
-	public function newClient(): IClient {
+	public function newClient(?callable $handler = null): IClient {
 		return new OutboundHttpClient(
-			inner: $this->clientService->newClient(),
+			inner: $this->clientService->newClient($handler),
 			proxy: $this->proxy,
 		);
 
