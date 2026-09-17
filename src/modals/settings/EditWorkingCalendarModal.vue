@@ -518,6 +518,7 @@ export default {
 				workingWeekdays: [...this.form.workingWeekdays].sort(
 					(a, b) => a - b,
 				),
+
 				hoursPerWorkingDay: Number(this.form.hoursPerWorkingDay),
 				rules: this.form.rules.map((rule) => this.toRule(rule)),
 				exceptions: this.form.exceptions

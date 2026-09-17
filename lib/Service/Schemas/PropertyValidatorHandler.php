@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 
 /**
  * Class PropertyValidatorHandler
@@ -475,9 +476,14 @@ class PropertyValidatorHandler {
 		'readOnly' => ['value' => 'boolean', 'description' => 'Show the value, refuse a write.'],
 		'writeOnly' => ['value' => 'boolean', 'description' => 'Accept a write, never read it back.'],
 		'immutable' => ['value' => 'boolean', 'description' => 'Accept the first answer, refuse every change after it.'],
+		'repeatingGroup' => ['value' => 'boolean', 'description' => 'Rows a person adds and removes. Set items to the shape of one row.'],
+		'groupOrdered' => ['value' => 'boolean', 'description' => 'Keep the order the rows were authored in. Needs repeatingGroup.'],
+		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
 		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
+		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
+		'inputControl' => ['value' => 'string', 'description' => 'The control a list surface should render to filter on this field.'],
 		'aggregated' => ['value' => 'boolean', 'description' => 'Count the field in aggregations.'],
 		'translatable' => ['value' => 'boolean', 'description' => 'Store one value per language.'],
 		'sourceLanguage' => ['value' => 'string', 'description' => 'Which language the authored value is in. Needs translatable.'],
@@ -580,6 +586,16 @@ class PropertyValidatorHandler {
 	private array $validStringFormats;
 
 	/**
+	 * The save-time rules a repeating group's declaration has to satisfy.
+	 *
+	 * Its own class: the rules are about one keyword, they read better
+	 * together, and this file is the one every property-shaped change edits.
+	 *
+	 * @var RepeatingGroupDeclarationValidator
+	 */
+	private RepeatingGroupDeclarationValidator $repeatingGroups;
+
+	/**
 	 * Read the two allowlists off the published vocabulary.
 	 *
 	 * @return void
@@ -587,6 +603,7 @@ class PropertyValidatorHandler {
 	public function __construct() {
 		$this->validTypes = array_map('strval', array_keys(self::TYPES));
 		$this->validStringFormats = self::STRING_FORMATS;
+		$this->repeatingGroups = new RepeatingGroupDeclarationValidator();
 	}//end __construct()
 
 	/**
@@ -801,6 +818,13 @@ class PropertyValidatorHandler {
 			}
 		}
 
+		// A repeating group is an array of objects that somebody authors row by
+		// row, so the declaration has to hold together before any object is
+		// written against it. Checked here rather than at save time because a
+		// group whose members nobody declared is a schema mistake, and the
+		// schema author is the only person who can fix it.
+		$this->repeatingGroups->validate(property: $property, path: $path);
+
 		// Validate array items if type is array.
 		$hasItems = ($property['items'] ?? null) !== null;
 		if ($property['type'] === 'array' && $hasItems === true && isset($property['items']['$ref']) === false) {
@@ -898,8 +922,54 @@ class PropertyValidatorHandler {
 			}
 		}
 
+		// Validate the declared search profile if present. An unknown match type
+		// is refused here rather than ignored at query time: ignoring it leaves
+		// the property matching the way it did before, which looks exactly like
+		// the declaration working.
+		$this->validateSearchProfile(property: $property, path: $path);
+
 		return true;
 	}//end validateProperty()
+
+	/**
+	 * Refuse an unknown match type or input control, naming the property.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @phpstan-param array<string, mixed> $property
+	 *
+	 * @psalm-param array<string, mixed> $property
+	 *
+	 * @throws Exception When a declared value is outside its vocabulary.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function validateSearchProfile(array $property, string $path): void {
+		$declarations = [
+			'matchType' => PropertySearchProfile::MATCH_TYPES,
+			'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+		];
+
+		foreach ($declarations as $key => $allowed) {
+			$declared = ($property[$key] ?? null);
+			if ($declared === null) {
+				continue;
+			}
+
+			if (is_string($declared) === false
+				|| in_array(strtolower(trim($declared)), $allowed, true) === false
+			) {
+				$rendered = json_encode($declared);
+				$allowedList = implode(', ', $allowed);
+				throw new Exception(
+					"Invalid {$key} {$rendered} at '$path'. Must be one of: {$allowedList}"
+				);
+			}
+		}
+	}//end validateSearchProfile()
 
 	/**
 	 * Validate an entire properties object

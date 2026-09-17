@@ -52,6 +52,8 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
@@ -326,7 +328,8 @@ class MagicSearchHandler {
 		$queryBuilder = $this->buildFilteredQuery(
 			query: $query,
 			schema: $schema,
-			tableName: $tableName
+			tableName: $tableName,
+			registerId: $register->getId()
 		);
 
 		// Check if fuzzy search is enabled for relevance scoring.
@@ -401,6 +404,7 @@ class MagicSearchHandler {
 	 * @param Schema $schema Schema for access-control rules.
 	 * @param bool $_rbac Whether to apply RBAC filtering.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param int|null $registerId The register of the table being read, for shared master data.
 	 *
 	 * @return void
 	 *
@@ -411,6 +415,7 @@ class MagicSearchHandler {
 		Schema $schema,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		?int $registerId = null,
 	): void {
 		// Mirror the list path: public schemas bypass multitenancy by default.
 		// No explicit multitenancy request exists on the single-object read path,
@@ -426,7 +431,8 @@ class MagicSearchHandler {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $resolvedMultitenancy,
-			multitenancyExplicit: false
+			multitenancyExplicit: false,
+			registerId: $registerId
 		);
 	}//end applyAccessControlToQuery()
 
@@ -444,10 +450,14 @@ class MagicSearchHandler {
 	 * @param array $query Search parameters including filters.
 	 * @param Schema $schema The schema for property filtering.
 	 * @param string $tableName The table to query.
+	 * @param int|null $registerId The register this table belongs to. When omitted it is
+	 *                             read from the query's reserved `register` key, which is
+	 *                             how the facet paths carry it. A register that cannot be
+	 *                             resolved simply yields no shared master data widening.
 	 *
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
-	public function buildFilteredQuery(array $query, Schema $schema, string $tableName): IQueryBuilder {
+	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
 		// Extract options from query (prefixed with _).
 		// Coerce to bool: query-string params arrive as strings (e.g.
 		// "_includeDeleted=true" → "true"). applyBasicFilters() is bool-typed
@@ -481,7 +491,8 @@ class MagicSearchHandler {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			multitenancyExplicit: $multitenancyExplicit
+			multitenancyExplicit: $multitenancyExplicit,
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
 		);
 
 		// Apply metadata, object-field and ID filters.
@@ -870,6 +881,13 @@ class MagicSearchHandler {
 	 * @psalm-param array<int, string>|null $existingColumns
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)    PropertySearchProfile reads a property array and
+	 *                                         holds no state. Injecting it would add a
+	 *                                         constructor argument to two classes to satisfy a
+	 *                                         linter, not to make anything substitutable.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) One branch per match type, plus the column rules
+	 *                                         the two platforms need.
 	 */
 	private function buildSearchLeafSql(
 		string $pattern,
@@ -885,26 +903,45 @@ class MagicSearchHandler {
 		$likePattern = $connection->quote($pattern);
 		$quotedTerm = $connection->quote($literal);
 
-		// Search in schema string properties (ILIKE/LIKE only for performance).
+		// Which properties the scan reads, and how each one compares, is the
+		// property's own business. A property that declares nothing is judged by
+		// the rule this scan has always used, so its SQL is unchanged.
 		$properties = $schema->getProperties() ?? [];
 		foreach ($properties as $propName => $propDef) {
-			$type = $propDef['type'] ?? 'string';
-			if ($type === 'string') {
-				$columnName = $this->sanitizeColumnName(name: $propName);
-				// In UNION contexts, only search columns that actually exist in this table.
-				if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
-					continue;
+			if (is_array($propDef) === false
+				|| PropertySearchProfile::participatesInFreeText(property: $propDef) === false
+			) {
+				continue;
+			}
+
+			$columnName = $this->sanitizeColumnName(name: $propName);
+			// In UNION contexts, only search columns that actually exist in this table.
+			if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
+				continue;
+			}
+
+			// Quote column name to handle reserved words (e.g., 'case', 'status').
+			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propDef);
+
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
+				$column = $quotedCol;
+				if ($nullSafe === true) {
+					$column = "COALESCE({$quotedCol}::text, '')";
 				}
 
-				// Quote column name to handle reserved words (e.g., 'case', 'status').
-				$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-				$searchConditions[] = $this->columnMatchSql(
-					column: $quotedCol,
-					likePattern: $likePattern,
-					isPostgres: $isPostgres,
-					nullSafe: $nullSafe
-				);
-			}//end if
+				$searchConditions[] = "similarity({$column}, {$quotedTerm}) > 0.1";
+				continue;
+			}
+
+			$searchConditions[] = $this->columnMatchSql(
+				column: $quotedCol,
+				likePattern: $connection->quote(
+					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
+				),
+				isPostgres: $isPostgres,
+				nullSafe: $nullSafe
+			);
 		}//end foreach
 
 		// Search in metadata text fields.
@@ -932,6 +969,38 @@ class MagicSearchHandler {
 		// never empty here and the old null return was unreachable.
 		return '(' . implode(' OR ', $searchConditions) . ')';
 	}//end buildSearchLeafSql()
+
+	/**
+	 * The LIKE pattern one property wants for this term.
+	 *
+	 * `fulltext` keeps the pattern the term itself produced, wildcards and all.
+	 * `exact` and `prefix` are the property speaking over the term: an
+	 * identifier column that declares `exact` should not answer to half an
+	 * identifier, whatever the caller typed around it.
+	 *
+	 * @param string $matchType The resolved match type.
+	 * @param string $pattern   The pattern the parsed term produced.
+	 * @param string $literal   The literal text of the term.
+	 *
+	 * @return string The pattern to compare this column against.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchTermNode::likeEscape() is a pure function over a
+	 *                                      string, shared so a declared match type escapes a
+	 *                                      user's `%` exactly as a parsed term does.
+	 */
+	private function patternForMatchType(string $matchType, string $pattern, string $literal): string {
+		if ($matchType === PropertySearchProfile::MATCH_EXACT) {
+			return SearchTermNode::likeEscape(value: $literal);
+		}
+
+		if ($matchType === PropertySearchProfile::MATCH_PREFIX) {
+			return SearchTermNode::likeEscape(value: $literal) . '%';
+		}
+
+		return $pattern;
+	}//end patternForMatchType()
 
 	/**
 	 * Match one column against a LIKE pattern, per platform.
@@ -1654,6 +1723,35 @@ class MagicSearchHandler {
 	}//end resolveMultitenancyFlag()
 
 	/**
+	 * Read the register id out of a search query's reserved `register` key.
+	 *
+	 * The facet paths build their query from a base query rather than from a
+	 * Register entity, and that base query carries `register` as a reserved
+	 * parameter. Reading it here means a register-level shared master data
+	 * declaration is honoured by the facets as well as by the list, instead of
+	 * the two disagreeing about which rows exist.
+	 *
+	 * @param array $query The search query.
+	 *
+	 * @return int|null The register id, or null when the query does not name one.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function registerIdFromQuery(array $query): ?int {
+		$register = ($query['register'] ?? null);
+
+		if (is_int($register) === true) {
+			return $register;
+		}
+
+		if (is_string($register) === true && ctype_digit($register) === true) {
+			return (int)$register;
+		}
+
+		return null;
+	}//end registerIdFromQuery()
+
+	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
 	 *
 	 * Handles the interaction between RBAC and _multitenancy:
@@ -1666,8 +1764,11 @@ class MagicSearchHandler {
 	 * @param bool $_rbac Whether RBAC filtering is enabled
 	 * @param bool $_multitenancy Whether multitenancy filtering is enabled
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
+	 * @param int|null $registerId The register of the table being read, for shared master data
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	private function applyAccessControlFilters(
 		IQueryBuilder $qb,
@@ -1675,6 +1776,7 @@ class MagicSearchHandler {
 		bool $_rbac,
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
+		?int $registerId = null,
 	): void {
 		// Check if user qualifies for any RBAC rule (simple or conditional).
 		// When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
@@ -1718,9 +1820,16 @@ class MagicSearchHandler {
 			// Otherwise: user has RBAC access and didn't request _multi=true
 			// Skip multitenancy - let RBAC handle access control.
 			if ($applyMultitenancy === true) {
+				// The register+schema pair is handed down so the organisation
+				// handler can widen by a DECLARED shared master data holder
+				// (REQ-SLE-001). Each magic table is exactly one such pair, so
+				// the widening reaches this table and nothing else the holder
+				// owns. A pair that cannot be resolved widens by nothing.
 				$this->organizationHandler->applyOrganizationFilter(
 					qb: $qb,
-					adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
+					adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+					registerId: $registerId,
+					schemaId: $schema->getId()
 				);
 			}
 		}//end if
@@ -2720,6 +2829,9 @@ class MagicSearchHandler {
 	 * @param bool          $fuzzyEnabled Whether `_fuzzy=true` was requested.
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Same pure reader as buildSearchLeafSql(), and it has
+	 *                                      to be the same one or the two paths could disagree.
 	 */
 	private function buildSearchLeafQbSql(
 		IQueryBuilder $qb,
@@ -2732,24 +2844,34 @@ class MagicSearchHandler {
 		$patternParam = $qb->createNamedParameter($pattern);
 		$conditions = [];
 
-		// Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
-		$dateFormats = ['date', 'date-time', 'time'];
 		foreach (($schema->getProperties() ?? []) as $field => $propertyConfig) {
-			// Encrypted properties get no dedicated magic-table column, so a LIKE
-			// over one either hits a missing column or scans ciphertext.
-			if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
-				continue;
-			}
-
-			if (($propertyConfig['type'] ?? '') !== 'string'
-				|| in_array($propertyConfig['format'] ?? '', $dateFormats, true) === true
+			// Encrypted properties get no dedicated magic-table column, and a
+			// range is a pair of bounds rather than a term. Both are decided by
+			// the property, in one place, for both search paths.
+			if (is_array($propertyConfig) === false
+				|| PropertySearchProfile::participatesInFreeText(property: $propertyConfig) === false
 			) {
 				continue;
 			}
 
 			$columnName = $this->sanitizeColumnName(name: $field);
 			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$patternParam}";
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propertyConfig);
+
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
+				$fuzzyParam = $qb->createNamedParameter($literal);
+				$conditions[] = "similarity(COALESCE(t.{$quotedCol}::text, ''), {$fuzzyParam}) > 0.1";
+				continue;
+			}
+
+			$columnPattern = $patternParam;
+			if ($matchType !== PropertySearchProfile::MATCH_FULLTEXT) {
+				$columnPattern = $qb->createNamedParameter(
+					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
+				);
+			}
+
+			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$columnPattern}";
 		}//end foreach
 
 		foreach (['_name', '_description', '_summary'] as $metadataColumn) {

@@ -121,6 +121,21 @@ class ObjectsController extends Controller {
 	private readonly ImportService $importService;
 
 	/**
+	 * The `@`-prefixed body keys a client is allowed to send.
+	 *
+	 * Everything else starting with `@` is server-managed metadata and is
+	 * dropped here. The list exists because dropping is SILENT: a key nobody
+	 * allows through is not refused, it simply never reaches the save, and the
+	 * caller reads a 200 on a field that was never stored. `@notSupplied` was
+	 * exactly that on its first day: the handler enforced it, the validator
+	 * excused it, the object stored it, and this filter removed it from every
+	 * create, update and patch before any of that ran.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
+
+	/**
 	 * Constructor for the ObjectsController
 	 *
 	 * @param string $appName The name of the app
@@ -146,7 +161,9 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder Optional PDOK geocoder (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry Relation resourceUrl resolver (null-safe)
 	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService Optional recovery-window service (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService Optional recovery-window service (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
 	 *
 	 * @return void
 	 *
@@ -176,7 +193,9 @@ class ObjectsController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder = null,
 		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
 		private readonly ?\OCP\IURLGenerator $relationUrlGenerator = null,
-		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService = null,
+		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService = null,
+		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
+		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->exportService = $exportService;
@@ -198,7 +217,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	private function deletedRefusal(string $id): ?array {
-		if ($this->windowService === null) {
+		if ($this->deletionWindowService === null) {
 			return null;
 		}
 
@@ -219,7 +238,7 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		return $this->windowService->refusalBody(
+		return $this->deletionWindowService->refusalBody(
 			object: $deleted,
 			schema: ($context['schema'] ?? null)
 		);
@@ -1071,6 +1090,46 @@ class ObjectsController extends Controller {
 	}//end crossTableSearch()
 
 	/**
+	 * Refuse a read that has to name a purpose and does not.
+	 *
+	 * Returns null in the two cases that must stay exactly as they were: no
+	 * guard wired (an older container), and a schema that does not ask for
+	 * doelbinding. That null is the backwards-compatibility promise, and an
+	 * instance that administers no purposes reads precisely as it did before.
+	 *
+	 * 403, not 404. The RBAC denials above return 404 so a caller cannot learn
+	 * that an object exists; this refusal leaks nothing, because the caller
+	 * already knows the schema and is being told to name a grondslag. Hiding it
+	 * as a 404 would send an integrator hunting for a missing record instead of
+	 * setting one header.
+	 *
+	 * @param array $resolved The resolved register and schema entities.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the read may proceed.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	private function refuseUnboundPurpose(array $resolved): ?JSONResponse {
+		if ($this->purposeGuard === null) {
+			return null;
+		}
+
+		try {
+			$this->purposeGuard->enforce(
+				register: ($resolved['registerEntity'] ?? null),
+				schema: ($resolved['schemaEntity'] ?? null)
+			);
+		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+			return new JSONResponse(
+				data: $refusal->toResponseBody(),
+				statusCode: $refusal->getStatusCode()
+			);
+		}
+
+		return null;
+	}//end refuseUnboundPurpose()
+
+	/**
 	 * Resolve a register/schema path pair to numeric ids.
 	 *
 	 * Delegates to ResolvesRegisterAndSchemaTrait so this controller and
@@ -1290,6 +1349,15 @@ class ObjectsController extends Controller {
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		// Doelbinding. A list over a schema that asks for a declared purpose is
+		// a registry query like any other: the person search the requirement was
+		// written for IS a list, so guarding only the single read would leave
+		// the case it exists for open.
+		$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		// Extract filtering parameters from request.
@@ -2554,6 +2622,14 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
+		// Doelbinding, before the object is fetched. A refused read must not
+		// have happened at all, so the guard runs ahead of the read rather than
+		// filtering what came back.
+		$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		// Get request parameters for filtering and searching.
 		$requestParams = $this->request->getParams();
 
@@ -2904,7 +2980,7 @@ class ObjectsController extends Controller {
 		$object = array_filter(
 			$object,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3054,7 +3130,7 @@ class ObjectsController extends Controller {
 
 		// Return the created object.
 		// Note: Sub-objects are only returned when _extend is explicitly requested on GET.
-		return new JSONResponse(data: $objectEntity->jsonSerialize(), statusCode: 201);
+		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()), statusCode: 201);
 	}//end create()
 
 	/**
@@ -3112,7 +3188,7 @@ class ObjectsController extends Controller {
 		$object = array_filter(
 			$object,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3347,7 +3423,7 @@ class ObjectsController extends Controller {
 		$patchData = array_filter(
 			$patchData,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3526,7 +3602,7 @@ class ObjectsController extends Controller {
 
 			// Return the successfully saved object directly.
 			// We already have it in memory from saveObject(), no need to re-fetch.
-			return new JSONResponse(data: $objectEntity->jsonSerialize());
+			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
 		} catch (AppendOnlyException $exception) {
 			// Reject patch on append-only schema with HTTP 405.
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
@@ -3620,7 +3696,7 @@ class ObjectsController extends Controller {
 		$patchData = array_filter(
 			$patchData,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema', 'id']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3724,7 +3800,7 @@ class ObjectsController extends Controller {
 				// Ignore unlock errors since the update was successful.
 			}
 
-			return new JSONResponse(data: $objectEntity->jsonSerialize());
+			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
 		} catch (AppendOnlyException $exception) {
 			// Reject post-patch on append-only schema with HTTP 405.
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
@@ -5629,4 +5705,38 @@ class ObjectsController extends Controller {
 			data: $collector->collect(object: $objectEntity, schema: $schemaEntity, _rbac: $rbac)
 		);
 	}//end geoFeatures()
+
+	/**
+	 * Put any soft-uniqueness warnings this write produced onto the response.
+	 *
+	 * Under `@warnings`, beside `@self`: it is metadata about this write, not a
+	 * property of the object, and it must never be mistaken for one. The status
+	 * code is untouched, because the hint is an ALERT and the write succeeded.
+	 * Turning it into a 4xx would make it the refusal the spec explicitly does
+	 * not want, and a schema that needs a refusal declares
+	 * `x-openregister-dedup.onCreate: "block"` instead.
+	 *
+	 * The collector is drained, so a bulk request cannot hand a later row the
+	 * warnings of an earlier one.
+	 *
+	 * @param array<string, mixed> $body The serialised object.
+	 *
+	 * @return array<string, mixed> The body, with `@warnings` when there are any.
+	 *
+	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function withUniqueHintWarnings(array $body): array {
+		if ($this->uniqueHintWarnings === null) {
+			return $body;
+		}
+
+		$warnings = $this->uniqueHintWarnings->drain();
+		if (count($warnings) === 0) {
+			return $body;
+		}
+
+		$body['@warnings'] = $warnings;
+
+		return $body;
+	}//end withUniqueHintWarnings()
 }//end class

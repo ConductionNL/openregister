@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -115,18 +116,28 @@ class MagicOrganizationHandler {
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param bool $adminBypassEnabled Whether admin users can bypass org filtering
+	 * @param int|null $registerId The register this table belongs to, for shared master data
+	 * @param int|null $schemaId The schema this table belongs to, for shared master data
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	public function applyOrganizationFilter(
 		IQueryBuilder $qb,
 		bool $adminBypassEnabled = false,
+		?int $registerId = null,
+		?int $schemaId = null,
 	): void {
-		$scope = $this->resolveOrganizationScope(adminBypassEnabled: $adminBypassEnabled);
+		$scope = $this->resolveOrganizationScope(
+			adminBypassEnabled: $adminBypassEnabled,
+			registerId: $registerId,
+			schemaId: $schemaId
+		);
 
 		if ($scope['mode'] === self::SCOPE_ALL) {
 			return;
@@ -185,6 +196,8 @@ class MagicOrganizationHandler {
 	 * approximate it, and the rule itself now lives in exactly one place.
 	 *
 	 * @param bool $adminBypassEnabled Whether the caller honours the admin bypass (disabled in SaaS mode).
+	 * @param int|null $registerId The register of the table being read, for shared master data.
+	 * @param int|null $schemaId The schema of the table being read, for shared master data.
 	 *
 	 * @return array{mode: string, uuids: array<int, string>} `mode` is one of the SCOPE_* constants.
 	 *
@@ -197,7 +210,11 @@ class MagicOrganizationHandler {
 	 *   branches are the tenancy rule itself (system context, admin, bypass,
 	 *   SaaS, active-org set) and collapsing them would hide it.
 	 */
-	public function resolveOrganizationScope(bool $adminBypassEnabled = false): array {
+	public function resolveOrganizationScope(
+		bool $adminBypassEnabled = false,
+		?int $registerId = null,
+		?int $schemaId = null,
+	): array {
 		$user = $this->userSession->getUser();
 
 		// CLI / no-session system context (occ commands, repair steps, cron
@@ -246,12 +263,74 @@ class MagicOrganizationHandler {
 			$scopedMode = self::SCOPE_IN_OR_NULL;
 		}
 
+		// Shared master data (REQ-SLE-001). The holder UUIDs go into `uuids`
+		// rather than into a new key, and that is the whole point: every
+		// renderer of this decision — applyOrganizationFilter() here, and
+		// AggregationRunner's native SQL — honours the share with no change of
+		// its own. A second key would be a second definition of the boundary,
+		// and this method exists BECAUSE a second definition once drifted and
+		// made every KPI tile under-report.
+		//
+		// The widening is safe to fold in this way only because it is resolved
+		// from the register+schema pair the caller named, and a magic table
+		// holds exactly one such pair. A caller that names neither gets no
+		// widening, which is the honest answer for a query whose table nobody
+		// identified.
+		$sharedHolders = $this->sharedHolders(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			consumerOrgUuids: $activeOrgUuids
+		);
+
 		return [
 			'mode' => $scopedMode,
-			'uuids' => array_values($activeOrgUuids),
+			'uuids' => array_values(array_unique(array_merge($activeOrgUuids, $sharedHolders))),
 		];
 
 	}//end resolveOrganizationScope()
+
+	/**
+	 * The holder organisations whose rows in ONE register+schema pair the caller may read.
+	 *
+	 * Resolved lazily through the container, the same way this class already
+	 * reaches OrganisationService, and failing to an empty list: a resolver
+	 * that cannot answer must cost a consumer its shared rows, never hand
+	 * anybody a row nobody declared them a consumer of.
+	 *
+	 * @param int|null $registerId The register being read.
+	 * @param int|null $schemaId The schema being read.
+	 * @param array<int, string> $consumerOrgUuids The caller's organisation and its parents.
+	 *
+	 * @return array<int, string> The holder UUIDs to widen by.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function sharedHolders(?int $registerId, ?int $schemaId, array $consumerOrgUuids): array {
+		if ($registerId === null && $schemaId === null) {
+			return [];
+		}
+
+		try {
+			$resolver = $this->container->get(SharedMasterDataService::class);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[MagicOrganizationHandler] Shared master data resolver unavailable',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+
+		if (($resolver instanceof SharedMasterDataService) === false) {
+			return [];
+		}
+
+		return $resolver->holdersForResource(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			consumerOrgUuids: $consumerOrgUuids
+		);
+
+	}//end sharedHolders()
 
 	/**
 	 * Determine whether the current call is a trusted system (CLI/no-session)
