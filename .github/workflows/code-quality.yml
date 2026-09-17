@@ -249,6 +249,28 @@ jobs:
       # mis-parse it. Path is relative to `server/`, which the step cd's into.
       playwright-seed-command: bash apps/openregister/tests/e2e/ci/seed.sh
       enable-coverage-guard: true
+      # ── Licensing ────────────────────────────────────────────────────────
+      # REUSE findings fail the build. The shared workflow defaults this OFF
+      # because most fleet apps ship no REUSE.toml or LICENSES/ directory. This
+      # repo ships both since WOO-579 (2026-09-17): a repo-wide `path = "**"` /
+      # `precedence = "closest"` floor in REUSE.toml makes every new file
+      # compliant on arrival whatever its type, and the third-party material
+      # the repo bundles (a Schema.org subset, the MDTO XSD, two TOOI value
+      # lists, the GGM snapshot, the Dolphin model card, one PDF fixture) is
+      # annotated to what its publisher says, in `override` blocks that name
+      # the source. Measured before flipping: `reuse lint` compliant, 0
+      # missing licences, 0 unused.
+      #
+      # Before this the REUSE row in the Quality Report was ❌ on every PR while
+      # the job itself reported success (`continue-on-error`), so nobody was
+      # blocked and nobody looked. Remko Huisman asked on portaliq (WOO-575) for
+      # the fleet to stop shipping that shape; this is the same change here.
+      #
+      # One regression mode remains, and it is now a red build instead of a red
+      # row nobody sees: vendoring a file whose own SPDX header names a licence
+      # with no text under LICENSES/. The fix is `reuse download <id>`, never
+      # removing the header.
+      reuse-blocking: true
       # Run the Hydra mechanical quality gates against this PR's diff.
       #
       # This tier has never executed in this repository. `enable-hydra-gates`
