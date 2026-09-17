@@ -103,7 +103,7 @@ class AuditTrailPayloadHelper {
 	 * @return void
 	 */
 	public function revertChanges(ObjectEntity $object, AuditTrail $audit): void {
-		$changes = $audit->getChanges();
+		$changes = $audit->getChanged();
 
 		// Iterate through each change and apply the reverse.
 		foreach ($changes as $field => $change) {

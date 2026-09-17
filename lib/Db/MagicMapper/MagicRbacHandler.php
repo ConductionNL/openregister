@@ -151,7 +151,7 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	private function denyResolver(): DenyResolver {
-		return ($this->resolvers?->denyResolver ?? new DenyResolver());
+		return ($this->resolvers->denyResolver ?? new DenyResolver());
 	}//end denyResolver()
 
 	/**
@@ -184,7 +184,7 @@ class MagicRbacHandler {
 	 * @return ObjectScopeResolver The one definition of the scope vocabulary.
 	 */
 	private function objectScope(): ObjectScopeResolver {
-		return ($this->resolvers?->objectScopeResolver ?? new ObjectScopeResolver());
+		return ($this->resolvers->objectScopeResolver ?? new ObjectScopeResolver());
 	}//end objectScope()
 
 	/**
