@@ -70,11 +70,12 @@ class ConfigurationValueMapper extends QBMapper {
 			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($configKey)))
 			->setMaxResults(1);
 
-		if ($layerRef === null) {
-			$qb->andWhere($qb->expr()->isNull('layer_ref'));
-		} else {
-			$qb->andWhere($qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef)));
+		$layerRefClause = $qb->expr()->isNull('layer_ref');
+		if ($layerRef !== null) {
+			$layerRefClause = $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
 		}
+
+		$qb->andWhere($layerRefClause);
 
 		try {
 			return $this->findEntity(query: $qb);
