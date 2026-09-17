@@ -18,8 +18,8 @@
 
 ## 4. Reported content
 
-- [ ] 4.1 A copy written when a report is filed, not when a removal runs (D-5).
-- [ ] 4.2 Reviewer-only access and its own retention; a removal names the copy.
+- [x] 4.1 A copy written when a report is filed, not when a removal runs (D-5).
+- [x] 4.2 Reviewer-only access and its own retention; a removal names the copy.
 
 ## 5. Announcement
 
