@@ -43,13 +43,17 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectFavouriteMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
@@ -86,6 +90,28 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull'];
 
 	/**
+	 * The working set: archived rows are left out. The default.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_EXCLUDE = 'exclude';
+
+	/**
+	 * The archived lens: archived rows and nothing else.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_ONLY = 'only';
+
+	/**
+	 * Both lenses at once. The literal is the parameter value callers send
+	 * (`_archived=any`), so the two cannot drift apart.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVED_ANY = 'any';
+
+	/**
 	 * Metadata columns every magic table carries.
 	 *
 	 * Mirrors MagicMapper::getMetadataColumns(); kept as a literal here so a
@@ -116,6 +142,8 @@ class MagicSearchHandler {
 		'_updated',
 		'_expires',
 		'_deleted',
+		'_archived',
+		'_frozen',
 		'_locked',
 		'_files',
 		'_relations',
@@ -300,7 +328,8 @@ class MagicSearchHandler {
 		$queryBuilder = $this->buildFilteredQuery(
 			query: $query,
 			schema: $schema,
-			tableName: $tableName
+			tableName: $tableName,
+			registerId: $register->getId()
 		);
 
 		// Check if fuzzy search is enabled for relevance scoring.
@@ -337,15 +366,13 @@ class MagicSearchHandler {
 
 		// Apply sorting BEFORE pagination so the query optimizer can use
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
-		if (empty($order) === false) {
-			$this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
-		} else {
-			// BUG-DB-4: without an explicit order, LIMIT/OFFSET pagination is
-			// non-deterministic (the database may return rows in any order),
-			// causing duplicates/gaps across pages. Add a stable default order
-			// on the monotonically increasing primary key.
-			$queryBuilder->addOrderBy('t._id', 'ASC');
-		}
+		$this->applyResultOrder(
+			qb: $queryBuilder,
+			order: $order,
+			schema: $schema,
+			searchTerm: $searchTerm,
+			recentFor: ($query['_recentFor'] ?? null)
+		);
 
 		$queryBuilder->setMaxResults($limit)
 			->setFirstResult($offset);
@@ -377,6 +404,7 @@ class MagicSearchHandler {
 	 * @param Schema $schema Schema for access-control rules.
 	 * @param bool $_rbac Whether to apply RBAC filtering.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param int|null $registerId The register of the table being read, for shared master data.
 	 *
 	 * @return void
 	 *
@@ -387,6 +415,7 @@ class MagicSearchHandler {
 		Schema $schema,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		?int $registerId = null,
 	): void {
 		// Mirror the list path: public schemas bypass multitenancy by default.
 		// No explicit multitenancy request exists on the single-object read path,
@@ -402,7 +431,8 @@ class MagicSearchHandler {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $resolvedMultitenancy,
-			multitenancyExplicit: false
+			multitenancyExplicit: false,
+			registerId: $registerId
 		);
 	}//end applyAccessControlToQuery()
 
@@ -420,10 +450,14 @@ class MagicSearchHandler {
 	 * @param array $query Search parameters including filters.
 	 * @param Schema $schema The schema for property filtering.
 	 * @param string $tableName The table to query.
+	 * @param int|null $registerId The register this table belongs to. When omitted it is
+	 *                             read from the query's reserved `register` key, which is
+	 *                             how the facet paths carry it. A register that cannot be
+	 *                             resolved simply yields no shared master data widening.
 	 *
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
-	public function buildFilteredQuery(array $query, Schema $schema, string $tableName): IQueryBuilder {
+	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
 		// Extract options from query (prefixed with _).
 		$search = $query['_search'] ?? null;
 		// Coerce to bool: query-string params arrive as strings (e.g.
@@ -465,8 +499,12 @@ class MagicSearchHandler {
 		$queryBuilder = $this->db->getQueryBuilder();
 		$queryBuilder->from($tableName, 't');
 
-		// Apply basic filters (deleted, etc.).
-		$this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted);
+		// Apply basic filters (deleted, archived).
+		$this->applyBasicFilters(
+			qb: $queryBuilder,
+			includeDeleted: $includeDeleted,
+			archivedMode: $this->resolveArchivedMode(query: $query)
+		);
 
 		// Apply multi-tenancy and RBAC access control filters.
 		$this->applyAccessControlFilters(
@@ -474,7 +512,8 @@ class MagicSearchHandler {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			multitenancyExplicit: $multitenancyExplicit
+			multitenancyExplicit: $multitenancyExplicit,
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
 		);
 
 		// Apply metadata filters.
@@ -495,6 +534,19 @@ class MagicSearchHandler {
 		// The unread lens, resolved IN the query so the page, the total and the
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $queryBuilder, userId: ($query['_unreadFor'] ?? null));
+
+		// The favourites and recent lenses, resolved in the query for the same
+		// reason, and each guarding itself so this method keeps its branch count.
+		$this->applyPersonalLensFilter(
+			qb: $queryBuilder,
+			table: ObjectFavouriteMapper::TABLE,
+			userId: ($query['_favouriteFor'] ?? null)
+		);
+		$this->applyPersonalLensFilter(
+			qb: $queryBuilder,
+			table: ObjectViewMapper::TABLE,
+			userId: ($query['_recentFor'] ?? null)
+		);
 
 		// Apply full-text search if provided.
 		// Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
@@ -598,6 +650,22 @@ class MagicSearchHandler {
 		// 1. Deleted filter.
 		if ($includeDeleted === false) {
 			$conditions[] = '_deleted IS NULL';
+		}
+
+		// 1b. Archive filter. Spelled here as well as in applyBasicFilters()
+		// because the two paths build the same WHERE by different means and a
+		// condition added to only one of them is exactly the drift the comment
+		// on step 3 below records: the UNION path silently returned MORE rows
+		// than the single-table path for the same query. Too many rows is the
+		// dangerous direction, and an archived record surfacing in a working
+		// list is that failure with a record attached.
+		$archivedMode = $this->resolveArchivedMode(query: $query);
+		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+			$conditions[] = '_archived IS NULL';
+		}
+
+		if ($archivedMode === self::ARCHIVED_ONLY) {
+			$conditions[] = '_archived IS NOT NULL';
 		}
 
 		// 2. RBAC filter (role-based access control).
@@ -776,6 +844,13 @@ class MagicSearchHandler {
 	 * @psalm-param array<int, string>|null $existingColumns
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)    PropertySearchProfile reads a property array and
+	 *                                         holds no state. Injecting it would add a
+	 *                                         constructor argument to two classes to satisfy a
+	 *                                         linter, not to make anything substitutable.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) One branch per match type, plus the column rules
+	 *                                         the two platforms need.
 	 */
 	private function buildSearchLeafSql(
 		string $pattern,
@@ -791,26 +866,45 @@ class MagicSearchHandler {
 		$likePattern = $connection->quote($pattern);
 		$quotedTerm = $connection->quote($literal);
 
-		// Search in schema string properties (ILIKE/LIKE only for performance).
+		// Which properties the scan reads, and how each one compares, is the
+		// property's own business. A property that declares nothing is judged by
+		// the rule this scan has always used, so its SQL is unchanged.
 		$properties = $schema->getProperties() ?? [];
 		foreach ($properties as $propName => $propDef) {
-			$type = $propDef['type'] ?? 'string';
-			if ($type === 'string') {
-				$columnName = $this->sanitizeColumnName(name: $propName);
-				// In UNION contexts, only search columns that actually exist in this table.
-				if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
-					continue;
+			if (is_array($propDef) === false
+				|| PropertySearchProfile::participatesInFreeText(property: $propDef) === false
+			) {
+				continue;
+			}
+
+			$columnName = $this->sanitizeColumnName(name: $propName);
+			// In UNION contexts, only search columns that actually exist in this table.
+			if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
+				continue;
+			}
+
+			// Quote column name to handle reserved words (e.g., 'case', 'status').
+			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propDef);
+
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
+				$column = $quotedCol;
+				if ($nullSafe === true) {
+					$column = "COALESCE({$quotedCol}::text, '')";
 				}
 
-				// Quote column name to handle reserved words (e.g., 'case', 'status').
-				$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-				$searchConditions[] = $this->columnMatchSql(
-					column: $quotedCol,
-					likePattern: $likePattern,
-					isPostgres: $isPostgres,
-					nullSafe: $nullSafe
-				);
-			}//end if
+				$searchConditions[] = "similarity({$column}, {$quotedTerm}) > 0.1";
+				continue;
+			}
+
+			$searchConditions[] = $this->columnMatchSql(
+				column: $quotedCol,
+				likePattern: $connection->quote(
+					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
+				),
+				isPostgres: $isPostgres,
+				nullSafe: $nullSafe
+			);
 		}//end foreach
 
 		// Search in metadata text fields.
@@ -838,6 +932,38 @@ class MagicSearchHandler {
 		// never empty here and the old null return was unreachable.
 		return '(' . implode(' OR ', $searchConditions) . ')';
 	}//end buildSearchLeafSql()
+
+	/**
+	 * The LIKE pattern one property wants for this term.
+	 *
+	 * `fulltext` keeps the pattern the term itself produced, wildcards and all.
+	 * `exact` and `prefix` are the property speaking over the term: an
+	 * identifier column that declares `exact` should not answer to half an
+	 * identifier, whatever the caller typed around it.
+	 *
+	 * @param string $matchType The resolved match type.
+	 * @param string $pattern   The pattern the parsed term produced.
+	 * @param string $literal   The literal text of the term.
+	 *
+	 * @return string The pattern to compare this column against.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchTermNode::likeEscape() is a pure function over a
+	 *                                      string, shared so a declared match type escapes a
+	 *                                      user's `%` exactly as a parsed term does.
+	 */
+	private function patternForMatchType(string $matchType, string $pattern, string $literal): string {
+		if ($matchType === PropertySearchProfile::MATCH_EXACT) {
+			return SearchTermNode::likeEscape(value: $literal);
+		}
+
+		if ($matchType === PropertySearchProfile::MATCH_PREFIX) {
+			return SearchTermNode::likeEscape(value: $literal) . '%';
+		}
+
+		return $pattern;
+	}//end patternForMatchType()
 
 	/**
 	 * Match one column against a LIKE pattern, per platform.
@@ -1425,8 +1551,13 @@ class MagicSearchHandler {
 			'_ids',
 			'_unread',
 			'_unreadFor',
+			'_favourite',
+			'_favouriteFor',
+			'_recent',
+			'_recentFor',
 			'_count',
 			'_includeDeleted',
+			'_archived',
 			'_relations_contains',
 			'_multitenancy_explicit',
 			'_fuzzy',
@@ -1445,16 +1576,66 @@ class MagicSearchHandler {
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param bool $includeDeleted Whether to include deleted objects
+	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 *
 	 * @return void
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted): void {
+	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE): void {
 		// Handle deleted filter.
 		if ($includeDeleted === false) {
 			$qb->andWhere($qb->expr()->isNull('t._deleted'));
 		}
 
+		// Handle the archive filter. Exclusion is the DEFAULT rather than a
+		// filter the caller has to remember, so a caller who forgets the
+		// parameter gets the working set — the safe answer. Asking for both is
+		// the only way to see an archived row beside an open one.
+		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+			$qb->andWhere($qb->expr()->isNull('t._archived'));
+		}
+
+		if ($archivedMode === self::ARCHIVED_ONLY) {
+			$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+		}
+
 	}//end applyBasicFilters()
+
+	/**
+	 * Resolve the archive lens a query asks for.
+	 *
+	 * `_archived` absent or false is the working set, `_archived=true` is the
+	 * archived lens alone and `_archived=any` is both. Anything else reads as
+	 * the working set, because an unrecognised lens must never silently widen
+	 * what a list shows.
+	 *
+	 * ⚠️ `filter_var(..., FILTER_VALIDATE_BOOLEAN)` alone cannot do this. It
+	 * maps the string `"any"` to false, which is indistinguishable from
+	 * `_archived=false` — so the one parameter value that means "show me
+	 * everything" would have quietly meant "hide the archive".
+	 *
+	 * @param array $query The search query parameters.
+	 *
+	 * @return string One of the ARCHIVED_* constants.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function resolveArchivedMode(array $query): string {
+		if (array_key_exists('_archived', $query) === false) {
+			return self::ARCHIVED_EXCLUDE;
+		}
+
+		$raw = $query['_archived'];
+
+		if (is_string($raw) === true && strtolower(trim($raw)) === self::ARCHIVED_ANY) {
+			return self::ARCHIVED_ANY;
+		}
+
+		if (filter_var($raw, FILTER_VALIDATE_BOOLEAN) === true) {
+			return self::ARCHIVED_ONLY;
+		}
+
+		return self::ARCHIVED_EXCLUDE;
+	}//end resolveArchivedMode()
 
 	/**
 	 * Check if a mixed value represents an explicit boolean true
@@ -1505,6 +1686,35 @@ class MagicSearchHandler {
 	}//end resolveMultitenancyFlag()
 
 	/**
+	 * Read the register id out of a search query's reserved `register` key.
+	 *
+	 * The facet paths build their query from a base query rather than from a
+	 * Register entity, and that base query carries `register` as a reserved
+	 * parameter. Reading it here means a register-level shared master data
+	 * declaration is honoured by the facets as well as by the list, instead of
+	 * the two disagreeing about which rows exist.
+	 *
+	 * @param array $query The search query.
+	 *
+	 * @return int|null The register id, or null when the query does not name one.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function registerIdFromQuery(array $query): ?int {
+		$register = ($query['register'] ?? null);
+
+		if (is_int($register) === true) {
+			return $register;
+		}
+
+		if (is_string($register) === true && ctype_digit($register) === true) {
+			return (int)$register;
+		}
+
+		return null;
+	}//end registerIdFromQuery()
+
+	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
 	 *
 	 * Handles the interaction between RBAC and _multitenancy:
@@ -1517,8 +1727,11 @@ class MagicSearchHandler {
 	 * @param bool $_rbac Whether RBAC filtering is enabled
 	 * @param bool $_multitenancy Whether multitenancy filtering is enabled
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
+	 * @param int|null $registerId The register of the table being read, for shared master data
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	private function applyAccessControlFilters(
 		IQueryBuilder $qb,
@@ -1526,6 +1739,7 @@ class MagicSearchHandler {
 		bool $_rbac,
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
+		?int $registerId = null,
 	): void {
 		// Check if user qualifies for any RBAC rule (simple or conditional).
 		// When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
@@ -1569,9 +1783,16 @@ class MagicSearchHandler {
 			// Otherwise: user has RBAC access and didn't request _multi=true
 			// Skip multitenancy - let RBAC handle access control.
 			if ($applyMultitenancy === true) {
+				// The register+schema pair is handed down so the organisation
+				// handler can widen by a DECLARED shared master data holder
+				// (REQ-SLE-001). Each magic table is exactly one such pair, so
+				// the widening reaches this table and nothing else the holder
+				// owns. A pair that cannot be resolved widens by nothing.
 				$this->organizationHandler->applyOrganizationFilter(
 					qb: $qb,
-					adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
+					adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+					registerId: $registerId,
+					schemaId: $schema->getId()
 				);
 			}
 		}//end if
@@ -2117,6 +2338,135 @@ class MagicSearchHandler {
 	}//end applyUnreadFilter()
 
 	/**
+	 * Narrow a query to the objects one user has starred, or has opened.
+	 *
+	 * The two lenses differ only in which table carries the (user, object) row,
+	 * so they share one `EXISTS` rather than two copies of it. That is also why
+	 * the table is a parameter: the shape of the question is identical, and a
+	 * second copy is a second place for the outer-parameter trap below to be got
+	 * wrong.
+	 *
+	 * The subquery is built on a SECOND query builder but its parameter is
+	 * created on the OUTER one, because only the outer builder's parameters are
+	 * bound at execution. Creating it on the inner builder produces SQL with a
+	 * placeholder nothing fills, which is a silent empty page, not an error.
+	 *
+	 * The lens is off unless a uid was named, so the guard lives here rather
+	 * than at the call site: `buildFilteredQuery()` already carries every other
+	 * filter's branch.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param string $table The table holding the (user, object) rows.
+	 * @param mixed $userId The user whose rows are read, or null when the lens was not asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyPersonalLensFilter(IQueryBuilder $qb, string $table, mixed $userId): void {
+		if (is_string($userId) === false || $userId === '') {
+			return;
+		}
+
+		$owner = $qb->createNamedParameter($userId);
+
+		$sub = $this->db->getQueryBuilder();
+		$sub->select('pl.object_uuid')
+			->from($table, 'pl')
+			->where($sub->expr()->eq('pl.user_id', $owner))
+			->andWhere($sub->expr()->eq('pl.object_uuid', 't._uuid'));
+
+		$qb->andWhere($qb->createFunction('EXISTS ('.$sub->getSQL().')'));
+
+	}//end applyPersonalLensFilter()
+
+	/**
+	 * Order a `_recent=true` page by when this user last opened each object.
+	 *
+	 * Ordering by a correlated subquery rather than a join, so the lens adds no
+	 * row to the result set and cannot change the total. Both databases accept
+	 * a scalar subquery in ORDER BY.
+	 *
+	 * This never overrides an explicit `_order`: the caller asking for
+	 * "recently opened, alphabetically" means it. It only replaces the default
+	 * `t._id ASC`, which for this lens would be arbitrary and, worse, look
+	 * deliberate.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param mixed $userId The user whose view times order the page, or null.
+	 *
+	 * @return boolean True when the recency order was applied.
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyRecencyOrder(IQueryBuilder $qb, mixed $userId): bool {
+		if (is_string($userId) === false || $userId === '') {
+			return false;
+		}
+
+		$viewer = $qb->createNamedParameter($userId);
+		$table = ObjectViewMapper::TABLE;
+
+		$qb->addOrderBy(
+			$qb->createFunction(
+				'(SELECT rv.viewed_at FROM '.$table.' rv'
+				.' WHERE rv.user_id = '.$viewer.' AND rv.object_uuid = t._uuid)'
+			),
+			'DESC'
+		);
+
+		// A stable tie-break, so two objects opened in the same second do not
+		// swap places between pages.
+		$qb->addOrderBy('t._id', 'ASC');
+
+		return true;
+
+	}//end applyRecencyOrder()
+
+	/**
+	 * Decide and apply the result order for one search.
+	 *
+	 * Three cases, in priority order: an explicit `_order` wins; then the
+	 * `_recent` lens's own recency order; then the stable default on the primary
+	 * key. They live in one method rather than a chain in `searchObjects()`
+	 * because that method is already at its complexity budget, and because the
+	 * priority is the interesting part and belongs in one place.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param array<int|string, mixed> $order The caller's requested order.
+	 * @param Schema|null $schema The schema being searched.
+	 * @param string|null $searchTerm The search term, for relevance ordering.
+	 * @param mixed $recentFor The user whose view times order a `_recent` page, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 */
+	private function applyResultOrder(
+		IQueryBuilder $qb,
+		array $order,
+		?Schema $schema,
+		?string $searchTerm,
+		mixed $recentFor
+	): void {
+		if (empty($order) === false) {
+			$this->applySorting(qb: $qb, order: $order, schema: $schema, searchTerm: $searchTerm);
+			return;
+		}
+
+		if ($this->applyRecencyOrder(qb: $qb, userId: $recentFor) === true) {
+			return;
+		}
+
+		// BUG-DB-4: without an explicit order, LIMIT/OFFSET pagination is
+		// non-deterministic (the database may return rows in any order),
+		// causing duplicates/gaps across pages. Add a stable default order
+		// on the monotonically increasing primary key.
+		$qb->addOrderBy('t._id', 'ASC');
+
+	}//end applyResultOrder()
+
+	/**
 	 * Apply ID-based filtering (UUID, slug, etc.)
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
@@ -2442,6 +2792,9 @@ class MagicSearchHandler {
 	 * @param bool          $fuzzyEnabled Whether `_fuzzy=true` was requested.
 	 *
 	 * @return string The SQL condition, already parenthesised.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Same pure reader as buildSearchLeafSql(), and it has
+	 *                                      to be the same one or the two paths could disagree.
 	 */
 	private function buildSearchLeafQbSql(
 		IQueryBuilder $qb,
@@ -2454,24 +2807,34 @@ class MagicSearchHandler {
 		$patternParam = $qb->createNamedParameter($pattern);
 		$conditions = [];
 
-		// Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
-		$dateFormats = ['date', 'date-time', 'time'];
 		foreach (($schema->getProperties() ?? []) as $field => $propertyConfig) {
-			// Encrypted properties get no dedicated magic-table column, so a LIKE
-			// over one either hits a missing column or scans ciphertext.
-			if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
-				continue;
-			}
-
-			if (($propertyConfig['type'] ?? '') !== 'string'
-				|| in_array($propertyConfig['format'] ?? '', $dateFormats, true) === true
+			// Encrypted properties get no dedicated magic-table column, and a
+			// range is a pair of bounds rather than a term. Both are decided by
+			// the property, in one place, for both search paths.
+			if (is_array($propertyConfig) === false
+				|| PropertySearchProfile::participatesInFreeText(property: $propertyConfig) === false
 			) {
 				continue;
 			}
 
 			$columnName = $this->sanitizeColumnName(name: $field);
 			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$patternParam}";
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propertyConfig);
+
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
+				$fuzzyParam = $qb->createNamedParameter($literal);
+				$conditions[] = "similarity(COALESCE(t.{$quotedCol}::text, ''), {$fuzzyParam}) > 0.1";
+				continue;
+			}
+
+			$columnPattern = $patternParam;
+			if ($matchType !== PropertySearchProfile::MATCH_FULLTEXT) {
+				$columnPattern = $qb->createNamedParameter(
+					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
+				);
+			}
+
+			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$columnPattern}";
 		}//end foreach
 
 		foreach (['_name', '_description', '_summary'] as $metadataColumn) {

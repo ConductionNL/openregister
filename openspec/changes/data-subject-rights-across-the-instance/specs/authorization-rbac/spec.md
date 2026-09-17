@@ -21,6 +21,7 @@ it removed.
 - **GIVEN** that listing
 - **WHEN** the administrator revokes everything
 - **THEN** each grant is removed and one audit entry names all of them
+- @e2e exclude {the act removes real grants across the instance, so an API spec would have to seed and then destroy another account's access; asserted in tests/Unit/Service/Rbac/ReachRevocationServiceTest.php::testTheRevocationIsRecordedInFull}
 
 ### Requirement: A grant to a principal outside the organisation carries an end date (REQ-DSR-005)
 
@@ -40,3 +41,4 @@ organisation and SHALL stay attributed.
 - **GIVEN** an external grant that lapses
 - **WHEN** the objects they wrote on are read
 - **THEN** their contributions are present and attributed, and they can no longer reach them
+- @e2e exclude {the lapse happens over time, so it needs a clock fixture; asserted in tests/Unit/Service/Rbac/ExternalGrantGuardTest.php::testTheWorkSurvivesTheAccess}

@@ -15,7 +15,7 @@ lifecycle does not declare, and a transition `inputs` entry naming a field
 - **GIVEN** a lifecycle whose state `open` requires field `outcome` and a schema without `outcome`
 - **WHEN** the schema is saved
 - **THEN** the save fails with 422 naming `outcome` and `open`
-- @e2e exclude {validator, covered by unit tests}
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/LifecycleStateFieldValidationTest.php::testAnUnknownFieldIsRefusedAtSchemaSave; the HTTP half rides tests/e2e/ci/field-rules-by-state.spec.ts}
 
 ### Requirement: A state declares entry and exit conditions
 
@@ -38,11 +38,11 @@ condition naming a property the schema does not declare.
 - **GIVEN** an entry condition grouping two clauses with and
 - **WHEN** the second clause is false
 - **THEN** the refusal names the second clause
-- @e2e exclude {evaluator, covered by unit tests}
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/StateConditionEvaluatorTest.php::testTheFailingClauseOfAnAndIsNamed}
 
 #### Scenario: a condition on an undeclared property is refused at schema save
 
 - **GIVEN** an exit condition naming a property the schema does not declare
 - **WHEN** the schema is saved
 - **THEN** the save fails with 422 naming the property
-- @e2e exclude {validator, covered by unit tests}
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/LifecycleStateFieldValidationTest.php::testAConditionOnAnUndeclaredPropertyIsRefused}

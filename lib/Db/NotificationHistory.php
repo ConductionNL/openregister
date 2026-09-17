@@ -66,6 +66,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSnoozedUntil(?DateTime $snoozedUntil)
  * @method DateTime|null getArchivedAt()
  * @method void setArchivedAt(?DateTime $archivedAt)
+ * @method string|null getEventId()
+ * @method void setEventId(?string $eventId)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -215,6 +217,23 @@ class NotificationHistory extends Entity implements JsonSerializable {
 	protected ?DateTime $archivedAt = null;
 
 	/**
+	 * The firing this row belongs to.
+	 *
+	 * One rule firing once may run several transports — an in-app notice, an
+	 * e-mail, an outbound call — and each of them records its own row, because
+	 * each has its own outcome. The event id is what says they were one event:
+	 * without it, "the integration call that went with this notification" is a
+	 * guess made from timestamps, which is how a notification and a ZGW message
+	 * drift apart without anyone noticing.
+	 *
+	 * Null on every row written before the column existed, and on any row
+	 * written by a caller that does not carry the event through.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $eventId = null;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -234,6 +253,7 @@ class NotificationHistory extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'subjectId', type: 'string');
 		$this->addType(fieldName: 'snoozedUntil', type: 'datetime');
 		$this->addType(fieldName: 'archivedAt', type: 'datetime');
+		$this->addType(fieldName: 'eventId', type: 'string');
 
 	}//end __construct()
 
@@ -299,6 +319,7 @@ class NotificationHistory extends Entity implements JsonSerializable {
 			'subjectId' => $this->subjectId,
 			'snoozedUntil' => $this->snoozedUntil?->format(DateTime::ATOM),
 			'archivedAt' => $this->archivedAt?->format(DateTime::ATOM),
+			'eventId' => $this->eventId,
 			// Answered here so a client that has just snoozed or archived
 			// something knows whether it left the list, without having to
 			// re-derive the three rules for itself and get one of them wrong.

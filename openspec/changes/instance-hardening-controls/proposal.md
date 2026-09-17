@@ -106,6 +106,13 @@ application's data, and every control the platform does not have at all.
 
 ## What changes
 
+- **Every control is reported against a floor it cannot fall below.** An
+  administrator reads one page: the password and session policy as Nextcloud
+  enforces them, the rate limit on each surface, the brute-force state, the
+  origins a browser may read from, and the upload ceiling. Each carries the
+  floor this instance declared. A change that would cross a floor is refused,
+  a floor may not be declared weaker than the shipped baseline, and both the
+  change and the refusal are on the audit trail.
 - **A published statement is accepted before use.** An administrator
   publishes a statement with a version. A user is asked once per version
   before the application renders, and the acceptance is recorded with the
