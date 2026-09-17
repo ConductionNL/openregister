@@ -289,18 +289,28 @@ test.describe('the subject export over HTTP', () => {
 		const res = await owner.post(`${API}/gdpr/subject-exports`, {
 			data: { subject: `export-${RUN}@example.org`, request: `DSR-${RUN}` },
 		})
-		expect(res.ok(), `subject export request failed: ${res.status()} ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`subject export request failed: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
 
 		const created = await res.json()
-		expect(String(created.uuid ?? ''), 'the request was not recorded').toMatch(/[0-9a-f-]{36}/)
+		expect(String(created.uuid ?? ''), 'the request was not recorded').toMatch(
+			/[0-9a-f-]{36}/,
+		)
 		expect(created.requestedBy, 'the export does not name who asked').toBe(OWNER)
-		expect(created.subject, 'the export does not name the subject').toBe(`export-${RUN}@example.org`)
+		expect(created.subject, 'the export does not name the subject').toBe(
+			`export-${RUN}@example.org`,
+		)
 		expect(created.requestId).toBe(`DSR-${RUN}`)
 
 		// D-4: the assembly is a background job, so the request answers pending
 		// rather than making the caller wait for every register to be walked.
 		expect(created.status).toBe('pending')
-		expect(created.downloadable, 'nothing is downloadable before it is ready').toBe(false)
+		expect(
+			created.downloadable,
+			'nothing is downloadable before it is ready',
+		).toBe(false)
 
 		const read = await owner.get(`${API}/gdpr/subject-exports/${created.uuid}`)
 		expect(read.ok()).toBeTruthy()
@@ -313,7 +323,9 @@ test.describe('the subject export over HTTP', () => {
 		})
 		const created = await res.json()
 
-		const download = await owner.get(`${API}/gdpr/subject-exports/${created.uuid}/download`)
+		const download = await owner.get(
+			`${API}/gdpr/subject-exports/${created.uuid}/download`,
+		)
 		expect(download.status(), 'a pending export must not download').toBe(404)
 		expect((await download.json()).error).toBe('SUBJECT_EXPORT_UNAVAILABLE')
 	})
@@ -323,7 +335,7 @@ test.describe('the subject export over HTTP', () => {
 		expect(res.status()).toBe(400)
 	})
 
-	test('another account cannot read or download someone else\'s export', async () => {
+	test("another account cannot read or download someone else's export", async () => {
 		const res = await owner.post(`${API}/gdpr/subject-exports`, {
 			data: { subject: `private-${RUN}@example.org` },
 		})
@@ -331,8 +343,18 @@ test.describe('the subject export over HTTP', () => {
 
 		// Answered as absent, not forbidden: confirming the row exists confirms
 		// somebody asked about this data subject.
-		expect((await other.get(`${API}/gdpr/subject-exports/${created.uuid}`)).status()).toBe(404)
-		expect((await other.get(`${API}/gdpr/subject-exports/${created.uuid}/download`)).status()).toBe(404)
+		expect(
+			(
+				await other.get(`${API}/gdpr/subject-exports/${created.uuid}`)
+			).status(),
+		).toBe(404)
+		expect(
+			(
+				await other.get(
+					`${API}/gdpr/subject-exports/${created.uuid}/download`,
+				)
+			).status(),
+		).toBe(404)
 	})
 })
 
@@ -348,7 +370,10 @@ test.describe('the reach listing and the one revocation act over HTTP', () => {
 
 	test('the reach listing names every source and what a revocation will not take', async () => {
 		const res = await admin.get(`${API}/rbac/reach/${OWNER}`)
-		expect(res.ok(), `reach listing failed: ${res.status()} ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`reach listing failed: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
 
 		const listing = await res.json()
 		expect(listing.principal).toBe(OWNER)
@@ -358,7 +383,10 @@ test.describe('the reach listing and the one revocation act over HTTP', () => {
 		// EVERY SOURCE IS COUNTED, even at zero. A bucket that disappears when
 		// empty makes an administrator read a partial answer as a whole one.
 		for (const source of ['authorization', 'group', 'derived', 'delegation']) {
-			expect(typeof listing.bySource[source], `bySource.${source} is missing`).toBe('number')
+			expect(
+				typeof listing.bySource[source],
+				`bySource.${source} is missing`,
+			).toBe('number')
 		}
 
 		// ADR-010: the retained half is visible BEFORE the act, not discovered
@@ -366,9 +394,12 @@ test.describe('the reach listing and the one revocation act over HTTP', () => {
 		expect(listing.revocable + listing.retained).toBe(listing.total)
 	})
 
-	test('an ordinary handler cannot read another account\'s whole reach', async () => {
+	test("an ordinary handler cannot read another account's whole reach", async () => {
 		const res = await owner.get(`${API}/rbac/reach/${ADMIN_USER}`)
-		expect(res.status(), 'the reach surface is an administrator\'s').toBeGreaterThanOrEqual(400)
+		expect(
+			res.status(),
+			"the reach surface is an administrator's",
+		).toBeGreaterThanOrEqual(400)
 	})
 })
 
@@ -381,7 +412,10 @@ test.describe('an external grant carries an end date', () => {
 		admin = await contextFor(ADMIN_USER, ADMIN_PASSWORD)
 
 		const reg = await admin.post(`${API}/registers`, {
-			data: { title: `e2e external grant register ${RUN}`, description: 'e2e' },
+			data: {
+				title: `e2e external grant register ${RUN}`,
+				description: 'e2e',
+			},
 		})
 		expect(reg.ok(), `register create failed: ${await reg.text()}`).toBeTruthy()
 		registerId = String((await reg.json()).id)
@@ -403,7 +437,9 @@ test.describe('an external grant carries an end date', () => {
 			data: {
 				title: `e2e external grant schema ${RUN}-${schemas.length}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 			},
 		})
 		expect(res.ok(), `schema create failed: ${await res.text()}`).toBeTruthy()
@@ -423,7 +459,10 @@ test.describe('an external grant carries an end date', () => {
 			},
 		})
 
-		expect(res.status(), 'an external grant with no end date must be refused').toBe(400)
+		expect(
+			res.status(),
+			'an external grant with no end date must be refused',
+		).toBe(400)
 
 		const body = await res.json()
 		expect(body.error).toBe('EXTERNAL_GRANT_REFUSED')
@@ -439,11 +478,22 @@ test.describe('an external grant carries an end date', () => {
 
 		const res = await admin.put(`${API}/schemas/${id}`, {
 			data: {
-				authorization: { read: [{ name: 'adviseur', external: true, until: '2027-01-01T00:00:00+00:00' }] },
+				authorization: {
+					read: [
+						{
+							name: 'adviseur',
+							external: true,
+							until: '2027-01-01T00:00:00+00:00',
+						},
+					],
+				},
 			},
 		})
 
-		expect(res.ok(), `an external grant WITH an end must save: ${res.status()} ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`an external grant WITH an end must save: ${res.status()} ${await res.text()}`,
+		).toBeTruthy()
 	})
 
 	test('an ordinary grant is untouched by the rule', async () => {
@@ -455,6 +505,9 @@ test.describe('an external grant carries an end date', () => {
 
 		// The grammar is additive: a rule written before this existed keeps
 		// meaning what it meant, or the guard is a migration in disguise.
-		expect(res.ok(), `an ordinary grant must still save: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`an ordinary grant must still save: ${await res.text()}`,
+		).toBeTruthy()
 	})
 })
