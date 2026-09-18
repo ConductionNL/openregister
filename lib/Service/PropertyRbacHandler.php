@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCP\IGroupManager;
@@ -77,6 +78,7 @@ class PropertyRbacHandler {
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly LoggerInterface $logger,
 		private readonly StateFieldRuleResolver $stateFieldRules,
+		private readonly ?RevealCollector $reveals = null,
 	) {
 	}//end __construct()
 
@@ -187,11 +189,70 @@ class PropertyRbacHandler {
 					message: '[PropertyRbacHandler] Filtered unreadable property',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
 				);
+				continue;
 			}
+
+			// 🔴 THE REVEAL IS RECORDED HERE, WHERE THE VALUE SURVIVES THE
+			// FILTER, and not where the check runs (ledger row 5.6, D-1). Those
+			// are the same line today and will not always be, and only one of
+			// them is the fact being recorded: a denial is already logged, and
+			// what a data protection officer asks is who SAW the BSN.
+			//
+			// A stripped property reaches the `continue` above and writes
+			// nothing, which is the spec's third scenario and the one an
+			// implementation that recorded before the check would get backwards.
+			$this->recordReveal(
+				schema: $schema,
+				property: $propertyName,
+				authorization: $propertiesWithAuth[$propertyName],
+				object: $object
+			);
 		}
 
 		return $object;
 	}//end filterReadableProperties()
+
+	/**
+	 * Record a reveal, when the property asked for one.
+	 *
+	 * Never throws and never blocks the read. An audit that can refuse to show
+	 * somebody a field they are entitled to see is an availability bug wearing
+	 * a compliance badge, and this collector holds rows in memory: the failure
+	 * it could plausibly have is running out of them, which must not cost the
+	 * reader their page.
+	 *
+	 * @param Schema $schema The schema being read.
+	 * @param string $property The property that survived the filter.
+	 * @param mixed $authorization The property's authorization block.
+	 * @param array<string, mixed> $object The object being read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	private function recordReveal(Schema $schema, string $property, mixed $authorization, array $object): void {
+		if ($this->reveals === null || is_array($authorization) === false) {
+			return;
+		}
+
+		if ($this->reveals->isAudited(propertyAuthorization: $authorization) === false) {
+			return;
+		}
+
+		try {
+			$this->reveals->record(
+				userId: (string)$this->userSession->getUser()?->getUID(),
+				objectUuid: (string)($object['id'] ?? ($object['uuid'] ?? ($object['@self']['id'] ?? ''))),
+				property: $property,
+				schemaId: $schema->getId()
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[PropertyRbacHandler] Could not record a reveal; the read is unaffected',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
+			);
+		}
+	}//end recordReveal()
 
 	/**
 	 * Strip write-only properties from outgoing object data.

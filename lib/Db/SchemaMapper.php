@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
@@ -1134,6 +1135,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateAuthorizationDeny(schema: $schema);
 		$this->validateHierarchyAnnotation(schema: $schema);
 		$this->validateDepartmentMatrix(schema: $schema);
+		$this->validateRevealAudit(schema: $schema);
 		$this->validateReversibilityDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
@@ -2037,6 +2039,60 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
+
+	/**
+	 * Refuse `audit: true` on a property nobody is kept out of (row 5.6).
+	 *
+	 * THE REFUSAL IS THE POINT OF THE FEATURE. An audited reveal answers "who
+	 * saw the BSN", and it can only answer it while the entries are rare. A
+	 * property with no `read` rule is shown to every reader of the object, so
+	 * auditing it writes an entry per reader per object per request for a
+	 * value nobody was ever kept from — and the handful of entries that matter
+	 * are then somewhere inside several million that do not. A trail nobody can
+	 * search is the same as no trail, arrived at by a route that looks like
+	 * diligence.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a property audits a reveal it cannot restrict.
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	private function validateRevealAudit(Schema $schema): void {
+		$offenders = [];
+		foreach (($schema->getProperties() ?? []) as $name => $config) {
+			if (is_array($config) === false) {
+				continue;
+			}
+
+			$authorization = ($config['authorization'] ?? null);
+			if (is_array($authorization) === false) {
+				continue;
+			}
+
+			if (($authorization[RevealCollector::AUDIT_KEY] ?? null) !== true) {
+				continue;
+			}
+
+			$read = ($authorization['read'] ?? null);
+			if (is_array($read) === true && count($read) > 0) {
+				continue;
+			}
+
+			$offenders[] = (string)$name;
+		}
+
+		if ($offenders === []) {
+			return;
+		}
+
+		throw new Exception(
+			'authorization.audit is only meaningful on a property with a read rule, and these have none: '
+			. implode(', ', $offenders)
+		);
+	}//end validateRevealAudit()
 
 	/**
 	 * Refuse a broken `authorization.matrix` at save (row B13).

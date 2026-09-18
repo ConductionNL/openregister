@@ -482,6 +482,20 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The reveal collector MUST be shared, and for the sharpest reason on
+		// this list: it collects during rendering and is flushed ONCE at the
+		// end of the request (ledger row 5.6, D-2). A container that built an
+		// auto-wired class fresh at every injection point would give the
+		// renderer one instance and the flush another, so the flush would find
+		// nothing and every reveal of a BSN would go unrecorded — with no
+		// error, and with an audit page that looks like a quiet day.
+		$context->registerService(
+			\OCA\OpenRegister\Service\Rbac\RevealCollector::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Rbac\RevealCollector();
+			}
+		);
+
 		// Register request-scoped LanguageService as a singleton (shared per request).
 		$context->registerService(
 			LanguageService::class,
