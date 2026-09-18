@@ -164,6 +164,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService Optional recovery-window service (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory Optional state-history projector (null-safe)
 	 *
 	 * @return void
 	 *
@@ -196,6 +197,7 @@ class ObjectsController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService = null,
 		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
 		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
+		private readonly ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->exportService = $exportService;
@@ -1245,6 +1247,48 @@ class ObjectsController extends Controller {
 	}//end refuseMalformedSearchTerm()
 
 	/**
+	 * Refuse a history filter over a property that has no history.
+	 *
+	 * The answerable properties are the ones SCHEMAS DECLARE as their lifecycle
+	 * field, never the property names that happen to sit in the projection: a
+	 * row written by mistake must not make a property filterable, and an empty
+	 * projection must still know that `status` is a property with history.
+	 *
+	 * @param array $params The raw request parameters.
+	 *
+	 * @phpstan-param array<string, mixed> $params
+	 *
+	 * @psalm-param array<string, mixed> $params
+	 *
+	 * @return JSONResponse|null A 400 naming the property, or null.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function refuseUnprojectedHistoryPredicate(array $params): ?JSONResponse {
+		if ($this->stateHistory === null) {
+			return null;
+		}
+
+		$predicate = \OCA\OpenRegister\Service\Search\HistoryPredicate::parse(query: $params);
+		if ($predicate->narrows() === false) {
+			return null;
+		}
+
+		$refusal = $predicate->refusalFor(projectedProperties: $this->stateHistory->projectedProperties());
+		if ($refusal === null) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => $refusal,
+				'properties' => $predicate->properties(),
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end refuseUnprojectedHistoryPredicate()
+
+	/**
 	 * Retrieves a list of all objects for a specific register and schema
 	 *
 	 * This method returns a paginated list of objects that match the specified register and schema.
@@ -1302,6 +1346,15 @@ class ObjectsController extends Controller {
 		// raised in the mapper could be swallowed into an empty facet list and
 		// the caller would see the "found nothing" this change exists to remove.
 		$refusal = $this->refuseMalformedSearchTerm(params: $params);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		// A history filter over a property nothing records is refused here, by
+		// name. Answered instead, it would be an empty page, and an empty page
+		// says "no case was ever in bezwaar" to a question the instance cannot
+		// answer at all. The two look identical on screen and only one is true.
+		$refusal = $this->refuseUnprojectedHistoryPredicate(params: $params);
 		if ($refusal !== null) {
 			return $refusal;
 		}
