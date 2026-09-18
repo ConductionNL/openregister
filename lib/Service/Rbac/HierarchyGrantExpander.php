@@ -174,14 +174,25 @@ class HierarchyGrantExpander {
 	 * Expand a grant set with every descendant it reaches.
 	 *
 	 * @param array<string, int> $granted Object UUID => core permission bitmask.
+	 * @param array<string, int>|null $seeds The grants that TRAVEL; null means all of them.
 	 *
 	 * @return array{granted: array<string, int>, sources: array<string, string>}
 	 *         The expanded map, and where each inherited entry came from.
 	 *
 	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
-	public function expand(array $granted): array {
+	public function expand(array $granted, ?array $seeds = null): array {
 		if (empty($granted) === true) {
+			return ['granted' => $granted, 'sources' => []];
+		}
+
+		// A grant marked as not inheritable still admits the object it was
+		// written on, and simply does not seed the descent (ledger row 13.41).
+		// `null` means every grant travels, which is what every caller written
+		// before the flag existed meant.
+		$seeds = ($seeds ?? $granted);
+		if (empty($seeds) === true) {
 			return ['granted' => $granted, 'sources' => []];
 		}
 
@@ -208,7 +219,8 @@ class HierarchyGrantExpander {
 			$this->expandOne(
 				hierarchy: $hierarchy,
 				granted: $granted,
-				sources: $sources
+				sources: $sources,
+				seeds: $seeds
 			);
 		}
 
@@ -221,19 +233,31 @@ class HierarchyGrantExpander {
 	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
 	 * @param array<string, int> $granted The grant map, modified in place.
 	 * @param array<string, string> $sources The provenance map, modified in place.
+	 * @param array<string, int> $seeds The grants that travel.
 	 *
 	 * @return void
 	 */
-	private function expandOne(array $hierarchy, array &$granted, array &$sources): void {
-		// The frontier starts at every DIRECT grant. A descendant reached on a
-		// later level is expanded too, which is what makes the grandchild work,
-		// but only ever as the descendant of the root it came from.
+	private function expandOne(array $hierarchy, array &$granted, array &$sources, array $seeds): void {
+		// The frontier starts at every direct grant THAT TRAVELS. A descendant
+		// reached on a later level is expanded too, which is what makes the
+		// grandchild work, but only ever as the descendant of the root it came
+		// from.
 		$frontier = [];
-		foreach ($granted as $uuid => $mask) {
+		foreach ($seeds as $uuid => $mask) {
 			$frontier[$uuid] = ['mask' => $mask, 'root' => $uuid];
 		}
 
+		// Everything already granted is `seen`, travelling or not: a
+		// non-inheritable grant on an object still means the object is decided,
+		// and re-deciding it from an ancestor would put the very grant the flag
+		// was written to stop straight back.
 		$seen = $frontier;
+		foreach (array_keys($granted) as $uuid) {
+			if (isset($seen[$uuid]) === false) {
+				$seen[$uuid] = ['mask' => $granted[$uuid], 'root' => $uuid];
+			}
+		}
+
 		$added = 0;
 
 		for ($depth = 0; $depth < $hierarchy['maxDepth']; $depth++) {

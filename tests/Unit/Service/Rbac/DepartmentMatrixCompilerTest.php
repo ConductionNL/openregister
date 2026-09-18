@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -360,6 +361,41 @@ class DepartmentMatrixCompilerTest extends TestCase {
 			)
 		);
 	}//end testNoPrefixYieldsNoValues()
+
+	/**
+	 * 🔴 The matrix key is a CONTROL key, not a verb.
+	 *
+	 * This was shipped broken in the change that introduced the matrix and is
+	 * caught here. `PermissionCatalogue::unknownVerbsIn()` walks the block's
+	 * keys and skips the control keys; `matrix` was not among them, so the key
+	 * was read as a VERB, `isGrantable()` answered no, and `assertGrantable()`
+	 * refused the schema save with "unknown verb: matrix". Every unit test of
+	 * the compiler passed, because none of them goes through that check, and
+	 * the e2e that would have caught it could not be run in the phase that
+	 * wrote it. The whole feature was unreachable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	public function testTheMatrixKeyIsNotReadAsAVerb(): void {
+		$catalogue = new PermissionCatalogue();
+
+		$this->assertContains(
+			DepartmentMatrixCompiler::KEY,
+			PermissionCatalogue::CONTROL_KEYS,
+			'a declaration read as a verb refuses the whole schema save'
+		);
+		$this->assertSame(
+			[],
+			$catalogue->unknownVerbsIn(
+				[
+					'read' => ['admin'],
+					DepartmentMatrixCompiler::KEY => ['field' => 'department'],
+				]
+			)
+		);
+	}//end testTheMatrixKeyIsNotReadAsAVerb()
 
 	/**
 	 * A matrix naming a field the schema does not declare is refused.
