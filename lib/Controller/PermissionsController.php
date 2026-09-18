@@ -22,9 +22,28 @@
  * somebody on the day the switch is flipped. This endpoint reads the rules as
  * written, so a deny nobody has hit is in the report the day it is saved.
  *
- * Auth posture: both routes are `#[NoAdminRequired]`. The catalogue is a
- * vocabulary, not a secret, and the preview reports only the rules of the
- * registers and schemas the caller can already resolve.
+ * Auth posture. `index()` is `#[NoAdminRequired]`: the catalogue is a
+ * vocabulary, not a secret.
+ *
+ * `denyPreview()`, `scopeAudit()` and `compareRoles()` are ADMIN-ONLY. They
+ * used to carry `#[NoAdminRequired]` on the claim, written here, that they
+ * "report only the rules of the registers and schemas the caller can already
+ * resolve". They did not. Called without a filter they walk
+ * `RegisterMapper::findAll()` / `SchemaMapper::findAll()` and report holders,
+ * roles and deny principals for every register and schema in the organisation,
+ * to any signed-in account.
+ *
+ * The scoping the old sentence described cannot currently be honoured: entity
+ * RBAC is opt-in (`rbac_entity_enforcement`, off by default and deliberately
+ * so), and with it off `hasRbacPermission()` answers true for any authenticated
+ * caller — so "the registers the caller can resolve" is every register in the
+ * organisation. Rather than invent a per-caller policy the app cannot enforce,
+ * these three report to admins only, which is what an authorization-model
+ * auditor is. No UI calls them; the routes exist for operators.
+ *
+ * If per-caller scoping is wanted later, the pattern is
+ * `ScopesController::resolveRegisters()`: read with `_rbac: false`, keep
+ * multitenancy ON, and compute the verdict per entity downstream.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -147,7 +166,6 @@ class PermissionsController extends Controller {
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
-	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function denyPreview(?string $register = null, ?string $schema = null): JSONResponse {
 		$rules = [];
@@ -207,7 +225,6 @@ class PermissionsController extends Controller {
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
-	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function scopeAudit(?string $register = null, ?string $schema = null): JSONResponse {
 		$rows = $this->audit->rows(
@@ -243,7 +260,6 @@ class PermissionsController extends Controller {
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
-	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function compareRoles(string $register, ?string $roles = null): JSONResponse {
 		$found = $this->registersFor(filter: $register);
