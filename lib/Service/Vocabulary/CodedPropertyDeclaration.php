@@ -49,6 +49,21 @@ class CodedPropertyDeclaration {
 	public const ANNOTATION = 'x-openregister-concepts';
 
 	/**
+	 * The simple spelling of the same binding: a scheme slug, nothing else.
+	 *
+	 * Published as a vocabulary modifier in openregister#3883, because that is
+	 * what an app forwards through an extending form and what a case-type
+	 * editor writes. `CodedPropertyDeclarationFactory` reads both into this one
+	 * declaration, so the validator, the option builder and the filter expander
+	 * cannot disagree about which properties are coded.
+	 *
+	 * Unprefixed on purpose. `assertKeysAreInTheVocabulary()` SKIPS every `x-`
+	 * key rather than checking it, so a prefixed spelling is accepted by the
+	 * save path without ever being published or validated; this one is both.
+	 */
+	public const SIMPLE_ANNOTATION = 'conceptScheme';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $scheme The concept scheme's uri.
