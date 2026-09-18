@@ -131,6 +131,7 @@ use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\AdministeredValidationListener;
+use OCA\OpenRegister\Listener\WorkingCalendarChangedListener;
 use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
@@ -3199,6 +3200,13 @@ class Application extends App implements IBootstrap {
 		// tries (row 11.53).
 		$context->registerEventListener(ObjectCreatingEvent::class, AdministeredValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, AdministeredValidationListener::class);
+
+		// A working calendar was saved, so the deadlines it governs are
+		// re-projected — off the write, as one queued job per calendar version
+		// (row Q8.17, ADR-078). On the UPDATED event rather than the UPDATING
+		// one: nothing should be recomputed against a calendar whose save might
+		// still be refused.
+		$context->registerEventListener(ObjectUpdatedEvent::class, WorkingCalendarChangedListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
