@@ -514,6 +514,7 @@ class PropertyValidatorHandler {
 		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
 		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
 		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
+		'conceptScheme' => ['value' => 'string', 'description' => 'The SKOS concept scheme this field takes its choices from, by slug. The concepts are the answers, so the list is maintained once in the vocabulary register and every schema binding to it follows. A field carrying both this and an inline enum has two sources, and the scheme is the one that wins.'],
 	];
 
 	/**
