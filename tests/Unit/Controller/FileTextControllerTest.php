@@ -680,4 +680,67 @@ class FileTextControllerTest extends TestCase {
 
 		$this->assertEquals(403, $result->getStatus());
 	}//end testBulkExtractRejectsNonAdmin()
+
+	// =========================================================================
+	// deleteFileText — a stub, but a guarded one
+	// =========================================================================
+
+	/**
+	 * The endpoint is not implemented yet and says so with 501. What matters is
+	 * that it says so only to a caller who can reach the file: the IDOR guard
+	 * runs BEFORE the stub, so the response cannot be used to probe which file
+	 * ids exist.
+	 *
+	 * @return void
+	 */
+	public function testDeleteFileTextReportsNotImplementedForAnAccessibleFile(): void {
+		$result = $this->controller->deleteFileText(1);
+
+		$this->assertEquals(501, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertStringContainsString('not yet implemented', $data['message']);
+	}//end testDeleteFileTextReportsNotImplementedForAnAccessibleFile()
+
+	/**
+	 * A file the caller cannot reach answers 404 — the same answer a missing
+	 * file gives, so the two are indistinguishable from outside.
+	 *
+	 * @return void
+	 */
+	public function testDeleteFileTextRejectsInaccessibleFile(): void {
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn($bob);
+
+		$rootFolder = $this->createMock(IRootFolder::class);
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->willReturn([]);
+		$rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn(false);
+
+		$controller = new FileTextController(
+			'openregister',
+			$this->request,
+			$this->textExtractor,
+			$this->fileService,
+			$this->entityRelationMapper,
+			$this->logger,
+			$this->config,
+			$this->manualEntityService,
+			$userSession,
+			$rootFolder,
+			$groupManager
+		);
+
+		$result = $controller->deleteFileText(1);
+
+		$this->assertEquals(404, $result->getStatus());
+		$this->assertFalse($result->getData()['success']);
+	}//end testDeleteFileTextRejectsInaccessibleFile()
+
 }//end class

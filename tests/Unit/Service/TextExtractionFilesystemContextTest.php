@@ -55,17 +55,19 @@ use ReflectionMethod;
 class TextExtractionFilesystemContextTest extends TestCase {
 	private TextExtractionService $service;
 	private FileMapper&MockObject $fileMapper;
+	private ChunkMapper&MockObject $chunkMapper;
 	private IRootFolder&MockObject $rootFolder;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
 		$this->fileMapper = $this->createMock(FileMapper::class);
+		$this->chunkMapper = $this->createMock(ChunkMapper::class);
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new TextExtractionService(
 			$this->fileMapper,
-			$this->createMock(ChunkMapper::class),
+			$this->chunkMapper,
 			$this->rootFolder,
 			$this->createMock(IDBConnection::class),
 			$this->logger,
@@ -318,4 +320,86 @@ class TextExtractionFilesystemContextTest extends TestCase {
 		$this->assertSame(1, $result['failed']);
 		$this->assertSame(1, $result['total']);
 	}//end testBackfillStopsWhenTheWindowIsShorterThanTheLimit()
+
+	/**
+	 * Arrange a window whose files all extract successfully.
+	 *
+	 * `extractFile()` returns without doing any work when the newest chunk is
+	 * at least as new as the file, so an up-to-date chunk timestamp is the
+	 * cheapest honest success: the row is claimed, nothing throws, and
+	 * `$processed` goes up.
+	 *
+	 * @return void
+	 */
+	private function arrangeFilesThatExtractCleanly(): void {
+		$this->fileMapper->method('getFile')->willReturn(['mtime' => 100]);
+		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(200);
+	}//end arrangeFilesThatExtractCleanly()
+
+	/**
+	 * The window is what the mapper hands back, not what the caller asked for.
+	 * A mapper that over-delivers must not make the walk exceed the caller's
+	 * budget: the per-file loop stops at `$limit`, so the surplus rows stay
+	 * pending for the next run instead of being processed unasked.
+	 *
+	 * @return void
+	 */
+	public function testTheBudgetStopsTheWalkPartWayThroughAWindow(): void {
+		$this->arrangeFilesThatExtractCleanly();
+
+		$this->fileMapper->expects($this->once())
+			->method('findUntrackedFiles')
+			->willReturn([
+				['fileid' => 34, 'name' => 'Readme.md'],
+				['fileid' => 35, 'name' => 'Welcome.docx'],
+				['fileid' => 36, 'name' => 'Reasons.pdf'],
+			]);
+
+		$result = $this->service->extractPendingFiles(2);
+
+		$this->assertSame(2, $result['processed'], 'de derde rij valt buiten het budget van de aanroeper');
+		$this->assertSame(0, $result['failed']);
+		$this->assertFalse($result['truncated'], 'het budget was op, niet het aantal vensters');
+	}//end testTheBudgetStopsTheWalkPartWayThroughAWindow()
+
+	/**
+	 * The counterpart of `testBackfillStepsOverFilesThatKeepFailing()`: the
+	 * offset only steps over FAILURES. A window in which nothing failed leaves
+	 * the offset alone, because every file it processed now has chunks and
+	 * drops out of the next query by itself. Stepping there would skip the
+	 * files that moved up into those positions.
+	 *
+	 * @return void
+	 */
+	public function testAWindowWithoutFailuresLeavesTheOffsetWhereItIs(): void {
+		$this->arrangeFilesThatExtractCleanly();
+
+		$seenOffsets = [];
+
+		// Row one is skipped for want of a usable fileid, so the window has a
+		// success and no failure while the budget still has room — the exact
+		// shape that has to reach a second query.
+		$this->fileMapper->method('findUntrackedFiles')
+			->willReturnCallback(
+				function (int $limit, int $offset = 0) use (&$seenOffsets): array {
+					$seenOffsets[] = $offset;
+
+					if (count($seenOffsets) > 1) {
+						return [];
+					}
+
+					return [
+						['fileid' => 0, 'name' => 'no-id.pdf'],
+						['fileid' => 35, 'name' => 'Welcome.docx'],
+					];
+				}
+			);
+
+		$result = $this->service->extractPendingFiles(2);
+
+		$this->assertSame([0, 0], $seenOffsets, 'zonder mislukkingen mag de offset niet opschuiven');
+		$this->assertSame(1, $result['processed']);
+		$this->assertSame(0, $result['failed']);
+	}//end testAWindowWithoutFailuresLeavesTheOffsetWhereItIs()
+
 }//end class
