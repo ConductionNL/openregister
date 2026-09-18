@@ -1144,6 +1144,9 @@ return [
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
+        // a longer path must be declared first or the generic one swallows it.
+        ['name' => 'objects#referenceOptions', 'url' => '/api/objects/{register}/{schema}/{id}/reference-options', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],

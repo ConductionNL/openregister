@@ -457,6 +457,22 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// 🔴 THE RUN AUTHORIZATION IS REGISTERED EXPLICITLY, because its
+		// failure mode is total. `FlowService` takes it as a NULLABLE argument
+		// and an absent one is UNDECIDABLE, which refuses every run — correct
+		// for a security control, and an outage if the container quietly
+		// declined to build it. A named registration turns that into a loud
+		// container error instead of a fleet of refusals nobody can explain
+		// (change `flow-runs-honour-their-declaration`).
+		$context->registerService(
+			\OCA\OpenRegister\Service\Flow\FlowRunAuthorization::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Flow\FlowRunAuthorization(
+					access: $c->get(\OCA\OpenRegister\Service\Flow\FlowAccess::class),
+				);
+			}
+		);
+
 		// 🔴 THE TOKEN GRANT SOURCE MUST BE SHARED, and this is not a
 		// performance argument. It is BOUND in the authentication path, where a
 		// Consumer is resolved, and READ in the permission handler, where the

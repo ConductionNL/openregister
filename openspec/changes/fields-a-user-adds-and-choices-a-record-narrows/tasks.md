@@ -122,11 +122,31 @@
     comparison the objects API already answers, so a filter cannot declare
     something the options read would have to emulate in PHP over an unbounded
     set.
-- [ ] 3.2 The options read applies the filter, paged and access-scoped.
-  - STILL OPEN, and it needs a surface that does not exist: there is no
-    reference-options endpoint. `/api/vocabulary/options` is the CONCEPT one.
-    The resolver 3.4 built is the half that endpoint will call, so the rule is
-    written once rather than twice.
+- [x] 3.2 The options read applies the filter, paged and access-scoped.
+  - UNBLOCKED AND BUILT. `GET /api/objects/{register}/{schema}/{id}/reference-options?property=<name>`,
+    declared BEFORE `objects#show` because `{id}` matches `[^/]+` and the
+    generic route would otherwise swallow it. Verified by PARSING
+    `appinfo/routes.php` and checking the index ordering, not by grepping for
+    the string.
+  - IT CALLS THE SAME `resolve()` THE SAVE PATH CALLS. A picker that offers one
+    set while the save path accepts another is two evaluators of one rule.
+  - 🔴 NO OPTIONS IS NOT EVERY OPTION. An unresolved operand answers an EMPTY
+    list, names the property it waits for, with HTTP 200. Returning the
+    unfiltered set would show every contact in the register to somebody who had
+    not yet chosen an organisation. Mutation-checked.
+  - `_draft[...]` merges over the stored record, because the case a picker
+    exists for is a form being filled in and those values are not saved yet.
+  - PAGED AND CAPPED. `_limit=0` means the DEFAULT, not `LIMIT 0`, which would
+    be an empty page with a 200 and no explanation; and a page is capped so a
+    picker cannot become a bulk export of the referenced register.
+  - ACCESS-SCOPED by running the ordinary object search with `_rbac` on. A
+    picker is not a way to see objects you may not see.
+  - An unknown property is REFUSED, not answered as empty: "no options" for a
+    typo reads exactly like a filter waiting on an operand.
+  - The e2e is WRITTEN AND TAGGED, NOT RUN: no Playwright runner on this host.
+    It asserts the STATUS of every call, because an earlier spec in this change
+    guessed a URL and a 404 would have been skipped by the suite's own
+    old-build guard, reporting green while asserting nothing.
 - [x] 3.3 A write of a value outside the filter is refused on the server, naming the filter.
   - `SaveObject::assertReferenceMatchesFilter()`, called from
     `validateReferences()` right after the existence check, throwing the
