@@ -3,8 +3,8 @@
 ## 1. The projection
 
 - [x] 1.1 A narrow, indexed projection of lifecycle transitions: object, property, value, entered, left.
-- [ ] 1.2 A rebuild from the recorded transitions, resumable and bounded.
-- [ ] 1.3 The projection is pruned with the trail it derives from.
+- [x] 1.2 A rebuild from the recorded transitions, resumable and bounded.
+- [x] 1.3 The projection is pruned with the trail it derives from.
 
 ## 2. The predicate
 
@@ -113,3 +113,46 @@ mistake there is invisible; that is why the provider says at INFO which scheme
 it could not find, and why a failed load logs at WARNING. That trail is not
 decoration: while building this, a named-argument typo in my own code was
 swallowed by the fail-soft catch, and the warning line is what found it.
+
+## Status of 1.2 and 1.3, 2026-09-18
+
+**1.2, the rebuild.** `StateHistoryRebuild` derives a line from the audit
+trail's recorded changes, and `StateHistoryRebuildJob` walks the instance a
+batch at a time.
+
+- **Resumable:** each run takes the next 200 objects after a stored cursor and
+  stops. The cursor moves even when a batch wrote nothing, because most objects
+  have no lifecycle property and a cursor that only advanced on success would
+  walk the same batch forever.
+- **Asked for, not automatic:** the job does nothing unless
+  `stateHistoryRebuild` is set, and clears the flag when it reaches the end. A
+  rebuild is a repair; run unasked it would re-derive the whole instance nightly
+  for nothing.
+- **The first recorded change contributes TWO intervals.** Its `old` value is
+  where the object was until that moment, with no known start. Dropping it
+  would lose every state held before the first recorded transition, which is
+  the exact set a rebuild exists to recover.
+- **The property is the one the schema declares**, the same rule the live
+  projection follows. The trail records every changed field, so a rebuild
+  reading "whatever changed" would file intervals under keys no schema declares
+  as states — and the filter would then be able to name them.
+- Rebuilding one object REPLACES its line. A second pass that appended would
+  double every interval.
+
+**1.3, pruning.** The projection derives from the audit trail's `changed`
+payload, and the retention purge destroys that payload while keeping the row.
+`LogCleanUpTask` now reconciles the two in the same hourly sweep, AFTER the
+purge that creates the condition: for each object with purged rows, closed
+intervals ending at or before its newest purged moment are dropped.
+
+**Only CLOSED intervals go.** The open one describes the state the object is in
+now, which the object itself still asserts; it is not derived from the purged
+payload, and dropping it would make a case sitting in bezwaar for ten years
+vanish from "was ever in bezwaar" the day its oldest audit row expired.
+
+**Not covered by a test:** the three new queries, like the projection's own.
+They need a database. What the tests pin is the derivation — the part that
+decides what the line SAYS — and the replace-don't-append contract.
+
+Section 3's remaining piece (a seeded empty pair of concept schemes) and 4.2's
+e2e are still open, with their reasons above.
