@@ -981,11 +981,16 @@ class ObjectsController extends Controller {
 		// SEC-CTRL-1: This path does NOT read rbac/multi from the request, so the
 		// request-controlled bypass does not apply here. Derive the posture from
 		// admin status for completeness and forward it on the query.
-		// TODO(SEC-CTRL-1): MagicMapper::searchAcrossMultipleTables() and its
-		// union/sequential builders currently apply NO RBAC or multitenancy filter
-		// (they ignore these query flags). Enforcing per-pair RBAC/tenant scoping
-		// lives in lib/Db/MagicMapper.php (out of this controller's scope) and must
-		// be wired there before cross-table search is exposed to non-admins.
+		//
+		// SEC-CTRL-1 IS CLOSED, and the note is kept because the flags below only
+		// mean something now that the builders honour them. Both cross-table
+		// builders read these flags: the sequential one always did (it goes
+		// through searchObjectsInRegisterSchemaTable), and the UNION one carried
+		// the RBAC half and NOT the organisation half — so a non-admin's
+		// cross-table search returned rows from other organisations. That half is
+		// wired in MagicSearchHandler::buildWhereConditionsSql(), which now takes
+		// the same multitenancy decision as the QueryBuilder path and renders it
+		// for the string-built arms.
 		$isAdmin = $this->isCurrentUserAdmin();
 		$query['_rbac'] = ($isAdmin === false);
 		$query['_multitenancy'] = ($isAdmin === false);
