@@ -39,6 +39,8 @@ namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use Throwable;
@@ -56,11 +58,15 @@ class AccessLinkMintGuard {
 	 * @param ObjectService $objects The object read path, asked with the rules on.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param ViewMapper        $views    Resolves a view under the caller's own rules.
+	 * @param RegisterMapper $registers Resolves the registers a view names, same rules.
+	 * @param SchemaMapper $schemas Resolves the schemas a view names, same rules.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly AccessLinkSubject $subjects,
 		private readonly ViewMapper $views,
+		private readonly RegisterMapper $registers,
+		private readonly SchemaMapper $schemas,
 	) {
 
 	}//end __construct()
@@ -151,12 +157,68 @@ class AccessLinkMintGuard {
 		// defaults — asks the question this method's name claims to ask, and a
 		// refusal is a refusal rather than a quietly widened search.
 		try {
-			$this->views->find($viewId);
+			$view = $this->views->find($viewId);
 		} catch (Throwable $denied) {
 			unset($denied);
 			return false;
 		}
 
-		return true;
+		return $this->mayReadEverythingTheViewNames(viewQuery: $view->getQuery());
 	}//end mayPublishView()
+
+	/**
+	 * Whether the caller may read every register and schema the view's query names.
+	 *
+	 * Resolving the view row proves the caller may see the VIEW. It says nothing
+	 * about what the view points at, and a view's stored query is caller-supplied:
+	 * `POST /api/views` is `#[NoAdminRequired]` and copies `configuration.registers`
+	 * and `configuration.schemas` into the stored query verbatim, with no check
+	 * against the caller's organisation. So a view you legitimately own, in your
+	 * own organisation, may name another organisation's register ids.
+	 *
+	 * That is harmless only for as long as those ids fail to reach the query. They
+	 * now do - the array bound no longer collapses in MagicMapper - and a link mints
+	 * a reader that runs with RBAC and multitenancy OFF. Register and schema ids are
+	 * auto-increment integers, so an unchecked view is an enumerable cross-tenant
+	 * read from an ordinary account. The two fixes belong in the same change.
+	 *
+	 * Resolved at the caller's own defaults: `_rbac` and `_multitenancy` both true.
+	 *
+	 * @param array<string, mixed>|null $viewQuery The view's stored query.
+	 *
+	 * @return bool True when every register and schema it names answers this caller.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
+	 */
+	private function mayReadEverythingTheViewNames(?array $viewQuery): bool {
+		if ($viewQuery === null) {
+			return true;
+		}
+
+		$registers = ($viewQuery['registers'] ?? []);
+		if (is_array($registers) === true) {
+			foreach ($registers as $registerId) {
+				try {
+					$this->registers->find($registerId);
+				} catch (Throwable $denied) {
+					unset($denied);
+					return false;
+				}
+			}
+		}
+
+		$schemas = ($viewQuery['schemas'] ?? []);
+		if (is_array($schemas) === true) {
+			foreach ($schemas as $schemaId) {
+				try {
+					$this->schemas->find($schemaId);
+				} catch (Throwable $denied) {
+					unset($denied);
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}//end mayReadEverythingTheViewNames()
 }//end class
