@@ -11,6 +11,7 @@ use OCA\OpenRegister\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use OCP\IUser;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -23,6 +24,7 @@ class ViewsControllerTest extends TestCase {
 	private ViewPresentationService&MockObject $viewPresentationService;
 	private IUserSession&MockObject $userSession;
 	private LoggerInterface&MockObject $logger;
+	private IGroupManager&MockObject $groupManager;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -32,6 +34,7 @@ class ViewsControllerTest extends TestCase {
 		$this->viewPresentationService = $this->createMock(ViewPresentationService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 
 		$this->controller = new ViewsController(
 			'openregister',
@@ -39,7 +42,8 @@ class ViewsControllerTest extends TestCase {
 			$this->viewService,
 			$this->viewPresentationService,
 			$this->userSession,
-			$this->logger
+			$this->logger,
+			$this->groupManager
 		);
 	}
 
@@ -76,7 +80,7 @@ class ViewsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('findAll')->willReturn([$view]);
+		$this->viewService->method('findAllFor')->willReturn([$view]);
 
 		$result = $this->controller->index();
 
@@ -237,7 +241,7 @@ class ViewsControllerTest extends TestCase {
 			$views[] = $v;
 		}
 
-		$this->viewService->method('findAll')->willReturn($views);
+		$this->viewService->method('findAllFor')->willReturn($views);
 
 		$result = $this->controller->index();
 
@@ -266,7 +270,7 @@ class ViewsControllerTest extends TestCase {
 			$views[] = $v;
 		}
 
-		$this->viewService->method('findAll')->willReturn($views);
+		$this->viewService->method('findAllFor')->willReturn($views);
 
 		$result = $this->controller->index();
 
@@ -295,7 +299,7 @@ class ViewsControllerTest extends TestCase {
 			$views[] = $v;
 		}
 
-		$this->viewService->method('findAll')->willReturn($views);
+		$this->viewService->method('findAllFor')->willReturn($views);
 
 		$result = $this->controller->index();
 
@@ -309,7 +313,7 @@ class ViewsControllerTest extends TestCase {
 	public function testIndexException(): void {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn([]);
-		$this->viewService->method('findAll')
+		$this->viewService->method('findAllFor')
 			->willThrowException(new \Exception('DB error'));
 
 		$this->logger->expects($this->once())->method('error');
