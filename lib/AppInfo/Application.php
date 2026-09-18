@@ -130,6 +130,8 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\AdministeredValidationListener;
+use OCA\OpenRegister\Listener\WorkingCalendarChangedListener;
 use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
@@ -451,6 +453,22 @@ class Application extends App implements IBootstrap {
 					appConfig: $c->get(\OCP\IAppConfig::class),
 					container: $c,
 					logger: $c->get(\Psr\Log\LoggerInterface::class),
+				);
+			}
+		);
+
+		// 🔴 THE RUN AUTHORIZATION IS REGISTERED EXPLICITLY, because its
+		// failure mode is total. `FlowService` takes it as a NULLABLE argument
+		// and an absent one is UNDECIDABLE, which refuses every run — correct
+		// for a security control, and an outage if the container quietly
+		// declined to build it. A named registration turns that into a loud
+		// container error instead of a fleet of refusals nobody can explain
+		// (change `flow-runs-honour-their-declaration`).
+		$context->registerService(
+			\OCA\OpenRegister\Service\Flow\FlowRunAuthorization::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Flow\FlowRunAuthorization(
+					access: $c->get(\OCA\OpenRegister\Service\Flow\FlowAccess::class),
 				);
 			}
 		);
@@ -3190,6 +3208,21 @@ class Application extends App implements IBootstrap {
 		// questions about.
 		$context->registerEventListener(ObjectCreatingEvent::class, StateFieldRuleListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, StateFieldRuleListener::class);
+
+		// The administrator's own checks, on the SAME two events, which is the
+		// whole of REQ-RCT-005: every write funnels through the two mapper
+		// methods that dispatch these, so a validation cannot be skipped by a
+		// path added later, and RuleEvaluationPointTest names that path if one
+		// tries (row 11.53).
+		$context->registerEventListener(ObjectCreatingEvent::class, AdministeredValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, AdministeredValidationListener::class);
+
+		// A working calendar was saved, so the deadlines it governs are
+		// re-projected — off the write, as one queued job per calendar version
+		// (row Q8.17, ADR-078). On the UPDATED event rather than the UPDATING
+		// one: nothing should be recomputed against a calendar whose save might
+		// still be refused.
+		$context->registerEventListener(ObjectUpdatedEvent::class, WorkingCalendarChangedListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into

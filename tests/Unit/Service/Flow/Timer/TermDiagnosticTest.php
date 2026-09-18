@@ -256,25 +256,50 @@ class TermDiagnosticTest extends TestCase {
 	}//end testALadderReturnsTheInstantOfEachRung()
 
 	/**
-	 * 🔴 A requested roll is REFUSED, because the engine has none.
+	 * 🔴 The roll is NARRATED, through the engine's own roll.
 	 *
-	 * Applying one here would print a fire moment the arm path never produces,
-	 * and it would be believed precisely because it came from the diagnostic.
+	 * This test used to assert a refusal, and correctly: `SlaCalculator` had no
+	 * roll, so applying one here would have printed a fire moment the arm path
+	 * never produces — believed precisely because it came from the diagnostic.
+	 * The engine has the roll now and this calls it, rather than walking the
+	 * calendar a second time.
+	 *
+	 * 2 April 2026 + 2 calendar days is Saturday 4 April; Easter Sunday is the
+	 * 5th and Tweede Paasdag the 6th, so `next` lands on Tuesday the 7th.
 	 *
 	 * @return void
 	 */
-	public function testARequestedRollIsRefusedBecauseTheEngineHasNone(): void {
+	public function testARequestedRollIsNarratedThroughTheEnginesOwnRoll(): void {
+		$result = $this->diagnostic->explain(
+			calendar: $this->calendar,
+			anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
+			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS, 'rollToWorkingDay' => 'next']
+		);
+
+		$this->assertSame('next', $result['roll']);
+		$this->assertSame('2026-04-07', substr((string)$result['firesAt'], 0, 10));
+		$this->assertSame('2026-04-04', substr((string)$result['unrolledAt'], 0, 10));
+		$this->assertSame('weekend', $result['rolledBy'], 'the Saturday stopped it, not the Monday it walked past');
+		$this->assertTrue($result['firesOnWorkingDay']);
+	}//end testARequestedRollIsNarratedThroughTheEnginesOwnRoll()
+
+	/**
+	 * A roll outside the vocabulary is still refused, not defaulted.
+	 *
+	 * @return void
+	 */
+	public function testARollOutsideTheVocabularyIsRefused(): void {
 		try {
 			$this->diagnostic->explain(
 				calendar: $this->calendar,
 				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
-				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS, 'rollToWorkingDay' => 'next']
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS, 'rollToWorkingDay' => 'nextWorkingDay']
 			);
-			$this->fail('a roll the engine cannot apply must not be narrated as if it had been');
+			$this->fail('an unknown roll must not be read as none');
 		} catch (FlowTimerValidationException $e) {
-			$this->assertStringContainsString('has no roll', $e->getMessage(), 'and the refusal says why');
+			$this->assertStringContainsString('refused', $e->getMessage());
 		}
-	}//end testARequestedRollIsRefusedBecauseTheEngineHasNone()
+	}//end testARollOutsideTheVocabularyIsRefused()
 
 	/**
 	 * The control: no roll asked for is `none`, and explains fine.

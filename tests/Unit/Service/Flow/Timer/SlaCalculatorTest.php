@@ -112,11 +112,147 @@ class SlaCalculatorTest extends TestCase {
 		self::assertSame(5.0, $this->calculator->convert(value: 5, fromUnit: 'hours', toUnit: 'hours', calendar: $this->calendar));
 	}//end testConversionPivotsOnWorkingHours()
 
-	public function testSlaShapeIsValidated(): void {
-		self::assertSame(['value' => 5, 'unit' => 'businessDays'], $this->calculator->validateSla(sla: ['value' => '5', 'unit' => 'businessDays']));
-		self::assertSame(['value' => 10000, 'unit' => 'hours'], $this->calculator->validateSla(sla: ['value' => 10000, 'unit' => 'hours']));
+	/**
+	 * The default is OFF, and this is the test that keeps it off.
+	 *
+	 * Rolling changes a deadline. One that moved because the software thought
+	 * it should is worse than one that lands on a Sunday, so a budget that says
+	 * nothing about rolling gets exactly the moment it got before this existed.
+	 *
+	 * @return void
+	 */
+	public function testWithoutARollTheDeadlineStaysWhereTheBudgetPutIt(): void {
+		// 42 calendar days from 23 February 2026 is Sunday 5 April 2026, which
+		// is Easter Sunday on this calendar.
+		$landed = $this->calculator->add(from: $this->at('2026-02-22 09:00'), value: 42, unit: 'calendarDays', calendar: $this->calendar);
+		self::assertSame('2026-04-05 09:00 Sunday', $landed->format('Y-m-d H:i l'));
 
-		foreach ([['value' => 0, 'unit' => 'hours'], ['value' => 10001, 'unit' => 'hours'], ['value' => 1.5, 'unit' => 'hours'], ['value' => 2, 'unit' => 'weeks'], ['value' => 2], 'nope'] as $bad) {
+		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NONE, calendar: $this->calendar);
+		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
+		self::assertNull($rolled['unrolledAt'], 'nothing moved, so nothing is reported as having moved');
+		self::assertNull($rolled['rolledBy']);
+	}//end testWithoutARollTheDeadlineStaysWhereTheBudgetPutIt()
+
+	/**
+	 * The Easter cluster: Sunday the 5th and Tweede Paasdag the 6th, so `next`
+	 * walks to Tuesday the 7th and keeps the time of day.
+	 *
+	 * @return void
+	 */
+	public function testNextWalksTheWholeEasterCluster(): void {
+		$landed = $this->at('2026-04-05 09:00');
+		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+
+		self::assertSame('2026-04-07 09:00 Tuesday', $rolled['at']->format('Y-m-d H:i l'));
+		self::assertSame('2026-04-05', $rolled['unrolledAt']->format('Y-m-d'));
+		self::assertSame('weekend', $rolled['rolledBy'], 'the Sunday stopped it, not the Monday it walked past');
+	}//end testNextWalksTheWholeEasterCluster()
+
+	/**
+	 * A named holiday is named, in the calendar's own words.
+	 *
+	 * The name comes from the rule an administrator declared. This class knows
+	 * one name, `weekend`, because it is the one rule it decides itself.
+	 *
+	 * @return void
+	 */
+	public function testANamedHolidayIsReportedByItsDeclaredName(): void {
+		// Tweede Paasdag 2026 is Monday 6 April.
+		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 14:30'), roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+
+		self::assertSame('2026-04-07 14:30', $rolled['at']->format('Y-m-d H:i'));
+		self::assertSame('Tweede Paasdag', $rolled['rolledBy']);
+	}//end testANamedHolidayIsReportedByItsDeclaredName()
+
+	/**
+	 * `previous` walks the other way, and keeps the time of day.
+	 *
+	 * @return void
+	 */
+	public function testPreviousWalksBackwards(): void {
+		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 16:45'), roll: SlaCalculator::ROLL_PREVIOUS, calendar: $this->calendar);
+
+		// Back past Easter Sunday and the Saturday to Friday 3 April — which is
+		// Goede Vrijdag on this calendar, so back again to Thursday the 2nd.
+		self::assertSame('2026-04-02 16:45 Thursday', $rolled['at']->format('Y-m-d H:i l'));
+		self::assertSame('Tweede Paasdag', $rolled['rolledBy']);
+	}//end testPreviousWalksBackwards()
+
+	/**
+	 * Koningsdag on a Sunday is observed the day before, and the roll follows
+	 * the calendar's observed date rather than the nominal one.
+	 *
+	 * 27 April 2031 is a Sunday, so the calendar observes Koningsdag on the
+	 * 26th; both days are non-working and `next` lands on Monday the 28th.
+	 *
+	 * @return void
+	 */
+	public function testAnObservedShiftIsFollowed(): void {
+		$rolled = $this->calculator->roll(moment: $this->at('2031-04-26 09:00'), roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+
+		self::assertSame('2031-04-28 09:00 Monday', $rolled['at']->format('Y-m-d H:i l'));
+		self::assertSame('Koningsdag', $rolled['rolledBy'], 'the observed date is the one that stopped it');
+	}//end testAnObservedShiftIsFollowed()
+
+	/**
+	 * A business-day budget already lands on a working day, so the option is
+	 * accepted and changes nothing.
+	 *
+	 * @return void
+	 */
+	public function testABusinessDayBudgetNeedsNoRoll(): void {
+		$landed = $this->calculator->add(from: $this->at('2026-04-02 09:00'), value: 1, unit: 'businessDays', calendar: $this->calendar);
+		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+
+		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
+		self::assertNull($rolled['unrolledAt']);
+	}//end testABusinessDayBudgetNeedsNoRoll()
+
+	/**
+	 * With no calendar there is nothing to roll against, and the moment stands.
+	 *
+	 * Inventing a working week here would move a deadline by a rule nobody
+	 * declared, which is the one thing this option must never do.
+	 *
+	 * @return void
+	 */
+	public function testWithoutACalendarNothingRolls(): void {
+		$landed = $this->at('2026-04-05 09:00');
+		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NEXT, calendar: null);
+
+		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
+		self::assertNull($rolled['rolledBy']);
+	}//end testWithoutACalendarNothingRolls()
+
+	public function testSlaShapeIsValidated(): void {
+		// The normalised shape now carries the roll, defaulting to `none`: a
+		// deadline that moved without anybody asking is worse than one that
+		// lands on a Sunday.
+		self::assertSame(
+			['value' => 5, 'unit' => 'businessDays', 'rollToWorkingDay' => 'none'],
+			$this->calculator->validateSla(sla: ['value' => '5', 'unit' => 'businessDays'])
+		);
+		self::assertSame(
+			['value' => 10000, 'unit' => 'hours', 'rollToWorkingDay' => 'none'],
+			$this->calculator->validateSla(sla: ['value' => 10000, 'unit' => 'hours'])
+		);
+		self::assertSame(
+			['value' => 42, 'unit' => 'calendarDays', 'rollToWorkingDay' => 'next'],
+			$this->calculator->validateSla(sla: ['value' => 42, 'unit' => 'calendarDays', 'rollToWorkingDay' => 'next'])
+		);
+
+		$refusals = [
+			['value' => 0, 'unit' => 'hours'],
+			['value' => 10001, 'unit' => 'hours'],
+			['value' => 1.5, 'unit' => 'hours'],
+			['value' => 2, 'unit' => 'weeks'],
+			['value' => 2],
+			'nope',
+			// An unknown roll is refused, not read as `none`. On a deadline
+			// with legal effect a silent default is the worst kind.
+			['value' => 2, 'unit' => 'hours', 'rollToWorkingDay' => 'nextWorkingDay'],
+		];
+		foreach ($refusals as $bad) {
 			try {
 				$this->calculator->validateSla(sla: $bad);
 				self::fail('accepted ' . json_encode($bad));

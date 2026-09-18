@@ -43,6 +43,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -171,6 +173,11 @@ class AggregationRunner {
 		private readonly LanguageService $languageService,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?DbalObjectSourceProvider $dbalSourceProvider = null,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED property's aggregate is withheld, which is the
+		// safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 		$this->scopedResolver = new RegisterScopedSchemaResolver(
 			registerMapper: $registerMapper,
@@ -336,6 +343,26 @@ class AggregationRunner {
 		$field = ($spec['field'] ?? null);
 		$filter = (array)($spec['filter'] ?? $spec['where'] ?? []);
 		$groupBy = ($spec['groupBy'] ?? null);
+
+		// 🔴 THE GATE ABOVE IS LIST PERMISSION ON THE SCHEMA, WHICH IS A
+		// DIFFERENT QUESTION FROM THIS ONE. A caller may be entitled to list a
+		// register and still not be entitled to read one of its properties, and
+		// a SUM over a salary nobody may read IS the salary total. Same for a
+		// groupBy: its keys are the distinct values of the column.
+		//
+		// `$bypassRbac` is honoured because it is how internal callers compute
+		// figures for somebody else, and those callers have already decided who
+		// may see the result.
+		if ($bypassRbac === false) {
+			$this->assertFieldsAreReadable(
+				schema: $schema,
+				fields: array_merge(
+					($field === null ? [] : [(string)$field]),
+					$this->groupByFields(groupBy: $groupBy),
+					$this->metricFields(metrics: $metrics)
+				)
+			);
+		}
 
 		// Normalized groupBy spec (array or null) — used both for the native
 		// path argument and for translatable group-key projection.
@@ -4476,4 +4503,120 @@ class AggregationRunner {
 
 		return null;
 	}//end getAnnotation()
+	/**
+	 * Refuse an aggregate over a property this caller may not read.
+	 *
+	 * @param Schema             $schema The schema.
+	 * @param array<int, string> $fields Every property the aggregate touches.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When any of them is not readable.
+	 *
+	 * @spec openspec/changes/aggregate-paths-ask-permission/specs/rbac-scopes/spec.md
+	 */
+	private function assertFieldsAreReadable(Schema $schema, array $fields): void {
+		$named = [];
+		foreach ($fields as $field) {
+			$name = trim((string)$field);
+			// A metadata field is governed by row access, not by a property
+			// rule, and there is no schema property to look up for it.
+			if ($name === '' || str_starts_with($name, '@self') === true) {
+				continue;
+			}
+
+			$named[$name] = true;
+		}
+
+		$split = $this->aggregateVisibility()->partition(
+			schema: $schema,
+			fields: array_keys($named)
+		);
+
+		if ($split['withheld'] === []) {
+			return;
+		}
+
+		// REFUSED, NOT SILENTLY ZEROED. An aggregation returns one number, and
+		// there is nowhere in that number to say part of it was withheld, so
+		// the only honest answers are the figure or a refusal.
+		throw new NotAuthorizedException(
+			sprintf(
+				'This aggregation reads %s, which you may not read, so it cannot be computed for you.',
+				implode(', ', $split['withheld'])
+			)
+		);
+	}//end assertFieldsAreReadable()
+
+	/**
+	 * The property names a groupBy spec refers to.
+	 *
+	 * @param mixed $groupBy The groupBy spec.
+	 *
+	 * @return array<int, string> The names.
+	 */
+	private function groupByFields(mixed $groupBy): array {
+		if (is_string($groupBy) === true) {
+			return [$groupBy];
+		}
+
+		if (is_array($groupBy) === false) {
+			return [];
+		}
+
+		$fields = [];
+		foreach ($groupBy as $key => $entry) {
+			if (is_string($entry) === true) {
+				$fields[] = $entry;
+				continue;
+			}
+
+			if (is_array($entry) === true && is_string(($entry['field'] ?? null)) === true) {
+				$fields[] = $entry['field'];
+				continue;
+			}
+
+			// A map keyed by field name is the other shape this spec takes.
+			if (is_string($key) === true) {
+				$fields[] = $key;
+			}
+		}
+
+		return $fields;
+	}//end groupByFields()
+
+	/**
+	 * The property names a metrics spec refers to.
+	 *
+	 * @param array<mixed>|null $metrics The metrics spec.
+	 *
+	 * @return array<int, string> The names.
+	 */
+	private function metricFields(?array $metrics): array {
+		if ($metrics === null) {
+			return [];
+		}
+
+		$fields = [];
+		foreach ($metrics as $metric) {
+			if (is_array($metric) === true && is_string(($metric['field'] ?? null)) === true) {
+				$fields[] = $metric['field'];
+			}
+		}
+
+		return $fields;
+	}//end metricFields()
+
+	/**
+	 * The shared answer to "may a summary over this property be shown".
+	 *
+	 * Built here rather than injected so every existing construction of this
+	 * runner keeps working; it holds no state.
+	 *
+	 * @return AggregateVisibility The answer.
+	 */
+	private function aggregateVisibility(): AggregateVisibility {
+		return new AggregateVisibility($this->propertyRbac, $this->logger);
+	}//end aggregateVisibility()
+
 }//end class

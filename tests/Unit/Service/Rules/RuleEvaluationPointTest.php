@@ -212,6 +212,58 @@ class RuleEvaluationPointTest extends TestCase {
 	}//end testTheRuleListenersAreSubscribedToThoseEvents()
 
 	/**
+	 * 🔴 The administered validations are subscribed to the SAME two events.
+	 *
+	 * REQ-RCT-005 asks that a validation an administrator wrote be reached by
+	 * every write path — the object API, an import, a flow node write, a bulk
+	 * job. That is not a claim any test of today's paths can keep: it rests on
+	 * the validations hanging off the same two events every write dispatches.
+	 * A path added later that bypasses the pipeline fails the test above and is
+	 * named there; a validation quietly unsubscribed fails here.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
+	 */
+	public function testTheAdministeredValidationsAreSubscribedToThoseEvents(): void {
+		$application = (string)file_get_contents($this->lib() . '/AppInfo/Application.php');
+
+		foreach (['ObjectCreatingEvent', 'ObjectUpdatingEvent'] as $event) {
+			$this->assertStringContainsString(
+				needle: sprintf(
+					'registerEventListener(%s::class, AdministeredValidationListener::class)',
+					$event
+				),
+				haystack: $application,
+				message: sprintf(
+					'An administered validation no longer reaches %s, so a write on that path skips every check an administrator wrote.',
+					$event
+				)
+			);
+		}
+
+	}//end testTheAdministeredValidationsAreSubscribedToThoseEvents()
+
+	/**
+	 * The administered validations record their verdict too.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
+	 */
+	public function testTheAdministeredValidationsRecordTheirVerdict(): void {
+		$source = (string)file_get_contents($this->lib() . '/Listener/AdministeredValidationListener.php');
+
+		$this->assertStringContainsString(
+			needle: 'RuleRunRecorder',
+			haystack: $source,
+			message: 'AdministeredValidationListener no longer records its verdict; the run log has a blind spot.'
+		);
+		$this->assertStringContainsString(needle: '->record(', haystack: $source);
+
+	}//end testTheAdministeredValidationsRecordTheirVerdict()
+
+	/**
 	 * Both listeners record what they decided.
 	 *
 	 * The run log is only as complete as the paths that write to it, so a
