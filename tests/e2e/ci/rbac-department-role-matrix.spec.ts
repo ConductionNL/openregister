@@ -43,10 +43,14 @@ const OWNER = 'e2e-owner'
 const OTHER = 'e2e-other'
 const PASS = 'E2e-Share-Pass-123'
 
-/** The group the matrix rows name, and the two department groups. */
+/**
+ * The group the matrix rows name, and the one department group this run
+ * creates. There is deliberately no `dept:Belastingen-…` group: the other
+ * department exists only as a field value on a seeded object, because the
+ * principal we probe with must belong to no department at all.
+ */
 const ROLE_GROUP = `e2e-handlers-${RUN}`
 const DEPT_OWNER = `dept:VTH-${RUN}`
-const DEPT_OTHER = `dept:Belastingen-${RUN}`
 
 /** Build an API context authenticated as one user. */
 async function contextFor(

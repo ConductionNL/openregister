@@ -352,7 +352,7 @@
 
 						<NcButton
 							v-if="maintenance.holds"
-							type="primary"
+							variant="primary"
 							:disabled="acting === 'maintenance'"
 							@click="leaveMaintenance">
 							{{ t('openregister', 'Open the register again') }}
