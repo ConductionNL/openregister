@@ -1,3 +1,47 @@
+# Tasks: object-level-sharing-and-private-scope
+
+> 🔑 **RE-MEASURED 2026-09-18, because "mostly done, remainder blocked" is the
+> kind of note that stops anyone looking.** Standing at 69 done, 13 open. What
+> the thirteen actually are, measured against the code rather than read off the
+> task text:
+>
+> **Two were already true and are now closed.** 8.6 asks to collapse `scope` as
+> the ACCESS discriminator; `ObjectScopeResolver` holds exactly `organisation`
+> and `private`, with no `personal` anywhere in it, so there is nothing left to
+> collapse. 8.7 asks to prove an organisation credential minted before that
+> still reads afterwards, and it now has a test — see below.
+>
+> **One task's text is stale in a way worth stating precisely.** 9.2 says
+> `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` run a
+> flow with "zero ownership checks today". That is no longer literally so: all
+> three now resolve through `FlowService::find()`, which throws for a flow
+> outside the caller's active organisation, and `test()` additionally requires
+> the `flow.update` right. **The substance of the task still stands**: that is
+> TENANT scoping plus a global capability, not per-flow run authorization. Any
+> colleague holding `flow.update` can test-run any flow in the organisation.
+>
+> **And 9.1's read authorization does not reach the run path.** 9.1 declared
+> `scope: private` on the `flow` SCHEMA in `flow_register.json`, which governs
+> flows as OBJECTS. The run entry points load flows through `FlowMapper`, a
+> `QBMapper` on the native `openregister_flows` table. Two stores, one
+> declaration, and the declaration governs the store the run path does not use.
+> Whoever closes 9.2 needs that fact before they start, so it is written here
+> rather than rediscovered.
+>
+> **Four are frontend** (6.3, 6.4, 6.5, 10.5): the shared-with-me widget, its
+> catalogue registration, its icons and the e2e that reads them.
+> **Two need a second instance** (7.2, 7.3): federated grant parity and
+> revocation, unprovable on one.
+> **Three are sequenced behind other work** (8.3 doriath dashboards and the
+> openregister credential/flow lists; 8.5 the data migration, which waits on
+> nothing reading the bespoke lists; 9.3, which waits on 9.2).
+> **One is a core limitation** (5.8): object verbs `run` and `use` in `IShare`'s
+> `IAttributes`, since core's bitmask has no such verbs.
+>
+> So: 2 closed here, 1 re-stated with its real shape and a finding attached,
+> and 10 that are genuinely waiting on a second instance, a frontend, a
+> migration or another owner. None of them is waiting on nothing.
+
 ## 1. Settle the remaining design questions
 
 > All seven are stated with their consequences in design.md "Open Questions".
@@ -261,8 +305,18 @@
       data migration, not a flag day. The verb is `use`, not `read` (Q6), which required building
       ADR-010's IAttributes half: grants can now carry extension verbs, and `grantCarriesVerb()`
       is separate from `isGranted()` so RBAC keeps answering only for the five core verbs
-- [ ] 8.6 Collapse `scope` as the ACCESS discriminator into `private` (Q7): `personal` -> private-with-no-invitations, `organisation` -> the default scope
-- [ ] 8.7 KEEP `scope` as the VAULT-OWNER selector, untouched — and test that an organisation credential minted BEFORE the collapse is still readable after it
+- [x] 8.6 MEASURED ALREADY TRUE, not built: `ObjectScopeResolver` holds
+      exactly `organisation` and `private`. There is no `personal` access
+      scope to collapse, and `CredentialScopeIsNotAnAccessScopeTest` asserts
+      that by reading the resolver's own constants — so if the two words ever
+      merge again, a test says so rather than a reader noticing.
+- [x] 8.7 `CredentialScopeIsNotAnAccessScopeTest`: an organisation credential
+      minted by one user is readable by ANOTHER — the second clause is the
+      point, because reading it back as the same user passes even if
+      `organisation` had quietly become per-user. With a personal-credential
+      control beside it, and an assertion that `private` falls through to the
+      per-user vault rather than the shared identity. Mutation-checked: removing
+      the organisation branch of the vault-owner selector reddens both.
 - [ ] 8.5 Remove the per-schema derived lists once nothing reads them, with a data migration — not before
 
 ## 9. Flows (BREAKING — last, and it unblocks the previous change)
