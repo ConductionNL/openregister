@@ -179,3 +179,29 @@ SPDX-FileCopyrightText = [
     "2026 Conduction B.V. <info@conduction.nl>",
 ]
 SPDX-License-Identifier = "Apache-2.0 AND EUPL-1.2"
+
+# ZGW example exports. The wrapper is an OpenRegister configuration export
+# (mappings, endpoints, our own metadata), but the embedded schema definitions
+# reproduce VNG Realisatie's ZGW API definitions verbatim — 25 occurrences of
+# "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van
+# dit object" across the four files, plus siblings like "Unieke resource
+# identifier (UUID4)". The sibling project.md names the four upstream standards
+# it was built from (ZTC/ZRC/DRC/BRC).
+#
+# Upstream licences, read from the repositories themselves: zaken-api
+# LICENCE.md, documenten-api LICENCE.md and besluiten-api LICENSE.md each say
+# "Copyright © VNG Realisatie 2018 / Licensed under the EUPL" followed by the
+# "EUROPEAN UNION PUBLIC LICENCE v. 1.2" text; catalogi-api LICENSE adds
+# "Zaaktypecatalogus, copyright (C) 2017 Maykin Media B.V, 2018 VNG Realisatie"
+# and links eupl.eu/1.2. Same licence as ours, different rights holder — the
+# ggm-snapshot.json case exactly, so it gets the same treatment rather than the
+# blanket.
+[[annotations]]
+path = "docs/static/oas/Examples/ZaakRegister/*.json"
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "2017 Maykin Media B.V.",
+    "2018 VNG Realisatie, https://github.com/VNG-Realisatie",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "EUPL-1.2"
