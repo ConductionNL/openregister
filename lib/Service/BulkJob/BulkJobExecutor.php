@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -165,6 +166,8 @@ class BulkJobExecutor {
 				$version = $this->schemaVersionOf(object: $object);
 			}
 
+			$plan = $this->reversalPlanOf(action: $action, object: $object, job: $job);
+
 			$this->memberMapper->createFromArray(
 				[
 					'jobId' => $job->getId(),
@@ -173,6 +176,8 @@ class BulkJobExecutor {
 					'reason' => $result->getReason(),
 					'schemaVersion' => $version,
 					'addedAtCommit' => $addedAtCommit,
+					'priorValues' => ($plan[ReversibleBulkActionInterface::PLAN_PRIOR] ?? null),
+					'appliedValues' => ($plan[ReversibleBulkActionInterface::PLAN_APPLIED] ?? null),
 				]
 			);
 		}
@@ -199,6 +204,7 @@ class BulkJobExecutor {
 		if ($members === []) {
 			$this->refreshCounts(job: $job);
 			$job->setState(BulkJob::STATE_COMPLETED);
+			$this->stampReversalDeadline(job: $job);
 			$this->jobMapper->save($job);
 
 			return false;
@@ -323,6 +329,12 @@ class BulkJobExecutor {
 			return;
 		}
 
+		// Re-read what the object holds NOW rather than trusting the preview's
+		// copy. Minutes or hours may have passed since the rehearsal, and a
+		// prior value captured then would restore the object to a state it
+		// left before this job ever wrote (D-2).
+		$plan = $this->reversalPlanOf(action: $action, object: $object, job: $job);
+
 		$result = $action->apply(
 			object: $object,
 			parameters: ($job->getParameters() ?? []),
@@ -332,6 +344,11 @@ class BulkJobExecutor {
 
 		if ($result->isApplied() === true) {
 			$this->recordAudit(job: $job, object: $object);
+
+			if ($plan !== null) {
+				$member->setPriorValues($plan[ReversibleBulkActionInterface::PLAN_PRIOR]);
+				$member->setAppliedValues($plan[ReversibleBulkActionInterface::PLAN_APPLIED]);
+			}
 		}
 
 		$this->recordOutcome(member: $member, result: $result, written: $result->isApplied());
@@ -371,6 +388,35 @@ class BulkJobExecutor {
 			rule: "the update rule on schema '".$schema->getTitle()."' does not include ".$actorUid
 		);
 	}//end refusalFor()
+
+	/**
+	 * What it would take to undo this action on this object, or null.
+	 *
+	 * Null for an action that did not declare itself reversible, which is the
+	 * whole of the "irreversible is declared" rule at the member level: no
+	 * prior value is stored, so no reversal can pretend to have one (D-4).
+	 *
+	 * @param BulkActionInterface $action The action.
+	 * @param ObjectEntity|null   $object The object, or null when unreadable.
+	 * @param BulkJob             $job    The job, for its parameters.
+	 *
+	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>}|null The plan.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	private function reversalPlanOf(BulkActionInterface $action, ?ObjectEntity $object, BulkJob $job): ?array {
+		if ($object === null || ($action instanceof ReversibleBulkActionInterface) === false) {
+			return null;
+		}
+
+		$plan = $action->reversalPlanFor(object: $object, parameters: ($job->getParameters() ?? []));
+
+		if (isset($plan[ReversibleBulkActionInterface::PLAN_PRIOR]) === false) {
+			return null;
+		}
+
+		return $plan;
+	}//end reversalPlanOf()
 
 	/**
 	 * Persist one member's outcome.
@@ -459,8 +505,30 @@ class BulkJobExecutor {
 
 		$job->setReport($report);
 		$job->setState(BulkJob::STATE_CANCELLED);
+		$this->stampReversalDeadline(job: $job);
 		$this->jobMapper->save($job);
 	}//end stopAtBoundary()
+
+	/**
+	 * Fix the reversal deadline at the moment the job stopped writing.
+	 *
+	 * The window runs from when the job actually wrote, not from when somebody
+	 * opened the dialog. Creation stamps a provisional deadline so the preview
+	 * can name one; this is the one a reversal is measured against.
+	 *
+	 * @param BulkJob $job The job that has just reached a terminal state.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	private function stampReversalDeadline(BulkJob $job): void {
+		if ($job->isReversible() === false) {
+			return;
+		}
+
+		$job->setReversibleUntil((new DateTime())->modify('+'.(int)$job->getReversalWindow().' seconds'));
+	}//end stampReversalDeadline()
 
 	/**
 	 * The actor a job runs as.

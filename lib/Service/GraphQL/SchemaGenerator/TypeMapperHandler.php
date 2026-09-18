@@ -25,6 +25,8 @@ use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 
 /**
  * Maps JSON Schema properties to GraphQL types and generates input types.
@@ -168,6 +170,10 @@ class TypeMapperHandler {
 		callable $objectTypeFactory,
 		callable $fieldNameConverter,
 		callable $typeNameConverter,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED property is withheld, which is the safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 		$this->scalars = $scalars;
 		$this->refResolver = $refResolver;
@@ -338,6 +344,15 @@ class TypeMapperHandler {
 				continue;
 			}
 
+			// A GraphQL type IS a description of the shape, and a field name is
+			// information. A governed property named here can be introspected by
+			// anyone who can reach the endpoint, and the governed names are the
+			// ones worth protecting: a property carries an authorization block
+			// or a scope precisely because it is sensitive.
+			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
+				continue;
+			}
+
 			$fieldName = ($this->fieldNameConverter)($name);
 
 			// Each filter field accepts the base type or a comparison object.
@@ -477,6 +492,15 @@ class TypeMapperHandler {
 
 		foreach ($properties as $name => $property) {
 			if (is_array(value: $property) === false) {
+				continue;
+			}
+
+			// A GraphQL type IS a description of the shape, and a field name is
+			// information. A governed property named here can be introspected by
+			// anyone who can reach the endpoint, and the governed names are the
+			// ones worth protecting: a property carries an authorization block
+			// or a scope precisely because it is sensitive.
+			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
 				continue;
 			}
 
@@ -1009,4 +1033,25 @@ class TypeMapperHandler {
 
 		return $result;
 	}//end getPropertyAuthDescriptions()
+	/**
+	 * Whether this caller may be told that a property exists.
+	 *
+	 * Asks the same `AggregateVisibility` the OpenAPI description asks, which in
+	 * turn asks `PropertyRbacHandler`. One answer to "may this person see this
+	 * field", asked in more places; this class holds no rule of its own.
+	 *
+	 * @param RegisterSchema $schema   The schema.
+	 * @param string         $property The property name.
+	 *
+	 * @return bool Whether it may be described.
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	private function mayDescribe(RegisterSchema $schema, string $property): bool {
+		return (new AggregateVisibility($this->propertyRbac))->maySummarise(
+			schema: $schema,
+			property: $property
+		);
+	}//end mayDescribe()
+
 }//end class

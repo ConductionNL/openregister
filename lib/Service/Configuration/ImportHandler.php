@@ -295,6 +295,7 @@ class ImportHandler {
 	 * @param UploadHandler $uploadHandler The upload handler.
 	 * @param ObjectService $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
+	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional guard that keeps local changes to an app-shipped schema.
 	 * @param ?IAppManager $appManager App manager for the seed-data app dependency check; null skips that check.
 	 */
 	public function __construct(
@@ -311,6 +312,7 @@ class ImportHandler {
 		ObjectService $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		private readonly ?IAppManager $appManager = null,
+		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -1335,6 +1337,135 @@ class ImportHandler {
 	 *
 	 * @return bool True when a structural field differs and the update must be applied.
 	 */
+	/**
+	 * The keys the shipped-baseline guard compares and resolves.
+	 *
+	 * The same three `schemaContentDiffers()` treats as structural, and the
+	 * ones row 11.36 is written about: a municipality adds a property, or
+	 * tightens a constraint, or widens an authorization rule. Annotations are
+	 * DELIBERATELY not guarded here: `setConfiguration()` drops an unknown
+	 * `x-openregister-*` key, so a guarded annotation would read as removed on
+	 * every import and conflict with itself forever. That narrowing is named in
+	 * the PR body rather than left to be discovered.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SHIPPED_GUARD_KEYS = ['properties', 'required', 'authorization'];
+
+	/**
+	 * Resolve an incoming shipped schema against what the instance changed.
+	 *
+	 * Returns the definition to write. When no guard is wired, or no baseline
+	 * has ever been recorded for this schema, the incoming definition comes
+	 * back untouched: that is exactly today's behaviour, and it is what every
+	 * instance gets on the first import after this ships.
+	 *
+	 * @param array<string, mixed> $data       The incoming schema definition.
+	 * @param Schema               $existing   The schema the instance runs.
+	 * @param string|null          $appId      The app shipping it.
+	 * @param string|null          $appVersion The app version.
+	 *
+	 * @return array<string, mixed> The definition to write.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function applyShippedBaselineGuard(
+		array $data,
+		Schema $existing,
+		?string $appId,
+		?string $appVersion
+	): array {
+		if ($this->shippedGuard === null || $appId === null) {
+			return $data;
+		}
+
+		$slug = (string)($data['slug'] ?? $existing->getSlug() ?? '');
+		if ($slug === '') {
+			return $data;
+		}
+
+		$live = [
+			'properties' => $existing->getProperties(),
+			'required' => $existing->getRequired(),
+			'authorization' => ($existing->getAuthorization() ?? []),
+		];
+
+		$incoming = [];
+		foreach (self::SHIPPED_GUARD_KEYS as $key) {
+			if (array_key_exists($key, $data) === true) {
+				$incoming[$key] = $data[$key];
+			}
+		}
+
+		$result = $this->shippedGuard->guardSchemaUpdate(
+			slug: $slug,
+			live: $live,
+			incoming: $incoming,
+			app: $appId,
+			appVersion: ($appVersion ?? '')
+		);
+
+		if ($result['guarded'] === false) {
+			return $data;
+		}
+
+		foreach (self::SHIPPED_GUARD_KEYS as $key) {
+			if (array_key_exists($key, $result['definition']) === true) {
+				$data[$key] = $result['definition'][$key];
+			}
+		}
+
+		if ($result['conflicts'] !== []) {
+			$this->logger->warning(
+				message: '[ImportHandler] schema kept its local definition for parts the app also changed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema_slug' => $slug,
+					'conflicts' => array_column($result['conflicts'], 'path'),
+				]
+			);
+		}
+
+		return $data;
+	}//end applyShippedBaselineGuard()
+
+	/**
+	 * Record what the app shipped for a schema that has just been created.
+	 *
+	 * @param array<string, mixed> $data       The schema definition.
+	 * @param string|null          $appId      The app shipping it.
+	 * @param string|null          $appVersion The app version.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function recordShippedBaseline(array $data, ?string $appId, ?string $appVersion): void {
+		if ($this->shippedGuard === null || $appId === null) {
+			return;
+		}
+
+		$slug = (string)($data['slug'] ?? '');
+		if ($slug === '') {
+			return;
+		}
+
+		$definition = [];
+		foreach (self::SHIPPED_GUARD_KEYS as $key) {
+			if (array_key_exists($key, $data) === true) {
+				$definition[$key] = $data[$key];
+			}
+		}
+
+		$this->shippedGuard->recordShipped(
+			slug: $slug,
+			definition: $definition,
+			app: $appId,
+			appVersion: ($appVersion ?? '')
+		);
+	}//end recordShippedBaseline()
+
 	private function schemaContentDiffers(array $data, Schema $existing): bool {
 		$fields = [
 			'properties' => $existing->getProperties(),
@@ -2040,7 +2171,21 @@ class ImportHandler {
 					);
 				}
 
-				// Update existing schema.
+				// Update existing schema, but NOT with the incoming definition
+				// as it stands: with whatever survives the shipped-baseline
+				// guard. Without this, ADR-005's "descriptor is the source of
+				// truth" means a municipality's added property disappears on
+				// every upgrade and nothing records that it existed (row
+				// 11.36). The guard is null-safe and never throws, so an
+				// instance without a baseline imports exactly as it does
+				// today.
+				$data = $this->applyShippedBaselineGuard(
+					data: $data,
+					existing: $existingSchema,
+					appId: $appId,
+					appVersion: $version
+				);
+
 				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
 				if ($owner !== null) {
 					$existingSchema->setOwner($owner);
@@ -2055,6 +2200,7 @@ class ImportHandler {
 
 			// Create new schema.
 			$schema = $this->schemaMapper->createFromArray($data);
+			$this->recordShippedBaseline(data: $data, appId: $appId, appVersion: $version);
 			if ($owner !== null) {
 				$schema->setOwner($owner);
 			}

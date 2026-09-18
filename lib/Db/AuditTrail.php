@@ -87,6 +87,10 @@ use OCP\AppFramework\Db\Entity;
  * @method array|null getResultSummary()
  * @method void setResultSummary(?array $resultSummary)
  * @method string|null getFlowRun()
+ * @method string|null getCause()
+ * @method void setCause(?string $cause)
+ * @method string|null getCauseRun()
+ * @method void setCauseRun(?string $causeRun)
  * @method void setFlowRun(?string $flowRun)
  * @method string|null getFlowNode()
  * @method void setFlowNode(?string $flowNode)
@@ -94,6 +98,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFlowStep(?int $flowStep)
  * @method string|null getPurpose()
  * @method void setPurpose(?string $purpose)
+ * @method string|null getConsumer()
+ * @method void setConsumer(?string $consumer)
  * @method string|null getProcessingActivityId()
  * @method void setProcessingActivityId(?string $processingActivityId)
  * @method string|null getVersion()
@@ -397,6 +403,28 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 *
 	 * @var string|null Uuid of the attributing flow run.
 	 */
+	/**
+	 * Why this write happened, from the closed vocabulary in {@see WriteCause}.
+	 *
+	 * NULLABLE and not back-filled: an entry written before the cause existed
+	 * has none, and `person` would be a guess. A reader must tell "nobody
+	 * recorded a cause" from "a person did this".
+	 *
+	 * @var string|null
+	 */
+	protected ?string $cause = null;
+
+	/**
+	 * The run this write belonged to, when the cause is one.
+	 *
+	 * Without it the cause is nearly useless: "an import did this" does not say
+	 * WHICH import, and the eight hundred entries of one load are not reachable
+	 * as a set.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $causeRun = null;
+
 	protected ?string $flowRun = null;
 
 	/**
@@ -432,6 +460,27 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $purpose = null;
+
+	/**
+	 * The registered consumer whose token made this write.
+	 *
+	 * ⚠️ DELIBERATELY OUTSIDE the canonical JSON, for the same reason `purpose`
+	 * is and with the same consequence if that is forgotten: a key added to
+	 * jsonSerialize() changes the canonical form of every row ever written and
+	 * invalidates the whole chain (ADR-003 Rule 4). This column is the INDEXED
+	 * projection that makes "everything this koppeling wrote last month" a
+	 * lookup rather than a scan of the largest table in the app. The SEALED
+	 * copy, with the token and its owner beside it, lives in
+	 * `resultSummary['token']`, inside the canonical JSON. Both are written in
+	 * one place ({@see \OCA\OpenRegister\Service\Audit\TokenAttribution}), and
+	 * a disagreement between them is detectable rather than invisible.
+	 *
+	 * Null means no token made this write, which is the ordinary case for a
+	 * person clicking in the interface. It never means the token was unknown.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $consumer = null;
 
 	/**
 	 * Constructor for the AuditTrail class
@@ -471,10 +520,13 @@ class AuditTrail extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'paramsDigest', type: 'string');
 		$this->addType(fieldName: 'resultSummary', type: 'json');
 		$this->addType(fieldName: 'purgedAt', type: 'datetime');
+		$this->addType(fieldName: 'cause', type: 'string');
+		$this->addType(fieldName: 'causeRun', type: 'string');
 		$this->addType(fieldName: 'flowRun', type: 'string');
 		$this->addType(fieldName: 'flowNode', type: 'string');
 		$this->addType(fieldName: 'flowStep', type: 'integer');
 		$this->addType(fieldName: 'purpose', type: 'string');
+		$this->addType(fieldName: 'consumer', type: 'string');
 	}//end __construct()
 
 	/**
@@ -583,7 +635,9 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 *     toolId: null|string,
 	 *     paramsDigest: null|string,
 	 *     resultSummary: array|null,
-	 *     flowRun: null|string,
+	 *     cause: null|string,
+ *     causeRun: null|string,
+ *     flowRun: null|string,
 	 *     flowNode: null|string,
 	 *     flowStep: int|null
 	 * }
@@ -640,6 +694,8 @@ class AuditTrail extends Entity implements JsonSerializable {
 			// every row ever written. Do not add a key to this array without
 			// reading that ADR — and note that `purgedAt` is deliberately
 			// ABSENT for exactly this reason.
+			'cause' => $this->cause,
+			'causeRun' => $this->causeRun,
 			'flowRun' => $this->flowRun,
 			'flowNode' => $this->flowNode,
 			'flowStep' => $this->flowStep,

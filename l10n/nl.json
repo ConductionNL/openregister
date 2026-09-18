@@ -1644,6 +1644,7 @@
         "OpenDocument (.ods)": "OpenDocument (.ods)",
         "OpenRegister": "OpenRegister",
         "OpenRegister Settings": "OpenRegister Settings",
+        "Operations": "Beheer en status",
         "Operator-defined dashboards and scheduled reports. Each dashboard is a first-class object in the `reports` register; widgets are declared in the dashboard's `widgets` array and rendered live from aggregations / GraphQL.": "Door de beheerder gedefinieerde dashboards en geplande rapporten. Elk dashboard is een eersteklas object in het `reports`-register; widgets worden gedeclareerd in de `widgets`-array van het dashboard en live gerenderd vanuit aggregaties / GraphQL.",
         "Optimizing search performance...": "Zoekprestaties optimaliseren...",
         "Optional URL-friendly identifier": "Optionele URL-vriendelijke identifier",

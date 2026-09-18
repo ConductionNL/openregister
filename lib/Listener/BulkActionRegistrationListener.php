@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\BulkAction\AssignAction;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
 use OCA\OpenRegister\BulkAction\SetPropertiesAction;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCP\EventDispatcher\Event;
@@ -50,6 +51,7 @@ class BulkActionRegistrationListener implements IEventListener {
 	 * @param AssignAction $assign The bulk redistribution.
 	 * @param ApplyRuleAction $applyRule The rule replay.
 	 * @param ExportWholeSetAction $exportWholeSet The whole-set extract.
+	 * @param RestorePriorValuesAction $restore The inverse of a reversible job.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -57,6 +59,7 @@ class BulkActionRegistrationListener implements IEventListener {
 		private readonly AssignAction $assign,
 		private readonly ApplyRuleAction $applyRule,
 		private readonly ExportWholeSetAction $exportWholeSet,
+		private readonly RestorePriorValuesAction $restore,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -75,7 +78,15 @@ class BulkActionRegistrationListener implements IEventListener {
 			return;
 		}
 
-		foreach ([$this->setProperties, $this->assign, $this->applyRule, $this->exportWholeSet] as $action) {
+		$actions = [
+			$this->setProperties,
+			$this->assign,
+			$this->applyRule,
+			$this->exportWholeSet,
+			$this->restore,
+		];
+
+		foreach ($actions as $action) {
 			try {
 				$event->registerAction(action: $action);
 			} catch (\Throwable $exception) {

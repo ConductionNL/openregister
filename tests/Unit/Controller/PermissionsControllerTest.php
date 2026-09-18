@@ -232,7 +232,7 @@ class PermissionsControllerTest extends TestCase {
 
 		$verbs = array_column($body['permissions'], 'verb');
 		$this->assertSame(
-			expected: ['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage'],
+			expected: ['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage', 'assign'],
 			actual: $verbs
 		);
 

@@ -32,10 +32,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Controller;
 
+use OCA\OpenRegister\AppHost\Service\PublicPageResolver;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
+use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Services\IInitialState;
 use OCP\IRequest;
 
 /**
@@ -59,10 +64,14 @@ class GenericDashboardController extends Controller {
 	 *
 	 * @param string $appName The calling (leaf) app id, supplied by the alias closure.
 	 * @param IRequest $request HTTP request.
+	 * @param PublicPageResolver|null $publicPages Decides which paths open without a session.
+	 * @param IInitialState|null $initialState The leaf app's initial state, for the public flag.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
+		private readonly ?PublicPageResolver $publicPages = null,
+		private readonly ?IInitialState $initialState = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -92,6 +101,51 @@ class GenericDashboardController extends Controller {
 	public function catchAll(): TemplateResponse {
 		return $this->page();
 	}//end catchAll()
+
+	/**
+	 * Serve the SPA to somebody with no account, for a declared public page.
+	 *
+	 * The route is public, the PAGE is not: this answers the shell only for a
+	 * path the app declared public in its own manifest, and the app declares
+	 * one by giving the page `config.mode: "public"` under a `/public/` route.
+	 * Every other path behaves exactly as before, which is why the catch-all
+	 * stays closed: making that one public would open every page in the app to
+	 * anybody, and a page reached that way would then call authenticated
+	 * endpoints it has no session for.
+	 *
+	 * What an anonymous visitor receives here is the app's JavaScript and
+	 * nothing else. The record behind the page arrives from the endpoint the
+	 * page reads, which keeps its own check: an access link, a share token.
+	 *
+	 * @param string $path The path under `/public/`, without the prefix.
+	 *
+	 * @return Response The public shell, the ordinary shell, or the login page.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
+	public function publicPage(string $path = ''): Response {
+		if ($this->publicPages === null) {
+			// Nothing decides what is public here, so nothing is.
+			return new TemplateResponse('core', '404', [], TemplateResponse::RENDER_AS_GUEST);
+		}
+
+		$wanted = PublicPageResolver::PUBLIC_PREFIX . ltrim($path, '/');
+		if ($this->publicPages->isDeclared(appId: $this->appName, path: $wanted) === true) {
+			$this->initialState?->provideInitialState(PublicPageResolver::INITIAL_STATE_KEY, true);
+
+			return $this->publicPages->publicShell(appId: $this->appName);
+		}
+
+		$answer = $this->publicPages->respond(appId: $this->appName, path: $wanted);
+		if ($answer !== null) {
+			return $answer;
+		}
+
+		return $this->page();
+	}//end publicPage()
 
 	/**
 	 * Build the `index` TemplateResponse for the calling app.

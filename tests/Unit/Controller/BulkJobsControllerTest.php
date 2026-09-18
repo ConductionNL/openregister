@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -51,6 +52,13 @@ final class BulkJobsControllerTest extends TestCase {
 	 * @var BulkJobService
 	 */
 	private BulkJobService $service;
+
+	/**
+	 * The inverse of a reversible job.
+	 *
+	 * @var BulkJobReversal
+	 */
+	private BulkJobReversal $reversal;
 
 	/**
 	 * Job persistence.
@@ -99,6 +107,7 @@ final class BulkJobsControllerTest extends TestCase {
 
 		$this->params = [];
 		$this->service = $this->createMock(BulkJobService::class);
+		$this->reversal = $this->createMock(BulkJobReversal::class);
 		$this->jobMapper = $this->createMock(BulkJobMapper::class);
 		$this->registry = $this->createMock(BulkActionRegistry::class);
 		$this->userSession = $this->createMock(IUserSession::class);
@@ -130,6 +139,7 @@ final class BulkJobsControllerTest extends TestCase {
 			'openregister',
 			$this->request,
 			$this->service,
+			$this->reversal,
 			$this->jobMapper,
 			$this->registry,
 			$this->userSession,
@@ -319,5 +329,147 @@ final class BulkJobsControllerTest extends TestCase {
 
 		$this->service->method('retry')->willReturn($job);
 		$this->assertSame(202, $this->controller()->retry(5)->getStatus());
+	}
+
+	/**
+	 * The console's two new verbs reach the service and answer the wire.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testPauseAndResumeReachTheService(): void {
+		$this->signIn('coordinator');
+		$job = $this->job();
+		$this->jobMapper->method('find')->willReturn($job);
+
+		$this->service->expects($this->once())->method('pause')->willReturn($job);
+		$this->assertSame(200, $this->controller()->pause(5)->getStatus());
+
+		$this->service->expects($this->once())->method('resume')->willReturn($job);
+		$this->assertSame(202, $this->controller()->resume(5)->getStatus());
+	}
+
+	/**
+	 * Pausing somebody else's job is refused the same way reading it is.
+	 *
+	 * The interesting half is that it never reaches the service: an
+	 * ownership check that ran after the act would stop nothing.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testAnotherUsersJobCannotBePausedOrResumed(): void {
+		$this->signIn('handler', false);
+		$this->jobMapper->method('find')->willReturn($this->job('coordinator'));
+		$this->service->expects($this->never())->method('pause');
+		$this->service->expects($this->never())->method('resume');
+
+		$this->assertSame(404, $this->controller()->pause(5)->getStatus());
+		$this->assertSame(404, $this->controller()->resume(5)->getStatus());
+	}
+
+	/**
+	 * An administrator drives the console over anybody's job.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorMayPauseSomebodyElsesJob(): void {
+		$this->signIn('admin', true);
+		$job = $this->job('coordinator');
+		$this->jobMapper->method('find')->willReturn($job);
+		$this->service->expects($this->once())->method('pause')->willReturn($job);
+
+		$this->assertSame(200, $this->controller()->pause(5)->getStatus());
+	}
+
+	/**
+	 * A refusal from the state machine reaches the caller as a 422 with its code.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testPausingAJobThatIsNotRunningAnswersTheRefusal(): void {
+		$this->signIn('coordinator');
+		$this->jobMapper->method('find')->willReturn($this->job());
+		$this->service->method('pause')->willThrowException(
+			new BulkJobRefusedException(
+				message: 'Only a running job can be paused. This one is completed.',
+				reason: 'not-pausable',
+				details: ['state' => BulkJob::STATE_COMPLETED]
+			)
+		);
+
+		$response = $this->controller()->pause(5);
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame('not-pausable', $response->getData()['reason']);
+	}
+
+	public function testTheReversalRunsAsThePersonAskingForItNotTheOriginalActor(): void {
+		// The original was created by an administrator. Fatima asks to undo
+		// it, and the reversal must be authorised for HER: the per-object
+		// write rules are re-checked against the uid handed to the service,
+		// never inherited from the job being undone.
+		$this->signIn('fatima', true);
+		$original = $this->job('administrator');
+		$this->jobMapper->method('find')->willReturn($original);
+		$this->params['justification'] = 'De filter stond verkeerd.';
+
+		$seen = [];
+		$this->reversal->expects($this->once())
+			->method('reverse')
+			->willReturnCallback(
+				function (BulkJob $job, string $actorUid, ?string $justification) use (&$seen): BulkJob {
+					$seen = ['actor' => $actorUid, 'reason' => $justification];
+
+					return $this->job('fatima');
+				}
+			);
+
+		$response = $this->controller()->reverse(5);
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame('fatima', $seen['actor']);
+		$this->assertSame('De filter stond verkeerd.', $seen['reason']);
+	}
+
+	public function testACallerWhoCannotReadTheJobCannotUndoIt(): void {
+		// Not 403: a job the caller may not read must not be distinguishable
+		// from one that does not exist, and nothing is written either way.
+		$this->signIn('fatima');
+		$this->jobMapper->method('find')->willReturn($this->job('administrator'));
+		$this->reversal->expects($this->never())->method('reverse');
+
+		$this->assertSame(404, $this->controller()->reverse(5)->getStatus());
+	}
+
+	public function testAReversalRefusedByTheServiceCarriesItsReasonAndNumbers(): void {
+		$this->signIn('coordinator');
+		$this->jobMapper->method('find')->willReturn($this->job());
+		$this->reversal->method('reverse')->willThrowException(
+			new BulkJobRefusedException(
+				'The action openregister:assign is not reversible.',
+				'not-reversible',
+				['action' => 'openregister:assign']
+			)
+		);
+
+		$response = $this->controller()->reverse(5);
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame('not-reversible', $response->getData()['reason']);
+		$this->assertSame('openregister:assign', $response->getData()['details']['action']);
+	}
+
+	public function testAMissingJobCannotBeUndone(): void {
+		$this->signIn('coordinator');
+		$this->jobMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
+
+		$this->assertSame(404, $this->controller()->reverse(5)->getStatus());
 	}
 }
