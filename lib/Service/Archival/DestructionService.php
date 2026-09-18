@@ -267,7 +267,7 @@ class DestructionService {
 		}
 
 		// Check dual approval: second approver must be different from first.
-		if ($requiresDual === true && $this->sameArchivistTwice($destructionList) === true) {
+		if ($requiresDual === true && $this->sameArchivistTwice(destructionList: $destructionList) === true) {
 			// The second approval is not a second pair of eyes; drop it.
 			array_pop($destructionList['approvals']);
 
@@ -386,13 +386,22 @@ class DestructionService {
 	 * Idempotent: an entry already moved to `excludedObjects` is no longer in
 	 * `objects`, so a second approval (dual sign-off) finds nothing left to move.
 	 *
+	 * Public because `RetentionController::approveDestructionList()` is a fully
+	 * independent approval implementation that never calls `approveList()`. The
+	 * records are safe there either way - DestructionExecutionJob refuses them -
+	 * but the route computes its audit trail and its 200 response BEFORE the job
+	 * runs, and never corrects them. Without this the approval record and the
+	 * destruction certificate state a count that never happened, on a statutory
+	 * records-management path. Routing that controller through `approveList()`
+	 * is the clean fix and remains the right one.
+	 *
 	 * @param array<string, mixed> $destructionList The destruction list data.
 	 *
 	 * @return array<string, mixed> The list, with decided-against entries withheld.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	private function withholdDecidedEntries(array $destructionList): array {
+	public function withholdDecidedEntries(array $destructionList): array {
 		$entries = ($destructionList['objects'] ?? []);
 		if (is_array($entries) === false) {
 			return $destructionList;

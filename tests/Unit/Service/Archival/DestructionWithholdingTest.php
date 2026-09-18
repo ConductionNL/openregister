@@ -108,6 +108,20 @@ class DestructionWithholdingTest extends TestCase {
 		$this->assertSame(1, $result['objectCount']);
 	}//end testObjectCountFollowsWhatIsActuallyLeft()
 
+	public function testTheRetentionRouteCanWithholdBeforeItCountsAnything(): void {
+		// RetentionController::approveDestructionList() is a second, independent
+		// approval implementation that never calls approveList(). It computes its
+		// audit trail and its 200 response from the list BEFORE the execution job
+		// runs, and never corrects them, so it calls this directly. The records
+		// were always safe - the job refuses them - but a destruction certificate
+		// reporting three objects where one was destroyed is its own defect.
+		$result = $this->service->withholdDecidedEntries($this->listWithDecisions());
+
+		$this->assertSame(['destroy-me'], $this->uuidsOf($result['objects']));
+		$this->assertSame(1, $result['objectCount']);
+		$this->assertSame(['keep-me', 'move-me'], $this->uuidsOf($result['excludedObjects']));
+	}//end testTheRetentionRouteCanWithholdBeforeItCountsAnything()
+
 	public function testAWithheldEntryCarriesTheReviewersOwnReason(): void {
 		$result = $this->service->approveList(
 			destructionList: $this->listWithDecisions(),
