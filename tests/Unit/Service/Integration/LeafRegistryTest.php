@@ -191,6 +191,121 @@ class LeafRegistryTest extends TestCase {
 	 *
 	 * @return LeafRegistry
 	 */
+	/**
+	 * 🔴 A RENDER SURFACE WHOSE APP SHIPS NO BUNDLE IS REFUSED, LOUDLY.
+	 *
+	 * This is the failure the change exists to end: the descriptor reached
+	 * capability discovery, `getLeaves()` returned it, the gate went green on
+	 * both halves, and the surface rendered NOTHING on every consuming page.
+	 * Nobody was told, because nothing had failed.
+	 *
+	 * Measured on the development instance when this was written: of 35
+	 * installed apps, 5 registered leaves and only 2 shipped a bundle, so 3
+	 * render surfaces were dark.
+	 *
+	 * @return void
+	 */
+	public function testARenderSurfaceWithNoBundleIsRefused(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme'
+						)
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertSame(
+			[],
+			$registry->getDescriptors(),
+			'A leaf that can only report success and render nothing must not register.'
+		);
+	}//end testARenderSurfaceWithNoBundleIsRefused()
+
+	/**
+	 * A data provider needs no bundle, so it is not refused for lacking one.
+	 *
+	 * The control that keeps the refusal narrow. Refusing every leaf from an
+	 * app without a bundle would take out every data-only integration on the
+	 * instance, none of which has a client half.
+	 *
+	 * @return void
+	 */
+	public function testADataProviderIsNotRefusedForHavingNoBundle(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-data',
+							label: 'Data',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
+							requiredApp: 'acme'
+						),
+						new _AppLocalNotesProvider()
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testADataProviderIsNotRefusedForHavingNoBundle()
+
+	/**
+	 * 🔑 A BUILT-IN LEAF IS NOT REFUSED: it rides OpenRegister's own bundle.
+	 *
+	 * `requiredApp` of null means the leaf belongs to OpenRegister itself,
+	 * whose bundle is already on the page. Refusing those would remove every
+	 * built-in surface on the instance.
+	 *
+	 * @return void
+	 */
+	public function testABuiltInLeafIsNotRefused(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'builtin-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: null
+						)
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testABuiltInLeafIsNotRefused()
+
 	private function makeRegistry(
 		array $listeners,
 		?IntegrationRegistry $integrationRegistry = null,
