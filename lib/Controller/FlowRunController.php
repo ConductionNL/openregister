@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Exception\FlowRunRefused;
+use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -967,9 +969,29 @@ class FlowRunController extends Controller {
 		}
 
 		try {
-			$this->flows->find(uuid: $flowId);
+			$flow = $this->flows->find(uuid: $flowId);
 		} catch (Throwable $e) {
 			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
+		}
+
+		// 🔴 EXISTENCE AND ORGANISATION WERE THE WHOLE CHECK. On the
+		// single-organisation instance that is the common case, that is any
+		// signed-in user running any flow — the exposure this controller's own
+		// docblock names (or#3643). The per-flow decision now lives in one
+		// place and every run path asks it, so a flow's owner governs its runs
+		// the way `flow_register.json` always implied.
+		try {
+			$this->flows->assertRunnable(flow: $flow);
+		} catch (FlowRunRefused $refused) {
+			$status = Http::STATUS_FORBIDDEN;
+			if ($refused->getVerdict() === FlowRunAuthorization::NO_SESSION) {
+				$status = Http::STATUS_UNAUTHORIZED;
+			}
+
+			return new JSONResponse(
+				['error' => $refused->getMessage(), 'verdict' => $refused->getVerdict()],
+				$status
+			);
 		}
 
 		return null;
