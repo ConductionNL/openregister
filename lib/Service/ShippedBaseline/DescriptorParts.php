@@ -79,7 +79,10 @@ class DescriptorParts {
 	public function flatten(array $descriptor, string $prefix = '', int $depth = 0): array {
 		$parts = [];
 		foreach ($descriptor as $key => $value) {
-			$path = ($prefix === '' ? (string)$key : $prefix . self::SEPARATOR . (string)$key);
+			$path = ($prefix . self::SEPARATOR . (string)$key);
+			if ($prefix === '') {
+				$path = (string)$key;
+			}
 
 			if (is_array($value) === true
 				&& $this->isList(value: $value) === false

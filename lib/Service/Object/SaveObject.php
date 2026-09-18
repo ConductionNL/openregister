@@ -5240,7 +5240,11 @@ class SaveObject {
 		if (is_object($found) === true && method_exists($found, 'getObject') === true) {
 			$data = $found->getObject();
 
-			return (is_array($data) === true ? $data : null);
+			if (is_array($data) === true) {
+				return $data;
+			}
+
+			return null;
 		}
 
 		return null;

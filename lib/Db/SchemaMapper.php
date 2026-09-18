@@ -1148,9 +1148,9 @@ class SchemaMapper extends QBMapper {
 		}
 
 		$governance = new ScopedPropertyGovernance(
-			$this->userSession,
-			$this->groupManager,
-			$this->appConfig
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			appConfig: $this->appConfig
 		);
 
 		foreach ($properties as $name => $property) {

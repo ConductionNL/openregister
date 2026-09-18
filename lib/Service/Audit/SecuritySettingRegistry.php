@@ -79,7 +79,12 @@ class SecuritySettingRegistry {
 		'rbac.defaultNewUserGroup' => ['label' => 'Group for new users', 'default' => 'viewer', 'secret' => false, 'type' => 'json'],
 		'multitenancy.enabled' => ['label' => 'Separation between organisations', 'default' => true, 'secret' => false, 'type' => 'json'],
 		'multitenancy.adminOverride' => ['label' => 'Administrators see every organisation', 'default' => true, 'secret' => false, 'type' => 'json'],
-		'multitenancy.publishedObjectsBypassMultiTenancy' => ['label' => 'Published records visible to every organisation', 'default' => false, 'secret' => false, 'type' => 'json'],
+		'multitenancy.publishedObjectsBypassMultiTenancy' => [
+			'label' => 'Published records visible to every organisation',
+			'default' => false,
+			'secret' => false,
+			'type' => 'json',
+		],
 		'retention.auditTrailsEnabled' => ['label' => 'Audit trail', 'default' => true, 'secret' => false, 'type' => 'json'],
 		'retention.searchTrailsEnabled' => ['label' => 'Search trail', 'default' => true, 'secret' => false, 'type' => 'json'],
 		'solr.username' => ['label' => 'Search index user name', 'default' => 'solr', 'secret' => false, 'type' => 'json'],

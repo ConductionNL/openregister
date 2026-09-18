@@ -194,9 +194,12 @@ final class RelatedRowExistsClause {
 
 				// An empty `in` matches nothing, and says so in SQL rather than
 				// being dropped. A dropped condition widens the filter.
-				$where[] = ($placeholders === []
-					? '1 = 0'
-					: sprintf('%s IN (%s)', $left, implode(', ', $placeholders)));
+				if ($placeholders === []) {
+					$where[] = '1 = 0';
+				} else {
+					$where[] = sprintf('%s IN (%s)', $left, implode(', ', $placeholders));
+				}
+
 				continue;
 			}
 

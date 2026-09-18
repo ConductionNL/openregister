@@ -53,7 +53,7 @@ class RepairRefusedException extends Exception {
 	 * @param string $reason  The stable reason word, for the caller.
 	 */
 	public function __construct(string $message, string $reason) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 		$this->reason = $reason;
 
 	}//end __construct()

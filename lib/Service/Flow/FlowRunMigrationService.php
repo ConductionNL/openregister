@@ -165,12 +165,17 @@ class FlowRunMigrationService {
 		}
 
 		if ($unmapped !== []) {
+			$unmappedPronoun = 'them';
+			if (count($unmapped) === 1) {
+				$unmappedPronoun = 'it';
+			}
+
 			return [
 				'ok' => false,
 				'marking' => [],
 				'unmapped' => $unmapped,
 				'reason' => 'Version ' . $targetVersion . ' has nowhere for this run to land: '
-					. implode(', ', $unmapped) . '. Map ' . ((count($unmapped) === 1) ? 'it' : 'them')
+					. implode(', ', $unmapped) . '. Map ' . $unmappedPronoun
 					. ' to a node of the same kind, or leave the run where it is.',
 			];
 		}
@@ -188,7 +193,8 @@ class FlowRunMigrationService {
 	 * @param array<string, string> $mapping       Old node id to new node id.
 	 * @param bool                  $dryRun        True to answer without writing.
 	 *
-	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int, marking: array<string, int>, unmapped: array<int, string>, reason: string}
+	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
+	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
@@ -389,10 +395,15 @@ class FlowRunMigrationService {
 		// Anything else names another flow, and this does not move a run
 		// between flows.
 		if (ctype_digit($targetDefinitionRef) === false) {
+			$livePlural = 's';
+			if (count($live) === 1) {
+				$livePlural = '';
+			}
+
 			return [
 				'migrated' => false,
 				'reason' => 'This object has ' . count($live) . ' flow run'
-					. ((count($live) === 1) ? '' : 's') . ' in progress on a different process. '
+					. $livePlural . ' in progress on a different process. '
 					. 'A run is moved between VERSIONS of one flow, never between flows, because two flows '
 					. 'share no steps to map a token onto. Finish or stop the run first.',
 				'runs' => [],
@@ -414,11 +425,14 @@ class FlowRunMigrationService {
 			}
 		}
 
+		$outcomeReason = ($outcomes[0]['reason'] ?? 'A run of this object could not be moved.');
+		if ($allMoved === true) {
+			$outcomeReason = 'Every run of this object moved to version ' . $targetDefinitionRef . '.';
+		}
+
 		return [
 			'migrated' => $allMoved,
-			'reason' => ($allMoved === true)
-				? 'Every run of this object moved to version ' . $targetDefinitionRef . '.'
-				: ($outcomes[0]['reason'] ?? 'A run of this object could not be moved.'),
+			'reason' => $outcomeReason,
 			'runs' => $outcomes,
 		];
 	}//end migrateRunForSubject()
@@ -481,7 +495,12 @@ class FlowRunMigrationService {
 				continue;
 			}
 
-			$id = trim((string)($node['id'] ?? (is_string($key) === true ? $key : '')));
+			$fallbackId = '';
+			if (is_string($key) === true) {
+				$fallbackId = $key;
+			}
+
+			$id = trim((string)($node['id'] ?? $fallbackId));
 			if ($id !== '') {
 				$keyed[$id] = $node;
 			}

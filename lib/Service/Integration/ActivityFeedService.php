@@ -99,7 +99,10 @@ class ActivityFeedService {
 
 		$sources = [];
 		foreach (['file', 'note', 'mail'] as $kind) {
-			$sources[$kind] = (is_array($handedIn[$kind] ?? null) === true ? $handedIn[$kind] : []);
+			$sources[$kind] = [];
+			if (is_array($handedIn[$kind] ?? null) === true) {
+				$sources[$kind] = $handedIn[$kind];
+			}
 		}
 
 		try {
@@ -165,11 +168,16 @@ class ActivityFeedService {
 		$rows = [];
 		foreach ($entries as $entry) {
 			$created = $entry->getCreated();
+			$timestamp = 0;
+			if ($created instanceof \DateTimeInterface) {
+				$timestamp = $created->getTimestamp();
+			}
+
 
 			$rows[] = [
 				'id' => (string)$entry->getUuid(),
 				'action' => (string)$entry->getAction(),
-				'timestamp' => ($created instanceof \DateTimeInterface ? $created->getTimestamp() : 0),
+				'timestamp' => $timestamp,
 				'actor' => (string)($entry->getUserName() ?? $entry->getUser() ?? ''),
 				'summary' => $this->summaryOf(action: (string)$entry->getAction(), changed: $entry->getChanged()),
 				// The trail has no page of its own to link to; the row is the

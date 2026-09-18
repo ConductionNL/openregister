@@ -135,7 +135,13 @@ class ConsistencyRepairService {
 		$ids = array_values(
 			array_filter(
 				array_map(
-					static fn (array $row): ?int => isset($row['id']) ? (int)$row['id'] : null,
+					static function (array $row): ?int {
+						if (isset($row['id']) === true) {
+							return (int)$row['id'];
+						}
+
+						return null;
+					},
 					$plan['objects']
 				),
 				static fn (?int $id): bool => $id !== null

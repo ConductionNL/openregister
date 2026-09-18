@@ -151,7 +151,10 @@ class ExternalRegisterDegrade {
 		$state = $this->stateOf(lookup: $lookup);
 		$record = null;
 		if ($state === self::OK) {
-			$record = (is_array($lookup['record'] ?? null) === true ? $lookup['record'] : []);
+			$record = [];
+			if (is_array($lookup['record'] ?? null) === true) {
+				$record = $lookup['record'];
+			}
 		}
 
 		return [

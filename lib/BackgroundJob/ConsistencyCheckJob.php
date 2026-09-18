@@ -84,10 +84,15 @@ class ConsistencyCheckJob extends RecordedQueuedJob {
 		$findings = $this->check->check();
 		$findings['ranAt'] = (new \DateTime())->format(\DateTime::ATOM);
 
+		$encoded = json_encode($findings);
+		if ($encoded === false) {
+			$encoded = '{}';
+		}
+
 		$this->config->setAppValue(
 			self::APP_ID,
 			self::SETTING_LAST_RESULT,
-			(json_encode($findings) ?: '{}')
+			$encoded
 		);
 
 	}//end runRecorded()

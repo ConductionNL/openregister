@@ -1048,7 +1048,7 @@ class TypeMapperHandler {
 	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
 	 */
 	private function mayDescribe(RegisterSchema $schema, string $property): bool {
-		return (new AggregateVisibility($this->propertyRbac))->maySummarise(
+		return (new AggregateVisibility(rbac: $this->propertyRbac))->maySummarise(
 			schema: $schema,
 			property: $property
 		);

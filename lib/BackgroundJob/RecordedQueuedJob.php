@@ -64,7 +64,7 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 		$this->recorder->around(
 			jobClass: static::class,
 			work: function () use ($argument): void {
-				$this->runRecorded($argument);
+				$this->runRecorded(argument: $argument);
 			},
 			cause: $this->causeOf(argument: $argument),
 			actor: $this->actorOf(argument: $argument),

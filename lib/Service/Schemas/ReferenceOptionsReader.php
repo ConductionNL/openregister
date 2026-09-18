@@ -64,7 +64,8 @@ class ReferenceOptionsReader {
 	 * @param string               $property The reference property.
 	 * @param array<string, mixed> $record   The record being edited, saved or draft.
 	 *
-	 * @return array{filtered: bool, needs: array<int, string>, filter: array<string, mixed>, target: array{schema: ?string, register: ?string}} The plan.
+	 * @return array{filtered: bool, needs: array<int, string>, filter: array<string, mixed>,
+	 *         target: array{schema: ?string, register: ?string}} The plan.
 	 *
 	 * @throws ReferenceFilterException When the declaration cannot be honoured.
 	 */

@@ -55,7 +55,7 @@ class ConsistencyCheckWouldWriteException extends Exception {
 	 * @param string $probe   The probe slug.
 	 */
 	public function __construct(string $message, string $probe) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 		$this->probe = $probe;
 
 	}//end __construct()

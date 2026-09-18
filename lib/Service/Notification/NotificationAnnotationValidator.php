@@ -91,21 +91,22 @@ final class NotificationAnnotationValidator {
 	private ScheduledFilterParser $filterParser;
 
 	/**
-	 * Construct a validator.
-	 *
-	 * The parser is injectable but defaulted, because this class is constructed
-	 * directly (`new NotificationAnnotationValidator()`) in several call sites
-	 * that predate any container wiring.
-	 *
-	 * @param ScheduledFilterParser|null $filterParser Parser for scheduled filters.
-	 */
-	/**
 	 * The administered decisions that are not preferences.
 	 *
 	 * @var ForcedChannelPolicy
 	 */
 	private ForcedChannelPolicy $forcedChannels;
 
+	/**
+	 * Constructor.
+	 *
+	 * Both collaborators are injectable but defaulted, because this class is
+	 * constructed directly (`new NotificationAnnotationValidator()`) in several
+	 * call sites that predate any container wiring.
+	 *
+	 * @param ScheduledFilterParser|null $filterParser  Parser for scheduled filters.
+	 * @param ForcedChannelPolicy|null   $forcedChannels The administered channel decisions.
+	 */
 	public function __construct(
 		?ScheduledFilterParser $filterParser = null,
 		?ForcedChannelPolicy $forcedChannels = null,

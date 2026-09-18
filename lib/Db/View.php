@@ -263,7 +263,7 @@ class View extends Entity implements JsonSerializable {
 	 */
 	public function setSharedWith(array $sharedWith): void {
 		$this->sharedWith = $sharedWith;
-		$this->markFieldUpdated('sharedWith');
+		$this->markFieldUpdated(attribute: 'sharedWith');
 	}//end setSharedWith()
 
 	/**

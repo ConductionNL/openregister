@@ -98,7 +98,7 @@ class ViewPresentationService {
 	 * @return AggregateVisibility The answer.
 	 */
 	private function aggregateVisibility(): AggregateVisibility {
-		return new AggregateVisibility($this->propertyRbac, $this->logger);
+		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
 	}//end aggregateVisibility()
 
 	/**

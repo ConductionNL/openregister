@@ -70,7 +70,10 @@ class Version1Date20260918235900 extends SimpleMigrationStep {
 	 * @return ISchemaWrapper|null The changed schema.
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/** @var ISchemaWrapper $schema */
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
+
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: self::TABLE) === false) {

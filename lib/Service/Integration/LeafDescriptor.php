@@ -145,9 +145,9 @@ final class LeafDescriptor {
 	public const LOADS_ALREADY_PRESENT = 'already-present';
 
 	/**
-	 * 🔴 THE CONVENTIONS ARE NAMED, NOT INFERRED, AND THAT IS THE WHOLE POINT.
+	 * The conventions are named, not inferred, and that is the whole point. 🔴
 	 *
-	 * openregister#3954 tried to infer this from the filesystem and was wrong
+	 * Issue openregister#3954 tried to infer this from the filesystem and was wrong
 	 * twice in one measurement: it read hermiq and decidiq as dark because they
 	 * ship no `<app>-leaves.js`, when both load their own bundle on every page.
 	 * Whether a bundle reaches the page is a fact about the PAGE; the registry

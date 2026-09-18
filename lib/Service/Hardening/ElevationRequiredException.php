@@ -47,7 +47,7 @@ class ElevationRequiredException extends RuntimeException {
 		private readonly int $periodSeconds,
 	) {
 		parent::__construct(
-			'Administration needs a fresh sign-in. Confirm your password, then try again.'
+			message: 'Administration needs a fresh sign-in. Confirm your password, then try again.'
 		);
 
 	}//end __construct()

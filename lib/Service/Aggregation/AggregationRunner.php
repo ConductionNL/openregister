@@ -354,10 +354,15 @@ class AggregationRunner {
 		// figures for somebody else, and those callers have already decided who
 		// may see the result.
 		if ($bypassRbac === false) {
+			$fieldNames = [];
+			if ($field !== null) {
+				$fieldNames = [(string)$field];
+			}
+
 			$this->assertFieldsAreReadable(
 				schema: $schema,
 				fields: array_merge(
-					($field === null ? [] : [(string)$field]),
+					$fieldNames,
 					$this->groupByFields(groupBy: $groupBy),
 					$this->metricFields(metrics: $metrics)
 				)
@@ -4541,7 +4546,7 @@ class AggregationRunner {
 		// there is nowhere in that number to say part of it was withheld, so
 		// the only honest answers are the figure or a refusal.
 		throw new NotAuthorizedException(
-			sprintf(
+			message: sprintf(
 				'This aggregation reads %s, which you may not read, so it cannot be computed for you.',
 				implode(', ', $split['withheld'])
 			)
@@ -4616,7 +4621,7 @@ class AggregationRunner {
 	 * @return AggregateVisibility The answer.
 	 */
 	private function aggregateVisibility(): AggregateVisibility {
-		return new AggregateVisibility($this->propertyRbac, $this->logger);
+		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
 	}//end aggregateVisibility()
 
 }//end class

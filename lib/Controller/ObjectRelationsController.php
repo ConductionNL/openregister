@@ -66,9 +66,9 @@ class ObjectRelationsController extends Controller {
 	 * @param ObjectRelationService $relations The relation row service.
 	 * @param RelationGraphService $graphs The bounded graph walk.
 	 * @param ObjectService $objectService Reads and writes objects, with RBAC.
+	 * @param IUserSession $userSession Current-user session.
 	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
 	 * @param SchemaMapper $schemaMapper Resolves the object's schema, whose rule carries the verb.
-	 * @param IUserSession $userSession Current-user session.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */

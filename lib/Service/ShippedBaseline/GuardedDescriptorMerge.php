@@ -156,10 +156,20 @@ class GuardedDescriptorMerge {
 						$nextBaseline[$path] = $b[$path];
 					}
 
+					$shippedValue = null;
+					if ($hasIncoming === true) {
+						$shippedValue = $i[$path];
+					}
+
+					$liveValue = null;
+					if ($hasLive === true) {
+						$liveValue = $l[$path];
+					}
+
 					$conflicts[] = [
 						'path' => $path,
-						'shipped' => ($hasIncoming === true ? $i[$path] : null),
-						'live' => ($hasLive === true ? $l[$path] : null),
+						'shipped' => $shippedValue,
+						'live' => $liveValue,
 						'shippedPresent' => $hasIncoming,
 						'livePresent' => $hasLive,
 					];

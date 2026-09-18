@@ -87,13 +87,18 @@ class JobScheduleService {
 		$schedule = $this->read(jobClass: $jobClass);
 		$nextDue = $this->nextDue(schedule: $schedule, lastRun: $lastRun);
 
+		$lastRunAt = null;
+		if ($lastRun > 0) {
+			$lastRunAt = (new DateTime())->setTimestamp($lastRun)->format(DateTime::ATOM);
+		}
+
 		return [
 			'job' => $jobClass,
 			'enabled' => $schedule['enabled'],
 			'intervalSeconds' => $schedule['intervalSeconds'],
 			'windowStartHour' => $schedule['windowStartHour'],
 			'windowEndHour' => $schedule['windowEndHour'],
-			'lastRun' => ($lastRun > 0) ? (new DateTime())->setTimestamp($lastRun)->format(DateTime::ATOM) : null,
+			'lastRun' => $lastRunAt,
 			'nextDue' => $nextDue?->format(DateTime::ATOM),
 		];
 
@@ -137,10 +142,15 @@ class JobScheduleService {
 			$schedule['windowEndHour'] = max(0, min(23, $windowEndHour));
 		}
 
+		$encoded = json_encode($schedule);
+		if ($encoded === false) {
+			$encoded = '{}';
+		}
+
 		$this->config->setAppValue(
 			self::APP_ID,
 			$this->key(jobClass: $jobClass),
-			(json_encode($schedule) ?: '{}')
+			$encoded
 		);
 
 		return $this->describe(jobClass: $jobClass);
@@ -195,11 +205,21 @@ class JobScheduleService {
 			return $default;
 		}
 
+		$windowStartHour = null;
+		if (isset($decoded['windowStartHour']) === true) {
+			$windowStartHour = (int)$decoded['windowStartHour'];
+		}
+
+		$windowEndHour = null;
+		if (isset($decoded['windowEndHour']) === true) {
+			$windowEndHour = (int)$decoded['windowEndHour'];
+		}
+
 		return [
 			'enabled' => (bool)($decoded['enabled'] ?? true),
 			'intervalSeconds' => max(60, (int)($decoded['intervalSeconds'] ?? self::DEFAULT_INTERVAL_SECONDS)),
-			'windowStartHour' => isset($decoded['windowStartHour']) ? (int)$decoded['windowStartHour'] : null,
-			'windowEndHour' => isset($decoded['windowEndHour']) ? (int)$decoded['windowEndHour'] : null,
+			'windowStartHour' => $windowStartHour,
+			'windowEndHour' => $windowEndHour,
 		];
 
 	}//end read()

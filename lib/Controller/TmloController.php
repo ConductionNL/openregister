@@ -77,8 +77,8 @@ class TmloController extends Controller {
 	 * @param ObjectService $objectService Object service for querying objects
 	 * @param RegisterMapper $registerMapper Register mapper
 	 * @param SchemaMapper $schemaMapper Schema mapper
-	 * @param ExportGate $exportGate The export verb, checked before any archival metadata leaves.
 	 * @param LoggerInterface $logger Logger interface
+	 * @param ExportGate $exportGate The export verb, checked before any archival metadata leaves.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */

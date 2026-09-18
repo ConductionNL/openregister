@@ -129,6 +129,10 @@ class ForcedChannelPolicy {
 
 		$internalOnly = (($declaration[self::INTERNAL_ONLY] ?? false) === true);
 		if ($internalOnly === true && $recipientIsInternal === false) {
+			// The refusal is always the internal-only layer's; $internalOnly is
+			// true on this branch by definition.
+			$refusedLayer = self::LAYER;
+
 			// Refused, and the refusal is the answer rather than an empty
 			// channel list: a caller that received no channels and no reason
 			// cannot tell this from a kind nobody configured.
@@ -137,7 +141,7 @@ class ForcedChannelPolicy {
 				'channels' => [],
 				'forced' => $forced,
 				'reason' => $reason,
-				'layer' => ($internalOnly === true ? self::LAYER : $layer),
+				'layer' => $refusedLayer,
 				'refusal' => self::REFUSED_EXTERNAL,
 			];
 		}

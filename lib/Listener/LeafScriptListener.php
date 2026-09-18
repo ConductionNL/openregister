@@ -291,7 +291,7 @@ class LeafScriptListener implements IEventListener {
 		// Delegated so the loader and the registry give ONE answer. They
 		// disagreeing is the failure this whole change is about: the registry
 		// accepting a leaf the loader never puts on a page.
-		return (new LeafBundle($this->appManager))->existsFor(appId: $appId);
+		return (new LeafBundle(appManager: $this->appManager))->existsFor(appId: $appId);
 	}//end hasLeafBundle()
 
 	/**

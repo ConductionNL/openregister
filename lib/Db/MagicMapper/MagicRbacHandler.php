@@ -1822,7 +1822,13 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processAuthorizationRuleSql(mixed $rule, array $userGroups, ?string $userId, bool $inheritFromPublic, string $columnPrefix = ''): mixed {
+	private function processAuthorizationRuleSql(
+		mixed $rule,
+		array $userGroups,
+		?string $userId,
+		bool $inheritFromPublic,
+		string $columnPrefix = ''
+	): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
 			return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
@@ -1831,7 +1837,13 @@ class MagicRbacHandler {
 		// Conditional rule: object with 'group' (or a 'user' override) and
 		// optional 'match'.
 		if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
-			return $this->processConditionalRuleSql(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic, columnPrefix: $columnPrefix);
+			return $this->processConditionalRuleSql(
+				rule: $rule,
+				userGroups: $userGroups,
+				userId: $userId,
+				inheritFromPublic: $inheritFromPublic,
+				columnPrefix: $columnPrefix
+			);
 		}
 
 		return false;
@@ -1849,7 +1861,13 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId, bool $inheritFromPublic, string $columnPrefix = ''): mixed {
+	private function processConditionalRuleSql(
+		array $rule,
+		array $userGroups,
+		?string $userId,
+		bool $inheritFromPublic,
+		string $columnPrefix = ''
+	): mixed {
 		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
 

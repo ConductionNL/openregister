@@ -284,7 +284,11 @@ class RelativeTimeCondition {
 
 		$declaration = $node[self::KEY];
 		$property = (string)$declaration['property'];
-		$comparison = (array_key_exists(self::MORE_THAN, $declaration) === true ? self::MORE_THAN : self::LESS_THAN);
+		$comparison = self::LESS_THAN;
+		if (array_key_exists(self::MORE_THAN, $declaration) === true) {
+			$comparison = self::MORE_THAN;
+		}
+
 		$offset = $declaration[$comparison];
 
 		$threshold = $this->threshold(
@@ -294,13 +298,18 @@ class RelativeTimeCondition {
 			calendar: $calendar
 		);
 
+		$operator = '>';
+		if ($comparison === self::MORE_THAN) {
+			$operator = '<=';
+		}
+
 		return [
 			'property' => $property,
 			// `moreThan` means older than the threshold, so the comparison is
 			// the LESS-than one. Getting this inversion wrong selects exactly
 			// the objects that are not due, which reads as "the rule does
 			// nothing" rather than as a bug.
-			'operator' => ($comparison === self::MORE_THAN ? '<=' : '>'),
+			'operator' => $operator,
 			'value' => $threshold->format(DATE_ATOM),
 		];
 	}//end compile()

@@ -61,7 +61,7 @@ class JobRunRefusedException extends Exception {
 	 * @param array<string, mixed> $details What the refusal collided with.
 	 */
 	public function __construct(string $message, string $reason, array $details = []) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 		$this->reason = $reason;
 		$this->details = $details;
 

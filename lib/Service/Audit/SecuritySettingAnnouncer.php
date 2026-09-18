@@ -217,7 +217,11 @@ class SecuritySettingAnnouncer {
 	 */
 	public static function render(mixed $value): string {
 		if (is_bool($value) === true) {
-			return ($value === true) ? 'on' : 'off';
+			if ($value === true) {
+				return 'on';
+			}
+
+			return 'off';
 		}
 
 		if ($value === null) {

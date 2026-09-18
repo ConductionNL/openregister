@@ -139,7 +139,10 @@ class MaintenanceModeMiddleware extends Middleware {
 	 * @return bool True when it stays reachable.
 	 */
 	private function reachableAnyway(Controller|string $controller): bool {
-		$class = is_string($controller) ? $controller : $controller::class;
+		$class = $controller::class;
+		if (is_string($controller) === true) {
+			$class = $controller;
+		}
 
 		return in_array($class, self::ALWAYS_REACHABLE, true);
 

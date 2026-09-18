@@ -214,7 +214,12 @@ class TransitionDocument {
 		$before = $document[self::BEFORE];
 		$after = ($document[self::AFTER] ?? []);
 
-		if (is_array($before) === true && is_array($after) === true && $before == $after) {
+		// The spaceship rather than `===` on purpose: two documents holding the
+		// same pairs in a different key order are the same document, and a save
+		// that re-serialises may hand back the keys in another order. `===`
+		// would read that as a transition and fire every rule on a write that
+		// changed nothing.
+		if (is_array($before) === true && is_array($after) === true && ($before <=> $after) === 0) {
 			return 'unchanged';
 		}
 

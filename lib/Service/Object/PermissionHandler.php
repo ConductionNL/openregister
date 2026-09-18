@@ -2644,7 +2644,9 @@ class PermissionHandler {
 		$registerSlug = null;
 		try {
 			$register = $this->getRegisterForSchema(schema: $schema);
-			$registerSlug = ($register === null ? null : $register->getSlug());
+			if ($register !== null) {
+				$registerSlug = $register->getSlug();
+			}
 		} catch (Throwable $e) {
 			// A register we cannot name is a register the grant cannot be
 			// checked against. That narrows rather than widens: a grant scoped

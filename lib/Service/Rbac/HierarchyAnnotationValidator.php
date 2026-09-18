@@ -110,11 +110,16 @@ class HierarchyAnnotationValidator {
 			return $findings;
 		}
 
+		$declaredProperties = [];
+		if (is_array($schema['properties'] ?? null) === true) {
+			$declaredProperties = $schema['properties'];
+		}
+
 		$findings = array_merge(
 			$findings,
 			$this->checkParentProperty(
 				parent: $parent,
-				properties: (is_array($schema['properties'] ?? null) === true ? $schema['properties'] : []),
+				properties: $declaredProperties,
 				slug: trim((string)($schema['slug'] ?? ''))
 			)
 		);
@@ -218,7 +223,13 @@ class HierarchyAnnotationValidator {
 			return true;
 		}
 
-		$tail = substr($target, (strrpos($target, '/') === false ? 0 : (int)strrpos($target, '/') + 1));
+		$lastSlash = strrpos($target, '/');
+		$offset = 0;
+		if ($lastSlash !== false) {
+			$offset = ($lastSlash + 1);
+		}
+
+		$tail = substr($target, $offset);
 
 		return ($tail === $slug);
 	}//end targetsSelf()

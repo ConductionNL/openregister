@@ -287,7 +287,10 @@ class ViewShareResolver {
 			// Decoding here rather than at every call site is what keeps the
 			// difference from becoming "this view is shared with nobody".
 			$decoded = json_decode($raw, true);
-			$raw = (is_array($decoded) === true) ? $decoded : [];
+			$raw = [];
+			if (is_array($decoded) === true) {
+				$raw = $decoded;
+			}
 		}
 
 		if (is_array($raw) === false) {

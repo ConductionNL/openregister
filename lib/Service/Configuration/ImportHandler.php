@@ -295,8 +295,9 @@ class ImportHandler {
 	 * @param UploadHandler $uploadHandler The upload handler.
 	 * @param ObjectService $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
-	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional guard that keeps local changes to an app-shipped schema.
 	 * @param ?IAppManager $appManager App manager for the seed-data app dependency check; null skips that check.
+	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
+	 *        guard that keeps local changes to an app-shipped schema.
 	 */
 	public function __construct(
 		SchemaMapper $schemaMapper,

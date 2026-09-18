@@ -249,14 +249,17 @@ class MoveObject {
 
 		$this->record(object: $object, from: $from, to: $to, actor: $actor, stranded: $stranded);
 
+		$errors = [];
+		if ($stranded === true) {
+			$errors = ['The object moved, and its old row could not be removed. It is readable at both addresses.'];
+		}
+
 		return [
 			'moved' => true,
 			'uuid' => $uuid,
 			'from' => $from,
 			'to' => $to,
-			'errors' => (($stranded === true)
-				? ['The object moved, and its old row could not be removed. It is readable at both addresses.']
-				: []),
+			'errors' => $errors,
 		];
 	}//end move()
 
@@ -285,7 +288,11 @@ class MoveObject {
 			return $path . ': ' . $message;
 		}
 
-		return (($message !== '') ? $message : 'invalid');
+		if ($message !== '') {
+			return $message;
+		}
+
+		return 'invalid';
 	}//end sentenceFor()
 
 	/**
@@ -323,6 +330,11 @@ class MoveObject {
 	 * @return void
 	 */
 	private function record(ObjectEntity $object, array $from, array $to, string $actor, bool $stranded): void {
+		$actorId = null;
+		if ($actor !== '') {
+			$actorId = $actor;
+		}
+
 		try {
 			$this->audit->createAuditTrailEntry(
 				object: $object,
@@ -332,7 +344,7 @@ class MoveObject {
 					'to' => $to,
 					'strandedSourceRow' => $stranded,
 				],
-				actorId: (($actor !== '') ? $actor : null)
+				actorId: $actorId
 			);
 		} catch (Throwable $e) {
 			// The move happened. Failing it now would leave the object moved

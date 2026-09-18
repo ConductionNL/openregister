@@ -167,11 +167,16 @@ class OperationsConsoleController extends Controller {
 	public function runs(): JSONResponse {
 		$hours = $this->request->getParam('hours');
 
+		$windowHours = null;
+		if (is_numeric($hours) === true) {
+			$windowHours = (int)$hours;
+		}
+
 		return new JSONResponse(
 			data: $this->jobsService->runs(
 				jobClass: $this->stringParam(name: 'job'),
 				outcome: $this->stringParam(name: 'outcome'),
-				windowHours: is_numeric($hours) ? (int)$hours : null,
+				windowHours: $windowHours,
 				limit: $this->intParam(name: 'limit', fallback: 50),
 				offset: $this->intParam(name: 'offset', fallback: 0)
 			)
@@ -182,6 +187,10 @@ class OperationsConsoleController extends Controller {
 	 * Start a job by hand, once.
 	 *
 	 * @return JSONResponse The run that was started, or the refusal.
+	 *
+	 * @auth admin-only starting a job by hand declares no NoAdminRequired attribute, so the
+	 *       middleware refuses a non-administrator before this controller is
+	 *       built, and CSRF stays required on the write.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
@@ -218,6 +227,10 @@ class OperationsConsoleController extends Controller {
 	 *
 	 * @return JSONResponse The schedule in force.
 	 *
+	 * @auth admin-only administering a schedule declares no NoAdminRequired attribute, so the
+	 *       middleware refuses a non-administrator before this controller is
+	 *       built, and CSRF stays required on the write.
+	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function schedule(): JSONResponse {
@@ -236,10 +249,15 @@ class OperationsConsoleController extends Controller {
 
 		$enabled = $this->request->getParam('enabled');
 
+		$wantedEnabled = null;
+		if (is_bool($enabled) === true) {
+			$wantedEnabled = $enabled;
+		}
+
 		return new JSONResponse(
 			data: $this->jobsService->administerSchedule(
 				jobClass: $job,
-				enabled: is_bool($enabled) ? $enabled : null,
+				enabled: $wantedEnabled,
 				intervalSeconds: $this->nullableIntParam(name: 'intervalSeconds'),
 				windowStartHour: $this->nullableIntParam(name: 'windowStartHour'),
 				windowEndHour: $this->nullableIntParam(name: 'windowEndHour')
@@ -266,6 +284,10 @@ class OperationsConsoleController extends Controller {
 	 * Administer the failure threshold.
 	 *
 	 * @return JSONResponse The threshold now in force.
+	 *
+	 * @auth admin-only moving the failure threshold declares no NoAdminRequired attribute, so
+	 *       the middleware refuses a non-administrator before this controller
+	 *       is built, and CSRF stays required on the write.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
@@ -318,6 +340,10 @@ class OperationsConsoleController extends Controller {
 	 *
 	 * @return JSONResponse What was changed.
 	 *
+	 * @auth admin-only applying a repair declares no NoAdminRequired attribute, so the
+	 *       middleware refuses a non-administrator before this controller is
+	 *       built, and CSRF stays required on the write.
+	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function repair(): JSONResponse {
@@ -328,6 +354,10 @@ class OperationsConsoleController extends Controller {
 	 * Maintenance mode: read it, enter it or leave it.
 	 *
 	 * @return JSONResponse The mode in force.
+	 *
+	 * @auth admin-only entering or leaving maintenance declares no NoAdminRequired attribute,
+	 *       so the middleware refuses a non-administrator before this
+	 *       controller is built, and CSRF stays required on the write.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */

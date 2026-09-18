@@ -127,7 +127,12 @@ class FlowBpmnImporter {
 		$nodes = [];
 		$edges = [];
 
-		foreach ($xpath->query('./*', $processes->item(0)) ?: [] as $child) {
+		$children = $xpath->query('./*', $processes->item(0));
+		if ($children === false) {
+			$children = [];
+		}
+
+		foreach ($children as $child) {
 			if (($child instanceof DOMElement) === false) {
 				continue;
 			}
@@ -180,7 +185,10 @@ class FlowBpmnImporter {
 		// carry the answer and the mapping is only consulted for files that do
 		// not.
 		$declared = $this->extensionType(element: $element, xpath: $xpath);
-		$type = ($declared !== '' ? $declared : $reading['type']);
+		$type = $reading['type'];
+		if ($declared !== '') {
+			$type = $declared;
+		}
 
 		$verdict = $reading['verdict'];
 		$action = $reading['note'];
@@ -279,7 +287,11 @@ class FlowBpmnImporter {
 
 		$decoded = json_decode((string)$found->item(0)->textContent, true);
 
-		return (is_array($decoded) === true ? $decoded : null);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return null;
 	}//end extensionConfig()
 
 	/**
@@ -313,7 +325,12 @@ class FlowBpmnImporter {
 	 */
 	private function positions(DOMXPath $xpath): array {
 		$positions = [];
-		foreach ($xpath->query('//bpmndi:BPMNShape') ?: [] as $shape) {
+		$shapes = $xpath->query('//bpmndi:BPMNShape');
+		if ($shapes === false) {
+			$shapes = [];
+		}
+
+		foreach ($shapes as $shape) {
 			if (($shape instanceof DOMElement) === false) {
 				continue;
 			}

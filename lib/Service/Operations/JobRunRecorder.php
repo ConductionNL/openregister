@@ -167,7 +167,7 @@ class JobRunRecorder {
 		$run->setCause(JobRun::CAUSE_MANUAL);
 		$run->setActor($actor);
 		$run->setMessage($message);
-		$run->setDetails(json_encode($details) ?: null);
+		$run->setDetails($this->encodedDetails(details: $details));
 
 		try {
 			return $this->runs->insert($run);
@@ -212,7 +212,7 @@ class JobRunRecorder {
 		$run->setArgumentDigest($this->digest(argument: $argument));
 
 		if ($details !== null) {
-			$run->setDetails(json_encode($details) ?: null);
+			$run->setDetails($this->encodedDetails(details: $details));
 		}
 
 		try {
@@ -298,4 +298,26 @@ class JobRunRecorder {
 		return substr(sha1($encoded), 0, 16);
 
 	}//end digest()
+
+	/**
+	 * The details column's value, or null when they do not encode.
+	 *
+	 * A run row that cannot be written is worse than one written without its
+	 * details, so an unencodable payload becomes null rather than an exception
+	 * on a path whose whole job is to record what already happened.
+	 *
+	 * @param array<string, mixed> $details The details to store.
+	 *
+	 * @return string|null The encoded details, or null.
+	 */
+	private function encodedDetails(array $details): ?string {
+		$encoded = json_encode($details);
+
+		if ($encoded === false) {
+			return null;
+		}
+
+		return $encoded;
+
+	}//end encodedDetails()
 }//end class

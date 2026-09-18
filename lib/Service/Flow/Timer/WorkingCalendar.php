@@ -426,8 +426,17 @@ final class WorkingCalendar {
 		}
 
 		if (is_string($value) === false || preg_match('/^([01][0-9]|2[0-3]):([0-5][0-9])$/', trim($value), $parts) !== 1) {
+			$shown = gettype($value);
+			if (is_scalar($value) === true) {
+				$shown = (string)$value;
+			}
+
 			throw new FlowTimerValidationException(
-				message: sprintf("Working calendar '%s' declares dayStartsAt '%s'; it must be HH:MM in 24-hour form.", $slug, is_scalar($value) === true ? (string)$value : gettype($value))
+				message: sprintf(
+					"Working calendar '%s' declares dayStartsAt '%s'; it must be HH:MM in 24-hour form.",
+					$slug,
+					$shown
+				)
 			);
 		}
 

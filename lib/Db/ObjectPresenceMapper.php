@@ -69,7 +69,7 @@ class ObjectPresenceMapper extends QBMapper {
 			->setMaxResults(1);
 
 		try {
-			return $this->findEntity($qb);
+			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
@@ -103,7 +103,7 @@ class ObjectPresenceMapper extends QBMapper {
 			)
 			->orderBy('arrived_at', 'ASC');
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 	}//end findPresent()
 
 	/**
@@ -150,7 +150,7 @@ class ObjectPresenceMapper extends QBMapper {
 			)
 			->setMaxResults($limit);
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 	}//end findStale()
 
 	/**

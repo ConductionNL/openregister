@@ -159,7 +159,11 @@ class NamedConditionLibrary {
 
 			// `{"not": {...}}` carries one node; `{"and": [...]}` carries a
 			// list of them. Both spellings appear in the corpus.
-			$children = ($this->isList(value: $value) === true ? $value : [$value]);
+			$children = [$value];
+			if ($this->isList(value: $value) === true) {
+				$children = $value;
+			}
+
 			foreach ($children as $child) {
 				foreach ($this->referencesIn(node: $child) as $name) {
 					$names[] = $name;

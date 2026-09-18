@@ -239,9 +239,10 @@ final class ReferenceFilterDeclaration {
 				continue;
 			}
 
-			$filter[$condition['field']] = ($condition['op'] === 'eq'
-				? $value
-				: [$condition['op'] => $value]);
+			$filter[$condition['field']] = [$condition['op'] => $value];
+			if ($condition['op'] === 'eq') {
+				$filter[$condition['field']] = $value;
+			}
 		}
 
 		if ($needs !== []) {

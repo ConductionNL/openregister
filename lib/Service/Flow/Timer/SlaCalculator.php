@@ -310,7 +310,8 @@ final class SlaCalculator {
 	 * @param DateTimeInterface $from The start instant.
 	 * @param float $value The amount; negative subtracts.
 	 * @param string $unit The unit.
-	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and refused when absent, ignored for hours and calendar days.
+	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and
+	 *        refused when absent, ignored for hours and calendar days.
 	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
 	 *
 	 * @return DateTimeImmutable The resulting instant.

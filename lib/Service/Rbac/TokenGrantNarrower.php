@@ -116,7 +116,10 @@ class TokenGrantNarrower {
 			now: $now
 		);
 
-		$block = (is_array($authorization) === true ? $authorization : []);
+		$block = [];
+		if (is_array($authorization) === true) {
+			$block = $authorization;
+		}
 
 		// The marker is written LAST and unconditionally, so a block that
 		// declared one of its own cannot claim a wider grant than the token

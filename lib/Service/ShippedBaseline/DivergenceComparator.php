@@ -165,11 +165,21 @@ class DivergenceComparator {
 				continue;
 			}
 
+			$shippedValue = null;
+			if ($shipped !== self::ABSENT) {
+				$shippedValue = $shipped;
+			}
+
+			$liveValue = null;
+			if ($current !== self::ABSENT) {
+				$liveValue = $current;
+			}
+
 			$divergences[] = [
 				'path' => $path,
 				'state' => self::LOCAL,
-				'shipped' => ($shipped === self::ABSENT ? null : $shipped),
-				'live' => ($current === self::ABSENT ? null : $current),
+				'shipped' => $shippedValue,
+				'live' => $liveValue,
 				'shippedPresent' => ($shipped !== self::ABSENT),
 				'livePresent' => ($current !== self::ABSENT),
 			];

@@ -166,7 +166,10 @@ class NamedConditionEvaluator {
 		}
 
 		if (($op === 'and' || $op === 'or') && is_array($value) === true) {
-			$children = (array_is_list($value) === true ? $value : [$value]);
+			$children = [$value];
+			if (array_is_list($value) === true) {
+				$children = $value;
+			}
 
 			foreach ($children as $child) {
 				$holds = $this->holds(node: $child, document: $document, library: $library, depth: $depth);

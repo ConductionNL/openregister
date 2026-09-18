@@ -137,9 +137,14 @@ class AdministeredValidationListener implements IEventListener {
 		// validation can say "this may not change once it is set" with the same
 		// `$before`/`$after` vocabulary a rule uses. Composition, rather than a
 		// second document shape for validations only.
+		$before = null;
+		if ($oldObject !== null) {
+			$before = ($oldObject->getObject() ?? []);
+		}
+
 		$document = (new TransitionDocument())->build(
 			after: ($newObject->getObject() ?? []),
-			before: ($oldObject === null ? null : ($oldObject->getObject() ?? []))
+			before: $before
 		);
 
 		$outcome = $this->validations->evaluate(
@@ -204,6 +209,11 @@ class AdministeredValidationListener implements IEventListener {
 			return;
 		}
 
+		$entryVerdict = $verdict;
+		if (($entry['unevaluable'] ?? false) === true) {
+			$entryVerdict = RuleVocabulary::VERDICT_ERROR;
+		}
+
 		try {
 			$this->ruleRuns->record(
 				ruleId: RuleDescriptor::idFor(
@@ -213,7 +223,7 @@ class AdministeredValidationListener implements IEventListener {
 				),
 				schemaSlug: $slug,
 				trace: new RuleTrace(
-					verdict: (($entry['unevaluable'] ?? false) === true ? RuleVocabulary::VERDICT_ERROR : $verdict),
+					verdict: $entryVerdict,
 					operand: implode(', ', ($entry['properties'] ?? [])),
 					message: (string)($entry['message'] ?? '')
 				),

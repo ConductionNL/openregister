@@ -169,6 +169,11 @@ final class PropertySourceDeclaration {
 		// `default` is the weaker promise and has to be asked for by name.
 		$mode = ($raw['mode'] ?? self::MODE_LIVE);
 		if (is_string($mode) === false || in_array($mode, self::MODES, true) === false) {
+			$shownMode = gettype($mode);
+			if (is_scalar($mode) === true) {
+				$shownMode = (string)$mode;
+			}
+
 			throw new PropertySourceException(
 				sprintf(
 					'\'%s\' at \'%s\' has mode \'%s\'. It must be one of: %s. '
@@ -176,7 +181,7 @@ final class PropertySourceDeclaration {
 					. 'whether a person may change what the provider returned.',
 					self::ANNOTATION,
 					$path,
-					(is_scalar($mode) === true ? (string)$mode : gettype($mode)),
+					$shownMode,
 					implode(', ', self::MODES)
 				)
 			);

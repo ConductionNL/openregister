@@ -160,9 +160,14 @@ class CrossRegisterExistenceService {
 			);
 		}
 
+		$wanted = [];
+		if (is_array($reveal) === true) {
+			$wanted = $reveal;
+		}
+
 		[$allowed, $refusedFields] = $this->narrowReveal(
 			schema: $schema,
-			reveal: ((is_array($reveal) === true) ? $reveal : [])
+			reveal: $wanted
 		);
 
 		try {
@@ -194,6 +199,13 @@ class CrossRegisterExistenceService {
 
 		$rows = $this->rowsOf(value: $rows);
 
+		// FIELD BY FIELD, from the first match only. Nothing of the row travels
+		// but the values a caller named and the schema allowed.
+		$revealed = [];
+		if ($rows !== []) {
+			$revealed = $this->reveal(row: $rows[0], fields: $allowed);
+		}
+
 		return [
 			'register' => $register,
 			'schema' => $schema,
@@ -201,7 +213,7 @@ class CrossRegisterExistenceService {
 			'matches' => count($rows),
 			// FIELD BY FIELD, from the first match only. Nothing of the row
 			// travels but the values a caller named and the schema allowed.
-			'revealed' => (($rows === []) ? [] : $this->reveal(row: $rows[0], fields: $allowed)),
+			'revealed' => $revealed,
 			'refusedFields' => $refusedFields,
 			'refused' => '',
 		];

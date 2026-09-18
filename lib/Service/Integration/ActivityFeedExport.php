@@ -123,7 +123,10 @@ class ActivityFeedExport {
 			return '';
 		}
 
-		$zone = (in_array($timezone, timezone_identifiers_list(), true) === true ? $timezone : 'UTC');
+		$zone = 'UTC';
+		if (in_array($timezone, timezone_identifiers_list(), true) === true) {
+			$zone = $timezone;
+		}
 
 		return (new DateTimeImmutable('@' . $timestamp))
 			->setTimezone(new DateTimeZone($zone))

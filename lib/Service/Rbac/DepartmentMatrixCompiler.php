@@ -287,7 +287,11 @@ class DepartmentMatrixCompiler {
 			return $action;
 		}
 
-		return (in_array('handle', $claimedVerbs, true) === true) ? 'handle' : self::HANDLE_FALLBACK;
+		if (in_array('handle', $claimedVerbs, true) === true) {
+			return 'handle';
+		}
+
+		return self::HANDLE_FALLBACK;
 	}//end resolveAction()
 
 	/**

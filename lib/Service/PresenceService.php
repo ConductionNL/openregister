@@ -130,7 +130,11 @@ class PresenceService {
 		$row->setLastSeen($this->asMutable(moment: $now));
 
 		try {
-			$saved = (($existing === null) ? $this->presence->insert($row) : $this->presence->update($row));
+			if ($existing === null) {
+				$saved = $this->presence->insert($row);
+			} else {
+				$saved = $this->presence->update($row);
+			}
 		} catch (Throwable $e) {
 			// A beat that could not be written is not worth failing a page
 			// over: the reader simply drops off the list in 90 seconds, which

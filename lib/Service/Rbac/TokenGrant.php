@@ -131,13 +131,23 @@ class TokenGrant {
 			return new self(verbs: [], tokenId: $tokenId);
 		}
 
+		$match = null;
+		if (is_array(($stored['match'] ?? null)) === true) {
+			$match = $stored['match'];
+		}
+
+		$rateLimit = null;
+		if (is_numeric(($stored['rateLimit'] ?? null)) === true) {
+			$rateLimit = (int)$stored['rateLimit'];
+		}
+
 		return new self(
 			verbs: array_values(array_map(static fn (mixed $v): string => (string)$v, $verbs)),
 			registers: self::listOrNull(value: ($stored['registers'] ?? null)),
 			schemas: self::listOrNull(value: ($stored['schemas'] ?? null)),
-			match: (is_array(($stored['match'] ?? null)) === true ? $stored['match'] : null),
+			match: $match,
 			expiresAt: self::dateOrNull(value: ($stored['expiresAt'] ?? null)),
-			rateLimit: (is_numeric(($stored['rateLimit'] ?? null)) === true ? (int)$stored['rateLimit'] : null),
+			rateLimit: $rateLimit,
 			tokenId: $tokenId
 		);
 	}//end fromStored()

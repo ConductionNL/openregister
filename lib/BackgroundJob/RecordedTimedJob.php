@@ -81,7 +81,7 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 		$this->recorder->around(
 			jobClass: static::class,
 			work: function () use ($argument): void {
-				$this->runRecorded($argument);
+				$this->runRecorded(argument: $argument);
 			},
 			argument: $argument
 		);

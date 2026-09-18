@@ -151,16 +151,30 @@ class ConflictReport {
 
 		$cause = ($intervening[0] ?? null);
 
+		$noun = 'fields';
+		if (count($conflicts) === 1) {
+			$noun = 'field';
+		}
+
+		$message = 'This object changed since you read it, and somebody else wrote the same ' . $noun . '.';
+		if ($conflicts === []) {
+			$message = 'This object changed since you read it. Re-read it and try again.';
+		}
+
+		$changedBy = null;
+		$changedAt = null;
+		if ($cause !== null) {
+			$changedBy = $this->actorOf(entry: $cause);
+			$changedAt = $cause->getCreated()?->format(DateTimeInterface::ATOM);
+		}
+
 		return [
 			'error' => self::ERROR,
 			'code' => self::CODE,
-			'message' => (($conflicts === [])
-				? 'This object changed since you read it. Re-read it and try again.'
-				: 'This object changed since you read it, and somebody else wrote the same '
-					. ((count($conflicts) === 1) ? 'field' : 'fields') . '.'),
+			'message' => $message,
 			'conflicts' => $conflicts,
-			'changedBy' => (($cause === null) ? null : $this->actorOf(entry: $cause)),
-			'changedAt' => (($cause === null) ? null : $cause->getCreated()?->format(DateTimeInterface::ATOM)),
+			'changedBy' => $changedBy,
+			'changedAt' => $changedAt,
 		];
 	}//end build()
 

@@ -65,7 +65,7 @@ class RecomputeTimersForCalendarJob extends QueuedJob {
 		private readonly CalendarRecompute $recompute,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct($time);
+		parent::__construct(time: $time);
 	}//end __construct()
 
 	/**
@@ -78,8 +78,13 @@ class RecomputeTimersForCalendarJob extends QueuedJob {
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
 	protected function run($argument): void {
-		$slug = trim((string)(is_array($argument) === true ? ($argument['slug'] ?? '') : ''));
-		$version = trim((string)(is_array($argument) === true ? ($argument['version'] ?? '') : ''));
+		$arguments = [];
+		if (is_array($argument) === true) {
+			$arguments = $argument;
+		}
+
+		$slug = trim((string)($arguments['slug'] ?? ''));
+		$version = trim((string)($arguments['version'] ?? ''));
 
 		if ($slug === '' || $version === '') {
 			$this->logger->warning('[RecomputeTimersForCalendarJob] queued without a slug and a version; nothing to do');

@@ -136,8 +136,8 @@ class ObjectSharingService {
 	 * @param ObjectScopeResolver $scopeResolver The scope vocabulary.
 	 * @param ObjectGrantResolver $grantResolver The grant resolver, to drop its per-request memo.
 	 * @param IManager $shareManager Core share manager.
-	 * @param HierarchyDescender $hierarchy Resolves an object's ancestors, for the inherited grants.
 	 * @param LoggerInterface $logger Logger.
+	 * @param HierarchyDescender $hierarchy Resolves an object's ancestors, for the inherited grants.
 	 */
 	public function __construct(
 		private readonly MagicMapper $mapper,

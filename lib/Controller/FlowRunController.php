@@ -726,12 +726,17 @@ class FlowRunController extends Controller {
 		}
 
 		$mapping = $this->request->getParam('mapping', []);
+		$nodeMapping = [];
+		if (is_array($mapping) === true) {
+			$nodeMapping = $mapping;
+		}
+
 		$outcome = $this->migrations->migrate(
 			runUuid: $uuid,
 			targetVersion: (int)$this->request->getParam('targetVersion', 0),
 			reason: (string)$this->request->getParam('reason', ''),
 			actor: $actor->getUID(),
-			mapping: ((is_array($mapping) === true) ? $mapping : []),
+			mapping: $nodeMapping,
 			dryRun: ($this->request->getParam('dryRun', false) === true),
 		);
 
@@ -797,6 +802,11 @@ class FlowRunController extends Controller {
 
 		$mapping = $this->request->getParam('mapping', []);
 
+		$nodeMapping = [];
+		if (is_array($mapping) === true) {
+			$nodeMapping = $mapping;
+		}
+
 		return new JSONResponse(
 			$this->migrations->migrateRunsOfVersion(
 				flowId: $flow,
@@ -804,7 +814,7 @@ class FlowRunController extends Controller {
 				targetVersion: (int)$this->request->getParam('targetVersion', 0),
 				reason: $reason,
 				actor: $actor->getUID(),
-				mapping: ((is_array($mapping) === true) ? $mapping : []),
+				mapping: $nodeMapping,
 			)
 		);
 	}//end migrateRuns()

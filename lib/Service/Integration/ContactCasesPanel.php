@@ -129,7 +129,11 @@ class ContactCasesPanel {
 				// whatever the map happened to hold.
 				$byCount = ($right['count'] <=> $left['count']);
 
-				return ($byCount !== 0 ? $byCount : strcasecmp($left['label'], $right['label']));
+				if ($byCount !== 0) {
+					return $byCount;
+				}
+
+				return strcasecmp($left['label'], $right['label']);
 			}
 		);
 

@@ -214,7 +214,11 @@ final class WriteCause {
 	public static function normalise(string $cause): string {
 		$cause = strtolower(trim($cause));
 
-		return ((in_array($cause, self::ALL, true) === true) ? $cause : self::PERSON);
+		if (in_array($cause, self::ALL, true) === true) {
+			return $cause;
+		}
+
+		return self::PERSON;
 	}
 
 	/**

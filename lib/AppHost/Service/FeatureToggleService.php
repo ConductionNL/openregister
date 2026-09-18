@@ -180,7 +180,10 @@ class FeatureToggleService {
 			}
 
 			$mode = (string)($declaration['failMode'] ?? self::FAIL_OPEN);
-			$modes[$key] = ($mode === self::FAIL_CLOSED ? self::FAIL_CLOSED : self::FAIL_OPEN);
+			$modes[$key] = self::FAIL_OPEN;
+			if ($mode === self::FAIL_CLOSED) {
+				$modes[$key] = self::FAIL_CLOSED;
+			}
 		}
 
 		return $modes;
@@ -237,7 +240,10 @@ class FeatureToggleService {
 			$modes = $this->failModes(declarations: $declarations);
 			$merged = [];
 			foreach ($defaults as $key => $default) {
-				$merged[$key] = (($modes[$key] ?? self::FAIL_OPEN) === self::FAIL_CLOSED ? false : $default);
+				$merged[$key] = $default;
+				if (($modes[$key] ?? self::FAIL_OPEN) === self::FAIL_CLOSED) {
+					$merged[$key] = false;
+				}
 			}
 
 			$this->memo[$app] = $merged;

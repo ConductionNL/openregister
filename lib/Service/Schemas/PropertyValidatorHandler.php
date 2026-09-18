@@ -512,11 +512,20 @@ class PropertyValidatorHandler {
 		'ranges' => ['value' => 'array', 'description' => 'The classes this property may point at.'],
 		'authorization' => ['value' => 'object', 'description' => 'Which roles or groups may read and write this one property.'],
 		'scope' => ['value' => 'string', 'description' => 'The team or unit this field belongs to. Only they may read or change it.'],
-		'x-openregister-property-source' => ['value' => 'object', 'description' => 'Where this one field\'s values come from: a provider id, what to ask it, and whether the answer is looked up live or offered as a starting value. It binds ONE FIELD, not the whole schema.'],
+		'x-openregister-property-source' => [
+			'value' => 'object',
+			'description' => 'Where this one field\'s values come from: a provider id, what to ask it, and whether the answer is '
+				. 'looked up live or offered as a starting value. It binds ONE FIELD, not the whole schema.',
+		],
 		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
 		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
 		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
-		'conceptScheme' => ['value' => 'string', 'description' => 'The SKOS concept scheme this field takes its choices from, by slug. The concepts are the answers, so the list is maintained once in the vocabulary register and every schema binding to it follows. A field carrying both this and an inline enum has two sources, and the scheme is the one that wins.'],
+		'conceptScheme' => [
+			'value' => 'string',
+			'description' => 'The SKOS concept scheme this field takes its choices from, by slug. The concepts are the answers, so '
+				. 'the list is maintained once in the vocabulary register and every schema binding to it follows. A '
+				. 'field carrying both this and an inline enum has two sources, and the scheme is the one that wins.',
+		],
 	];
 
 	/**

@@ -151,11 +151,21 @@ class MaintenanceModeService {
 	public function state(): array {
 		$since = $this->config->getAppValue(self::APP_ID, self::SETTING_SINCE, '');
 
+		$sinceAt = null;
+		if ($since !== '') {
+			$sinceAt = $since;
+		}
+
+		$actor = $this->config->getAppValue(self::APP_ID, self::SETTING_ACTOR, '');
+		if ($actor === '') {
+			$actor = null;
+		}
+
 		return [
 			'holds' => $this->holds(),
 			'message' => $this->message(),
-			'since' => ($since !== '') ? $since : null,
-			'actor' => ($this->config->getAppValue(self::APP_ID, self::SETTING_ACTOR, '') ?: null),
+			'since' => $sinceAt,
+			'actor' => $actor,
 		];
 
 	}//end state()

@@ -4800,6 +4800,12 @@ class ObjectsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * @no-admin-idor-exempt the probe names no object id; the guard is in
+	 *       CrossRegisterExistenceService::probe(), which sends every probe
+	 *       through the search with `_rbac: true` and answers REFUSED rather
+	 *       than "nothing exists" when the caller could not have searched that
+	 *       register.
+	 *
 	 * @psalm-suppress PossiblyUnusedMethod
 	 *
 	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
@@ -4814,7 +4820,12 @@ class ObjectsController extends Controller {
 
 		$service = $this->container->get(\OCA\OpenRegister\Service\CrossRegisterExistenceService::class);
 		$probes = $this->request->getParam('probes', []);
-		$answer = $service->probe(probes: ((is_array($probes) === true) ? $probes : []));
+		$asked = [];
+		if (is_array($probes) === true) {
+			$asked = $probes;
+		}
+
+		$answer = $service->probe(probes: $asked);
 
 		if (isset($answer['error']) === true) {
 			return new JSONResponse(data: $answer, statusCode: 422);
@@ -4945,7 +4956,11 @@ class ObjectsController extends Controller {
 		// A bare word like `application/json` can still parse on some builds,
 		// so the round trip has to look like the input rather than merely
 		// succeeding: an instant this app wrote always carries a date.
-		return ((preg_match('/\\d{4}-\\d{2}-\\d{2}/', $value) === 1) ? $parsed->format(\DateTimeInterface::ATOM) : null);
+		if (preg_match('/\\d{4}-\\d{2}-\\d{2}/', $value) === 1) {
+			return $parsed->format(\DateTimeInterface::ATOM);
+		}
+
+		return null;
 	}//end asExpectedVersion()
 
 	/**
@@ -5299,7 +5314,11 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		return (($found instanceof ObjectEntity) ? $found : null);
+		if ($found instanceof ObjectEntity) {
+			return $found;
+		}
+
+		return null;
 	}//end presenceObject()
 
 	/**

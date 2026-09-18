@@ -151,10 +151,17 @@ class SettingsChangeAuditor {
 			}
 
 			$secret = in_array($key, $secretKeys, true);
+			$shownOld = $old;
+			$shownNew = $new;
+			if ($secret === true) {
+				$shownOld = $this->maskIfPresent(value: $old, present: $hadBefore);
+				$shownNew = $this->maskIfPresent(value: $new, present: $hasAfter);
+			}
+
 			$changes[] = [
 				'key' => $key,
-				'old' => ($secret === true ? $this->maskIfPresent(value: $old, present: $hadBefore) : $old),
-				'new' => ($secret === true ? $this->maskIfPresent(value: $new, present: $hasAfter) : $new),
+				'old' => $shownOld,
+				'new' => $shownNew,
 				'secret' => $secret,
 			];
 		}//end foreach

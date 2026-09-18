@@ -329,11 +329,21 @@ class ShippedConfigurationGuard {
 			unset($next[$path]);
 		}
 
+		$from = null;
+		if ($hasLive === true) {
+			$from = $liveParts[$path];
+		}
+
+		$to = null;
+		if ($hasShipped === true) {
+			$to = $shippedParts[$path];
+		}
+
 		return [
 			'applicable' => true,
 			'reason' => '',
-			'from' => ($hasLive === true ? $liveParts[$path] : null),
-			'to' => ($hasShipped === true ? $shippedParts[$path] : null),
+			'from' => $from,
+			'to' => $to,
 			'definition' => $parts->unflatten(parts: $next),
 		];
 	}//end previewReset()
@@ -426,8 +436,15 @@ class ShippedConfigurationGuard {
 			$row = new AuditTrail();
 			$row->setUuid(Uuid::v4()->toRfc4122());
 			$row->setAction($action);
-			$row->setUser(($user === null ? 'system' : $user->getUID()));
-			$row->setUserName(($user === null ? 'System' : $user->getDisplayName()));
+			$actorId = 'system';
+			$actorName = 'System';
+			if ($user !== null) {
+				$actorId = $user->getUID();
+				$actorName = $user->getDisplayName();
+			}
+
+			$row->setUser($actorId);
+			$row->setUserName($actorName);
 			$row->setChanged($changed);
 			$row->setCreated(new DateTime());
 

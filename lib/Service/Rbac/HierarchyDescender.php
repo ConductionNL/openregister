@@ -398,12 +398,13 @@ class HierarchyDescender {
 			try {
 				$schemaManager = $this->db->createSchema();
 				$prefixed = $this->db->getPrefix() . $table;
-				$this->columns[$table] = ($schemaManager->hasTable($prefixed) === true)
-					? array_map(
+				$this->columns[$table] = [];
+				if ($schemaManager->hasTable($prefixed) === true) {
+					$this->columns[$table] = array_map(
 						static fn (object $c): string => strtolower((string)$c->getName()),
 						$schemaManager->getTable($prefixed)->getColumns()
-					)
-					: [];
+					);
+				}
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					message: '[HierarchyDescender] Could not read a table\'s columns; treating it as carrying none',
