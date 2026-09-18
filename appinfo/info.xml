@@ -133,6 +133,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\StateHistoryRebuildJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>

@@ -57,6 +57,12 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
+ * @method array|null getAlert()
+ * @method void setAlert(?array $alert)
+ * @method array|null getAlertState()
+ * @method void setAlertState(?array $alertState)
+ * @method DateTime|null getAlertEvaluatedAt()
+ * @method void setAlertEvaluatedAt(?DateTime $alertEvaluatedAt)
  * @method void setUpdated(?DateTime $updated)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -148,6 +154,30 @@ class View extends Entity implements JsonSerializable {
 	protected ?array $presentation = null;
 
 	/**
+	 * The declared count alert, or null when the view has none.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $alert = null;
+
+	/**
+	 * What the sweep remembers between passes: the state and the last count.
+	 *
+	 * Two facts and no more. An alert that remembered its own history would be
+	 * a different alert from the one somebody set.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $alertState = null;
+
+	/**
+	 * When the sweep last counted this view.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $alertEvaluatedAt = null;
+
+	/**
 	 * Groups this view is shared with, and at which mode.
 	 *
 	 * A list of `{group, mode}` with `mode` one of `read` or `write` (ledger
@@ -197,6 +227,9 @@ class View extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'favoredBy', type: 'json');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'alert', type: 'json');
+		$this->addType(fieldName: 'alertState', type: 'json');
+		$this->addType(fieldName: 'alertEvaluatedAt', type: 'datetime');
 	}//end __construct()
 
 	/**
@@ -316,6 +349,8 @@ class View extends Entity implements JsonSerializable {
 			'isDefault' => $this->isDefault,
 			'query' => $this->query,
 			'presentation' => $this->getPresentationFormatted(),
+			'alert' => $this->alert,
+			'alertState' => $this->alertState,
 			'sharedWith' => ($this->sharedWith ?? []),
 			// `@self.access` is what this CALLER may do, and it is absent
 			// rather than guessed when nobody resolved it: a serialiser that
