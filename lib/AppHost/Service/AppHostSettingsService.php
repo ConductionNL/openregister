@@ -59,6 +59,16 @@ class AppHostSettingsService {
 	protected const DEFAULT_CONFIG_KEYS = ['register'];
 
 	/**
+	 * The resolved feature declarations, for this request only.
+	 *
+	 * Resolving them reads the register JSON and its fragments off disk, and
+	 * `isFeatureEnabled()` is meant to be callable inside a guard.
+	 *
+	 * @var array<int, mixed>|null
+	 */
+	private ?array $featureDeclarations = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appId The calling (leaf) app id.
@@ -207,6 +217,133 @@ class AppHostSettingsService {
 			);
 		}
 	}//end auditSettingsChange()
+
+	/**
+	 * The feature toggles this app declares.
+	 *
+	 * 🔑 THE DECLARATION HAS TO BE READABLE ON THE SERVER. The change names the
+	 * manifest as where an app declares its toggles, and the manifest is a
+	 * client artefact: PHP cannot ask it whether a guard is on. So the
+	 * server-side declaration is the `features` block of the app's register
+	 * configuration, which this service already resolves, and the manifest half
+	 * (task 1.1, in nextcloud-vue) is the same list for the client. When the
+	 * manifest schema lands, one loader feeds both and this hook is where it
+	 * arrives; nothing that reads a toggle changes.
+	 *
+	 * Overridable, like {@see self::configKeys()}.
+	 *
+	 * @return array<int, mixed> The declared toggles.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	protected function featureDeclarations(): array {
+		if ($this->featureDeclarations !== null) {
+			return $this->featureDeclarations;
+		}
+
+		$declarations = [];
+		try {
+			[$data] = $this->resolveRegisterConfiguration();
+			$declared = ($data[FeatureToggleService::DECLARATION_KEY] ?? null);
+			if (is_array($declared) === true) {
+				$declarations = array_values($declared);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] feature declarations unreadable, no toggles offered: %s', $this->appId, $e->getMessage())
+			);
+		}
+
+		$this->featureDeclarations = $declarations;
+
+		return $declarations;
+	}//end featureDeclarations()
+
+	/**
+	 * The effective feature toggles: declared defaults under instance overrides.
+	 *
+	 * @return array<string, bool> The toggles.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function getFeatures(): array {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return [];
+		}
+
+		return $toggles->merged(app: $this->appId, declarations: $this->featureDeclarations());
+	}//end getFeatures()
+
+	/**
+	 * Set instance overrides for declared toggles.
+	 *
+	 * @param array<string, mixed> $overrides The submitted overrides.
+	 *
+	 * @return array<string, bool> The toggles after the write.
+	 *
+	 * @throws \OCA\OpenRegister\AppHost\Exception\FeatureToggleRefusedException When a key is not declared.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function updateFeatures(array $overrides): array {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return [];
+		}
+
+		return $toggles->update(
+			app: $this->appId,
+			declarations: $this->featureDeclarations(),
+			overrides: $overrides
+		);
+	}//end updateFeatures()
+
+	/**
+	 * Whether one declared feature is on.
+	 *
+	 * 🔴 AN ABSENT TOGGLE SERVICE READS FALSE, not true. This service is the
+	 * base every fleet app extends and the toggle service is resolved from the
+	 * container, so "I cannot tell" is a real answer here — and the safe
+	 * reading of it is that the feature is off. Returning true would mean a
+	 * container problem silently switches every guarded feature on.
+	 *
+	 * @param string $key The toggle.
+	 *
+	 * @return bool True when the feature is on.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function isFeatureEnabled(string $key): bool {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return false;
+		}
+
+		return $toggles->isEnabled(app: $this->appId, key: $key, declarations: $this->featureDeclarations());
+	}//end isFeatureEnabled()
+
+	/**
+	 * The toggle service, or null when it cannot be resolved.
+	 *
+	 * @return FeatureToggleService|null The service.
+	 */
+	private function featureToggles(): ?FeatureToggleService {
+		try {
+			$service = $this->container->get(FeatureToggleService::class);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] feature toggle service unavailable; every toggle reads off: %s', $this->appId, $e->getMessage())
+			);
+			return null;
+		}
+
+		if (($service instanceof FeatureToggleService) === false) {
+			return null;
+		}
+
+		return $service;
+	}//end featureToggles()
 
 	/**
 	 * Which of this app's config keys hold a secret.
