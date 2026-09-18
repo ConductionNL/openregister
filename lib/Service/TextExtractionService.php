@@ -1180,9 +1180,13 @@ class TextExtractionService {
 	 *
 	 * @param int $limit Maximum number of files to process
 	 *
-	 * @return int[] Statistics about the extraction process: {processed, failed, total}
+	 * @return int[] Statistics about the extraction process: {processed, failed, total, truncated}
 	 *
-	 * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
+	 * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>, truncated: bool}
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The windowed walk is a loop plus
+	 *   four single-line guards — budget reached, window empty, row without a usable
+	 *   fileid, pool exhausted. Each is a guard clause, not nested logic.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1234,6 +1238,15 @@ class TextExtractionService {
 					break;
 				}
 
+				// A row without a usable fileid is skipped rather than passed on. The
+				// cron job used to carry this guard and lost it when its own loop moved
+				// here; `fc.fileid` is a NOT NULL primary key so it should not fire, but
+				// a safety net someone wrote deliberately is not worth dropping silently.
+				$fileId = (int) ($ncFile['fileid'] ?? 0);
+				if ($fileId === 0) {
+					continue;
+				}
+
 				try {
 					$this->logger->debug(
 						message: '[TextExtractionService] Processing file',
@@ -1246,7 +1259,7 @@ class TextExtractionService {
 					);
 
 					// Trigger extraction for this file.
-					$this->extractFile(fileId: $ncFile['fileid'], forceReExtract: false);
+					$this->extractFile(fileId: $fileId, forceReExtract: false);
 					$processed++;
 				} catch (Exception $e) {
 					$failed++;
@@ -1293,6 +1306,11 @@ class TextExtractionService {
 			'processed' => $processed,
 			'failed' => $failed,
 			'total' => $seen,
+			// The walk is capped at MAX_PENDING_WINDOWS windows. Hitting that cap
+			// while the budget still had room means files may remain pending that
+			// this run never looked at — indistinguishable from "done" in the
+			// counters alone, which is how a truncated backfill reads as a finished one.
+			'truncated' => ($windows >= self::MAX_PENDING_WINDOWS && $processed < $limit),
 		];
 	}//end extractPendingFiles()
 

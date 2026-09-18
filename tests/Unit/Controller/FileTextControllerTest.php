@@ -277,6 +277,43 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals(500, $data['processed']);
 	}//end testBulkExtractCapsLimitAt500()
 
+	/**
+	 * The cap needs a floor to match. `?limit=0` used to reach the service,
+	 * which walked nothing and answered `processed 0, failed 0, total 0` — a
+	 * success an admin cannot tell apart from "the queue is empty".
+	 *
+	 * @dataProvider provideNonPositiveLimits
+	 *
+	 * @param string $requested The limit as it arrives on the request.
+	 */
+	public function testBulkExtractFloorsANonPositiveLimitAtOne(string $requested): void {
+		$this->request->method('getParam')
+			->willReturnMap(
+				[
+					['limit', 100, $requested],
+				]
+			);
+		$this->textExtractor->expects($this->once())
+			->method('extractPendingFiles')
+			->with(1)
+			->willReturn(['processed' => 1, 'failed' => 0, 'total' => 1]);
+
+		$result = $this->controller->bulkExtract();
+
+		$this->assertEquals(200, $result->getStatus());
+	}//end testBulkExtractFloorsANonPositiveLimitAtOne()
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function provideNonPositiveLimits(): array {
+		return [
+			'zero'     => ['0'],
+			'negative' => ['-10'],
+			'garbage'  => ['abc'],
+		];
+	}//end provideNonPositiveLimits()
+
 	public function testBulkExtractUsesDefaultLimit(): void {
 		$this->request->method('getParam')
 			->willReturnMap(

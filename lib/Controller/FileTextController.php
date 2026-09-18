@@ -265,8 +265,10 @@ class FileTextController extends Controller {
 
 		try {
 			$limit = (int)$this->request->getParam('limit', 100);
-			$limit = min($limit, 500);
-			// Max 500 files at once.
+			// Floor as well as ceiling: `?limit=0` used to reach the service, which
+			// then walked nothing and answered `processed 0, failed 0, total 0` — a
+			// success indistinguishable from "the queue is empty". Max 500 at once.
+			$limit = max(1, min($limit, 500));
 			$result = $this->textExtractor->extractPendingFiles($limit);
 
 			return new JSONResponse(
