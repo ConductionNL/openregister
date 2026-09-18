@@ -538,13 +538,36 @@ class MagicMapper extends AbstractObjectMapper {
 			logger: $this->logger
 		);
 
+		// The table handler is built BEFORE the search handler because the
+		// related-row applier needs it, and the search handler needs the
+		// applier. It depends on nothing built later, so the move is safe; the
+		// facet handler still comes after the search handler it consumes.
+		$this->tableHandler = new MagicTableHandler(
+			db: $this->db,
+			appConfig: $this->appConfig,
+			logger: $this->logger,
+			magicMapper: $this
+		);
+
+		// Assembled by hand rather than resolved from the container, for the
+		// same reason the cache handler above is not: the container would walk
+		// MagicMapper → applier → MagicTableHandler → MagicMapper and recurse.
+		$relatedRowApplier = new \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier(
+			schemaMapper: $this->schemaMapper,
+			tableHandler: $this->tableHandler,
+			rbacHandler: $this->rbacHandler,
+			db: $this->db,
+			logger: $this->logger
+		);
+
 		$this->searchHandler = new MagicSearchHandler(
 			db: $this->db,
 			logger: $this->logger,
 			rbacHandler: $this->rbacHandler,
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
-			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+			relatedRows: $relatedRowApplier
 		);
 
 		$this->bulkHandler = new MagicBulkHandler(
@@ -565,13 +588,6 @@ class MagicMapper extends AbstractObjectMapper {
 			searchHandler: $this->searchHandler,
 			container: $this->container,
 			config: $this->config
-		);
-
-		$this->tableHandler = new MagicTableHandler(
-			db: $this->db,
-			appConfig: $this->appConfig,
-			logger: $this->logger,
-			magicMapper: $this
 		);
 
 		$this->statisticsHandler = new MagicStatisticsHandler(
