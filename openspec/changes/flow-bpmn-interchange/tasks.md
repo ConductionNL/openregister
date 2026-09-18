@@ -1,12 +1,29 @@
 # Tasks: flow-bpmn-interchange
 
+> 🔑 **This PR builds the VOCABULARY and the REPORT, and nothing that touches
+> XML.** Those are the two pieces everything else rests on and the two that can
+> be got wrong invisibly: a mapping each direction keeps its own copy of drifts
+> until a file stops round-tripping through its own product, and a report that
+> loses something quietly is the failure the import requirement is written
+> against in its own words. The XSD vendoring, the two serialisers, the DI
+> layout and the endpoints are named below with what each is waiting for; none
+> of them is waiting on a decision this PR did not make.
+
 ## Groundwork
 
-- [ ] Vendor the OMG BPMN 2.0 XSD set (version-pinned, licence-checked) under
-      `lib/Service/Flow/Bpmn/schema/`; wire `DOMDocument::schemaValidate`
-      behind a helper both directions share.
-- [x] Declare the `openregister` extension namespace and its two elements
-      (`type`, `config`) in one place both exporter and importer read.
+- [ ] Vendor the OMG BPMN 2.0 XSD set. NOT DONE HERE, deliberately: it is a
+      licence-checked third-party artefact fetched from omg.org, and vendoring
+      one on a build-lane's judgement is the kind of thing that is discovered
+      six months later in a licence audit. It wants a person who can say yes to
+      the licence.
+- [x] `BpmnVocabulary` declares the namespace, the prefix and the two
+      elements — and the MAPPING itself, for the same reason: two copies drift,
+      and the drift shows up as a file that does not round-trip through its own
+      product, which is the first acceptance criterion.
+      🔴 The import table is NOT the export table flipped. `switch` and `route`
+      both export to an exclusive gateway, so a flip resolves the collision by
+      array order and turns every imported route into a switch. A test asserts
+      the flip and the declaration disagree, so nobody "simplifies" it later.
 
 ## Export
 
@@ -25,6 +42,22 @@
       fixture's output as part of the test, not a separate step.
 
 ## Import
+
+- [x] The three declared ways, as a closed set: `BpmnMappingReport` records
+      `mapped`, `approximated` or `refused`, each with the element id, the
+      kind and an action sentence. An entry with no element id is REFUSED by
+      the report itself — "an unsupported construct was dropped" without
+      saying which one is a report an author cannot act on. A fourth verdict
+      is refused, because a fourth verdict invented at a call site is a fourth
+      way of losing something.
+- [x] An APPROXIMATION counts as a loss. It is the verdict most likely to read
+      as "fine": the construct did import, and only the sentence beside it says
+      the semantics are narrower. `strict` fails on a REFUSAL only, or it would
+      be unusable on the files people actually have.
+- [x] A task with no openregister extension imports TYPELESS and is listed as
+      needing a type. No type is ever guessed from the task's NAME: a flow that
+      runs something because a box was labelled "send email" is a flow nobody
+      authorised.
 
 - [ ] `FlowBpmnImporter::import(string $xml, bool $strict): ImportResult`
       producing the flow document plus a `BpmnMappingReport` of
@@ -76,48 +109,38 @@
 - References: ADR-065 Decisions 2 and 7; DMN interchange stays with
   openregister#466, not this change.
 
-## Status, 2026-09-18
+## Status of the export half, 2026-09-18
 
-**Built: the export half, over a subset that is written down.**
+**The exporter is built, on the vocabulary the sibling lane landed** in #3944.
+I had written a second mapping table before that PR appeared on
+`parity/round2`; it is deleted. `BpmnVocabulary` owns both directions —
+including the fact that the import table is NOT the export table flipped — and
+the exporter asks it. A test asserts the exporter holds no mapping rows of its
+own, because two tables agree until somebody adds a node type to one of them,
+and the disagreement shows up as a file that does not round-trip through its
+own product.
 
-`BpmnMapping` holds the subset as data, in one place both directions read. It
-carries two lists, and the second is the point: `EXPORT`, the node types the
-standard has a word for, and `NOT_SUPPORTED`, the parts of BPMN 2.0 this app
-does not read at all — choreographies and conversations, compensation and
-transactions, event sub-processes, boundary events, lanes and pools beyond the
-first participant, more than one process per file, data objects and item
-definitions, multi-instance and loop markers. Claiming "BPMN support" and
-quietly dropping those is how an exported diagram comes back from another tool
-meaning something else.
-
-- Export is TOTAL: every flow exports. A step the standard has no word for
-  becomes a `serviceTask` carrying its real type and configuration in
-  `extensionElements`, which a conformant tool must preserve and may ignore.
+- Export is TOTAL: every flow exports. A step the vocabulary has no row for
+  becomes the `serviceTask` fallback carrying its real type and configuration
+  in `extensionElements`, which a conformant tool must preserve and may ignore.
 - The extension is written on EVERY node, including the ones BPMN can name. A
   `switch` and a `route` are both exclusive gateways; without it the file
-  cannot say which it was, and our own round-trip would be close rather than
-  exact.
+  cannot say which it was, which is the same collision the vocabulary's import
+  table exists to avoid.
 - DI comes from stored canvas positions; a node without one is laid out in
   document order rather than stacked on the origin.
-- A dangling edge is dropped rather than exported: a `sequenceFlow` pointing at
-  nothing makes the file unopenable in every modeller, turning one broken edge
-  into an export nobody can use.
+- A dangling edge is dropped: a `sequenceFlow` pointing at nothing makes the
+  file unopenable in every modeller, turning one broken edge into an export
+  nobody can use.
 - Ids are made xsd:ID-safe. A uuid starts with a digit as often as not.
+- `GET /api/flows/{id}/bpmn`, `flow.read`-guarded, `application/xml`.
 
-**What is NOT read, in this change, and matters most:**
+**What this export does NOT do, said where the endpoint is:** validate against
+the OMG XSD. The schema is not vendored, for the reason the groundwork task
+already records, so the output is well-formed XML in the standard's namespaces
+and shape and its schema-validity is unverified. The importer needs the schema
+first, because "refused because we do not read it" and "refused because the
+file is invalid" are different sentences an author acts on differently.
 
-- **The OMG XSD is not vendored, so nothing is validated against it.** The
-  output is well-formed XML in the standard's namespaces and shape; whether it
-  is schema-VALID is unverified. The groundwork task stays open deliberately:
-  vendoring the schema set is a licence decision and a supply-chain decision,
-  and doing it by hand from an unpinned download is exactly the move the ADR
-  warns about elsewhere. Until then the endpoint's docblock says what the file
-  is and is not.
-- **The importer is not built**, nor the mapping report, nor the round-trip
-  test, nor the auto-layout. Import is the half where BPMN is bigger than the
-  engine and every approximation has to be reported by element id; it is a
-  change's worth of work and it needs the XSD first, because "refused because
-  we do not read it" and "refused because the file is invalid" are different
-  sentences and a user acts on them differently.
-- **The UI follow-up** against nextcloud-vue is unfiled; the endpoint contract
-  is here and the surface is not.
+**Still open:** the importer and its report wiring, the round-trip test, the
+auto-layout, and the nextcloud-vue surface.

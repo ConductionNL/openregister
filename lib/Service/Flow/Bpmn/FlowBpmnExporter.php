@@ -11,6 +11,12 @@
  * reads as a diagram there — just as a diagram whose task bodies it does not
  * understand.
  *
+ * 🔴 THE MAPPING IS NOT THIS CLASS'S. `BpmnVocabulary` owns both directions,
+ * including the fact that the import table is not the export table flipped,
+ * and this exporter asks it rather than keeping a second copy. Two tables agree
+ * until somebody adds a node type to one of them, and the disagreement shows up
+ * as a file that does not round-trip through its own product.
+ *
  * 🔴 IT VALIDATES NOTHING AGAINST THE OMG XSD, because the XSD is not vendored
  * here. The output is well-formed XML in the standard's namespaces and shape;
  * whether it is schema-VALID is unverified, and saying "BPMN 2.0 export" while
@@ -53,6 +59,37 @@ use OCA\OpenRegister\Db\Flow;
 class FlowBpmnExporter {
 
 	/**
+	 * The BPMN 2.0 model namespace.
+	 *
+	 * @var string
+	 */
+	public const NS_BPMN = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
+
+	/**
+	 * The BPMN diagram interchange namespace.
+	 *
+	 * @var string
+	 */
+	public const NS_BPMNDI = 'http://www.omg.org/spec/BPMN/20100524/DI';
+
+	/**
+	 * The diagram-common namespace the DI bounds live in.
+	 *
+	 * @var string
+	 */
+	public const NS_DC = 'http://www.omg.org/spec/DD/20100524/DC';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param BpmnVocabulary $vocabulary The mapping both directions read.
+	 */
+	public function __construct(
+		private readonly BpmnVocabulary $vocabulary = new BpmnVocabulary(),
+	) {
+	}//end __construct()
+
+	/**
 	 * Default node box, in diagram units.
 	 *
 	 * @var int
@@ -84,17 +121,17 @@ class FlowBpmnExporter {
 		$document = new DOMDocument('1.0', 'UTF-8');
 		$document->formatOutput = true;
 
-		$definitions = $document->createElementNS(BpmnMapping::NS_BPMN, 'bpmn:definitions');
-		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:bpmndi', BpmnMapping::NS_BPMNDI);
-		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:dc', BpmnMapping::NS_DC);
-		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:openregister', BpmnMapping::NS_OPENREGISTER);
+		$definitions = $document->createElementNS(self::NS_BPMN, 'bpmn:definitions');
+		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:bpmndi', self::NS_BPMNDI);
+		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:dc', self::NS_DC);
+		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:openregister', BpmnVocabulary::EXTENSION_NS);
 		$definitions->setAttribute('id', 'definitions_' . $this->identifier(value: (string)$flow->getUuid()));
-		$definitions->setAttribute('targetNamespace', BpmnMapping::NS_OPENREGISTER);
+		$definitions->setAttribute('targetNamespace', BpmnVocabulary::EXTENSION_NS);
 		$definitions->setAttribute('exporter', 'OpenRegister');
 		$document->appendChild($definitions);
 
 		$processId = 'process_' . $this->identifier(value: (string)$flow->getUuid());
-		$process = $document->createElementNS(BpmnMapping::NS_BPMN, 'bpmn:process');
+		$process = $document->createElementNS(self::NS_BPMN, 'bpmn:process');
 		$process->setAttribute('id', $processId);
 		$process->setAttribute('name', (string)$flow->getName());
 		// A flow is executable HERE and nowhere else: the attribute says the
@@ -110,7 +147,7 @@ class FlowBpmnExporter {
 		}
 
 		foreach ($edges as $edge) {
-			$flowElement = $document->createElementNS(BpmnMapping::NS_BPMN, 'bpmn:sequenceFlow');
+			$flowElement = $document->createElementNS(self::NS_BPMN, 'bpmn:sequenceFlow');
 			$flowElement->setAttribute('id', $this->identifier(value: $edge['id']));
 			$flowElement->setAttribute('sourceRef', $this->identifier(value: $edge['from']));
 			$flowElement->setAttribute('targetRef', $this->identifier(value: $edge['to']));
@@ -134,7 +171,7 @@ class FlowBpmnExporter {
 	 */
 	private function nodeElement(DOMDocument $document, array $node): DOMElement {
 		$type = (string)($node['type'] ?? '');
-		$mapped = BpmnMapping::elementFor(nodeType: $type);
+		$mapped = $this->vocabulary->elementFor(nodeType: $type);
 
 		// The catch and start variants are the same BPMN element with a child
 		// event definition; keeping that detail here rather than in the map
@@ -145,8 +182,8 @@ class FlowBpmnExporter {
 			[
 				'timerStartEvent' => ['startEvent', 'timerEventDefinition'],
 				'conditionalStartEvent' => ['startEvent', 'conditionalEventDefinition'],
-				'intermediateCatchEventMessage' => ['intermediateCatchEvent', 'messageEventDefinition'],
-				'intermediateCatchEventTimer' => ['intermediateCatchEvent', 'timerEventDefinition'],
+				'intermediateCatchEvent:message' => ['intermediateCatchEvent', 'messageEventDefinition'],
+				'intermediateCatchEvent:timer' => ['intermediateCatchEvent', 'timerEventDefinition'],
 			] as $key => $pair
 		) {
 			if ($mapped === $key) {
@@ -154,7 +191,7 @@ class FlowBpmnExporter {
 			}
 		}
 
-		$element = $document->createElementNS(BpmnMapping::NS_BPMN, 'bpmn:' . $tag);
+		$element = $document->createElementNS(self::NS_BPMN, 'bpmn:' . $tag);
 		$element->setAttribute('id', $this->identifier(value: (string)($node['id'] ?? '')));
 		$element->setAttribute('name', (string)($node['name'] ?? ($node['id'] ?? '')));
 
@@ -163,16 +200,16 @@ class FlowBpmnExporter {
 		// as an exclusiveGateway and loses which of our two gateway types it
 		// was; the extension is what makes our own round-trip exact rather
 		// than merely close.
-		$extensions = $document->createElementNS(BpmnMapping::NS_BPMN, 'bpmn:extensionElements');
-		$typeElement = $document->createElementNS(BpmnMapping::NS_OPENREGISTER, 'openregister:' . BpmnMapping::EXT_TYPE);
+		$extensions = $document->createElementNS(self::NS_BPMN, 'bpmn:extensionElements');
+		$typeElement = $document->createElementNS(BpmnVocabulary::EXTENSION_NS, 'openregister:' . BpmnVocabulary::ELEMENT_TYPE);
 		$typeElement->appendChild($document->createTextNode($type));
 		$extensions->appendChild($typeElement);
 
 		$config = ($node['config'] ?? []);
 		if (is_array($config) === true && $config !== []) {
 			$configElement = $document->createElementNS(
-				BpmnMapping::NS_OPENREGISTER,
-				'openregister:' . BpmnMapping::EXT_CONFIG
+				BpmnVocabulary::EXTENSION_NS,
+				'openregister:' . BpmnVocabulary::ELEMENT_CONFIG
 			);
 			// CDATA because a config value may hold anything a person typed,
 			// and an unescaped `<` in a condition would make the file
@@ -186,7 +223,7 @@ class FlowBpmnExporter {
 		$element->appendChild($extensions);
 
 		if ($eventDefinition !== null) {
-			$element->appendChild($document->createElementNS(BpmnMapping::NS_BPMN, 'bpmn:' . $eventDefinition));
+			$element->appendChild($document->createElementNS(self::NS_BPMN, 'bpmn:' . $eventDefinition));
 		}
 
 		return $element;
@@ -208,9 +245,9 @@ class FlowBpmnExporter {
 	 * @return DOMElement The diagram element.
 	 */
 	private function diagram(DOMDocument $document, string $processId, array $nodes, array $edges): DOMElement {
-		$diagram = $document->createElementNS(BpmnMapping::NS_BPMNDI, 'bpmndi:BPMNDiagram');
+		$diagram = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNDiagram');
 		$diagram->setAttribute('id', 'diagram_' . $processId);
-		$plane = $document->createElementNS(BpmnMapping::NS_BPMNDI, 'bpmndi:BPMNPlane');
+		$plane = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNPlane');
 		$plane->setAttribute('id', 'plane_' . $processId);
 		$plane->setAttribute('bpmnElement', $processId);
 		$diagram->appendChild($plane);
@@ -222,10 +259,10 @@ class FlowBpmnExporter {
 			$x = (int)($position['x'] ?? ($index * self::AUTO_STEP));
 			$y = (int)($position['y'] ?? 0);
 
-			$shape = $document->createElementNS(BpmnMapping::NS_BPMNDI, 'bpmndi:BPMNShape');
+			$shape = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNShape');
 			$shape->setAttribute('id', 'shape_' . $id);
 			$shape->setAttribute('bpmnElement', $id);
-			$bounds = $document->createElementNS(BpmnMapping::NS_DC, 'dc:Bounds');
+			$bounds = $document->createElementNS(self::NS_DC, 'dc:Bounds');
 			$bounds->setAttribute('x', (string)$x);
 			$bounds->setAttribute('y', (string)$y);
 			$bounds->setAttribute('width', (string)self::NODE_WIDTH);
@@ -236,7 +273,7 @@ class FlowBpmnExporter {
 		}//end foreach
 
 		foreach ($edges as $edge) {
-			$edgeElement = $document->createElementNS(BpmnMapping::NS_BPMNDI, 'bpmndi:BPMNEdge');
+			$edgeElement = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNEdge');
 			$edgeElement->setAttribute('id', 'edge_' . $this->identifier(value: $edge['id']));
 			$edgeElement->setAttribute('bpmnElement', $this->identifier(value: $edge['id']));
 			$plane->appendChild($edgeElement);

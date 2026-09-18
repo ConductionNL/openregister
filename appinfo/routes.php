@@ -800,7 +800,7 @@ return [
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         // BPMN 2.0 export of one flow. A DECLARED SUBSET of the standard, not
         // the whole of it: what it maps and what it refuses is in
-        // `Service\Flow\Bpmn\BpmnMapping`, and the file carries each node's
+        // `Service\Flow\Bpmn\BpmnVocabulary`, and the file carries each node's
         // real type in extensionElements so our own round-trip is exact.
         ['name' => 'flow#bpmn',    'url' => '/api/flows/{id}/bpmn', 'verb' => 'GET',   'requirements' => ['id' => '[^/]+']],
 
@@ -1149,6 +1149,9 @@ return [
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
+        // a longer path must be declared first or the generic one swallows it.
+        ['name' => 'objects#referenceOptions', 'url' => '/api/objects/{register}/{schema}/{id}/reference-options', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],

@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Bpmn;
 use DOMDocument;
 use DOMXPath;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Service\Flow\Bpmn\BpmnMapping;
+use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
 use PHPUnit\Framework\TestCase;
 
@@ -62,10 +62,10 @@ class FlowBpmnExporterTest extends TestCase {
 		$this->assertTrue($document->loadXML($xml), 'the export is well-formed XML');
 
 		$xpath = new DOMXPath($document);
-		$xpath->registerNamespace('bpmn', BpmnMapping::NS_BPMN);
-		$xpath->registerNamespace('bpmndi', BpmnMapping::NS_BPMNDI);
-		$xpath->registerNamespace('dc', BpmnMapping::NS_DC);
-		$xpath->registerNamespace('or', BpmnMapping::NS_OPENREGISTER);
+		$xpath->registerNamespace('bpmn', FlowBpmnExporter::NS_BPMN);
+		$xpath->registerNamespace('bpmndi', FlowBpmnExporter::NS_BPMNDI);
+		$xpath->registerNamespace('dc', FlowBpmnExporter::NS_DC);
+		$xpath->registerNamespace('or', BpmnVocabulary::EXTENSION_NS);
 		return $xpath;
 	}//end xpath()
 
@@ -220,16 +220,26 @@ class FlowBpmnExporterTest extends TestCase {
 	}//end testIdsAreMadeValidXmlIds()
 
 	/**
-	 * The subset says out loud what it does not read.
+	 * The exporter does not keep a second mapping table.
 	 *
-	 * An empty list here would be the quiet claim of a whole standard, which
-	 * is the thing this change is careful not to make.
+	 * `BpmnVocabulary` owns both directions, including the fact that the import
+	 * table is not the export table flipped. A copy here would agree with it
+	 * until somebody added a node type to one of them, and the disagreement
+	 * would show up as a file that does not round-trip through its own product.
 	 *
 	 * @return void
 	 */
-	public function testTheSubsetNamesWhatItDoesNotSupport(): void {
-		$this->assertNotEmpty(BpmnMapping::NOT_SUPPORTED);
-		$this->assertContains('compensation and transactions', BpmnMapping::NOT_SUPPORTED);
-		$this->assertContains('boundary events', BpmnMapping::NOT_SUPPORTED);
-	}//end testTheSubsetNamesWhatItDoesNotSupport()
+	public function testTheExporterReadsTheSharedVocabulary(): void {
+		$xpath = $this->xpath($this->flow([['id' => 'child', 'type' => 'openregister.sub-flow']]));
+
+		$this->assertSame('callActivity', BpmnVocabulary::EXPORT['openregister.sub-flow']);
+		$this->assertSame(1, $xpath->query('//bpmn:callActivity')->length);
+
+		$source = (string)file_get_contents(__DIR__ . '/../../../../../lib/Service/Flow/Bpmn/FlowBpmnExporter.php');
+		$this->assertStringNotContainsString(
+			"'openregister.trigger-manual' =>",
+			$source,
+			'the exporter must not hold its own copy of the mapping'
+		);
+	}//end testTheExporterReadsTheSharedVocabulary()
 }//end class

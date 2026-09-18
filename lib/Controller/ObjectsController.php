@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
+use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -70,6 +72,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -2632,6 +2635,167 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $result);
 	}//end objects()
+
+	/**
+	 * The options a filtered reference property may offer for this record.
+	 *
+	 * 🔑 IT CALLS THE SAME RESOLVER THE SAVE PATH CALLS. A picker that offers
+	 * one set while the save path accepts another is two evaluators of one rule:
+	 * the user picks what the form offered and the server refuses it, or the
+	 * form offers something the server then accepts and should not have.
+	 *
+	 * 🔴 NO OPTIONS IS NOT EVERY OPTION. When an operand the filter depends on
+	 * has no value yet, this answers an EMPTY list and names the property it is
+	 * waiting for, with HTTP 200. Returning the unfiltered set would show every
+	 * contact in the register to somebody who had not yet chosen an
+	 * organisation, and each of those is a value they were never meant to
+	 * browse. A 200 with `needs` is the honest shape: the request was fine, the
+	 * answer is "not yet, choose that first".
+	 *
+	 * The record's values come from the stored object, with `_draft` merged over
+	 * them, because the case a picker exists for is a form being filled in and
+	 * those values are not saved yet.
+	 *
+	 * @param string        $id            The record being edited.
+	 * @param string        $register      The register.
+	 * @param string        $schema        The schema.
+	 * @param ObjectService $objectService The object service.
+	 *
+	 * @return JSONResponse The options, or what is still needed.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 600, period: 60)]
+	public function referenceOptions(
+		string $id,
+		string $register,
+		string $schema,
+		ObjectService $objectService,
+	): JSONResponse {
+		$property = (string)($this->request->getParam('property') ?? '');
+		if (trim($property) === '') {
+			return new JSONResponse(
+				data: ['message' => 'Name the property whose options you want, with ?property=<name>.'],
+				statusCode: 400
+			);
+		}
+
+		try {
+			$resolved = $this->resolveRegisterSchemaIds(
+				register: $register,
+				schema: $schema,
+				objectService: $objectService
+			);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		$schemaEntity = ($resolved['schemaEntity'] ?? null);
+		if (($schemaEntity instanceof Schema) === false) {
+			return new JSONResponse(data: ['message' => 'Schema not found.'], statusCode: 404);
+		}
+
+		// The record as it stands. A read the caller may not make answers the
+		// same 404 it would anywhere else, so this endpoint cannot be used to
+		// confirm an object exists.
+		$record = [];
+		try {
+			$stored = $this->objectService->find(
+				id: $id,
+				files: false,
+				register: $register,
+				schema: $schema,
+				_render: false
+			);
+			if ($stored !== null) {
+				$record = $stored->getObject();
+			}
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				message: '[ObjectsController] No stored record for a reference-options read; using the draft alone',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
+			);
+		}
+
+		if (is_array($record) === false) {
+			$record = [];
+		}
+
+		$draft = $this->request->getParam('_draft');
+		if (is_array($draft) === true) {
+			$record = array_merge($record, $draft);
+		}
+
+		$reader = new ReferenceOptionsReader();
+
+		try {
+			$plan = $reader->plan(schema: $schemaEntity, property: $property, record: $record);
+		} catch (ReferenceFilterException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 422);
+		}
+
+		if ($reader->isAnswerable(plan: $plan) === false) {
+			return new JSONResponse(
+				data: [
+					'results' => [],
+					'total' => 0,
+					'needs' => $plan['needs'],
+					'filter' => $plan['filter'],
+					'message' => sprintf(
+						'Choose %s first; there are no options until then.',
+						implode(' and ', $plan['needs'])
+					),
+				]
+			);
+		}
+
+		$target = ($plan['target'] ?? []);
+		if (is_string(($target['schema'] ?? null)) === false) {
+			return new JSONResponse(
+				data: ['message' => sprintf('\'%s\' does not name a schema to read options from.', $property)],
+				statusCode: 422
+			);
+		}
+
+		$limit = $reader->limitFor(requested: $this->request->getParam('_limit'));
+		$offset = (int)($this->request->getParam('_offset') ?? 0);
+		$query = $reader->queryFor(plan: $plan, limit: $limit, offset: $offset);
+
+		try {
+			// Point the service at the REFERENCED register and schema. Without
+			// this the search would run against the record's own schema and
+			// answer a confidently wrong list.
+			$objectService->setRegister(($target['register'] ?? $register));
+			$objectService->setSchema($target['schema']);
+
+			// `_rbac` stays on. The options a picker offers are objects, and a
+			// picker is not a way to see objects you may not see.
+			$options = $objectService->searchObjectsPaginated(query: $query);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				message: '[ObjectsController] A reference-options read failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
+			);
+
+			return new JSONResponse(
+				data: ['message' => 'The options for this field could not be read.'],
+				statusCode: 500
+			);
+		}
+
+		if (is_array($options) === false) {
+			$options = ['results' => []];
+		}
+
+		$options['filtered'] = $plan['filtered'];
+		$options['filter'] = $plan['filter'];
+		$options['needs'] = [];
+
+		return new JSONResponse(data: $options);
+	}//end referenceOptions()
 
 	/**
 	 * Shows a specific object from a register and schema
