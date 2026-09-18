@@ -11,7 +11,9 @@
 > collapse. 8.7 asks to prove an organisation credential minted before that
 > still reads afterwards, and it now has a test — see below.
 >
-> **One task's text is stale in a way worth stating precisely.** 9.2 says
+> **CLOSED 2026-09-18 in openregister#3936.** The paragraph below is kept as
+> written, because it is the measurement that led to the change and to the
+> finding under it. 9.2 said
 > `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` run a
 > flow with "zero ownership checks today". That is no longer literally so: all
 > three now resolve through `FlowService::find()`, which throws for a flow
@@ -20,13 +22,15 @@
 > TENANT scoping plus a global capability, not per-flow run authorization. Any
 > colleague holding `flow.update` can test-run any flow in the organisation.
 >
-> **And 9.1's read authorization does not reach the run path.** 9.1 declared
+> **And 9.1's read authorization does not reach the run path — now closed.** 9.1 declared
 > `scope: private` on the `flow` SCHEMA in `flow_register.json`, which governs
 > flows as OBJECTS. The run entry points load flows through `FlowMapper`, a
 > `QBMapper` on the native `openregister_flows` table. Two stores, one
 > declaration, and the declaration governs the store the run path does not use.
-> Whoever closes 9.2 needs that fact before they start, so it is written here
-> rather than rediscovered.
+> That is now closed by `flow-runs-honour-their-declaration`: the control was
+> moved to where the run path actually reads, one resolver answers for every
+> run path, and the declaration in `flow_register.json` says what it governs
+> and what it does not.
 >
 > **Four are frontend** (6.3, 6.4, 6.5, 10.5): the shared-with-me widget, its
 > catalogue registration, its icons and the e2e that reads them.
@@ -38,9 +42,9 @@
 > **One is a core limitation** (5.8): object verbs `run` and `use` in `IShare`'s
 > `IAttributes`, since core's bitmask has no such verbs.
 >
-> So: 2 closed here, 1 re-stated with its real shape and a finding attached,
-> and 10 that are genuinely waiting on a second instance, a frontend, a
-> migration or another owner. None of them is waiting on nothing.
+> So: 2 closed in #3932, 9.2 closed in #3936, and 10 that are genuinely waiting
+> on a second instance, a frontend, a migration or another owner. None of them
+> is waiting on nothing.
 
 ## 1. Settle the remaining design questions
 
@@ -333,7 +337,23 @@
       sub-flows keep resolving — is now pinned by
       `testRbacFalseBypassesThePrivateScopeSoTheFlowEngineStillResolves`, which runs its control first so
       "the row is visible" cannot pass for a row that was never private.
-- [ ] 9.2 Give flows run authorization: `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` all run a flow with zero ownership checks today
+- [x] 9.2 Give flows run authorization.
+      🔴 **THE SENTENCE THIS TASK USED TO CARRY WAS UNTRUE, so it is replaced
+      rather than ticked.** It read: "`flowRun#test`, `flowRun#retry` and
+      `FlowMcpToolProvider::runFlow()` all run a flow with zero ownership
+      checks today". Measured 2026-09-18: all three resolve through
+      `FlowService::find()`, which refuses a flow outside the caller's active
+      organisation, and `test()` additionally requires the global
+      `flow.update` right. A task file that says something untrue is the same
+      class of failure as a comment claiming coverage elsewhere — it stops
+      anyone looking, and what they would have found is different from what
+      they were told.
+      The SUBSTANCE stood, and is now closed in openregister#3936
+      (`flow-runs-honour-their-declaration`): organisation plus a global right
+      is not per-flow run authorization, and a FOURTH path the task did not
+      name — `FlowController::run()`, the editor's "Run Now" — required only
+      `flow.run`, which `lib/actions.seed.json` seeds `@authenticated`. One
+      resolver now answers for all four.
       DEFERRED, deliberately and not for lack of a design: the flow engine is being consolidated
       into OpenRegister under a different owner, and run authorization belongs with the code that
       executes a run. Half of the original finding DID ship here — `retry()` was an open IDOR and
