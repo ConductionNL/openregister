@@ -435,6 +435,53 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The object-hierarchy descent MUST be shared, for the reason the three
+		// registrations below it give and one that is sharper here: both of
+		// these memoise FOR THE LIFETIME OF ONE REQUEST, and a container that
+		// builds an auto-wired class fresh at every injection point would turn
+		// a per-request memo into a per-injection one. That is not merely slow.
+		// `HierarchyDescender` reads every schema and every register to find
+		// the declarations, so an unshared instance pays that on each of the
+		// several paths that consult a grant, on every request that holds one.
+		//
+		// Registered EXPLICITLY rather than left to autowiring for a second
+		// reason: `ObjectGrantResolver` takes the expander as a NULLABLE
+		// argument, so a wiring failure there would not raise, it would simply
+		// stop inheriting grants and say nothing. A named registration is what
+		// makes that failure loud (ledger row Q13.23).
+		$context->registerService(
+			\OCA\OpenRegister\Service\Rbac\HierarchyDescender::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Rbac\HierarchyDescender(
+					db: $c->get(\OCP\IDBConnection::class),
+					schemaMapper: $c->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+					registerMapper: $c->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+					logger: $c->get(\Psr\Log\LoggerInterface::class),
+				);
+			}
+		);
+
+		$context->registerService(
+			\OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander(
+					descender: $c->get(\OCA\OpenRegister\Service\Rbac\HierarchyDescender::class),
+					logger: $c->get(\Psr\Log\LoggerInterface::class),
+				);
+			}
+		);
+
+		$context->registerService(
+			\OCA\OpenRegister\Service\Rbac\ObjectGrantResolver::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Rbac\ObjectGrantResolver(
+					logger: $c->get(\Psr\Log\LoggerInterface::class),
+					container: $c,
+					hierarchy: $c->get(\OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander::class),
+				);
+			}
+		);
+
 		// Register request-scoped LanguageService as a singleton (shared per request).
 		$context->registerService(
 			LanguageService::class,

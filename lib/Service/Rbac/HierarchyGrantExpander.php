@@ -1,0 +1,366 @@
+<?php
+
+/**
+ * A grant on a parent reaches its children (ledger row Q13.23).
+ *
+ * Somebody is invited to an object and cannot open the objects hanging under
+ * it, so those get invited separately and the two invitations drift: the child
+ * stays open to a person taken off the parent a year earlier. The register's
+ * note on the consuming app says it plainly: `deelzaak|parentCase|subCase` over
+ * dossiq's own guard returned 0, so nothing anywhere read the parent.
+ *
+ * WHY THE EXPANSION LIVES HERE, ON THE GRANT SET, AND NOT AT EACH DECISION.
+ * {@see ObjectGrantResolver} is the ONE funnel every path takes: the per-object
+ * check calls `isGranted()`, the two list emitters call `quotedGrantedUuids()`,
+ * and both read the same map. Expanding the map itself is therefore the only
+ * placement where a list and an object read CANNOT disagree — which is design
+ * D-3's whole worry, and a worry worth having: the two are compiled by
+ * different code into different languages, and a rule added to one of them has
+ * gone missing from the other before.
+ *
+ * WHY IT IS A BOUNDED DESCENT AND NOT ONE RECURSIVE CTE. The spec's wording is
+ * "a single recursive query", and this is `maxDepth` queries per hierarchical
+ * schema per request rather than one. The intent behind that wording is
+ * openregister ADR-009: NOT A WALK PER OBJECT IN A LIST. A descent by LEVEL
+ * satisfies that exactly, because its cost is the depth of the tree and not the
+ * size of the list, and a grant set is the handful of objects one person was
+ * invited to. What it buys is portability: `WITH RECURSIVE` differs across the
+ * four backends this app supports and cannot be exercised on all of them from
+ * here, and an authorization resolver that is subtly wrong on one backend is a
+ * disclosure on that backend. The honest trade is written down rather than
+ * hidden behind the word "recursive".
+ *
+ * WHAT IT REFUSES TO DO. It never widens a verb (D-2): a descendant inherits
+ * the ancestor's bitmask and nothing more, narrowed further when the schema
+ * declares `inheritedVerbs`. It never overwrites a DIRECT grant: a grant
+ * written on the object itself wins, because the existing most-specific-wins
+ * resolution is what the spec keeps. A cycle and an over-deep chain both stop
+ * with no grant added and a logged refusal (D-4), which is fail-closed: the
+ * direction that hides an object is recoverable by asking, and the other one is
+ * not.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Rbac
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Rbac;
+
+use OCA\OpenRegister\Db\Schema;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Expands a grant set down every declared object hierarchy.
+ *
+ * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ */
+class HierarchyGrantExpander {
+
+	/**
+	 * The schema annotation that declares the parent edge.
+	 *
+	 * @var string
+	 */
+	public const ANNOTATION = 'x-openregister-hierarchy';
+
+	/**
+	 * The depth used when a declaration names none.
+	 *
+	 * @var integer
+	 */
+	public const DEFAULT_MAX_DEPTH = 5;
+
+	/**
+	 * The deepest a declaration may ask to go.
+	 *
+	 * A cap on the cap. `maxDepth` is authored per schema and the descent runs
+	 * on every request that holds a grant, so an author who types 500 would
+	 * otherwise buy five hundred queries per request for a tree nobody has.
+	 *
+	 * @var integer
+	 */
+	public const DEPTH_CEILING = 20;
+
+	/**
+	 * How many descendants one expansion may collect before it stops.
+	 *
+	 * Reached only by a tree far larger than the grant model is for. Stopping
+	 * is fail-closed in the same direction as everything else here: the
+	 * descendants past the bound are NOT granted, and the refusal is logged
+	 * with the count so it can be read rather than guessed at.
+	 *
+	 * @var integer
+	 */
+	public const MAX_DESCENDANTS = 10000;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param HierarchyDescender $descender Reads one level of children.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		private readonly HierarchyDescender $descender,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
+
+	/**
+	 * The hierarchy a schema declares, normalised, or null when it declares none.
+	 *
+	 * TWO SPELLINGS OF THE PARENT KEY ARE ACCEPTED, and that is deliberate
+	 * rather than sloppy. This spec writes `parent`; dossiq shipped
+	 * `parentField` in its own change before this one existed, and an
+	 * annotation whose key is not the one the reader looks for is DROPPED IN
+	 * SILENCE: dossiq would declare an edge, this resolver would report no
+	 * inheritance, and nothing anywhere would say the declaration was never
+	 * read. `parent` is canonical and wins where both are present.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array{parent: string, maxDepth: int, verbs: string[]}|null The declaration.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	public function declarationFor(Schema $schema): ?array {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$block = ($configuration[self::ANNOTATION] ?? null);
+		if (is_array($block) === false) {
+			return null;
+		}
+
+		$parent = trim((string)($block['parent'] ?? ($block['parentField'] ?? '')));
+		if ($parent === '') {
+			return null;
+		}
+
+		$declared = (int)($block['maxDepth'] ?? self::DEFAULT_MAX_DEPTH);
+		if ($declared < 1) {
+			$declared = self::DEFAULT_MAX_DEPTH;
+		}
+
+		$verbs = [];
+		$declaredVerbs = ($block['inheritedVerbs'] ?? null);
+		if (is_array($declaredVerbs) === true) {
+			foreach ($declaredVerbs as $verb) {
+				$verb = trim((string)$verb);
+				if ($verb !== '') {
+					$verbs[] = $verb;
+				}
+			}
+		}
+
+		return [
+			'parent' => $parent,
+			'maxDepth' => min($declared, self::DEPTH_CEILING),
+			'verbs' => $verbs,
+		];
+	}//end declarationFor()
+
+	/**
+	 * Expand a grant set with every descendant it reaches.
+	 *
+	 * @param array<string, int> $granted Object UUID => core permission bitmask.
+	 *
+	 * @return array{granted: array<string, int>, sources: array<string, string>}
+	 *         The expanded map, and where each inherited entry came from.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	public function expand(array $granted): array {
+		if (empty($granted) === true) {
+			return ['granted' => $granted, 'sources' => []];
+		}
+
+		$sources = [];
+
+		try {
+			$hierarchies = $this->descender->hierarchicalTables();
+		} catch (Throwable $e) {
+			// No expansion rather than no grants: the caller's DIRECT grants
+			// are unaffected by this failing, and withdrawing them would lock
+			// people out of objects they were plainly invited to.
+			$this->logger->error(
+				message: '[HierarchyGrantExpander] Could not read the hierarchical schemas; no grant is inherited this request',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return ['granted' => $granted, 'sources' => []];
+		}
+
+		foreach ($hierarchies as $hierarchy) {
+			$this->expandOne(
+				hierarchy: $hierarchy,
+				granted: $granted,
+				sources: $sources
+			);
+		}
+
+		return ['granted' => $granted, 'sources' => $sources];
+	}//end expand()
+
+	/**
+	 * Descend one schema's hierarchy, adding what it reaches.
+	 *
+	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
+	 * @param array<string, int> $granted The grant map, modified in place.
+	 * @param array<string, string> $sources The provenance map, modified in place.
+	 *
+	 * @return void
+	 */
+	private function expandOne(array $hierarchy, array &$granted, array &$sources): void {
+		// The frontier starts at every DIRECT grant. A descendant reached on a
+		// later level is expanded too, which is what makes the grandchild work,
+		// but only ever as the descendant of the root it came from.
+		$frontier = [];
+		foreach ($granted as $uuid => $mask) {
+			$frontier[$uuid] = ['mask' => $mask, 'root' => $uuid];
+		}
+
+		$seen = $frontier;
+		$added = 0;
+
+		for ($depth = 0; $depth < $hierarchy['maxDepth']; $depth++) {
+			if (empty($frontier) === true) {
+				return;
+			}
+
+			try {
+				$children = $this->descender->childrenOf(
+					table: $hierarchy['table'],
+					parentColumn: $hierarchy['parentColumn'],
+					parentUuids: array_keys($frontier)
+				);
+			} catch (Throwable $e) {
+				$this->logger->error(
+					message: '[HierarchyGrantExpander] A level of the hierarchy could not be read; the descent stops here',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schemaId' => $hierarchy['schemaId'],
+						'depth' => $depth,
+						'exception' => $e->getMessage(),
+					]
+				);
+				return;
+			}
+
+			$next = [];
+			foreach ($children as $childUuid => $parentUuid) {
+				$childUuid = (string)$childUuid;
+				$parentUuid = (string)$parentUuid;
+
+				if (isset($seen[$childUuid]) === true) {
+					// A cycle, or a diamond. Either way this object has already
+					// been decided and re-deciding it is how a walk never ends.
+					// A CYCLE ADDS NOTHING: the object keeps whatever grant it
+					// already had, which for an object nobody was invited to is
+					// none at all.
+					$this->logger->info(
+						message: '[HierarchyGrantExpander] The parent chain returns to an object already resolved; that branch grants nothing further',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'schemaId' => $hierarchy['schemaId'],
+							'object' => $childUuid,
+							'reason' => 'cycle-or-revisit',
+						]
+					);
+					continue;
+				}
+
+				$added++;
+				if ($added > self::MAX_DESCENDANTS) {
+					$this->logger->warning(
+						message: '[HierarchyGrantExpander] The descent passed its descendant bound; nothing below this point is inherited',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'schemaId' => $hierarchy['schemaId'],
+							'bound' => self::MAX_DESCENDANTS,
+						]
+					);
+					return;
+				}
+
+				$from = ($frontier[$parentUuid] ?? null);
+				if ($from === null) {
+					continue;
+				}
+
+				$mask = $this->narrow(mask: $from['mask'], verbs: $hierarchy['verbs']);
+				$seen[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
+				$next[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
+
+				// 🔴 A DIRECT GRANT IS NEVER OVERWRITTEN. The inherited one is
+				// the weaker claim by construction, and the spec keeps the
+				// existing most-specific-wins resolution: a person given
+				// `update` on the child keeps it even where the root grants
+				// only `read`.
+				if (array_key_exists($childUuid, $granted) === true) {
+					continue;
+				}
+
+				if ($mask === 0) {
+					// The schema narrowed every verb away. Recording a grant of
+					// nothing would put the object in the list and refuse every
+					// action on it, which reads as a broken object.
+					continue;
+				}
+
+				$granted[$childUuid] = $mask;
+				$sources[$childUuid] = $from['root'];
+			}//end foreach
+
+			$frontier = $next;
+		}//end for
+	}//end expandOne()
+
+	/**
+	 * The ancestor's bitmask, narrowed by what the schema lets travel down.
+	 *
+	 * The verb NEVER GROWS (D-2), which costs nothing to enforce here because
+	 * the mask is copied rather than recomputed. What this adds is the
+	 * narrowing: a schema that declares `inheritedVerbs: ["read"]` sends read
+	 * down a chain whose root also carries update, and the update stays at the
+	 * root. A schema declaring none sends the ancestor's mask unchanged.
+	 *
+	 * @param integer $mask The ancestor's bitmask.
+	 * @param string[] $verbs The verbs the schema lets travel down, or [].
+	 *
+	 * @return integer The narrowed bitmask.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	public function narrow(int $mask, array $verbs): int {
+		if (empty($verbs) === true) {
+			return $mask;
+		}
+
+		$allowed = 0;
+		foreach ($verbs as $verb) {
+			$bit = ObjectGrantResolver::permissionBitFor(action: $verb);
+			if ($bit !== null) {
+				$allowed |= $bit;
+			}
+		}
+
+		return ($mask & $allowed);
+	}//end narrow()
+}//end class
