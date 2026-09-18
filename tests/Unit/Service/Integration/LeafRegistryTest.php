@@ -242,6 +242,113 @@ class LeafRegistryTest extends TestCase {
 	}//end testARenderSurfaceWithNoBundleIsReportedNotRefused()
 
 	/**
+	 * 🔴 A LEAF THAT CLAIMS THE SHARED ENTRY AND HAS NO BUNDLE IS REFUSED.
+	 *
+	 * This is the sound refusal. The platform does the loading for that
+	 * convention, so a missing file is proof the surface cannot render, not an
+	 * inference from one filename out of three.
+	 *
+	 * @return void
+	 */
+	public function testALeafClaimingTheSharedEntryWithNoBundleIsRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme',
+							loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertSame([], $registry->getDescriptors());
+	}//end testALeafClaimingTheSharedEntryWithNoBundleIsRefused()
+
+	/**
+	 * 🔑 A LEAF THAT LOADS ITS OWN SCRIPT IS NOT REFUSED FOR LACKING A BUNDLE.
+	 *
+	 * hermiq and decidiq are this case, and openregister#3954 nearly took both
+	 * of them down. They ship no `<app>-leaves.js` because they do not need one:
+	 * each loads its own registration bundle on every page.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatLoadsItsOwnScriptIsNotRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme',
+							loadStrategy: LeafDescriptor::LOADS_VIA_OWN_SCRIPT
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testALeafThatLoadsItsOwnScriptIsNotRefused()
+
+	/**
+	 * 🔑 SILENCE IS NOT A CLAIM, so an undeclared leaf still registers.
+	 *
+	 * Every descriptor written before this declaration existed says nothing.
+	 * Refusing them would re-create the #3954 failure wholesale.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatHasNotSaidHowItLoadsIsNotRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme'
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testALeafThatHasNotSaidHowItLoadsIsNotRefused()
+
+	/**
+	 * An app manager that resolves a path with no leaf bundle in it.
+	 *
+	 * @return IAppManager The double.
+	 */
+	private function appManagerWithPath(): IAppManager {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		return $appManager;
+	}//end appManagerWithPath()
+
+	/**
 	 * A data provider needs no bundle, so it is not refused for lacking one.
 	 *
 	 * The control that keeps the refusal narrow. Refusing every leaf from an

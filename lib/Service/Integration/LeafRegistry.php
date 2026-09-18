@@ -165,36 +165,46 @@ class LeafRegistry {
 			return true;
 		}
 
-		// 🔴 REPORTED, NOT REFUSED, AND THAT IS A CORRECTION TO #3954.
+		// 🔴 NOW THE REFUSAL IS SOUND, BECAUSE IT ONLY JUDGES A CLAIM.
 		//
-		// #3954 skipped the registration here. That was unsound, and hermiq is
-		// the proof: it ships no `hermiq-leaves.js`, and its leaf is NOT dark.
-		// It loads its own render-registration bundle on EVERY Nextcloud page
-		// with `Util::addInitScript('hermiq', 'hermiq-agent-leaf')`, precisely
-		// so it runs wherever another app renders the integration registry.
-		// Refusing it would have taken down a working feature.
+		// openregister#3954 skipped on filesystem evidence alone and was wrong
+		// twice in one measurement: hermiq and decidiq ship no
+		// `<app>-leaves.js` and are not dark, because both load their own
+		// bundle on every page. #3955 downgraded that to a report. This is the
+		// version that can refuse without guessing.
 		//
-		// 🔑 THE LESSON IS ABOUT WHAT THIS CLASS CAN KNOW. Whether a bundle
-		// reaches the page is a fact about the PAGE, and the registry only sees
-		// the filesystem. The absence of one conventional filename is not proof
-		// of absence: it is one convention out of at least three, and the app
-		// gets to choose. So the loud, actionable error stays, because it is
-		// what turned hermiq's invisible bundle into a one-line fix, and the
-		// skip goes, because this class cannot prove what it was asserting.
+		// A leaf that DECLARES the shared entry has made a checkable claim: the
+		// platform does that loading, so the platform can see the file is
+		// missing and knows the surface cannot render. That is refused.
 		//
-		// A refusal that IS sound needs the descriptor to declare that it
-		// relies on the shared entry. That declaration does not exist yet and
-		// is named in the change's tasks rather than guessed at here.
+		// 🔑 SILENCE IS NOT A CLAIM. A descriptor that says nothing is reported
+		// and registered, exactly as #3955 left it, because "has not said" is
+		// not "says shared entry". Refusing silence would re-create the #3954
+		// failure for every descriptor written before this declaration existed.
+		if ($descriptor->claimsSharedEntry() === true) {
+			$this->logger->error(
+				sprintf(
+					'[LeafRegistry] leaf "%s" declares it loads through the shared "%s" entry, but app '
+					. '"%s" ships no "%s", so the surface cannot render. Refused. Build that entry, or '
+					. 'declare the strategy the app actually uses.',
+					$descriptor->getId(),
+					LeafBundle::ENTRY,
+					$providingApp,
+					$this->leafBundle->expectedFileName(appId: $providingApp)
+				)
+			);
+
+			return false;
+		}
+
 		$this->logger->error(
 			sprintf(
-				'[LeafRegistry] leaf "%s" declares a render surface but app "%s" ships no "%s". '
-				. 'If that app does not load its leaf bundle itself, this surface renders nothing '
-				. 'while every other check reports success. Add a "%s" webpack entry to that app, '
-				. 'or confirm it loads its own bundle.',
+				'[LeafRegistry] leaf "%s" declares a render surface but app "%s" ships no "%s" and has '
+				. 'not said how it loads. If that app does not load its own bundle, this surface renders '
+				. 'nothing while every other check reports success. Declare a load strategy.',
 				$descriptor->getId(),
 				$providingApp,
-				$this->leafBundle->expectedFileName(appId: $providingApp),
-				LeafBundle::ENTRY
+				$this->leafBundle->expectedFileName(appId: $providingApp)
 			)
 		);
 
