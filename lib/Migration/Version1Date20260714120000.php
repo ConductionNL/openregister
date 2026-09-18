@@ -63,7 +63,7 @@ class Version1Date20260714120000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_realtime_events') === false) {
-			return null;
+			return $schema;
 		}
 
 		$schema->dropTable('openregister_realtime_events');

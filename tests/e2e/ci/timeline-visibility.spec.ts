@@ -94,7 +94,8 @@ test.describe('timeline entry visibility over HTTP', () => {
 	let objectUuid: string
 
 	/** The path of the notes leaf on the fixture object. */
-	const notesPath = (): string => `${API}/objects/${registerId}/${schemaId}/${objectUuid}/notes`
+	const notesPath = (): string =>
+		`${API}/objects/${registerId}/${schemaId}/${objectUuid}/notes`
 
 	test.beforeAll(async () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
@@ -145,7 +146,10 @@ test.describe('timeline entry visibility over HTTP', () => {
 		const created = await handler.post(notesPath(), {
 			data: { message: `plain note ${RUN}` },
 		})
-		expect(created.ok(), `note create failed: ${await created.text()}`).toBeTruthy()
+		expect(
+			created.ok(),
+			`note create failed: ${await created.text()}`,
+		).toBeTruthy()
 
 		const note = await created.json()
 		expect(
@@ -160,12 +164,18 @@ test.describe('timeline entry visibility over HTTP', () => {
 		const internal = await handler.post(notesPath(), {
 			data: { message: `internal note ${RUN}`, visibility: 'internal' },
 		})
-		expect(internal.ok(), `internal note create failed: ${await internal.text()}`).toBeTruthy()
+		expect(
+			internal.ok(),
+			`internal note create failed: ${await internal.text()}`,
+		).toBeTruthy()
 
 		const published = await handler.post(notesPath(), {
 			data: { message: `public note ${RUN}`, visibility: 'public' },
 		})
-		expect(published.ok(), `public note create failed: ${await published.text()}`).toBeTruthy()
+		expect(
+			published.ok(),
+			`public note create failed: ${await published.text()}`,
+		).toBeTruthy()
 		expect((await published.json()).visibility).toBe('public')
 
 		// The handler, asking for nothing, holds both of them.
@@ -174,13 +184,18 @@ test.describe('timeline entry visibility over HTTP', () => {
 		const allBody = await all.json()
 		expect(allBody.canSetVisibility, 'a handler may set the flag').toBe(true)
 		expect(allBody.visibility, 'an unfiltered read carries no filter').toBeNull()
-		const allMessages = allBody.results.map((row: { message: string }) => row.message)
+		const allMessages = allBody.results.map(
+			(row: { message: string }) => row.message,
+		)
 		expect(allMessages).toContain(`internal note ${RUN}`)
 		expect(allMessages).toContain(`public note ${RUN}`)
 
 		// The same handler, asking for the citizen's view, holds one of them.
 		const filtered = await handler.get(`${notesPath()}?visibility=public`)
-		expect(filtered.ok(), `filtered read failed: ${await filtered.text()}`).toBeTruthy()
+		expect(
+			filtered.ok(),
+			`filtered read failed: ${await filtered.text()}`,
+		).toBeTruthy()
 		const filteredMessages = (await filtered.json()).results.map(
 			(row: { message: string }) => row.message,
 		)
@@ -189,11 +204,20 @@ test.describe('timeline entry visibility over HTTP', () => {
 
 		// The reader, asking for nothing, is served the citizen's view anyway.
 		const asReader = await reader.get(notesPath())
-		expect(asReader.ok(), `reader read failed: ${await asReader.text()}`).toBeTruthy()
+		expect(
+			asReader.ok(),
+			`reader read failed: ${await asReader.text()}`,
+		).toBeTruthy()
 		const readerBody = await asReader.json()
-		expect(readerBody.canSetVisibility, 'a reader may not set the flag').toBe(false)
-		expect(readerBody.visibility, 'a reader is pinned to the public view').toBe('public')
-		const readerMessages = readerBody.results.map((row: { message: string }) => row.message)
+		expect(readerBody.canSetVisibility, 'a reader may not set the flag').toBe(
+			false,
+		)
+		expect(readerBody.visibility, 'a reader is pinned to the public view').toBe(
+			'public',
+		)
+		const readerMessages = readerBody.results.map(
+			(row: { message: string }) => row.message,
+		)
 		expect(readerMessages).toContain(`public note ${RUN}`)
 		expect(readerMessages).not.toContain(`internal note ${RUN}`)
 
@@ -214,11 +238,17 @@ test.describe('timeline entry visibility over HTTP', () => {
 		const created = await handler.post(notesPath(), {
 			data: { message: `guarded note ${RUN}`, visibility: 'internal' },
 		})
-		expect(created.ok(), `note create failed: ${await created.text()}`).toBeTruthy()
+		expect(
+			created.ok(),
+			`note create failed: ${await created.text()}`,
+		).toBeTruthy()
 		const noteId = String((await created.json()).id)
 
 		const refusedWrite = await reader.post(notesPath(), {
-			data: { message: `reader tries to publish ${RUN}`, visibility: 'public' },
+			data: {
+				message: `reader tries to publish ${RUN}`,
+				visibility: 'public',
+			},
 		})
 		expect(
 			refusedWrite.status(),
@@ -228,16 +258,20 @@ test.describe('timeline entry visibility over HTTP', () => {
 		const refusedFlip = await reader.put(`${notesPath()}/${noteId}`, {
 			data: { visibility: 'public' },
 		})
-		expect(refusedFlip.status(), 'a reader must not be able to flip the flag').toBe(403)
+		expect(
+			refusedFlip.status(),
+			'a reader must not be able to flip the flag',
+		).toBe(403)
 
 		// Unchanged: the handler still sees it on the internal side.
 		const after = await handler.get(`${notesPath()}?visibility=internal`)
 		const stillInternal = (await after.json()).results.map(
 			(row: { message: string }) => row.message,
 		)
-		expect(stillInternal, 'the refused write must have changed nothing').toContain(
-			`guarded note ${RUN}`,
-		)
+		expect(
+			stillInternal,
+			'the refused write must have changed nothing',
+		).toContain(`guarded note ${RUN}`)
 	})
 
 	// @e2e object-interactions::making-a-note-public-is-audited
@@ -245,7 +279,10 @@ test.describe('timeline entry visibility over HTTP', () => {
 		const created = await handler.post(notesPath(), {
 			data: { message: `audited note ${RUN}`, visibility: 'internal' },
 		})
-		expect(created.ok(), `note create failed: ${await created.text()}`).toBeTruthy()
+		expect(
+			created.ok(),
+			`note create failed: ${await created.text()}`,
+		).toBeTruthy()
 		const noteId = String((await created.json()).id)
 
 		const flipped = await handler.put(`${notesPath()}/${noteId}`, {
@@ -263,7 +300,7 @@ test.describe('timeline entry visibility over HTTP', () => {
 		const trailBody = await trail.json()
 		const entries = trailBody.results ?? trailBody.items ?? []
 		const move = entries.find(
-			(entry: { action?: string, changed?: Record<string, unknown> }) =>
+			(entry: { action?: string; changed?: Record<string, unknown> }) =>
 				entry.action === 'note.visibility.changed'
 				&& String(entry.changed?.noteId) === noteId,
 		)

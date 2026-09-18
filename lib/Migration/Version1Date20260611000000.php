@@ -75,7 +75,7 @@ class Version1Date20260611000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_anonymisation_log') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_anonymisation_log');

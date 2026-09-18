@@ -647,9 +647,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				v-model="codedConfig.scheme"
 				:disabled="loading"
 				:label="t('openregister', 'Concept scheme URI')"
-				:placeholder="
-					t('openregister', 'https://identifier.overheid.nl/tooi/…')
-				" />
+				placeholder="https://identifier.overheid.nl/tooi/…" />
 			<div class="helper-text">
 				{{
 					t(
@@ -667,7 +665,9 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					:inputLabel="t('openregister', 'Store the value as')"
 					label="label"
 					trackBy="value"
-					@update:modelValue="codedConfig.store = $event?.value || 'uri'" />
+					@update:modelValue="
+						codedConfig.store = $event?.value || 'uri'
+					" />
 
 				<NcTextField
 					v-model="codedConfig.branch"
@@ -699,7 +699,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					v-model="codedConfig.contextProperty"
 					:disabled="loading"
 					:label="t('openregister', 'Narrow the list by property')"
-					:placeholder="t('openregister', 'zaaktype')" />
+					:placeholder="t('openregister', 'case type')" />
 				<div class="helper-text">
 					{{
 						t(
@@ -741,9 +741,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 							</span>
 						</li>
 					</ul>
-					<div
-						v-else-if="treeLoaded && !treeError"
-						class="helper-text">
+					<div v-else-if="treeLoaded && !treeError" class="helper-text">
 						{{
 							t(
 								'openregister',
@@ -781,7 +779,10 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				:disabled="loading"
 				:label="t('openregister', 'Help text (Dutch)')"
 				:placeholder="
-					t('openregister', 'What someone filling this field needs to know')
+					t(
+						'openregister',
+						'What someone filling this field needs to know',
+					)
 				" />
 
 			<NcTextArea
@@ -1344,7 +1345,7 @@ export default {
 		flatConceptTree() {
 			const rows = []
 			const walk = (nodes, depth) => {
-				(nodes || []).forEach((node) => {
+				;(nodes || []).forEach((node) => {
 					rows.push({
 						value: node.value,
 						label: node.label,
@@ -1608,7 +1609,9 @@ export default {
 			this.operatorsLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/schemas/calculation-operators'),
+					generateUrl(
+						'/apps/openregister/api/schemas/calculation-operators',
+					),
 				)
 				this.operatorCatalogue = response.data?.operators || []
 			} catch {
@@ -1662,7 +1665,9 @@ export default {
 
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/schemas/calculation-evaluate'),
+					generateUrl(
+						'/apps/openregister/api/schemas/calculation-evaluate',
+					),
 					{
 						calculation: { type: this.calculationType, expression },
 						object: sample,
@@ -1903,7 +1908,11 @@ export default {
 				scheme: coded.scheme || '',
 				store: coded.store === 'notation' ? 'notation' : 'uri',
 				branch: coded.branch || '',
-				maxDepth: (coded.maxDepth !== null && coded.maxDepth !== undefined) ? String(coded.maxDepth) : '',
+				maxDepth:
+					coded.maxDepth !== null && coded.maxDepth !== undefined
+						? String(coded.maxDepth)
+						: '',
+
 				leafOnly: coded.leafOnly === true,
 				allowDeprecated: coded.allowDeprecated === true,
 				contextProperty: coded.contextProperty || '',
@@ -1947,7 +1956,11 @@ export default {
 				if (this.codedConfig.branch) {
 					coded.branch = this.codedConfig.branch.trim()
 				}
-				if (this.codedConfig.maxDepth !== '' && this.codedConfig.maxDepth !== null && this.codedConfig.maxDepth !== undefined) {
+				if (
+					this.codedConfig.maxDepth !== ''
+					&& this.codedConfig.maxDepth !== null
+					&& this.codedConfig.maxDepth !== undefined
+				) {
 					const depth = parseInt(this.codedConfig.maxDepth, 10)
 					if (!Number.isNaN(depth)) coded.maxDepth = depth
 				}
@@ -1995,13 +2008,19 @@ export default {
 			this.treeError = ''
 
 			const params = new URLSearchParams({ scheme, tree: '1' })
-			if (this.codedConfig.branch) params.set('branch', this.codedConfig.branch.trim())
+			if (this.codedConfig.branch)
+				params.set('branch', this.codedConfig.branch.trim())
 			if (this.codedConfig.store) params.set('store', this.codedConfig.store)
-			if (this.codedConfig.maxDepth !== '' && this.codedConfig.maxDepth !== null && this.codedConfig.maxDepth !== undefined) {
+			if (
+				this.codedConfig.maxDepth !== ''
+				&& this.codedConfig.maxDepth !== null
+				&& this.codedConfig.maxDepth !== undefined
+			) {
 				params.set('maxDepth', String(this.codedConfig.maxDepth))
 			}
 			if (this.codedConfig.leafOnly) params.set('leafOnly', 'true')
-			if (this.codedConfig.allowDeprecated) params.set('allowDeprecated', 'true')
+			if (this.codedConfig.allowDeprecated)
+				params.set('allowDeprecated', 'true')
 
 			try {
 				const response = await fetch(

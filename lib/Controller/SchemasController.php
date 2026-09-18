@@ -40,8 +40,10 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
@@ -52,6 +54,7 @@ use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
@@ -844,6 +847,15 @@ class SchemasController extends Controller {
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
 			return new JSONResponse(data: $schema, statusCode: 201);
+		} catch (UniqueHintException $e) {
+			// A nomination naming a property the schema does not declare is the
+			// caller's input and a person is waiting on the answer, so the
+			// refusal names the property rather than being logged and swallowed
+			// (ADR-005). MUST stay above the generic catch below.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (PropertyVocabularyException $e) {
 			// A type, a constraint key or a forwarded key the vocabulary does
 			// not hold is the caller's input and a person is waiting on the
@@ -860,6 +872,15 @@ class SchemasController extends Controller {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage()],
 				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (ReversibilityDeclarationException $e) {
+			// A bulk action declared reversible that cannot be would put an undo
+			// button in front of an operator that cannot work, and they would
+			// find out on the day they needed it. The refusal names the action
+			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
 			);
 		} catch (RelationDeclarationException $e) {
 			// A relation declaration is the caller's input and a person is waiting
@@ -1063,6 +1084,16 @@ class SchemasController extends Controller {
 			}
 		}//end if
 
+		// D-6: A GRANT TO AN EXTERNAL PRINCIPAL CARRIES AN END DATE OR IT DOES
+		// NOT EXIST. Asked BEFORE the write, because a refusal after
+		// updateFromArray would be a refusal of something already saved.
+		if (isset($data['authorization']) === true && is_array($data['authorization']) === true) {
+			$externalRefusal = (new ExternalGrantGuard())->refusalFor($data['authorization']);
+			if ($externalRefusal !== null) {
+				return new JSONResponse(data: $externalRefusal, statusCode: 400);
+			}
+		}
+
 		try {
 			// Update the schema with the provided data.
 			$updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
@@ -1104,6 +1135,15 @@ class SchemasController extends Controller {
 			);
 
 			return new JSONResponse(data: $updatedSchema);
+		} catch (UniqueHintException $e) {
+			// A nomination naming a property the schema does not declare is the
+			// caller's input and a person is waiting on the answer, so the
+			// refusal names the property rather than being logged and swallowed
+			// (ADR-005). MUST stay above the generic catch below.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (PropertyVocabularyException $e) {
 			// A type, a constraint key or a forwarded key the vocabulary does
 			// not hold is the caller's input and a person is waiting on the
@@ -1120,6 +1160,15 @@ class SchemasController extends Controller {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage()],
 				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (ReversibilityDeclarationException $e) {
+			// A bulk action declared reversible that cannot be would put an undo
+			// button in front of an operator that cannot work, and they would
+			// find out on the day they needed it. The refusal names the action
+			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
 			);
 		} catch (RelationDeclarationException $e) {
 			// A relation declaration is the caller's input and a person is waiting
@@ -1618,6 +1667,15 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schema);
+		} catch (UniqueHintException $e) {
+			// A nomination naming a property the schema does not declare is the
+			// caller's input and a person is waiting on the answer, so the
+			// refusal names the property rather than being logged and swallowed
+			// (ADR-005). MUST stay above the generic catch below.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (PropertyVocabularyException $e) {
 			// A type, a constraint key or a forwarded key the vocabulary does
 			// not hold is the caller's input and a person is waiting on the
@@ -1634,6 +1692,15 @@ class SchemasController extends Controller {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage()],
 				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (ReversibilityDeclarationException $e) {
+			// A bulk action declared reversible that cannot be would put an undo
+			// button in front of an operator that cannot work, and they would
+			// find out on the day they needed it. The refusal names the action
+			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
 			);
 		} catch (RelationDeclarationException $e) {
 			// A relation declaration is the caller's input and a person is waiting

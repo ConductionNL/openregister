@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.27-unstable.20260915120000</version>
+    <version>2.1.32-unstable.20260918062400</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -111,10 +111,22 @@ Vrij en open source onder de EUPL-licentie.
              the Nextcloud version, so the PHP 8.3 requirement does not itself
              depend on this floor.
 
-             max-version stays 34, which is the fleet-wide value everywhere
-             except openconnector, which declares 35. That split is known and
-             deliberately not resolved here. -->
-        <nextcloud min-version="32" max-version="34"/>
+             max-version is 35 as of 2026-09-15 for Nextcloud 35 readiness.
+             OpenRegister has been run on Nextcloud 35 instances in practice for
+             months, and its upgrade/enable path was re-verified on NC35
+             (PostgreSQL) on 2026-09-15. OpenRegister is the AppHost dependency
+             every consumer app is built on, so it raises this ceiling first —
+             the rest of the fleet can then follow without a clean NC35 occ
+             upgrade disabling OpenRegister underneath them.
+
+             This ceiling is exercised in CI, and this element is what
+             exercises it: the PHPUnit matrix is derived from the range declared
+             here rather than pinned in code-quality.yml, so declaring 35 is
+             precisely what creates the stable35 leg. The tested range and the
+             declared range cannot drift apart. An earlier revision of this
+             paragraph recorded the opposite, which was true only while the
+             workflow still pinned a list of its own. -->
+        <nextcloud min-version="32" max-version="35"/>
     </dependencies>
 
 	<background-jobs>
@@ -233,6 +245,7 @@ Vrij en open source onder de EUPL-licentie.
 			     register never existed: a merge history that is not recorded,
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
@@ -318,6 +331,13 @@ Vrij en open source onder de EUPL-licentie.
 			     both need the openregister_flow_timers tables. -->
 			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
 			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
+			<!-- The archive and freeze columns (object-archive-state). The
+			     default object list now carries `_archived IS NULL`, and a
+			     magic table that predates the column answers that with an SQL
+			     error, which reaches a user as a 500 on a plain list. Nothing
+			     re-syncs an already-materialised table on a read, so the sync
+			     has to be asked for, and an upgrade is when. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\AddObjectStateColumns</step>
 			<!-- Intake sources (objects-as-the-hinge-between-cases): the
 			     intake-sources register with its intake-source schema, so a watched
 			     folder, a mailbox or an inbound endpoint is a row somebody can add
@@ -373,6 +393,7 @@ Vrij en open source onder de EUPL-licentie.
 			     register never existed: a merge history that is not recorded,
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
@@ -422,6 +443,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<command>OCA\OpenRegister\Command\SearchIndexCommand</command>
 		<!-- The sanctioned administrative purge. Every HTTP delete route refuses an
 		     archival record; this is the one path that can still destroy one, and it
 		     needs shell access plus an explicit force flag. -->

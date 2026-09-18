@@ -293,7 +293,7 @@ class Version1Date20260828100000 extends SimpleMigrationStep {
 		// check rather than a permanent skip.
 		if ($schema->hasTable(self::TABLE) === false) {
 			$output->warning(message: 'openregister_organisations is absent; skipping organisation consolidation columns');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
@@ -318,7 +318,7 @@ class Version1Date20260828100000 extends SimpleMigrationStep {
 		}
 
 		if ($added === []) {
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: 'Organisation consolidation added: ' . implode(', ', $added));
