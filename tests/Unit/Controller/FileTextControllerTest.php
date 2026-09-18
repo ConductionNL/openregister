@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -742,5 +743,63 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals(404, $result->getStatus());
 		$this->assertFalse($result->getData()['success']);
 	}//end testDeleteFileTextRejectsInaccessibleFile()
+
+	// =========================================================================
+	// PDF anonymisation: reason -> HTTP status
+	// =========================================================================
+
+	/**
+	 * The PDF pipeline answers with a structured reason, and the controller is
+	 * the only place that turns it into a status a caller can act on: an
+	 * encrypted PDF or a missing text layer is something the caller can fix
+	 * (422), a failed validation or an internal error is not (500). Nothing in
+	 * the response may carry the operator-supplied entity text (ADR-005), so
+	 * the body is asserted to be exactly the PII-free diagnostic.
+	 *
+	 * @dataProvider providePdfAnonymisationReasons
+	 *
+	 * @param string $reason   The reason the pipeline reports.
+	 * @param int    $expected The status the caller should see.
+	 */
+	public function testAPdfAnonymisationReasonDecidesTheStatus(string $reason, int $expected): void {
+		$fileNode = $this->createMock(\OCP\Files\File::class);
+		$fileNode->method('getName')->willReturn('contract.pdf');
+		$this->fileService->method('getFileById')->willReturn($fileNode);
+
+		$this->entityRelationMapper->method('findEntitiesForAnonymization')
+			->willReturn([['entity_value' => 'Jane Smith', 'entity_type' => 'PERSON']]);
+
+		$this->fileService->method('anonymizeDocument')
+			->willThrowException(
+				new PdfAnonymisationException(
+					reason: $reason,
+					message: 'pipeline said no',
+					diagnostic: ['pages' => 3, 'redactions' => 0]
+				)
+			);
+
+		$result = $this->controller->anonymizeFile(1);
+
+		$this->assertEquals($expected, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertSame('pdf_anonymisation_failed', $data['error']);
+		$this->assertSame($reason, $data['reason'], 'de caller moet de reden kunnen routeren');
+		$this->assertSame(['pages' => 3, 'redactions' => 0], $data['details']);
+		$this->assertStringNotContainsString('Jane Smith', json_encode($data), 'ADR-005: geen entity-tekst in de respons');
+	}//end testAPdfAnonymisationReasonDecidesTheStatus()
+
+	/**
+	 * @return array<string, array{0: string, 1: int}>
+	 */
+	public static function providePdfAnonymisationReasons(): array {
+		return [
+			'encrypted pdf'       => [PdfAnonymisationException::REASON_ENCRYPTED_PDF, Http::STATUS_UNPROCESSABLE_ENTITY],
+			'no text layer'       => [PdfAnonymisationException::REASON_TEXT_LAYER_MISSING, Http::STATUS_UNPROCESSABLE_ENTITY],
+			'validation failed'   => [PdfAnonymisationException::REASON_VALIDATION_FAILED, Http::STATUS_INTERNAL_SERVER_ERROR],
+			'internal error'      => [PdfAnonymisationException::REASON_INTERNAL_ERROR, Http::STATUS_INTERNAL_SERVER_ERROR],
+			'an unmapped reason'  => ['something_new', Http::STATUS_INTERNAL_SERVER_ERROR],
+		];
+	}//end providePdfAnonymisationReasons()
 
 }//end class
