@@ -43,6 +43,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setReason(?string $reason)
  * @method string|null getSchemaVersion()
  * @method void setSchemaVersion(?string $schemaVersion)
+ * @method array|null getPriorValues()
+ * @method void setPriorValues(?array $priorValues)
+ * @method array|null getAppliedValues()
+ * @method void setAppliedValues(?array $appliedValues)
  * @method bool getAddedAtCommit()
  * @method void setAddedAtCommit(bool $addedAtCommit)
  * @method DateTime|null getAppliedAt()
@@ -125,6 +129,30 @@ class BulkJobMember extends Entity implements JsonSerializable {
 	protected ?string $schemaVersion = null;
 
 	/**
+	 * The properties the job changed on this member, with their values before
+	 * the change. Only those properties, never a snapshot of the object (D-2).
+	 *
+	 * Null when the action did not declare itself reversible, which is what
+	 * makes the reversal route's refusal honest rather than a silent no-op.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $priorValues = null;
+
+	/**
+	 * The values the job wrote on this member.
+	 *
+	 * The reversal compares these against the object's CURRENT values. A
+	 * property that no longer holds what the job wrote means somebody edited
+	 * the object afterwards, and a reversal never writes a prior value over a
+	 * later change (D-3). Reading the prior values alone cannot tell the two
+	 * apart.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $appliedValues = null;
+
+	/**
 	 * True when the member appeared only at commit, because a query-backed
 	 * selection grew between preview and commit (D-2).
 	 *
@@ -167,6 +195,8 @@ class BulkJobMember extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'outcome', type: 'string');
 		$this->addType(fieldName: 'reason', type: 'string');
 		$this->addType(fieldName: 'schemaVersion', type: 'string');
+		$this->addType(fieldName: 'priorValues', type: 'json');
+		$this->addType(fieldName: 'appliedValues', type: 'json');
 		$this->addType(fieldName: 'addedAtCommit', type: 'boolean');
 		$this->addType(fieldName: 'appliedAt', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
@@ -210,6 +240,8 @@ class BulkJobMember extends Entity implements JsonSerializable {
 			'outcome' => $this->outcome,
 			'reason' => $this->reason,
 			'schemaVersion' => $this->schemaVersion,
+			'priorValues' => $this->priorValues,
+			'appliedValues' => $this->appliedValues,
 			'addedAtCommit' => $this->addedAtCommit,
 			'appliedAt' => $this->appliedAt?->format(DateTime::ATOM),
 			'created' => $this->created?->format(DateTime::ATOM),

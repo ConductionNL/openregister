@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
@@ -872,6 +873,15 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage()],
 				statusCode: $e->getHttpStatusCode()
 			);
+		} catch (ReversibilityDeclarationException $e) {
+			// A bulk action declared reversible that cannot be would put an undo
+			// button in front of an operator that cannot work, and they would
+			// find out on the day they needed it. The refusal names the action
+			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (RelationDeclarationException $e) {
 			// A relation declaration is the caller's input and a person is waiting
 			// on the answer, so the refusal names the property rather than being
@@ -1150,6 +1160,15 @@ class SchemasController extends Controller {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage()],
 				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (ReversibilityDeclarationException $e) {
+			// A bulk action declared reversible that cannot be would put an undo
+			// button in front of an operator that cannot work, and they would
+			// find out on the day they needed it. The refusal names the action
+			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
 			);
 		} catch (RelationDeclarationException $e) {
 			// A relation declaration is the caller's input and a person is waiting
@@ -1673,6 +1692,15 @@ class SchemasController extends Controller {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage()],
 				statusCode: $e->getHttpStatusCode()
+			);
+		} catch (ReversibilityDeclarationException $e) {
+			// A bulk action declared reversible that cannot be would put an undo
+			// button in front of an operator that cannot work, and they would
+			// find out on the day they needed it. The refusal names the action
+			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
 			);
 		} catch (RelationDeclarationException $e) {
 			// A relation declaration is the caller's input and a person is waiting
