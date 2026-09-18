@@ -1186,6 +1186,15 @@ return [
             // route that shares the verb: `exists` is never read as a register
             // name, because there is no schema segment behind it to match.
         ['name' => 'objects#exists', 'url' => '/api/objects/exists', 'verb' => 'POST'],
+            // Who has this object open (object-presence). A heartbeat, not a
+            // connection: notify_push says nothing about who is looking at
+            // what, so the client beats every 30 s and the server stops
+            // believing it after 90. Every one of the three goes through the
+            // object's OWN read authorisation, so presence can never tell a
+            // caller that an object exists when they may not read it.
+        ['name' => 'objects#presenceBeat',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#presenceDepart', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#presenceList',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
             // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
