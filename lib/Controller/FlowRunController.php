@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
@@ -138,6 +139,7 @@ class FlowRunController extends Controller {
 		private readonly ?AuditFlowAttribution $auditTrails = null,
 		private readonly ?FlowRunSignalService $signalService = null,
 		private readonly ?FlowAccess $access = null,
+		private readonly ?FlowRunMigrationService $migrations = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -668,6 +670,142 @@ class FlowRunController extends Controller {
 
 		return new JSONResponse($new->jsonSerialize(), Http::STATUS_CREATED);
 	}//end retry()
+
+	/**
+	 * Move one run onto another version of its flow, or say what that would do.
+	 *
+	 * 🔴 NEVER AUTOMATIC. Publishing a version moves nothing; this is the
+	 * deliberate exception, and it needs a reason, a named actor and a marking
+	 * that fits. `dryRun` answers the same verdict without writing, so a UI can
+	 * show an administrator what would happen before they commit.
+	 *
+	 * The guard is the flow's `run` right, the same one `retry` and `resume`
+	 * take, because moving a run in flight is at least as consequential as
+	 * re-running it.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The outcome, or a 4xx naming what stood in the way.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function migrate(string $uuid): JSONResponse {
+		if ($this->migrations === null) {
+			// Fail CLOSED, like `refuseUnlessRunnable`: without the collaborator
+			// there is no validator, and a migration that skipped validation is
+			// the silent move this whole change exists to prevent.
+			return new JSONResponse(
+				['error' => 'Run migration is not available on this instance.'],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
+		}
+
+		try {
+			$run = $this->mapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		$refusal = $this->refuseUnlessRunnable(flowId: (string)$run->getFlowId());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$actor = $this->userSession->getUser();
+		if ($actor === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$mapping = $this->request->getParam('mapping', []);
+		$outcome = $this->migrations->migrate(
+			runUuid: $uuid,
+			targetVersion: (int)$this->request->getParam('targetVersion', 0),
+			reason: (string)$this->request->getParam('reason', ''),
+			actor: $actor->getUID(),
+			mapping: ((is_array($mapping) === true) ? $mapping : []),
+			dryRun: ($this->request->getParam('dryRun', false) === true),
+		);
+
+		// A dry run is not a refusal even though it did not migrate, so the two
+		// are told apart before the status is chosen: answering 422 for a
+		// successful preview would make every UI treat it as a failure.
+		if ($outcome['dryRun'] === true) {
+			return new JSONResponse($outcome);
+		}
+
+		if ($outcome['migrated'] === false) {
+			return new JSONResponse($outcome, Http::STATUS_UNPROCESSABLE_ENTITY);
+		}
+
+		return new JSONResponse($outcome);
+	}//end migrate()
+
+	/**
+	 * Move every run pinned to one version of a flow onto another.
+	 *
+	 * Reports PER RUN. A bulk migration that answered only a count would leave
+	 * an administrator believing every run moved, and the ones that did not are
+	 * exactly the ones somebody has to go and look at.
+	 *
+	 * @param string $flow The flow uuid.
+	 *
+	 * @return JSONResponse The report, or a 4xx naming what stood in the way.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-runs-can-be-migrated-in-bulk-per-version
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function migrateRuns(string $flow): JSONResponse {
+		if ($this->migrations === null) {
+			return new JSONResponse(
+				['error' => 'Run migration is not available on this instance.'],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
+		}
+
+		$refusal = $this->refuseUnlessRunnable(flowId: $flow);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$actor = $this->userSession->getUser();
+		if ($actor === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$reason = trim((string)$this->request->getParam('reason', ''));
+		if ($reason === '') {
+			return new JSONResponse(
+				['error' => 'Say why these runs are being moved. The reason is kept on each of them.'],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		$mapping = $this->request->getParam('mapping', []);
+
+		return new JSONResponse(
+			$this->migrations->migrateRunsOfVersion(
+				flowId: $flow,
+				sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
+				targetVersion: (int)$this->request->getParam('targetVersion', 0),
+				reason: $reason,
+				actor: $actor->getUID(),
+				mapping: ((is_array($mapping) === true) ? $mapping : []),
+			)
+		);
+	}//end migrateRuns()
 
 	/**
 	 * Tell a suspended run that the thing it was waiting for has happened.
