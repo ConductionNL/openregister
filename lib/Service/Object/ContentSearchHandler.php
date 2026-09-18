@@ -277,6 +277,16 @@ class ContentSearchHandler {
 	 * out. A row already on this page is never shown twice, whatever the
 	 * overlap probe said (belt and braces for a probe that under-reports).
 	 *
+	 * THE ANCHOR TRUSTS `metadataTotal`. It is the metadata arm's own count, from
+	 * a separate COUNT query than the one that produced the rows, so the two can
+	 * disagree — a write landing between the round-trips, or a count and a fetch
+	 * built by different code paths. When the count is too high the chunk arm
+	 * repeats its first owner for as many pages as the overstatement; when it is
+	 * too low, rows past the stated total are never reached by a client paging on
+	 * `total`. Nothing here can detect that: this method sees one page, not the
+	 * arm. The fix belongs where the disagreement is — the count and the fetch
+	 * agreeing — not in a correction guessed per page.
+	 *
 	 * @param array<string, ObjectEntity> $chunkOnly The chunk-only owners, keyed by uuid, in hit order.
 	 * @param array<string, true> $seenOnPage The uuids of this page's metadata rows.
 	 * @param ObjectEntity[] $results This page's metadata rows.
