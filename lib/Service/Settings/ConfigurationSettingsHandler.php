@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -112,6 +113,7 @@ class ConfigurationSettingsHandler {
 	 * @param LoggerInterface $logger Logger.
 	 * @param IAppManager $appManager App manager, read for the app's own version info.
 	 * @param string $appName Application name.
+	 * @param SecuritySettingAnnouncer|null $announcer Tells the administrators when a marked setting moves.
 	 *
 	 * @return void
 	 */
@@ -123,6 +125,7 @@ class ConfigurationSettingsHandler {
 		LoggerInterface $logger,
 		private readonly IAppManager $appManager,
 		string $appName = 'openregister',
+		private readonly ?SecuritySettingAnnouncer $announcer = null,
 	) {
 		$this->appConfig = $appConfig;
 		$this->groupManager = $groupManager;
@@ -562,6 +565,14 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateSettings(array $data): array {
+		// The BEFORE half of the announcement (D-6). Taken here rather than
+		// derived from $data, because $data is what the caller SENT and a
+		// setting it omits keeps its stored value: comparing against the
+		// request would announce changes nobody made and miss the ones they
+		// did. Cheap by construction: the registry reads only the marked keys,
+		// never getSettings(), which also lists every group and user.
+		$beforeSecurity = $this->announcer?->snapshot();
+
 		try {
 			// Handle RBAC settings.
 			if (($data['rbac'] ?? null) !== null) {
@@ -674,6 +685,15 @@ class ConfigurationSettingsHandler {
 				];
 				$this->appConfig->setValueString($this->appName, 'solr', json_encode($solrConfig));
 			}//end if
+
+			// Announcing is not recording: `settings-change-audit` owns the
+			// record, this tells a person at the moment it happens. After the
+			// writes and inside the try, so a save that threw announces
+			// nothing. Fail-soft inside the announcer, so a notification that
+			// cannot be delivered does not turn a successful save into an error.
+			if ($this->announcer !== null && $beforeSecurity !== null) {
+				$this->announcer->announce($beforeSecurity, $this->announcer->snapshot());
+			}
 
 			// Return the updated settings.
 			return $this->getSettings();

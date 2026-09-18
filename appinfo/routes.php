@@ -456,6 +456,15 @@ return [
         // Whether the audit trail is actually reaching the organisation's log platform.
         ['name' => 'auditSink#show',        'url' => '/api/audit/sink',             'verb' => 'GET'],
         ['name' => 'auditSink#acknowledge', 'url' => '/api/audit/sink/acknowledge', 'verb' => 'POST'],
+        // Reported content and the copies taken of it. Filing is open to any
+        // authenticated caller; reading a copy is the reviewer group's. `copy`
+        // is registered ABOVE the bare {id} routes so the literal segment wins
+        // over the placeholder.
+        ['name' => 'contentReport#index',  'url' => '/api/content-reports',             'verb' => 'GET'],
+        ['name' => 'contentReport#create', 'url' => '/api/content-reports',             'verb' => 'POST'],
+        ['name' => 'contentReport#copy',   'url' => '/api/content-reports/{id}/copy',   'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contentReport#show',   'url' => '/api/content-reports/{id}',        'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contentReport#update', 'url' => '/api/content-reports/{id}',        'verb' => 'PUT',  'requirements' => ['id' => '[^/]+']],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#access',         'url' => '/api/avg/access',         'verb' => 'GET'],
         ['name' => 'dsar#portability',    'url' => '/api/avg/portability',    'verb' => 'GET'],

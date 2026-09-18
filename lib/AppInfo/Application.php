@@ -3352,6 +3352,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
 
+		// Reported content: a removal is noted on every report filed against the
+		// content, and the removal record names the copies taken at filing time.
+		// Fail-soft: never blocks the removal it observes.
+		$context->registerEventListener(
+			ObjectDeletedEvent::class,
+			\OCA\OpenRegister\Listener\ContentReportRemovalListener::class
+		);
+
 		// Context Chat submission listener — submits/removes object content
 		// to OCP\ContextChat on create/update/delete for schemas opted in via
 		// x-openregister-contextchat. Fail-soft: never aborts the write it
