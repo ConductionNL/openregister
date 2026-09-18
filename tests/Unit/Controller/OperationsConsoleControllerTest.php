@@ -59,22 +59,183 @@ final class OperationsConsoleControllerTest extends TestCase {
 	 */
 	private array $params = [];
 
+	/**
+	 * The run history, run now and the schedule.
+	 *
+	 * @var \OCA\OpenRegister\Service\Operations\OperationsJobsService
+	 */
+	private \OCA\OpenRegister\Service\Operations\OperationsJobsService $jobsService;
+
+	/**
+	 * Maintenance mode.
+	 *
+	 * @var \OCA\OpenRegister\Service\Operations\MaintenanceModeService
+	 */
+	private \OCA\OpenRegister\Service\Operations\MaintenanceModeService $maintenance;
+
+	/**
+	 * The support bundle and the instance facts.
+	 *
+	 * @var \OCA\OpenRegister\Service\Operations\SupportBundleService
+	 */
+	private \OCA\OpenRegister\Service\Operations\SupportBundleService $bundle;
+
+	/**
+	 * The HTTP verb the request reports.
+	 *
+	 * @var string
+	 */
+	private string $method = 'GET';
+
+	/**
+	 * The uid the session reports, or null for nobody.
+	 *
+	 * @var string|null
+	 */
+	private ?string $uid = 'noor';
+
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->params = [];
 		$this->console = $this->createMock(OperationsConsoleService::class);
 		$this->request = $this->createMock(IRequest::class);
+		$this->jobsService = $this->createMock(\OCA\OpenRegister\Service\Operations\OperationsJobsService::class);
+		$this->maintenance = $this->createMock(\OCA\OpenRegister\Service\Operations\MaintenanceModeService::class);
+		$this->bundle = $this->createMock(\OCA\OpenRegister\Service\Operations\SupportBundleService::class);
 
 		$this->request->method('getParam')->willReturnCallback(
 			function (string $key, $default = null) {
 				return ($this->params[$key] ?? $default);
 			}
 		);
+		$this->request->method('getMethod')->willReturnCallback(fn (): string => $this->method);
 	}
 
 	private function controller(): OperationsConsoleController {
-		return new OperationsConsoleController('openregister', $this->request, $this->console);
+		$session = $this->createMock(\OCP\IUserSession::class);
+
+		if ($this->uid !== null) {
+			$user = $this->createMock(\OCP\IUser::class);
+			$user->method('getUID')->willReturn($this->uid);
+			$session->method('getUser')->willReturn($user);
+		}
+
+		return new OperationsConsoleController(
+			'openregister',
+			$this->request,
+			$this->console,
+			$this->jobsService,
+			$this->createMock(\OCA\OpenRegister\Service\Operations\ConsistencyCheckService::class),
+			$this->createMock(\OCA\OpenRegister\Service\Operations\ConsistencyRepairService::class),
+			$this->maintenance,
+			$this->bundle,
+			$this->createMock(\OCA\OpenRegister\Service\Operations\JobAlertService::class),
+			$session
+		);
+	}
+
+	/**
+	 * A refusal from the job service reaches the caller as a 422 carrying the
+	 * run it collided with, not a bare "no".
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testARefusedRunNowAnswersTheRunThatHoldsTheJob(): void {
+		$this->method = 'POST';
+		$this->params['job'] = 'Acme\\NightlyJob';
+		$this->jobsService->method('runNow')->willThrowException(
+			new \OCA\OpenRegister\Exception\JobRunRefusedException(
+				'This job is already running.',
+				'already-running',
+				['runId' => 41]
+			)
+		);
+
+		$response = $this->controller()->runNow();
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame('already-running', $response->getData()['reason']);
+		$this->assertSame(41, $response->getData()['details']['runId']);
+	}
+
+	/**
+	 * Run now names the administrator asking, so the run row can too.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testRunNowHandsTheSessionUidToTheService(): void {
+		$this->method = 'POST';
+		$this->params['job'] = 'Acme\\NightlyJob';
+
+		$seen = null;
+		$this->jobsService->method('runNow')->willReturnCallback(
+			function (string $job, string $actor) use (&$seen): array {
+				$seen = $actor;
+
+				return ['job' => $job, 'started' => true, 'run' => null];
+			}
+		);
+
+		$this->assertSame(202, $this->controller()->runNow()->getStatus());
+		$this->assertSame('noor', $seen);
+	}
+
+	/**
+	 * Naming no job is a bad request, never a run of something unnamed.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testRunNowWithoutAJobIsRefused(): void {
+		$this->method = 'POST';
+
+		$this->assertSame(400, $this->controller()->runNow()->getStatus());
+	}
+
+	/**
+	 * The verb decides: GET reads the mode, DELETE leaves it, POST enters it.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testMaintenanceModeIsReadEnteredAndLeftByVerb(): void {
+		$this->maintenance->method('state')->willReturn(['holds' => false]);
+		$this->maintenance->expects($this->once())->method('enter')->willReturn(['holds' => true]);
+		$this->maintenance->expects($this->once())->method('leave')->willReturn(['holds' => false]);
+
+		$this->method = 'GET';
+		$this->assertFalse($this->controller()->maintenance()->getData()['holds']);
+
+		$this->method = 'POST';
+		$this->params['message'] = 'onderhoud tot 14:00';
+		$this->assertTrue($this->controller()->maintenance()->getData()['holds']);
+
+		$this->method = 'DELETE';
+		$this->assertFalse($this->controller()->maintenance()->getData()['holds']);
+	}
+
+	/**
+	 * The facts page answers the version and the build a support call opens
+	 * with.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 *
+	 * @return void
+	 */
+	public function testTheFactsEndpointAnswersTheVersionAndTheBuild(): void {
+		$this->bundle->method('facts')->willReturn(['version' => '2.1.32', 'build' => 'a6ab296']);
+
+		$facts = $this->controller()->facts()->getData();
+
+		$this->assertSame('2.1.32', $facts['version']);
+		$this->assertSame('a6ab296', $facts['build']);
 	}
 
 	public function testTheConsoleAnswersItsWindowAndItsPanes(): void {
