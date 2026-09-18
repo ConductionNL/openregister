@@ -266,10 +266,37 @@ jobs:
       # blocked and nobody looked. Remko Huisman asked on portaliq (WOO-575) for
       # the fleet to stop shipping that shape; this is the same change here.
       #
-      # One regression mode remains, and it is now a red build instead of a red
-      # row nobody sees: vendoring a file whose own SPDX header names a licence
-      # with no text under LICENSES/. The fix is `reuse download <id>`, never
-      # removing the header.
+      # REUSE-IgnoreStart
+      # TWO regression modes remain. Measured on this branch, against the exact
+      # image the action runs (fsfe/reuse-action@v5 is FROM fsfe/reuse:5), and
+      # against fsfe/reuse:6 to see what the next bump brings.
+      #
+      # 1. Vendoring a file whose own SPDX header names a licence with no text
+      #    under LICENSES/. Red build on reuse 5 and 6 alike. The fix is
+      #    `reuse download <id>`, never removing the header.
+      #
+      # 2. A tracked TEXT file that MENTIONS an SPDX licence tag in prose —
+      #    reuse parses the rest of the line as the licence expression. This PR
+      #    tripped over it on an archived tasks.md that quoted a tag while
+      #    describing the work. What it costs depends on the reuse major:
+      #      reuse 5 (what CI runs today): a stderr ERROR, the file is skipped,
+      #        the blanket then supplies its licensing info, lint still exits 0.
+      #        Latent, not blocking. Verified by reproducing it on this branch.
+      #      reuse 6 (fsfe/reuse-action@v6 exists; the day the shared workflow
+      #        bumps): first-class non-compliance, "Invalid SPDX License
+      #        Expressions: N", red build. Verified the same way.
+      #    Both majors NAME the offending file in the error, so this is
+      #    diagnosable; run `docker run --rm -v "$PWD":/data fsfe/reuse:6 lint`
+      #    locally to see it before CI does.
+      #    Fix: reuse's own REUSE-IgnoreStart / REUSE-IgnoreEnd around the
+      #    quoted tag — which is why this comment block sits between a pair of
+      #    them. For openspec/changes/archive/**, which the repo treats as
+      #    immutable history, REUSE.toml carries a `precedence = "override"`
+      #    block instead, so nothing there is read for tags at all.
+      #
+      # This branch is compliant under BOTH majors, so the v6 bump will not
+      # land as a surprise red build here.
+      # REUSE-IgnoreEnd
       reuse-blocking: true
       # Run the Hydra mechanical quality gates against this PR's diff.
       #
