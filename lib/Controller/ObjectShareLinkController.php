@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -96,6 +97,7 @@ class ObjectShareLinkController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param IManager $shareManager Core share manager — validates the token.
 	 * @param ObjectService $objectService Loads the addressed object.
+	 * @param AccessLinkReader $reader Projects the object onto what an anonymous caller may read.
 	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -104,6 +106,7 @@ class ObjectShareLinkController extends Controller {
 		IRequest $request,
 		private readonly IManager $shareManager,
 		private readonly ObjectService $objectService,
+		private readonly AccessLinkReader $reader,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -171,9 +174,16 @@ class ObjectShareLinkController extends Controller {
 			return $this->refused();
 		}
 
+		// Projected, never serialised whole. The token says WHICH record may be
+		// read; it does not say that the platform's own bookkeeping travels
+		// with it. Before this, `@self.authorization`, the owner, the
+		// organisation and the folder all left with every anonymous read, plus
+		// every property regardless of write-only or property-level
+		// authorization (openregister#3818). The projection is the access-link
+		// reader's, so the two anonymous surfaces publish the same shape.
 		return new JSONResponse(
 			[
-				'object' => $object->jsonSerialize(),
+				'object' => $this->reader->publish(object: $object),
 				'permissions' => $share->getPermissions(),
 			]
 		);

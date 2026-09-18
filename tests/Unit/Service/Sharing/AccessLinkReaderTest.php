@@ -290,4 +290,70 @@ class AccessLinkReaderTest extends TestCase {
 
 		$this->reader->read(link: $this->link());
 	}
+	// ---- Task 4.3: a public entry's text is public, its author is not. ------
+
+	/**
+	 * A public timeline entry names an employee, and a citizen reads the text.
+	 *
+	 * The row the note service returns carries `actorId`, `editedBy`,
+	 * `editedByDisplayName` and `isCurrentUser`. Those are account names inside
+	 * the organisation, published to somebody with no account at all, so the
+	 * row is projected the way the object is.
+	 */
+	public function testAPublicTimelineEntryPublishesItsTextAndNotTheAccountsAroundIt(): void {
+		$this->objects->method('find')->willReturn($this->object());
+		$this->properties->method('filterReadableProperties')->willReturn([]);
+		$this->notes->method('getNotesForObject')->willReturn([
+			[
+				'id' => 7,
+				'message' => 'Your objection was received',
+				'actorType' => 'user',
+				'actorId' => 'behandelaar',
+				'editedBy' => 'teamlead',
+				'editedByDisplayName' => 'Team Lead',
+				'isCurrentUser' => false,
+				'createdAt' => '2026-09-01T10:00:00+02:00',
+				'visibility' => 'public',
+			],
+		]);
+
+		$body = $this->reader->read(link: $this->link());
+
+		$this->assertIsArray($body);
+		$entry = $body['timeline'][0];
+		$this->assertSame('Your objection was received', $entry['message']);
+		foreach (['actorId', 'editedBy', 'editedByDisplayName', 'isCurrentUser'] as $account) {
+			$this->assertArrayNotHasKey(
+				$account,
+				$entry,
+				sprintf('a public timeline entry must not publish %s', $account)
+			);
+		}
+	}
+
+	// ---- Task 4.1/4.2: the projection the share token surface borrows. -----
+
+	/**
+	 * `publish()` is the same projection the link uses, for the share token.
+	 *
+	 * The share token surface answered with `jsonSerialize()`, which carried
+	 * `@self.authorization` and every property regardless of the rules
+	 * (openregister#3818). Two anonymous surfaces get one allow-list, so this
+	 * test asserts what the OTHER surface now receives.
+	 */
+	public function testPublishReducesAnObjectTheWayALinkDoes(): void {
+		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
+
+		$published = $this->reader->publish(object: $this->object());
+
+		$this->assertSame('Bezwaar', $published['onderwerp']);
+		$this->assertArrayNotHasKey('bsn', $published, 'a property the rules removed must not reappear');
+		foreach (['owner', 'organisation', 'folder', 'authorization', 'groups'] as $forbidden) {
+			$this->assertArrayNotHasKey(
+				$forbidden,
+				$published['@self'],
+				sprintf('an anonymous read must not publish @self.%s', $forbidden)
+			);
+		}
+	}
 }

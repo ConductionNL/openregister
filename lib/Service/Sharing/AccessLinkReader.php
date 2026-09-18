@@ -92,6 +92,26 @@ class AccessLinkReader {
 	];
 
 	/**
+	 * The timeline keys a link may publish.
+	 *
+	 * An allow-list for the same reason `@self` has one: the note row grows,
+	 * and a key added to it later must be decided rather than published by
+	 * default. `actorId`, `editedBy`, `editedByDisplayName` and `isCurrentUser`
+	 * are deliberately absent, because they name accounts.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PUBLISHABLE_TIMELINE_KEYS = [
+		'id',
+		'message',
+		'actorType',
+		'createdAt',
+		'visibility',
+		'editedAt',
+		'versionCount',
+	];
+
+	/**
 	 * The most objects a view link serves in one answer.
 	 *
 	 * @var int
@@ -273,6 +293,25 @@ class AccessLinkReader {
 	}//end readView()
 
 	/**
+	 * One object, reduced to what an anonymous caller may read.
+	 *
+	 * Public because a link is not the only surface that answers without a
+	 * session: an object share token does too, and it was serving the object
+	 * whole, `@self.authorization` included (openregister#3818). Two surfaces
+	 * with the same audience get the same projection, from here, rather than a
+	 * second allow-list that drifts.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed> The published projection.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
+	 */
+	public function publish(ObjectEntity $object): array {
+		return $this->project(object: $object);
+	}//end publish()
+
+	/**
 	 * One object, reduced to what a link may publish.
 	 *
 	 * @param ObjectEntity $object The object.
@@ -352,10 +391,21 @@ class AccessLinkReader {
 	 */
 	private function publicTimeline(ObjectEntity $object): array {
 		try {
-			return $this->notes->getNotesForObject(
+			$entries = $this->notes->getNotesForObject(
 				objectUuid: (string)$object->getUuid(),
 				visibility: TimelineVisibilityService::PUBLIC_ENTRY
 			);
+
+			$published = [];
+			foreach ($entries as $entry) {
+				if (is_array($entry) === false) {
+					continue;
+				}
+
+				$published[] = $this->publishableEntry(entry: $entry);
+			}
+
+			return $published;
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[AccessLinkReader] Could not read the timeline for a link: ' . $failure->getMessage()
@@ -363,6 +413,32 @@ class AccessLinkReader {
 			return [];
 		}
 	}//end publicTimeline()
+
+	/**
+	 * One timeline entry, reduced to what a reader with no account may read.
+	 *
+	 * A public entry is public in its TEXT. The row around it is not: it names
+	 * the account that wrote it, the account that last edited it, and whether
+	 * the caller is that person. An account name is an internal fact about the
+	 * organisation, and a citizen reading their own case has no use for it, so
+	 * the row is projected the way the object is, onto an allow-list.
+	 *
+	 * @param array<string, mixed> $entry The entry as the note service returns it.
+	 *
+	 * @return array<string, mixed> The published entry.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
+	 */
+	private function publishableEntry(array $entry): array {
+		$published = [];
+		foreach (self::PUBLISHABLE_TIMELINE_KEYS as $key) {
+			if (array_key_exists($key, $entry) === true) {
+				$published[$key] = $entry[$key];
+			}
+		}
+
+		return $published;
+	}//end publishableEntry()
 
 	/**
 	 * The descriptor of one file the object carries, or null.

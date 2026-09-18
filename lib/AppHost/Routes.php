@@ -91,15 +91,25 @@ class Routes {
 	 * `$extra` itself throws, since Symfony silently replaces same-named routes
 	 * and that is always a mistake.
 	 *
+	 * `$publicPages` adds ONE more route, `dashboard#publicPage` on
+	 * `/public/{path}`, just before the catch-all. It is opt-in because it
+	 * needs a `publicPage()` method on the app's dashboard controller: an app
+	 * that aliases the generic one has it already, and an app that writes its
+	 * own would answer HTTP 500 on a route it never asked for. What the route
+	 * serves is still decided per page by the app's manifest, so switching it
+	 * on opens nothing by itself.
+	 *
 	 * @param array<int, array<string, mixed>> $extra App-specific routes.
+	 * @param bool $publicPages Whether the app serves manifest-declared public pages.
 	 *
 	 * @return array{routes: array<int, array<string, mixed>>}
 	 *
 	 * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
 	 *
 	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
 	 */
-	public static function standard(array $extra = []): array {
+	public static function standard(array $extra = [], bool $publicPages = false): array {
 		self::assertNoDuplicateNames(extra: $extra);
 
 		$extraNames = [];
@@ -121,10 +131,35 @@ class Routes {
 		}
 
 		$merged = array_merge($canonical, $extra);
+		if ($publicPages === true) {
+			$merged[] = self::publicPageRoute();
+		}
+
 		$merged[] = self::catchAllRoute();
 
 		return ['routes' => $merged];
 	}//end standard()
+
+	/**
+	 * The route that serves a declared public page without a session.
+	 *
+	 * It sits before the catch-all so `/public/…` reaches the public shell
+	 * rather than the authenticated one, and after `$extra` so an app's own
+	 * route on a `/public/…` address still wins.
+	 *
+	 * @return array<string, mixed> The route.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
+	 */
+	public static function publicPageRoute(): array {
+		return [
+			'name' => 'dashboard#publicPage',
+			'url' => '/public/{path}',
+			'verb' => 'GET',
+			'requirements' => ['path' => '.+'],
+			'defaults' => ['path' => ''],
+		];
+	}//end publicPageRoute()
 
 	/**
 	 * The canonical AppHost routes (everything except the SPA catch-all).

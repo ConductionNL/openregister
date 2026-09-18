@@ -187,4 +187,53 @@ class RoutesTest extends TestCase {
 			['name' => 'pets#index', 'url' => '/api/pets/all', 'verb' => 'GET'],
 		]);
 	}//end testDuplicateNameWithinExtraThrows()
+	/**
+	 * The public page route is opt-in, so no app gets it by accident.
+	 *
+	 * An app that aliases the generic dashboard controller has `publicPage()`,
+	 * and an app that wrote its own does not: handing everybody the route would
+	 * answer HTTP 500 on the apps that never asked for it.
+	 *
+	 * @return void
+	 */
+	public function testThePublicPageRouteIsAbsentUnlessTheAppAsksForIt(): void {
+		$this->assertNotContains('dashboard#publicPage', $this->names(Routes::standard()));
+		$this->assertContains('dashboard#publicPage', $this->names(Routes::standard([], publicPages: true)));
+	}//end testThePublicPageRouteIsAbsentUnlessTheAppAsksForIt()
+
+	/**
+	 * The public route precedes the catch-all, and the app's own routes precede it.
+	 *
+	 * Order is the whole behaviour here: the catch-all matches `/{path}` with
+	 * `.+`, so a public route merged after it would never be reached and an
+	 * anonymous visitor would meet the login on a page the app declared public.
+	 *
+	 * @return void
+	 */
+	public function testThePublicPageRouteSitsAfterExtraAndBeforeTheCatchAll(): void {
+		$names = $this->names(Routes::standard(
+			[['name' => 'status#show', 'url' => '/public/status/{token}', 'verb' => 'GET']],
+			publicPages: true
+		));
+
+		$extra = array_search('status#show', $names, true);
+		$public = array_search('dashboard#publicPage', $names, true);
+		$catchAll = array_search('dashboard#catchAll', $names, true);
+
+		$this->assertLessThan($public, $extra, "an app's own public route must win over the generic one");
+		$this->assertLessThan($catchAll, $public, 'the public route must precede the SPA catch-all');
+	}//end testThePublicPageRouteSitsAfterExtraAndBeforeTheCatchAll()
+
+	/**
+	 * The catch-all is not the public route, in either shape of the table.
+	 *
+	 * @return void
+	 */
+	public function testTheCatchAllKeepsItsOwnAddressAndStaysLast(): void {
+		$routes = Routes::standard([], publicPages: true)['routes'];
+		$last = $routes[array_key_last($routes)];
+
+		$this->assertSame('dashboard#catchAll', $last['name']);
+		$this->assertNotSame('/public/{path}', $last['url']);
+	}//end testTheCatchAllKeepsItsOwnAddressAndStaysLast()
 }//end class
