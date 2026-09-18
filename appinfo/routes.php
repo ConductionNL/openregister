@@ -1195,6 +1195,13 @@ return [
         ['name' => 'objects#presenceBeat',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceDepart', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceList',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+            // Move an object to another register and schema, keeping its uuid
+            // and everything keyed on it (identity-survives-a-move). NOT a
+            // copy: a second uuid would orphan the audit trail, the versions,
+            // the files, the notes, the watchers, the favourites, the presence
+            // and the timers, silently, which is what closing and refiling
+            // does today.
+        ['name' => 'objects#move', 'url' => '/api/objects/{register}/{schema}/{id}/move', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
             // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a

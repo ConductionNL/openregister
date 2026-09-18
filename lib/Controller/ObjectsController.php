@@ -4796,6 +4796,84 @@ class ObjectsController extends Controller {
 	}//end recordRefusedWrite()
 
 	/**
+	 * Move an object to another register and schema, keeping who it is.
+	 *
+	 * 🔴 NOT A COPY. Every side table — the audit trail, the versions, the
+	 * files, the notes, the watchers, the favourites, the presence, the timers
+	 * — is keyed on the uuid, and the uuid does not change. A copy would mint a
+	 * second identity and orphan all of them silently, which is what "close it
+	 * and refile it" does today and what this replaces.
+	 *
+	 * Authorised on BOTH SIDES: the object is read under the caller's own
+	 * permissions, and the target is resolved the same way, so a caller who
+	 * could not read the object cannot move it and a caller who could not write
+	 * the target cannot put anything there.
+	 *
+	 * @param string $register The source register.
+	 * @param string $schema   The source schema.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse The outcome, or a 4xx naming what stood in the way.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	#[NoAdminRequired]
+	public function move(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->userSession->getUser();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		if ($object === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$targetRegister = trim((string)$this->request->getParam('targetRegister', ''));
+		$targetSchema = trim((string)$this->request->getParam('targetSchema', ''));
+		if ($targetRegister === '' || $targetSchema === '') {
+			return new JSONResponse(
+				data: ['error' => 'Name the register and the schema this object is moving to.'],
+				statusCode: 422
+			);
+		}
+
+		try {
+			$from = [
+				'register' => $this->registerMapper->find($register),
+				'schema' => $this->schemaMapper->find($schema),
+			];
+			$to = [
+				'register' => $this->registerMapper->find($targetRegister),
+				'schema' => $this->schemaMapper->find($targetSchema),
+			];
+		} catch (\Throwable $e) {
+			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
+		}
+
+		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObject::class)->move(
+			object: $object,
+			sourceRegister: $from['register'],
+			sourceSchema: $from['schema'],
+			targetRegister: $to['register'],
+			targetSchema: $to['schema'],
+			actor: $caller->getUID(),
+		);
+
+		if ($outcome['moved'] === false) {
+			// 422, not 400: the request is well formed and the object does not
+			// fit where it was asked to go, which is the caller's to act on.
+			return new JSONResponse(data: $outcome, statusCode: 422);
+		}
+
+		return new JSONResponse(data: $outcome);
+	}//end move()
+
+	/**
 	 * Say that the caller still has this object open.
 	 *
 	 * 🔴 A HEARTBEAT, NOT A CONNECTION (D-1). notify_push tells the server
