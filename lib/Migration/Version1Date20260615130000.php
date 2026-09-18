@@ -73,7 +73,7 @@ class Version1Date20260615130000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_push_subscriptions') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_push_subscriptions');

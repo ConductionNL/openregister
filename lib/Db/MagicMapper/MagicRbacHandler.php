@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -120,10 +121,9 @@ class MagicRbacHandler {
 	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
 	 * @param ContainerInterface $container Container for service injection
 	 * @param LoggerInterface $logger Logger for debugging
-	 * @param ObjectScopeResolver|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is not
-	 *                                                      a fatal at existing construction sites.
-	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the same reason.
-	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
+	 * @param RbacResolvers|null $resolvers The shared object-scope, per-object grant and deny-grammar resolvers,
+	 *                                      bundled together; nullable so adding them is not a fatal at existing
+	 *                                      construction sites.
 	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
 	 */
 	public function __construct(
@@ -134,9 +134,7 @@ class MagicRbacHandler {
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
-		private readonly ?ObjectScopeResolver $objectScopeResolver = null,
-		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
-		private readonly ?DenyResolver $denyResolver = null,
+		private readonly ?RbacResolvers $resolvers = null,
 		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
 	) {
 	}//end __construct()
@@ -154,7 +152,7 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	private function denyResolver(): DenyResolver {
-		return ($this->denyResolver ?? new DenyResolver());
+		return ($this->resolvers->denyResolver ?? new DenyResolver());
 	}//end denyResolver()
 
 	/**
@@ -187,7 +185,7 @@ class MagicRbacHandler {
 	 * @return ObjectScopeResolver The one definition of the scope vocabulary.
 	 */
 	private function objectScope(): ObjectScopeResolver {
-		return ($this->objectScopeResolver ?? new ObjectScopeResolver());
+		return ($this->resolvers->objectScopeResolver ?? new ObjectScopeResolver());
 	}//end objectScope()
 
 	/**
@@ -202,8 +200,8 @@ class MagicRbacHandler {
 	 * @return ObjectGrantResolver|null The resolver, or null when unavailable.
 	 */
 	private function objectGrants(): ?ObjectGrantResolver {
-		if ($this->objectGrantResolver !== null) {
-			return $this->objectGrantResolver;
+		if ($this->resolvers?->objectGrantResolver !== null) {
+			return $this->resolvers->objectGrantResolver;
 		}
 
 		try {
@@ -272,17 +270,18 @@ class MagicRbacHandler {
 	 *
 	 * @return string[] SQL conditions to OR together.
 	 */
-	private function ownerAdmitConditionsSql(array $userGroups, ?string $userId): array {
+	private function ownerAdmitConditionsSql(array $userGroups, ?string $userId, string $columnPrefix = ''): array {
 		$conditions = [];
+		$ownerColumn = $columnPrefix . '_owner';
 
 		if ($userId !== null) {
 			$quotedUserId = $this->quoteValue(value: $userId);
-			$conditions[] = "_owner = {$quotedUserId}";
+			$conditions[] = "{$ownerColumn} = {$quotedUserId}";
 		}
 
 		if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
 			$quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
-			$conditions[] = "_owner = {$quotedSystemId}";
+			$conditions[] = "{$ownerColumn} = {$quotedSystemId}";
 		}
 
 		return $conditions;
@@ -379,6 +378,7 @@ class MagicRbacHandler {
 		?string $userId,
 		array $userGroups,
 		string $columnName,
+		string $columnPrefix = '',
 	): string|false|null {
 		if ($this->denyEnforcementMode()->enforces() === false) {
 			return null;
@@ -423,7 +423,7 @@ class MagicRbacHandler {
 			$rule = $denial['rule'];
 			$match = null;
 			if (is_array($rule) === true && is_array(($rule['match'] ?? null)) === true) {
-				$match = $this->buildMatchConditionsSql(match: $rule['match']);
+				$match = $this->buildMatchConditionsSql(match: $rule['match'], columnPrefix: $columnPrefix);
 			}
 
 			if ($match === null) {
@@ -529,7 +529,8 @@ class MagicRbacHandler {
 			action: $action,
 			userId: $userId,
 			userGroups: $userGroups,
-			columnName: 't._authorization'
+			columnName: 't._authorization',
+			columnPrefix: 't.'
 		);
 		if ($denyTerm === false) {
 			$qb->andWhere($qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0)));
@@ -1489,6 +1490,70 @@ class MagicRbacHandler {
 	}//end deniesHere()
 
 	/**
+	 * The access predicate for one table, under one alias, as a single string.
+	 *
+	 * 🔴 THIS EXISTS SO A SUBQUERY OVER A SECOND SCHEMA CANNOT SKIP RBAC.
+	 * `RelatedRowExistsClause` refuses to render without an access predicate,
+	 * and this is the one it is meant to be given. Writing a second evaluator
+	 * for the same question is how the two paths drift, and the one that ends
+	 * up wider is the one that discloses, so this delegates to
+	 * {@see buildRbacConditionsSql()} rather than re-deriving anything.
+	 *
+	 * 🔑 THE ALIAS IS NOT OPTIONAL HERE, AND THAT IS THE WHOLE POINT. The
+	 * UNION callers take unqualified names because their members carry no
+	 * alias. Inside `EXISTS (SELECT 1 FROM <related> r0 WHERE ...)` an
+	 * unqualified `_owner` still parses, and binds to the innermost FROM, so it
+	 * looks correct. It is correct by accident: the moment the related table
+	 * lacks the column, SQL resolves the name against the OUTER query instead
+	 * and the access check silently tests the wrong row. That failure is
+	 * invisible, and it fails open.
+	 *
+	 * The two degenerate answers are returned as SQL literals rather than as an
+	 * empty string, because an empty predicate AND-ed into a WHERE is not "no
+	 * opinion", it is "admit everything":
+	 *
+	 * - a bypass (admin) becomes `TRUE`;
+	 * - no conditions at all is DENY ALL and becomes `FALSE`, never `TRUE` and
+	 *   never omitted.
+	 *
+	 * @param Schema $schema The schema of the rows the subquery reads.
+	 * @param string $alias  The alias those rows carry in the subquery.
+	 * @param string $action The CRUD action being filtered.
+	 *
+	 * @return string A predicate, always non-empty, safe to AND into a WHERE.
+	 *
+	 * @throws InvalidArgumentException When the alias is not a plain identifier.
+	 *
+	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read'): string {
+		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $alias) !== 1) {
+			throw new InvalidArgumentException(
+				sprintf('\'%s\' is not a table alias an access predicate may be built for.', $alias)
+			);
+		}
+
+		$result = $this->buildRbacConditionsSql(
+			schema: $schema,
+			action: $action,
+			columnPrefix: $alias . '.'
+		);
+
+		if (($result['bypass'] ?? false) === true) {
+			return 'TRUE';
+		}
+
+		$conditions = ($result['conditions'] ?? []);
+		if ($conditions === []) {
+			// Deny all. Said out loud, because an omitted predicate reads as no
+			// restriction and this is the opposite of that.
+			return 'FALSE';
+		}
+
+		return '(' . implode(' OR ', $conditions) . ')';
+	}//end buildRbacPredicateForAlias()
+
+	/**
 	 * Build RBAC conditions as raw SQL for use in UNION queries.
 	 *
 	 * This is the raw SQL equivalent of applyRbacFilters() for use in UNION-based
@@ -1503,7 +1568,7 @@ class MagicRbacHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Mirrors applyRbacFilters dispatch; carries the system-owner carve-out (openregister#1617).
 	 */
-	public function buildRbacConditionsSql(Schema $schema, string $action = 'read'): array {
+	public function buildRbacConditionsSql(Schema $schema, string $action = 'read', string $columnPrefix = ''): array {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
 
@@ -1537,35 +1602,23 @@ class MagicRbacHandler {
 			return ['bypass' => false, 'conditions' => []];
 		}
 
-		// The DENY term. This emitter returns conditions its caller ORs
-		// together, so the term cannot simply be appended: it is folded into
-		// EVERY condition below instead, which is the same AND the QueryBuilder
-		// emitter applies once to the whole query. Folding rather than appending
-		// is what stops the owner condition putting a denied row back.
-		$denyTerm = $this->denyFilterSqlFor(
+		// Assemble the three shared SQL term pieces (deny term, "not private"
+		// row predicate, owner-admit conditions). A null result signals that the
+		// deny term excludes everything, i.e. the deny-all empty-conditions case.
+		$terms = $this->buildRbacSqlTerms(
 			authorization: $authorization,
 			action: $action,
 			userId: $userId,
 			userGroups: $userGroups,
-			columnName: '_authorization'
+			columnPrefix: $columnPrefix
 		);
-		if ($denyTerm === false) {
+		if ($terms === null) {
 			return ['bypass' => false, 'conditions' => []];
 		}
 
-		// The "not private" row predicate, from the same builder the
-		// QueryBuilder emitter uses. Note the UNQUALIFIED column name: this
-		// emitter feeds UNION members that carry no table alias, which is why
-		// its owner conditions read `_owner` and not `t._owner`.
-		$notPrivate = $this->reachableRowSqlFor(
-			authorization: $authorization,
-			columnName: '_authorization',
-			uuidColumn: '_uuid',
-			userId: $userId,
-			action: $action
-		);
-
-		$ownerAdmits = $this->ownerAdmitConditionsSql(userGroups: $userGroups, userId: $userId);
+		$denyTerm    = $terms['denyTerm'];
+		$notPrivate  = $terms['notPrivate'];
+		$ownerAdmits = $terms['ownerAdmits'];
 
 		// If no authorization is configured, the schema is open to all — but an
 		// individual OBJECT may still declare itself private, so this is no
@@ -1596,7 +1649,8 @@ class MagicRbacHandler {
 				schema: $schema,
 				userGroups: $userGroups,
 				userId: $userId,
-				notPrivate: $notPrivate
+				notPrivate: $notPrivate,
+				columnPrefix: $columnPrefix
 			)
 		);
 
@@ -1606,6 +1660,70 @@ class MagicRbacHandler {
 			'conditions' => $this->withDenyTerm(conditions: $conditions, denyTerm: $denyTerm),
 		];
 	}//end buildRbacConditionsSql()
+
+	/**
+	 * Assemble the shared raw-SQL term pieces for {@see buildRbacConditionsSql()}.
+	 *
+	 * Builds the DENY term, the "not private" row predicate and the owner-admit
+	 * conditions from the same emitters the QueryBuilder path uses. All three
+	 * feed UNION members that carry no table alias, hence the UNQUALIFIED column
+	 * names (`_owner`, not `t._owner`).
+	 *
+	 * The DENY term is folded into EVERY OR-ed condition by the caller rather
+	 * than appended, which is the same AND the QueryBuilder emitter applies once
+	 * to the whole query; appending it as one more alternative would let a denied
+	 * row back in. When the deny term excludes everything the emitter returns
+	 * `false`, which this helper surfaces as a null return so the caller can emit
+	 * the deny-all empty-conditions result.
+	 *
+	 * @param array<string, mixed>|null $authorization The effective authorization block, or null when unconfigured.
+	 * @param string $action The CRUD action being filtered.
+	 * @param string|null $userId The current user identifier, or null when unauthenticated.
+	 * @param string[] $userGroups The current user's group IDs.
+	 *
+	 * @return array{denyTerm: string|null, notPrivate: string, ownerAdmits: string[]}|null The term pieces, or null
+	 *                                                                                       when the deny term
+	 *                                                                                       excludes everything.
+	 */
+	private function buildRbacSqlTerms(
+		?array $authorization,
+		string $action,
+		?string $userId,
+		array $userGroups,
+		string $columnPrefix = ''
+	): ?array {
+		$denyTerm = $this->denyFilterSqlFor(
+			authorization: $authorization,
+			action: $action,
+			userId: $userId,
+			userGroups: $userGroups,
+			columnName: $columnPrefix . '_authorization',
+			columnPrefix: $columnPrefix
+		);
+		if ($denyTerm === false) {
+			return null;
+		}
+
+		$notPrivate = $this->reachableRowSqlFor(
+			authorization: $authorization,
+			columnName: $columnPrefix . '_authorization',
+			uuidColumn: $columnPrefix . '_uuid',
+			userId: $userId,
+			action: $action
+		);
+
+		$ownerAdmits = $this->ownerAdmitConditionsSql(
+			userGroups: $userGroups,
+			userId: $userId,
+			columnPrefix: $columnPrefix
+		);
+
+		return [
+			'denyTerm'    => $denyTerm,
+			'notPrivate'  => $notPrivate,
+			'ownerAdmits' => $ownerAdmits,
+		];
+	}//end buildRbacSqlTerms()
 
 	/**
 	 * Fold the deny term into every OR-ed condition.
@@ -1658,6 +1776,7 @@ class MagicRbacHandler {
 		array $userGroups,
 		?string $userId,
 		string $notPrivate,
+		string $columnPrefix = '',
 	): array {
 		// Resolve whether authenticated users inherit `public` rights once.
 		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
@@ -1665,6 +1784,7 @@ class MagicRbacHandler {
 		$conditions = [];
 		foreach ($rules as $rule) {
 			$ruleResult = $this->processAuthorizationRuleSql(
+				columnPrefix: $columnPrefix,
 				rule: $rule,
 				userGroups: $userGroups,
 				userId: $userId,
@@ -1702,7 +1822,7 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processAuthorizationRuleSql(mixed $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): mixed {
+	private function processAuthorizationRuleSql(mixed $rule, array $userGroups, ?string $userId, bool $inheritFromPublic, string $columnPrefix = ''): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
 			return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
@@ -1711,7 +1831,7 @@ class MagicRbacHandler {
 		// Conditional rule: object with 'group' (or a 'user' override) and
 		// optional 'match'.
 		if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
-			return $this->processConditionalRuleSql(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
+			return $this->processConditionalRuleSql(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic, columnPrefix: $columnPrefix);
 		}
 
 		return false;
@@ -1729,7 +1849,7 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): mixed {
+	private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId, bool $inheritFromPublic, string $columnPrefix = ''): mixed {
 		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
 
@@ -1757,7 +1877,7 @@ class MagicRbacHandler {
 		}
 
 		// Build SQL conditions for the match criteria.
-		return $this->buildMatchConditionsSql(match: $match);
+		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $columnPrefix);
 	}//end processConditionalRuleSql()
 
 	/**
@@ -1767,11 +1887,11 @@ class MagicRbacHandler {
 	 *
 	 * @return string|null SQL expression or null if invalid.
 	 */
-	private function buildMatchConditionsSql(array $match): ?string {
+	private function buildMatchConditionsSql(array $match, string $columnPrefix = ''): ?string {
 		$conditions = [];
 
 		foreach ($match as $property => $value) {
-			$condition = $this->buildPropertyConditionSql(property: $property, value: $value);
+			$condition = $this->buildPropertyConditionSql(property: $property, value: $value, columnPrefix: $columnPrefix);
 			if ($condition !== null) {
 				$conditions[] = $condition;
 			}
@@ -1798,9 +1918,15 @@ class MagicRbacHandler {
 	 *
 	 * @return string|null SQL expression or null.
 	 */
-	private function buildPropertyConditionSql(string $property, mixed $value): ?string {
+	private function buildPropertyConditionSql(string $property, mixed $value, string $columnPrefix = ''): ?string {
 		// Convert camelCase property to snake_case column name.
-		$columnName = $this->propertyToColumnName(property: $property);
+		// The prefix qualifies it with a table alias when this predicate is
+		// going inside a subquery over a SECOND table. Unqualified, the name
+		// would still parse there and bind to the innermost FROM, which is
+		// right by accident and silently wrong the moment the related table
+		// does not carry the column: SQL then resolves it against the OUTER
+		// row, so the access check would pass by testing the wrong record.
+		$columnName = $columnPrefix . $this->propertyToColumnName(property: $property);
 
 		// Resolve dynamic variables in the value.
 		$resolvedValue = $this->resolveDynamicValue(value: $value);

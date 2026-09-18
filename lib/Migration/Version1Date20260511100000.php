@@ -55,7 +55,7 @@ class Version1Date20260511100000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_tenant_keys') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(tableName: 'openregister_tenant_keys');

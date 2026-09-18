@@ -648,7 +648,7 @@ class FlowNodeConfigVocabularyTest extends TestCase {
 		$byId = array_column($palette, null, 'id');
 
 		$this->assertArrayHasKey('openregister.end', $byId);
-		$this->assertSame(['error', 'message'], $byId['openregister.end']['configKeys']);
+		$this->assertSame(['error', 'message', 'next'], $byId['openregister.end']['configKeys']);
 
 		// An empty declaration must survive as `[]`, not vanish — "reads no
 		// config" and "did not say" are different answers.

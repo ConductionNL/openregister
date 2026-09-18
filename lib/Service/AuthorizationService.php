@@ -23,6 +23,8 @@ use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
+use OCA\OpenRegister\Service\Audit\TokenContext;
+use OCA\OpenRegister\Service\Audit\TokenIdentity;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
 use OCP\IUserManager;
@@ -80,14 +82,63 @@ class AuthorizationService {
 	 * @param IUserManager $userManager Nextcloud user manager
 	 * @param IUserSession $userSession Nextcloud user session
 	 * @param ConsumerMapper $consumerMapper Consumer database mapper
+	 * @param \OCA\OpenRegister\Service\Rbac\TokenGrantSource|null $tokenGrantSource What the calling token may do
+	 * @param TokenContext|null $tokenContext Carries the calling token to the audit writer
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
 		private readonly IUserSession $userSession,
 		private readonly ConsumerMapper $consumerMapper,
+		// BOTH SIDES OF THIS MERGE ADDED A NULLABLE-LAST PARAMETER and neither
+		// replaces the other: `tokenGrantSource` answers what a token may DO,
+		// `tokenContext` carries who presented it to the audit writer. Keeping
+		// only one would have compiled, and quietly disabled the other's
+		// feature on an authorisation path.
+		private readonly ?\OCA\OpenRegister\Service\Rbac\TokenGrantSource $tokenGrantSource = null,
+		private readonly ?TokenContext $tokenContext = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Tell the audit writer which consumer's token opened this request.
+	 *
+	 * The authorisation layer is the ONLY place that knows this. A JWT presents
+	 * no Nextcloud app password, so the resolver behind TokenContext finds
+	 * nothing to work with, and by the time the save path writes an audit row
+	 * the issuer is long out of scope. Without this call a koppeling
+	 * authenticating by JWT writes rows that cannot say which koppeling wrote
+	 * them, which is the whole question the attribution exists to answer.
+	 *
+	 * Optional and fail-soft on purpose: this is bookkeeping attached to an
+	 * authorisation path, and a container without the context registered must
+	 * still be able to authorise a call.
+	 *
+	 * @param Consumer $consumer The issuer whose credential was accepted.
+	 * @param string $mechanism How it authenticated.
+	 * @param string|null $reference The credential's own identifier, never its value.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function claimConsumerToken(Consumer $consumer, string $mechanism, ?string $reference): void {
+		if ($this->tokenContext === null) {
+			return;
+		}
+
+		$this->tokenContext->claim(
+			new TokenIdentity(
+				mechanism: $mechanism,
+				reference: $reference,
+				name: $consumer->getName(),
+				ownerUid: $consumer->getUserId(),
+				ownerName: null,
+				consumerUuid: $consumer->getUuid(),
+				consumerName: $consumer->getName(),
+			)
+		);
+	}//end claimConsumerToken()
 
 	/**
 	 * Find the consumer for a given JWT issuer.
@@ -313,7 +364,32 @@ class AuthorizationService {
 
 		$this->validatePayload(payload: $payload);
 
+		// 🔴 THIS LINE IS THE ROW. Making the Consumer act AS its Nextcloud
+		// user is what gives a supplier the handler's whole desk: the token
+		// resolves to a person and inherits everything that person may do
+		// (row Q13.20). Binding the Consumer's grant beside it turns the
+		// principal into a filtered one — intersection, never substitution, so
+		// it can only narrow what that user could already do.
+		//
+		// Bound BEFORE the user is set, so there is no window in which the
+		// request is the user with no ceiling on it.
+		$this->tokenGrantSource?->bindFromConsumer(
+			authorizationConfiguration: $authConf,
+			tokenId: (string)($issuer->getUuid() ?? $payload['iss'])
+		);
+
 		$this->userSession->setUser($this->userManager->get($issuer->getUserId()));
+
+		// The JWT's own id when it carries one, so a single credential can be
+		// revoked by name. The token itself is never passed on: the audit trail
+		// is shipped off the instance and retained for years, and a credential
+		// in it is a breach waiting for somebody to grep for it.
+		$jti = null;
+		if (isset($payload['jti']) === true && is_string($payload['jti']) === true && $payload['jti'] !== '') {
+			$jti = $payload['jti'];
+		}
+
+		$this->claimConsumerToken(consumer: $issuer, mechanism: 'jwt', reference: ($jti ?? $issuer->getUuid()));
 
 	}//end authorizeJwt()
 

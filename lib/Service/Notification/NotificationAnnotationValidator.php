@@ -99,7 +99,18 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @param ScheduledFilterParser|null $filterParser Parser for scheduled filters.
 	 */
-	public function __construct(?ScheduledFilterParser $filterParser = null) {
+	/**
+	 * The administered decisions that are not preferences.
+	 *
+	 * @var ForcedChannelPolicy
+	 */
+	private ForcedChannelPolicy $forcedChannels;
+
+	public function __construct(
+		?ScheduledFilterParser $filterParser = null,
+		?ForcedChannelPolicy $forcedChannels = null,
+	) {
+		$this->forcedChannels = ($forcedChannels ?? new ForcedChannelPolicy());
 		$this->filterParser = ($filterParser ?? new ScheduledFilterParser());
 
 	}//end __construct()
@@ -449,6 +460,20 @@ final class NotificationAnnotationValidator {
 				}//end foreach
 			}//end if
 
+			// The two administered decisions that are not preferences
+			// (notification-kinds-an-administrator-forces). Both fail SILENTLY
+			// at send time: a force with no reason renders as a preference a
+			// user cannot explain, and an internal kind whose only channels
+			// leave the organisation renders as a kind that never sends. The
+			// rules live in ForcedChannelPolicy so the save and the send read
+			// one interpretation of them rather than two.
+			foreach ($this->forcedChannels->validate(declaration: $spec) as $forcedError) {
+				$errors[] = [
+					'code' => $forcedError['code'],
+					'message' => sprintf('Notification "%s": %s', $name, $forcedError['message']),
+				];
+			}
+
 			$channels = ($spec['channels'] ?? []);
 			if (is_array($channels) === false || count($channels) === 0) {
 				$errors[] = [
@@ -732,6 +757,41 @@ final class NotificationAnnotationValidator {
 						),
 					];
 					continue;
+				}
+
+				// 🔴 A RECIPIENT THAT CAN NEVER RESOLVE IS REFUSED HERE, where
+				// somebody is looking, rather than resolving to nobody every
+				// night in silence. `groups: []` and `users: []` name nobody
+				// structurally: no instance state makes them match, so this is
+				// a stub or a typo rather than an unstaffed group.
+				//
+				// ⚠️ A NON-EMPTY GROUP THAT HAPPENS TO BE EMPTY TODAY IS NOT
+				// REFUSED. Declared groups ship empty on purpose across this
+				// fleet, and refusing them would fail the import of every
+				// correctly written annotation on a fresh install. That case is
+				// recorded at dispatch instead; see RuleReachRecorder.
+				foreach (['groups' => 'groups', 'users' => 'users'] as $listKind => $listKey) {
+					if ($kind !== $listKind) {
+						continue;
+					}
+
+					$named = ($recipient[$listKey] ?? null);
+					if (is_array($named) === true && $named !== []) {
+						continue;
+					}
+
+					$errors[] = [
+						'code' => 'notification-recipient-names-nobody',
+						'message' => sprintf(
+							'Notification "%s" recipient[%d] is kind "%s" but names no %s, so it can never '
+							.'resolve to anybody. An unstaffed group is fine and is reported at dispatch; '
+							.'an empty list is a stub.',
+							$name,
+							$i,
+							$kind,
+							$listKey
+						),
+					];
 				}
 
 				if ($kind === 'field') {

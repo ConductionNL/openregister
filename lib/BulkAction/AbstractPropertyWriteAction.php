@@ -34,7 +34,19 @@ use Psr\Log\LoggerInterface;
 /**
  * A bulk action that writes a set of properties on each member.
  */
-abstract class AbstractPropertyWriteAction implements BulkActionInterface {
+abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterface {
+
+	/**
+	 * How long a property write stays undoable, in seconds.
+	 *
+	 * Seven days: long enough that the mistake is noticed on the next working
+	 * day, short enough that the recorded prior values are not a second copy
+	 * of the register (D-2).
+	 *
+	 * @var int
+	 */
+	public const REVERSAL_WINDOW = 604800;
+
 	/**
 	 * Constructor.
 	 *
@@ -117,6 +129,46 @@ abstract class AbstractPropertyWriteAction implements BulkActionInterface {
 
 		return BulkActionResult::applied();
 	}//end apply()
+
+	/**
+	 * How long after the job runs a reversal is still accepted, in seconds.
+	 *
+	 * @return int The window, in seconds.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function getReversalWindow(): int {
+		return self::REVERSAL_WINDOW;
+	}//end getReversalWindow()
+
+	/**
+	 * What this action would change on one object, and what it would change it from.
+	 *
+	 * Only the keys of the patch, never a snapshot of the object (D-2). A key
+	 * the object does not carry is recorded as a null prior value, so the
+	 * reversal clears it rather than leaving the action's value behind.
+	 *
+	 * @param ObjectEntity         $object     The object to act on.
+	 * @param array<string, mixed> $parameters The job's parameters.
+	 *
+	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>} The plan.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function reversalPlanFor(ObjectEntity $object, array $parameters): array {
+		$patch = $this->patchFor(parameters: $parameters);
+		$current = $object->getObject();
+
+		$prior = [];
+		foreach (array_keys($patch) as $key) {
+			$prior[$key] = ($current[$key] ?? null);
+		}
+
+		return [
+			self::PLAN_PRIOR => $prior,
+			self::PLAN_APPLIED => $patch,
+		];
+	}//end reversalPlanFor()
 
 	/**
 	 * Whether every property in the patch already holds its target value.

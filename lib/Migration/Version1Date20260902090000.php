@@ -66,7 +66,7 @@ class Version1Date20260902090000 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE_TASKS) === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE_TASKS);
@@ -88,7 +88,7 @@ class Version1Date20260902090000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;

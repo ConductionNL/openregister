@@ -118,6 +118,29 @@ class ObjectGrantResolver {
 	private array $verbs = [];
 
 	/**
+	 * Which ancestor each INHERITED grant came from, keyed by object UUID.
+	 *
+	 * Populated by the same resolve as the map above and cleared by the same
+	 * `forget()`, so the two cannot disagree about which request they describe.
+	 * An object absent from this map holds a DIRECT grant, which is what makes
+	 * the two distinguishable in the audit (REQ-RIC-004).
+	 *
+	 * @var array<string, string>
+	 */
+	private array $inheritedFrom = [];
+
+	/**
+	 * Object UUIDs whose grant is marked as not travelling to descendants.
+	 *
+	 * Keyed by object and cleared by the same `forget()` as the maps above,
+	 * for the same reason: this decides an authorization answer and a stale
+	 * entry is wrong in both directions.
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $notInheritable = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
@@ -126,6 +149,7 @@ class ObjectGrantResolver {
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
+		private readonly ?HierarchyGrantExpander $hierarchy = null,
 	) {
 	}//end __construct()
 
@@ -172,10 +196,80 @@ class ObjectGrantResolver {
 			);
 		}
 
+		// A GRANT ON A PARENT REACHES ITS CHILDREN (ledger row Q13.23). The
+		// expansion happens HERE, on the map, rather than at each decision,
+		// because this map is the one funnel every path takes: the per-object
+		// check reads it through `isGranted()` and both list emitters read it
+		// through `grantedObjectUuidsFor()`. Expanding it once is the only
+		// placement where a list and an object read cannot disagree, which is
+		// exactly what the change's D-3 is about and is not a theoretical
+		// worry: the two are compiled by different code into different
+		// languages.
+		//
+		// It runs BEFORE the memo is written, so the expansion is paid once per
+		// request like everything else here, and `forget()` drops it with the
+		// rest.
+		// Only the grants that TRAVEL seed the descent. A grant marked as not
+		// inheritable still admits the object it was written on; it simply
+		// stops there, which is what lets an access review finish.
+		$seeds = array_diff_key($granted, $this->notInheritable);
+
+		$expanded = $this->hierarchy?->expand(granted: $granted, seeds: $seeds);
+		if ($expanded !== null) {
+			$granted = $expanded['granted'];
+			$this->inheritedFrom = ($this->inheritedFrom + $expanded['sources']);
+		}
+
 		$this->memoised[$userId] = $granted;
 
 		return $granted;
 	}//end grantedObjectUuids()
+
+	/**
+	 * Which ancestor a grant came from, or null when it was written on the object.
+	 *
+	 * The provenance the discovery endpoint and the scope audit report
+	 * (REQ-RIC-004). An administrator looking at a descendant sees access they
+	 * cannot otherwise explain and cannot remove, because the grant is not on
+	 * the object in front of them; naming the ancestor is what turns that into
+	 * an answer.
+	 *
+	 * @param string $objectUuid The object.
+	 *
+	 * @return string|null The ancestor's UUID, or null for a direct grant.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	public function inheritedFrom(string $objectUuid): ?string {
+		return ($this->inheritedFrom[$objectUuid] ?? null);
+	}//end inheritedFrom()
+
+	/**
+	 * The core permission bit an action requires, as a static.
+	 *
+	 * The same table {@see self::permissionFor()} answers from, reachable
+	 * without an instance so the hierarchy expander can narrow a mask by the
+	 * verbs a schema lets travel down. ONE table, not two: a second copy of
+	 * this map is a second answer to "which bit is update", and the day they
+	 * disagree an inherited grant carries a verb the ancestor never had.
+	 *
+	 * @param string $action The action.
+	 *
+	 * @return integer|null The bit, or null when the action has none.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	public static function permissionBitFor(string $action): ?int {
+		$bits = [
+			'read' => Constants::PERMISSION_READ,
+			'update' => Constants::PERMISSION_UPDATE,
+			'create' => Constants::PERMISSION_CREATE,
+			'delete' => Constants::PERMISSION_DELETE,
+			'share' => Constants::PERMISSION_SHARE,
+		];
+
+		return ($bits[$action] ?? null);
+	}//end permissionBitFor()
 
 	/**
 	 * Whether the caller holds any grant at all.
@@ -207,15 +301,7 @@ class ObjectGrantResolver {
 	 * @return integer|null The required bit, or null when the action has none.
 	 */
 	public function permissionFor(string $action): ?int {
-		$bits = [
-			'read' => Constants::PERMISSION_READ,
-			'update' => Constants::PERMISSION_UPDATE,
-			'create' => Constants::PERMISSION_CREATE,
-			'delete' => Constants::PERMISSION_DELETE,
-			'share' => Constants::PERMISSION_SHARE,
-		];
-
-		return ($bits[$action] ?? null);
+		return self::permissionBitFor(action: $action);
 	}//end permissionFor()
 
 	/**
@@ -281,6 +367,8 @@ class ObjectGrantResolver {
 		if ($userId === null) {
 			$this->memoised = [];
 			$this->verbs = [];
+			$this->inheritedFrom = [];
+			$this->notInheritable = [];
 			return;
 		}
 
@@ -289,7 +377,11 @@ class ObjectGrantResolver {
 		// The verb map is keyed by OBJECT, not by user, so a per-user forget
 		// cannot prune it precisely. Clearing it wholly is the safe direction:
 		// it is rebuilt on the next resolve, and a stale verb would admit.
+		// The inherited-from map is keyed by object for the same reason and is
+		// cleared for the same one.
 		$this->verbs = [];
+		$this->inheritedFrom = [];
+		$this->notInheritable = [];
 	}//end forget()
 
 	/**
@@ -352,6 +444,21 @@ class ObjectGrantResolver {
 						array_unique(array_merge(($this->verbs[$uuid] ?? []), $verbs))
 					);
 				}
+
+				// A grant may be marked as NOT INHERITABLE, and then it stops at
+				// the object it was written on (ledger row 13.41). The default
+				// is inheritable, because that is what every grant written
+				// before this existed meant and silently changing them would
+				// remove access nobody asked to remove.
+				//
+				// A single non-inheritable grant on an object is enough to hold
+				// the object back, even where an overlapping grant says
+				// nothing: the two together are an administrator who wrote
+				// "not below here" once, and the widest-wins rule that composes
+				// the BITMASK must not quietly overrule that.
+				if ($this->inheritableOf(share: $share) === false) {
+					$this->notInheritable[$uuid] = true;
+				}
 			}//end foreach
 
 			if (count($shares) < self::PAGE_SIZE) {
@@ -387,6 +494,13 @@ class ObjectGrantResolver {
 	public const VERB_ATTRIBUTE_KEY = 'verbs';
 
 	/**
+	 * The attribute key marking a grant as not travelling to descendants.
+	 *
+	 * @var string
+	 */
+	public const INHERITABLE_ATTRIBUTE_KEY = 'inheritable';
+
+	/**
 	 * Whether a grant carries one EXTENSION verb for this caller.
 	 *
 	 * Core's bitmask has five verbs and OpenRegister has more concepts than
@@ -418,6 +532,68 @@ class ObjectGrantResolver {
 
 		return in_array($verb, ($this->verbs[$objectUuid] ?? []), true);
 	}//end grantCarriesVerb()
+
+	/**
+	 * Whether a grant travels to the object's descendants.
+	 *
+	 * Rides in the same attribute bag as the extension verbs, for the same
+	 * reason ADR-010 puts them there: core's share record has no field for a
+	 * concept core does not have.
+	 *
+	 * DEFAULTS TO TRUE, and that direction is the point. Every grant written
+	 * before this flag existed meant "inheritable", because inheritance was
+	 * how they were resolved; defaulting to false would silently remove access
+	 * from every one of them, which is a lock-out nobody asked for and which
+	 * would be blamed on the hierarchy change rather than on this one.
+	 *
+	 * Only an explicit, recognisable FALSE turns it off. A malformed value is
+	 * read as inheritable rather than guessed at, so a typo cannot quietly
+	 * narrow a grant either.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return bool False only when the grant is explicitly marked as local.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	private function inheritableOf(IShare $share): bool {
+		try {
+			$attributes = $share->getAttributes();
+			if ($attributes === null) {
+				return true;
+			}
+
+			$raw = $attributes->getAttribute(
+				self::VERB_ATTRIBUTE_SCOPE,
+				self::INHERITABLE_ATTRIBUTE_KEY
+			);
+		} catch (Throwable $e) {
+			return true;
+		}
+
+		if ($raw === false || $raw === 0 || $raw === '0' || $raw === 'false') {
+			return false;
+		}
+
+		return true;
+	}//end inheritableOf()
+
+	/**
+	 * Whether this object's grant travels to its descendants.
+	 *
+	 * Read by the scopes surface beside the provenance, so an access review can
+	 * say of every grant either where it came from or that it is explicitly
+	 * local (ledger row 13.41).
+	 *
+	 * @param string $objectUuid The object.
+	 *
+	 * @return bool True unless the grant is marked as local.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	public function isInheritable(string $objectUuid): bool {
+		return (array_key_exists($objectUuid, $this->notInheritable) === false);
+	}//end isInheritable()
 
 	/**
 	 * The extension verbs one share carries.

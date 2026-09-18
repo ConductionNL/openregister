@@ -46,40 +46,66 @@ async function elevate(request): Promise<void> {
 }
 
 test.describe('The hardening report', () => {
-	test('an administrator reads what is on and what is not', async ({ request }) => {
+	test('an administrator reads what is on and what is not', async ({
+		request,
+	}) => {
 		const response = await request.get(REPORT)
 		expect(response.status(), 'the report route is registered').toBe(200)
 
 		const body = await response.json()
 
 		expect(Array.isArray(body.controls), 'the report carries rows').toBe(true)
-		expect(body.controls.length, 'every category is represented').toBeGreaterThan(10)
+		expect(
+			body.controls.length,
+			'every category is represented',
+		).toBeGreaterThan(10)
 		expect(typeof body.meetsAllFloors).toBe('boolean')
 		expect(Array.isArray(body.failing)).toBe(true)
 
 		const categories = new Set(body.controls.map((control) => control.category))
-		for (const expected of ['password', 'session', 'rateLimit', 'bruteForce', 'origins', 'upload']) {
-			expect(categories, `the report answers for ${expected}`).toContain(expected)
+		for (const expected of [
+			'password',
+			'session',
+			'rateLimit',
+			'bruteForce',
+			'origins',
+			'upload',
+		]) {
+			expect(categories, `the report answers for ${expected}`).toContain(
+				expected,
+			)
 		}
 
 		for (const control of body.controls) {
 			expect(['platform', 'administered', 'code']).toContain(control.source)
 			expect(['atLeast', 'atMost']).toContain(control.comparator)
 			expect(['on', 'off', 'unknown']).toContain(control.state)
-			expect(typeof control.floor, `${control.id} carries a floor`).toBe('number')
+			expect(typeof control.floor, `${control.id} carries a floor`).toBe(
+				'number',
+			)
 
 			// The rule this report lives or dies on: unknown is never fine.
 			if (control.value === null) {
-				expect(control.meetsFloor, `${control.id} reads unknown and must fail`).toBe(false)
+				expect(
+					control.meetsFloor,
+					`${control.id} reads unknown and must fail`,
+				).toBe(false)
 				expect(body.failing).toContain(control.id)
 			}
 		}
 
-		expect(body.observed.bruteForce, 'the brute-force state is observed').toBeTruthy()
-		expect(Object.keys(body.observed.throttledSurfaces).length).toBeGreaterThan(0)
+		expect(
+			body.observed.bruteForce,
+			'the brute-force state is observed',
+		).toBeTruthy()
+		expect(Object.keys(body.observed.throttledSurfaces).length).toBeGreaterThan(
+			0,
+		)
 	})
 
-	test('the published ceiling is the ceiling the capabilities answer names', async ({ request }) => {
+	test('the published ceiling is the ceiling the capabilities answer names', async ({
+		request,
+	}) => {
 		const report = await (await request.get(REPORT)).json()
 		const capabilities = await (
 			await request.get('/index.php/apps/openregister/api/capabilities')
@@ -95,7 +121,9 @@ test.describe('The hardening report', () => {
 		).toBe(capabilities.limits.authentication.lockoutSeconds)
 	})
 
-	test('the floors answer says which direction is stronger', async ({ request }) => {
+	test('the floors answer says which direction is stronger', async ({
+		request,
+	}) => {
 		const body = await (await request.get(FLOORS)).json()
 
 		expect(body.floors['auth.rateLimit.lockoutSeconds']).toBeGreaterThan(0)
@@ -104,7 +132,9 @@ test.describe('The hardening report', () => {
 			body.comparators['session.lifetimeSeconds'],
 			'a consumer that assumes higher is stronger gets this one backwards',
 		).toBe('atMost')
-		expect(body.baselines['auth.rateLimit.attemptsPerIdentity']).toBeGreaterThan(0)
+		expect(body.baselines['auth.rateLimit.attemptsPerIdentity']).toBeGreaterThan(
+			0,
+		)
 	})
 })
 
@@ -132,22 +162,30 @@ test.describe('The refusal', () => {
 
 		const after = await (await request.get(REPORT)).json()
 		expect(
-			after.controls.find((control) => control.id === 'auth.rateLimit.lockoutSeconds').value,
+			after.controls.find(
+				(control) => control.id === 'auth.rateLimit.lockoutSeconds',
+			).value,
 			'the refused value never reached the configuration',
 		).toBe(lockoutBefore)
 	})
 
-	test('a floor weaker than the shipped baseline is refused', async ({ request }) => {
+	test('a floor weaker than the shipped baseline is refused', async ({
+		request,
+	}) => {
 		await elevate(request)
 		const response = await request.put(FLOORS, {
 			data: { floors: { 'auth.rateLimit.attemptsPerIdentity': 5000 } },
 		})
 
 		expect(response.status()).toBe(409)
-		expect((await response.json()).control).toBe('auth.rateLimit.attemptsPerIdentity')
+		expect((await response.json()).control).toBe(
+			'auth.rateLimit.attemptsPerIdentity',
+		)
 	})
 
-	test('a control this instance does not administer is refused', async ({ request }) => {
+	test('a control this instance does not administer is refused', async ({
+		request,
+	}) => {
 		await elevate(request)
 		const response = await request.put(CONTROLS, {
 			data: { controls: { 'password.minimumLength': 4 } },

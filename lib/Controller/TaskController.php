@@ -189,6 +189,10 @@ class TaskController extends Controller {
 	 * @param string|null $state Restrict to CMMN states (comma-separated).
 	 * @param string|null $isTerminal 'true'|'false' to restrict on terminality.
 	 * @param string|null $priority Restrict to one priority.
+	 * @param string|null $kind Restrict to one kind of work, as the creator
+	 *                           named it (`reminder`, and whatever else a
+	 *                           consuming app writes). The engine attaches no
+	 *                           behaviour to the value.
 	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
 	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
 	 *                             This ANCHORS the read rather than filtering
@@ -218,6 +222,7 @@ class TaskController extends Controller {
 		?string $state = null,
 		?string $isTerminal = null,
 		?string $priority = null,
+		?string $kind = null,
 		?string $objectUuid = null,
 		?string $runUuid = null,
 		?string $overdue = null,
@@ -269,6 +274,7 @@ class TaskController extends Controller {
 			states: $states,
 			isTerminal: $terminalFilter,
 			priority: $priority,
+			kind: $this->trimmedOrNull(value: $kind),
 			objectUuid: $objectUuid,
 			runUuid: $this->trimmedOrNull(value: $runUuid),
 			overdueAt: $overdueAt,

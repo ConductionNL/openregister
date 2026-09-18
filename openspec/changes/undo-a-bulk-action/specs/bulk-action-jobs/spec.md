@@ -21,7 +21,6 @@ save with HTTP 422 naming the action.
 - **GIVEN** a schema declaring a destruction action as reversible
 - **WHEN** the schema is saved
 - **THEN** the save fails with HTTP 422 naming the action
-- @e2e exclude {annotation validator, covered by unit tests}
 
 ### Requirement: A reversible job records the prior value of every property it changes (REQ-UBA-002)
 
@@ -42,7 +41,7 @@ naming the ceiling.
 - **GIVEN** an instance ceiling and a job whose recorded prior values would exceed it
 - **WHEN** the job is created
 - **THEN** creation fails naming the ceiling
-- @e2e exclude {validator, covered by unit tests}
+- @e2e exclude {a creation-time refusal with no HTTP fixture large enough to trip it; asserted in tests/Unit/Service/BulkJob/BulkJobPriorValueCaptureTest.php::testAJobAboveTheUndoCeilingIsRefusedAtCreationNamingTheCeiling}
 
 ### Requirement: A reversal is a new job that names the job it undoes (REQ-UBA-003)
 
@@ -60,19 +59,21 @@ original write and the reversal as two acts with their own actors.
 - **WHEN** it is reversed inside its window
 - **THEN** a new job runs restoring the recorded prior value on each member
 - **AND** the new job names the original as its cause
+- @e2e exclude {needs the background worker to have walked the original's members, which no HTTP call can guarantee; asserted in tests/Unit/Service/BulkJob/BulkJobReversalTest.php::testAHundredCasesGoBackAsOneJobNamingTheOriginal and tests/Unit/BulkAction/RestorePriorValuesActionTest.php::testTheRecordedPriorValueIsWrittenBack}
 
 #### Scenario: the reversal is authorised for the person doing it
 
 - **GIVEN** a completed job created by an administrator
 - **WHEN** a caller without write access to the members requests the reversal
 - **THEN** the reversal is refused and nothing is written
+- @e2e exclude {needs a completed job, so the same worker dependency; asserted in tests/Unit/Controller/BulkJobsControllerTest.php::testACallerWhoCannotReadTheJobCannotUndoIt and ::testTheReversalRunsAsThePersonAskingForItNotTheOriginalActor}
 
 #### Scenario: a reversal outside the window is refused
 
 - **GIVEN** a job whose reversal window has passed
 - **WHEN** a reversal is requested
 - **THEN** it is refused naming the window
-- @e2e exclude {time-dependent, covered by unit tests with a clock fixture}
+- @e2e exclude {time-dependent, and the HTTP surface exposes no clock; asserted in tests/Unit/Service/BulkJob/BulkJobReversalTest.php::testAReversalOutsideTheWindowIsRefusedNamingTheWindow}
 
 ### Requirement: A member changed since the job is not silently overwritten (REQ-UBA-004)
 
@@ -87,10 +88,11 @@ a later change.
 - **WHEN** the job is reversed
 - **THEN** nine objects are restored
 - **AND** the tenth is reported as not reversible, naming the later change
+- @e2e exclude {needs the background worker to have walked both jobs; asserted in tests/Unit/BulkAction/RestorePriorValuesActionTest.php::testALaterEditIsReportedByNameAndNeverOverwritten}
 
 #### Scenario: the report is readable after the reversal
 
 - **GIVEN** a completed reversal with skipped members
 - **WHEN** the reversal job is read
 - **THEN** each skipped member is listed with its reason
-- @e2e exclude {job read, covered by unit tests}
+- @e2e exclude {needs a completed reversal, so the same worker dependency; asserted in tests/Unit/Controller/BulkJobsControllerTest.php::testTheMembersRouteCarriesTheOutcomeAndItsReason and tests/Unit/BulkAction/RestorePriorValuesActionTest.php::testALaterEditIsReportedByNameAndNeverOverwritten}
