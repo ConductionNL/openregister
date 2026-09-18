@@ -3146,4 +3146,64 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createHardeningChangeEntry()
+	/**
+	 * Create one immutable, hash-chained audit record for an export.
+	 *
+	 * An export is the moment data leaves the instance, so it belongs on the
+	 * trail beside the writes. The entry names the actor, the profile, the row
+	 * count and the time, which is the set an incident is reconstructed from.
+	 *
+	 * A REFUSAL is recorded on the same terms and for the same reason: "who
+	 * tried to take this register off the instance" is a question a functionaris
+	 * gegevensbescherming asks, and a trail that only holds the successes cannot
+	 * answer it.
+	 *
+	 * The entry hangs on a register and a schema rather than on an object,
+	 * because an export has no single object. Same shape as
+	 * {@see createPartyQueryRefusalEntry()}.
+	 *
+	 * @param string $outcome Either `completed` or `refused`.
+	 * @param array<string, mixed> $summary Profile, format, value mode, row count and, on a refusal, the reason.
+	 * @param int|null $register Register id exported, when known.
+	 * @param int|null $schema Schema id exported, when known.
+	 * @param string|null $actorId The principal the export ran as, when it is not the session user.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	public function createExportEntry(
+		string $outcome,
+		array $summary,
+		?int $register = null,
+		?int $schema = null,
+		?string $actorId = null,
+	): AuditTrail {
+		$userId = $actorId;
+		$userName = $actorId;
+		if ($userId === null) {
+			$user = $this->userSession->getUser();
+			$userId = 'system';
+			$userName = 'System';
+			if ($user !== null) {
+				$userId = $user->getUID();
+				$userName = $user->getDisplayName();
+			}
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('export.' . $outcome);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary($summary);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createExportEntry()
+
 }//end class

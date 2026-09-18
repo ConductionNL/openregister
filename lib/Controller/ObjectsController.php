@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
@@ -54,6 +55,8 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
@@ -5353,6 +5356,16 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Register or schema not found'], statusCode: 404);
 		}
 
+		// THE EXPORT VERB, before a single row is read. Hiding the menu item is
+		// not a control: this endpoint is what an integration calls, so this is
+		// where the right has to hold (design D-1). The refusal names the verb
+		// rather than the register, because "forbidden" leaves an operator
+		// guessing which of the two grants they are missing.
+		$refusal = $this->exportRefusalFor(schema: $schemaEntity, register: $registerEntity);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		// Generate filename base.
 		$filenameBase = sprintf(
 			'%s_%s_%s',
@@ -5370,6 +5383,13 @@ class ObjectsController extends Controller {
 				currentUser: $this->userSession->getUser()
 			);
 
+			$this->recordExportCompleted(
+				register: $registerEntity,
+				schema: $schemaEntity,
+				format: 'csv',
+				rowCount: $this->countCsvExportRows(csv: $content)
+			);
+
 			return new DataDownloadResponse(
 				data: $content,
 				filename: "{$filenameBase}.csv",
@@ -5382,6 +5402,13 @@ class ObjectsController extends Controller {
 				register: $registerEntity,
 				schema: $schemaEntity,
 				filters: $filters
+			);
+
+			$this->recordExportCompleted(
+				register: $registerEntity,
+				schema: $schemaEntity,
+				format: 'json',
+				rowCount: $this->countJsonExportRows(json: $content)
 			);
 
 			return new DataDownloadResponse(
@@ -5411,6 +5438,17 @@ class ObjectsController extends Controller {
 				);
 			}
 
+			$this->recordExportCompleted(
+				register: $registerEntity,
+				schema: $schemaEntity,
+				format: 'pdf',
+				rowCount: $this->exportService->countExportRows(
+					register: $registerEntity,
+					schema: $schemaEntity,
+					filters: $filters
+				)
+			);
+
 			return new DataDownloadResponse(
 				data: $content,
 				filename: "{$filenameBase}.pdf",
@@ -5432,12 +5470,210 @@ class ObjectsController extends Controller {
 		$writer->save('php://output');
 		$content = ob_get_clean();
 
+		$this->recordExportCompleted(
+			register: $registerEntity,
+			schema: $schemaEntity,
+			format: 'excel',
+			rowCount: $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet)
+		);
+
 		return new DataDownloadResponse(
 			data: $content,
 			filename: "{$filenameBase}.xlsx",
 			contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 		);
 	}//end export()
+
+	/**
+	 * The refusal for this caller's export, or null when they may take it.
+	 *
+	 * Resolved from the container rather than injected, because a nullable
+	 * constructor dependency would make the control skippable: a caller that
+	 * constructs this controller without the service would get an export with
+	 * no verb check and no sign that one was missing. A service that cannot be
+	 * resolved refuses, for the same reason an unreadable rule refuses.
+	 *
+	 * @param Schema   $schema   The schema being exported.
+	 * @param Register $register The register being exported.
+	 *
+	 * @return JSONResponse|null The refusal to return, or null when the export may run.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 */
+	private function exportRefusalFor(Schema $schema, Register $register): ?JSONResponse {
+		$rightService = null;
+		try {
+			$rightService = $this->container->get(ExportRightService::class);
+		} catch (\Throwable $e) {
+			$this->logger?->error(
+				message: '[ObjectsController] Export right service unresolvable, refusing the export',
+				context: ['error' => $e->getMessage()]
+			);
+		}
+
+		// A container that answers with something other than the service is the
+		// same situation as one that throws, and it must end the same way. The
+		// alternative is an export that runs with no verb check and nothing to
+		// say one was missing, which is the hole this whole change closes.
+		if (($rightService instanceof ExportRightService) === false) {
+			return new JSONResponse(
+				data: [
+					'error' => 'EXPORT_REFUSED',
+					'verb' => ExportRightService::ACTION,
+					'rule' => 'right-service-unavailable',
+					'message' => 'The export right cannot be evaluated right now, so nothing was exported.',
+				],
+				statusCode: 503
+			);
+		}
+
+		$refusal = $rightService->refusalFor(schema: $schema);
+		if ($refusal === null) {
+			return null;
+		}
+
+		$this->recordExportRefusal(refusal: $refusal, register: $register, schema: $schema);
+
+		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+	}//end exportRefusalFor()
+
+	/**
+	 * Record a refused export on the audit trail.
+	 *
+	 * @param \OCA\OpenRegister\Service\Export\ExportRefusedException $refusal The refusal.
+	 * @param Register $register The register that was asked for.
+	 * @param Schema   $schema   The schema that was asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function recordExportRefusal(
+		\OCA\OpenRegister\Service\Export\ExportRefusedException $refusal,
+		Register $register,
+		Schema $schema,
+	): void {
+		$recorder = $this->exportAuditRecorder();
+		if ($recorder === null) {
+			return;
+		}
+
+		$recorder->recordRefused(
+			profile: 'ad-hoc',
+			rule: $refusal->getRule(),
+			reason: $refusal->getMessage(),
+			register: $register->getId(),
+			schema: $schema->getId()
+		);
+	}//end recordExportRefusal()
+
+	/**
+	 * Record a completed export on the audit trail.
+	 *
+	 * @param Register $register The register exported.
+	 * @param Schema   $schema   The schema exported.
+	 * @param string   $format   The format written.
+	 * @param int      $rowCount How many rows left the instance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function recordExportCompleted(Register $register, Schema $schema, string $format, int $rowCount): void {
+		$recorder = $this->exportAuditRecorder();
+		if ($recorder === null) {
+			return;
+		}
+
+		$recorder->recordCompleted(
+			profile: 'ad-hoc',
+			rowCount: $rowCount,
+			format: $format,
+			valueMode: null,
+			register: $register->getId(),
+			schema: $schema->getId()
+		);
+	}//end recordExportCompleted()
+
+	/**
+	 * The audit recorder, or null when it cannot be resolved.
+	 *
+	 * Unlike the right service this one may be absent without refusing the
+	 * export: see ExportAuditRecorder's own note on why a ledger hiccup must
+	 * not fail a monthly aanlevering.
+	 *
+	 * @return ExportAuditRecorder|null The recorder.
+	 */
+	private function exportAuditRecorder(): ?ExportAuditRecorder {
+		try {
+			return $this->container->get(ExportAuditRecorder::class);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				message: '[ObjectsController] Export audit recorder unresolvable, the export is not on the trail',
+				context: ['error' => $e->getMessage()]
+			);
+
+			return null;
+		}
+	}//end exportAuditRecorder()
+
+	/**
+	 * Count the data rows in exported CSV bytes.
+	 *
+	 * Counted off the artefact that was actually produced rather than off a
+	 * second query, so the number on the trail is the number in the file.
+	 *
+	 * @param string $csv The CSV content.
+	 *
+	 * @return int The row count, header excluded.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function countCsvExportRows(string $csv): int {
+		$lines = array_filter(explode("\n", $csv), static fn ($line) => trim($line) !== '');
+
+		return max(0, (count($lines) - 1));
+	}//end countCsvExportRows()
+
+	/**
+	 * Count the objects in exported JSON bytes.
+	 *
+	 * @param string $json The JSON content.
+	 *
+	 * @return int The row count, or 0 when the payload is not a list.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function countJsonExportRows(string $json): int {
+		$decoded = json_decode($json, true);
+		if (is_array($decoded) === false) {
+			return 0;
+		}
+
+		if (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
+			return count($decoded['results']);
+		}
+
+		return count($decoded);
+	}//end countJsonExportRows()
+
+	/**
+	 * Sum the data rows across every sheet of an exported spreadsheet.
+	 *
+	 * @param \PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet The spreadsheet.
+	 *
+	 * @return int The row count, each sheet header excluded.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function countSpreadsheetExportRows(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet): int {
+		$rows = 0;
+		foreach ($spreadsheet->getAllSheets() as $sheet) {
+			$rows += max(0, ($sheet->getHighestRow() - 1));
+		}
+
+		return $rows;
+	}//end countSpreadsheetExportRows()
 
 	/**
 	 * Merge two objects

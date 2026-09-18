@@ -30,6 +30,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\TmloService;
@@ -76,6 +77,7 @@ class TmloController extends Controller {
 	 * @param ObjectService $objectService Object service for querying objects
 	 * @param RegisterMapper $registerMapper Register mapper
 	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param ExportGate $exportGate The export verb, checked before any archival metadata leaves.
 	 * @param LoggerInterface $logger Logger interface
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
@@ -88,6 +90,7 @@ class TmloController extends Controller {
 		private readonly RegisterMapper $registerMapper,
 		SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
+		private readonly ExportGate $exportGate,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
@@ -123,6 +126,21 @@ class TmloController extends Controller {
 				register: $registerEntity,
 				schemaRef: $schema
 			);
+
+			// REQ-EXP-001: archival metadata IS the object's data, shaped for
+			// an archive, so taking it off the instance is an export and is
+			// gated on the export verb like every other export path. Placed
+			// after the register and schema resolve, because the rule lives on
+			// the schema and cannot be read without it.
+			$refusal = $this->exportGate->refusalFor(
+				schema: $schemaEntity,
+				profile: 'tmlo-single',
+				registerId: $registerEntity->getId()
+			);
+
+			if ($refusal !== null) {
+				return $refusal;
+			}
 
 			// `id:`, not `identifier:` — the parameter is `$id`, and a named
 			// argument that names nothing raises `Error: Unknown named
@@ -195,6 +213,21 @@ class TmloController extends Controller {
 				register: $registerEntity,
 				schemaRef: $schema
 			);
+
+			// REQ-EXP-001: archival metadata IS the object's data, shaped for
+			// an archive, so taking it off the instance is an export and is
+			// gated on the export verb like every other export path. Placed
+			// after the register and schema resolve, because the rule lives on
+			// the schema and cannot be read without it.
+			$refusal = $this->exportGate->refusalFor(
+				schema: $schemaEntity,
+				profile: 'tmlo-batch',
+				registerId: $registerEntity->getId()
+			);
+
+			if ($refusal !== null) {
+				return $refusal;
+			}
 
 			// Get all query parameters for filtering.
 			$params = $this->request->getParams();

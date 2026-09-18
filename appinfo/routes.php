@@ -1918,6 +1918,20 @@ return [
 		['name' => 'webhooks#allLogs', 'url' => '/api/webhooks/logs', 'verb' => 'GET'],
 		['name' => 'webhooks#retry', 'url' => '/api/webhooks/logs/{logId}/retry', 'verb' => 'POST', 'requirements' => ['logId' => '\d+']],
 
+		// Export profiles (export-as-its-own-right): a named, ordered field set
+		// with a value mode and a format, owned by a user and independent of
+		// any saved view's columns. `run` produces the file and checks the
+		// export verb in the service, so an integration meets the same refusal
+		// a browser does. `contract` publishes what a consumer needs to read a
+		// produced file without guessing.
+		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
+		['name' => 'exportProfiles#contract', 'url' => '/api/export-profiles/contract', 'verb' => 'GET'],
+		['name' => 'exportProfiles#create', 'url' => '/api/export-profiles', 'verb' => 'POST'],
+		['name' => 'exportProfiles#show', 'url' => '/api/export-profiles/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'exportProfiles#update', 'url' => '/api/export-profiles/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'exportProfiles#destroy', 'url' => '/api/export-profiles/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'exportProfiles#run', 'url' => '/api/export-profiles/{id}/run', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+
 		// Scheduled reports (scheduled-report-jobs): owner-scoped recurring
 		// ExportService exports, delivered to Files + notification. Admin may
 		// list all via ?all=true. run-now queues ScheduledReportRunNowJob and

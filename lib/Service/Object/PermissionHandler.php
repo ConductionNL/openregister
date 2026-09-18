@@ -164,6 +164,13 @@ class PermissionHandler {
 		// SHOULD be enforced" was the only thing the spec could say about the
 		// destructive verb. See DestroyRightService.
 		'destroy',
+		// `export` is a SECOND, narrower right than `read`. Reading a record and
+		// taking the set off the instance are different acts, and an export
+		// gated behind `read` is an export every reader holds. Deliberately NOT
+		// in the fail-closed write lists below: an export reads, and shipping it
+		// denied would break every instance on upgrade (design D-2). See
+		// ExportRightService for the read fallback that keeps that promise.
+		'export',
 		// `assign` joins the canonical set HERE as well as in
 		// PermissionCatalogue, and the duplication is the point: this list
 		// decides whether a verb dispatches a custom-scope evaluation, and
