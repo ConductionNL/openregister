@@ -118,7 +118,9 @@ test.describe('a bulk action has an inverse', () => {
 		return json
 	}
 
-	async function membersOf(jobId: string): Promise<Array<Record<string, unknown>>> {
+	async function membersOf(
+		jobId: string,
+	): Promise<Array<Record<string, unknown>>> {
 		const res = await admin.get(`${API}/bulk-jobs/${jobId}/members?limit=500`)
 		expect(res.ok(), `member listing failed: ${await res.text()}`).toBeTruthy()
 
@@ -188,7 +190,10 @@ test.describe('a bulk action has an inverse', () => {
 			]),
 		)
 
-		expect(byId[SET_PROPERTIES], 'the attribute write is not registered').toBeTruthy()
+		expect(
+			byId[SET_PROPERTIES],
+			'the attribute write is not registered',
+		).toBeTruthy()
 		expect(
 			byId[SET_PROPERTIES].reversible,
 			'the attribute write does not say it can be undone',
@@ -224,9 +229,10 @@ test.describe('a bulk action has an inverse', () => {
 		expect(job.state, 'a new job should be previewed, not running').toBe(
 			'previewed',
 		)
-		expect(job.reversible, 'the preview does not say the job can be undone').toBe(
-			true,
-		)
+		expect(
+			job.reversible,
+			'the preview does not say the job can be undone',
+		).toBe(true)
 		expect(Number(job.reversalWindow)).toBeGreaterThan(0)
 		expect(
 			String(job.reversibleUntil ?? ''),
@@ -283,7 +289,10 @@ test.describe('a bulk action has an inverse', () => {
 		// Cancelled before it committed, so it wrote nothing and there is
 		// nothing to write back. The refusal says which of the two it is.
 		const cancelled = await admin.post(`${API}/bulk-jobs/${job.id}/cancel`)
-		expect(cancelled.ok(), `cancel failed: ${await cancelled.text()}`).toBeTruthy()
+		expect(
+			cancelled.ok(),
+			`cancel failed: ${await cancelled.text()}`,
+		).toBeTruthy()
 		expect((await cancelled.json()).state).toBe('cancelled')
 
 		const empty = await admin.post(`${API}/bulk-jobs/${job.id}/reverse`, {
@@ -311,7 +320,8 @@ test.describe('a bulk action has an inverse', () => {
 					'x-openregister-action': {
 						shredAttachments: {
 							name: 'Shred attachments',
-							description: 'Destroys every attachment beyond recovery.',
+							description:
+								'Destroys every attachment beyond recovery.',
 							kind: 'destroy',
 							reversible: true,
 						},
