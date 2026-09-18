@@ -798,6 +798,12 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        // BPMN 2.0 interchange. Export is read-guarded and import is
+        // flow.create-guarded, both inside the controller; the auth posture is
+        // declared there with #[NoAdminRequired] and no CSRF exemption, because
+        // both are called by a browser that has a token to send.
+        ['name' => 'flow#exportBpmn', 'url' => '/api/flows/{id}/bpmn',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#importBpmn', 'url' => '/api/flows/import/bpmn', 'verb' => 'POST'],
 
         // Direct node invocation (or-flow-run-node): run ONE named node of a
         // published flow against ONE subject, authorized against that
