@@ -53,6 +53,8 @@ use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
@@ -1129,6 +1131,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateExternalLinksAnnotation(schema: $schema);
 		$this->validateExtendingFormAnnotation(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
+		$this->validateHierarchyAnnotation(schema: $schema);
 		$this->validateReversibilityDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
@@ -2032,6 +2035,67 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
+
+	/**
+	 * Refuse a broken `x-openregister-hierarchy` declaration at save.
+	 *
+	 * THIS ONE THROWS, and the reason is what the annotation does: it names the
+	 * edge a GRANT travels down. An author who points it at the wrong property
+	 * has not written a cosmetic mistake. `assignee` on a case references a
+	 * USER, so a hierarchy declared over it would hand everybody who may read
+	 * one object every object filed to the same person, and from that moment on
+	 * it is indistinguishable from working inheritance. The save is the only
+	 * point at which the two can be told apart.
+	 *
+	 * An unknown key inside the block is surfaced and ignored, the same rule
+	 * {@see self::validateArchivalAnnotation()} records: it declares nothing, so
+	 * dropping it loses nothing, and refusing it would cost the register every
+	 * object of that schema at import time.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function validateHierarchyAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration[HierarchyGrantExpander::ANNOTATION] ?? null);
+		if ($annotation === null) {
+			return;
+		}
+
+		$findings = (new HierarchyAnnotationValidator())->validate(
+			[
+				'properties' => ($schema->getProperties() ?? []),
+				'slug' => (string)($schema->getSlug() ?? ''),
+				HierarchyGrantExpander::ANNOTATION => $annotation,
+			]
+		);
+
+		$split = HierarchyAnnotationValidator::partition(findings: $findings);
+
+		if (count($split['warnings']) > 0) {
+			$this->logger->warning(
+				sprintf(
+					'[OpenRegister.SchemaMapper] Ignored %d unknown %s key(s) on schema "%s": %s',
+					count($split['warnings']),
+					HierarchyGrantExpander::ANNOTATION,
+					(string)($schema->getSlug() ?? ''),
+					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
+				)
+			);
+		}
+
+		if (count($split['errors']) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
+		throw new Exception(HierarchyGrantExpander::ANNOTATION . ': ' . implode(' ', $messages));
+	}//end validateHierarchyAnnotation()
 
 	/**
 	 * Refuse a broken `x-openregister-external-links` declaration at save.

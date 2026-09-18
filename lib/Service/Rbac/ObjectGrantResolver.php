@@ -118,6 +118,18 @@ class ObjectGrantResolver {
 	private array $verbs = [];
 
 	/**
+	 * Which ancestor each INHERITED grant came from, keyed by object UUID.
+	 *
+	 * Populated by the same resolve as the map above and cleared by the same
+	 * `forget()`, so the two cannot disagree about which request they describe.
+	 * An object absent from this map holds a DIRECT grant, which is what makes
+	 * the two distinguishable in the audit (REQ-RIC-004).
+	 *
+	 * @var array<string, string>
+	 */
+	private array $inheritedFrom = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
@@ -126,6 +138,7 @@ class ObjectGrantResolver {
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
+		private readonly ?HierarchyGrantExpander $hierarchy = null,
 	) {
 	}//end __construct()
 
@@ -172,10 +185,75 @@ class ObjectGrantResolver {
 			);
 		}
 
+		// A GRANT ON A PARENT REACHES ITS CHILDREN (ledger row Q13.23). The
+		// expansion happens HERE, on the map, rather than at each decision,
+		// because this map is the one funnel every path takes: the per-object
+		// check reads it through `isGranted()` and both list emitters read it
+		// through `grantedObjectUuidsFor()`. Expanding it once is the only
+		// placement where a list and an object read cannot disagree, which is
+		// exactly what the change's D-3 is about and is not a theoretical
+		// worry: the two are compiled by different code into different
+		// languages.
+		//
+		// It runs BEFORE the memo is written, so the expansion is paid once per
+		// request like everything else here, and `forget()` drops it with the
+		// rest.
+		$expanded = $this->hierarchy?->expand(granted: $granted);
+		if ($expanded !== null) {
+			$granted = $expanded['granted'];
+			$this->inheritedFrom = ($this->inheritedFrom + $expanded['sources']);
+		}
+
 		$this->memoised[$userId] = $granted;
 
 		return $granted;
 	}//end grantedObjectUuids()
+
+	/**
+	 * Which ancestor a grant came from, or null when it was written on the object.
+	 *
+	 * The provenance the discovery endpoint and the scope audit report
+	 * (REQ-RIC-004). An administrator looking at a descendant sees access they
+	 * cannot otherwise explain and cannot remove, because the grant is not on
+	 * the object in front of them; naming the ancestor is what turns that into
+	 * an answer.
+	 *
+	 * @param string $objectUuid The object.
+	 *
+	 * @return string|null The ancestor's UUID, or null for a direct grant.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	public function inheritedFrom(string $objectUuid): ?string {
+		return ($this->inheritedFrom[$objectUuid] ?? null);
+	}//end inheritedFrom()
+
+	/**
+	 * The core permission bit an action requires, as a static.
+	 *
+	 * The same table {@see self::permissionFor()} answers from, reachable
+	 * without an instance so the hierarchy expander can narrow a mask by the
+	 * verbs a schema lets travel down. ONE table, not two: a second copy of
+	 * this map is a second answer to "which bit is update", and the day they
+	 * disagree an inherited grant carries a verb the ancestor never had.
+	 *
+	 * @param string $action The action.
+	 *
+	 * @return integer|null The bit, or null when the action has none.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	public static function permissionBitFor(string $action): ?int {
+		$bits = [
+			'read' => Constants::PERMISSION_READ,
+			'update' => Constants::PERMISSION_UPDATE,
+			'create' => Constants::PERMISSION_CREATE,
+			'delete' => Constants::PERMISSION_DELETE,
+			'share' => Constants::PERMISSION_SHARE,
+		];
+
+		return ($bits[$action] ?? null);
+	}//end permissionBitFor()
 
 	/**
 	 * Whether the caller holds any grant at all.
@@ -207,15 +285,7 @@ class ObjectGrantResolver {
 	 * @return integer|null The required bit, or null when the action has none.
 	 */
 	public function permissionFor(string $action): ?int {
-		$bits = [
-			'read' => Constants::PERMISSION_READ,
-			'update' => Constants::PERMISSION_UPDATE,
-			'create' => Constants::PERMISSION_CREATE,
-			'delete' => Constants::PERMISSION_DELETE,
-			'share' => Constants::PERMISSION_SHARE,
-		];
-
-		return ($bits[$action] ?? null);
+		return self::permissionBitFor(action: $action);
 	}//end permissionFor()
 
 	/**
@@ -281,6 +351,7 @@ class ObjectGrantResolver {
 		if ($userId === null) {
 			$this->memoised = [];
 			$this->verbs = [];
+			$this->inheritedFrom = [];
 			return;
 		}
 
@@ -289,7 +360,10 @@ class ObjectGrantResolver {
 		// The verb map is keyed by OBJECT, not by user, so a per-user forget
 		// cannot prune it precisely. Clearing it wholly is the safe direction:
 		// it is rebuilt on the next resolve, and a stale verb would admit.
+		// The inherited-from map is keyed by object for the same reason and is
+		// cleared for the same one.
 		$this->verbs = [];
+		$this->inheritedFrom = [];
 	}//end forget()
 
 	/**

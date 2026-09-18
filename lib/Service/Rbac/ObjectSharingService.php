@@ -136,6 +136,7 @@ class ObjectSharingService {
 	 * @param ObjectScopeResolver $scopeResolver The scope vocabulary.
 	 * @param ObjectGrantResolver $grantResolver The grant resolver, to drop its per-request memo.
 	 * @param IManager $shareManager Core share manager.
+	 * @param HierarchyDescender $hierarchy Resolves an object's ancestors, for the inherited grants.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -148,6 +149,7 @@ class ObjectSharingService {
 		private readonly ObjectGrantResolver $grantResolver,
 		private readonly IManager $shareManager,
 		private readonly LoggerInterface $logger,
+		private readonly HierarchyDescender $hierarchy,
 	) {
 	}//end __construct()
 
@@ -249,8 +251,106 @@ class ObjectSharingService {
 			}//end foreach
 		}//end foreach
 
-		return array_values($grants);
+		return array_merge(
+			array_values($grants),
+			$this->inheritedGrantsFor(object: $object)
+		);
 	}//end listGrants()
+
+	/**
+	 * The grants this object holds through an ancestor (REQ-RIC-004).
+	 *
+	 * "Why can this person see it" is the question an administrator actually
+	 * asks, and before this it had no answer for an inherited grant: the share
+	 * is written on the ANCESTOR's folder, so a listing of this object's own
+	 * folder is empty and the access is unexplained and unremovable from the
+	 * object in front of them.
+	 *
+	 * Each entry names the ancestor it came from and is marked `inherited`, so
+	 * the two kinds are distinguishable rather than merged. They are
+	 * deliberately NOT deduplicated against the direct grants above: a
+	 * principal who holds both a direct grant and an inherited one holds two
+	 * facts, and collapsing them would hide whichever one an administrator is
+	 * about to revoke.
+	 *
+	 * 🔴 IT NEVER REVOKES. An inherited entry carries the ancestor's share id,
+	 * and revoking it removes the grant from the ANCESTOR, which is a much
+	 * larger act than the row suggests. The entry says where to go; the
+	 * revocation happens there.
+	 *
+	 * @param ObjectEntity $object The object being audited.
+	 *
+	 * @return array<int, array<string, mixed>> The inherited grants, ancestor named.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function inheritedGrantsFor(ObjectEntity $object): array {
+		$ancestors = [];
+		try {
+			$ancestors = $this->hierarchy->ancestorsOf(
+				registerId: (int)$object->getRegister(),
+				schemaId: (int)$object->getSchema(),
+				objectUuid: (string)$object->getUuid()
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[ObjectSharingService] Could not resolve the ancestors of an object; its inherited grants are not listed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'object' => (string)$object->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
+			return [];
+		}
+
+		$inherited = [];
+		foreach ($ancestors as $ancestorUuid) {
+			try {
+				$ancestor = $this->mapper->find(identifier: $ancestorUuid, _rbac: false, _multitenancy: false);
+			} catch (Throwable $e) {
+				// An ancestor this caller cannot resolve contributes nothing.
+				// Saying so would be worse than silence here: the listing is
+				// already gated on owner-or-admin, and an entry naming an
+				// object nobody can open explains nothing.
+				continue;
+			}
+
+			$folder = $this->resolveFolder(object: $ancestor);
+			if ($folder === null) {
+				continue;
+			}
+
+			foreach (self::LISTABLE_TYPES as $label => $shareType) {
+				try {
+					$shares = $this->shareManager->getSharesBy(
+						(string)$ancestor->getOwner(),
+						$shareType,
+						$folder,
+						false,
+						-1
+					);
+				} catch (Throwable $e) {
+					continue;
+				}
+
+				foreach ($shares as $share) {
+					$inherited[] = [
+						'id' => $share->getFullId(),
+						'type' => $label,
+						'sharedWith' => $share->getSharedWith(),
+						'permissions' => $share->getPermissions(),
+						'expiration' => $share->getExpirationDate()?->format('c'),
+						'inherited' => true,
+						'inheritedFrom' => $ancestorUuid,
+					];
+				}
+			}
+		}//end foreach
+
+		return $inherited;
+	}//end inheritedGrantsFor()
 
 	/**
 	 * Grant one principal access to one object.
