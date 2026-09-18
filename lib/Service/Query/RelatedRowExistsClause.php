@@ -61,6 +61,34 @@ final class RelatedRowExistsClause {
 	public const ENGINE_MARIADB = 'mysql';
 
 	/**
+	 * The related rows live in `oc_openregister_objects`, in its JSON `object`
+	 * column.
+	 */
+	public const STORAGE_JSON = 'json';
+
+	/**
+	 * 🔴 THE STORAGE THE LIVE SEARCH PATH ACTUALLY USES.
+	 *
+	 * The related rows live in a per-schema "magic" table,
+	 * `oc_openregister_table_<register>_<schema>`, whose properties are REAL
+	 * TYPED COLUMNS: `days_remaining numeric`, `due_at timestamp`,
+	 * `is_overdue boolean`. Metadata columns are underscore-prefixed
+	 * (`_uuid`, `_owner`, `_deleted`), which is why they need their own names
+	 * here rather than the objects table\'s.
+	 *
+	 * Two consequences that are easy to get backwards:
+	 *
+	 * - The table IS the schema, so there is no `schema = :p` condition. Adding
+	 *   one would compare against `_schema` and narrow correctly by accident,
+	 *   while implying the table holds more than one schema.
+	 * - The numeric-versus-text machinery the JSON shape needs is not just
+	 *   unnecessary here, it is WRONG. A `numeric` column already compares
+	 *   numerically; casting it, or guarding it with a string regex, would
+	 *   break the comparison the column type already gets right.
+	 */
+	public const STORAGE_COLUMNS = 'columns';
+
+	/**
 	 * What counts as a number on both engines.
 	 *
 	 * Deliberately the same string for Postgres `~` and MariaDB `REGEXP`, so
@@ -97,6 +125,7 @@ final class RelatedRowExistsClause {
 	 * @param string           $innerAlias      The alias to give the related row.
 	 * @param string           $accessPredicate SQL restricting the related rows to ones the caller may read.
 	 * @param string           $parameterPrefix A prefix making this clause's placeholders unique.
+	 * @param string           $storage         Whether the related rows are JSON in the objects table or columns in a magic table.
 	 *
 	 * @return array{sql: string, parameters: array<string, mixed>} The clause and its bindings.
 	 *
@@ -112,6 +141,7 @@ final class RelatedRowExistsClause {
 		string $innerAlias,
 		string $accessPredicate,
 		string $parameterPrefix,
+		string $storage = self::STORAGE_JSON,
 	): array {
 		if (trim($accessPredicate) === '') {
 			throw new InvalidArgumentException(
@@ -120,27 +150,38 @@ final class RelatedRowExistsClause {
 			);
 		}
 
-		$parameters = [
-			$parameterPrefix . '_schema' => $filter->schema,
-		];
+		$parameters = [];
+		$where      = [];
 
-		$where = [
-			sprintf('%s."schema" = :%s_schema', $innerAlias, $parameterPrefix),
-			sprintf(
-				'%s = %s.uuid',
-				$this->jsonField(engine: $engine, alias: $innerAlias, field: $filter->foreignKey),
-				$outerAlias
-			),
-			// Soft-deleted related rows are not rows. Without this a case keeps
-			// matching on a property somebody removed, which reads as the
-			// removal not having worked.
-			sprintf('%s.deleted IS NULL', $innerAlias),
-			'(' . $accessPredicate . ')',
-		];
+		if ($storage === self::STORAGE_JSON) {
+			// The objects table holds every schema, so the schema must be named.
+			// A magic table IS one schema, so naming it there would imply the
+			// table holds more than one.
+			$parameters[$parameterPrefix . '_schema'] = $filter->schema;
+			$where[] = sprintf('%s."schema" = :%s_schema', $innerAlias, $parameterPrefix);
+		}
+
+		$where[] = sprintf(
+			'%s = %s.%s',
+			$this->fieldExpression(engine: $engine, storage: $storage, alias: $innerAlias, field: $filter->foreignKey),
+			$outerAlias,
+			$this->metadataColumn(storage: $storage, name: 'uuid')
+		);
+
+		// Soft-deleted related rows are not rows. Without this a case keeps
+		// matching on a property somebody removed, which reads as the removal
+		// not having worked.
+		$where[] = sprintf(
+			'%s.%s IS NULL',
+			$innerAlias,
+			$this->metadataColumn(storage: $storage, name: 'deleted')
+		);
+
+		$where[] = '(' . $accessPredicate . ')';
 
 		foreach ($filter->conditions as $index => $condition) {
 			$name = sprintf('%s_c%d', $parameterPrefix, $index);
-			$left = $this->jsonField(engine: $engine, alias: $innerAlias, field: $condition['field']);
+			$left = $this->fieldExpression(engine: $engine, storage: $storage, alias: $innerAlias, field: $condition['field']);
 
 			if ($condition['operator'] === 'in') {
 				$values = array_values((array)$condition['value']);
@@ -168,6 +209,7 @@ final class RelatedRowExistsClause {
 
 			$where[] = $this->comparison(
 				engine: $engine,
+				storage: $storage,
 				left: $left,
 				operator: $operator,
 				placeholder: $name,
@@ -209,6 +251,7 @@ final class RelatedRowExistsClause {
 	 * @param string                       $outerAlias      The alias of the outer object row.
 	 * @param callable                     $accessPredicateFor Given the inner alias and the filter, the access predicate for rows under it.
 	 * @param string                       $parameterPrefix A prefix for this query's placeholders.
+	 * @param string                       $storage         The storage shape of the related rows.
 	 *
 	 * @return array{sql: array<int, string>, parameters: array<string, mixed>} The clauses and their bindings.
 	 *
@@ -221,6 +264,7 @@ final class RelatedRowExistsClause {
 		string $outerAlias,
 		callable $accessPredicateFor,
 		string $parameterPrefix = 'rel',
+		string $storage = self::STORAGE_JSON,
 	): array {
 		$sql        = [];
 		$parameters = [];
@@ -234,7 +278,8 @@ final class RelatedRowExistsClause {
 				outerAlias: $outerAlias,
 				innerAlias: $alias,
 				accessPredicate: (string)$accessPredicateFor($alias, $filter),
-				parameterPrefix: $alias
+				parameterPrefix: $alias,
+				storage: $storage
 			);
 
 			$sql[]      = $clause['sql'];
@@ -285,7 +330,8 @@ final class RelatedRowExistsClause {
 	 * both engines, and `'7' = '7'` needs no cast to be true.
 	 *
 	 * @param string $engine      The database engine.
-	 * @param string $left        The JSON field expression.
+	 * @param string $storage     Whether the field is JSON text or a typed column.
+	 * @param string $left        The field expression.
 	 * @param string $operator    The SQL operator.
 	 * @param string $placeholder The bound parameter's name.
 	 * @param mixed  $value       The bound value, read to choose the ordering.
@@ -294,21 +340,33 @@ final class RelatedRowExistsClause {
 	 */
 	private function comparison(
 		string $engine,
+		string $storage,
 		string $left,
 		string $operator,
 		string $placeholder,
 		mixed $value,
 	): string {
-		$text = sprintf('%s %s :%s', $left, $operator, $placeholder);
+		$plain = sprintf('%s %s :%s', $left, $operator, $placeholder);
+
+		// 🔴 A TYPED COLUMN NEEDS NONE OF WHAT FOLLOWS, AND IS HARMED BY IT.
+		// A magic table stores `days_remaining` as `numeric` and `due_at` as a
+		// timestamp, so the column's own type already orders them correctly.
+		// Casting it, or guarding it with a regex that only a string can
+		// satisfy, would break comparisons the database gets right unaided.
+		// The machinery below exists solely because the JSON operator erases
+		// the type and hands back text.
+		if ($storage === self::STORAGE_COLUMNS) {
+			return $plain;
+		}
 
 		if (in_array($operator, ['=', '!='], true) === true) {
-			return $text;
+			return $plain;
 		}
 
 		if (is_scalar($value) === false
 			|| preg_match('/' . self::NUMERIC_PATTERN . '/', (string)$value) !== 1
 		) {
-			return $text;
+			return $plain;
 		}
 
 		if ($engine === self::ENGINE_POSTGRES) {
@@ -335,6 +393,86 @@ final class RelatedRowExistsClause {
 			sprintf('No related-row SQL for engine \'%s\'.', $engine)
 		);
 	}//end comparison()
+
+	/**
+	 * The expression for one property, in whichever storage holds it.
+	 *
+	 * @param string $engine  The database engine.
+	 * @param string $storage The storage shape.
+	 * @param string $alias   The related row's alias.
+	 * @param string $field   The property name.
+	 *
+	 * @return string The SQL expression.
+	 *
+	 * @throws InvalidArgumentException When the storage or engine is unknown.
+	 */
+	private function fieldExpression(string $engine, string $storage, string $alias, string $field): string {
+		if ($storage === self::STORAGE_COLUMNS) {
+			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $field));
+		}
+
+		if ($storage === self::STORAGE_JSON) {
+			return $this->jsonField(engine: $engine, alias: $alias, field: $field);
+		}
+
+		throw new InvalidArgumentException(
+			sprintf('No related-row SQL for storage \'%s\'.', $storage)
+		);
+	}//end fieldExpression()
+
+	/**
+	 * The name of one metadata column, which differs between the two storages.
+	 *
+	 * The objects table calls them `uuid` and `deleted`; a magic table prefixes
+	 * every metadata column with an underscore to keep them clear of the
+	 * schema's own properties, which is exactly why a schema may legitimately
+	 * have a property called `deleted` (one on this instance does).
+	 *
+	 * @param string $storage The storage shape.
+	 * @param string $name    The bare metadata name.
+	 *
+	 * @return string The column name.
+	 *
+	 * @throws InvalidArgumentException When the storage is unknown.
+	 */
+	private function metadataColumn(string $storage, string $name): string {
+		if ($storage === self::STORAGE_COLUMNS) {
+			return '_' . $name;
+		}
+
+		if ($storage === self::STORAGE_JSON) {
+			return $name;
+		}
+
+		throw new InvalidArgumentException(
+			sprintf('No related-row SQL for storage \'%s\'.', $storage)
+		);
+	}//end metadataColumn()
+
+	/**
+	 * Quote a column name, refusing anything that is not one.
+	 *
+	 * A magic-table property becomes a bare identifier in the SQL, not a bound
+	 * parameter, because no engine accepts a placeholder where a column goes.
+	 * So the name is checked rather than escaped: the parser produced it, but
+	 * "the parser produced it" is the reasoning behind most injection, and the
+	 * check costs nothing.
+	 *
+	 * @param string $name The column name.
+	 *
+	 * @return string The quoted name.
+	 *
+	 * @throws InvalidArgumentException When the name is not a plain identifier.
+	 */
+	private function quoteIdentifier(string $name): string {
+		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name) !== 1) {
+			throw new InvalidArgumentException(
+				sprintf('\'%s\' is not a column name a related-row filter may reference.', $name)
+			);
+		}
+
+		return '"' . $name . '"';
+	}//end quoteIdentifier()
 
 	/**
 	 * A JSON field of the object column, in the engine's own spelling.

@@ -318,4 +318,148 @@ class RelatedRowExistsClauseTest extends TestCase {
 			$this->assertStringContainsString('rel0_c0', $clause['sql'], $operator . ' rendered no binding');
 		}
 	}//end testEveryParserOperatorRenders()
+
+	/**
+	 * Render one filter against a magic table.
+	 *
+	 * @param array<int, array<string, mixed>> $conditions The conditions.
+	 *
+	 * @return array{sql: string, parameters: array<string, mixed>} The clause.
+	 */
+	private function renderColumns(array $conditions): array {
+		return $this->clause->render(
+			filter: new RelatedRowFilter('syncLog', 'synchronization_id', $conditions),
+			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+			table: 'oc_openregister_table_29_1108',
+			outerAlias: 'o',
+			innerAlias: 'r0',
+			accessPredicate: 'r0._owner = :me',
+			parameterPrefix: 'rel0',
+			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+		);
+	}//end renderColumns()
+
+	/**
+	 * 🔴 A MAGIC TABLE'S PROPERTIES ARE REAL COLUMNS, NOT JSON.
+	 *
+	 * This is the storage the live search path uses: `MagicMapper` resolves
+	 * `oc_openregister_table_<register>_<schema>` for every read, and there are
+	 * 1,340 such tables on the development instance while
+	 * `oc_openregister_objects` holds zero rows. A clause that only spoke JSON
+	 * could never filter anything a user can actually see.
+	 *
+	 * @return void
+	 */
+	public function testAMagicTablePropertyIsAColumnNotAJsonExpression(): void {
+		$sql = $this->renderColumns([['field' => 'found', 'operator' => 'gte', 'value' => '6']])['sql'];
+
+		$this->assertStringContainsString('r0."found" >= :rel0_c0', $sql);
+		$this->assertStringNotContainsString('->>', $sql);
+		$this->assertStringNotContainsString('object', $sql);
+	}//end testAMagicTablePropertyIsAColumnNotAJsonExpression()
+
+	/**
+	 * 🔴 A TYPED COLUMN MUST NOT GET THE NUMERIC-VERSUS-TEXT MACHINERY.
+	 *
+	 * `found` is an `integer` column, so `>=` already compares numerically.
+	 * Casting it, or guarding it with a regex only a string can satisfy, breaks
+	 * a comparison the database gets right unaided. Measured on the live
+	 * instance with the discriminating value 6: the column comparison answers
+	 * 4 parents and the text comparison answers 0.
+	 *
+	 * @return void
+	 */
+	public function testATypedColumnIsComparedWithoutCastsOrGuards(): void {
+		$sql = $this->renderColumns([['field' => 'found', 'operator' => 'gte', 'value' => '6']])['sql'];
+
+		$this->assertStringNotContainsString('CASE', $sql);
+		$this->assertStringNotContainsString('numeric', $sql);
+		$this->assertStringNotContainsString('~', $sql);
+	}//end testATypedColumnIsComparedWithoutCastsOrGuards()
+
+	/**
+	 * A magic table IS one schema, so the clause must not name the schema.
+	 *
+	 * Naming it would narrow correctly by accident, against `_schema`, while
+	 * implying the table holds more than one schema.
+	 *
+	 * @return void
+	 */
+	public function testAMagicTableClauseDoesNotNameTheSchema(): void {
+		$clause = $this->renderColumns([['field' => 'found', 'operator' => 'gte', 'value' => '6']]);
+
+		$this->assertArrayNotHasKey('rel0_schema', $clause['parameters']);
+		$this->assertStringNotContainsString('"schema"', $clause['sql']);
+	}//end testAMagicTableClauseDoesNotNameTheSchema()
+
+	/**
+	 * Magic tables prefix every metadata column with an underscore.
+	 *
+	 * That prefix is why a schema may legitimately carry its own property
+	 * called `deleted`, and why reading the objects table's names here would
+	 * silently filter on the wrong column.
+	 *
+	 * @return void
+	 */
+	public function testAMagicTableUsesTheUnderscoredMetadataColumns(): void {
+		$sql = $this->renderColumns([])['sql'];
+
+		$this->assertStringContainsString('r0._deleted IS NULL', $sql);
+		$this->assertStringContainsString('= o._uuid', $sql);
+	}//end testAMagicTableUsesTheUnderscoredMetadataColumns()
+
+	/**
+	 * A property name that is not an identifier is refused, not quoted.
+	 *
+	 * A column cannot be a bound parameter on any engine, so the name is
+	 * checked instead. The parser produced it, but "the parser produced it" is
+	 * the reasoning behind most injection.
+	 *
+	 * @return void
+	 */
+	public function testANonIdentifierColumnNameIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+
+		$this->renderColumns([['field' => 'found"; DROP TABLE x --', 'operator' => 'eq', 'value' => '1']]);
+	}//end testANonIdentifierColumnNameIsRefused()
+
+	/**
+	 * An unknown storage is refused rather than guessed.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownStorageIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+
+		$this->clause->render(
+			filter: $this->filter([['field' => 'value', 'operator' => 'eq', 'value' => 'x']]),
+			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+			table: 'whatever',
+			outerAlias: 'o',
+			innerAlias: 'r0',
+			accessPredicate: 'TRUE',
+			parameterPrefix: 'rel0',
+			storage: 'mongo'
+		);
+	}//end testAnUnknownStorageIsRefused()
+
+	/**
+	 * The access predicate is required on a magic table too.
+	 *
+	 * @return void
+	 */
+	public function testAMagicTableClauseAlsoRequiresTheAccessPredicate(): void {
+		$this->expectException(InvalidArgumentException::class);
+
+		$this->clause->render(
+			filter: new RelatedRowFilter('syncLog', 'synchronization_id', []),
+			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+			table: 'oc_openregister_table_29_1108',
+			outerAlias: 'o',
+			innerAlias: 'r0',
+			accessPredicate: '',
+			parameterPrefix: 'rel0',
+			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+		);
+	}//end testAMagicTableClauseAlsoRequiresTheAccessPredicate()
 }//end class
