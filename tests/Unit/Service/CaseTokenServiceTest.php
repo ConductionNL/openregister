@@ -44,7 +44,9 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\CaseTokenService;
+use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -142,7 +144,10 @@ class CaseTokenServiceTest extends TestCase {
 					return null;
 				}
 
-				return (object)['uuid' => $id];
+				$entity = new ObjectEntity();
+				$entity->setUuid((string)$id);
+
+				return $entity;
 			}//end find()
 
 			public function renderEntity(
@@ -267,7 +272,110 @@ class CaseTokenServiceTest extends TestCase {
 		$this->assertSame(['title' => 'Public View', 'status' => 'open'], $result['object']);
 		$this->assertTrue($objectService->findRbac, 'find() must run with _rbac:true (RBAC-respecting)');
 		$this->assertTrue($objectService->renderRbac, 'renderEntity() must run with _rbac:true (RBAC-respecting)');
+		$this->assertSame([], $result['timeline'], 'an instance with no timeline service still resolves');
 	}//end testResolveReturnsPublicSafeViewWithRbac()
+
+	/**
+	 * resolve() serves exactly what the one anonymous timeline reader answers.
+	 *
+	 * The public filter and the five-key projection belong to PublicTimeline,
+	 * and PublicTimelineTest pins both by name. What this test pins is that the
+	 * case-token path asks that class, for this object, and serves its answer
+	 * without adding a key of its own. A second projection here is how the two
+	 * anonymous surfaces would come to disagree.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function testResolveServesThePublicTimelineReadersAnswer(): void {
+		$token = new CaseToken();
+		$token->setToken('GOOD');
+		$token->setObjectUuid('obj-1');
+		$token->setLabel('Your case');
+		$token->setRevokedAt(null);
+		$token->setExpiresAt(null);
+
+		$mapper = $this->createMock(CaseTokenMapper::class);
+		$mapper->method('findByToken')->with('GOOD')->willReturn($token);
+
+		$published = [[
+			'id' => 'e1',
+			'kind' => 'beschikking-verzonden',
+			'message' => 'Beschikking verzonden',
+			'fields' => ['channel' => 'berichtenbox'],
+			'occurredAt' => '2026-05-04T09:12:00+02:00',
+		]];
+
+		$reader = $this->createMock(PublicTimeline::class);
+		$reader->expects($this->once())
+			->method('forObject')
+			->with(
+				$this->callback(static fn (ObjectEntity $object): bool => $object->getUuid() === 'obj-1'),
+				50
+			)
+			->willReturn($published);
+
+		$service = new CaseTokenService(
+			mapper: $mapper,
+			secureRandom: $this->buildSecureRandom('x'),
+			userSession: $this->buildUserSession(null),
+			urlGenerator: $this->buildUrlGenerator(),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([
+				'OCA\\OpenRegister\\Service\\ObjectService' => $this->buildObjectService(['title' => 'Public View']),
+				PublicTimeline::class => $reader,
+			]),
+		);
+
+		$result = $service->resolve('GOOD');
+
+		$this->assertSame($published, $result['timeline']);
+	}//end testResolveServesThePublicTimelineReadersAnswer()
+
+	/**
+	 * A reader the container cannot build leaves the status page standing.
+	 *
+	 * The status page shipped before the timeline did. An instance that cannot
+	 * build the reader must show the status rather than a uniform 404, which a
+	 * citizen reads as a revoked link. The warning is asserted beside it,
+	 * because an empty timeline nobody logged is a failure with no name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function testAReaderThatCannotBeBuiltStillResolvesTheStatus(): void {
+		$token = new CaseToken();
+		$token->setToken('GOOD');
+		$token->setObjectUuid('obj-1');
+		$token->setLabel('Your case');
+		$token->setRevokedAt(null);
+		$token->setExpiresAt(null);
+
+		$mapper = $this->createMock(CaseTokenMapper::class);
+		$mapper->method('findByToken')->with('GOOD')->willReturn($token);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning');
+
+		$service = new CaseTokenService(
+			mapper: $mapper,
+			secureRandom: $this->buildSecureRandom('x'),
+			userSession: $this->buildUserSession(null),
+			urlGenerator: $this->buildUrlGenerator(),
+			logger: $logger,
+			container: $this->buildContainer([
+				'OCA\\OpenRegister\\Service\\ObjectService' => $this->buildObjectService(['title' => 'Public View']),
+			]),
+		);
+
+		$result = $service->resolve('GOOD');
+
+		$this->assertNotNull($result);
+		$this->assertSame(['title' => 'Public View'], $result['object']);
+		$this->assertSame([], $result['timeline']);
+	}//end testAReaderThatCannotBeBuiltStillResolvesTheStatus()
 
 	/**
 	 * resolve() returns null for an unknown token (no oracle).

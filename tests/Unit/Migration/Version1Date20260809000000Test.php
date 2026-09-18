@@ -25,13 +25,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Migration\Version1Date20260809000000;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 class Version1Date20260809000000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	private Version1Date20260809000000 $migration;
 
@@ -96,39 +98,39 @@ class Version1Date20260809000000Test extends TestCase {
 		);
 
 		$schema->method('createTable')->willReturnCallback(
-			function (string $name): Table {
+			function (string $name) {
 				$this->columns[$name] = [];
 				$this->indexes[$name] = [];
 				$this->uniqueIndexes[$name] = [];
 				$this->primaryKeys[$name] = [];
 
-				$table = $this->createMock(Table::class);
+				$table = $this->createTableMock();
 
 				$table->method('addColumn')->willReturnCallback(
-					function (string $column) use ($name): Table {
+					function (string $column) use ($name) {
 						$this->columns[$name][] = $column;
-						return $this->createMock(Table::class);
+						return $this->createColumnMock();
 					}
 				);
 
 				$table->method('setPrimaryKey')->willReturnCallback(
-					function (array $cols) use ($name): Table {
+					function (array $cols) use ($name) {
 						$this->primaryKeys[$name] = $cols;
-						return $this->createMock(Table::class);
+						return $this->createTableMock();
 					}
 				);
 
 				$table->method('addUniqueIndex')->willReturnCallback(
-					function (array $cols, string $indexName) use ($name): Table {
+					function (array $cols, string $indexName) use ($name) {
 						$this->uniqueIndexes[$name][] = $indexName;
-						return $this->createMock(Table::class);
+						return $this->createTableMock();
 					}
 				);
 
 				$table->method('addIndex')->willReturnCallback(
-					function (array $cols, string $indexName) use ($name): Table {
+					function (array $cols, string $indexName) use ($name) {
 						$this->indexes[$name][] = $indexName;
-						return $this->createMock(Table::class);
+						return $this->createTableMock();
 					}
 				);
 

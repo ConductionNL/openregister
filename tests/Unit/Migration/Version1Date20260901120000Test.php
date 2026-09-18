@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Migration\Version1Date20260901120000;
 use OCP\DB\IResult;
 use OCP\DB\ISchemaWrapper;
@@ -35,11 +34,14 @@ use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * The migration.
  */
 class Version1Date20260901120000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	private IDBConnection&MockObject $db;
 
@@ -87,10 +89,10 @@ class Version1Date20260901120000Test extends TestCase {
 	/**
 	 * A table mock that reports nothing present and records what gets added.
 	 *
-	 * @return Table&MockObject The table.
+	 * @return MockObject The table.
 	 */
-	private function emptyTable(): Table&MockObject {
-		$table = $this->createMock(Table::class);
+	private function emptyTable(): MockObject {
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(false);
 		$table->method('hasIndex')->willReturn(false);
 
@@ -118,10 +120,10 @@ class Version1Date20260901120000Test extends TestCase {
 			static fn (string $name): bool => in_array($name, ['openregister_flow_runs', 'openregister_flow_steps'], true)
 		);
 		$schema->method('createTable')->willReturnCallback(
-			static fn (string $name): Table => ($name === 'openregister_flow_claims') ? $claims : $streams
+			static fn (string $name) => ($name === 'openregister_flow_claims') ? $claims : $streams
 		);
 		$schema->method('getTable')->willReturnCallback(
-			static fn (string $name): Table => ($name === 'openregister_flow_runs') ? $runs : $steps
+			static fn (string $name) => ($name === 'openregister_flow_runs') ? $runs : $steps
 		);
 
 		$output = $this->createMock(IOutput::class);
@@ -130,7 +132,7 @@ class Version1Date20260901120000Test extends TestCase {
 	}//end testChangeSchemaCreatesBothTablesAndAddsTheFourColumns()
 
 	public function testChangeSchemaIsANoOpWhenEverythingExists(): void {
-		$present = $this->createMock(Table::class);
+		$present = $this->createTableMock();
 		$present->method('hasColumn')->willReturn(true);
 		$present->method('hasIndex')->willReturn(true);
 		$present->expects($this->never())->method('addColumn');

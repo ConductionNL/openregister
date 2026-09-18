@@ -30,8 +30,11 @@ use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 class DataMigrationTest extends TestCase {
+	use SchemaTableMockTrait;
+
 	private Version1Date20250801000000 $migration;
 	private IDBConnection|MockObject $connection;
 	private OrganisationMapper|MockObject $organisationMapper;
@@ -67,7 +70,7 @@ class DataMigrationTest extends TestCase {
 		// Act: Run migration.
 		$schema = $this->createMock(ISchemaWrapper::class);
 		$schema->method('hasTable')->willReturn(true);
-		$schema->method('getTable')->willReturn($this->createMock(\Doctrine\DBAL\Schema\Table::class));
+		$schema->method('getTable')->willReturn($this->createTableMock());
 		$this->migration->changeSchema($this->output, \Closure::fromCallable(function () use ($schema) {
 			return $schema;
 		}), []);

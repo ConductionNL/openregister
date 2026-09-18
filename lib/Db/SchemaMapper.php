@@ -56,6 +56,8 @@ use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator;
+use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -1127,6 +1129,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateExternalLinksAnnotation(schema: $schema);
 		$this->validateExtendingFormAnnotation(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
+		$this->validateReversibilityDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
 
@@ -1173,6 +1176,31 @@ class SchemaMapper extends QBMapper {
 			subject: $subject
 		);
 	}//end validateAuthorizationDeny()
+
+	/**
+	 * Refuse a schema that declares an action reversible that cannot be.
+	 *
+	 * Validated here rather than in the controller because this is the one
+	 * choke point the create, update and file-upload paths all pass through,
+	 * the same reason the relation declarations are checked here.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws ReversibilityDeclarationException When a declaration contradicts itself.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	private function validateReversibilityDeclaration(Schema $schema): void {
+		$errors = (new ReversibilityAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
+
+		if ($errors === []) {
+			return;
+		}
+
+		throw new ReversibilityDeclarationException(errors: $errors);
+	}//end validateReversibilityDeclaration()
 
 	/**
 	 * R07: surface dropped `x-openregister-*` keys via the structured
