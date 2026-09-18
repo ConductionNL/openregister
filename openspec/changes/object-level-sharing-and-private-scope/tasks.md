@@ -11,7 +11,7 @@
 > collapse. 8.7 asks to prove an organisation credential minted before that
 > still reads afterwards, and it now has a test — see below.
 >
-> **CLOSED 2026-09-18 in openregister#3936.** The paragraph below is kept as
+> **CLOSED 2026-09-18 in openregister#3941.** The paragraph below is kept as
 > written, because it is the measurement that led to the change and to the
 > finding under it. 9.2 said
 > `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` run a
@@ -348,7 +348,7 @@
       class of failure as a comment claiming coverage elsewhere — it stops
       anyone looking, and what they would have found is different from what
       they were told.
-      The SUBSTANCE stood, and is now closed in openregister#3936
+      The SUBSTANCE stood, and is now closed in openregister#3941
       (`flow-runs-honour-their-declaration`): organisation plus a global right
       is not per-flow run authorization, and a FOURTH path the task did not
       name — `FlowController::run()`, the editor's "Run Now" — required only
