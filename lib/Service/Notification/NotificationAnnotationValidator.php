@@ -759,6 +759,41 @@ final class NotificationAnnotationValidator {
 					continue;
 				}
 
+				// 🔴 A RECIPIENT THAT CAN NEVER RESOLVE IS REFUSED HERE, where
+				// somebody is looking, rather than resolving to nobody every
+				// night in silence. `groups: []` and `users: []` name nobody
+				// structurally: no instance state makes them match, so this is
+				// a stub or a typo rather than an unstaffed group.
+				//
+				// ⚠️ A NON-EMPTY GROUP THAT HAPPENS TO BE EMPTY TODAY IS NOT
+				// REFUSED. Declared groups ship empty on purpose across this
+				// fleet, and refusing them would fail the import of every
+				// correctly written annotation on a fresh install. That case is
+				// recorded at dispatch instead; see RuleReachRecorder.
+				foreach (['groups' => 'groups', 'users' => 'users'] as $listKind => $listKey) {
+					if ($kind !== $listKind) {
+						continue;
+					}
+
+					$named = ($recipient[$listKey] ?? null);
+					if (is_array($named) === true && $named !== []) {
+						continue;
+					}
+
+					$errors[] = [
+						'code' => 'notification-recipient-names-nobody',
+						'message' => sprintf(
+							'Notification "%s" recipient[%d] is kind "%s" but names no %s, so it can never '
+							.'resolve to anybody. An unstaffed group is fine and is reported at dispatch; '
+							.'an empty list is a stub.',
+							$name,
+							$i,
+							$kind,
+							$listKey
+						),
+					];
+				}
+
 				if ($kind === 'field') {
 					$field = (string)($recipient['field'] ?? '');
 					if ($field === '' || in_array($field, $propKeys, true) === false) {
