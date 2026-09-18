@@ -87,6 +87,10 @@ use OCP\AppFramework\Db\Entity;
  * @method array|null getResultSummary()
  * @method void setResultSummary(?array $resultSummary)
  * @method string|null getFlowRun()
+ * @method string|null getCause()
+ * @method void setCause(?string $cause)
+ * @method string|null getCauseRun()
+ * @method void setCauseRun(?string $causeRun)
  * @method void setFlowRun(?string $flowRun)
  * @method string|null getFlowNode()
  * @method void setFlowNode(?string $flowNode)
@@ -397,6 +401,28 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 *
 	 * @var string|null Uuid of the attributing flow run.
 	 */
+	/**
+	 * Why this write happened, from the closed vocabulary in {@see WriteCause}.
+	 *
+	 * NULLABLE and not back-filled: an entry written before the cause existed
+	 * has none, and `person` would be a guess. A reader must tell "nobody
+	 * recorded a cause" from "a person did this".
+	 *
+	 * @var string|null
+	 */
+	protected ?string $cause = null;
+
+	/**
+	 * The run this write belonged to, when the cause is one.
+	 *
+	 * Without it the cause is nearly useless: "an import did this" does not say
+	 * WHICH import, and the eight hundred entries of one load are not reachable
+	 * as a set.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $causeRun = null;
+
 	protected ?string $flowRun = null;
 
 	/**
@@ -471,6 +497,8 @@ class AuditTrail extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'paramsDigest', type: 'string');
 		$this->addType(fieldName: 'resultSummary', type: 'json');
 		$this->addType(fieldName: 'purgedAt', type: 'datetime');
+		$this->addType(fieldName: 'cause', type: 'string');
+		$this->addType(fieldName: 'causeRun', type: 'string');
 		$this->addType(fieldName: 'flowRun', type: 'string');
 		$this->addType(fieldName: 'flowNode', type: 'string');
 		$this->addType(fieldName: 'flowStep', type: 'integer');
@@ -583,7 +611,9 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 *     toolId: null|string,
 	 *     paramsDigest: null|string,
 	 *     resultSummary: array|null,
-	 *     flowRun: null|string,
+	 *     cause: null|string,
+ *     causeRun: null|string,
+ *     flowRun: null|string,
 	 *     flowNode: null|string,
 	 *     flowStep: int|null
 	 * }
@@ -640,6 +670,8 @@ class AuditTrail extends Entity implements JsonSerializable {
 			// every row ever written. Do not add a key to this array without
 			// reading that ADR — and note that `purgedAt` is deliberately
 			// ABSENT for exactly this reason.
+			'cause' => $this->cause,
+			'causeRun' => $this->causeRun,
 			'flowRun' => $this->flowRun,
 			'flowNode' => $this->flowNode,
 			'flowStep' => $this->flowStep,

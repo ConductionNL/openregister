@@ -96,6 +96,26 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
 	 */
+	/**
+	 * Files allowed to suppress the lifecycle events, and why.
+	 *
+	 * 🔑 NOT A LIST OF EXCEPTIONS, A LIST OF JUSTIFICATIONS. The guard's value
+	 * is that suppressing an event costs somebody a sentence here; a silent
+	 * `dispatchEvents: false` is the shape of a path that quietly skips the
+	 * rules, and it is found when a rule stops firing rather than when it is
+	 * written.
+	 *
+	 * @var array<string, string>
+	 */
+	private const SUPPRESSION_REASONS = [
+		// The source row of a MOVE. The object was not deleted: it is readable
+		// at its new address with the same uuid, and every side table still
+		// points at it. Dispatching a delete event would tell eight listening
+		// apps that an object they can still read is gone, and the rules would
+		// act on a deletion that did not happen.
+		'MoveObject.php' => 'a move removes the source ROW, not the object; the object still exists',
+	];
+
 	public function testBothWriteMethodsDispatchTheSaveEvent(): void {
 		$mapper = (string)file_get_contents($this->lib() . '/Db/MagicMapper.php');
 
@@ -126,7 +146,9 @@ class RuleEvaluationPointTest extends TestCase {
 	public function testNoWritePathAsksToSkipTheRules(): void {
 		$offenders = [];
 		foreach ($this->sources() as $path => $source) {
-			if (preg_match('/dispatchEvents\s*:\s*false/', $source) === 1) {
+			if (preg_match('/dispatchEvents\s*:\s*false/', $source) === 1
+				&& array_key_exists(basename($path), self::SUPPRESSION_REASONS) === false
+			) {
 				$offenders[] = basename($path);
 			}
 		}
@@ -137,6 +159,27 @@ class RuleEvaluationPointTest extends TestCase {
 			message: 'These files write objects with the save events suppressed, so the declared rules '
 				. 'never see them: ' . implode(', ', $offenders)
 		);
+
+		// 🔴 THE ALLOWLIST IS A RATCHET AND HAS TO FAIL ON THE WAY DOWN TOO. An
+		// entry left here after its suppression is gone makes the next reader
+		// believe a path skips the rules when it does not, and the day somebody
+		// re-adds one nothing would say so. So every named file must still
+		// carry the suppression it was excused for.
+		foreach (self::SUPPRESSION_REASONS as $file => $reason) {
+			$found = false;
+			foreach ($this->sources() as $path => $source) {
+				if (basename($path) === $file && preg_match('/dispatchEvents\s*:\s*false/', $source) === 1) {
+					$found = true;
+					break;
+				}
+			}
+
+			$this->assertTrue(
+				$found,
+				sprintf('%s no longer suppresses events; remove it from SUPPRESSION_REASONS.', $file)
+			);
+			$this->assertNotSame('', trim($reason), sprintf('%s must say WHY.', $file));
+		}
 
 	}//end testNoWritePathAsksToSkipTheRules()
 
