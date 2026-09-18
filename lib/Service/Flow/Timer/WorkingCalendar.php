@@ -100,6 +100,7 @@ final class WorkingCalendar {
 	 * @param array<int, array<string, mixed>> $rules The computed non-working-date rules.
 	 * @param array<string, string> $exceptions Enumerated one-off closures, `Y-m-d` => name.
 	 * @param integer $dayStartsAtMinute Minutes past midnight the working day opens.
+	 * @param string $timezone The zone the organisation's days are counted in.
 	 */
 	private function __construct(
 		private readonly string $slug,
@@ -109,6 +110,7 @@ final class WorkingCalendar {
 		private readonly array $rules,
 		private readonly array $exceptions,
 		private readonly int $dayStartsAtMinute,
+		private readonly string $timezone,
 	) {
 
 	}//end __construct()
@@ -166,7 +168,8 @@ final class WorkingCalendar {
 			hoursPerWorkingDay: (float)$hours,
 			rules: $rules,
 			exceptions: $exceptions,
-			dayStartsAtMinute: self::validDayStart(slug: $slug, value: ($definition['dayStartsAt'] ?? null))
+			dayStartsAtMinute: self::validDayStart(slug: $slug, value: ($definition['dayStartsAt'] ?? null)),
+			timezone: self::validTimezone(slug: $slug, value: ($definition['timezone'] ?? null))
 		);
 	}//end fromArray()
 
@@ -258,6 +261,28 @@ final class WorkingCalendar {
 		// the measurement below never has to cross midnight.
 		return min($end, (24 * 60));
 	}//end getDayEndsAtMinute()
+
+	/**
+	 * The zone the organisation counts its days in.
+	 *
+	 * WHY A CALENDAR HAS A ZONE, AND WHY IT IS NOT THE VIEWER'S. A calendar
+	 * date is not an instant: "the term ends on 2 June" becomes a moment only
+	 * once somebody says where midnight is. Without a zone the answer is the
+	 * server's, which means a term computed at 23:30 UTC lands a day early for
+	 * an organisation in Amsterdam and nothing on screen says why.
+	 *
+	 * It is the ORGANISATION's zone and not the signed-in person's. A display
+	 * preference must not move a statutory deadline: two handlers on one case
+	 * would then be owed different days, and the one who travelled would be
+	 * right.
+	 *
+	 * @return string An IANA zone name.
+	 *
+	 * @spec openspec/changes/the-working-calendar-carries-its-zone/specs/flow-business-timers/spec.md
+	 */
+	public function getTimezone(): string {
+		return $this->timezone;
+	}//end getTimezone()
 
 	/**
 	 * Whether the calendar day containing this instant is a working day.
@@ -408,6 +433,46 @@ final class WorkingCalendar {
 
 		return (((int)$parts[1] * 60) + (int)$parts[2]);
 	}//end validDayStart()
+
+	/**
+	 * Validate the zone, defaulting to UTC.
+	 *
+	 * REFUSED RATHER THAN COERCED, and UTC rather than the server's. A zone
+	 * PHP cannot resolve would otherwise fall back to `date_default_timezone`,
+	 * which is whatever the instance happens to be set to, so the same
+	 * calendar would count different days on two servers and neither would
+	 * report anything. UTC as the default is the one answer that is the same
+	 * everywhere, and an organisation that needs another says so.
+	 *
+	 * @param string $slug The calendar, for the refusal.
+	 * @param mixed $value The declared zone, or null.
+	 *
+	 * @return string The zone name.
+	 *
+	 * @throws FlowTimerValidationException On a zone that does not resolve.
+	 *
+	 * @spec openspec/changes/the-working-calendar-carries-its-zone/specs/flow-business-timers/spec.md
+	 */
+	private static function validTimezone(string $slug, mixed $value): string {
+		if ($value === null || (is_string($value) === true && trim($value) === '')) {
+			return 'UTC';
+		}
+
+		if (is_string($value) === false) {
+			throw new FlowTimerValidationException(
+				message: sprintf("Working calendar '%s' declares a timezone that is not a string.", $slug)
+			);
+		}
+
+		$zone = trim($value);
+		if (in_array($zone, DateTimeZone::listIdentifiers(), true) === false) {
+			throw new FlowTimerValidationException(
+				message: sprintf("Working calendar '%s' declares timezone '%s', which is not an IANA zone name.", $slug, $zone)
+			);
+		}
+
+		return $zone;
+	}//end validTimezone()
 
 	private static function validWeekdays(string $slug, mixed $value): array {
 		if (is_array($value) === false || $value === []) {

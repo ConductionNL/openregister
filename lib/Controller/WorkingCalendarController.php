@@ -157,6 +157,7 @@ class WorkingCalendarController extends Controller {
 				// cannot tell the reader that a malformed one was defaulted.
 				'dayStartsAt' => sprintf('%02d:%02d', intdiv($definition->getDayStartsAtMinute(), 60), ($definition->getDayStartsAtMinute() % 60)),
 				'dayEndsAt' => sprintf('%02d:%02d', intdiv($definition->getDayEndsAtMinute(), 60), ($definition->getDayEndsAtMinute() % 60)),
+				'timezone' => $definition->getTimezone(),
 				'dates' => $dates,
 				'total' => count($dates),
 			]
