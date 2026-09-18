@@ -110,7 +110,7 @@
 - [x] Round-trip test: export → import on a flow exercising every mapping
       row; assert semantic equality of documents and DEFINITION equality
       after lowering (the "indistinguishable at run time" scenario).
-- [ ] Dependency-direction check. Worth noting what this pass did to it:
+- [x] Dependency-direction check. Worth noting what this pass did to it:
       `FlowController` now imports from `Bpmn\`, which is a CONTROLLER and so
       outside the rule as written — but the rule should be spelled out before
       it is enforced, not after somebody trips it.
@@ -133,3 +133,21 @@
   `openspec/specs/flow-bpmn-interchange/spec.md` requirement anchors.
 - References: ADR-065 Decisions 2 and 7; DMN interchange stays with
   openregister#466, not this change.
+
+## Follow-up, 2026-09-18
+
+Two small things the serialisers landed without, added here rather than in a
+revival of the duplicate branch that produced them (openregister#3946, closed).
+
+- **The dependency-direction check**, which was the one unticked task in this
+  list. `BpmnIsABoundaryTest` asserts that nothing under `lib/Service/Flow/`
+  outside `Bpmn/` names the `Bpmn\` namespace, and that nothing in `Bpmn/`
+  queues, advances or fires. Interchange is a boundary, not an execution
+  semantic: if a run path ever asked the BPMN code a question, the standard's
+  vocabulary would start deciding behaviour.
+- **A dangling edge is dropped rather than exported.** A `sequenceFlow` whose
+  `sourceRef` or `targetRef` names nothing in the process is not a slightly
+  wrong diagram: every modeller refuses the whole file, so one edge left behind
+  by a deleted node turns the export into something nobody can open. The engine
+  refuses a dangling edge at build time, but a document assembled from a stored
+  node list can still carry one, and the export is where it becomes fatal.

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Bpmn;
 
 use DOMDocument;
+use DOMXPath;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport;
@@ -403,4 +404,31 @@ class FlowBpmnRoundTripTest extends TestCase {
 			'FlowService has no create(); the import path must use save()'
 		);
 	}//end testTheEndpointsCallMethodsThatExist()
+
+	/**
+	 * A dangling edge is dropped rather than exported.
+	 *
+	 * A `sequenceFlow` whose sourceRef or targetRef names nothing in the
+	 * process is not a slightly wrong diagram: every modeller refuses the whole
+	 * file, so one edge left behind by a deleted node turns the export into
+	 * something nobody can open.
+	 *
+	 * @return void
+	 */
+	public function testADanglingEdgeIsDroppedRatherThanBreakingTheFile(): void {
+		$flow = new Flow();
+		$flow->setUuid('9f1c2d3e-0000-4000-8000-00000000000d');
+		$flow->setName('Half a diagram');
+		$flow->setNodes([['id' => 'start', 'type' => 'openregister.trigger-manual']]);
+		$flow->setEdges([['id' => 'nowhere', 'from' => 'start', 'to' => 'deleted-node']]);
+
+		$xml = (new FlowBpmnExporter(new BpmnVocabulary()))->export(flow: $flow);
+		$document = new DOMDocument();
+		$this->assertTrue($document->loadXML($xml));
+
+		$xpath = new DOMXPath($document);
+		$xpath->registerNamespace('bpmn', FlowBpmnExporter::NS_BPMN);
+		$this->assertSame(0, $xpath->query('//bpmn:sequenceFlow')->length);
+	}//end testADanglingEdgeIsDroppedRatherThanBreakingTheFile()
+
 }//end class
