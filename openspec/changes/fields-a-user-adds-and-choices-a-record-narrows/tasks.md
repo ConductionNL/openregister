@@ -2,7 +2,7 @@
 
 ## 1. A property with a scope
 
-- [ ] 1.1 A `scope` attribute in the published property vocabulary, naming a unit or a team.
+- [x] 1.1 A `scope` attribute in the published property vocabulary, naming a unit or a team.
   - 🔴 **DELIBERATELY NOT SHIPPED ON ITS OWN, 2026-09-18.** Publishing `scope`
     without 1.3 would be an inert declaration, and this one is inert in the
     dangerous direction: a schema author writes `scope: team-a`, the key
@@ -17,10 +17,36 @@
     the published key are one change, and section 2's ceiling and promotion sit
     on top of them.
 - [ ] 1.2 Adding a scoped property is a declared action gated by a group, not by the admin flag.
-- [ ] 1.3 A scoped property is returned, validated and writable only within its scope.
-  - The enforcement 1.1 must not ship without. It touches the object READ path,
-    which is where a scoped property has to disappear for a principal outside
-    the scope, and that is the part no unit test on a fixture can settle.
+- [x] 1.3 A scoped property is returned, validated and writable only within its scope.
+  - SHIPPED TOGETHER WITH 1.1, as the note above insisted.
+  - 🔑 IT IS A SHORTHAND, NOT A SECOND EVALUATOR. `PropertyRbacHandler` already
+    strips unreadable properties from every read, refuses writes to them, and
+    keeps them out of exports and the OAS, all driven by a property's
+    `authorization` block. So `scope: team-a` COMPILES INTO
+    `authorization: {read: ['team-a'], update: ['team-a']}` in
+    `Schema::getPropertyAuthorization()`, and every enforcement path that
+    already exists applies unchanged. Building a second mechanism beside it
+    would mean two answers to "may this person see this field", and the two
+    disagree within a week; the wider one is the one that discloses.
+  - READ IS IN THE COMPILED BLOCK ON PURPOSE. A scope governing only writes
+    would leave the value on screen for everybody, which is the inert failure
+    with extra steps. Mutation-checked.
+  - 🔴 THE COMPILE ALONE WOULD HAVE BEEN INERT, AND NOTHING WOULD HAVE FAILED.
+    `Schema::hasPropertyAuthorization()` is a SHORT-CIRCUIT that five call
+    sites on the render, query, export and OAS paths use to skip property
+    filtering entirely. On a schema whose only control is a scope it answered
+    false, so the compiler would have been correct and never called: the field
+    published as scoped and returned to everyone. Both that gate and
+    `getPropertiesWithAuthorization()` now ask one shared question that a scope
+    answers. This is the single most important line of the change and it is not
+    the one the task described.
+  - Declaring both `scope` and `authorization` is refused rather than merged,
+    and so is a scope that cannot name a group: a name no group carries matches
+    nobody, so accepting it would publish a scope that denies everybody just as
+    quietly.
+  - The existing vocabulary prober caught the key before the tests did: it
+    asserts every PUBLISHED key is accepted by the save path, probing with null
+    where it has no sample. That is the derived-from-source shape working.
 - [ ] 1.4 A scoped property is searchable, facetable, groupable and exportable like a schema property.
 
 ## 2. Keeping the schema honest
