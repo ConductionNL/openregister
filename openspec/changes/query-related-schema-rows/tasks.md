@@ -96,15 +96,39 @@
   - Exercised against the live `oc_openregister_table_29_1108` with its real
     rows. Still not wired into `MagicSearchHandler`: see 2.4.
 
-- [ ] 2.4 Wire the clause into `MagicSearchHandler`.
-  - UNBUILT AND NAMED, because a renderer with no caller is the same as no
-    filter at all. `MagicSearchHandler::buildFilteredQuery()` is the join
-    point, and the access predicate it must pass in is the one
-    `MagicRbacHandler::applyRbacFilters()` already builds. That handler
-    hardcodes the alias `t`, so it cannot currently produce a predicate for a
-    second table under a different alias. Making the alias a parameter is the
-    prerequisite, and it touches every existing caller, so it is its own task
-    rather than a detail of this one.
+- [x] 2.4 Wire the clause into `MagicSearchHandler`.
+  - BUILT. `RelatedRowQueryApplier` is the caller, invoked from
+    `MagicSearchHandler::buildFilteredQuery()` after the lens and search
+    filters. It does nothing at all unless the query carries `_related`, so
+    every existing call site is unaffected.
+  - THE PREREQUISITE WAS SMALLER THAN I SAID, BECAUSE I HAD NAMED THE WRONG
+    METHOD. `applyRbacFilters()` does hardcode `t`, but it is the QueryBuilder
+    emitter and not the one a subquery needs. `buildRbacConditionsSql()`
+    already existed beside it for UNION members, already emitted UNQUALIFIED
+    column names, and already threaded the column name into two of its three
+    emitters. So the change is a `columnPrefix` parameter through that SQL
+    path, defaulting to `''`, and every existing caller is untouched: 1,751 Db
+    unit tests pass unchanged.
+  - 🔴 WHY THE ALIAS CANNOT BE LEFT OFF, WHICH IS THE WHOLE REASON FOR
+    `buildRbacPredicateForAlias()`. Inside
+    `EXISTS (SELECT 1 FROM <related> r0 WHERE ...)` an unqualified `_owner`
+    still parses and binds to the innermost FROM, so it looks right. It is
+    right by accident: the moment the related table lacks the column, SQL
+    resolves the name against the OUTER query and the access check passes by
+    testing the wrong row. Nothing errors and nothing logs. It fails open.
+  - AND THE TWO DEGENERATE ANSWERS ARE SAID OUT LOUD. An empty predicate AND-ed
+    into a WHERE is not "no opinion", it is "admit everything", so deny-all
+    returns `FALSE` and an admin bypass returns `TRUE`. Never an empty string.
+  - THE ACCESS PREDICATE IS THE RELATED SCHEMA'S, NOT THE OUTER ONE'S. The two
+    schemas carry different authorization blocks, and reusing the outer query's
+    predicate would decide who may read case properties by asking who may read
+    cases.
+  - REFUSES RATHER THAN DROPS, ALL THE WAY DOWN. The parser throws on a
+    malformed block; the applier adds the two refusals only a live lookup can
+    make, a schema nobody can name and a slug two schemas answer to. Both end
+    the query rather than joining `$ignoredFilters`, because a dropped
+    `_related` block answers the unfiltered set and the response looks
+    identical to a correctly filtered one.
 
 ## 3. Tests
 

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -207,7 +208,8 @@ final class MagicSearchHandlerArchiveLensTest extends TestCase {
 			$rbac,
 			$this->createMock(originalClassName: MagicOrganizationHandler::class),
 			$this->createMock(originalClassName: SchemaTypeConverter::class),
-			$this->createMock(originalClassName: DateTimeNormalizer::class)
+			$this->createMock(originalClassName: DateTimeNormalizer::class),
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 	}//end handlerWithDb()
 

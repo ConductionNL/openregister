@@ -249,6 +249,10 @@ return [
         // is no CRUD here on purpose: calendars are objects in the flow-timers
         // register and the objects API is their public API (design D-1).
         ['name' => 'workingCalendar#preview', 'url' => '/api/flow-timers/calendars/preview', 'verb' => 'POST'],
+        // The term engine narrating a date you choose (row Q8.18). POST because
+        // it carries a calendar definition and an SLA, not because it writes:
+        // it arms nothing, and nothing on its path holds a mapper.
+        ['name' => 'flowTimerDiagnostic#explain', 'url' => '/api/flow-timers/diagnostic', 'verb' => 'POST'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
