@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Db\ViewMapper;
 
 /**
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
@@ -49,13 +50,20 @@ use RuntimeException;
 class AccessLinkMintGuardTest extends TestCase {
 
 	private ObjectService&MockObject $objects;
+
+	private ViewMapper|\PHPUnit\Framework\MockObject\MockObject $views;
 	private AccessLinkMintGuard $guard;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->objects = $this->createMock(ObjectService::class);
-		$this->guard = new AccessLinkMintGuard(objects: $this->objects, subjects: new AccessLinkSubject());
+		$this->views = $this->createMock(ViewMapper::class);
+		$this->guard = new AccessLinkMintGuard(
+			objects: $this->objects,
+			subjects: new AccessLinkSubject(),
+			views: $this->views,
+		);
 	}
 
 	private function object(): ObjectEntity {
@@ -116,17 +124,20 @@ class AccessLinkMintGuardTest extends TestCase {
 		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'no-slash'));
 	}
 
-	public function testAViewTheCallerCanListCanBePublished(): void {
-		$this->objects->expects($this->once())
-			->method('searchObjects')
-			->with($this->anything(), true, true, null, null, ['view-uuid'])
-			->willReturn([]);
+	public function testAViewTheCallerCanResolveCanBePublished(): void {
+		// Resolved under the caller's OWN rules: no _rbac/_multitenancy
+		// overrides, so a view in another organisation throws below.
+		$this->views->expects($this->once())->method('find')->with('view-uuid');
+		$this->objects->expects($this->never())->method('searchObjects');
 
 		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
 	}
 
-	public function testAViewTheCallerCannotListCannotBePublished(): void {
-		$this->objects->method('searchObjects')->willThrowException(new RuntimeException('denied'));
+	public function testAViewTheCallerCannotResolveCannotBePublished(): void {
+		// The regression this guard exists for: a search that merely MENTIONS an
+		// unresolvable view still answers an array, because applyViewsToQuery()
+		// skips it. Resolving the view itself is what makes a refusal a refusal.
+		$this->views->method('find')->willThrowException(new RuntimeException('denied'));
 
 		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
 	}

@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use Throwable;
 
@@ -54,10 +55,12 @@ class AccessLinkMintGuard {
 	 *
 	 * @param ObjectService $objects The object read path, asked with the rules on.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
+	 * @param ViewMapper        $views    Resolves a view under the caller's own rules.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly AccessLinkSubject $subjects,
+		private readonly ViewMapper $views,
 	) {
 
 	}//end __construct()
@@ -132,18 +135,28 @@ class AccessLinkMintGuard {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
 	 */
 	private function mayPublishView(string $viewId): bool {
+		// ASK THE VIEW, NOT A SEARCH THAT MENTIONS IT.
+		//
+		// This used to run `searchObjects(..., _rbac: true, _multitenancy: true,
+		// views: [$viewId])` and accept any array as proof. It proved nothing:
+		// `applyViewsToQuery()` SKIPS a view it cannot resolve — logging a
+		// warning and leaving the query unfiltered — so a view belonging to
+		// another organisation produced a perfectly ordinary, still-RBAC'd
+		// search, an array came back, and the guard said yes. A caller in one
+		// organisation could mint a publication link over another's view.
+		//
+		// That tolerance is deliberate elsewhere and stays, which is exactly
+		// why this guard must not lean on it. Resolving the view directly under
+		// the caller's OWN rules — RBAC and multitenancy both left at their
+		// defaults — asks the question this method's name claims to ask, and a
+		// refusal is a refusal rather than a quietly widened search.
 		try {
-			$results = $this->objects->searchObjects(
-				query: ['_limit' => 1],
-				_rbac: true,
-				_multitenancy: true,
-				views: [$viewId]
-			);
+			$this->views->find($viewId);
 		} catch (Throwable $denied) {
 			unset($denied);
 			return false;
 		}
 
-		return is_array($results);
+		return true;
 	}//end mayPublishView()
 }//end class
