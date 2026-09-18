@@ -354,31 +354,7 @@ class ConfigurationBundleService {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	private function requireCopyable(string $prefix, string $fromRef, string $toRef, string $layer): void {
-		$refusal = null;
-
-		if (ConfigurationLayer::isKnown($layer) === false) {
-			$refusal = sprintf('unknown layer "%s"', $layer);
-		}
-
-		if ($refusal === null && ConfigurationLayer::requiresReference($layer) === false) {
-			$refusal = 'a matrix is copied between two subjects or bundles, and the instance layer has neither';
-		}
-
-		if ($refusal === null && ($prefix === '' || str_ends_with($prefix, '.') === false)) {
-			// Without a prefix ending in a dot, "permission" would also match
-			// "permissions_legacy", and a copy that takes more than it was
-			// asked for is a copy nobody can review against what they asked.
-			$refusal = 'a matrix is named by a key prefix ending in a dot, such as "permission."';
-		}
-
-		if ($refusal === null && ($fromRef === '' || $toRef === '')) {
-			$refusal = 'a copy needs a source and a target';
-		}
-
-		if ($refusal === null && $fromRef === $toRef) {
-			$refusal = sprintf('"%s" is both the source and the target of this copy', $fromRef);
-		}
-
+		$refusal = $this->copyRefusal(prefix: $prefix, fromRef: $fromRef, toRef: $toRef, layer: $layer);
 		if ($refusal === null) {
 			return;
 		}
@@ -391,6 +367,50 @@ class ConfigurationBundleService {
 		);
 
 	}//end requireCopyable()
+
+	/**
+	 * Why a copy cannot be addressed, when it cannot.
+	 *
+	 * Early returns rather than one guarded chain: a copy has five separate
+	 * ways of being unaddressable, and a reader checking one of them should
+	 * not have to hold the other four in their head.
+	 *
+	 * @param string $prefix  The key prefix.
+	 * @param string $fromRef The source reference.
+	 * @param string $toRef   The target reference.
+	 * @param string $layer   The layer.
+	 *
+	 * @return string|null The reason, or null when the copy is addressable.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function copyRefusal(string $prefix, string $fromRef, string $toRef, string $layer): ?string {
+		if (ConfigurationLayer::isKnown($layer) === false) {
+			return sprintf('unknown layer "%s"', $layer);
+		}
+
+		if (ConfigurationLayer::requiresReference($layer) === false) {
+			return 'a matrix is copied between two subjects or bundles, and the instance layer has neither';
+		}
+
+		// Without a prefix ending in a dot, "permission" would also match
+		// "permissions_legacy", and a copy that takes more than it was asked
+		// for is a copy nobody can review against what they asked.
+		if ($prefix === '' || str_ends_with($prefix, '.') === false) {
+			return 'a matrix is named by a key prefix ending in a dot, such as "permission."';
+		}
+
+		if ($fromRef === '' || $toRef === '') {
+			return 'a copy needs a source and a target';
+		}
+
+		if ($fromRef === $toRef) {
+			return sprintf('"%s" is both the source and the target of this copy', $fromRef);
+		}
+
+		return null;
+
+	}//end copyRefusal()
 
 	/**
 	 * Which of a bundle's keys one subject answers for itself.
