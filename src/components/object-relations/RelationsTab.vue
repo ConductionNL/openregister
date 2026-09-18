@@ -327,12 +327,15 @@ export default {
 				title = raw.fullName || raw.email || ''
 			}
 
+			// Hoisted so the property stays on one line: prettier wraps a long
+			// `id:` across lines, and eslint's vue/new-line-between-multi-line-property
+			// then demands a blank line after it. The `||` chain still
+			// short-circuits, so the counter only advances when it is used.
+			const id =
+				raw.id || raw.uid || raw.uuid || `${type}-${++fallbackRelationId}`
+
 			return {
-				id:
-					raw.id
-					|| raw.uid
-					|| raw.uuid
-					|| `${type}-${++fallbackRelationId}`,
+				id,
 				type,
 				title,
 				subtitle,
