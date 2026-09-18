@@ -78,7 +78,9 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration;
 use RuntimeException;
+use Throwable;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
@@ -4849,6 +4851,18 @@ class SaveObject {
 						schemaRef: $ref,
 						register: $targetRegister
 					);
+
+					// And it has to be one the picker would have offered.
+					// Costs nothing for a property that declares no filter:
+					// the reader returns null before any read is made.
+					$this->assertReferenceMatchesFilter(
+						propertyName: $propertyName,
+						property: $property,
+						record: $data,
+						uuid: (string)$uuid,
+						schemaRef: $ref,
+						register: $targetRegister
+					);
 				} catch (ReferenceValidationException $exception) {
 					// Strict mode (`error`) re-raises the 422 so the save
 					// is rejected. `warn` mode swallows the exception
@@ -5064,6 +5078,174 @@ class SaveObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
+	/**
+	 * Refuse a reference the narrowing filter would not have offered.
+	 *
+	 * 🔴 IT CALLS THE SAME `resolve()` THE OPTIONS READ WILL, and that is the
+	 * whole design rather than a tidiness note. A picker that offers one set
+	 * and a save path that accepts another is two evaluators of one rule, and
+	 * they disagree within a week; the one that ends up wider is the one that
+	 * discloses. `ReferenceFilterDeclaration` is the single reader and the
+	 * single resolver, and this method only compares.
+	 *
+	 * 🔴 AN UNRESOLVED OPERAND REFUSES, IT DOES NOT WAVE THROUGH. When the
+	 * record has no organisation yet, the picker would have offered NOTHING,
+	 * so no value can be inside the filter and every value has to be refused.
+	 * Waving it through would make the server accept precisely the writes the
+	 * form was built to prevent, which is the "no options becomes every option"
+	 * failure one layer down.
+	 *
+	 * COST. A property declaring no filter costs one array lookup:
+	 * `fromProperty()` returns null before anything is read. Only a filtered
+	 * reference pays for the extra object read, and only for the values that
+	 * changed, because the caller already skipped unchanged ones.
+	 *
+	 * @param string              $propertyName The property carrying the reference.
+	 * @param array<string,mixed> $property     The property definition.
+	 * @param array<string,mixed> $record       The record being written.
+	 * @param string              $uuid         The referenced object.
+	 * @param string              $schemaRef    The referenced schema.
+	 * @param string|null         $register     The register to look in.
+	 *
+	 * @return void
+	 *
+	 * @throws ReferenceValidationException When the value is outside the filter.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	private function assertReferenceMatchesFilter(
+		string $propertyName,
+		array $property,
+		array $record,
+		string $uuid,
+		string $schemaRef,
+		?string $register,
+	): void {
+		$declaration = ReferenceFilterDeclaration::fromProperty(property: $property, path: $propertyName);
+		if ($declaration === null) {
+			return;
+		}
+
+		$answer = $declaration->resolve(record: $record);
+
+		if ($answer['needs'] !== []) {
+			throw new ReferenceValidationException(
+				propertyName: $propertyName,
+				referencedUuid: $uuid,
+				targetSchemaSlug: $schemaRef,
+				targetRegister: $register,
+				message: sprintf(
+					"'%s' is filtered on %s, and this record answers none of them, so nothing may be chosen for it yet.",
+					$propertyName,
+					implode(', ', $answer['needs'])
+				)
+			);
+		}
+
+		$referenced = $this->readReferencedObject(
+			uuid: $uuid,
+			schemaRef: $schemaRef,
+			register: $register
+		);
+		if ($referenced === null) {
+			// Unreadable to this caller, or gone between the existence check
+			// and here. Existence is validateReferenceExists()'s question and
+			// it has already answered it; answering it again differently here
+			// would refuse a save for a reason this method cannot see.
+			return;
+		}
+
+		foreach ($answer['filter'] as $field => $expected) {
+			if ($this->filterFieldMatches(actual: ($referenced[$field] ?? null), expected: $expected) === true) {
+				continue;
+			}
+
+			throw new ReferenceValidationException(
+				propertyName: $propertyName,
+				referencedUuid: $uuid,
+				targetSchemaSlug: $schemaRef,
+				targetRegister: $register,
+				message: sprintf(
+					"'%s' only accepts an object whose '%s' matches this record. '%s' does not.",
+					$propertyName,
+					(string)$field,
+					$uuid
+				)
+			);
+		}
+	}//end assertReferenceMatchesFilter()
+
+	/**
+	 * One condition of a resolved filter, compared.
+	 *
+	 * @param mixed $actual   The referenced object's value.
+	 * @param mixed $expected The resolved expectation.
+	 *
+	 * @return bool True when it matches.
+	 */
+	private function filterFieldMatches(mixed $actual, mixed $expected): bool {
+		if (is_array($expected) === false) {
+			return ((string)$actual === (string)$expected);
+		}
+
+		if (array_key_exists('neq', $expected) === true) {
+			return ((string)$actual !== (string)$expected['neq']);
+		}
+
+		if (array_key_exists('in', $expected) === true) {
+			$allowed = array_map('strval', (array)$expected['in']);
+
+			return in_array((string)$actual, $allowed, true);
+		}
+
+		// An operator this method does not know refuses, rather than passing.
+		// `ReferenceFilterDeclaration::OPERATORS` is the list, and a new entry
+		// there without an arm here would otherwise accept everything.
+		return false;
+	}//end filterFieldMatches()
+
+	/**
+	 * The referenced object as a plain array, or null when it cannot be read.
+	 *
+	 * @param string      $uuid      The object.
+	 * @param string      $schemaRef The schema it belongs to.
+	 * @param string|null $register  The register to look in.
+	 *
+	 * @return array<string,mixed>|null The object's data.
+	 */
+	private function readReferencedObject(string $uuid, string $schemaRef, ?string $register): ?array {
+		$targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
+		if ($targetSchemaId === null) {
+			return null;
+		}
+
+		try {
+			$registerEntity = null;
+			if ($register !== null) {
+				$registerEntity = $this->getCachedRegister(registerId: $register);
+			}
+
+			$found = $this->unifiedObjectMapper->find(
+				identifier: $uuid,
+				register: $registerEntity,
+				schema: null,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if (is_object($found) === true && method_exists($found, 'getObject') === true) {
+			$data = $found->getObject();
+
+			return (is_array($data) === true ? $data : null);
+		}
+
+		return null;
+	}//end readReferencedObject()
+
 	private function validateReferenceExists(
 		string $propertyName,
 		string $uuid,
