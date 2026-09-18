@@ -34,10 +34,13 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -142,6 +145,10 @@ class OasService {
 		IURLGenerator $urlGenerator,
 		?LoggerInterface $logger = null,
 		private readonly ?OasRequestValidator $metaValidator = null,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED property is withheld, which is the safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;
@@ -640,17 +647,120 @@ class OasService {
 			],
 		];
 
-		// Process schema-defined properties and ensure they're valid OAS.
+		// 🔴 A FIELD NAME IS INFORMATION, AND THE GOVERNED NAMES ARE THE ONES
+		// WORTH PROTECTING. `onderzoek_integriteit`, `schuldhulpverlening`,
+		// `bijzondere_bijstand`: the name alone says what category of fact is
+		// held, and on a record about one person it says the fact is held about
+		// them. A property carries an authorization block or a scope precisely
+		// because it is sensitive, so the set of governed names is by
+		// construction the set most worth not printing.
+		//
+		// The objection is that a schema is a contract. It is smaller than it
+		// looks: the API NEVER returns a property this caller may not read, so
+		// describing it promises a field that will never arrive. Leaving it out
+		// makes the document MORE truthful, not less. It describes the API this
+		// caller actually has.
+		$withheld = 0;
 		foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
+			if ($this->mayDescribe(schema: $schema, property: (string)$propertyName) === false) {
+				$withheld++;
+				continue;
+			}
+
 			$cleanProperties[$propertyName] = $this->sanitizePropertyDefinition(propertyDefinition: $propertyDefinition);
 		}
 
-		return [
+		$described = [
 			'type' => 'object',
 			'x-tags' => [$schema->getTitle()],
 			'properties' => $cleanProperties,
 		];
+
+		// A `required` list naming a property this document does not describe is
+		// not a contract anyone can satisfy: a generated client would fail
+		// validation on a field it cannot even see.
+		$required = $this->describableRequired(schema: $schema, described: $cleanProperties);
+		if ($required !== []) {
+			$described['required'] = $required;
+		}
+
+		if ($withheld > 0) {
+			// A COUNT, NEVER NAMES. Naming them here would be the leak with an
+			// audit trail attached. Saying nothing would be worse in its own
+			// way: an integrator reading four properties cannot tell whether
+			// that is the whole schema or the part they are allowed to see, and
+			// would build as though it were complete. The count says there is
+			// more here and it is not yours, without saying what.
+			$described['x-openregister-withheld-properties'] = $withheld;
+		}
+
+		return $described;
 	}//end enrichSchema()
+
+	/**
+	 * Whether this caller may be told that a property exists.
+	 *
+	 * Asks the ONE thing that already decides property reads, through the same
+	 * `AggregateVisibility` #3938 introduced for exactly this. Neither this
+	 * class nor the GraphQL mapper holds a rule of its own; two answers to
+	 * "may this person see this field" drift, and the wider one discloses.
+	 *
+	 * An administrator receives the complete description, because they already
+	 * bypass property-level reads everywhere else. Making the OpenAPI document
+	 * the one place they cannot see the schema would be a second answer to a
+	 * question `PropertyRbacHandler` already answers.
+	 *
+	 * @param object $schema   The schema.
+	 * @param string $property The property name.
+	 *
+	 * @return bool Whether it may be described.
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	private function mayDescribe(object $schema, string $property): bool {
+		if (($schema instanceof Schema) === false) {
+			return true;
+		}
+
+		return $this->shapeVisibility()->maySummarise(schema: $schema, property: $property);
+	}//end mayDescribe()
+
+	/**
+	 * The required list, filtered to what this document still describes.
+	 *
+	 * @param object               $schema    The schema.
+	 * @param array<string, mixed> $described The properties this document carries.
+	 *
+	 * @return array<int, string> The required names.
+	 */
+	private function describableRequired(object $schema, array $described): array {
+		if (method_exists($schema, 'getRequired') === false) {
+			return [];
+		}
+
+		$required = $schema->getRequired();
+		if (is_array($required) === false) {
+			return [];
+		}
+
+		$kept = [];
+		foreach ($required as $name) {
+			if (array_key_exists((string)$name, $described) === true) {
+				$kept[] = (string)$name;
+			}
+		}
+
+		return $kept;
+	}//end describableRequired()
+
+	/**
+	 * The shared answer to "may this person see this field".
+	 *
+	 * @return AggregateVisibility The answer.
+	 */
+	private function shapeVisibility(): AggregateVisibility {
+		return new AggregateVisibility($this->propertyRbac, $this->logger);
+	}//end shapeVisibility()
 
 	/**
 	 * Sanitize property definition to be valid OpenAPI schema

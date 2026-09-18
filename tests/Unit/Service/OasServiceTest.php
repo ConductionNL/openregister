@@ -2027,7 +2027,25 @@ class OasServiceTest extends TestCase {
 		$this->schemaMapper->method('findMultiple')->willReturn([$schema]);
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/api');
 
-		$oas = $this->service->createOas('1');
+		// This test is about STRIPPING INTERNAL KEYS from a property
+		// definition, and it happens to use `authorization` as one of them.
+		// Since schema-shape-exposure, a property carrying an authorization
+		// block is described only to a caller who may read it, so the service
+		// needs a read rule to ask; without one it fails closed and the property
+		// is absent, which is correct behaviour and not what this test is
+		// about. A permissive rule keeps the subject of the test intact.
+		$rbac = $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class);
+		$rbac->method('canReadProperty')->willReturn(true);
+		$service = new \OCA\OpenRegister\Service\OasService(
+			$this->registerMapper,
+			$this->schemaMapper,
+			$this->urlGenerator,
+			null,
+			null,
+			$rbac
+		);
+
+		$oas = $service->createOas('1');
 
 		$nameProp = $oas['components']['schemas']['Clean']['properties']['name'];
 		$this->assertSame('string', $nameProp['type']);
