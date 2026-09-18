@@ -1909,10 +1909,17 @@ class MagicMapper extends AbstractObjectMapper {
 			$armQuery['@self']['schema'] = $schema->getId();
 		}
 
+		// The register goes with the question. It is what lets the organisation
+		// boundary widen by a declared shared master data holder on this arm,
+		// the same way the single-table path does; without it this arm would
+		// answer a NARROWER set than the sequential path answers for the same
+		// query, and the two paths disagreeing is the defect this whole area
+		// keeps producing.
 		$whereClauses = $this->searchHandler->buildWhereConditionsSql(
 			query: $armQuery,
 			schema: $schema,
-			existingColumns: $existingColumns
+			existingColumns: $existingColumns,
+			registerId: $register->getId()
 		);
 
 		if (empty($whereClauses) === false) {

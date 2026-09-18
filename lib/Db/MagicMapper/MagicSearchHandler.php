@@ -717,14 +717,25 @@ class MagicSearchHandler {
 	 * @param array $query Search parameters including filters.
 	 * @param Schema $schema The schema for property filtering.
 	 * @param array|null $existingColumns Optional list of existing column names.
+	 * @param int|null $registerId The register whose table this condition set is built for. It is
+	 *                             what lets a shared master data declaration (REQ-SLE-001) widen
+	 *                             the organisation boundary here exactly as it widens it on the
+	 *                             QueryBuilder path. A caller that names no register gets no
+	 *                             widening, which is narrower and therefore safe.
 	 *
 	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
 	 *
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
-	public function buildWhereConditionsSql(array $query, Schema $schema, ?array $existingColumns = null): array {
+	public function buildWhereConditionsSql(
+		array $query,
+		Schema $schema,
+		?array $existingColumns = null,
+		?int $registerId = null,
+	): array {
 		$conditions = [];
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();
@@ -759,6 +770,45 @@ class MagicSearchHandler {
 
 		if ($archivedMode === self::ARCHIVED_ONLY) {
 			$conditions[] = '_archived IS NOT NULL';
+		}
+
+		// 1c. Multitenancy: the organisation boundary.
+		//
+		// This used to be missing here, and missing meant OPEN. The RBAC half of
+		// this method has carried the scope-and-grant predicate since
+		// object-level-sharing landed, so the union path decided private scope
+		// and per-object grants correctly while returning rows from OTHER
+		// organisations — measured by
+		// `PrivateScopeParityIntegrationTest::testUnionPathDoesNotCrossTheTenantEdge`,
+		// which asserted the leak so that closing it would fail the test rather
+		// than pass unnoticed.
+		//
+		// The decision is the SAME one the QueryBuilder path takes
+		// (multitenancyApplies()); only the rendering differs, because these
+		// callers build SQL by string concatenation and cannot bind parameters.
+		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
+		$resolvedMultitenancy = $this->resolveMultitenancyFlag(
+			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
+			multitenancyExplicit: $multitenancyExplicit,
+			schema: $schema
+		);
+
+		$multitenancyApplies = $this->multitenancyApplies(
+			schema: $schema,
+			_rbac: $this->flagFromQuery(value: $_rbac),
+			_multitenancy: $resolvedMultitenancy,
+			multitenancyExplicit: $multitenancyExplicit
+		);
+
+		if ($multitenancyApplies === true) {
+			$orgCondition = $this->buildOrganizationConditionSql(
+				schema: $schema,
+				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
+				connection: $connection
+			);
+			if ($orgCondition !== null) {
+				$conditions[] = $orgCondition;
+			}
 		}
 
 		// 2. RBAC filter (role-based access control).
@@ -822,6 +872,180 @@ class MagicSearchHandler {
 
 		return $conditions;
 	}//end buildWhereConditionsSql()
+
+	/**
+	 * Read a reserved boolean flag out of a query, failing closed.
+	 *
+	 * Query-string parameters arrive as strings, so `"false"` must not be read
+	 * as the boolean true simply because it is a non-empty string, and `"true"`
+	 * must not be read as false because it is not identical to true. A value
+	 * that means neither (an array, an object, a typo) leaves the boundary ON:
+	 * the only flag this reads is one that TURNS ACCESS CONTROL OFF, and an
+	 * unreadable request is not permission to skip it.
+	 *
+	 * @param mixed $value The raw query value.
+	 *
+	 * @return bool The flag, defaulting to true.
+	 */
+	private function flagFromQuery(mixed $value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		$parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+		if ($parsed === null) {
+			return true;
+		}
+
+		return $parsed;
+	}//end flagFromQuery()
+
+	/**
+	 * Decide whether the organisation boundary applies to this read.
+	 *
+	 * Extracted from {@see applyAccessControlFilters()} so the QueryBuilder
+	 * path and the string-SQL path (UNION search, UNION facets) take ONE
+	 * decision and only render it differently. The two disagreeing is exactly
+	 * how the union path came to return another organisation's rows: the RBAC
+	 * half was carried across and this half was not, and nothing compared them.
+	 *
+	 * @param Schema $schema               The schema being read.
+	 * @param bool   $_rbac                Whether RBAC filtering is on.
+	 * @param bool   $_multitenancy        The multitenancy flag, ALREADY resolved against the schema.
+	 * @param bool   $multitenancyExplicit Whether the caller explicitly asked for it.
+	 *
+	 * @return bool True when the organisation filter must be emitted.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
+	 */
+	private function multitenancyApplies(
+		Schema $schema,
+		bool $_rbac,
+		bool $_multitenancy,
+		bool $multitenancyExplicit,
+	): bool {
+		if ($_multitenancy === false) {
+			return false;
+		}
+
+		// Check if user qualifies for any RBAC rule (simple or conditional).
+		// When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
+		$userHasRbacAccess = false;
+		$hasObjectGrants = false;
+		if ($_rbac === true) {
+			$userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
+				schema: $schema,
+				action: 'read'
+			);
+
+			// A per-object grant must never widen the tenant edge (ADR-002; design
+			// D3c). The grant branch is OR-ed into the RBAC filter, so on a schema
+			// whose conditional rules would otherwise SKIP the organisation filter a
+			// grant would become a cross-tenant hole.
+			$hasObjectGrants = $this->rbacHandler->currentCallerHoldsObjectGrants();
+		}
+
+		if ($hasObjectGrants === true) {
+			// Reached rows through a grant — the tenant edge stands.
+			return true;
+		}
+
+		if ($userHasRbacAccess === false) {
+			// No RBAC access - apply multitenancy as normal.
+			return true;
+		}
+
+		// User has RBAC access but explicitly requested _multi=true: apply
+		// multitenancy to further restrict results to their org. Otherwise skip
+		// it and let RBAC handle access control.
+		return $multitenancyExplicit;
+	}//end multitenancyApplies()
+
+	/**
+	 * Render the organisation boundary as raw SQL, for the string-built paths.
+	 *
+	 * The DECISION is {@see MagicOrganizationHandler::resolveOrganizationScope()},
+	 * the single source of truth; this only renders it, the way
+	 * `AggregationRunner` renders the same decision for its native SQL. The
+	 * column is unqualified (`_organisation`, not `t._organisation`) because
+	 * every caller of {@see buildWhereConditionsSql()} builds `FROM <table>`
+	 * with no alias, exactly as the `_deleted IS NULL` condition above does.
+	 *
+	 * An unknown mode FAILS CLOSED here rather than returning null. The
+	 * aggregation renderer can answer an unknown mode by refusing and falling
+	 * back to the PHP path; a UNION arm has nothing to fall back to, so the only
+	 * safe answer to "I cannot render this boundary" is to return no rows.
+	 *
+	 * @param Schema           $schema     The schema being read.
+	 * @param int|null         $registerId The register whose table is being read, for shared master data.
+	 * @param IDBConnection    $connection The connection, used to quote the organisation uuids.
+	 *
+	 * @return string|null The SQL condition, or null when every row is in scope.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function buildOrganizationConditionSql(
+		Schema $schema,
+		?int $registerId,
+		IDBConnection $connection,
+	): ?string {
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $registerId,
+			schemaId: $schema->getId()
+		);
+
+		$column = '_organisation';
+
+		// Read the mode rather than assume it: a decision that arrives without
+		// one is a decision this renderer cannot read, and the answer to that is
+		// the empty set, not the whole table.
+		$mode = ($scope['mode'] ?? null);
+
+		if ($mode === MagicOrganizationHandler::SCOPE_ALL) {
+			return null;
+		}
+
+		if ($mode === MagicOrganizationHandler::SCOPE_NULL_ONLY) {
+			return $column . ' IS NULL';
+		}
+
+		$scoped = [
+			MagicOrganizationHandler::SCOPE_IN,
+			MagicOrganizationHandler::SCOPE_IN_OR_NULL,
+		];
+		if (in_array($mode, $scoped, true) === false) {
+			// SCOPE_NONE, and anything this renderer does not know.
+			return '1 = 0';
+		}
+
+		$uuids = array_values(array_filter(
+			($scope['uuids'] ?? []),
+			static fn ($uuid): bool => is_string($uuid) === true && $uuid !== ''
+		));
+
+		if (empty($uuids) === true) {
+			// "In these organisations" with no organisations named is the empty
+			// set, not everything.
+			return '1 = 0';
+		}
+
+		$quoted = array_map(
+			static fn (string $uuid): string => $connection->quote($uuid),
+			$uuids
+		);
+
+		$condition = $column . ' IN (' . implode(', ', $quoted) . ')';
+
+		if ($mode === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
+			// SQL `IN` never matches NULL, so the org-less rows an admin may see
+			// need their own disjunct. Leaving it out is how the aggregation API
+			// once made every org-less row invisible.
+			$condition = '(' . $condition . ' OR ' . $column . ' IS NULL)';
+		}
+
+		return $condition;
+	}//end buildOrganizationConditionSql()
 
 	/**
 	 * Build the RBAC SQL condition
@@ -1834,61 +2058,35 @@ class MagicSearchHandler {
 		bool $multitenancyExplicit,
 		?int $registerId = null,
 	): void {
-		// Check if user qualifies for any RBAC rule (simple or conditional).
-		// When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
-		$userHasRbacAccess = false;
-		if ($_rbac === true) {
-			$userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
-				schema: $schema,
-				action: 'read'
+		// Whether the organisation boundary applies is decided in ONE place
+		// (multitenancyApplies), because the string-SQL path renders the same
+		// decision and the two silently disagreeing is what let the UNION path
+		// return another organisation's rows. Forcing the existing filter on for
+		// a grant holder is deliberate: an `_organisation` term inside the grant
+		// branch would be a second definition of the tenant edge, and this
+		// change exists because second definitions of a rule drift apart.
+		// Cross-organisation sharing is group 7's decision to take, not a side
+		// effect to inherit here.
+		$applyMultitenancy = $this->multitenancyApplies(
+			schema: $schema,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			multitenancyExplicit: $multitenancyExplicit
+		);
+
+		if ($applyMultitenancy === true) {
+			// The register+schema pair is handed down so the organisation
+			// handler can widen by a DECLARED shared master data holder
+			// (REQ-SLE-001). Each magic table is exactly one such pair, so
+			// the widening reaches this table and nothing else the holder
+			// owns. A pair that cannot be resolved widens by nothing.
+			$this->organizationHandler->applyOrganizationFilter(
+				qb: $qb,
+				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+				registerId: $registerId,
+				schemaId: $schema->getId()
 			);
 		}
-
-		// A per-object grant must never widen the tenant edge (ADR-002; design
-		// D3c). The grant branch is OR-ed into the RBAC filter, so on a schema
-		// whose conditional rules would otherwise SKIP the organisation filter a
-		// grant would become a cross-tenant hole. Forcing the EXISTING filter on
-		// is deliberate: an `_organisation` term inside the grant branch would be
-		// a second definition of the tenant edge, and this change exists because
-		// second definitions of a rule drift apart. Cross-organisation sharing is
-		// group 7's decision to take, not a side effect to inherit here.
-		$hasObjectGrants = false;
-		if ($_rbac === true) {
-			$hasObjectGrants = $this->rbacHandler->currentCallerHoldsObjectGrants();
-		}
-
-		// Apply multitenancy filter based on RBAC access and explicit request.
-		if ($_multitenancy === true) {
-			$applyMultitenancy = false;
-
-			if ($hasObjectGrants === true) {
-				// Reached rows through a grant — the tenant edge stands.
-				$applyMultitenancy = true;
-			} elseif ($userHasRbacAccess === false) {
-				// No RBAC access - apply multitenancy as normal.
-				$applyMultitenancy = true;
-			} elseif ($multitenancyExplicit === true) {
-				// User has RBAC access but explicitly requested _multi=true
-				// Apply multitenancy to further restrict results to their org.
-				$applyMultitenancy = true;
-			}
-
-			// Otherwise: user has RBAC access and didn't request _multi=true
-			// Skip multitenancy - let RBAC handle access control.
-			if ($applyMultitenancy === true) {
-				// The register+schema pair is handed down so the organisation
-				// handler can widen by a DECLARED shared master data holder
-				// (REQ-SLE-001). Each magic table is exactly one such pair, so
-				// the widening reaches this table and nothing else the holder
-				// owns. A pair that cannot be resolved widens by nothing.
-				$this->organizationHandler->applyOrganizationFilter(
-					qb: $qb,
-					adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-					registerId: $registerId,
-					schemaId: $schema->getId()
-				);
-			}
-		}//end if
 
 		// Apply RBAC filtering if enabled.
 		if ($_rbac === true) {

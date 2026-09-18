@@ -202,11 +202,20 @@ final class MagicSearchHandlerArchiveLensTest extends TestCase {
 		$rbac = $this->createMock(originalClassName: MagicRbacHandler::class);
 		$rbac->method('buildRbacConditionsSql')->willReturn(['bypass' => true, 'conditions' => []]);
 
+		// Tenancy waved through for the same reason RBAC is: this test is about
+		// the archive condition. An organisation double that answers nothing
+		// makes the renderer fail closed and add `1 = 0`, which is correct
+		// behaviour and irrelevant noise here.
+		$organisation = $this->createMock(originalClassName: MagicOrganizationHandler::class);
+		$organisation->method('resolveOrganizationScope')->willReturn(
+			['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]
+		);
+
 		return new MagicSearchHandler(
 			$db,
 			$this->createMock(originalClassName: LoggerInterface::class),
 			$rbac,
-			$this->createMock(originalClassName: MagicOrganizationHandler::class),
+			$organisation,
 			$this->createMock(originalClassName: SchemaTypeConverter::class),
 			$this->createMock(originalClassName: DateTimeNormalizer::class),
 			relatedRows: $this->createMock(RelatedRowQueryApplier::class)

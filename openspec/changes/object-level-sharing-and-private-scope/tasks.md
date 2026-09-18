@@ -45,6 +45,32 @@
 > So: 2 closed in #3932, 9.2 closed in #3936, and 10 that are genuinely waiting
 > on a second instance, a frontend, a migration or another owner. None of them
 > is waiting on nothing.
+>
+> 🔑 **RE-MEASURED AGAIN 2026-09-18, and the "frontend" reading of 6.3 was
+> wrong in one costly way.** 6.3 was not waiting on a widget. It was waiting on
+> a MEASURED SECURITY GAP underneath the widget: the UNION builder that answers
+> every cross-register read carried the RBAC and scope predicates and NOT the
+> organisation filter, so a non-admin's cross-table search returned rows from
+> other organisations. Reading that task as frontend work left the leak filed
+> under a dashboard tile.
+>
+> That gap is now closed. The organisation boundary is decided once
+> (`MagicSearchHandler::multitenancyApplies()`) and rendered twice: through the
+> QueryBuilder as before, and as text for the string-built arms
+> (`buildOrganizationConditionSql()`, step 1c of `buildWhereConditionsSql()`).
+> Both UNION facet paths get it with the same call, because they build their
+> WHERE the same way and had the same hole. `TODO(SEC-CTRL-1)` in
+> `ObjectsController` is retired: it was accurate for multitenancy and stale for
+> RBAC, and is now stale for both.
+>
+> The characterisation test that recorded the leak has been flipped to the
+> assertion it said to flip to, and renamed with it:
+> `testUnionPathDoesNotCrossTheTenantEdge`.
+>
+> **What that leaves for 6.3, stated so nobody reads this as "the widget is
+> done".** The widget itself is nextcloud-vue work and is NOT built here. What
+> is built here is the path it must read: a cross-register list that stops at
+> the tenant edge. 6.4 and 6.5 stay open with it, in the same repository.
 
 ## 1. Settle the remaining design questions
 
@@ -82,6 +108,15 @@
       otherwise open schema, and bypassing there would leak exactly the objects on the schemas
       nobody is watching. The `IS NULL` disjunct leads the predicate so an unwritten column is
       decided without touching the JSON.
+- [x] 2.12 The ORGANISATION half of the raw-SQL paths, which groups 2–4 left behind. Carrying the
+      scope-and-grant predicate to the UNION arms and not the tenant filter made a grant the one
+      way a row from another organisation could be read, on the one path where nothing else
+      stopped it. The decision now lives in `multitenancyApplies()` and is rendered twice rather
+      than reimplemented twice: a QueryBuilder filter as before, and
+      `buildOrganizationConditionSql()` for the string-built arms (UNION search, both UNION facet
+      paths). An unknown decision FAILS CLOSED here — the aggregation renderer can refuse and fall
+      back to the PHP path, a UNION arm has nothing to fall back to, so "I cannot render this
+      boundary" must mean no rows and never no condition.
 
 ## 3. Verdict parity, over a live database
 
@@ -244,8 +279,14 @@
 - [x] 6.2 Expose it as a detail-page **Shares** tab. `ObjectDetails.vue`, gated on
       `relationContext` — the component declares register/schema/objectId REQUIRED and requests on
       mount, so an ungated render would fire at `/objects/undefined/undefined/undefined/shares`.
-- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget. BLOCKED, and the blocker is measured
-      rather than suspected. A grant resolves to an object UUID, but objects live in
+- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget. THE BLOCKER IS GONE (2026-09-18);
+      the widget itself is nextcloud-vue work and stays open here. The paragraph below is kept
+      verbatim because it is the measurement that found the leak, and the leak is the part that
+      mattered: tenancy is now wired into the union path, `testUnionPathDoesNotCrossTheTenantEdge`
+      asserts the guarantee instead of the gap, and `tests/e2e/ci/cross-register-tenancy.spec.ts`
+      proves the same boundary over HTTP as an ordinary non-admin. A cross-register list built on
+      this path no longer leaks across tenants. WHAT THE MEASUREMENT SAID:
+      A grant resolves to an object UUID, but objects live in
       per-register/schema tables, the legacy central `openregister_objects` table holds 0 rows, and
       the object folder path is `files/Open Registers/{Register TITLE}/{uuid}` — no schema segment
       at all, and the register only by title. So a cross-register list needs the cross-table search,
