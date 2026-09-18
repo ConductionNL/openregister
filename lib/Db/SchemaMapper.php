@@ -79,6 +79,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCA\OpenRegister\Service\Flow\MacroActionBinding;
+use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -239,6 +241,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
+	 * @param MacroActionValidator|null $macroActions Verifies the flows macro actions bind to.
 	 *
 	 * @return void
 	 */
@@ -251,6 +254,12 @@ class SchemaMapper extends QBMapper {
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		// LAST AND NULLABLE so every existing construction of this mapper keeps
+		// working. Nextcloud's container always supplies it; null happens only
+		// in a hand-built test, and then the SHAPE refusals below still fire —
+		// only the three questions about the flow itself are skipped, which the
+		// save says out loud rather than passing over in silence.
+		private readonly ?MacroActionValidator $macroActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -1111,6 +1120,7 @@ class SchemaMapper extends QBMapper {
 		$this->buildRequiredFieldsArray(schema: $schema);
 		$this->autoPopulateConfigurationFields(schema: $schema);
 		$this->validateLifecycleAnnotation(schema: $schema);
+		$this->validateMacroActions(schema: $schema);
 		$this->validateMdtoMappingAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
@@ -1235,6 +1245,50 @@ class SchemaMapper extends QBMapper {
 		$message .= ' Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.';
 		$this->logger->warning($message);
 	}//end logDroppedAnnotationKeys()
+
+	/**
+	 * Refuse a declared action bound to a flow nobody can run.
+	 *
+	 * Three of the refusals are questions about the flow — it exists, it is
+	 * published, it has a manual trigger — and all three are SILENT at run
+	 * time. An action bound to a missing flow appears in the menu, does nothing
+	 * when clicked, and looks exactly like a flow that ran and changed nothing.
+	 * The handler cannot tell those apart and cannot fix either, so the refusal
+	 * belongs here, in front of the author who can.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When a macro binding cannot run.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	private function validateMacroActions(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+
+		if ($this->macroActions === null) {
+			// No validator wired: the shape is still checked, and the save says
+			// which half did not run rather than reporting a clean pass.
+			$refusals = MacroActionBinding::refusals(configuration: $configuration);
+			if ($refusals !== []) {
+				throw new \InvalidArgumentException(implode(' ', $refusals));
+			}
+
+			if (MacroActionBinding::parse(configuration: $configuration) !== []) {
+				$this->logger->warning(
+					'[SchemaMapper] Macro bindings saved without verifying their flows: no validator is wired'
+				);
+			}
+
+			return;
+		}
+
+		$refusals = $this->macroActions->refusals(configuration: $configuration);
+		if ($refusals !== []) {
+			throw new \InvalidArgumentException(implode(' ', $refusals));
+		}
+	}//end validateMacroActions()
 
 	/**
 	 * Validate the optional `x-openregister-lifecycle` annotation.

@@ -3130,6 +3130,14 @@ class Schema extends Entity implements JsonSerializable {
 		// and the schema author would be reading a 200 on the list they had
 		// just saved. Same silent no-op class as every entry above.
 		self::NOT_SUPPLIED_REASONS_ANNOTATION,
+		// The library of named conditions a rule, guard or field rule may
+		// reference by name (row 11.40). Absent from this list,
+		// setConfiguration() would DROP it, and every rule referencing a name
+		// would then REFUSE — fail-closed, so not a silent no-op this time,
+		// but a schema whose author had just saved the library reading a 200
+		// and watching every one of their rules stop working. Same class of
+		// trap as every entry above, arriving from the other side.
+		'x-openregister-conditions',
 	];
 
 	/**

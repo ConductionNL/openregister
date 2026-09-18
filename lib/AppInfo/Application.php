@@ -455,6 +455,27 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// 🔴 THE TOKEN GRANT SOURCE MUST BE SHARED, and this is not a
+		// performance argument. It is BOUND in the authentication path, where a
+		// Consumer is resolved, and READ in the permission handler, where the
+		// decision is made. An unshared registration would give those two
+		// different objects: the bind would land on one and the read would find
+		// an empty other, so every scoped token would silently evaluate as
+		// unscoped — a widening, arriving in total silence (row Q13.20).
+		$context->registerService(
+			\OCA\OpenRegister\Service\Rbac\TokenGrantSource::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Rbac\TokenGrantSource();
+			}
+		);
+
+		$context->registerService(
+			\OCA\OpenRegister\Service\Rbac\TokenGrantNarrower::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Rbac\TokenGrantNarrower();
+			}
+		);
+
 		// The object-hierarchy descent MUST be shared, for the reason the three
 		// registrations below it give and one that is sharper here: both of
 		// these memoise FOR THE LIFETIME OF ONE REQUEST, and a container that
