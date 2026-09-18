@@ -218,6 +218,11 @@ Vrij en open source onder de EUPL-licentie.
 			     Before that command existed the only evidence was two unrelated
 			     e2e suites dying on `registers slug=flows`. -->
 			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
+			<!-- The surveys register and its four schemas. The descriptor shipped
+			     without a step naming it, so `surveys` was ABSENT on every instance
+			     while `occ upgrade` reported success: exactly the failure the
+			     comment above records, one register later. -->
+			<step>OCA\OpenRegister\Repair\ImportSurveyRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
@@ -367,6 +372,11 @@ Vrij en open source onder de EUPL-licentie.
 			     the `flows` register was never created and every flow step
 			     below it silently operated on nothing. -->
 			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
+			<!-- The surveys register and its four schemas. The descriptor shipped
+			     without a step naming it, so `surveys` was ABSENT on every instance
+			     while `occ upgrade` reported success: exactly the failure the
+			     comment above records, one register later. -->
+			<step>OCA\OpenRegister\Repair\ImportSurveyRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
