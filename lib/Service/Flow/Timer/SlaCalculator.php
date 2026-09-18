@@ -264,6 +264,82 @@ final class SlaCalculator {
 	}//end measure()
 
 	/**
+	 * How many WORKING hours lie between two instants.
+	 *
+	 * NOT THE SAME QUESTION AS `measure(..., UNIT_HOURS, ...)`, and the
+	 * difference is the whole point of this method. That one answers wall
+	 * clock: seconds divided by 3600, weekends and nights included, which is
+	 * right for a deadline expressed in hours. This one answers how much of
+	 * that interval the organisation was actually open, which is what a
+	 * report comparing two teams has to count. A phase entered at 16:00 on
+	 * Friday and left at 09:00 on Monday is 65 wall-clock hours and one
+	 * working hour, and reporting the first rewards whoever draws the Friday
+	 * afternoon cases.
+	 *
+	 * `measure(..., UNIT_BUSINESS_DAYS, ...)` cannot stand in for it either.
+	 * It counts fractions of a CALENDAR day on working days, so the same
+	 * interval reads 0.71 business days, and converting that at eight hours a
+	 * day gives 5.67: a number that counts Friday evening and Monday before
+	 * dawn as work. Both are defensible for a deadline and neither is
+	 * elapsed working time.
+	 *
+	 * Negative when `to` precedes `from`, like `measure()`.
+	 *
+	 * @param DateTimeInterface $from The start.
+	 * @param DateTimeInterface $to The end.
+	 * @param WorkingCalendar $calendar The resolved calendar, which supplies the
+	 *                                  working weekdays, the non-working dates
+	 *                                  and the hours of the day.
+	 *
+	 * @return float The working hours between the two instants.
+	 *
+	 * @throws FlowTimerValidationException When the interval is longer than the walk allows.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	public function elapsedBusinessHours(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar): float {
+		if ($to->getTimestamp() < $from->getTimestamp()) {
+			return -$this->elapsedBusinessHours(from: $to, to: $from, calendar: $calendar);
+		}
+
+		$cursor = DateTimeImmutable::createFromInterface($from);
+		$end = DateTimeImmutable::createFromInterface($to);
+		$opensAt = $calendar->getDayStartsAtMinute();
+		$closesAt = $calendar->getDayEndsAtMinute();
+		$total = 0.0;
+
+		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
+			if ($cursor >= $end) {
+				return $total;
+			}
+
+			$midnight = $cursor->setTime(0, 0, 0);
+			$nextMidnight = $this->shift(moment: $midnight, modifier: '+1 day');
+
+			if ($calendar->isWorkingDay($cursor) === true) {
+				$opens = $midnight->getTimestamp() + ($opensAt * 60);
+				$closes = $midnight->getTimestamp() + ($closesAt * 60);
+
+				// The overlap of [cursor, min(end, nextMidnight)] with the
+				// day's window. An interval entirely outside it contributes
+				// nothing, which is how a Monday 00:00 to 09:00 stretch adds
+				// zero rather than nine.
+				$segmentEnd = min($end->getTimestamp(), $nextMidnight->getTimestamp());
+				$overlap = (min($segmentEnd, $closes) - max($cursor->getTimestamp(), $opens));
+				if ($overlap > 0) {
+					$total += ($overlap / 3600);
+				}
+			}
+
+			$cursor = $nextMidnight;
+		}
+
+		throw new FlowTimerValidationException(
+			message: sprintf('Measuring working hours between %s and %s exceeds %d calendar days.', $from->format('c'), $to->format('c'), self::MAX_WALK_DAYS)
+		);
+	}//end elapsedBusinessHours()
+
+	/**
 	 * Convert an amount between units, through hours as the pivot: one business
 	 * day is the calendar's working hours, one calendar day is 24 hours.
 	 *

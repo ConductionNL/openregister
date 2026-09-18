@@ -99,6 +99,7 @@ final class WorkingCalendar {
 	 * @param float $hoursPerWorkingDay Working hours in one working day.
 	 * @param array<int, array<string, mixed>> $rules The computed non-working-date rules.
 	 * @param array<string, string> $exceptions Enumerated one-off closures, `Y-m-d` => name.
+	 * @param integer $dayStartsAtMinute Minutes past midnight the working day opens.
 	 */
 	private function __construct(
 		private readonly string $slug,
@@ -107,6 +108,7 @@ final class WorkingCalendar {
 		private readonly float $hoursPerWorkingDay,
 		private readonly array $rules,
 		private readonly array $exceptions,
+		private readonly int $dayStartsAtMinute,
 	) {
 
 	}//end __construct()
@@ -163,7 +165,8 @@ final class WorkingCalendar {
 			workingWeekdays: $weekdays,
 			hoursPerWorkingDay: (float)$hours,
 			rules: $rules,
-			exceptions: $exceptions
+			exceptions: $exceptions,
+			dayStartsAtMinute: self::validDayStart(slug: $slug, value: ($definition['dayStartsAt'] ?? null))
 		);
 	}//end fromArray()
 
@@ -215,6 +218,46 @@ final class WorkingCalendar {
 	public function getHoursPerWorkingDay(): float {
 		return $this->hoursPerWorkingDay;
 	}//end getHoursPerWorkingDay()
+
+	/**
+	 * The minute of the day the working day opens.
+	 *
+	 * WHY THE CALENDAR CARRIES A TIME OF DAY AT ALL. Until now a calendar
+	 * answered which DAYS are worked and how many hours one of them holds,
+	 * which is everything a deadline needs: "five business days from now"
+	 * never asks what time the office opens. Elapsed business time does ask.
+	 * A case entered at 16:00 on Friday and left at 09:00 on Monday spans one
+	 * working hour or eight depending entirely on where the day starts, and
+	 * there is no honest way to answer without knowing.
+	 *
+	 * The window is start plus `hoursPerWorkingDay`, so the two can never
+	 * disagree: a calendar cannot say the day is eight hours long and then
+	 * describe a nine-hour window.
+	 *
+	 * @return integer Minutes past midnight.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	public function getDayStartsAtMinute(): int {
+		return $this->dayStartsAtMinute;
+	}//end getDayStartsAtMinute()
+
+	/**
+	 * The minute of the day the working day closes.
+	 *
+	 * @return integer Minutes past midnight, never beyond the end of the day.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	public function getDayEndsAtMinute(): int {
+		$end = ($this->dayStartsAtMinute + (int)round($this->hoursPerWorkingDay * 60));
+
+		// A twelve-hour day starting at 18:00 would close at 06:00 the next
+		// morning, which is a second day's worth of bookkeeping for a case
+		// nobody has. Clamped instead, so the window stays inside its day and
+		// the measurement below never has to cross midnight.
+		return min($end, (24 * 60));
+	}//end getDayEndsAtMinute()
 
 	/**
 	 * Whether the calendar day containing this instant is a working day.
@@ -332,6 +375,40 @@ final class WorkingCalendar {
 	 *
 	 * @throws FlowTimerValidationException When absent, empty or out of range.
 	 */
+	/**
+	 * Validate the opening time, defaulting to 09:00.
+	 *
+	 * `HH:MM`, refused rather than coerced: a calendar that says `9` or
+	 * `9am` and is silently read as midnight would move every elapsed
+	 * business hour on the instance by nine hours, and nothing on screen
+	 * would say why.
+	 *
+	 * @param string $slug The calendar, for the refusal.
+	 * @param mixed $value The declared opening time, or null.
+	 *
+	 * @return integer Minutes past midnight.
+	 *
+	 * @throws FlowTimerValidationException On a malformed time.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	private static function validDayStart(string $slug, mixed $value): int {
+		if ($value === null || (is_string($value) === true && trim($value) === '')) {
+			// 09:00. The default is stated rather than derived, because every
+			// derivation of it (midnight, noon minus half the day) is a
+			// different number and none of them is what an office does.
+			return (9 * 60);
+		}
+
+		if (is_string($value) === false || preg_match('/^([01][0-9]|2[0-3]):([0-5][0-9])$/', trim($value), $parts) !== 1) {
+			throw new FlowTimerValidationException(
+				message: sprintf("Working calendar '%s' declares dayStartsAt '%s'; it must be HH:MM in 24-hour form.", $slug, is_scalar($value) === true ? (string)$value : gettype($value))
+			);
+		}
+
+		return (((int)$parts[1] * 60) + (int)$parts[2]);
+	}//end validDayStart()
+
 	private static function validWeekdays(string $slug, mixed $value): array {
 		if (is_array($value) === false || $value === []) {
 			throw new FlowTimerValidationException(
