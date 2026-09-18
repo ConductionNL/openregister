@@ -218,30 +218,62 @@ class PropertyVocabularyTest extends TestCase {
 	}
 
 	/**
-	 * A key another lane owns saves, and stays out of the published list.
+	 * `x-openregister-property-source` is now defined, so it is published.
 	 *
-	 * `x-openregister-property-source` is dossiq's, and integriq's
-	 * `registry-backed-field-source` is where its meaning is being defined.
-	 * Both halves matter: refusing it would break a shipped schema, and
-	 * publishing it would be this lane inventing semantics for a key it does
-	 * not own. Covers the scenario "a key an app owns stays out of the
-	 * vocabulary until it is defined".
+	 * 🔑 THIS TEST USED TO ASSERT THE OPPOSITE, AND IT WAS RIGHT AT THE TIME.
+	 * It said the key must save but stay unpublished, because publishing it
+	 * would have been this layer inventing semantics for a key whose meaning
+	 * another change was still defining. That reasoning has been honoured
+	 * rather than overruled: integriq's `registry-backed-field-source` has now
+	 * DEFINED the shape (`provider`, `config`, `mode`), its resolver half is
+	 * built, and it was waiting on this side. So the key is adopted with the
+	 * meaning that change gave it, not with one invented here.
+	 *
+	 * Its old fixture, `{registry: 'kvk'}`, was never a shipped shape: no
+	 * register file in openregister or integriq carries this key at all, which
+	 * is what made it safe to enforce the defined one.
 	 *
 	 * @return void
 	 */
-	public function testAKeyAnotherLaneOwnsSavesButIsNotPublished(): void {
+	public function testThePropertySourceKeyIsPublishedNowThatItIsDefined(): void {
 		$this->assertTrue(
 			condition: $this->validator->validateProperty(
-				property: ['type' => 'string', 'x-openregister-property-source' => ['registry' => 'kvk']],
+				property: [
+					'type' => 'string',
+					'x-openregister-property-source' => ['provider' => 'kvk', 'mode' => 'live'],
+				],
 				path: '/kvkNummer'
 			),
-			message: 'a shipped annotation this layer does not define must still save'
+			message: 'the defined shape must save'
+		);
+
+		$this->assertContains(
+			needle: 'x-openregister-property-source',
+			haystack: $this->vocabulary->keys(),
+			message: 'a key nothing publishes cannot be discovered, which is what kept integriq waiting'
+		);
+	}
+
+	/**
+	 * A vendor extension whose meaning nobody has defined still saves.
+	 *
+	 * The half of the old test that has NOT changed, kept deliberately: an
+	 * `x-` key this layer does not define must not be refused, or a shipped
+	 * schema carrying somebody else's annotation stops saving.
+	 *
+	 * @return void
+	 */
+	public function testAnUndefinedVendorKeyStillSaves(): void {
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: ['type' => 'string', 'x-someotherapp-whatever' => ['anything' => true]],
+				path: '/kvkNummer'
+			)
 		);
 
 		$this->assertNotContains(
-			needle: 'x-openregister-property-source',
-			haystack: $this->vocabulary->keys(),
-			message: 'the vocabulary published a key whose meaning another change defines'
+			needle: 'x-someotherapp-whatever',
+			haystack: $this->vocabulary->keys()
 		);
 	}
 
@@ -262,7 +294,16 @@ class PropertyVocabularyTest extends TestCase {
 		// cannot name a group matches nobody, and publishing one would deny
 		// everybody silently. This prober assigns null to any key without a
 		// sample, which is what caught it.
-		$samples = ['translatable' => true, 'sourceLanguage' => 'nl', 'scope' => 'team-a'];
+		$samples = [
+			'translatable' => true,
+			'sourceLanguage' => 'nl',
+			'scope' => 'team-a',
+			// The prober assigns null to any key without a sample, and this key
+			// refuses null: a binding with no provider has nothing to ask for
+			// the values. It caught the key the moment it was published, which
+			// is the second time this prober has caught one of mine.
+			'x-openregister-property-source' => ['provider' => 'kvk', 'mode' => 'live'],
+		];
 
 		foreach ($this->vocabulary->keys() as $key) {
 			if ($key === 'type') {
