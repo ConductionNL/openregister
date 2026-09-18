@@ -151,6 +151,35 @@ class ViewMapper extends QBMapper {
 	}//end __construct()
 
 	/**
+	 * Views carrying an alert, oldest evaluation first.
+	 *
+	 * 🔑 THE ORDER IS THE WATERMARK. Taking the least recently evaluated views
+	 * means a bounded pass walks the whole set over several ticks instead of
+	 * re-counting the same busy ones, so no view starves behind a neighbour.
+	 * A view never evaluated sorts first, which is what makes an alert somebody
+	 * set a minute ago run on the next pass.
+	 *
+	 * @param int $limit Most views to return.
+	 *
+	 * @return View[] The views.
+	 *
+	 * @psalm-return array<int, View>
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-the-alert-sweep-is-bounded
+	 */
+	public function findWithAlerts(int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('alert'))
+			->orderBy('alert_evaluated_at', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findWithAlerts()
+
+
+	/**
 	 * Find a view by its ID
 	 *
 	 * Retrieves view by ID (supports both integer ID and UUID) with RBAC and
