@@ -62,7 +62,9 @@ use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
+use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
+use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
@@ -1660,12 +1662,134 @@ class SchemaMapper extends QBMapper {
 		}
 
 		$errors = (new RelationAnnotationValidator())->validate($shape);
+
+		// What a link EXPOSES is refused here too, and only once the shape above
+		// is sound: a type naming a vocabulary key nobody declared has already
+		// failed, and asking what that type exposes would be asking about
+		// nothing.
+		if ($errors === []) {
+			$errors = $this->exposureRefusals(schema: $schema);
+		}
+
 		if ($errors === []) {
 			return;
 		}
 
 		throw new RelationDeclarationException(errors: $errors);
 	}//end validateRelationAnnotation()
+
+	/**
+	 * Refuse an `exposes` list naming a property the linked schema does not declare.
+	 *
+	 * Refused at SAVE, because the alternative is silent. A name that matches
+	 * nothing is simply absent from every projection afterwards: the author
+	 * reads a 200 and ships a link that hands over one field fewer than they
+	 * wrote, and nothing anywhere says so.
+	 *
+	 * 🔑 A FAR SCHEMA THAT CANNOT BE RESOLVED IS NOT A REFUSAL, deliberately.
+	 * Schemas arrive in whatever order a configuration import walks them, so
+	 * the schema a `$ref` names may genuinely not exist yet when this one is
+	 * saved. Refusing there would make a valid import fail on ordering alone.
+	 * The check is therefore what it can honestly be: a refusal when the far
+	 * schema IS resolvable and does not declare the property. The
+	 * `relation-without-ref` refusal above already covers a link with no `$ref`
+	 * at all.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function exposureRefusals(Schema $schema): array {
+		$resolver = new RelationTypeResolver();
+		$exposure = new LinkExposure();
+		$properties = ($schema->getProperties() ?? []);
+
+		if (is_array($properties) === false) {
+			return [];
+		}
+
+		$errors = [];
+		foreach ($resolver->descriptors(schema: $schema) as $property => $descriptor) {
+			if ($exposure->declaresExposure(relationType: $descriptor) === false) {
+				continue;
+			}
+
+			$far = $this->schemaForReference(property: ($properties[$property] ?? null));
+			if ($far === null) {
+				continue;
+			}
+
+			$farProperties = ($far->getProperties() ?? []);
+			if (is_array($farProperties) === false) {
+				$farProperties = [];
+			}
+
+			$reason = $exposure->refusalFor(
+				relationType: $descriptor,
+				farProperties: array_map('strval', array_keys($farProperties)),
+				typeName: (string)(($descriptor['type'] ?? null) ?? $property)
+			);
+
+			if ($reason !== null) {
+				$errors[] = ['code' => 'relation-exposes-unknown-property', 'message' => $reason];
+			}
+		}//end foreach
+
+		return $errors;
+	}//end exposureRefusals()
+
+	/**
+	 * The schema a reference property points at, or null when it cannot be resolved.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return Schema|null The linked schema.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function schemaForReference(mixed $property): ?Schema {
+		if (is_object($property) === true) {
+			$property = (array)$property;
+		}
+
+		if (is_array($property) === false) {
+			return null;
+		}
+
+		$items = ($property['items'] ?? null);
+		if (is_object($items) === true) {
+			$items = (array)$items;
+		}
+
+		$reference = ($property['$ref'] ?? null);
+		if (is_string($reference) === false && is_array($items) === true) {
+			$reference = ($items['$ref'] ?? null);
+		}
+
+		if (is_string($reference) === false || trim($reference) === '') {
+			return null;
+		}
+
+		// `#/components/schemas/Besluit`, a URL, a uuid, an id or a bare slug.
+		// find() already resolves the last three; the first two reduce to a slug.
+		$identifier = trim($reference);
+		if (str_contains($identifier, '/') === true) {
+			$identifier = substr($identifier, (strrpos($identifier, '/') + 1));
+		}
+
+		if ($identifier === '') {
+			return null;
+		}
+
+		try {
+			return $this->find(id: $identifier, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			// Unresolvable is not a refusal; see the note on exposureRefusals().
+			return null;
+		}
+	}//end schemaForReference()
 
 	/**
 	 * Validate the two property-level rule annotations this change adds.

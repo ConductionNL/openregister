@@ -1,5 +1,26 @@
 # Tasks: relations-that-travel-and-what-they-expose
 
+> 🔑 **RE-MEASURED 2026-09-18 against the code rather than the task text.**
+> Eight tasks stood open. THE FINDING is not in any of them individually: it is
+> that `LinkExposure` had carried its rule, its constants and its own test
+> suite since the change opened, and had NO CALLER. That is the worst shape a
+> control can take. Every test of it passed, every schema declaring `exposes`
+> was accepted, and every field it was written to withhold travelled anyway,
+> because nothing ever asked. The two tasks that would have noticed, 3.1b and
+> 3.2b, read as wiring chores.
+>
+> **Closed here: 3.1b, 3.2b, 4.2.** The save path refuses an exposed property
+> the far schema does not declare, the read path narrows a far record reached
+> through a link, and an e2e reads both over HTTP as a non-admin.
+>
+> **Still open, and owned elsewhere rather than waiting on nothing:**
+> 2.3 and 2.4 belong to pipelinq, which owns the `relationship` schema (2.1 and
+> 2.2 were closed against it in #3959); validating a schema another app defines
+> here would put the rule and the data in separate repositories. 1.2b waits on
+> `party-model` to say which schemas ARE parties, because guessing it here
+> would be a second definition of what a party is. 1.4b and 4.1b want the
+> live-DB suite and section 2 respectively.
+
 ## 1. The affected set
 
 - [x] 1.1 `AffectedSet::derive()` over `RelationGraphService::graph()`'s
@@ -80,16 +101,38 @@
 - [x] 3.1a `LinkExposure::refusalFor()` refuses an exposed property the far
       schema does not declare — a typo would otherwise be silently absent from
       every projection while its author read a 200.
-- [ ] 3.1b Calling it from the schema save path, beside
+- [x] 3.1b Calling it from the schema save path, beside
       `RelationAnnotationValidator`, which needs the far schema resolved at
-      validation time.
+      validation time. DONE: `SchemaMapper::exposureRefusals()`, in the same
+      choke point every create, update and file-upload passes through. The far
+      schema is resolved from the property's `$ref` through `find()`.
+      🔑 AN UNRESOLVABLE FAR SCHEMA IS NOT A REFUSAL, and that is a decision
+      rather than an oversight: schemas arrive in whatever order a
+      configuration import walks them, so the schema a `$ref` names may
+      genuinely not exist yet when this one is saved, and refusing there would
+      fail a valid import on ordering alone. The check is what it can honestly
+      be: a refusal when the far schema IS resolvable and does not declare the
+      property.
 - [x] 3.2a The rule: the visible set is the INTERSECTION of what the link
       declares and what the reader's own property rules allow, so a link can
       carry a reader to a record they could not otherwise open and can never
       show them a field their own rules withhold.
-- [ ] 3.2b Wiring it into the read path beside `PropertyRbacHandler`, which is
+- [x] 3.2b Wiring it into the read path beside `PropertyRbacHandler`, which is
       where the readable set comes from. The rule takes that set as an
       argument precisely so there is no second permission evaluator.
+      DONE, in `RenderObject`'s extend path, which is where a far record is
+      reached THROUGH a link. The readable set is the far record as
+      `renderEntity()` answered it: that call has already run the far schema's
+      own property rules through `PropertyRbacHandler`, so the intersection
+      takes its answer as an argument and evaluates no permission of its own.
+      🔴 `@self` and `id` are the render envelope and are never withheld. They
+      say WHICH record the link points at, and a link that withheld the
+      identity of the record it exists to name would be unusable.
+      The exposure declaration rides the descriptor
+      (`RelationTypeResolver::describe()`) rather than being parsed again in
+      the render path, so `x-openregister-relation-types` keeps one reader.
+      The already-extended branch projects too, or a caller could step around
+      the control by asking for the wildcard form of the same extend.
 - [x] 3.3 `LinkExposure::WITHHELD`. Empty reads as "there is no besluit" and
       withheld reads as "you may not see it", and the two send a reader to
       different places.
@@ -101,7 +144,17 @@
       withheld marker, the undeclared-versus-empty exposure and the save-time
       refusal. Two mutation checks.
 - [ ] 4.1b The kind validation belongs to section 2.
-- [ ] 4.2 An e2e over a cross-domain link showing two fields and withholding the rest.
+- [x] 4.2 An e2e over a cross-domain link showing two fields and withholding the rest.
+      `tests/e2e/ci/link-exposure.spec.ts`, tagged to the three scenarios it
+      covers, probing as an ordinary authenticated user rather than as an
+      administrator. Two of those scenarios carried `@e2e exclude {covered by
+      unit tests}`; the exclusions are gone, because unit tests could not have
+      told anyone whether the rule was ever CALLED, and until this change it
+      was not.
+      14 wiring tests in `tests/Unit/Service/Relation/LinkExposureWiringTest.php`
+      beside it, with two mutation checks: withholding the envelope reddens the
+      identity assertion, and carrying an empty `exposes` for an undeclared one
+      reddens the undeclared-versus-empty pair.
 - [x] 4.3 Recorded in the PR body: one traversal, one permission evaluator,
       one label vocabulary. The affected set filters the existing walk's answer
       and the exposure takes the readable set as an argument.
