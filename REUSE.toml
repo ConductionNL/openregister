@@ -247,3 +247,35 @@ SPDX-FileCopyrightText = [
     "2026 Conduction B.V. <info@conduction.nl>",
 ]
 SPDX-License-Identifier = "MIT AND EUPL-1.2"
+
+# Docusaurus classic-template scaffolding. Review finding on #3857
+# (rjzondervan), raised as "the same class as the icons and the ZGW examples,
+# and a reviewer may want all three decided by one consistent rule". They are,
+# and the rule is the one at the top of this file: if the expression in a file
+# originated with someone else, name them — being generator output is not a
+# reason for silence, only a reason not to block on it.
+#
+# docs/src/css/custom.css still opens with the template's own comment ("Any CSS
+# included here will be global. The classic template bundles Infima by
+# default…"); docs/src/components/HomepageFeatures/index.js keeps the template
+# structure (`FeatureList`, `function Feature({title, description})`,
+# `clsx('col col--4')`) with only the copy swapped; the two *.module.css files
+# are the template's rules. Docusaurus is MIT, © Meta Platforms, Inc. and
+# affiliates.
+#
+# docs/src/pages/index.js is NOT here on purpose: it was rewritten to compose
+# @conduction/docusaurus-preset components and keeps none of the template's
+# body, so it stays under the blanket.
+[[annotations]]
+path = [
+    "docs/src/css/custom.css",
+    "docs/src/components/HomepageFeatures/index.js",
+    "docs/src/components/HomepageFeatures/styles.module.css",
+    "docs/src/pages/index.module.css",
+]
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "Meta Platforms, Inc. and affiliates, https://github.com/facebook/docusaurus",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "MIT AND EUPL-1.2"
