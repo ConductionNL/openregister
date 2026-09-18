@@ -196,9 +196,10 @@ final class RelatedRowExistsClause {
 				// being dropped. A dropped condition widens the filter.
 				if ($placeholders === []) {
 					$where[] = '1 = 0';
-				} else {
-					$where[] = sprintf('%s IN (%s)', $left, implode(', ', $placeholders));
+					continue;
 				}
+
+				$where[] = sprintf('%s IN (%s)', $left, implode(', ', $placeholders));
 
 				continue;
 			}

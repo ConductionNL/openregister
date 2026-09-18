@@ -130,11 +130,7 @@ class PresenceService {
 		$row->setLastSeen($this->asMutable(moment: $now));
 
 		try {
-			if ($existing === null) {
-				$saved = $this->presence->insert($row);
-			} else {
-				$saved = $this->presence->update($row);
-			}
+			$saved = $this->store(row: $row, isNew: ($existing === null));
 		} catch (Throwable $e) {
 			// A beat that could not be written is not worth failing a page
 			// over: the reader simply drops off the list in 90 seconds, which
@@ -150,6 +146,28 @@ class PresenceService {
 
 		return ['arrived' => $arrived, 'presence' => $saved];
 	}//end heartbeat()
+
+	/**
+	 * Write the row, as an insert or an update.
+	 *
+	 * Split out so the choice is a return rather than a branch assigning the
+	 * same variable twice: the mapper has two methods and one of them has to
+	 * be picked, and doing it here keeps the heartbeat readable.
+	 *
+	 * @param ObjectPresence $row   The row to write.
+	 * @param boolean        $isNew Whether there was no row before.
+	 *
+	 * @return ObjectPresence The stored row.
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	private function store(ObjectPresence $row, bool $isNew): ObjectPresence {
+		if ($isNew === true) {
+			return $this->presence->insert($row);
+		}
+
+		return $this->presence->update($row);
+	}//end store()
 
 	/**
 	 * Say that a reader has closed the object.

@@ -2673,6 +2673,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
+	 * @contract tests/e2e/ci/reference-options.spec.ts
+	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	#[NoAdminRequired]
