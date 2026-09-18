@@ -19,8 +19,13 @@
     the option builder and the filter expander cannot disagree about which
     property is coded, and `competingSpellings()` reports a property carrying
     both rather than resolving it by a precedence nobody knows.
-  - STILL OPEN: refusing the annotation beside a literal `enum`. The two are
-    both readable today and nothing reports the pair.
+  - DONE 2026-09-18 in a second pass: `CodedChoiceDeclaration::assert()`, called
+    from `PropertyValidatorHandler::validateProperty()` beside the generated
+    identifier guard and throwing in the same exception family, so every
+    schema-save path answers it as a 422 naming the property without learning
+    about the annotation. It refuses a scheme beside a literal `enum`, and a
+    property declaring BOTH spellings of the binding, which also gives
+    `competingSpellings()` the production caller #3887 left it without.
   - `@spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md`
 - [x] 1.2 Value-in-scheme check in `ValidationHandler` through the concept resolution API, cached per (scheme, version) per request.
   - Built by `code-list-lifecycle-and-hierarchy`: `CodedValueGuard` behind
@@ -43,6 +48,13 @@
 
 ## 4. Discovery wave 1 (CT-4)
 
-- [ ] 4.1 Refuse a choice property with an empty `enum` and no concept scheme, naming the property.
+- [x] 4.1 Refuse a choice property with an empty `enum` and no concept scheme, naming the property.
+  - **ALREADY REFUSED, AND A SECOND REFUSAL WAS WRITTEN AND REMOVED.**
+    `PropertyValidatorHandler` throws "'enum' at '<path>' must be a non-empty
+    array", with `testValidatePropertyRejectsEmptyEnum` on the sentence. A
+    refusal added in `CodedChoiceDeclaration` shadowed it with different words
+    for one defect, which is how an app ends up with two error messages for one
+    mistake. Found by running the suite, not by reading the file: the new
+    refusal threw first and the existing test failed on the wrong sentence.
 - [ ] 4.2 Hand the editor half to the dossiq lane for `code-lists-from-concepts`: the Properties tab has no input for `enumValues`, study row A4.
 - [ ] 4.3 Record that the B3 half, options narrowed by another property's value, is carried by `code-list-lifecycle-and-hierarchy` REQ-CLH-002.
