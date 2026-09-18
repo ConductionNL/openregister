@@ -205,3 +205,28 @@ SPDX-FileCopyrightText = [
     "2026 Conduction B.V. <info@conduction.nl>",
 ]
 SPDX-License-Identifier = "EUPL-1.2"
+
+# Archived openspec documents. Review finding on #3857 (rjzondervan): this PR
+# had reworded one sentence in an ARCHIVED tasks.md because reuse read its
+# quoted SPDX tag as a malformed licence expression. The repo states the
+# convention in an archived document of its own —
+# openspec/changes/archive/2026-06-14-lifecycle-notifications-amendments/tasks.md:22,
+# "openspec archive directories are convention-treated as immutable history" —
+# so the sentence is restored byte-for-byte and the lint is satisfied here
+# instead.
+#
+# `override` rather than `closest` is the whole point: it makes reuse stop
+# reading these files' contents for licensing tags, so a document that QUOTES
+# an SPDX tag while describing work no longer fails the build. That generalises
+# to every future archived document, which is what the one-path fix would not
+# do. These are all Conduction's own change records; nothing third-party is
+# archived here.
+#
+# For a document that is still editable, the fix is reuse's own
+# `REUSE-IgnoreStart` / `REUSE-IgnoreEnd` around the quoted tag — see the
+# comment at `reuse-blocking` in .github/workflows/code-quality.yml.
+[[annotations]]
+path = "openspec/changes/archive/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Conduction B.V. <info@conduction.nl>"
+SPDX-License-Identifier = "EUPL-1.2"
