@@ -197,19 +197,22 @@ class TermDiagnostic {
 	 */
 	private function validateRoll(array $sla): string {
 		$roll = ($sla['rollToWorkingDay'] ?? 'none');
-		if (is_string($roll) === false) {
-			// `false`, `null`, a number or an array all mean "not a roll this
-			// vocabulary knows". Asked as a type rather than as two literals,
-			// because the two literals are what a declaration actually carries
-			// and a third shape would have passed straight through.
-			$roll = 'none';
-		}
 
+		// 🔴 `true` IS READ FIRST, and the order is the whole point. A boolean
+		// `true` means "roll to the next working day"; normalising non-strings
+		// before this would turn it into `none`, which is the opposite
+		// instruction and refuses nothing on the way through.
 		if ($roll === true) {
 			$roll = 'next';
 		}
 
-		$roll = (string)$roll;
+		if (is_string($roll) === false) {
+			// `false`, `null`, a number or an array all mean "not a roll this
+			// vocabulary knows". Asked as a type rather than as two literals,
+			// so a third shape cannot pass straight through.
+			$roll = 'none';
+		}
+
 		if (in_array($roll, self::ROLLS, true) === false) {
 			throw new FlowTimerValidationException(
 				message: sprintf(
