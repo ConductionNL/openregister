@@ -45,8 +45,66 @@
 ## 2. Facets and backend
 
 - [ ] 2.1 Facets over a related field.
-- [ ] 2.2 Solr `{!join}` translation with database fallback and response
+- [~] 2.2 Solr `{!join}` translation with database fallback and response
       attribution.
+  - 🔴 OBSOLETE AS WRITTEN, AND THE SOURCE IS WHY, NOT THIS PROPOSAL. There is
+    no Solr left to translate for. `remove-solr-and-publishing` deleted the
+    whole search-Index abstraction, and the tree agrees: `find lib src -iname
+    '*solr*'` returns ZERO files, there is no `SearchBackendInterface` and no
+    `IndexService`, and `grep -rn '{!join' lib src` finds nothing. That change
+    also says of this very capability: "`zoeken-filteren`: full-text/filter
+    search requirements drop the Solr/Elasticsearch backend branch; the
+    PostgreSQL Magic-Tables path becomes the sole search backend."
+  - So there is no second engine to translate to, and no fallback to attribute
+    a response to. The DB path is not the fallback any more, it is the path.
+    Building a `{!join}` translator now would add a caller-less translator for a
+    subsystem that was deliberately deleted.
+  - WHAT SURVIVES OF THE INTENT is the storage split, and that is built:
+    `RelatedRowExistsClause` renders against BOTH storages. See 2.3.
+  - One leftover reported, not swept, because it belongs to that change and not
+    this one: `elasticsearch/elasticsearch` is still required in
+    `composer.json` though nothing in `lib/` or `src/` imports it. The
+    `/api/objects/*/vectorize*` and `/api/settings/search/semantic` routes also
+    survive, but those are NOT orphans: their controller methods exist and they
+    run on pgvector, not on the removed backends.
+
+- [x] 2.3 The clause renders for the storage the search path actually uses.
+  - 🔴 I HAD THE WRONG TABLE, AND ONLY COUNTING THE LIVE ONES SHOWED IT. The
+    first version of the clause rendered `object ->> 'field'` against
+    `oc_openregister_objects`, and I verified it against real rows I seeded
+    there. But `MagicMapper` resolves
+    `oc_openregister_table_<register>_<schema>` for every read and has no
+    fallback to the objects table. On this instance there are 1,340 such tables
+    and `oc_openregister_objects` holds ZERO rows. The clause was correct SQL
+    against a table nothing reads.
+  - My earlier measurement missed this because I searched for the prefixes
+    `oc_or_%` and `%_magic%` and found nothing, and read that as "no magic
+    tables on this rig". The prefix is `openregister_table_`. Searching for the
+    name I expected instead of the name the code defines turned a populated
+    schema into an empty one.
+  - A magic table's properties are REAL TYPED COLUMNS: `days_remaining
+    numeric`, `due_at timestamp`, `found integer`. So the numeric-versus-text
+    machinery the JSON shape needs is not merely unneeded there, it is
+    HARMFUL: applying the regex guard to an integer column is a type error, and
+    casting one breaks an ordering the column type already gets right.
+    Measured live with the discriminating value 6: the column comparison
+    answers 4 parents, the same query over `found::text` answers 0.
+  - Metadata columns are underscore-prefixed on a magic table (`_uuid`,
+    `_deleted`, `_owner`), which is exactly why a schema may carry its own
+    property named `deleted`. And a magic table IS one schema, so the clause
+    omits the schema condition there rather than comparing `_schema`.
+  - Exercised against the live `oc_openregister_table_29_1108` with its real
+    rows. Still not wired into `MagicSearchHandler`: see 2.4.
+
+- [ ] 2.4 Wire the clause into `MagicSearchHandler`.
+  - UNBUILT AND NAMED, because a renderer with no caller is the same as no
+    filter at all. `MagicSearchHandler::buildFilteredQuery()` is the join
+    point, and the access predicate it must pass in is the one
+    `MagicRbacHandler::applyRbacFilters()` already builds. That handler
+    hardcodes the alias `t`, so it cannot currently produce a predicate for a
+    second table under a different alias. Making the alias a parameter is the
+    prerequisite, and it touches every existing caller, so it is its own task
+    rather than a detail of this one.
 
 ## 3. Tests
 
