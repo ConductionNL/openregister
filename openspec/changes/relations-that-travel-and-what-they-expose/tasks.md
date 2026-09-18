@@ -33,7 +33,7 @@
 > than the convention in prose it replaces.
 
 
-- [~] 2.1 A `partyRelationship` schema: two party references, a type, a period, a provenance.
+- [x] 2.1 A `partyRelationship` schema: two party references, a type, a period, a provenance. NOT BUILT HERE — pipelinq's `relationship` schema carries all four, provenance added in pipelinq#1981.
   - 🔴 DO NOT BUILD IT HERE. PIPELINQ ALREADY SHIPS ONE. Measured 2026-09-18 on
     the development instance: `pipelinq/lib/Settings/pipelinq_register.json`
     carries `components.schemas.relationship`, titled "Relationship", with
@@ -44,9 +44,22 @@
     SECOND DEFINITION OF ONE CONCEPT, at the data-model level, which is the
     costliest place to have two: two schemas mean two sets of stored rows, and
     nothing reconciles them afterwards.
-  - Provenance is the one part pipelinq's schema does not carry. It is an
-    addition to THAT schema, not a reason for a new one.
-- [~] 2.2 A relationship type declares the party kind at each end, its label and its reciprocal label.
+  - Provenance was the one part pipelinq's schema did not carry. ADDED THERE,
+    pipelinq#1981, as an enum (`declared`, `imported`, `derived`,
+    `authoritative-source`) defaulting to the WEAKEST value, because every
+    relationship written before it has none and reading that silence as anything
+    stronger would credit old rows with an authority nobody gave them. It is
+    `visible`, and that is asserted: `notes` and `startDate` on the same schema
+    are `visible: false`, so a provenance added the same way would be stored,
+    facetable, validated and never once shown to the person deciding whether to
+    trust the relationship.
+  - ✅ SO 2.1 AND 2.2 ARE SATISFIED BY PIPELINQ'S SCHEMA AND ARE CLOSED HERE.
+    Nothing further is owed in openregister for either. If a later reader is
+    tempted to add `partyRelationship`, the answer is in pipelinq's
+    `components.schemas.relationship`, and the reason not to is that two schemas
+    for one concept mean two sets of stored rows with nothing reconciling
+    them.
+- [x] 2.2 A relationship type declares the party kind at each end, its label and its reciprocal label. NOT BUILT HERE — `fromType`/`toType` and `type`/`inverseType` on pipelinq's schema.
   - ALSO ALREADY THERE, in the same schema: `fromType` and `toType` are the
     party kind at each end, and `type` with `inverseType` are the label and its
     reciprocal. `category` groups them.
