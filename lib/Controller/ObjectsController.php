@@ -4542,6 +4542,50 @@ class ObjectsController extends Controller {
 	}//end unlock()
 
 	/**
+	 * Whether a row exists in other registers, and nothing about the row.
+	 *
+	 * 🔴 IT IS NOT A SEARCH WITH FIELDS REMOVED. The answer is assembled from
+	 * named values, so a schema that grows a property grows nothing here. The
+	 * question purpose limitation actually allows is "is this person already
+	 * known elsewhere", and answering it by handing over rows and trusting the
+	 * caller to discard them puts the decision in code the register's owner
+	 * never sees.
+	 *
+	 * Authorisation is the read it replaces: every probe goes through the same
+	 * RBAC the search does, so this can never answer about a register the
+	 * caller could not have searched. A refused probe says REFUSED rather than
+	 * "nothing exists" — reporting a refusal as an absence would itself be an
+	 * answer the caller was not entitled to.
+	 *
+	 * @return JSONResponse The per-probe answers, or a 4xx.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 */
+	#[NoAdminRequired]
+	public function exists(): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			// Before anything is asked. An anonymous caller learning that a
+			// register holds nothing about a person has still learned something.
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$service = $this->container->get(\OCA\OpenRegister\Service\CrossRegisterExistenceService::class);
+		$probes = $this->request->getParam('probes', []);
+		$answer = $service->probe(probes: ((is_array($probes) === true) ? $probes : []));
+
+		if (isset($answer['error']) === true) {
+			return new JSONResponse(data: $answer, statusCode: 422);
+		}
+
+		return new JSONResponse(data: $answer);
+	}//end exists()
+
+	/**
 	 * Export objects to specified format
 	 *
 	 * @param string $register The register slug or identifier

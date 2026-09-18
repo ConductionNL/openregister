@@ -1178,6 +1178,14 @@ return [
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
+            // Whether a row exists in other registers, and nothing about the
+            // row (cross-register-existence-query). NOT a search with fields
+            // removed: the answer is assembled from named values, so a schema
+            // that grows a property grows nothing here. ONE segment, so it
+            // cannot collide with the two-segment `{register}/{schema}` create
+            // route that shares the verb: `exists` is never read as a register
+            // name, because there is no schema segment behind it to match.
+        ['name' => 'objects#exists', 'url' => '/api/objects/exists', 'verb' => 'POST'],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
             // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
