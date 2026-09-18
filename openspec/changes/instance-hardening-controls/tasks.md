@@ -13,17 +13,17 @@
 - [x] 0.9 `ThrottledSurfaces`: the six throttler actions named once, referenced by the six controllers.
 - [x] 0.10 Unit tests for the policy, the guard, the report, the settings writer, the controller and the middleware.
 
-## 1. The accepted statement
+## 1. The accepted statement (shipped, part 2)
 
-- [ ] 1.1 A statement with a version, published by an administrator (D-1).
-- [ ] 1.2 Acceptance required before the application renders, recorded with user, version and time (D-1).
-- [ ] 1.3 A new version asks every user again.
+- [x] 1.1 A statement with a version, published by an administrator (D-1). `StatementService::publish()`, `PUT /api/hardening/statement`.
+- [x] 1.2 Acceptance required before the application renders, recorded with user, version and time (D-1). `GET /api/hardening/statement` answers `needsAcceptance` for the session's own account; `POST /api/hardening/statement/acceptance` records it.
+- [x] 1.3 A new version asks every user again. The acceptance carries the version, so `needsAcceptance` turns true again the moment a new one is published.
 
-## 2. Elevation
+## 2. Elevation (shipped, part 2)
 
-- [ ] 2.1 A fresh authentication before the administration surface renders (D-2).
-- [ ] 2.2 An administered expiry, refusing administration writes after it lapses (D-2).
-- [ ] 2.3 Elevation written to the audit trail.
+- [x] 2.1 A fresh authentication before the administration surface renders (D-2). `POST /api/hardening/elevation` confirms the password of the SESSION's account, throttled.
+- [x] 2.2 An administered expiry, refusing administration writes after it lapses (D-2). `admin.elevationSeconds` is a control with an `atMost` floor, and the four administration writes call `requireElevated()` and answer 403.
+- [x] 2.3 Elevation written to the audit trail. `elevation.granted`, `elevation.refused` and `elevation.lapsed`.
 
 ## 3. Scoped second factor and address binding
 
@@ -47,12 +47,18 @@
 
 ## 6. Tests
 
-- [ ] 6.1 `tests/e2e/ci/instance-hardening.spec.ts`: the statement on first use, a new version asking again, elevation before administration, the last-administrator refusal.
-- [ ] 6.2 Unit tests: the elevated session expiry, the second-factor scope refusal, the blank address refusal, the unverified-recipient body, the held grant, the absent environment variable, the bar keeping history.
+- [x] 6.1 `tests/e2e/ci/instance-hardening.spec.ts`: the statement on first use, a new version asking again, and an administration write refused from a session that confirmed no password. The last-administrator refusal waits for section 5.
+- [~] 6.2 Unit tests: the elevated session expiry (`ElevationServiceTest`) and the statement (`StatementServiceTest`) are written. The second-factor scope, the blank address, the unverified recipient, the held grant, the absent environment variable and the bar belong to sections 3 to 5, which are not built.
 - [ ] 6.3 A regression test that an instance declaring none of this behaves as before.
 - [ ] 6.4 `openspec validate instance-hardening-controls --strict`.
 
 ## 7. Hand over
+
+> Sections 3, 4 and 5 are NOT built. Part 2 lands the statement and elevation
+> because they are the two the rest lean on: a scope that requires a second
+> factor and a privilege guard both refuse through an elevated session. What
+> remains is named above, task by task, and none of it is half-written.
+
 
 - [ ] 7.1 Hand the statement and the second-factor scope to the dossiq lane, with the eighteen candidate ids.
 - [ ] 7.2 Tell the cluster 66 lane that C-configuration-72 is answered by REQ-IHC-002 and needs no second elevated session.

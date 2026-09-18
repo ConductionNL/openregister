@@ -394,6 +394,17 @@ return [
         ['name' => 'hardening#floors', 'url' => '/api/hardening/floors', 'verb' => 'GET'],
         ['name' => 'hardening#updateControls', 'url' => '/api/hardening/controls', 'verb' => 'PUT'],
         ['name' => 'hardening#updateFloors', 'url' => '/api/hardening/floors', 'verb' => 'PUT'],
+        // A write here needs a password confirmed in the last period, not just
+        // an open session (REQ-IHC-002), and `elevate` is throttled because a
+        // correct guess buys the right to weaken every control above.
+        ['name' => 'hardening#elevate', 'url' => '/api/hardening/elevation', 'verb' => 'POST'],
+        // The statement (REQ-IHC-001). The two reads and the acceptance are the
+        // only hardening routes an ordinary account may call, and each answers
+        // about the SESSION's account: no user id is read from the request.
+        ['name' => 'hardening#statement', 'url' => '/api/hardening/statement', 'verb' => 'GET'],
+        ['name' => 'hardening#acceptStatement', 'url' => '/api/hardening/statement/acceptance', 'verb' => 'POST'],
+        ['name' => 'hardening#publishStatement', 'url' => '/api/hardening/statement', 'verb' => 'PUT'],
+        ['name' => 'hardening#withdrawStatement', 'url' => '/api/hardening/statement', 'verb' => 'DELETE'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
