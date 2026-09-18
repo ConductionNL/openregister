@@ -26,10 +26,15 @@ SPDX-PackageDownloadLocation = "https://github.com/ConductionNL/openregister"
 # the LAST matching table in this file wins. `precedence = "closest"` means a
 # file's OWN header beats the table (the table only fills gaps);
 # `precedence = "override"` means the table beats the header. The blanket comes
-# first and uses `closest`; every third-party block comes after it and uses
-# `override`, because a .xsd, .jsonld, .pdf or tokenizer.json cannot carry a
-# header and we assert its provenance here on the publisher's behalf. Same
-# model as keepiq and portaliq.
+# first and uses `closest`; every block after it uses `override`. Two different
+# reasons for that, and it is worth keeping them apart. For most third-party
+# material the format cannot carry a header at all (.xsd, .jsonld, .pdf,
+# tokenizer.json) or a header would be an edit to someone else's artwork
+# (.svg), so we assert provenance here on the publisher's behalf. For the
+# archived openspec documents at the end of this file the point is the opposite:
+# `override` makes reuse stop READING the file for tags, which is what lets an
+# archived document quote an SPDX tag without failing the build. Same model as
+# keepiq and portaliq.
 #
 # THE ORDER THIS WAS WRITTEN IN MATTERS. The third-party inventory below was
 # done BEFORE the blanket was added — a blanket first would have stamped every
@@ -44,10 +49,10 @@ SPDX-PackageDownloadLocation = "https://github.com/ConductionNL/openregister"
 # `closest` also means the two Nextcloud-derived files keep their own truth:
 # `.editorconfig` carries "2019 Nextcloud GmbH and Nextcloud contributors /
 # AGPL-3.0-or-later" in its own header, which is why LICENSES/ contains
-# AGPL-3.0-or-later.txt. The three `patches/*.patch` have a block of their own
-# below. The files that say
-# "Open Register Contributors" instead of "Conduction B.V." keep their own
-# header too — the copyright text differs, the licence does not.
+# AGPL-3.0-or-later.txt. The three `patches/*.patch` have blocks of their own
+# below. The files that say "Open Register Contributors" instead of
+# "Conduction B.V." keep their own header too — the copyright text differs, the
+# licence does not.
 [[annotations]]
 path = "**"
 precedence = "closest"
@@ -152,25 +157,55 @@ path = [
     "img/lock.svg",
     "img/unlock.svg",
     "img/app-dark.svg",
+    "img/app.svg",
 ]
 precedence = "override"
 SPDX-FileCopyrightText = "Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/"
 SPDX-License-Identifier = "Apache-2.0"
 
 # The same MDI `database-sync` glyph, re-exported through Adobe Illustrator
-# (decimal path coordinates instead of MDI's integers, same shape). `img/app.svg`
-# is the glyph alone; `img/app-store.svg` and `docs/static/img/logo.svg` place it
-# inside Conduction's hexagon, which is ours. Two rights holders and two licences
-# in one file is what an `AND` expression is for — the glyph stays Apache-2.0,
-# the hexagon and the composition are EUPL-1.2. Replacing the glyph with our own
-# drawing would collapse these three back to the blanket; until then, silence
-# would be the wrong answer given how this file frames the ordering.
+# (decimal path coordinates instead of MDI's integers, same shape), placed inside
+# Conduction's hexagon — `<polygon points="256,26 455.19,141 …">`, which is ours.
+# Two rights holders and two licences in one file is what an `AND` expression is
+# for: the glyph stays Apache-2.0, the hexagon and the composition are EUPL-1.2.
+#
+# `img/app.svg` is deliberately NOT here. It is the re-exported glyph and nothing
+# else — no hexagon, `grep -c polygon img/app.svg` is 0 — so a Conduction
+# copyright over it would be the same over-claim this file exists to avoid, and
+# it sits in the Apache-2.0-only block above next to `img/app-dark.svg`, which is
+# the identical drawing in MDI's own coordinate form.
+#
+# Replacing the glyph with our own drawing would collapse all of these back to
+# the blanket; until then, silence would be the wrong answer given how this file
+# frames the ordering.
 [[annotations]]
 path = [
-    "img/app.svg",
     "img/app-store.svg",
     "docs/static/img/logo.svg",
 ]
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "Apache-2.0 AND EUPL-1.2"
+
+# `src/files-sidebar.js` inlines two icon glyphs rather than importing them, and
+# says so itself: "// MDI icon SVG paths (inline to avoid icon library
+# dependency)", with `// database-outline` and `// text-box-search-outline` above
+# them. A repo-wide sweep — every tracked `d="…"` in a source file tested against
+# `node_modules/@mdi/js/mdi.js` — returns exactly four files: the three SVGs above
+# and this one. The `database-outline` path here is byte-identical to MDI's; the
+# `text-box-search-outline` one is not present in the installed package (a
+# different MDI release, or hand-adjusted), but the file declares it as MDI and
+# an assertion of sole Conduction authorship over it would not be supportable.
+#
+# The rest of the file is Conduction's own sidebar registration, hence `AND`
+# rather than an Apache-2.0-only block. `src/icons.js` and
+# `src/mail-sidebar/icons.js` only IMPORT from vue-material-design-icons and
+# embed no artwork, so they stay under the blanket.
+[[annotations]]
+path = "src/files-sidebar.js"
 precedence = "override"
 SPDX-FileCopyrightText = [
     "Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/",
@@ -204,6 +239,86 @@ SPDX-FileCopyrightText = [
 ]
 SPDX-License-Identifier = "EUPL-1.2"
 
+
+
+# Our patches against upstream MIT code. Review finding on #3857 (rjzondervan):
+# the licence conclusion was right — theodo-group/llphant 1.0.1 and
+# phpoffice/phpspreadsheet 5.9.0 are MIT per composer.lock, and the reproduced
+# context (6, 12 and 7 lines respectively, `grep -cE '^ ' patches/*.patch`) is
+# nowhere near a substantial portion — but the COPYRIGHT field was not: the
+# blanket asserted "2026 Conduction B.V." over context lines that are
+# demonstrably LLPhant's and PhpSpreadsheet's. That is the ggm-snapshot.json
+# shape again, so it gets the same dual-holder treatment.
+#
+# Two blocks rather than one, because each patch touches exactly one upstream:
+# the LLPhant patches are against src/Chat/OllamaChat.php, the PhpSpreadsheet
+# patch against src/PhpSpreadsheet/Writer/ZipStream0.php. One combined block
+# would put PhpSpreadsheet's copyright on a file containing none of its code —
+# a smaller version of the error being fixed here.
+[[annotations]]
+path = "patches/llphant-*.patch"
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "The LLPhant contributors, https://github.com/theodo-group/LLPhant",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "MIT AND EUPL-1.2"
+
+[[annotations]]
+path = "patches/phpspreadsheet-*.patch"
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "The PhpSpreadsheet contributors, https://github.com/PHPOffice/PhpSpreadsheet",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "MIT AND EUPL-1.2"
+
+# Docusaurus classic-template scaffolding. Review finding on #3857
+# (rjzondervan), raised as "the same class as the icons and the ZGW examples,
+# and a reviewer may want all three decided by one consistent rule". They are,
+# and the rule is the one at the top of this file: if the expression in a file
+# originated with someone else, name them — being generator output is not a
+# reason for silence, only a reason not to block on it.
+#
+# docs/src/css/custom.css still opens with the template's own comment ("Any CSS
+# included here will be global. The classic template bundles Infima by
+# default…"); docs/src/components/HomepageFeatures/index.js keeps the template
+# structure (`FeatureList`, `function Feature({title, description})`,
+# `clsx('col col--4')`) with only the copy swapped; the two *.module.css files
+# are the template's rules. Docusaurus is MIT, © Meta Platforms, Inc. and
+# affiliates.
+#
+# `docs/sidebars.js` is the strongest case of the five: everything between its
+# first and last line is byte-identical to the template's `sidebars.js`,
+# commented-out `'intro' / 'hello' / 'tutorial-basics/create-a-document'`
+# example included; only the header comment and `module.exports` vs
+# `export default` differ.
+#
+# docs/src/pages/index.js is NOT here on purpose: it was rewritten to compose
+# @conduction/docusaurus-preset components and keeps none of the template's
+# body, so it stays under the blanket. `docs/docusaurus.config.js` shares only
+# the `// @ts-check` line and is otherwise ours; also left on the blanket.
+[[annotations]]
+path = [
+    "docs/src/css/custom.css",
+    "docs/src/components/HomepageFeatures/index.js",
+    "docs/src/components/HomepageFeatures/styles.module.css",
+    "docs/src/pages/index.module.css",
+    "docs/sidebars.js",
+]
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "Meta Platforms, Inc. and affiliates, https://github.com/facebook/docusaurus",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "MIT AND EUPL-1.2"
+
+# ---------------------------------------------------------------------------
+# Not third party — ours, but read differently. The block below is Conduction's
+# own material; it sits here rather than under the blanket because the reason
+# for it is the reading mechanism, not the rights holder.
+# ---------------------------------------------------------------------------
+
 # Archived openspec documents. Review finding on #3857 (rjzondervan): this PR
 # had reworded one sentence in an ARCHIVED tasks.md because reuse read its
 # quoted SPDX tag as a malformed licence expression. The repo states the
@@ -228,54 +343,3 @@ path = "openspec/changes/archive/**"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Conduction B.V. <info@conduction.nl>"
 SPDX-License-Identifier = "EUPL-1.2"
-
-# Our patches against upstream MIT code. Review finding on #3857 (rjzondervan):
-# the licence conclusion was right — theodo-group/llphant 1.0.1 and
-# phpoffice/phpspreadsheet 5.9.0 are MIT per composer.lock, and 8-14 context
-# lines is nowhere near a substantial portion — but the COPYRIGHT field was
-# not: the blanket asserted "2026 Conduction B.V." over context lines that are
-# demonstrably LLPhant's and PhpSpreadsheet's. That is the ggm-snapshot.json
-# shape again (upstream content plus Conduction's work, same treatment), so it
-# gets the same dual-holder block. The added lines stay ours under EUPL-1.2;
-# the quoted context stays theirs under MIT.
-[[annotations]]
-path = "patches/*.patch"
-precedence = "override"
-SPDX-FileCopyrightText = [
-    "The LLPhant contributors, https://github.com/theodo-group/LLPhant",
-    "The PhpSpreadsheet contributors, https://github.com/PHPOffice/PhpSpreadsheet",
-    "2026 Conduction B.V. <info@conduction.nl>",
-]
-SPDX-License-Identifier = "MIT AND EUPL-1.2"
-
-# Docusaurus classic-template scaffolding. Review finding on #3857
-# (rjzondervan), raised as "the same class as the icons and the ZGW examples,
-# and a reviewer may want all three decided by one consistent rule". They are,
-# and the rule is the one at the top of this file: if the expression in a file
-# originated with someone else, name them — being generator output is not a
-# reason for silence, only a reason not to block on it.
-#
-# docs/src/css/custom.css still opens with the template's own comment ("Any CSS
-# included here will be global. The classic template bundles Infima by
-# default…"); docs/src/components/HomepageFeatures/index.js keeps the template
-# structure (`FeatureList`, `function Feature({title, description})`,
-# `clsx('col col--4')`) with only the copy swapped; the two *.module.css files
-# are the template's rules. Docusaurus is MIT, © Meta Platforms, Inc. and
-# affiliates.
-#
-# docs/src/pages/index.js is NOT here on purpose: it was rewritten to compose
-# @conduction/docusaurus-preset components and keeps none of the template's
-# body, so it stays under the blanket.
-[[annotations]]
-path = [
-    "docs/src/css/custom.css",
-    "docs/src/components/HomepageFeatures/index.js",
-    "docs/src/components/HomepageFeatures/styles.module.css",
-    "docs/src/pages/index.module.css",
-]
-precedence = "override"
-SPDX-FileCopyrightText = [
-    "Meta Platforms, Inc. and affiliates, https://github.com/facebook/docusaurus",
-    "2026 Conduction B.V. <info@conduction.nl>",
-]
-SPDX-License-Identifier = "MIT AND EUPL-1.2"

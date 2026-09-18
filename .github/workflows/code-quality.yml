@@ -254,12 +254,13 @@ jobs:
       # because most fleet apps ship no REUSE.toml or LICENSES/ directory. This
       # repo ships both since WOO-579 (2026-09-17): a repo-wide `path = "**"` /
       # `precedence = "closest"` floor in REUSE.toml makes every new file
-      # compliant on arrival whatever its type, and the third-party material
-      # the repo bundles (a Schema.org subset, the MDTO XSD, two TOOI value
-      # lists, the GGM snapshot, the Dolphin model card, one PDF fixture) is
-      # annotated to what its publisher says, in `override` blocks that name
-      # the source. Measured before flipping: `reuse lint` compliant, 0
-      # missing licences, 0 unused.
+      # compliant on arrival whatever its type, and every piece of third-party
+      # material the repo bundles is annotated to what its publisher says, in
+      # `override` blocks that name the source. No enumeration of them here on
+      # purpose: the list written here first went stale inside the very pull
+      # request that wrote it, when review found five more clusters. REUSE.toml
+      # is the list, one commented block each. Measured before flipping:
+      # `reuse lint` compliant, 0 missing licences, 0 unused.
       #
       # Before this the REUSE row in the Quality Report was ❌ on every PR while
       # the job itself reported success (`continue-on-error`), so nobody was
@@ -288,11 +289,16 @@ jobs:
       #    Both majors NAME the offending file in the error, so this is
       #    diagnosable; run `docker run --rm -v "$PWD":/data fsfe/reuse:6 lint`
       #    locally to see it before CI does.
-      #    Fix: reuse's own REUSE-IgnoreStart / REUSE-IgnoreEnd around the
-      #    quoted tag — which is why this comment block sits between a pair of
-      #    them. For openspec/changes/archive/**, which the repo treats as
-      #    immutable history, REUSE.toml carries a `precedence = "override"`
-      #    block instead, so nothing there is read for tags at all.
+      #    Fix: reuse's own ignore markers around the quoted tag — which is
+      #    why this comment block sits between a pair of them. Their two names
+      #    are deliberately not written out again anywhere inside the block:
+      #    reuse matches the literal strings non-greedily, so a prose mention
+      #    of the closing one ENDS the region at that line and leaves the rest
+      #    of the block unprotected. That is a real trap — the first draft of
+      #    this comment had exactly that shape.
+      #    For openspec/changes/archive/**, which the repo treats as immutable
+      #    history, REUSE.toml carries a `precedence = "override"` block
+      #    instead, so nothing there is read for tags at all.
       #
       # This branch is compliant under BOTH majors, so the v6 bump will not
       # land as a surprise red build here.
