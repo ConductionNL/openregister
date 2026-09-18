@@ -6,11 +6,28 @@
       `FlowTimer` carries `organisation` and `calendarSlug` today, both filled
       at arm time, so the migration this task asks for is half unnecessary.
       Worth stating rather than silently skipping.
-- [ ] 1.1b The two indexes. Until they exist the job pages the OPEN timers by
-      id — which is an index read with a resumable cursor over the small set,
-      not a scan of every timer ever armed. When the indexes land this becomes
-      the two reads D-3 describes and the RULE does not change, because the
-      rule is `CalendarDependency` either way.
+- [x] 1.1b The index the two reads need.
+  - 🔑 THE TASK ASKED FOR TWO; THE SOURCE NEEDS ONE, AND SAYING SO IS THE POINT.
+    `FlowTimerMapper` has exactly two calendar reads,
+    `findOpenByCalendarSlug()` and `countOpenByCalendarSlug()`, and BOTH filter
+    on the same pair, `calendar_slug` and `state`. One composite index serves
+    both. The second index was to be on `organisation`, and NO query filters on
+    it: `grep -n "eq('organisation'" lib/Db/FlowTimerMapper.php` returns
+    nothing. That index would have cost a write on every timer armed and been
+    read by nobody.
+  - `calendar_slug` LEADS, because it is the selective half: one calendar out of
+    many, against a `state` that is two values. The existing
+    `or_flowtimer_due_idx` on `(state, fire_at)` does not serve these reads for
+    exactly that reason.
+  - 🔴 IT CHANGES THE COST, NOT THE ANSWER. Without it the job paged the open
+    timers by id, which is an index read with a resumable cursor over a small
+    set, not a scan of every timer ever armed. A speed-up on a correct job, and
+    it must not be written up as a fix for a wrong one.
+  - VERIFIED AGAINST THE LIVE POSTGRES, not just `php -l`: the table carries the
+    five existing indexes and no calendar one, and the index statement was
+    created and dropped on the real table, which is what proves the column names
+    (`calendar_slug`, not `calendarSlug`). NOT measured as a speed-up: that
+    instance holds two timers, where any plan test would be theatre.
 - [x] 1.2a `supersede()` already takes a free-text reason and already writes
       it to the ledger event, so `CalendarRecompute::REASON` is the constant
       and no engine change was needed. The actor is a named machine identity,
