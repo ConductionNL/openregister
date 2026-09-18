@@ -237,6 +237,148 @@
 						</tbody>
 					</table>
 				</section>
+
+				<section class="consoleSection">
+					<h2>{{ t('openregister', 'Run history') }}</h2>
+
+					<div class="runFilters">
+						<label class="runFilter">
+							<span>{{ t('openregister', 'Outcome') }}</span>
+							<select v-model="runOutcome" @change="loadRuns">
+								<option value="">
+									{{ t('openregister', 'Every outcome') }}
+								</option>
+								<option value="running">
+									{{ t('openregister', 'Still running') }}
+								</option>
+								<option value="completed">
+									{{ t('openregister', 'Completed') }}
+								</option>
+								<option value="failed">
+									{{ t('openregister', 'Failed') }}
+								</option>
+							</select>
+						</label>
+
+						<label class="runFilter">
+							<span>{{ t('openregister', 'Period') }}</span>
+							<select v-model.number="runWindowHours" @change="loadRuns">
+								<option :value="24">
+									{{ t('openregister', 'Last day') }}
+								</option>
+								<option :value="168">
+									{{ t('openregister', 'Last week') }}
+								</option>
+								<option :value="720">
+									{{ t('openregister', 'Last month') }}
+								</option>
+							</select>
+						</label>
+					</div>
+
+					<NcEmptyContent
+						v-if="runs.length === 0"
+						:name="t('openregister', 'No run in this period')"
+						:description="
+							t(
+								'openregister',
+								'Every recorded run shows up here with how it came out.',
+							)
+						">
+						<template #icon>
+							<CogOutline :size="48" />
+						</template>
+					</NcEmptyContent>
+
+					<table v-else class="consoleTable">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Job') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Started') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Took') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Outcome') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Reason') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Started by') }}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="run in runs" :key="run.id">
+								<td>{{ run.name }}</td>
+								<td>{{ run.started }}</td>
+								<td>{{ durationOf(run) }}</td>
+								<td>{{ outcomeWords(run.outcome) }}</td>
+								<td class="failureCell">
+									{{ run.message || '' }}
+								</td>
+								<td>{{ run.actor || t('openregister', 'The schedule') }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+
+				<section class="consoleSection">
+					<h2>{{ t('openregister', 'Maintenance') }}</h2>
+
+					<NcNoteCard v-if="maintenance.holds" type="warning">
+						{{
+							t(
+								'openregister',
+								'This register is closed. Readers are told: {message}',
+								{ message: maintenance.message },
+							)
+						}}
+					</NcNoteCard>
+
+					<div class="maintenanceActions">
+						<NcButton
+							v-for="action in maintenanceActions"
+							:key="action.slug"
+							:disabled="acting === action.slug"
+							@click="runNow(action.slug)">
+							{{ action.label }}
+						</NcButton>
+
+						<NcButton
+							v-if="maintenance.holds"
+							type="primary"
+							:disabled="acting === 'maintenance'"
+							@click="leaveMaintenance">
+							{{ t('openregister', 'Open the register again') }}
+						</NcButton>
+						<NcButton
+							v-else
+							:disabled="acting === 'maintenance'"
+							@click="enterMaintenance">
+							{{ t('openregister', 'Close for maintenance') }}
+						</NcButton>
+					</div>
+
+					<p v-if="facts.version" class="factsLine">
+						{{
+							t(
+								'openregister',
+								'Version {version}, build {build}, licence {licence}.',
+								{
+									version: facts.version,
+									build: facts.build || '-',
+									licence: facts.licence,
+								},
+							)
+						}}
+					</p>
+				</section>
 			</template>
 		</div>
 	</NcAppContent>
@@ -286,6 +428,11 @@ export default {
 			bulkJobs: [],
 			unobserved: [],
 			rulesHoldingAnError: [],
+			runs: [],
+			runOutcome: '',
+			runWindowHours: 24,
+			maintenance: { holds: false, message: '', actor: null },
+			facts: {},
 		}
 	},
 
@@ -322,6 +469,32 @@ export default {
 		 */
 		unobservedNames() {
 			return this.unobserved.map((job) => job.name).join(', ')
+		},
+
+		/**
+		 * The maintenance actions, with the words a reader sees.
+		 *
+		 * The slugs are the server's; the words are here, where they can be
+		 * translated, and nowhere else.
+		 *
+		 * @return {Array<object>} The actions.
+		 * @spec exclude UI plumbing, pairs the shipped slugs with their labels
+		 */
+		maintenanceActions() {
+			return [
+				{
+					slug: 'search-index-rebuild',
+					label: t('openregister', 'Rebuild the search index'),
+				},
+				{
+					slug: 'cache-clear-and-warm',
+					label: t('openregister', 'Clear and warm the cache'),
+				},
+				{
+					slug: 'consistency-check',
+					label: t('openregister', 'Check the data'),
+				},
+			]
 		},
 	},
 
@@ -410,6 +583,12 @@ export default {
 				this.bulkJobs = jobs.data.results || []
 				this.unobserved = jobs.data.unobserved || []
 				this.rulesHoldingAnError = ruleRuns.data.holdingAnError || []
+
+				await Promise.all([
+					this.loadRuns(),
+					this.loadMaintenance(),
+					this.loadFacts(),
+				])
 			} catch {
 				this.error = t(
 					'openregister',
@@ -449,6 +628,174 @@ export default {
 			} finally {
 				this.acting = null
 			}
+		},
+
+		/**
+		 * The run history, under the filters the reader chose.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 */
+		async loadRuns() {
+			const query = new URLSearchParams({
+				hours: String(this.runWindowHours),
+				limit: '50',
+			})
+
+			if (this.runOutcome !== '') {
+				query.set('outcome', this.runOutcome)
+			}
+
+			const answer = await axios.get(
+				generateUrl(
+					`/apps/openregister/api/operations/runs?${query.toString()}`,
+				),
+			)
+
+			this.runs = answer.data.results || []
+		},
+
+		/**
+		 * Whether the instance is closed, and what readers are told.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 */
+		async loadMaintenance() {
+			const answer = await axios.get(
+				generateUrl('/apps/openregister/api/operations/maintenance'),
+			)
+
+			this.maintenance = answer.data || { holds: false, message: '' }
+		},
+
+		/**
+		 * The version, build and licence a support call opens with.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+		 */
+		async loadFacts() {
+			const answer = await axios.get(
+				generateUrl('/apps/openregister/api/operations/facts'),
+			)
+
+			this.facts = answer.data || {}
+		},
+
+		/**
+		 * Start a job by hand.
+		 *
+		 * A refusal is shown as the server worded it, including the run that
+		 * holds the job: replacing it with a generic sentence here would take
+		 * away the one thing the reader can act on.
+		 *
+		 * @param {string} slug The job or maintenance action.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+		 */
+		async runNow(slug) {
+			this.acting = slug
+			this.error = ''
+
+			try {
+				await axios.post(
+					generateUrl('/apps/openregister/api/operations/run-now'),
+					{ job: slug },
+				)
+				await this.loadRuns()
+			} catch (exception) {
+				this.error =
+					(exception.response || {}).data?.message
+					|| t('openregister', 'That did not go through.')
+			} finally {
+				this.acting = null
+			}
+		},
+
+		/**
+		 * Close the instance, with the message readers are given.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 */
+		async enterMaintenance() {
+			this.acting = 'maintenance'
+			this.error = ''
+
+			try {
+				const answer = await axios.post(
+					generateUrl('/apps/openregister/api/operations/maintenance'),
+					{ message: this.maintenance.message || undefined },
+				)
+				this.maintenance = answer.data
+			} catch (exception) {
+				this.error =
+					(exception.response || {}).data?.message
+					|| t('openregister', 'That did not go through.')
+			} finally {
+				this.acting = null
+			}
+		},
+
+		/**
+		 * Open the instance again.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 */
+		async leaveMaintenance() {
+			this.acting = 'maintenance'
+			this.error = ''
+
+			try {
+				const answer = await axios.delete(
+					generateUrl('/apps/openregister/api/operations/maintenance'),
+				)
+				this.maintenance = answer.data
+			} catch (exception) {
+				this.error =
+					(exception.response || {}).data?.message
+					|| t('openregister', 'That did not go through.')
+			} finally {
+				this.acting = null
+			}
+		},
+
+		/**
+		 * How long a run took, in words.
+		 *
+		 * @param {object} run The run row.
+		 * @return {string} The duration.
+		 * @spec exclude UI plumbing, renders a number of milliseconds
+		 */
+		durationOf(run) {
+			if (run.durationMs === null || run.durationMs === undefined) {
+				return t('openregister', 'Still running')
+			}
+
+			if (run.durationMs < 1000) {
+				return `${run.durationMs} ms`
+			}
+
+			return `${Math.round(run.durationMs / 100) / 10} s`
+		},
+
+		/**
+		 * The words for an outcome the backend names by id.
+		 *
+		 * @param {string} outcome The outcome id.
+		 * @return {string} The words.
+		 * @spec exclude UI plumbing, translates one of three known ids
+		 */
+		outcomeWords(outcome) {
+			const words = {
+				running: t('openregister', 'Still running'),
+				completed: t('openregister', 'Completed'),
+				failed: t('openregister', 'Failed'),
+			}
+
+			return words[outcome] || outcome
 		},
 	},
 }
@@ -533,6 +880,32 @@ export default {
 .unobservedNames {
 	display: block;
 	margin-top: 4px;
+	color: var(--color-text-maxcontrast);
+}
+
+.runFilters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin-bottom: 12px;
+}
+
+.runFilter {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	color: var(--color-text-maxcontrast);
+}
+
+.maintenanceActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.factsLine {
+	margin-top: 12px;
 	color: var(--color-text-maxcontrast);
 }
 </style>
