@@ -143,7 +143,7 @@ class DeleteObject {
 	 * @param FileService|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapper|null $registerMapper Register mapper for register lookups
-	 * @param DeletionWindowService|null $deletionWindowService Resolves and states the recovery window
+	 * @param DeletionWindowService|null $windowService Resolves and states the recovery window
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 *
@@ -162,7 +162,7 @@ class DeleteObject {
 		private readonly ?FileService $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper = null,
-		private readonly ?DeletionWindowService $deletionWindowService = null,
+		private readonly ?DeletionWindowService $windowService = null,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->settingsService = $settingsService;
@@ -343,10 +343,10 @@ class DeleteObject {
 		// date at all, so the only object that ever carried one came through
 		// ObjectEntity::delete(). Nobody could read how long they had because
 		// nothing had written it down.
-		if ($this->deletionWindowService !== null) {
+		if ($this->windowService !== null) {
 			$deletionData = array_merge(
 				$deletionData,
-				$this->deletionWindowService->openWindow(
+				$this->windowService->openWindow(
 					schema: $schemaEntity,
 					deletedAt: DateTimeImmutable::createFromMutable($deletedAt)
 				)

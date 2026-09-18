@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
@@ -35,11 +36,11 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -70,18 +71,6 @@ use Throwable;
 class AuditTrailMapper extends QBMapper {
 
 	/**
-	 * Largest a single `changed` property value may be, in bytes.
-	 *
-	 * 64 KB is far above any real field-level change and far below the 62 MB
-	 * single entry measured on the dev instance. An audit trail records THAT a
-	 * property changed and by whom; storing a multi-megabyte copy of the value
-	 * is a backup of the object filed under a different name.
-	 *
-	 * @var integer
-	 */
-	private const MAX_CHANGED_VALUE_BYTES = 65536;
-
-	/**
 	 * Request-scoped import-job tag.
 	 *
 	 * Set by `ImportService` at the start of a bulk import via
@@ -107,6 +96,7 @@ class AuditTrailMapper extends QBMapper {
 	 * @param IUserSession $userSession User session service
 	 * @param IRequest $request Current request
 	 * @param LoggerInterface $logger Logger
+	 * @param AuditTrailPayloadHelper $payloadHelper Dependency-free payload conversion/reversion helpers
 	 */
 	public function __construct(
 		IDBConnection $db,
@@ -114,6 +104,7 @@ class AuditTrailMapper extends QBMapper {
 		private readonly IUserSession $userSession,
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,
+		private readonly AuditTrailPayloadHelper $payloadHelper = new AuditTrailPayloadHelper(),
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
 	}//end __construct()
@@ -455,9 +446,138 @@ class AuditTrailMapper extends QBMapper {
 	): AuditTrail {
 		$auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
 
+		// Nothing merges unless an administrator set a window, so this is a
+		// no-op on every instance that did not ask for it.
+		$merged = $this->mergeIntoAggregationWindow(candidate: $auditTrail);
+		if ($merged !== null) {
+			return $merged;
+		}
+
 		// Insert the new AuditTrail, sealed into the hash chain, and return it.
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createAuditTrail()
+
+	/**
+	 * Fold an edit into the entry already written, when a window says to.
+	 *
+	 * Returns the amended entry, or null when the edit is its own entry. Null
+	 * is the answer in every case that is not unambiguously a merge: no window,
+	 * not an update, no previous entry, a different actor, a different object,
+	 * too long ago, or an entry that is already sealed.
+	 *
+	 * ⚠️ THE SEALED CHECK IS NOT A BELT-AND-BRACES GUARD, IT IS THE RULE.
+	 * Amending an unsealed row is ordinary writing, because `insertHashChained`
+	 * deliberately leaves sealing to `AuditSealJob` and an unsealed row is not
+	 * yet in the chain. Amending a SEALED row would change a row the chain
+	 * covers, which `verifyChain()` reports as tampering and which it would be.
+	 * So a sealed row ends the window early and the edit gets its own entry,
+	 * which is the conservative direction: more entries, never fewer.
+	 *
+	 * Fail-soft throughout. Aggregation is a convenience; recording the edit is
+	 * not. Anything that goes wrong here answers null and the ordinary insert
+	 * happens, so the worst case is an entry that was not merged.
+	 *
+	 * @param AuditTrail $candidate The entry that would otherwise be inserted.
+	 *
+	 * @return AuditTrail|null The amended entry, or null to insert normally.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 */
+	private function mergeIntoAggregationWindow(AuditTrail $candidate): ?AuditTrail {
+		if ($candidate->getAction() !== 'update' || $candidate->getObjectUuid() === null) {
+			return null;
+		}
+
+		try {
+			// Resolved here rather than injected: the constructor is mocked by a
+			// long tail of tests that build this mapper positionally, and the
+			// window is read once per audited write on instances that set one.
+			$appConfig = $this->container->get(IAppConfig::class);
+			if (($appConfig instanceof IAppConfig) === false) {
+				return null;
+			}
+
+			$aggregation = new AuditAggregationService(appConfig: $appConfig);
+			$window = $aggregation->windowSeconds();
+			if ($window === 0) {
+				return null;
+			}
+
+			$previous = $this->findMergeCandidate(candidate: $candidate);
+			if ($previous === null) {
+				return null;
+			}
+
+			$within = $aggregation->isWithinWindow(
+				previous: $previous->getCreated(),
+				now: ($candidate->getCreated() ?? new DateTime()),
+				window: $window
+			);
+			if ($within === false) {
+				return null;
+			}
+
+			$previous->setChanged(
+				$aggregation->fold(previous: $previous->getChanged(), incoming: $candidate->getChanged())
+			);
+
+			return $this->update(entity: $previous);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[AuditTrailMapper] Could not fold an edit into the aggregation window',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'objectUuid' => $candidate->getObjectUuid(),
+					'error' => $e->getMessage(),
+				]
+			);
+
+			return null;
+		}//end try
+	}//end mergeIntoAggregationWindow()
+
+	/**
+	 * The entry an edit would fold into, if one exists.
+	 *
+	 * Same object, same actor, still an update, and not yet sealed. Ordered by
+	 * id rather than by `created` because the chain is walked in id order and
+	 * two rows can share a second.
+	 *
+	 * @param AuditTrail $candidate The entry that would otherwise be inserted.
+	 *
+	 * @return AuditTrail|null The entry to amend, or null.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 */
+	private function findMergeCandidate(AuditTrail $candidate): ?AuditTrail {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($candidate->getObjectUuid())))
+			->andWhere($qb->expr()->eq('action', $qb->createNamedParameter('update')))
+			->andWhere($qb->expr()->isNull('hash'))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		// Same actor, and an entry with no actor only ever merges with another
+		// one that has none. Folding a system write into a person's entry would
+		// put their name on a change they did not make.
+		$actor = $candidate->getUser();
+		$sameActor = $qb->expr()->isNull('user');
+		if ($actor !== null) {
+			$sameActor = $qb->expr()->eq('user', $qb->createNamedParameter($actor));
+		}
+
+		$qb->andWhere($sameActor);
+
+		$found = $this->findEntities(query: $qb);
+		if ($found === []) {
+			return null;
+		}
+
+		return $found[0];
+	}//end findMergeCandidate()
 
 	/**
 	 * Build (but do not persist) an audit trail entity for object changes.
@@ -619,7 +739,7 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setObject($objectEntity->getId());
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
-		$auditTrail->setChanged($this->capChangedPayload(changed: $changed));
+		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
 
 		$auditTrail->setUser('System');
 		$auditTrail->setUserName('System');
@@ -882,7 +1002,7 @@ class AuditTrailMapper extends QBMapper {
 			$placeholders = [];
 			foreach ($properties as $property) {
 				$getter = 'get' . ucfirst($property);
-				$parameters[] = $this->toDatabaseValue(
+				$parameters[] = $this->payloadHelper->toDatabaseValue(
 					value: $auditTrail->$getter(),
 					type: ($fieldTypes[$property] ?? 'string')
 				);
@@ -928,38 +1048,6 @@ class AuditTrailMapper extends QBMapper {
 		// readback would put `"id":null` on every line of an import.
 		$this->shipToSink(entries: $chunk);
 	}//end insertAuditTrailChunk()
-
-	/**
-	 * Convert an entity property value to its database representation.
-	 *
-	 * Mirrors the conversions QBMapper::insert() applies through parameter
-	 * types: json fields are json_encode'd and datetime fields are formatted
-	 * with the platform datetime format (`Y-m-d H:i:s`).
-	 *
-	 * @param mixed $value The property value
-	 * @param string $type The declared entity field type
-	 *
-	 * @return mixed The database-ready value
-	 */
-	private function toDatabaseValue(mixed $value, string $type): mixed {
-		if ($value === null) {
-			return null;
-		}
-
-		if ($type === 'json') {
-			return json_encode($value);
-		}
-
-		if ($type === 'datetime' && $value instanceof \DateTimeInterface) {
-			return $value->format('Y-m-d H:i:s');
-		}
-
-		if ($type === 'boolean' || $type === 'bool') {
-			return (int)$value;
-		}
-
-		return $value;
-	}//end toDatabaseValue()
 
 	/**
 	 * Resolve the AVG / GDPR Art 30 processing-activity uuid for this
@@ -1169,7 +1257,7 @@ class AuditTrailMapper extends QBMapper {
 		}
 
 		if (is_string($until) === true) {
-			if ($this->isSemanticVersion(version: $until) === false) {
+			if ($this->payloadHelper->isSemanticVersion(version: $until) === false) {
 				// Handle audit trail ID.
 				$qb->andWhere(
 					$qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -1188,7 +1276,7 @@ class AuditTrailMapper extends QBMapper {
 				);
 			}
 
-			if ($this->isSemanticVersion(version: $until) === true) {
+			if ($this->payloadHelper->isSemanticVersion(version: $until) === true) {
 				// Handle semantic version.
 				$qb->andWhere(
 					$qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -1198,17 +1286,6 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUntil()
-
-	/**
-	 * Check if a string is a semantic version
-	 *
-	 * @param string $version The version string to check
-	 *
-	 * @return bool True if string is a semantic version
-	 */
-	private function isSemanticVersion(string $version): bool {
-		return (preg_match('/^\d+\.\d+\.\d+$/', $version) === 1);
-	}//end isSemanticVersion()
 
 	/**
 	 * Revert an object to a previous state
@@ -1245,7 +1322,7 @@ class AuditTrailMapper extends QBMapper {
 
 		// Apply changes in reverse.
 		foreach ($auditTrails as $audit) {
-			$this->revertChanges(object: $revertedObject, audit: $audit);
+			$this->payloadHelper->revertChanges(object: $revertedObject, audit: $audit);
 		}
 
 		// Handle versioning.
@@ -1257,30 +1334,6 @@ class AuditTrailMapper extends QBMapper {
 
 		return $revertedObject;
 	}//end revertObject()
-
-	/**
-	 * Helper function to revert changes from an audit trail entry
-	 *
-	 * @param ObjectEntity $object The object to apply reversions to
-	 * @param AuditTrail $audit The audit trail entry
-	 *
-	 * @return void
-	 */
-	private function revertChanges(ObjectEntity $object, AuditTrail $audit): void {
-		$changes = $audit->getChanges();
-
-		// Iterate through each change and apply the reverse.
-		foreach ($changes as $field => $change) {
-			if (($change['old'] ?? null) !== null) {
-				// Use reflection to set the value if it's a protected property.
-				$reflection = new ReflectionClass($object);
-				$property = $reflection->getProperty($field);
-
-				// Note: setAccessible() is no longer needed in PHP 8.1+ for same-class properties.
-				$property->setValue($object, $change['old']);
-			}
-		}
-	}//end revertChanges()
 
 	/**
 	 * Get statistics for audit trails with optional filtering
@@ -1861,50 +1914,6 @@ class AuditTrailMapper extends QBMapper {
 	 * @psalm-return   bool
 	 * @phpstan-return bool
 	 */
-	/**
-	 * Bound what a single audit entry's `changed` payload may hold.
-	 *
-	 * MEASURED 2026-08-14: `oc_openregister_audit_trails` was 3,404 MB — 28% of
-	 * a 12 GB database — and ONE row's `changed` payload was **61,910,691 bytes**.
-	 * A 62 MB audit entry is a copy of an object, not a record of a change, and
-	 * it is charged to every backup, every replica and every TOAST read.
-	 *
-	 * A per-property value over the threshold is replaced by a descriptor
-	 * recording what was elided and how large it was, so the entry still says
-	 * THAT the property changed and roughly how much — only the bytes go. The
-	 * property list, the action, the actor and the hash chain are untouched,
-	 * which is what an audit trail is actually for.
-	 *
-	 * ⚠️ Retention alone does not solve this: {@see clearLogs()} only prunes rows
-	 * that have EXPIRED, so an unexpired 62 MB row sits there for its full
-	 * retention period regardless.
-	 *
-	 * @param array|null $changed The changed-properties map.
-	 *
-	 * @return array|null The map with oversized values replaced by descriptors.
-	 */
-	private function capChangedPayload(?array $changed): ?array {
-		if ($changed === null) {
-			return null;
-		}
-
-		foreach ($changed as $property => $value) {
-			$encoded = json_encode($value);
-			if ($encoded === false || strlen($encoded) <= self::MAX_CHANGED_VALUE_BYTES) {
-				continue;
-			}
-
-			$changed[$property] = [
-				'elided' => true,
-				'reason' => 'value exceeded the ' . self::MAX_CHANGED_VALUE_BYTES
-					. '-byte audit payload ceiling',
-				'bytes' => strlen($encoded),
-			];
-		}
-
-		return $changed;
-	}//end capChangedPayload()
-
 	/**
 	 * Tombstone every audit-trail entry.
 	 *
@@ -2914,4 +2923,70 @@ class AuditTrailMapper extends QBMapper {
 
 		$this->insert(entity: $gap);
 	}//end recordSinkGap()
+
+	/**
+	 * Record one change to a security control, or one refused attempt at a change.
+	 *
+	 * WHY THE REFUSAL IS AUDITED TOO. A weakening that was refused is the most
+	 * interesting row on the page: somebody tried to turn the lockout down, and
+	 * the instance said no. An audit trail that only holds the changes that
+	 * succeeded cannot tell a security officer that anybody tried.
+	 *
+	 * No object, no register and no schema: a control is instance-wide, and
+	 * attaching it to an arbitrary object would put it on that object's timeline
+	 * where it does not belong. Same shape as
+	 * {@see createPartyQueryRefusalEntry()}.
+	 *
+	 * @param string $control The control identifier.
+	 * @param int|string|array $before The value before the change.
+	 * @param int|string|array $after The value asked for.
+	 * @param bool $accepted Whether the change was made.
+	 * @param string $refusal The refusal, when the change was not made.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 */
+	public function createHardeningChangeEntry(
+		string $control,
+		int|string|array $before,
+		int|string|array $after,
+		bool $accepted,
+		string $refusal = '',
+	): AuditTrail {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$action = 'hardening.refused';
+		if ($accepted === true) {
+			$action = 'hardening.changed';
+		}
+
+		$summary = [
+			'control' => $control,
+			'before' => $before,
+			'after' => $after,
+			'accepted' => $accepted,
+		];
+		if ($refusal !== '') {
+			$summary['refusal'] = $refusal;
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction($action);
+		$auditTrail->setResultSummary($summary);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createHardeningChangeEntry()
 }//end class

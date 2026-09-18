@@ -86,6 +86,8 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Service\Object\NotSuppliedHandler;
+use OCA\OpenRegister\Service\Object\RepeatingGroupValidator;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -239,6 +241,27 @@ class ObjectService implements ObjectServiceInterface
      * @var array<string, array{register: Register|null, schema: Schema}>
      */
     private array $uuidScopeCache = [];
+
+    /**
+     * The row-by-row repeating-group validator, constructed on first use.
+     *
+     * Not injected. This class takes forty-odd constructor arguments and a
+     * long tail of unit tests build it positionally, so a new argument is a
+     * bigger change than it looks. Both validators below are pure and have no
+     * dependencies of their own, which is what makes constructing them here
+     * safe: there is no wiring that can be missing, so there is no
+     * configuration under which the enforcement quietly stops running.
+     *
+     * @var RepeatingGroupValidator|null
+     */
+    private ?RepeatingGroupValidator $repeatingGroupValidator = null;
+
+    /**
+     * The recorded-incompleteness handler, constructed on first use.
+     *
+     * @var NotSuppliedHandler|null
+     */
+    private ?NotSuppliedHandler $notSuppliedHandler = null;
 
     // **REMOVED**: Distributed caching mechanisms removed since SOLR is now our index.
     // **REMOVED**: Cache TTL constants removed since SOLR is now our index.
@@ -1734,6 +1757,12 @@ class ObjectService implements ObjectServiceInterface
 
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
 
+            // The declared bounds hold on every write, hard validation or not.
+            // Ordered before the validator so a caller who sent four rows into
+            // a group of three reads that sentence rather than a JSON-pointer
+            // complaint about the same array.
+            $this->enforceDeclaredShapes(object: $object);
+
             // Validate if hard validation is enabled.
             $this->validateObjectIfRequired(object: $object);
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
@@ -2174,9 +2203,16 @@ class ObjectService implements ObjectServiceInterface
 
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
+            // A property recorded as not supplied carries no value and is
+            // excused from the required rule, so the validator sees neither
+            // the record nor the properties it names. The record itself stays
+            // on the body that gets stored, which is how it reads back.
+            $notSupplied = $this->notSupplied()->declared(object: $object);
+
             $result = $this->validateHandler->validateObject(
-                object: $object,
-                schema: $this->currentSchema
+                object: $this->notSupplied()->stripForValidation(object: $object),
+                schema: $this->currentSchema,
+                notSupplied: $notSupplied
             );
 
             if ($result->isValid() === false) {
@@ -2185,6 +2221,94 @@ class ObjectService implements ObjectServiceInterface
             }
         }
     }//end validateObjectIfRequired()
+
+    /**
+     * The repeating-group validator, constructed on first use.
+     *
+     * @return RepeatingGroupValidator The validator.
+     *
+     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     */
+    private function repeatingGroups(): RepeatingGroupValidator
+    {
+        if ($this->repeatingGroupValidator === null) {
+            $this->repeatingGroupValidator = new RepeatingGroupValidator();
+        }
+
+        return $this->repeatingGroupValidator;
+    }//end repeatingGroups()
+
+    /**
+     * The recorded-incompleteness handler, constructed on first use.
+     *
+     * @return NotSuppliedHandler The handler.
+     *
+     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     */
+    private function notSupplied(): NotSuppliedHandler
+    {
+        if ($this->notSuppliedHandler === null) {
+            $this->notSuppliedHandler = new NotSuppliedHandler();
+        }
+
+        return $this->notSuppliedHandler;
+    }//end notSupplied()
+
+    /**
+     * Enforce the declared repeating groups and the not-supplied record.
+     *
+     * Runs on CREATE as well as UPDATE, and whether or not the schema has hard
+     * validation switched on. Both are declarations about what the register
+     * holds rather than opt-in conveniences: a group with a maximum of three
+     * that accepts four rows on the schemas whose administrator left hard
+     * validation off is a bound that does not bind.
+     *
+     * The refusal names the row and the member, which is the whole difference
+     * between an authorable repeating group and an array (D-2).
+     *
+     * @param array $object The candidate object body.
+     *
+     * @return void
+     *
+     * @throws ValidationException When a group or the not-supplied record is refused.
+     *
+     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     */
+    private function enforceDeclaredShapes(array $object): void
+    {
+        if ($this->currentSchema === null) {
+            return;
+        }
+
+        $messages = [];
+
+        $incompleteness = $this->notSupplied()->validate(object: $object, schema: $this->currentSchema);
+        foreach ($incompleteness as $violation) {
+            $messages[] = $violation['message'];
+        }
+
+        $groups = $this->repeatingGroups()->validate(object: $object, schema: $this->currentSchema);
+        foreach ($groups as $violation) {
+            $messages[] = $violation['message'];
+        }
+
+        if ($messages === []) {
+            return;
+        }
+
+        $this->logger->info(
+            message: '[ObjectService] repeating-group / not-supplied enforcement rejected the write',
+            context: [
+                'file'           => __FILE__,
+                'line'           => __LINE__,
+                'schemaId'       => $this->currentSchema->getId(),
+                'groups'         => $groups,
+                'incompleteness' => $incompleteness,
+            ]
+        );
+
+        throw new ValidationException(message: implode(' ', $messages));
+    }//end enforceDeclaredShapes()
 
     /**
      * Enforce JSON-Schema `readOnly: true` and `immutable: true` on the

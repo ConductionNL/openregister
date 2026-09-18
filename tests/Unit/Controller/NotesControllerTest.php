@@ -394,4 +394,165 @@ class NotesControllerTest extends TestCase {
 
 		$this->assertTrue($this->controller->destroy('zaken', 'zaak', 'uuid-123', '41')->getData()['success']);
 	}
+
+	/**
+	 * A locked note answers 423, not the 400 a generic failure would give.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testEditingALockedNoteAnswers423(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
+		$this->noteService->method('updateNote')
+			->willThrowException(new \OCA\OpenRegister\Exception\NoteLockedException(5));
+
+		$this->noteService->expects($this->never())->method('auditEdit');
+
+		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
+
+		$this->assertSame(423, $result->getStatus());
+	}
+
+	/**
+	 * A colleague who is neither the author nor a manager answers 403.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testRewritingAnothersNoteAnswers403(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
+		$this->noteService->method('updateNote')
+			->willThrowException(new \OCA\OpenRegister\Exception\NoteEditForbiddenException());
+
+		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
+
+		$this->assertSame(403, $result->getStatus());
+	}
+
+	/**
+	 * An edit audits the fact on the object, naming the note, never the text.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testAnEditIsAuditedOnTheObject(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
+		$this->visibility->method('mayManageObject')->willReturn(true);
+		$this->noteService->method('updateNote')->willReturn(['id' => 5, 'versionCount' => 1]);
+
+		$this->noteService->expects($this->once())
+			->method('auditEdit')
+			->with($object, 5, 1)
+			->willReturn(true);
+
+		$this->assertSame(200, $this->controller->update('reg', 'schema', 'obj-id', '5')->getStatus());
+	}
+
+	/**
+	 * A visibility-only write is not an edit, so nothing is audited as one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testMovingTheFlagIsNotAuditedAsAnEdit(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['visibility' => 'public']);
+		$this->visibility->method('mayManage')->willReturn(true);
+		$this->noteService->method('getNote')->willReturn(['id' => 5, 'visibility' => 'internal']);
+		$this->noteService->method('updateNote')->willReturn(['id' => 5, 'visibility' => 'public']);
+
+		$this->noteService->expects($this->never())->method('auditEdit');
+
+		$this->assertSame(200, $this->controller->update('reg', 'schema', 'obj-id', '5')->getStatus());
+	}
+
+	/**
+	 * PATCH lands on the same handler as PUT, so the two cannot drift apart.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testPatchWritesTheSameNoteAsPut(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
+		$this->noteService->expects($this->once())
+			->method('updateNote')
+			->willReturn(['id' => 5, 'message' => 'rewritten', 'versionCount' => 1]);
+
+		$result = $this->controller->patch('reg', 'schema', 'obj-id', '5');
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame('rewritten', $result->getData()['message']);
+	}
+
+	/**
+	 * The versions endpoint lists what the note used to say.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testVersionsListsThePriorTexts(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('getNote')->willReturn(['id' => 5, 'visibility' => 'internal']);
+		$this->visibility->method('effectiveFilter')->willReturn(null);
+		$this->visibility->method('filterRows')->willReturnArgument(0);
+		$this->noteService->method('noteVersions')->willReturn(
+			[['message' => 'Applicant called', 'author' => 'a']]
+		);
+
+		$result = $this->controller->versions('reg', 'schema', 'obj-id', '5');
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(1, $result->getData()['total']);
+		$this->assertSame('Applicant called', $result->getData()['results'][0]['message']);
+	}
+
+	/**
+	 * A note that is not there is a 404, not a 400.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testVersionsOfANoteThatIsNotThereAre404(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('getNote')->willThrowException(new Exception('Note not found'));
+		$this->noteService->expects($this->never())->method('noteVersions');
+
+		$this->assertSame(404, $this->controller->versions('reg', 'schema', 'obj-id', '5')->getStatus());
+	}
+
+	/**
+	 * A reader who may not see the note may not read its history either.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function testVersionsOfANoteTheCallerMayNotSeeAre404(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('getNote')->willReturn(['id' => 5, 'visibility' => 'internal']);
+		$this->visibility->method('effectiveFilter')->willReturn('public');
+		$this->visibility->method('filterRows')->willReturn([]);
+		$this->noteService->expects($this->never())->method('noteVersions');
+
+		$this->assertSame(404, $this->controller->versions('reg', 'schema', 'obj-id', '5')->getStatus());
+	}
 }

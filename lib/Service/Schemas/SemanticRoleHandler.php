@@ -189,7 +189,6 @@ class SemanticRoleHandler {
 
 		if (is_string($raw) === true) {
 			$raw = trim($raw);
-
 			if ($raw === '') {
 				return null;
 			}
@@ -205,21 +204,35 @@ class SemanticRoleHandler {
 			return null;
 		}
 
+		return $this->localisedHelp(map: $raw, language: $language);
+	}//end helpTextOf()
+
+	/**
+	 * Pick a help string from a per-language map: exact tag, then primary
+	 * subtag, then Dutch, then English, then whatever non-empty string is
+	 * there — showing help in the wrong language beats showing none.
+	 *
+	 * @param array<mixed> $map The per-language help map.
+	 * @param string $language The BCP-47 tag asked for.
+	 *
+	 * @return string|null The help text, or null when the map holds none.
+	 */
+	private function localisedHelp(array $map, string $language): ?string {
 		foreach ([$language, substr($language, 0, 2), 'nl', 'en'] as $tag) {
-			$candidate = ($raw[$tag] ?? null);
+			$candidate = ($map[$tag] ?? null);
 			if (is_string($candidate) === true && trim($candidate) !== '') {
 				return trim($candidate);
 			}
 		}
 
-		foreach ($raw as $candidate) {
+		foreach ($map as $candidate) {
 			if (is_string($candidate) === true && trim($candidate) !== '') {
 				return trim($candidate);
 			}
 		}
 
 		return null;
-	}//end helpTextOf()
+	}//end localisedHelp()
 
 	/**
 	 * One property's declared role, when it is a valid one.

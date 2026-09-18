@@ -479,4 +479,11 @@
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RegisterObjectEntity.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/WorkflowEngine/RunFlowOperation.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RunFlowOperation.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Vocabulary/CodedValueGuard.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Vocabulary/ConceptHierarchy.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Vocabulary/ConceptLifecycle.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Vocabulary/CodedPropertyDeclaration.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Vocabulary/ConceptLifecycle.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Rbac/ProvenanceResolver.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Schemas/UniqueConstraintEvaluator.php"/>
 </phpmd-baseline>

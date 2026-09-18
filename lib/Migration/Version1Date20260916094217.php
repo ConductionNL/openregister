@@ -117,7 +117,7 @@ class Version1Date20260916094217 extends SimpleMigrationStep {
 
 		if ($added === 0) {
 			$output->info('shared master data: the shared_with column is already present, nothing to do');
-			return null;
+			return $schema;
 		}
 
 		$output->info('shared master data: added shared_with to ' . $added . ' table(s)');

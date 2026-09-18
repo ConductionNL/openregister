@@ -127,7 +127,8 @@ class CodedValueGuardTest extends TestCase {
 		$this->guard = new CodedValueGuard(
 			concepts: $this->concepts,
 			lifecycle: $lifecycle,
-			hierarchy: $hierarchy
+			hierarchy: $hierarchy,
+			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
 		$this->options = new CodedOptionsBuilder(
 			concepts: $this->concepts,
@@ -205,7 +206,7 @@ class CodedValueGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testARetiredValueIsAbsentFromTheOptionsAndStillResolves(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [CodedPropertyDeclaration::ANNOTATION => ['scheme' => self::SCHEME]]
 		);
 
@@ -214,7 +215,7 @@ class CodedValueGuardTest extends TestCase {
 				declaration: $declaration,
 				language: 'nl',
 				context: null,
-				at: new DateTimeImmutable('2026-09-14')
+				asOf: new DateTimeImmutable('2026-09-14')
 			),
 			'value'
 		);
@@ -303,7 +304,8 @@ class CodedValueGuardTest extends TestCase {
 		$guard = new CodedValueGuard(
 			concepts: $concepts,
 			lifecycle: $lifecycle,
-			hierarchy: new ConceptHierarchy(lifecycle: $lifecycle)
+			hierarchy: new ConceptHierarchy(lifecycle: $lifecycle),
+			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
 
 		$this->assertSame(
@@ -349,7 +351,7 @@ class CodedValueGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testOnePropertyServesTwoCaseTypesWithDifferentValues(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [
 				CodedPropertyDeclaration::ANNOTATION => [
 					'scheme' => self::SCHEME,
@@ -363,7 +365,7 @@ class CodedValueGuardTest extends TestCase {
 				declaration: $declaration,
 				language: 'nl',
 				context: 'bezwaar',
-				at: new DateTimeImmutable('2026-09-14')
+				asOf: new DateTimeImmutable('2026-09-14')
 			),
 			'value'
 		);
@@ -372,7 +374,7 @@ class CodedValueGuardTest extends TestCase {
 				declaration: $declaration,
 				language: 'nl',
 				context: 'melding',
-				at: new DateTimeImmutable('2026-09-14')
+				asOf: new DateTimeImmutable('2026-09-14')
 			),
 			'value'
 		);

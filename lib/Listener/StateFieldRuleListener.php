@@ -242,6 +242,15 @@ class StateFieldRuleListener implements IEventListener {
 				continue;
 			}
 
+			// A property recorded as not supplied was answered, deliberately
+			// and with a reason from the schema's administered list. That is a
+			// different fact from an empty field, and a required rule that
+			// cannot tell them apart is the rule that puts "onbekend" back into
+			// the register (REQ-RGC-002).
+			if (self::isRecordedAsNotSupplied(property: $property, data: $newData) === true) {
+				continue;
+			}
+
 			return [
 				'code' => self::CODE_REQUIRED,
 				'field' => $property,
@@ -353,6 +362,32 @@ class StateFieldRuleListener implements IEventListener {
 
 		return true;
 	}//end isFilled()
+
+	/**
+	 * Whether the write records this property as not supplied.
+	 *
+	 * The record itself is validated on the save path: the reason has to be one
+	 * the schema administers, and a property cannot both carry a value and be
+	 * marked. By the time this listener runs, a marker present here is one that
+	 * already passed those checks, so reading it is enough.
+	 *
+	 * @param string $property The property a state rule requires.
+	 * @param array<string, mixed> $data The object as it would be saved.
+	 *
+	 * @return bool True when the property is recorded as not supplied.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private static function isRecordedAsNotSupplied(string $property, array $data): bool {
+		$record = ($data[Schema::NOT_SUPPLIED_KEY] ?? null);
+		if (is_array($record) === false) {
+			return false;
+		}
+
+		$reason = ($record[$property] ?? null);
+
+		return (is_string($reason) === true && $reason !== '');
+	}//end isRecordedAsNotSupplied()
 
 	/**
 	 * Record the refusal against the state's rule, for the run log.

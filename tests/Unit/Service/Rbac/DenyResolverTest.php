@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -55,7 +56,7 @@ class DenyResolverTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->resolver = new DenyResolver();
+		$this->resolver = new DenyResolver(new DenyEntryMatcher());
 	}//end setUp()
 
 	/**

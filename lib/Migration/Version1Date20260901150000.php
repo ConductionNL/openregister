@@ -95,7 +95,7 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		$output->info('Created the case-plan tables: ' . self::TABLE_ITEMS . ', ' . self::TABLE_AUDIT . '.');

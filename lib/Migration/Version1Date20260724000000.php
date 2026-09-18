@@ -68,14 +68,14 @@ class Version1Date20260724000000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable('openregister_views') === false) {
 			$output->info(message: 'openregister_views table does not exist, skipping...');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_views');
 
 		if ($table->hasColumn('presentation') === true) {
 			$output->info(message: 'presentation column already exists on openregister_views, skipping...');
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

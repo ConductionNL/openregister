@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
@@ -122,7 +123,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 			null,
 			null,
 			null,
-			new DenyResolver(),
+			new DenyResolver(new DenyEntryMatcher()),
 			new DenyEnforcementMode($appConfig, new NullLogger()),
 			null,
 			new GrantConstraints(),
