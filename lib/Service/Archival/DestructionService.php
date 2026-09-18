@@ -75,6 +75,22 @@ class DestructionService {
 	private const DEFAULT_EXTENSION_PERIOD = 'P1Y';
 
 	/**
+	 * The review answers that take an entry off a destruction list.
+	 *
+	 * Taken from DestructionReviewService's own constants, not copied as
+	 * literals: the writer of the value and the reader of it must not be able to
+	 * drift apart, because the cost of drifting is destroying a record somebody
+	 * said to keep. The third answer, `destroy`, is the one that leaves the
+	 * entry where it is. Same namespace, so no import is needed.
+	 *
+	 * @var string[]
+	 */
+	private const WITHHOLDING_DECISIONS = [
+		DestructionReviewService::ANSWER_RETAIN,
+		DestructionReviewService::ANSWER_TRANSFER,
+	];
+
+	/**
 	 * Object entity mapper.
 	 *
 	 * @var MagicMapper
@@ -229,6 +245,22 @@ class DestructionService {
 			);
 		}
 
+		// 🔴 A RECORDED "KEEP THIS" IS BINDING, AND IT IS BINDING HERE.
+		//
+		// A named reviewer answering `retain` or `transfer` through
+		// DestructionReviewService::recordAnswer() only ever stamped the answer
+		// onto the entry. Nothing removed the entry and nothing downstream read
+		// the stamp, so `approve_all` — the default — handed the entry to
+		// DestructionExecutionJob and the record was hard-deleted anyway. That is
+		// irreversible and on a statutory path.
+		//
+		// Derived from the decisions rather than asked of the approver: the
+		// approver is not the reviewer, and an exclusion the approver has to
+		// remember to type is an exclusion that gets forgotten. It runs AFTER
+		// handlePartialApproval() because that method REPLACES `excludedObjects`,
+		// so withholding first would have its result overwritten.
+		$destructionList = $this->withholdDecidedEntries(destructionList: $destructionList);
+
 		// Check if dual approval is required and this is the first approval.
 		if ($requiresDual === true && count($destructionList['approvals']) < 2) {
 			$destructionList['status'] = self::STATUS_AWAITING_SECOND;
@@ -345,6 +377,132 @@ class DestructionService {
 
 		return $destructionList;
 	}//end handlePartialApproval()
+
+	/**
+	 * Take every entry a reviewer answered `retain` or `transfer` off the list.
+	 *
+	 * The reviewer's answer is the authority here, not the approver's action: an
+	 * entry carrying such a decision must not reach DestructionExecutionJob under
+	 * ANY approval action, `approve_all` included.
+	 *
+	 * NO DATE IS EXTENDED HERE, deliberately, and this is the one thing that
+	 * separates it from {@see self::handlePartialApproval()}. The outcome of a
+	 * retention or a transfer was already applied to the RECORD when the answer
+	 * was given — {@see ReviewOutcomeService::apply()} writes the reviewer's own
+	 * new archiefactiedatum, or puts the record on a transfer list. Adding the
+	 * configured extension period on top would overwrite the date the reviewer
+	 * chose with a generic one, which is a different defect in the same file.
+	 *
+	 * Idempotent: an entry already moved to `excludedObjects` is no longer in
+	 * `objects`, so a second approval (dual sign-off) finds nothing left to move.
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list data.
+	 *
+	 * @return array<string, mixed> The list, with decided-against entries withheld.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	private function withholdDecidedEntries(array $destructionList): array {
+		$entries = ($destructionList['objects'] ?? []);
+		if (is_array($entries) === false) {
+			return $destructionList;
+		}
+
+		$kept = [];
+		$withheld = [];
+		foreach ($entries as $objectEntry) {
+			if (is_array($objectEntry) === false) {
+				// Not an entry this method can read. Left exactly where it was,
+				// because silently dropping it would be a destruction decision
+				// made by a type check.
+				$kept[] = $objectEntry;
+				continue;
+			}
+
+			$decision = ($objectEntry['decision'] ?? null);
+			if (in_array($decision, self::WITHHOLDING_DECISIONS, true) === false) {
+				$kept[] = $objectEntry;
+				continue;
+			}
+
+			$objectEntry['status'] = 'uitgezonderd';
+			$objectEntry['exclusionReason'] = $this->withholdingReason(
+				destructionList: $destructionList,
+				objectEntry: $objectEntry,
+				decision: (string)$decision
+			);
+			$withheld[] = $objectEntry;
+		}//end foreach
+
+		if (empty($withheld) === true) {
+			return $destructionList;
+		}
+
+		$existing = ($destructionList['excludedObjects'] ?? []);
+		if (is_array($existing) === false) {
+			$existing = [];
+		}
+
+		$destructionList['objects'] = $kept;
+		$destructionList['excludedObjects'] = array_merge($existing, $withheld);
+		$destructionList['objectCount'] = count($kept);
+
+		$this->logger->info(
+			message: '[DestructionService] Entries withheld from destruction by a recorded review decision',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'withheldCount' => count($withheld),
+				'remainingCount' => count($kept),
+			]
+		);
+
+		return $destructionList;
+	}//end withholdDecidedEntries()
+
+	/**
+	 * Why one entry was withheld, in the reviewer's own recorded words.
+	 *
+	 * The entry itself carries only the answer and who gave it; the reason lives
+	 * in the list's `decisions` history. The LAST matching decision is used, so a
+	 * corrected answer reads as the reason rather than the first draft.
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list data.
+	 * @param array<string, mixed> $objectEntry     The entry being withheld.
+	 * @param string               $decision        The recorded answer.
+	 *
+	 * @return string The exclusion reason.
+	 */
+	private function withholdingReason(array $destructionList, array $objectEntry, string $decision): string {
+		$uuid = (string)($objectEntry['uuid'] ?? '');
+		$reviewer = (string)($objectEntry['decidedBy'] ?? '');
+
+		$reason = '';
+		$history = ($destructionList['decisions'] ?? []);
+		if (is_array($history) === true) {
+			foreach ($history as $recorded) {
+				if (is_array($recorded) === false
+					|| (string)($recorded['entry'] ?? '') !== $uuid
+					|| (string)($recorded['answer'] ?? '') !== $decision
+				) {
+					continue;
+				}
+
+				$reason = (string)($recorded['reason'] ?? '');
+			}
+		}
+
+		$sentence = sprintf('Review decision "%s"', $decision);
+		if ($reviewer !== '') {
+			$sentence .= sprintf(' by %s', $reviewer);
+		}
+
+		if ($reason !== '') {
+			$sentence .= sprintf(': %s', $reason);
+		}
+
+		return $sentence;
+	}//end withholdingReason()
 
 	/**
 	 * Reject an entire destruction list.
