@@ -111,6 +111,12 @@
             "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
             "default": "09:00"
           },
+          "timezone": {
+            "title": "Time zone",
+            "type": "string",
+            "description": "The zone the organisation counts its days in, as an IANA name such as Europe/Amsterdam. A calendar date becomes a moment only once somebody says where midnight is, and it is the organisation's zone rather than the viewer's: a display preference must not move a statutory deadline. Defaults to UTC.",
+            "default": "UTC"
+          },
           "rules": {
             "title": "Non-working-date rules",
             "type": "array",
@@ -420,7 +426,8 @@
           }
         ],
         "exceptions": [],
-        "dayStartsAt": "09:00"
+        "dayStartsAt": "09:00",
+        "timezone": "Europe/Amsterdam"
       },
       {
         "@self": {
