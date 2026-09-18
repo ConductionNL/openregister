@@ -99,7 +99,7 @@ class LeafRegistry {
 	}//end __construct()
 
 	/**
-	 * Whether a render surface has the bundle it needs to appear at all.
+	 * Whether a render surface has the conventional bundle, reporting when not.
 	 *
 	 * 🔴 THE FAILURE THIS ENDS IS THAT EVERYTHING REPORTS SUCCESS AND THE
 	 * FEATURE IS ABSENT. A render-surface descriptor from an app that ships no
@@ -165,11 +165,32 @@ class LeafRegistry {
 			return true;
 		}
 
+		// 🔴 REPORTED, NOT REFUSED, AND THAT IS A CORRECTION TO #3954.
+		//
+		// #3954 skipped the registration here. That was unsound, and hermiq is
+		// the proof: it ships no `hermiq-leaves.js`, and its leaf is NOT dark.
+		// It loads its own render-registration bundle on EVERY Nextcloud page
+		// with `Util::addInitScript('hermiq', 'hermiq-agent-leaf')`, precisely
+		// so it runs wherever another app renders the integration registry.
+		// Refusing it would have taken down a working feature.
+		//
+		// 🔑 THE LESSON IS ABOUT WHAT THIS CLASS CAN KNOW. Whether a bundle
+		// reaches the page is a fact about the PAGE, and the registry only sees
+		// the filesystem. The absence of one conventional filename is not proof
+		// of absence: it is one convention out of at least three, and the app
+		// gets to choose. So the loud, actionable error stays, because it is
+		// what turned hermiq's invisible bundle into a one-line fix, and the
+		// skip goes, because this class cannot prove what it was asserting.
+		//
+		// A refusal that IS sound needs the descriptor to declare that it
+		// relies on the shared entry. That declaration does not exist yet and
+		// is named in the change's tasks rather than guessed at here.
 		$this->logger->error(
 			sprintf(
-				'[LeafRegistry] leaf "%s" declares a render surface but app "%s" ships no "%s" — '
-				. 'it would report success and render nothing, so it is refused. '
-				. 'Add a "%s" webpack entry to that app.',
+				'[LeafRegistry] leaf "%s" declares a render surface but app "%s" ships no "%s". '
+				. 'If that app does not load its leaf bundle itself, this surface renders nothing '
+				. 'while every other check reports success. Add a "%s" webpack entry to that app, '
+				. 'or confirm it loads its own bundle.',
 				$descriptor->getId(),
 				$providingApp,
 				$this->leafBundle->expectedFileName(appId: $providingApp),
@@ -177,7 +198,7 @@ class LeafRegistry {
 			)
 		);
 
-		return false;
+		return true;
 	}//end renderSurfaceCanRender()
 
 	/**

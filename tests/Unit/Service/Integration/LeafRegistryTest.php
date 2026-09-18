@@ -192,20 +192,26 @@ class LeafRegistryTest extends TestCase {
 	 * @return LeafRegistry
 	 */
 	/**
-	 * 🔴 A RENDER SURFACE WHOSE APP SHIPS NO BUNDLE IS REFUSED, LOUDLY.
+	 * 🔴 A RENDER SURFACE WITH NO CONVENTIONAL BUNDLE IS REPORTED, NOT REFUSED.
 	 *
-	 * This is the failure the change exists to end: the descriptor reached
-	 * capability discovery, `getLeaves()` returned it, the gate went green on
-	 * both halves, and the surface rendered NOTHING on every consuming page.
-	 * Nobody was told, because nothing had failed.
+	 * This test asserted the opposite one commit ago, and it was WRONG.
+	 * openregister#3954 skipped the registration, and hermiq is the proof that
+	 * it could not: hermiq ships no `hermiq-leaves.js` and its leaf is not dark.
+	 * It loads its own bundle on EVERY Nextcloud page with
+	 * `Util::addInitScript`, exactly so it runs wherever another app renders the
+	 * integration registry. The skip would have taken down a working feature.
 	 *
-	 * Measured on the development instance when this was written: of 35
-	 * installed apps, 5 registered leaves and only 2 shipped a bundle, so 3
-	 * render surfaces were dark.
+	 * 🔑 WHAT THIS CLASS CAN KNOW IS THE POINT. Whether a bundle reaches the
+	 * page is a fact about the page; the registry sees only the filesystem. The
+	 * absence of one conventional filename is not proof of absence, because it
+	 * is one convention out of at least three and the app chooses.
+	 *
+	 * So the leaf registers, and the error is still logged, because that error
+	 * is what turned hermiq's invisibly-named bundle into a one-line fix.
 	 *
 	 * @return void
 	 */
-	public function testARenderSurfaceWithNoBundleIsRefused(): void {
+	public function testARenderSurfaceWithNoBundleIsReportedNotRefused(): void {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isEnabledForUser')->willReturn(true);
 		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
@@ -228,12 +234,12 @@ class LeafRegistryTest extends TestCase {
 			$appManager
 		);
 
-		$this->assertSame(
+		$this->assertNotSame(
 			[],
 			$registry->getDescriptors(),
-			'A leaf that can only report success and render nothing must not register.'
+			'The registry cannot prove a leaf is dark, so it must not refuse one.'
 		);
-	}//end testARenderSurfaceWithNoBundleIsRefused()
+	}//end testARenderSurfaceWithNoBundleIsReportedNotRefused()
 
 	/**
 	 * A data provider needs no bundle, so it is not refused for lacking one.
