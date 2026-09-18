@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use DateTime;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -84,7 +85,7 @@ class ConsistencyCheckJob extends RecordedQueuedJob {
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$findings = $this->check->check();
-		$findings['ranAt'] = (new \DateTime())->format(\DateTime::ATOM);
+		$findings['ranAt'] = (new DateTime())->format(DateTime::ATOM);
 
 		$encoded = json_encode($findings);
 		if ($encoded === false) {

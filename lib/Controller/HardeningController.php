@@ -163,7 +163,7 @@ class HardeningController extends Controller {
 	 *
 	 * @return JSONResponse The controls now in force, or the refusal.
 	 *
-	 * @psalm-return JSONResponse<200|400|409, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|400|403|409, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 *
@@ -214,7 +214,7 @@ class HardeningController extends Controller {
 	 *
 	 * @return JSONResponse The floors now in force, or the refusal.
 	 *
-	 * @psalm-return JSONResponse<200|400|409, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|400|403|409, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 *

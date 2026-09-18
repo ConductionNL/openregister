@@ -85,7 +85,7 @@ class GuardedDescriptorMerge {
 
 		$b = $this->parts->flatten(descriptor: $baseline);
 		$l = $this->parts->flatten(descriptor: $live);
-		$i = $this->parts->flatten(descriptor: $incoming);
+		$incomingParts = $this->parts->flatten(descriptor: $incoming);
 
 		$mergedParts = [];
 		$nextBaseline = [];
@@ -94,7 +94,7 @@ class GuardedDescriptorMerge {
 		$conflicts = [];
 
 		foreach ($states as $path => $state) {
-			$hasIncoming = array_key_exists($path, $i);
+			$hasIncoming = array_key_exists($path, $incomingParts);
 			$hasLive = array_key_exists($path, $l);
 			$hasBaseline = array_key_exists($path, $b);
 
@@ -112,8 +112,8 @@ class GuardedDescriptorMerge {
 			switch ($state) {
 				case DivergenceComparator::UPSTREAM:
 					if ($hasIncoming === true) {
-						$mergedParts[$path] = $i[$path];
-						$nextBaseline[$path] = $i[$path];
+						$mergedParts[$path] = $incomingParts[$path];
+						$nextBaseline[$path] = $incomingParts[$path];
 						if ($decided === false) {
 							$applied[] = $path;
 						}
@@ -158,7 +158,7 @@ class GuardedDescriptorMerge {
 
 					$shippedValue = null;
 					if ($hasIncoming === true) {
-						$shippedValue = $i[$path];
+						$shippedValue = $incomingParts[$path];
 					}
 
 					$liveValue = null;
@@ -184,7 +184,7 @@ class GuardedDescriptorMerge {
 					}
 
 					if ($hasIncoming === true) {
-						$nextBaseline[$path] = $i[$path];
+						$nextBaseline[$path] = $incomingParts[$path];
 					}
 				break;
 
@@ -195,7 +195,7 @@ class GuardedDescriptorMerge {
 					}
 
 					if ($hasIncoming === true) {
-						$nextBaseline[$path] = $i[$path];
+						$nextBaseline[$path] = $incomingParts[$path];
 					}
 				break;
 			}//end switch

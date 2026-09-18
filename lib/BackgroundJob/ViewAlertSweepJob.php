@@ -109,6 +109,10 @@ class ViewAlertSweepJob extends TimedJob {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the
+	 * QueuedJob/TimedJob contract; this job sweeps on a clock and takes no
+	 * argument.
+	 *
 	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-the-alert-sweep-is-bounded
 	 */
 	protected function run($argument): void {

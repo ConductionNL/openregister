@@ -89,6 +89,10 @@ class PresenceExpiryJob extends TimedJob {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the
+	 * QueuedJob/TimedJob contract; this job sweeps on a clock and takes no
+	 * argument.
+	 *
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-presence-changes-are-pushed-not-polled
 	 */
 	protected function run($argument): void {

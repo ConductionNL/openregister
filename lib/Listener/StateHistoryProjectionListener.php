@@ -91,7 +91,7 @@ class StateHistoryProjectionListener implements IEventListener {
 				schema: $this->resolveSchema(event: $event),
 				register: $event->getRegister(),
 				to: $event->getTo(),
-				at: new DateTime()
+				stampedAt: new DateTime()
 			);
 		} catch (\Throwable $e) {
 			// The projection is derived and rebuildable; the transition is

@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\StateHistoryMapper;
@@ -194,7 +195,7 @@ class LogCleanUpTask extends TimedJob {
 
 				$pruned += $this->stateHistory->pruneClosedIntervalsBefore(
 					objectUuid: $uuid,
-					horizon: new \DateTime($horizon)
+					horizon: new DateTime($horizon)
 				);
 			}
 

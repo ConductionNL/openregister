@@ -108,7 +108,7 @@ class LinkExposure {
 			return array_values($readable);
 		}
 
-		$declared = array_map(static fn (mixed $p): string => (string)$p, $relationType[self::KEY]);
+		$declared = array_map(static fn (mixed $name): string => (string)$name, $relationType[self::KEY]);
 
 		// The intersection, in the DECLARED order, so a surface renders the
 		// fields in the order the schema author listed them rather than in

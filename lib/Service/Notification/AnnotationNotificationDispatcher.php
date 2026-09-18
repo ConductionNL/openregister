@@ -3177,7 +3177,7 @@ class AnnotationNotificationDispatcher {
 	 * @param string $ruleId The rule, for the history row.
 	 * @param string $subject The rule's subject, in the default locale.
 	 *
-	 * @return void
+	 * @return int How many people the party path reached.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */

@@ -90,15 +90,15 @@ class StateHistoryRebuild {
 				continue;
 			}
 
-			$at = $this->moment(raw: ($change['created'] ?? null));
-			if ($at === null) {
+			$stampedAt = $this->moment(raw: ($change['created'] ?? null));
+			if ($stampedAt === null) {
 				continue;
 			}
 
 			$moves[] = [
 				'old' => ($entry['old'] ?? null),
 				'new' => ($entry['new'] ?? null),
-				'at' => $at,
+				'at' => $stampedAt,
 			];
 		}//end foreach
 

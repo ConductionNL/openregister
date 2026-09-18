@@ -94,7 +94,7 @@ final class WriteCauseTest extends TestCase {
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
 	public function testAFrameNamesTheCauseAndTheRun(): void {
-		$seen = WriteCause::as(
+		$seen = WriteCause::runAs(
 			WriteCause::IMPORT,
 			'run-42',
 			static fn (): array => WriteCause::current()
@@ -116,10 +116,10 @@ final class WriteCauseTest extends TestCase {
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
 	public function testTheInnermostFrameWins(): void {
-		$seen = WriteCause::as(
+		$seen = WriteCause::runAs(
 			WriteCause::IMPORT,
 			'run-42',
-			static fn (): array => WriteCause::as(
+			static fn (): array => WriteCause::runAs(
 				WriteCause::CASCADE,
 				'write-7',
 				static fn (): array => WriteCause::current()
@@ -140,11 +140,11 @@ final class WriteCauseTest extends TestCase {
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
 	public function testTheOuterFrameSurvivesTheInnerOne(): void {
-		$after = WriteCause::as(
+		$after = WriteCause::runAs(
 			WriteCause::IMPORT,
 			'run-42',
 			static function (): array {
-				WriteCause::as(WriteCause::CASCADE, 'write-7', static fn (): bool => true);
+				WriteCause::runAs(WriteCause::CASCADE, 'write-7', static fn (): bool => true);
 
 				return WriteCause::current();
 			}
@@ -162,7 +162,7 @@ final class WriteCauseTest extends TestCase {
 	 */
 	public function testAThrowingOperationDoesNotStrandItsFrame(): void {
 		try {
-			WriteCause::as(
+			WriteCause::runAs(
 				WriteCause::IMPORT,
 				'run-42',
 				static function (): void {
@@ -188,7 +188,7 @@ final class WriteCauseTest extends TestCase {
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
 	public function testAWordOutsideTheVocabularyIsNotStored(): void {
-		$seen = WriteCause::as(
+		$seen = WriteCause::runAs(
 			'IMPORT-2026-batch-3',
 			'run-42',
 			static fn (): array => WriteCause::current()

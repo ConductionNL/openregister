@@ -62,6 +62,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -552,7 +553,7 @@ class MagicMapper extends AbstractObjectMapper {
 		// Assembled by hand rather than resolved from the container, for the
 		// same reason the cache handler above is not: the container would walk
 		// MagicMapper → applier → MagicTableHandler → MagicMapper and recurse.
-		$relatedRowApplier = new \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier(
+		$relatedRowApplier = new RelatedRowQueryApplier(
 			schemaMapper: $this->schemaMapper,
 			tableHandler: $this->tableHandler,
 			rbacHandler: $this->rbacHandler,

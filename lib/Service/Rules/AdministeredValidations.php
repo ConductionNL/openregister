@@ -349,6 +349,6 @@ class AdministeredValidations {
 			return [];
 		}
 
-		return array_values(array_map(static fn (mixed $p): string => (string)$p, $properties));
+		return array_values(array_map(static fn (mixed $name): string => (string)$name, $properties));
 	}//end propertiesOf()
 }//end class

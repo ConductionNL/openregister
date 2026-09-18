@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
 use OCP\AppFramework\Utility\ITimeFactory;
+use RuntimeException;
 
 /**
  * Rebuilds the search index and leaves a run row behind.
@@ -68,7 +69,7 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @throws \RuntimeException When the platform refuses the rebuild.
+	 * @throws RuntimeException When the platform refuses the rebuild.
 	 *
 	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
@@ -82,11 +83,11 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 		$report = $this->index->rebuild(registerId: $registerId, apply: true);
 
 		if (($report['state'] ?? null) === 'refused') {
-			throw new \RuntimeException((string)($report['reason'] ?? 'The rebuild was refused.'));
+			throw new RuntimeException((string)($report['reason'] ?? 'The rebuild was refused.'));
 		}
 
 		if ((int)($report['failed'] ?? 0) > 0) {
-			throw new \RuntimeException(
+			throw new RuntimeException(
 				'The rebuild finished with '.(int)$report['failed'].' failed index(es).'
 			);
 		}

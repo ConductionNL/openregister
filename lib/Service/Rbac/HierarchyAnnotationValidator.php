@@ -141,15 +141,20 @@ class HierarchyAnnotationValidator {
 					code: 'hierarchy.bad-verbs',
 					message: 'inheritedVerbs must be a list of verbs.'
 				);
-			} else {
-				foreach ($verbs as $verb) {
-					if (is_string($verb) === false || trim($verb) === '') {
-						$findings[] = $this->error(
-							code: 'hierarchy.bad-verbs',
-							message: 'inheritedVerbs must hold non-empty verb names.'
-						);
-						break;
-					}
+			}
+
+			$verbList = [];
+			if (is_array($verbs) === true) {
+				$verbList = $verbs;
+			}
+
+			foreach ($verbList as $verb) {
+				if (is_string($verb) === false || trim($verb) === '') {
+					$findings[] = $this->error(
+						code: 'hierarchy.bad-verbs',
+						message: 'inheritedVerbs must hold non-empty verb names.'
+					);
+					break;
 				}
 			}
 		}

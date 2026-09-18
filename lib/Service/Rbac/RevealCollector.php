@@ -100,18 +100,18 @@ class RevealCollector {
 	/**
 	 * Whether a property's authorization declares that reveals are audited.
 	 *
-	 * @param array<string, mixed>|null $propertyAuthorization The property's block.
+	 * @param array<string, mixed>|null $propertyRules The property's block.
 	 *
 	 * @return bool True only on an explicit true.
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
-	public function isAudited(?array $propertyAuthorization): bool {
-		if ($propertyAuthorization === null) {
+	public function isAudited(?array $propertyRules): bool {
+		if ($propertyRules === null) {
 			return false;
 		}
 
-		return (($propertyAuthorization[self::AUDIT_KEY] ?? null) === true);
+		return (($propertyRules[self::AUDIT_KEY] ?? null) === true);
 	}//end isAudited()
 
 	/**

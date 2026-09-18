@@ -263,9 +263,9 @@ class FlowBpmnExporter {
 			$shape->setAttribute('bpmnElement', $id);
 
 			$bounds = $document->createElementNS(self::NS_DC, 'dc:Bounds');
-			[$x, $y] = $this->positionOf(node: $node, index: (int)$index);
-			$bounds->setAttribute('x', (string)$x);
-			$bounds->setAttribute('y', (string)$y);
+			[$left, $top] = $this->positionOf(node: $node, index: (int)$index);
+			$bounds->setAttribute('x', (string)$left);
+			$bounds->setAttribute('y', (string)$top);
 			$bounds->setAttribute('width', (string)self::WIDTH);
 			$bounds->setAttribute('height', (string)self::HEIGHT);
 			$shape->appendChild($bounds);

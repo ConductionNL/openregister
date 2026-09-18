@@ -398,14 +398,26 @@ class HierarchyDescender {
 	private function tableHasColumn(string $table, string $column): bool {
 		if (array_key_exists($table, $this->columns) === false) {
 			try {
+				// 🔴 NOT `IDBConnection::getPrefix()`. OCP exposes no such
+				// method: calling it is a runtime Error, and because the catch
+				// below takes every Throwable, this whole lookup answered "the
+				// table carries no columns" on every call. A hierarchy grant
+				// then silently stopped descending, with a warning in the log
+				// and nothing on screen. The prefix is discovered from the
+				// schema instead, by matching the table's own name.
 				$schemaManager = $this->db->createSchema();
-				$prefixed = $this->db->getPrefix() . $table;
 				$this->columns[$table] = [];
-				if ($schemaManager->hasTable($prefixed) === true) {
+				foreach ($schemaManager->getTables() as $candidate) {
+					$name = (string)$candidate->getName();
+					if ($name !== $table && str_ends_with($name, '_' . $table) === false) {
+						continue;
+					}
+
 					$this->columns[$table] = array_map(
 						static fn (object $c): string => strtolower((string)$c->getName()),
-						$schemaManager->getTable($prefixed)->getColumns()
+						$candidate->getColumns()
 					);
+					break;
 				}
 			} catch (Throwable $e) {
 				$this->logger->warning(

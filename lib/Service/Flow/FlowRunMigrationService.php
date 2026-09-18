@@ -555,12 +555,12 @@ class FlowRunMigrationService {
 	 * @return array{0: string, 1: string} The node id and the suffix.
 	 */
 	private function splitPlace(string $place): array {
-		$at = strpos($place, FlowGraph::PLACE_JOIN);
-		if ($at === false) {
+		$joinAt = strpos($place, FlowGraph::PLACE_JOIN);
+		if ($joinAt === false) {
 			return [$place, ''];
 		}
 
-		return [substr($place, 0, $at), substr($place, $at)];
+		return [substr($place, 0, $joinAt), substr($place, $joinAt)];
 	}//end splitPlace()
 
 	/**

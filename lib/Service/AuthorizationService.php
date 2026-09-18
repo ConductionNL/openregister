@@ -374,7 +374,7 @@ class AuthorizationService {
 		// Bound BEFORE the user is set, so there is no window in which the
 		// request is the user with no ceiling on it.
 		$this->tokenGrantSource?->bindFromConsumer(
-			authorizationConfiguration: $authConf,
+			storedAuthorization: $authConf,
 			tokenId: (string)($issuer->getUuid() ?? $payload['iss'])
 		);
 

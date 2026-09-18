@@ -276,7 +276,9 @@ class ScopedPropertyGovernance {
 
 			if (array_key_exists($key, $counts) === false) {
 				$state = 'unknown';
-			} else {
+			}
+
+			if (array_key_exists($key, $counts) === true) {
 				$values = (int)$counts[$key];
 				if ($values === 0) {
 					$state = 'unused';
@@ -356,7 +358,7 @@ class ScopedPropertyGovernance {
 	 * @param Schema            $schema   The schema.
 	 * @param string            $property The promoted property.
 	 * @param string            $scope    The scope it left.
-	 * @param DateTimeImmutable $at       When.
+	 * @param DateTimeImmutable $stampedAt       When.
 	 *
 	 * @return array<string, mixed> The entry.
 	 *
@@ -366,7 +368,7 @@ class ScopedPropertyGovernance {
 		Schema $schema,
 		string $property,
 		string $scope,
-		DateTimeImmutable $at,
+		DateTimeImmutable $stampedAt,
 	): array {
 		return [
 			'action'   => 'scoped_property_promoted',
@@ -377,7 +379,7 @@ class ScopedPropertyGovernance {
 			// because "who promoted this" is the question anyone reading the
 			// trail later is actually asking.
 			'actor'    => $this->userSession->getUser()?->getUID(),
-			'at'       => $at->format('c'),
+			'at'       => $stampedAt->format('c'),
 		];
 	}//end promotionRecord()
 }//end class

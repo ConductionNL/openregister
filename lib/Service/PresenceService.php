@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectPresence;
@@ -313,9 +314,9 @@ class PresenceService {
 	 *
 	 * @param DateTimeInterface $moment The moment.
 	 *
-	 * @return \DateTime The same instant.
+	 * @return DateTime The same instant.
 	 */
-	private function asMutable(DateTimeInterface $moment): \DateTime {
-		return (new \DateTime())->setTimestamp($moment->getTimestamp());
+	private function asMutable(DateTimeInterface $moment): DateTime {
+		return (new DateTime())->setTimestamp($moment->getTimestamp());
 	}//end asMutable()
 }//end class

@@ -219,7 +219,7 @@ class RelatedRowFilterParser {
 
 			// A bare list is the `in` shorthand: `field[]=a&field[]=b`.
 			if (array_is_list($value) === true) {
-				$conditions[] = ['field' => $name, 'operator' => 'in', 'value' => array_values($value)];
+				$conditions[] = ['field' => $name, 'operator' => 'in', 'value' => $value];
 				continue;
 			}
 

@@ -106,7 +106,7 @@ class ActivityFeedService {
 		}
 
 		try {
-			$sources['audit'] = $this->auditRows(objectId: $objectId, bound: $bound, options: $options);
+			$sources['audit'] = $this->auditRows(objectId: $objectId, bound: $bound);
 		} catch (Throwable $e) {
 			// A source that could not be read is NAMED rather than merged as
 			// nothing. An empty audit list and an unreadable one render the
@@ -149,15 +149,14 @@ class ActivityFeedService {
 	 * them at the query would make the toggle unable to bring them back
 	 * without a second, differently shaped read.
 	 *
-	 * @param string              $objectId The object's uuid.
-	 * @param int                 $bound    How many rows this source may contribute.
-	 * @param array<string,mixed> $options  The caller's options, for the cursor.
+	 * @param string $objectId The object's uuid.
+	 * @param int    $bound    How many rows this source may contribute.
 	 *
 	 * @return array<int,array<string,mixed>> The rows.
 	 *
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
-	private function auditRows(string $objectId, int $bound, array $options): array {
+	private function auditRows(string $objectId, int $bound): array {
 		$entries = $this->audit->findAll(
 			limit: $bound,
 			offset: 0,

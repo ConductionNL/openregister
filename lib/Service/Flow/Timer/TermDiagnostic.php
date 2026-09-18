@@ -197,7 +197,11 @@ class TermDiagnostic {
 	 */
 	private function validateRoll(array $sla): string {
 		$roll = ($sla['rollToWorkingDay'] ?? 'none');
-		if ($roll === false || $roll === null) {
+		if (is_string($roll) === false) {
+			// `false`, `null`, a number or an array all mean "not a roll this
+			// vocabulary knows". Asked as a type rather than as two literals,
+			// because the two literals are what a declaration actually carries
+			// and a third shape would have passed straight through.
 			$roll = 'none';
 		}
 

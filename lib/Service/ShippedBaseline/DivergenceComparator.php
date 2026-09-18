@@ -119,9 +119,9 @@ class DivergenceComparator {
 	public function states(array $baseline, array $live, array $incoming): array {
 		$b = $this->parts->flatten(descriptor: $baseline);
 		$l = $this->parts->flatten(descriptor: $live);
-		$i = $this->parts->flatten(descriptor: $incoming);
+		$incomingParts = $this->parts->flatten(descriptor: $incoming);
 
-		$paths = array_unique(array_merge(array_keys($b), array_keys($l), array_keys($i)));
+		$paths = array_unique(array_merge(array_keys($b), array_keys($l), array_keys($incomingParts)));
 		sort($paths);
 
 		$states = [];
@@ -129,7 +129,7 @@ class DivergenceComparator {
 			$states[$path] = $this->stateOf(
 				baseline: ($b[$path] ?? self::ABSENT),
 				live: ($l[$path] ?? self::ABSENT),
-				incoming: ($i[$path] ?? self::ABSENT)
+				incoming: ($incomingParts[$path] ?? self::ABSENT)
 			);
 		}
 
@@ -222,7 +222,9 @@ class DivergenceComparator {
 			return self::LOCAL;
 		}
 
-		if ($localMoved === false && $upstreamMoved === true) {
+		if ($localMoved === false) {
+			// Reached only when something moved, so upstream is the one that
+			// did; phpstan reports the second half of the pair as always true.
 			return self::UPSTREAM;
 		}
 

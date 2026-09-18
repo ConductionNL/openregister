@@ -154,8 +154,8 @@ class SettingsChangeAuditor {
 			$shownOld = $old;
 			$shownNew = $new;
 			if ($secret === true) {
-				$shownOld = $this->maskIfPresent(value: $old, present: $hadBefore);
-				$shownNew = $this->maskIfPresent(value: $new, present: $hasAfter);
+				$shownOld = $this->maskIfPresent(present: $hadBefore);
+				$shownNew = $this->maskIfPresent(present: $hasAfter);
 			}
 
 			$changes[] = [
@@ -322,12 +322,11 @@ class SettingsChangeAuditor {
 	 * is one being removed. Masking both to the same token would make those two
 	 * read identically.
 	 *
-	 * @param mixed $value The value.
 	 * @param bool $present Whether the key was present.
 	 *
 	 * @return string|null The mask, or null.
 	 */
-	private function maskIfPresent(mixed $value, bool $present): ?string {
+	private function maskIfPresent(bool $present): ?string {
 		if ($present === false) {
 			return null;
 		}

@@ -228,28 +228,28 @@ final class SlaCalculator {
 	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function roll(DateTimeInterface $moment, string $roll, ?WorkingCalendar $calendar): array {
-		$at = DateTimeImmutable::createFromInterface($moment);
-		$unrolled = ['at' => $at, 'unrolledAt' => null, 'rolledBy' => null];
+		$instant = DateTimeImmutable::createFromInterface($moment);
+		$unrolled = ['at' => $instant, 'unrolledAt' => null, 'rolledBy' => null];
 
-		if ($roll === self::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $at) === true) {
+		if ($roll === self::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
 			return $unrolled;
 		}
 
 		// The rule that stopped the FIRST day is the one that moved the term.
 		// Reporting the last day walked past would name Easter Monday for a
 		// term that was really stopped by the Saturday before it.
-		$rolledBy = $this->nonWorkingReason(moment: $at, calendar: $calendar);
+		$rolledBy = $this->nonWorkingReason(moment: $instant, calendar: $calendar);
 
 		$modifier = '+1 day';
 		if ($roll === self::ROLL_PREVIOUS) {
 			$modifier = '-1 day';
 		}
 
-		$walked = $at;
+		$walked = $instant;
 		for ($step = 0; $step < self::MAX_ROLL_DAYS; $step++) {
 			$walked = $this->shift(moment: $walked, modifier: $modifier);
 			if ($calendar->isWorkingDay(moment: $walked) === true) {
-				return ['at' => $walked, 'unrolledAt' => $at, 'rolledBy' => $rolledBy];
+				return ['at' => $walked, 'unrolledAt' => $instant, 'rolledBy' => $rolledBy];
 			}
 		}
 
@@ -257,7 +257,7 @@ final class SlaCalculator {
 			message: sprintf(
 				'No working day within %d days of %s on calendar %s: the calendar declares no working days to roll to.',
 				self::MAX_ROLL_DAYS,
-				$at->format('Y-m-d'),
+				$instant->format('Y-m-d'),
 				$calendar->getSlug()
 			)
 		);

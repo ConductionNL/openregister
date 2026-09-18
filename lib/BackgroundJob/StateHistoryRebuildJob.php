@@ -113,6 +113,10 @@ class StateHistoryRebuildJob extends TimedJob {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the
+	 * QueuedJob/TimedJob contract; this job sweeps on a clock and takes no
+	 * argument.
+	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	protected function run($argument): void {

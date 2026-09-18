@@ -77,6 +77,9 @@ class RevealAuditMiddleware extends Middleware {
 	 *
 	 * @return Response The response, unchanged.
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the
+	 * Middleware contract; the flush is about the request, not the verb.
+	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
@@ -98,6 +101,9 @@ class RevealAuditMiddleware extends Middleware {
 	 * @return Response Never returns; the exception is re-thrown for the next middleware.
 	 *
 	 * @throws Exception Always, unchanged.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the
+	 * Middleware contract; the flush is about the request, not the verb.
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */

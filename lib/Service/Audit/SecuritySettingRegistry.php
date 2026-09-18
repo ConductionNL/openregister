@@ -183,7 +183,11 @@ class SecuritySettingRegistry {
 	 *
 	 * @param string                                                        $path       The setting path.
 	 * @param array{label: string, default: mixed, secret: bool, type: string} $definition Its registry entry.
-	 * @param array<string, array<string, mixed>>                           $blobs      Decoded blobs, cached per snapshot.
+	 * @param array<string, array<mixed>>                                   $blobs      Decoded blobs, cached per snapshot. `json_decode`
+	 *                                                                                  answers an array whose keys it read from the
+	 *                                                                                  document, so the inner shape is not narrower
+	 *                                                                                  than this and claiming it was is what the
+	 *                                                                                  by-ref check caught.
 	 *
 	 * @return mixed The stored value, or the default.
 	 *

@@ -235,7 +235,7 @@ class PropertyRbacHandler {
 			return;
 		}
 
-		if ($this->reveals->isAudited(propertyAuthorization: $authorization) === false) {
+		if ($this->reveals->isAudited(propertyRules: $authorization) === false) {
 			return;
 		}
 

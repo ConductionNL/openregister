@@ -94,7 +94,7 @@ class StateHistoryProjectorTest extends TestCase {
 				schema: $schema,
 				register: 'zaken',
 				to: 'bezwaar',
-				at: $at
+				stampedAt: $at
 			)
 		);
 
@@ -122,7 +122,7 @@ class StateHistoryProjectorTest extends TestCase {
 				schema: $this->schema(['x-openregister-something-else' => ['field' => 'status']]),
 				register: 'zaken',
 				to: 'bezwaar',
-				at: new DateTime()
+				stampedAt: new DateTime()
 			)
 		);
 	}//end testASchemaWithoutADeclaredLifecycleFieldProjectsNothing()
@@ -141,7 +141,7 @@ class StateHistoryProjectorTest extends TestCase {
 				schema: null,
 				register: 'zaken',
 				to: 'bezwaar',
-				at: new DateTime()
+				stampedAt: new DateTime()
 			)
 		);
 	}//end testAnUnresolvableSchemaProjectsNothing()

@@ -39,6 +39,7 @@ use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
+use OCA\OpenRegister\AppHost\Service\FeatureToggleService;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
@@ -52,13 +53,6 @@ use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
-// Thirteen imports from OCA\OpenRegister\Service\Objects\ stood here — a
-// namespace that DOES NOT EXIST. Those classes live under Service\Object\
-// (singular); the plural was left behind by the rename. Every one was unused, so
-// PHP never resolved them and they were inert — which is why nothing ever
-// failed. The first person to actually reference one would have got a fatal at
-// boot, in the app's own bootstrap, from a line that looks like every other
-// import in the file.
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -94,6 +88,7 @@ use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
+use OCA\OpenRegister\Listener\AdministeredValidationListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
@@ -102,18 +97,20 @@ use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AutoTransitionRecordListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\CodedValueValidationListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
+use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
-use OCA\OpenRegister\Listener\StateHistoryProjectionListener;
 use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\FlowNodePreflightListener;
 use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
-use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\GrantableRightsInvalidationListener;
+use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\LifecycleActionListener;
@@ -130,21 +127,18 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
-use OCA\OpenRegister\Listener\AdministeredValidationListener;
-use OCA\OpenRegister\Listener\WorkingCalendarChangedListener;
-use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
+use OCA\OpenRegister\Listener\StateFieldRuleListener;
+use OCA\OpenRegister\Listener\StateHistoryProjectionListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
-use OCA\OpenRegister\Listener\WatcherPruneListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
-use OCA\OpenRegister\Listener\WebhookEventListener;
-use OCA\OpenRegister\Listener\CodedValueValidationListener;
-use OCA\OpenRegister\Listener\DependentValueListener;
-use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
+use OCA\OpenRegister\Listener\WatcherPruneListener;
+use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\WorkingCalendarChangedListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
@@ -169,6 +163,13 @@ use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCA\OpenRegister\Service\CaseTokenService;
 use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -176,27 +177,18 @@ use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
-use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
-use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
+use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
 use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
@@ -236,13 +228,14 @@ use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\MapLinkService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
-use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
@@ -251,8 +244,8 @@ use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
 use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
@@ -260,24 +253,31 @@ use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
 use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\PhotoLinkService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\RegisterSlugResolver;
+use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
-use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
@@ -285,20 +285,26 @@ use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
-use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
+use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
+use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
-use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\WebPush\HexIconService;
 use OCA\OpenRegister\Service\XwikiLinkService;
 use OCP\AppFramework\App;
@@ -447,9 +453,9 @@ class Application extends App implements IBootstrap {
 		// failure is loud here rather than showing up as every toggle reading
 		// off (ledger row 11.15).
 		$context->registerService(
-			\OCA\OpenRegister\AppHost\Service\FeatureToggleService::class,
+			FeatureToggleService::class,
 			static function ($c) {
-				return new \OCA\OpenRegister\AppHost\Service\FeatureToggleService(
+				return new FeatureToggleService(
 					appConfig: $c->get(\OCP\IAppConfig::class),
 					container: $c,
 					logger: $c->get(\Psr\Log\LoggerInterface::class),
@@ -465,9 +471,9 @@ class Application extends App implements IBootstrap {
 		// container error instead of a fleet of refusals nobody can explain
 		// (change `flow-runs-honour-their-declaration`).
 		$context->registerService(
-			\OCA\OpenRegister\Service\Flow\FlowRunAuthorization::class,
+			FlowRunAuthorization::class,
 			static function ($c) {
-				return new \OCA\OpenRegister\Service\Flow\FlowRunAuthorization(
+				return new FlowRunAuthorization(
 					access: $c->get(\OCA\OpenRegister\Service\Flow\FlowAccess::class),
 				);
 			}
@@ -481,16 +487,16 @@ class Application extends App implements IBootstrap {
 		// an empty other, so every scoped token would silently evaluate as
 		// unscoped — a widening, arriving in total silence (row Q13.20).
 		$context->registerService(
-			\OCA\OpenRegister\Service\Rbac\TokenGrantSource::class,
-			static function ($c) {
-				return new \OCA\OpenRegister\Service\Rbac\TokenGrantSource();
+			TokenGrantSource::class,
+			static function () {
+				return new TokenGrantSource();
 			}
 		);
 
 		$context->registerService(
-			\OCA\OpenRegister\Service\Rbac\TokenGrantNarrower::class,
-			static function ($c) {
-				return new \OCA\OpenRegister\Service\Rbac\TokenGrantNarrower();
+			TokenGrantNarrower::class,
+			static function () {
+				return new TokenGrantNarrower();
 			}
 		);
 
@@ -509,9 +515,9 @@ class Application extends App implements IBootstrap {
 		// stop inheriting grants and say nothing. A named registration is what
 		// makes that failure loud (ledger row Q13.23).
 		$context->registerService(
-			\OCA\OpenRegister\Service\Rbac\HierarchyDescender::class,
+			HierarchyDescender::class,
 			static function ($c) {
-				return new \OCA\OpenRegister\Service\Rbac\HierarchyDescender(
+				return new HierarchyDescender(
 					db: $c->get(\OCP\IDBConnection::class),
 					schemaMapper: $c->get(\OCA\OpenRegister\Db\SchemaMapper::class),
 					registerMapper: $c->get(\OCA\OpenRegister\Db\RegisterMapper::class),
@@ -521,22 +527,22 @@ class Application extends App implements IBootstrap {
 		);
 
 		$context->registerService(
-			\OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander::class,
+			HierarchyGrantExpander::class,
 			static function ($c) {
-				return new \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander(
-					descender: $c->get(\OCA\OpenRegister\Service\Rbac\HierarchyDescender::class),
+				return new HierarchyGrantExpander(
+					descender: $c->get(HierarchyDescender::class),
 					logger: $c->get(\Psr\Log\LoggerInterface::class),
 				);
 			}
 		);
 
 		$context->registerService(
-			\OCA\OpenRegister\Service\Rbac\ObjectGrantResolver::class,
+			ObjectGrantResolver::class,
 			static function ($c) {
-				return new \OCA\OpenRegister\Service\Rbac\ObjectGrantResolver(
+				return new ObjectGrantResolver(
 					logger: $c->get(\Psr\Log\LoggerInterface::class),
 					container: $c,
-					hierarchy: $c->get(\OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander::class),
+					hierarchy: $c->get(HierarchyGrantExpander::class),
 				);
 			}
 		);
@@ -549,9 +555,9 @@ class Application extends App implements IBootstrap {
 		// nothing and every reveal of a BSN would go unrecorded — with no
 		// error, and with an audit page that looks like a quiet day.
 		$context->registerService(
-			\OCA\OpenRegister\Service\Rbac\RevealCollector::class,
-			static function ($c) {
-				return new \OCA\OpenRegister\Service\Rbac\RevealCollector();
+			RevealCollector::class,
+			static function () {
+				return new RevealCollector();
 			}
 		);
 
@@ -1242,7 +1248,7 @@ class Application extends App implements IBootstrap {
 			$shippedGuard = null;
 			try {
 				$shippedGuard = $container->get(
-					\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard::class
+					ShippedConfigurationGuard::class
 				);
 			} catch (\Throwable $e) {
 				$logger->debug('[Application] ShippedConfigurationGuard unavailable for ImportHandler: ' . $e->getMessage());
@@ -1409,9 +1415,9 @@ class Application extends App implements IBootstrap {
 		// which is why it is registered here beside it and not in a corner of
 		// its own (row 11.36, ADR-012).
 		$context->registerService(
-			\OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore::class,
+			ShippedBaselineStore::class,
 			function (ContainerInterface $container) {
-				return new \OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore(
+				return new ShippedBaselineStore(
 					values: $container->get(ConfigurationValueStore::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
@@ -1419,14 +1425,14 @@ class Application extends App implements IBootstrap {
 		);
 
 		$context->registerService(
-			\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard::class,
+			ShippedConfigurationGuard::class,
 			function (ContainerInterface $container) {
-				$parts = new \OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts();
-				$comparator = new \OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator(parts: $parts);
+				$parts = new DescriptorParts();
+				$comparator = new DivergenceComparator(parts: $parts);
 
-				return new \OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard(
-					baselines: $container->get(\OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore::class),
-					merge: new \OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge(
+				return new ShippedConfigurationGuard(
+					baselines: $container->get(ShippedBaselineStore::class),
+					merge: new GuardedDescriptorMerge(
 						parts: $parts,
 						comparator: $comparator
 					),

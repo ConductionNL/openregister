@@ -410,7 +410,12 @@ final class MoveObjectTest extends TestCase {
 			]
 		);
 
-		self::assertSame(['identifier'], $this->service()->generatedProperties(schema: $target));
+		// KEYED BY NAME, because `NotSuppliedHandler::excuse()` reads
+		// `array_keys()`: a list excuses the properties called `0` and `1`.
+		self::assertSame(
+			['identifier' => MoveObject::GENERATED],
+			$this->service()->generatedProperties(schema: $target)
+		);
 	}
 
 	/**

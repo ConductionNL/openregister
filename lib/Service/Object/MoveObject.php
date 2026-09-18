@@ -200,8 +200,8 @@ class MoveObject {
 		// WRITE FIRST. See the class docblock: a failure here leaves the object
 		// exactly where it was, which is the recoverable half.
 		try {
-			$object->setRegister($targetRegister->getId());
-			$object->setSchema($targetSchema->getId());
+			$object->setRegister((string)$targetRegister->getId());
+			$object->setSchema((string)$targetSchema->getId());
 			$this->objects->updateObjectEntity(
 				entity: $object,
 				register: $targetRegister,
@@ -211,8 +211,8 @@ class MoveObject {
 			// Put the entity back the way it was in memory, so a caller that
 			// keeps using it is not holding an object that claims to live
 			// somewhere it does not.
-			$object->setRegister($sourceRegister->getId());
-			$object->setSchema($sourceSchema->getId());
+			$object->setRegister((string)$sourceRegister->getId());
+			$object->setSchema((string)$sourceSchema->getId());
 
 			return $this->refusal(
 				uuid: $uuid,
@@ -298,9 +298,15 @@ class MoveObject {
 	/**
 	 * The properties the target declares as platform-minted.
 	 *
+	 * 🔴 KEYED BY NAME, WITH A REASON. `ValidateObject::validateObject()` hands
+	 * this straight to `NotSuppliedHandler::excuse()`, which reads
+	 * `array_keys()`. A LIST therefore excuses the properties named `0`, `1`
+	 * and `2`, which is to say nothing at all: the move would report a target
+	 * as not fitting because a value the platform mints on save is absent.
+	 *
 	 * @param Schema $schema The schema.
 	 *
-	 * @return array<int, string> The property names.
+	 * @return array<string, string> The property names, mapped to the reason.
 	 *
 	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
@@ -308,7 +314,7 @@ class MoveObject {
 		$generated = [];
 		foreach ($schema->getProperties() as $name => $config) {
 			if (is_array($config) === true && ($config[self::GENERATED] ?? null) !== null) {
-				$generated[] = (string)$name;
+				$generated[(string)$name] = self::GENERATED;
 			}
 		}
 

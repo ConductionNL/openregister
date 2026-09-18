@@ -74,17 +74,17 @@ class TokenGrantSource {
 	/**
 	 * Bind from a Consumer's stored authorization configuration.
 	 *
-	 * @param array<string, mixed>|null $authorizationConfiguration The Consumer's configuration.
+	 * @param array<string, mixed>|null $storedAuthorization The Consumer's configuration.
 	 * @param string                    $tokenId                    Which Consumer this is.
 	 *
 	 * @return TokenGrant|null The grant that was bound.
 	 *
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
-	public function bindFromConsumer(?array $authorizationConfiguration, string $tokenId): ?TokenGrant {
+	public function bindFromConsumer(?array $storedAuthorization, string $tokenId): ?TokenGrant {
 		$stored = null;
-		if (is_array($authorizationConfiguration) === true) {
-			$stored = ($authorizationConfiguration[TokenGrant::KEY] ?? null);
+		if (is_array($storedAuthorization) === true) {
+			$stored = ($storedAuthorization[TokenGrant::KEY] ?? null);
 		}
 
 		$grant = TokenGrant::fromStored(stored: $stored, tokenId: $tokenId);

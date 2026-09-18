@@ -105,14 +105,14 @@ final class SearchScopes {
 				continue;
 			}
 
-			$at = strpos($token, ':');
-			if ($at === false) {
+			$colonAt = strpos($token, ':');
+			if ($colonAt === false) {
 				$unparsed[] = $token;
 				continue;
 			}
 
-			$prefix = substr($token, 0, $at);
-			$value = trim(substr($token, ($at + 1)));
+			$prefix = substr($token, 0, $colonAt);
+			$value = trim(substr($token, ($colonAt + 1)));
 			if ($value === '' || in_array($prefix, self::PREFIXES, true) === false) {
 				$unparsed[] = $token;
 				continue;
@@ -167,7 +167,7 @@ final class SearchScopes {
 	 */
 	public function narrowSchemas(array $schemas): array {
 		if ($this->schemas === [] && $this->registers === []) {
-			return array_values(array_map(static fn (array $s): int => (int)$s['id'], $schemas));
+			return array_values(array_map(static fn (array $row): int => (int)$row['id'], $schemas));
 		}
 
 		$kept = [];

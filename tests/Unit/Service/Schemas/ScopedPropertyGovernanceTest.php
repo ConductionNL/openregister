@@ -367,7 +367,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 			schema: $this->schemaWith(['salary' => ['scope' => 'team-a']]),
 			property: 'salary',
 			scope: 'team-a',
-			at: new DateTimeImmutable('2026-09-18T10:00:00+00:00')
+			stampedAt: new DateTimeImmutable('2026-09-18T10:00:00+00:00')
 		);
 
 		$this->assertSame('scoped_property_promoted', $record['action']);

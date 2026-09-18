@@ -145,7 +145,7 @@ final class WriteCause {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	public static function as(string $cause, ?string $run, callable $operation): mixed {
+	public static function runAs(string $cause, ?string $run, callable $operation): mixed {
 		self::$frames[] = ['cause' => self::normalise(cause: $cause), 'run' => $run];
 
 		try {

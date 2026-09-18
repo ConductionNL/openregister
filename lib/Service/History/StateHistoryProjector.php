@@ -71,7 +71,7 @@ class StateHistoryProjector {
 	 * @param Schema|null $schema     The object's schema, or null when it cannot be resolved.
 	 * @param string      $register   The register slug.
 	 * @param string      $to         The state the object is now in.
-	 * @param DateTime    $at         The moment of the move.
+	 * @param DateTime    $stampedAt         The moment of the move.
 	 *
 	 * @return bool True when an interval was written.
 	 *
@@ -82,7 +82,7 @@ class StateHistoryProjector {
 		?Schema $schema,
 		string $register,
 		string $to,
-		DateTime $at,
+		DateTime $stampedAt,
 	): bool {
 		$property = $this->declaredProperty(schema: $schema);
 		if ($property === null) {
@@ -92,7 +92,7 @@ class StateHistoryProjector {
 			return false;
 		}
 
-		$this->mapper->closeOpenInterval(objectUuid: $objectUuid, property: $property, leftAt: $at);
+		$this->mapper->closeOpenInterval(objectUuid: $objectUuid, property: $property, leftAt: $stampedAt);
 
 		$interval = new StateHistory();
 		$interval->setObjectUuid($objectUuid);
@@ -100,7 +100,7 @@ class StateHistoryProjector {
 		$interval->setSchema((string)$schema?->getSlug());
 		$interval->setProperty($property);
 		$interval->setValue($to);
-		$interval->setEnteredAt($at);
+		$interval->setEnteredAt($stampedAt);
 		$interval->setLeftAt(null);
 
 		$this->mapper->insert($interval);

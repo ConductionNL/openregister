@@ -183,7 +183,7 @@ class ViewShareResolver {
 			// A read member and a stranger may change nothing at all. Every
 			// field they sent is refused, which is what lets the endpoint
 			// answer with a sentence rather than an empty 403.
-			return array_values(array_keys($update));
+			return array_keys($update);
 		}
 
 		$refused = [];

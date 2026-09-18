@@ -467,7 +467,7 @@ class TokenGrantTest extends TestCase {
 		$this->assertFalse($source->isBound(), 'a session request binds nothing');
 		$this->assertNull($source->current());
 
-		$source->bindFromConsumer(authorizationConfiguration: ['publicKey' => 'x'], tokenId: 'leverancier');
+		$source->bindFromConsumer(storedAuthorization: ['publicKey' => 'x'], tokenId: 'leverancier');
 		$this->assertTrue($source->isBound(), 'a machine principal binds even when it carries no grant');
 		$this->assertNull($source->current(), 'and an unscoped Consumer keeps its holder\'s rights, as today');
 	}//end testTheSourceDistinguishesUnboundFromUngranted()
@@ -480,7 +480,7 @@ class TokenGrantTest extends TestCase {
 	public function testAConsumerCarryingAGrantBindsIt(): void {
 		$source = new TokenGrantSource();
 		$source->bindFromConsumer(
-			authorizationConfiguration: [
+			storedAuthorization: [
 				'publicKey' => 'x',
 				TokenGrant::KEY => [
 					'verbs' => ['read'],

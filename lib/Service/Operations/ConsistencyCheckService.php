@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
+use DateTime;
 use OCA\OpenRegister\Exception\ConsistencyCheckWouldWriteException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -268,7 +269,7 @@ class ConsistencyCheckService {
 							$qb->expr()->lt(
 								'started',
 								$qb->createNamedParameter(
-									(new \DateTime('-1 day')),
+									(new DateTime('-1 day')),
 									IQueryBuilder::PARAM_DATETIME_MUTABLE
 								)
 							)

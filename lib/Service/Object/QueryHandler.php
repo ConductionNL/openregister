@@ -441,20 +441,20 @@ class QueryHandler {
 
 		// Use optimized combined search+count that loads register/schema once.
 		$searchStart = microtime(true);
-		if ($historyNarrowed === true) {
-			// The history predicate left no candidates. An EMPTY id set is not
-			// the same instruction as no id set: passed on, it is read as "no
-			// id filter" and would answer with the whole register. So the
-			// search is not issued at all.
-			$searchResult = [
-				'results' => [],
-				'total' => 0,
-				'registers' => [],
-				'schemas' => [],
-				'ignoredFilters' => [],
-				'source' => 'database',
-			];
-		} else {
+		// The history predicate left no candidates. An EMPTY id set is not the
+		// same instruction as no id set: passed on, it is read as "no id
+		// filter" and would answer with the whole register. So the search is
+		// not issued at all.
+		$searchResult = [
+			'results' => [],
+			'total' => 0,
+			'registers' => [],
+			'schemas' => [],
+			'ignoredFilters' => [],
+			'source' => 'database',
+		];
+
+		if ($historyNarrowed === false) {
 			$searchResult = $this->objectMapper->searchObjectsPaginated(
 				searchQuery: $paginatedQuery,
 				countQuery: $countQuery,
