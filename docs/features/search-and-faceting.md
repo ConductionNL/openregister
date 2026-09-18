@@ -225,6 +225,45 @@ Apps declare their result URLs, icons, and display names via the boot-time
 deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional
 `displayName` is what labels an app's unified-search results.
 
+## The administered dictionary
+
+A search can be taught what a citizen's word means here. Two things are
+administered, both as SKOS concepts in the **vocabulary** register, so they are
+exportable, auditable and translatable like any other configuration, and a
+change takes effect on the next search with no index to rebuild:
+
+- **Synonym groups** — concepts in the scheme
+  `https://openregister.app/vocabularies/search-synonyms`. A concept's
+  `prefLabel` and its `altLabel` entries are one group, so
+  `omgevingsvergunning` with `bouwvergunning` beside it makes either word find
+  both. `altLabel` has always meant this; no second register was added for it.
+- **Stopwords** — concepts in the scheme
+  `https://openregister.app/vocabularies/search-stopwords`. Their `prefLabel`
+  is the word to drop.
+
+Both are keyed by BCP-47 language tag, so "per language" needs no second
+mechanism, and a concept with no label in the searching language contributes
+nothing rather than falling back to another one.
+
+What a search does with them:
+
+- A plain term is rewritten as `(word OR synonym)` in the search grammar the
+  term parser already reads. A term that already carries operators, brackets,
+  quotes or wildcards is left exactly as typed: the person has said precisely
+  what they want.
+- Expansion is bounded twice, by `searchDictionaryPerGroup` (default 5) and
+  `searchDictionaryPerQuery` (default 20). The bound is on the query's cost,
+  not on the vocabulary, so a group may be as large as it likes.
+- **A term made only of stopwords keeps the term as typed.** Removing every
+  word leaves an empty term, and an empty term answers with the whole register.
+- The response says what happened, under `@self.dictionary`: what was typed,
+  what was searched, what the dictionary added and which stopwords it dropped.
+  Expansion is the one search feature that returns rows the searcher did not
+  ask for, and unreported that reads as a broken search.
+
+With no dictionary administered, every search behaves exactly as it did before
+one existed.
+
 ## Search Trail Recording
 
 OpenRegister records a **search trail** for paginated searches so the dashboard's
