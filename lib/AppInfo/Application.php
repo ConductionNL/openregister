@@ -105,6 +105,7 @@ use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
+use OCA\OpenRegister\Listener\StateHistoryProjectionListener;
 use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
@@ -3309,6 +3310,11 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatedEvent::class, FacetCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, FacetCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, FacetCacheInvalidationListener::class);
+
+		// A transition becomes an interval a history filter can join. The
+		// listener never fails the move: the projection is derived and
+		// rebuildable, the transition is not.
+		$context->registerEventListener(ObjectTransitionedEvent::class, StateHistoryProjectionListener::class);
 
 		// Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
 		$context->registerEventListener(ObjectCreatedEvent::class, TranslationProjectionListener::class);
