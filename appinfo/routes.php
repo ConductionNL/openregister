@@ -1180,6 +1180,21 @@ return [
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+            // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
+            // resource at `/lock`, and DELETE is the verb a client reaches for;
+            // `@conduction/nextcloud-vue`'s `useObjectLock.release()` sent
+            // exactly this until nextcloud-vue#1202 changed it to POST
+            // `/unlock`, because this app declared no DELETE and every release
+            // 404ed. The composable reads a 404 as "already released;
+            // idempotent" and returned WITHOUT A WORD, so every release in
+            // every app on that library succeeded loudly and freed nothing.
+            //
+            // Declaring it costs one line and one route, and it turns that 404
+            // into a fact about the object (see `unlock()`: not locked) rather
+            // than a fact about the router. Consumers pinned to 3.2.0 or older
+            // start working; consumers on the fix keep using POST `/unlock`.
+            // One controller method answers both, so the two verbs cannot drift.
+        ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['id' => '[^/]+']],
         // Archive and freeze (object-archive-state). DELETE undoes POST on the
         // same url, which is what makes restore the obvious opposite of
         // archive; a second `/unarchive` url would read as a third state.
