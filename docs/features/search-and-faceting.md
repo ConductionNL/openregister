@@ -207,6 +207,19 @@ Key behaviours:
   security applies to excerpt content.
 - **Pagination** — results paginate with a cursor (integer offset), 25 per page,
   so "load more" works for registers with thousands of objects.
+- **The magic tables are the index** — unified search reads the per
+  register-schema magic tables directly. It never consults Solr or
+  Elasticsearch: those backends are deprecated for unified search, and a
+  configured `search-index` backend changes nothing about what the magnifier
+  answers. The external `search-index` capability itself is untouched and still
+  serves the object search API.
+- **The fan-out is bounded** — a cross-schema search is not one statement over
+  every searchable schema. Schemas are searched in batches of at most
+  `MagicMapper::UNION_ARM_BATCH_SIZE` UNION arms, and the batches are merged,
+  ordered and paginated together, so the page is the search's page rather than
+  the first batch's. On an instance with 1,272 searchable schemas the single
+  statement was the failure: it exceeded the database's statement bounds and
+  the magnifier answered nothing.
 
 Apps declare their result URLs, icons, and display names via the boot-time
 deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional

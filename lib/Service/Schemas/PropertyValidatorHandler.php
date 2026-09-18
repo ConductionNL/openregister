@@ -741,6 +741,12 @@ class PropertyValidatorHandler {
 		// had to learn about this annotation to do it.
 		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
 
+		// And a choice property has to resolve to exactly one list of answers.
+		// Same reason, same place, same exception family: a field that offers
+		// nothing, or offers two different things, is not something a reader
+		// can tell apart from a field nobody has configured yet.
+		CodedChoiceDeclaration::assert(property: $property, path: $path);
+
 		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {
 			return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');

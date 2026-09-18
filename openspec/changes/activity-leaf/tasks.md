@@ -27,13 +27,25 @@
 
 ## 2. Surfaces
 
-- [ ] 2.1 `tab` and `widget` surfaces with kind chips and a date range. The
+- [ ] 2.1 `tab` and `widget` surfaces with kind chips and a date range.
+      **This is a nextcloud-vue change, not an openregister one**, and that
+      is why it is not cheap here: the leaf surfaces come from the library
+      (`registerLeafIntegrations`, `CnActivityTab`), and openregister's
+      `src/integrations/bootstrap.js` registers what the library ships into
+      the shared registry rather than declaring surfaces of its own. The
       engine already accepts `kinds`, `from` and `until` and returns a count
       per kind, so a chip can render "0" rather than vanish; what is missing
-      is the Vue surface and the per-user memory of the reads toggle.
-- [ ] 2.2 CSV and PDF export of the filtered feed, through the existing
-      export formats. The page it exports is the page the filters produced,
-      which is the same call with no page bound.
+      is the library's surface and the per-user memory of the reads toggle.
+- [x] 2.2 CSV export of the filtered feed:
+      `lib/Service/Integration/ActivityFeedExport.php`. It exports the page
+      it is GIVEN and re-queries nothing, because an export that re-reads can
+      disagree with the screen and the reader cannot tell which was wrong.
+      Cells a spreadsheet would execute (`=`, `+`, `-`, `@`) are written as
+      text, and an undated row exports an empty cell rather than 1970.
+      **PDF is not built**: `ExportService::exportToPdf()` renders objects of
+      a register and schema, not an arbitrary row set, so a feed PDF is a new
+      renderer rather than a call, and it belongs beside the surface that
+      decides what a printed feed looks like (2.1).
 
 ## 3. Tests
 
