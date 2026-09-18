@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
@@ -1132,6 +1133,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateExtendingFormAnnotation(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
 		$this->validateHierarchyAnnotation(schema: $schema);
+		$this->validateDepartmentMatrix(schema: $schema);
 		$this->validateReversibilityDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
@@ -2035,6 +2037,47 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
+
+	/**
+	 * Refuse a broken `authorization.matrix` at save (row B13).
+	 *
+	 * THIS ONE THROWS for the same reason the hierarchy validator does: the
+	 * block decides who reaches which objects, and every way of getting it
+	 * wrong is silent afterwards. A matrix on `afdeling` where the schema
+	 * declares `department` compiles to a condition on a column that does not
+	 * exist, which the SQL builder answers by DROPPING the predicate, and a
+	 * rule meant to narrow a group to its own department becomes an
+	 * unconditional grant to the whole group. There is no error anywhere on
+	 * that path; there is only a group that can suddenly read everything.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the matrix cannot be compiled.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	private function validateDepartmentMatrix(Schema $schema): void {
+		$authorization = $schema->getAuthorization();
+		if (is_array($authorization) === false
+			|| array_key_exists(DepartmentMatrixCompiler::KEY, $authorization) === false
+		) {
+			return;
+		}
+
+		$findings = (new DepartmentMatrixCompiler())->validate(
+			properties: ($schema->getProperties() ?? []),
+			authorization: $authorization
+		);
+
+		if (count($findings) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $finding) => $finding['message'], $findings);
+		throw new Exception('authorization.matrix: ' . implode(' ', $messages));
+	}//end validateDepartmentMatrix()
 
 	/**
 	 * Refuse a broken `x-openregister-hierarchy` declaration at save.

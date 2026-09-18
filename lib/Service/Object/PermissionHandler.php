@@ -45,6 +45,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
@@ -2550,6 +2551,17 @@ class PermissionHandler {
 			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
 		);
 
+		// THE DEPARTMENT BY ROLE MATRIX IS COMPILED HERE, and here only (row
+		// B13). This method is the one step every path takes — the object read,
+		// the relation check and both list emitters all resolve through it, and
+		// `MagicRbacHandler::resolveSchemaAuthorization()` delegates to it —
+		// so a matrix row becomes an ordinary conditional scope before anything
+		// evaluates anything. That is what makes the PHP verdict and the SQL
+		// verdict identical BY CONSTRUCTION rather than by two implementations
+		// agreeing, which is the property rbac-scopes requires and the one a
+		// second enforcement path would quietly break.
+		$authorization = $this->compileDepartmentMatrix(authorization: $authorization);
+
 		// THE END AND THE AREA ARE READ HERE, with the mcp strip, because this
 		// is the one step every path takes: the object read, the relation check
 		// and both list emitters all resolve through this method. A grant that
@@ -2566,6 +2578,64 @@ class PermissionHandler {
 
 		return $constraints->apply(authorization: $authorization, area: $this->areaOf(schema: $schema));
 	}//end resolveAuthorization()
+
+	/**
+	 * Compile the schema's department matrix into the block, if it declares one.
+	 *
+	 * The caller's own values are resolved from their Nextcloud groups by the
+	 * declared prefix. THE PERSON-SCHEMA USER SOURCE IS NOT RESOLVED HERE and a
+	 * matrix declaring one compiles nothing rather than compiling something
+	 * narrower: reading a person object to decide authorization means resolving
+	 * an object through the resolver that is mid-decision, and half a rule is
+	 * worse than none. `tasks.md` records it as open.
+	 *
+	 * A failure compiles NOTHING and leaves the block as it was. That is the
+	 * fail-closed direction for a matrix, which only ever ADDS ways to be
+	 * admitted: without it the caller falls back to whatever the schema said
+	 * before, and nobody is admitted by an error.
+	 *
+	 * @param array<string, mixed>|null $authorization The resolved block.
+	 *
+	 * @return array<string, mixed>|null The block, with the matrix's rules in it.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	private function compileDepartmentMatrix(?array $authorization): ?array {
+		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return $authorization;
+		}
+
+		try {
+			$compiler = new DepartmentMatrixCompiler();
+
+			$userId = $this->userSession->getUser()?->getUID();
+			$userGroups = [];
+			if ($userId !== null) {
+				$userObj = $this->userManager->get($userId);
+				if ($userObj !== null) {
+					$userGroups = $this->groupManager->getUserGroupIds($userObj);
+				}
+			}
+
+			return $compiler->merge(
+				authorization: $authorization,
+				compiled: $compiler->compile(
+					matrix: $matrix,
+					ownValues: $compiler->valuesFromGroups(
+						source: ($matrix['userSource'] ?? null),
+						userGroups: $userGroups
+					)
+				)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[PermissionHandler] Could not compile a department matrix; the schema keeps its own rules',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return $authorization;
+		}
+	}//end compileDepartmentMatrix()
 
 	/**
 	 * The shared reader of an entry's end and its area.
