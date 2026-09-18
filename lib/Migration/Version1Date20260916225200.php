@@ -65,7 +65,10 @@ class Version1Date20260916225200 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_audit_trails') === false) {
-			return null;
+			// Hand the schema back, never null: a null return drops the shared
+			// snapshot and makes the next migration re-introspect the whole
+			// database. This branch predates the guard that says so.
+			return $schema;
 		}
 
 		$audit = $schema->getTable('openregister_audit_trails');

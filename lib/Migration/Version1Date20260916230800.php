@@ -68,7 +68,10 @@ class Version1Date20260916230800 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_content_reports') === true) {
-			return null;
+			// Hand the schema back, never null: a null return drops the shared
+			// snapshot and makes the next migration re-introspect the whole
+			// database. This branch predates the guard that says so.
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_content_reports');
