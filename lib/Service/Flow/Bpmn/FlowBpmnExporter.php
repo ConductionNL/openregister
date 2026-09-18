@@ -331,12 +331,33 @@ class FlowBpmnExporter {
 	 * @return array<int, array<string, mixed>> The edges.
 	 */
 	private function edgesOf(Flow $flow): array {
+		$known = [];
+		foreach ($this->nodesOf(flow: $flow) as $node) {
+			$known[] = (string)($node['id'] ?? '');
+		}
+
 		$edges = [];
 		foreach ((array)($flow->getEdges() ?? []) as $edge) {
-			if (is_array($edge) === true) {
-				$edges[] = $edge;
+			if (is_array($edge) === false) {
+				continue;
 			}
-		}
+
+			// 🔴 A DANGLING EDGE IS DROPPED, NOT EXPORTED. A `sequenceFlow`
+			// whose sourceRef or targetRef names nothing in the process is not
+			// a slightly wrong diagram: every modeller refuses the whole file,
+			// so one edge left behind by a deleted node turns the export into
+			// something nobody can open. The flow itself is not wrong — the
+			// engine refuses a dangling edge at build time — but a document
+			// assembled from a stored node list can still carry one, and the
+			// export is the surface where it becomes fatal.
+			$from = (string)($edge['from'] ?? '');
+			$to = (string)($edge['to'] ?? '');
+			if (in_array($from, $known, true) === false || in_array($to, $known, true) === false) {
+				continue;
+			}
+
+			$edges[] = $edge;
+		}//end foreach
 
 		return $edges;
 	}//end edgesOf()
