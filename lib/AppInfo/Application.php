@@ -701,6 +701,13 @@ class Application extends App implements IBootstrap {
 		// driver-level 500 an unresolvable column name used to produce.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
 
+		// Register the MaintenanceModeMiddleware (admin-operations-console
+		// D-6): while maintenance mode holds, every controller but the
+		// operations console is refused with the administered message, so the
+		// instance can be closed without locking out the administrator who
+		// closed it and has to open it again.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\MaintenanceModeMiddleware::class);
+
 		// Register the ApiVersionMiddleware (api-as-a-versioned-surface): names
 		// the contract version that answered on every API response, carries the
 		// RFC 8594 end date when that version is deprecated, and refuses a call

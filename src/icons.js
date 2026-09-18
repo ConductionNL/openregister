@@ -39,6 +39,7 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import MonitorDashboard from 'vue-material-design-icons/MonitorDashboard.vue'
 import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
 import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
@@ -78,6 +79,7 @@ export default {
 	MagnifyPlus,
 	MapMarkerPath,
 	Merge,
+	MonitorDashboard,
 	MessageTextOutline,
 	OfficeBuildingOutline,
 	PowerPlugOutline,
