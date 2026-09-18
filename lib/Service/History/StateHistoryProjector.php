@@ -74,6 +74,8 @@ class StateHistoryProjector {
 	 * @param DateTime    $at         The moment of the move.
 	 *
 	 * @return bool True when an interval was written.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function record(
 		string $objectUuid,
@@ -117,6 +119,8 @@ class StateHistoryProjector {
 	 * @return string[] The declared lifecycle fields, distinct.
 	 *
 	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function projectedProperties(): array {
 		try {

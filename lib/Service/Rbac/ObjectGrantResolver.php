@@ -159,6 +159,8 @@ class ObjectGrantResolver {
 	 * @param string|null $userId The caller, or null when anonymous.
 	 *
 	 * @return array<string, int> Object UUID => core permission bitmask.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function grantedObjectUuids(?string $userId): array {
 		// An anonymous caller holds no principal grants. A link or email
@@ -299,6 +301,8 @@ class ObjectGrantResolver {
 	 * @param string $action The action being decided.
 	 *
 	 * @return integer|null The required bit, or null when the action has none.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function permissionFor(string $action): ?int {
 		return self::permissionBitFor(action: $action);
@@ -362,6 +366,8 @@ class ObjectGrantResolver {
 	 * @param string|null $userId Only this caller, or null for everybody.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function forget(?string $userId = null): void {
 		if ($userId === null) {

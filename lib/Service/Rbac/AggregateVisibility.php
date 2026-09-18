@@ -78,6 +78,8 @@ class AggregateVisibility {
 	 * @param string      $property The property name.
 	 *
 	 * @return bool Whether the summary may be shown.
+	 *
+	 * @spec openspec/changes/aggregate-paths-ask-permission/specs/rbac-scopes/spec.md
 	 */
 	public function maySummarise(?Schema $schema, string $property): bool {
 		if ($schema === null) {
@@ -136,6 +138,8 @@ class AggregateVisibility {
 	 * @param array<int, string> $fields The field names.
 	 *
 	 * @return array{allowed: array<int, string>, withheld: array<int, string>} The split.
+	 *
+	 * @spec openspec/changes/aggregate-paths-ask-permission/specs/rbac-scopes/spec.md
 	 */
 	public function partition(?Schema $schema, array $fields): array {
 		$allowed  = [];

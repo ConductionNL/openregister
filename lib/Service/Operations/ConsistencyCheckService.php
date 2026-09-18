@@ -123,6 +123,8 @@ class ConsistencyCheckService {
 	 * The slugs this instance can check.
 	 *
 	 * @return array<int, string> The probe slugs.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	public function slugs(): array {
 		return array_keys($this->probes);
@@ -283,6 +285,8 @@ class ConsistencyCheckService {
 	 * @param string $slug The probe slug.
 	 *
 	 * @return array<string, mixed>|null The repair plan, or null when no such probe.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	public function repairPlan(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {

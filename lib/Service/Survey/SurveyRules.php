@@ -106,6 +106,8 @@ class SurveyRules {
 	 * @param string               $proposed The anonymity being asked for.
 	 *
 	 * @return string|null The refusal, or null when nothing changes.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function refuseAnonymityChange(array $survey, string $proposed): ?string {
 		$current = (string)($survey['anonymity'] ?? self::ATTRIBUTED);
@@ -127,6 +129,8 @@ class SurveyRules {
 	 * @param int $answerSetCount How many answer sets already exist.
 	 *
 	 * @return bool True when the edit must raise the version.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function editRaisesVersion(int $answerSetCount): bool {
 		return $answerSetCount > 0;
@@ -139,6 +143,8 @@ class SurveyRules {
 	 * @param int                  $answerSetCount How many answer sets exist.
 	 *
 	 * @return int The version to store.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function versionAfterEdit(array $survey, int $answerSetCount): int {
 		$version = (int)($survey['version'] ?? 1);
@@ -157,6 +163,8 @@ class SurveyRules {
 	 * @param DateTimeInterface|null $now        The moment, for a frozen clock.
 	 *
 	 * @return string|null The refusal, or null when the link works.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function refuseInvitation(array $invitation, array $survey, ?DateTimeInterface $now = null): ?string {
 		$moment = ($now ?? new DateTimeImmutable());
@@ -196,6 +204,8 @@ class SurveyRules {
 	 * @param array<int, array<string, mixed>> $answers   What was submitted.
 	 *
 	 * @return string[] The refusals, one per missing required question.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function refuseSubmission(array $questions, array $answers): array {
 		$answered = [];
@@ -243,6 +253,8 @@ class SurveyRules {
 	 * @param int                  $responseCount How many answer sets exist.
 	 *
 	 * @return array{withheld: bool, count: int, reason: string} What to show.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function disclosure(array $survey, int $responseCount): array {
 		$anonymity = (string)($survey['anonymity'] ?? self::ATTRIBUTED);
@@ -279,6 +291,8 @@ class SurveyRules {
 	 * @param int $periodDays        The period, in days, for the sentence.
 	 *
 	 * @return string|null The block reason, or null when they may be asked.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function refuseForFatigue(int $recentInvitations, int $maximum, int $periodDays): ?string {
 		if ($recentInvitations < $maximum) {
@@ -300,6 +314,8 @@ class SurveyRules {
 	 * @param array<string, mixed> $survey    Its survey.
 	 *
 	 * @return array<string, mixed> The answer set to store.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function scrubRespondent(array $answerSet, array $survey): array {
 		if ((string)($survey['anonymity'] ?? self::ATTRIBUTED) !== self::ANONYMOUS) {

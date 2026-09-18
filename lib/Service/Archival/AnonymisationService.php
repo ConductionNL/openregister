@@ -68,6 +68,8 @@ class AnonymisationService {
 	 * @param string                              $salt    Instance salt for the pseudonym.
 	 *
 	 * @return array<string, mixed> The anonymised payload.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function apply(array $payload, array $profile, string $salt): array {
 		$result = $payload;
@@ -107,6 +109,8 @@ class AnonymisationService {
 	 * @param string               $profileName What the profile was called.
 	 *
 	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function report(array $before, array $after, string $profileName = ''): array {
 		$changed = [];
@@ -154,6 +158,8 @@ class AnonymisationService {
 	 * @param string $salt  The instance salt.
 	 *
 	 * @return string The token.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function pseudonymFor(string $value, string $salt): string {
 		return 'anon-'.substr(hash('sha256', $salt.'::'.mb_strtolower(trim($value))), 0, 16);

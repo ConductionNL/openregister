@@ -76,6 +76,8 @@ final class ServiceHours {
 	 * A calendar that declares no windows.
 	 *
 	 * @return self The empty declaration.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public static function none(): self {
 		return new self(windows: []);
@@ -91,6 +93,8 @@ final class ServiceHours {
 	 * @return self The windows.
 	 *
 	 * @throws FlowTimerValidationException On any refused window, naming the weekday.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public static function fromArray(mixed $value, array $workingWeekdays, string $slug): self {
 		if ($value === null || $value === []) {
@@ -137,6 +141,8 @@ final class ServiceHours {
 	 * Whether any windows are declared at all.
 	 *
 	 * @return bool True when the calendar keeps service hours.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function areDeclared(): bool {
 		return ($this->windows !== []);
@@ -148,6 +154,8 @@ final class ServiceHours {
 	 * @param int $iso The ISO weekday.
 	 *
 	 * @return array<int, array{start: int, end: int}> The windows.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function forWeekday(int $iso): array {
 		return ($this->windows[$iso] ?? []);
@@ -157,6 +165,8 @@ final class ServiceHours {
 	 * Every declared window, for a diagnostic to name.
 	 *
 	 * @return array<int, array<int, array{start: int, end: int}>> The windows.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function all(): array {
 		return $this->windows;
@@ -168,6 +178,8 @@ final class ServiceHours {
 	 * @param int $iso The ISO weekday.
 	 *
 	 * @return int The open minutes.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function minutesOn(int $iso): int {
 		$minutes = 0;
@@ -187,6 +199,8 @@ final class ServiceHours {
 	 * windows removes the disagreement rather than validating it.
 	 *
 	 * @return float The hours, or 0.0 when no windows are declared.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function derivedHoursPerWorkingDay(): float {
 		if ($this->areDeclared() === false) {

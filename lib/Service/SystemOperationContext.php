@@ -117,6 +117,8 @@ final class SystemOperationContext {
 	 * @return mixed Whatever the callable returns.
 	 *
 	 * @throws SystemContextUnavailableException When elevation is not available.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public static function assertSystem(string $what, callable $operation) {
 		// 🔴 THE ELEVATION IS VERIFIED, NOT ASSUMED. An earlier draft of this

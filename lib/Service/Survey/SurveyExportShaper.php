@@ -57,6 +57,8 @@ class SurveyExportShaper {
 	 * @param array<int, array<string, mixed>> $questions Its questions, in order.
 	 *
 	 * @return string[] The column headings.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function headers(array $survey, array $questions): array {
 		$headers = ['surveyVersion', 'submittedAt', 'subjectObject'];
@@ -82,6 +84,8 @@ class SurveyExportShaper {
 	 * @return array<int, array<string, mixed>> The rows.
 	 *
 	 * @throws RuntimeException When an anonymous survey is below its minimum.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function rows(array $survey, array $questions, array $answerSets): array {
 		$disclosure = $this->rules->disclosure(survey: $survey, responseCount: count($answerSets));

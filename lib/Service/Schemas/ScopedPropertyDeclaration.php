@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Schemas;
  * sources for one question, where the quiet resolution is whichever the code
  * happens to read first.
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
 final class ScopedPropertyDeclaration {
 
@@ -95,6 +95,8 @@ final class ScopedPropertyDeclaration {
 	 * @return string|null The scope, or null when the property has none.
 	 *
 	 * @throws ScopedPropertyException When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public static function fromProperty(array $property, string $path = ''): ?string {
 		if (array_key_exists(self::ANNOTATION, $property) === false) {
@@ -150,6 +152,8 @@ final class ScopedPropertyDeclaration {
 	 * @param string $scope The scope.
 	 *
 	 * @return array<string, array<int, string>> The authorization block.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public static function authorizationFor(string $scope): array {
 		$block = [];
@@ -169,6 +173,8 @@ final class ScopedPropertyDeclaration {
 	 * @return void
 	 *
 	 * @throws ScopedPropertyException When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public static function assert(array $property, string $path = ''): void {
 		self::fromProperty(property: $property, path: $path);

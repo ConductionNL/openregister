@@ -1135,7 +1135,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws ScopedPropertyException When a scope is not the caller's, or is full.
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	private function assertScopedPropertiesAreGoverned(Entity $entity): void {
 		if (($entity instanceof Schema) === false) {

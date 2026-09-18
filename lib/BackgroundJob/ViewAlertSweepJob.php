@@ -108,6 +108,8 @@ class ViewAlertSweepJob extends TimedJob {
 	 * @param mixed $argument The job argument (unused).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-the-alert-sweep-is-bounded
 	 */
 	protected function run($argument): void {
 		try {

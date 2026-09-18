@@ -69,6 +69,8 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	 * @param mixed $argument The job argument.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	final protected function run($argument): void {
 		if ($this->schedule->mayRun(jobClass: static::class, moment: new DateTime()) === false) {
@@ -94,6 +96,8 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	 * @param mixed $argument The job argument.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	abstract protected function runRecorded(mixed $argument): void;
 }//end class

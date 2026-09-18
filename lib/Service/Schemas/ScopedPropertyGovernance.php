@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCP\IUserSession;
  * may add to it, which is the same answer the read rule gives, so a person
  * cannot create a field they would not then be allowed to see.
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
 class ScopedPropertyGovernance {
 
@@ -91,6 +91,8 @@ class ScopedPropertyGovernance {
 	 * @param string $scope The scope being added to.
 	 *
 	 * @return bool Whether the caller may add.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function mayAddAtScope(string $scope): bool {
 		$user = $this->userSession->getUser();
@@ -116,6 +118,8 @@ class ScopedPropertyGovernance {
 	 * @return void
 	 *
 	 * @throws ScopedPropertyException When the caller is outside the scope.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function assertMayAddAtScope(string $scope, string $path = ''): void {
 		if ($this->mayAddAtScope(scope: $scope) === true) {
@@ -136,6 +140,8 @@ class ScopedPropertyGovernance {
 	 * The administered ceiling on scoped properties per scope.
 	 *
 	 * @return int The ceiling.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function ceiling(): int {
 		$configured = (int)$this->appConfig->getValueInt('openregister', self::CEILING_KEY, self::DEFAULT_CEILING);
@@ -153,6 +159,8 @@ class ScopedPropertyGovernance {
 	 * @param string $except A property name to ignore, so an EDIT of an existing property is not counted twice.
 	 *
 	 * @return int The count.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function countAtScope(Schema $schema, string $scope, string $except = ''): int {
 		$count = 0;
@@ -189,6 +197,8 @@ class ScopedPropertyGovernance {
 	 * @return void
 	 *
 	 * @throws ScopedPropertyException When the scope is full.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function assertBelowCeiling(Schema $schema, string $scope, string $property): void {
 		$ceiling = $this->ceiling();
@@ -214,6 +224,8 @@ class ScopedPropertyGovernance {
 	 * How long a scoped property may hold no value before it reads as abandoned.
 	 *
 	 * @return int The period, in days.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function unusedAfterDays(): int {
 		return max(1, (int)$this->appConfig->getValueInt(
@@ -242,6 +254,8 @@ class ScopedPropertyGovernance {
 	 * @param DateTimeImmutable     $asOf     When the report is read.
 	 *
 	 * @return array<int, array{property: string, scope: string, values: int|null, state: string}> The report.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function unusedReport(Schema $schema, array $counts, DateTimeImmutable $asOf): array {
 		$report = [];
@@ -302,6 +316,8 @@ class ScopedPropertyGovernance {
 	 * @return array<string, mixed> The schema's properties, with that one promoted.
 	 *
 	 * @throws ScopedPropertyException When the property is not scoped.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function promote(Schema $schema, string $property): array {
 		$properties = ($schema->getProperties() ?? []);
@@ -343,6 +359,8 @@ class ScopedPropertyGovernance {
 	 * @param DateTimeImmutable $at       When.
 	 *
 	 * @return array<string, mixed> The entry.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function promotionRecord(
 		Schema $schema,

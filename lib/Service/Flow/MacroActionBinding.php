@@ -81,6 +81,8 @@ final class MacroActionBinding {
 	 * @return self[] The bindings, keyed by nothing; each carries its action.
 	 *
 	 * @psalm-return list<self>
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
 	public static function parse(array $configuration): array {
 		$bindings = [];
@@ -109,6 +111,8 @@ final class MacroActionBinding {
 	 * @return string[] The refusals, empty when the shape is sound.
 	 *
 	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
 	public static function refusals(array $configuration): array {
 		$refusals = [];

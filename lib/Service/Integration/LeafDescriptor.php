@@ -231,6 +231,8 @@ final class LeafDescriptor {
 	 * Whether this leaf claims the one convention the platform can verify.
 	 *
 	 * @return bool Whether it declares the shared entry.
+	 *
+	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
 	 */
 	public function claimsSharedEntry(): bool {
 		return ($this->loadStrategy === self::LOADS_VIA_SHARED_ENTRY);

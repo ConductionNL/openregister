@@ -120,6 +120,8 @@ final class ViewAlert implements JsonSerializable {
 	 * @return self|null The alert, or null when none is declared.
 	 *
 	 * @throws InvalidArgumentException When a declared alert does not read.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	public static function parse(mixed $raw): ?self {
 		if ($raw === null || $raw === [] || $raw === '') {
@@ -182,6 +184,8 @@ final class ViewAlert implements JsonSerializable {
 	 * @param int $count The count.
 	 *
 	 * @return bool True when it has crossed.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	public function isCrossed(int $count): bool {
 		if ($this->operator === self::GTE) {
@@ -202,6 +206,8 @@ final class ViewAlert implements JsonSerializable {
 	 * @param int    $count The fresh count.
 	 *
 	 * @return array{state: string, fires: bool} The decision.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	public function decide(string $state, int $count): array {
 		$crossed = $this->isCrossed(count: $count);
@@ -231,6 +237,8 @@ final class ViewAlert implements JsonSerializable {
 	 * @param int      $now           Unix time now.
 	 *
 	 * @return bool True when it is due.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	public function isDue(?int $lastEvaluated, int $now): bool {
 		if ($lastEvaluated === null) {
@@ -244,6 +252,8 @@ final class ViewAlert implements JsonSerializable {
 	 * The alert as stored.
 	 *
 	 * @return array<string, mixed> The block.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	public function jsonSerialize(): array {
 		return [

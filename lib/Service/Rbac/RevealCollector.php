@@ -216,6 +216,8 @@ class RevealCollector {
 	 * How many reveals are waiting.
 	 *
 	 * @return int The count.
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function count(): int {
 		return count($this->pending);
@@ -228,6 +230,8 @@ class RevealCollector {
 	 * that is quietly incomplete is worse than one that says where it stopped.
 	 *
 	 * @return bool True when the bound was passed.
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function overflowed(): bool {
 		return $this->overflowed;

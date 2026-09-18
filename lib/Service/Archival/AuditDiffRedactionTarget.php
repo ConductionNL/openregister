@@ -70,6 +70,8 @@ final class AuditDiffRedactionTarget {
 	 * @param string[]             $changedProperties The anonymised properties.
 	 *
 	 * @return array<string, mixed> The redacted diff.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function redact(array $changed, array $changedProperties): array {
 		$targets = array_flip($changedProperties);
@@ -107,6 +109,8 @@ final class AuditDiffRedactionTarget {
 	 * @param AnonymisationPlan $plan The plan.
 	 *
 	 * @return array<string, mixed> The entry's changed payload.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function entryFor(AnonymisationPlan $plan): array {
 		return [
@@ -131,6 +135,8 @@ final class AuditDiffRedactionTarget {
 	 * @param array<string, mixed> $removed  The values that were removed.
 	 *
 	 * @return string[] The values still present, empty when the redaction is clean.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function leftovers(array $redacted, array $removed): array {
 		$serialised = json_encode($redacted);

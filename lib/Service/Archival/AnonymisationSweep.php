@@ -79,6 +79,8 @@ class AnonymisationSweep {
 	 * @param string                           $salt       The instance salt.
 	 *
 	 * @return array<string, mixed> The report: what was done, and what was refused and why.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function run(array $candidates, callable $targetsFor, string $salt): array {
 		$fingerprint = $this->run->fingerprint(salt: $salt);

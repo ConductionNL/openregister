@@ -265,6 +265,8 @@ class PresenceService {
 	 * @param DateTimeInterface $now The clock.
 	 *
 	 * @return DateTimeImmutable The cutoff.
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md
 	 */
 	public function cutoff(DateTimeInterface $now): DateTimeImmutable {
 		return (new DateTimeImmutable('@' . $now->getTimestamp()))

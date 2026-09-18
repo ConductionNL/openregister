@@ -65,6 +65,8 @@ final class AnonymisationPlan {
 	 * Whether this plan would change anything at all.
 	 *
 	 * @return bool True when it touches at least one property.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function touchesAnything(): bool {
 		return ($this->changedProperties !== []);

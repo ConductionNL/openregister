@@ -65,6 +65,8 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @param string $term The term.
 	 *
 	 * @return self The expansion.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function unchanged(string $term): self {
 		return new self(term: $term, original: $term, added: [], removed: [], kept: false);
@@ -79,6 +81,8 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @param string[] $removed  Stopwords dropped.
 	 *
 	 * @return self The expansion.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function expanded(string $term, string $original, array $added, array $removed): self {
 		return new self(term: $term, original: $original, added: $added, removed: $removed, kept: false);
@@ -91,6 +95,8 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @param string[] $removed The stopwords that would have been dropped.
 	 *
 	 * @return self The expansion.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function stopwordsWouldEmptyIt(string $term, array $removed): self {
 		return new self(term: $term, original: $term, added: [], removed: $removed, kept: true);
@@ -100,6 +106,8 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * The term the search runs.
 	 *
 	 * @return string The term.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function term(): string {
 		return $this->term;
@@ -109,6 +117,8 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * Whether the term the search runs differs from the one that was typed.
 	 *
 	 * @return bool True when it does.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function changed(): bool {
 		return ($this->term !== $this->original);
@@ -130,6 +140,8 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * The report.
 	 *
 	 * @return array<string, mixed> The account.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

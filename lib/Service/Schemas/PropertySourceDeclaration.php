@@ -122,6 +122,8 @@ final class PropertySourceDeclaration {
 	 * @return self|null The declaration, or null when the property carries none.
 	 *
 	 * @throws PropertySourceException When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/property-source-vocabulary/specs/schema-vocabulaire/spec.md
 	 */
 	public static function fromProperty(array $property, string $path = ''): ?self {
 		if (array_key_exists(self::ANNOTATION, $property) === false) {
@@ -228,6 +230,8 @@ final class PropertySourceDeclaration {
 	 * @return void
 	 *
 	 * @throws PropertySourceException When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/property-source-vocabulary/specs/schema-vocabulaire/spec.md
 	 */
 	public static function assert(array $property, string $path = ''): void {
 		self::fromProperty(property: $property, path: $path);

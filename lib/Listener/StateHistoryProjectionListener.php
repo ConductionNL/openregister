@@ -71,6 +71,8 @@ class StateHistoryProjectionListener implements IEventListener {
 	 * @param Event $event Inbound dispatcher event.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectTransitionedEvent) === false) {

@@ -69,6 +69,8 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 	 * @return void
 	 *
 	 * @throws \RuntimeException When the platform refuses the rebuild.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$registerId = null;

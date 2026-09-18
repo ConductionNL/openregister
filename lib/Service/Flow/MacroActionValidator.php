@@ -70,6 +70,8 @@ class MacroActionValidator {
 	 * @return string[] The refusals, empty when every binding is runnable.
 	 *
 	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
 	public function refusals(array $configuration): array {
 		$refusals = MacroActionBinding::refusals(configuration: $configuration);

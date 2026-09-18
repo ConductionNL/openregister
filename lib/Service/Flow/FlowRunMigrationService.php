@@ -445,6 +445,8 @@ class FlowRunMigrationService {
 	 * @param int    $limit   The batch bound.
 	 *
 	 * @return array<int, FlowRun> The runs.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md
 	 */
 	public function runsOnVersion(string $flowId, int $version, int $limit = 100): array {
 		$found = [];

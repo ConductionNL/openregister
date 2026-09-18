@@ -59,6 +59,8 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 * @param mixed $argument The job argument.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	final protected function run($argument): void {
 		$this->recorder->around(
@@ -116,6 +118,8 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 * @param mixed $argument The job argument.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	abstract protected function runRecorded(mixed $argument): void;
 }//end class

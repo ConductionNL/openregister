@@ -66,6 +66,8 @@ class LeafBundle {
 	 * @param string $appId The providing app.
 	 *
 	 * @return string The expected bundle file name.
+	 *
+	 * @spec openspec/changes/a-leaf-that-cannot-render-refuses-to-register/specs/leaf-provider-registration/spec.md
 	 */
 	public function expectedFileName(string $appId): string {
 		return $appId . '-' . self::ENTRY . '.js';
@@ -77,6 +79,8 @@ class LeafBundle {
 	 * @param string $appId The providing app.
 	 *
 	 * @return bool Whether `js/<app>-leaves.js` exists.
+	 *
+	 * @spec openspec/changes/a-leaf-that-cannot-render-refuses-to-register/specs/leaf-provider-registration/spec.md
 	 */
 	public function existsFor(string $appId): bool {
 		$path = $this->pathFor(appId: $appId);
@@ -98,6 +102,8 @@ class LeafBundle {
 	 * @param string $appId The app.
 	 *
 	 * @return string|null The path.
+	 *
+	 * @spec openspec/changes/a-leaf-that-cannot-render-refuses-to-register/specs/leaf-provider-registration/spec.md
 	 */
 	public function pathFor(string $appId): ?string {
 		try {

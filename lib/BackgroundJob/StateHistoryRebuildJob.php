@@ -112,6 +112,8 @@ class StateHistoryRebuildJob extends TimedJob {
 	 * @param mixed $argument The job argument (unused).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	protected function run($argument): void {
 		try {

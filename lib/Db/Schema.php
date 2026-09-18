@@ -640,7 +640,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return bool Whether the property is governed by an authorization block or a scope.
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	private static function propertyCarriesAuthorization(mixed $propertyConfig): bool {
 		if (is_array($propertyConfig) === false) {

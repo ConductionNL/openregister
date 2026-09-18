@@ -63,6 +63,8 @@ class HistoryNarrowing {
 	 * @return string[] The narrowed id set, empty when nothing survives.
 	 *
 	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function narrow(HistoryPredicate $predicate, ?array $ids = null): array {
 		$candidates = null;

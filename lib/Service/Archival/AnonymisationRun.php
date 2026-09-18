@@ -109,6 +109,8 @@ class AnonymisationRun {
 	 * @param string               $saltFingerprint The salt this run would use.
 	 *
 	 * @return string|null The refusal, or null when it may run.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function refuse(array $marker, bool $hasLegalHold, string $holdReason, string $saltFingerprint): ?string {
 		if ($hasLegalHold === true) {
@@ -158,6 +160,8 @@ class AnonymisationRun {
 	 * @return AnonymisationPlan The plan.
 	 *
 	 * @throws AnonymisationRefusedException When the plan would change nothing.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function plan(string $objectUuid, array $payload, array $annotation, string $salt, string $profileName = ''): AnonymisationPlan {
 		$this->planner->assertSound(annotation: $annotation, declaredProperties: array_keys($payload));
@@ -201,6 +205,8 @@ class AnonymisationRun {
 	 * @return array<string, mixed> The report, once every target has applied.
 	 *
 	 * @throws AnonymisationRefusedException When any target cannot be reached.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function apply(AnonymisationPlan $plan, array $targets): array {
 		if ($targets === []) {
@@ -270,6 +276,8 @@ class AnonymisationRun {
 	 * @param string            $state complete or in_progress.
 	 *
 	 * @return array<string, mixed> The marker.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function marker(AnonymisationPlan $plan, string $state): array {
 		return [
@@ -292,6 +300,8 @@ class AnonymisationRun {
 	 * @param string $salt The instance salt.
 	 *
 	 * @return string The fingerprint.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function fingerprint(string $salt): string {
 		return substr(hash('sha256', 'anonymisation-salt::'.$salt), 0, 12);

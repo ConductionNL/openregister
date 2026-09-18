@@ -341,6 +341,8 @@ class HierarchyDescender {
 	 * Forget what was resolved, for tests and for a schema saved mid-request.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
 	 */
 	public function forget(): void {
 		$this->memoised = null;

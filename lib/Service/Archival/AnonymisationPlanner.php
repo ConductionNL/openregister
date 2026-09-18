@@ -46,6 +46,8 @@ class AnonymisationPlanner {
 	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
 	 *
 	 * @return array<string, array<string, mixed>> Property name to its treatment.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function profileOf(array $annotation): array {
 		$profile = ($annotation[AnonymisationProfile::ANNOTATION_KEY] ?? null);
@@ -85,6 +87,8 @@ class AnonymisationPlanner {
 	 * @param string[]             $declaredProperties The property names the schema declares.
 	 *
 	 * @return string[] The refusals, empty when the profile is sound.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function refusals(array $annotation, array $declaredProperties): array {
 		$refusals = [];
@@ -113,6 +117,8 @@ class AnonymisationPlanner {
 	 * @param array<string, mixed> $payload    The record's own properties.
 	 *
 	 * @return array{changed: string[], kept: string[]} The two lists, both sorted.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function plan(array $annotation, array $payload): array {
 		$profile = $this->profileOf(annotation: $annotation);
@@ -208,6 +214,8 @@ class AnonymisationPlanner {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When the profile cannot mean what it says.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function assertSound(array $annotation, array $declaredProperties): void {
 		$refusals = $this->refusals(annotation: $annotation, declaredProperties: $declaredProperties);

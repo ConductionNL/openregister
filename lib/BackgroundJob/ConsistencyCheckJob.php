@@ -79,6 +79,8 @@ class ConsistencyCheckJob extends RecordedQueuedJob {
 	 * @param mixed $argument The job argument: the actor, when a person asked.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$findings = $this->check->check();

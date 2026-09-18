@@ -138,6 +138,8 @@ class DescriptorParts {
 	 * @param mixed $value The value.
 	 *
 	 * @return mixed The comparable value.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function normalise(mixed $value): mixed {
 		if (is_array($value) === false) {
@@ -172,6 +174,8 @@ class DescriptorParts {
 	 * @param mixed $b The other.
 	 *
 	 * @return bool True when they are the same.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function same(mixed $a, mixed $b): bool {
 		return ($this->normalise(value: $a) === $this->normalise(value: $b));

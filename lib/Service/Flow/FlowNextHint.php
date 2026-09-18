@@ -89,6 +89,8 @@ final class FlowNextHint {
 	 * @param array<int, mixed> $nodes The flow's nodes.
 	 *
 	 * @return string One of HINTS.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
 	 */
 	public static function declared(array $nodes): string {
 		foreach ($nodes as $node) {
@@ -116,6 +118,8 @@ final class FlowNextHint {
 	 * @param array<string, mixed>|null $endNode The end node the run reached, if any.
 	 *
 	 * @return string One of HINTS.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
 	 */
 	public static function effective(array $nodes, ?array $endNode = null): string {
 		if ($endNode !== null) {
@@ -139,6 +143,8 @@ final class FlowNextHint {
 	 * @param mixed $raw The declared value.
 	 *
 	 * @return string|null The hint, or null.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
 	 */
 	public static function read(mixed $raw): ?string {
 		if (is_string($raw) === false) {

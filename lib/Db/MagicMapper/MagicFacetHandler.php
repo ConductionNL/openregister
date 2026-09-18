@@ -1160,7 +1160,7 @@ class MagicFacetHandler {
 	 *
 	 * @return bool Whether the facet may be offered.
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	private function callerMayFacet(Schema $schema, string $property): bool {
 		if ($schema->hasPropertyAuthorization() === false) {

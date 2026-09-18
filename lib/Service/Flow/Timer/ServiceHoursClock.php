@@ -65,6 +65,8 @@ class ServiceHoursClock {
 	 * @return DateTimeImmutable The moment it is due, in the calendar's zone.
 	 *
 	 * @throws FlowTimerValidationException When the calendar never opens.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function due(DateTimeInterface $from, float $hours, WorkingCalendar $calendar, ServiceHours $windows): DateTimeImmutable {
 		$zone = new DateTimeZone($calendar->getTimezone());
@@ -129,6 +131,8 @@ class ServiceHoursClock {
 	 * @param ServiceHours    $windows  The windows applied.
 	 *
 	 * @return array<string, mixed> The diagnostic.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function diagnostic(WorkingCalendar $calendar, ServiceHours $windows): array {
 		$applied = [];

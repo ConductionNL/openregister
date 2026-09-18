@@ -207,6 +207,8 @@ class ObjectSharingService {
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 *
 	 * @return array<int, array<string, mixed>> The grants.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function listGrants(ObjectEntity $object): array {
 		$this->requireOwnerOrAdmin(object: $object);

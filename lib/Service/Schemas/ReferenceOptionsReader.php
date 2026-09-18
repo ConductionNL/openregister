@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\Schema;
  * to somebody who had not yet chosen an organisation, and each of those is a
  * value they were never meant to browse.
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
 class ReferenceOptionsReader {
 
@@ -68,6 +68,8 @@ class ReferenceOptionsReader {
 	 *         target: array{schema: ?string, register: ?string}} The plan.
 	 *
 	 * @throws ReferenceFilterException When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function plan(Schema $schema, string $property, array $record): array {
 		$properties = ($schema->getProperties() ?? []);
@@ -130,6 +132,8 @@ class ReferenceOptionsReader {
 	 * @param mixed $requested What the caller asked for.
 	 *
 	 * @return int The page size.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function limitFor(mixed $requested): int {
 		if (is_numeric($requested) === false) {
@@ -156,6 +160,8 @@ class ReferenceOptionsReader {
 	 * @param int                  $offset Where the page starts.
 	 *
 	 * @return array<string, mixed> The query.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function queryFor(array $plan, int $limit, int $offset): array {
 		$query = ($plan['filter'] ?? []);

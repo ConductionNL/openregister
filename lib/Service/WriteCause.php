@@ -225,6 +225,8 @@ final class WriteCause {
 	 * Forget every frame. For tests and for a worker between jobs.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function reset(): void {
 		self::$frames = [];

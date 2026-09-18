@@ -85,6 +85,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * @param array<string, mixed> $query The search query.
 	 *
 	 * @return self The predicate, empty when the query carries none.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function parse(array $query): self {
 		$wasEver = [];
@@ -119,6 +121,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * Whether this predicate has anything to say about the result set.
 	 *
 	 * @return bool True when at least one filter read.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function narrows(): bool {
 		return ($this->wasEver !== [] || $this->changedBetween !== []);
@@ -128,6 +132,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * The `was ever at` filters, property => value.
 	 *
 	 * @return array<string, string> The filters.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function wasEver(): array {
 		return $this->wasEver;
@@ -137,6 +143,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * The `changed between` filters, property => period.
 	 *
 	 * @return array<string, array{after: DateTimeImmutable, before: DateTimeImmutable}> The filters.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function changedBetween(): array {
 		return $this->changedBetween;
@@ -148,6 +156,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * @return string[] The property names.
 	 *
 	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function properties(): array {
 		return array_values(array_unique(array_merge(array_keys($this->wasEver), array_keys($this->changedBetween))));
@@ -159,6 +169,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * @return string[] The filter keys.
 	 *
 	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function unparsed(): array {
 		return $this->unparsed;
@@ -175,6 +187,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * @param string[] $projectedProperties Properties the schemas declare as lifecycle fields.
 	 *
 	 * @return string|null The refusal, or null.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function refusalFor(array $projectedProperties): ?string {
 		foreach ($this->properties() as $property) {
@@ -194,6 +208,8 @@ final class HistoryPredicate implements JsonSerializable {
 	 * Serialise what was understood, for the response's own account of itself.
 	 *
 	 * @return array<string, mixed> The predicate.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function jsonSerialize(): array {
 		$periods = [];

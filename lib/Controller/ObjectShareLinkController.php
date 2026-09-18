@@ -119,6 +119,8 @@ class ObjectShareLinkController extends Controller {
 	 * @param string $token The share token.
 	 *
 	 * @return JSONResponse The object, or a refusal.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/share-links-and-email-invites/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

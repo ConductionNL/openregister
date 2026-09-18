@@ -148,6 +148,8 @@ class SearchDictionaryProvider {
 	 * @param string $language The BCP-47 language tag.
 	 *
 	 * @return SearchDictionary The dictionary, empty when there is none.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function forLanguage(string $language = 'nl'): SearchDictionary {
 		if (isset($this->memo[$language]) === true) {
@@ -186,6 +188,8 @@ class SearchDictionaryProvider {
 	 * Most synonyms one word may contribute.
 	 *
 	 * @return int The cap.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function perGroupCap(): int {
 		return max(0, $this->appConfig->getValueInt('openregister', 'searchDictionaryPerGroup', self::DEFAULT_PER_GROUP));
@@ -195,6 +199,8 @@ class SearchDictionaryProvider {
 	 * Most synonyms one query may gain.
 	 *
 	 * @return int The cap.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function perQueryCap(): int {
 		return max(0, $this->appConfig->getValueInt('openregister', 'searchDictionaryPerQuery', self::DEFAULT_PER_QUERY));

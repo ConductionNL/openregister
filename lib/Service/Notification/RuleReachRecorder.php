@@ -81,6 +81,8 @@ class RuleReachRecorder {
 	 * @param string $objectUuid The object it was evaluated for.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md
 	 */
 	public function reachedNobody(string $ruleId, string $objectUuid = ''): void {
 		$rule = trim($ruleId);
@@ -117,6 +119,8 @@ class RuleReachRecorder {
 	 * @param string $ruleId The rule.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md
 	 */
 	public function reachedSomebody(string $ruleId): void {
 		unset($ruleId);
@@ -148,6 +152,8 @@ class RuleReachRecorder {
 	 * notifications is already standing.
 	 *
 	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md
 	 */
 	public function report(): array {
 		$rules = [];
@@ -170,6 +176,8 @@ class RuleReachRecorder {
 	 * Forget what this run recorded.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md
 	 */
 	public function reset(): void {
 		$this->reachedNobody = [];

@@ -68,6 +68,8 @@ final class SearchDictionary {
 	 * dictionary searches exactly as it did before one existed.
 	 *
 	 * @return self The empty dictionary.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function empty(): self {
 		return new self(groups: [], stopwords: []);
@@ -86,6 +88,8 @@ final class SearchDictionary {
 	 * @param array<int, mixed>                                      $stopwords The stopword terms.
 	 *
 	 * @return self The dictionary.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function fromDeclarations(array $concepts, array $stopwords): self {
 		$groups = [];
@@ -137,6 +141,8 @@ final class SearchDictionary {
 	 * @param int    $perQueryCap  Most synonyms added across the whole term.
 	 *
 	 * @return DictionaryExpansion What the term became, and why.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function expand(string $term, int $perGroupCap, int $perQueryCap): DictionaryExpansion {
 		$words = preg_split('/\s+/u', trim($term), -1, PREG_SPLIT_NO_EMPTY);

@@ -79,6 +79,8 @@ class StateHistoryRebuild {
 	 * @param string                                              $property The declared lifecycle property.
 	 *
 	 * @return array<int, array{value: string, enteredAt: ?DateTime, leftAt: ?DateTime}> The intervals.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function intervalsFor(array $changes, string $property): array {
 		$moves = [];
@@ -136,6 +138,8 @@ class StateHistoryRebuild {
 	 * @param string $schema     The schema slug.
 	 *
 	 * @return int Intervals written.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function rebuildObject(string $objectUuid, string $property, string $register, string $schema): int {
 		try {

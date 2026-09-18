@@ -42,6 +42,8 @@ interface AnonymisationTarget {
 	 * What this target is, for the refusal and the report.
 	 *
 	 * @return string The name.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function name(): string;
 
@@ -53,6 +55,8 @@ interface AnonymisationTarget {
 	 * @return void
 	 *
 	 * @throws \Throwable When this target cannot be reached.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function prepare(AnonymisationPlan $plan): void;
 
@@ -64,6 +68,8 @@ interface AnonymisationTarget {
 	 * @return void
 	 *
 	 * @throws \Throwable When the write fails despite preparation.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function apply(AnonymisationPlan $plan): void;
 }//end interface
