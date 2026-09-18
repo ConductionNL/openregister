@@ -40,6 +40,16 @@ namespace OCA\OpenRegister\Service;
  * Narrowing wins over elevating: while this scope is active,
  * {@see SystemOperationContext::isActive()} answers false.
  *
+ * DO NOT OPEN THIS SCOPE INSIDE A SYSTEM OPERATION. Most consumers of the
+ * system scope lose trust when it yields, which is the intent — they deny where
+ * they would have allowed. Two do the opposite: MagicMapper's
+ * `suppressLifecycleEvents()` and SaveObjects' bulk dispatch use it to WITHHOLD
+ * work, so inside an anonymous scope they would start firing again — a config
+ * import that wakes every listening app per object, which is the storm that
+ * suppression exists to prevent. Not reachable today: the only caller is a
+ * read-only public search and nothing in this app opens the scope internally.
+ * It is a constraint on the next caller, not a live bug.
+ *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
 final class AnonymousEvaluationContext {

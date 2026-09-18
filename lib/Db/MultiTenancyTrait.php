@@ -1216,6 +1216,12 @@ trait MultiTenancyTrait {
 		}
 
 		$user = $this->userSession->getUser();
+		// UNREACHABLE TODAY, KEPT FOR SYMMETRY. The `$userId === null` block earlier
+		// in this method returns on every branch, and `getCurrentUserId()` is this
+		// same `getUser()?->getUID()`, so reaching here means the session has a user.
+		// The WOO-578 gating below is therefore a no-op; it is written anyway so the
+		// two blocks cannot drift if that early return is ever relaxed. Pre-existing
+		// dead code — removing it is a separate cleanup, not part of a security fix.
 		if ($user === null) {
 			// CLI context (occ commands, repair steps, cron jobs) — no user session exists.
 			// These are trusted system operations that must always succeed —

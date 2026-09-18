@@ -100,7 +100,14 @@ class MagicRbacHandlerAnonymousScopeTest extends TestCase {
 	}//end testInsideTheScopeTheSameSessionIsFilteredAsAnAnonymousCaller()
 
 
-	public function testInsideTheScopeAnAnonymousCallerHoldsNoStaffPermission(): void {
+	/**
+	 * A companion check, NOT evidence for the gating: `hasPermission()` has no
+	 * CLI bypass and no system-scope bypass, so it denies a staff-only schema for
+	 * a null user with or without the scope. It is here to pin that the scope does
+	 * not accidentally make this path MORE permissive — the gating itself is
+	 * pinned by the test above and by MagicOrganizationHandlerAnonymousScopeTest.
+	 */
+	public function testInsideTheScopeAnAnonymousCallerStillHoldsNoStaffPermission(): void {
 		$granted = AnonymousEvaluationContext::run(
 			fn (): bool => $this->handler->hasPermission(schema: $this->staffOnlySchema(), action: 'read')
 		);

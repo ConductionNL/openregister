@@ -135,6 +135,79 @@ class ObjectServiceRunAsAnonymousTest extends TestCase {
 	}//end testTheSubjectAndScopeAreRestoredWhenTheCallableThrows()
 
 
+	/**
+	 * THE ONE THAT MATTERS ON A REAL REQUEST.
+	 *
+	 * Core's `Session::getUser()` treats a null `activeUser` as "not resolved
+	 * yet" and falls back to the `user_id` in the PHP session, so clearing the
+	 * volatile user does NOT make the caller anonymous while a session exists —
+	 * the next read hands back the same signed-in admin. A plain
+	 * `createMock(IUserSession::class)` cannot catch that, because it models
+	 * `setUser()` semantics: set null, get null.
+	 *
+	 * This double reproduces the fallback. Without incognito mode the read
+	 * inside the scope returns the admin and this test fails, which is exactly
+	 * what shipped before the review caught it.
+	 */
+	public function testTheSubjectIsGoneEvenWhileThePhpSessionStillNamesAUser(): void {
+		$admin = $this->user('admin');
+		// The memoised copy core keeps in Session::$activeUser.
+		$active = $admin;
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('setVolatileActiveUser')->willReturnCallback(
+			function (?IUser $user) use (&$active): void {
+				$active = $user;
+			}
+		);
+		$session->method('getUser')->willReturnCallback(
+			function () use (&$active, $admin): ?IUser {
+				// Verbatim shape of Session::getUser(): incognito first, then the
+				// "null means unresolved" re-read of user_id.
+				if (\OC_User::isIncognitoMode() === true) {
+					return null;
+				}
+
+				if ($active === null) {
+					$active = $admin;
+				}
+
+				return $active;
+			}
+		);
+
+		$reflection = new ReflectionClass(ObjectService::class);
+		$service = $reflection->newInstanceWithoutConstructor();
+		$property = $reflection->getProperty('userSession');
+		$property->setAccessible(true);
+		$property->setValue($service, $session);
+
+		$seen = 'unset';
+		$service->runAsAnonymous(
+			static function () use (&$seen, $session): void {
+				$seen = $session->getUser();
+			}
+		);
+
+		$this->assertNull($seen, 'the session still names a user — the scope must still read as nobody');
+		$this->assertSame($admin, $session->getUser(), 'and the caller gets their session back afterwards');
+		$this->assertFalse(\OC_User::isIncognitoMode(), 'incognito mode must not leak past the scope');
+	}
+
+	/**
+	 * Nesting inside a genuinely incognito request must leave it incognito,
+	 * rather than switching the caller's own mode off on the way out.
+	 */
+	public function testAnIncognitoCallerStaysIncognitoAfterwards(): void {
+		\OC_User::setIncognitoMode(true);
+		try {
+			$this->service->runAsAnonymous(static fn (): bool => true);
+			$this->assertTrue(\OC_User::isIncognitoMode(), 'the previous state is restored, not cleared');
+		} finally {
+			\OC_User::setIncognitoMode(false);
+		}
+	}
+
 	public function testNestingInsideRunAsRestoresTheNamedUser(): void {
 		$inner = 'unset';
 		$outer = null;

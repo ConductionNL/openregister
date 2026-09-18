@@ -578,14 +578,42 @@ class ObjectService implements ObjectServiceInterface
      */
     public function runAsAnonymous(callable $operation)
     {
-        $previousUser = $this->userSession->getUser();
+        // INCOGNITO MODE, NOT setVolatileActiveUser(null).
+        //
+        // `setVolatileActiveUser(null)` looks like the obvious inverse of what
+        // runAs() does, and it is wrong here. In `Session::getUser()`, null is not
+        // "there is no user" — it is "not resolved yet":
+        //
+        //     if (is_null($this->activeUser)) {
+        //         $uid = $this->session->get('user_id');   // still the signed-in user
+        //         ...
+        //         $this->activeUser = $this->manager->get($uid);
+        //     }
+        //
+        // So on a real request the very next getUser() re-reads `user_id` from the
+        // PHP session and hands back the same admin — the scope would be a no-op
+        // exactly where it is supposed to bite. runAs() escapes this only because
+        // it writes a NON-null user.
+        //
+        // `OC_User::isIncognitoMode()` is checked FIRST in getUser(), before the
+        // activeUser fallback, and returns null unconditionally. It is what core
+        // itself uses to serve a public link while a session exists — see
+        // ShareController, PublicAuth and BearerAuth. The volatile clear stays as
+        // well, so the memoised copy does not survive the scope either.
+        $previousIncognito = \OC_User::isIncognitoMode();
+        $previousUser      = $this->userSession->getUser();
+
+        \OC_User::setIncognitoMode(true);
         $this->userSession->setVolatileActiveUser(null);
 
         try {
             return AnonymousEvaluationContext::run($operation);
         } finally {
-            // ALWAYS restore, including on a throw — see runAs().
+            // ALWAYS restore, including on a throw — see runAs(). Restore the
+            // PREVIOUS incognito state rather than switching it off, so nesting
+            // inside a genuinely incognito request composes.
             $this->userSession->setVolatileActiveUser($previousUser);
+            \OC_User::setIncognitoMode($previousIncognito);
         }
     }//end runAsAnonymous()
 
