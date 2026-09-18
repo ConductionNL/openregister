@@ -148,6 +148,11 @@ class Bootstrap {
 	private const GENERIC_SETTINGS_SECTION = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
 	private const GENERIC_DEEPLINK_LISTENER = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
 
+	/**
+	 * Decides which of a leaf app's pages open without a session.
+	 */
+	private const PUBLIC_PAGE_RESOLVER = 'OCA\\OpenRegister\\AppHost\\Service\\PublicPageResolver';
+
 	private const GENERIC_SETTINGS_PLANE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService';
 	private const REGISTER_CONFIG_RESOLVER = 'OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver';
 
@@ -257,7 +262,11 @@ class Bootstrap {
 				$class = self::GENERIC_DASHBOARD_CONTROLLER;
 				return new $class(
 					appName: $appId,
-					request: $c->get('OCP\\IRequest')
+					request: $c->get('OCP\\IRequest'),
+					// The leaf's OWN initial state, so the public flag lands
+					// under the leaf app id the SPA reads it with.
+					publicPages: $c->get(self::PUBLIC_PAGE_RESOLVER),
+					initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState')
 				);
 			}
 		);
