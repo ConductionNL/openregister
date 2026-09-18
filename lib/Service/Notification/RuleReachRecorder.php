@@ -129,6 +129,24 @@ class RuleReachRecorder {
 	 * finding that exists only in a log file is findable by whoever already
 	 * suspects it.
 	 *
+	 * 🔴 THIS METHOD HAS NO CALLER, measured on `parity/round2` at
+	 * `1a895e046`. Nothing in `lib` calls it, and `RuleReachRecorder` has no
+	 * registration in `lib/AppInfo/`: the dispatcher builds its own and keeps
+	 * it private, so this aggregate is discarded with that instance. It is not
+	 * merely uncalled, it is unreachable.
+	 *
+	 * What is real today is the one warning line per rule per run, which an
+	 * administrator finds only by searching for `self::MARKER`, which means
+	 * only if they already suspect the problem. Do not read the tests on this
+	 * class as evidence that an operator is being told.
+	 *
+	 * What would give it a caller is written down rather than left to be
+	 * rediscovered: tasks 3.1 to 3.3 of
+	 * `openspec/changes/a-rule-that-reaches-nobody-says-so`, the smallest of
+	 * which is to register this as a shared service and read it on the
+	 * notification settings page, where an administrator configuring
+	 * notifications is already standing.
+	 *
 	 * @return array<string, mixed> The report.
 	 */
 	public function report(): array {
