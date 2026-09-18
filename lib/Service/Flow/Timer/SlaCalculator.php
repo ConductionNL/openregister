@@ -151,12 +151,20 @@ final class SlaCalculator {
 	 * @param float $value The amount; negative subtracts.
 	 * @param string $unit The unit.
 	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function add(DateTimeInterface $from, float $value, string $unit, WorkingCalendar $calendar): DateTimeImmutable {
+	public function add(
+		DateTimeInterface $from,
+		float $value,
+		string $unit,
+		WorkingCalendar $calendar,
+		?WalkCollector $collector = null
+	): DateTimeImmutable {
 		$start = DateTimeImmutable::createFromInterface($from);
 		$this->validateUnit(unit: $unit);
 
@@ -180,10 +188,10 @@ final class SlaCalculator {
 		}
 
 		if ($value >= 0) {
-			return $this->walkForward(start: $start, days: $value, calendar: $calendar);
+			return $this->walkForward(start: $start, days: $value, calendar: $calendar, collector: $collector);
 		}
 
-		return $this->walkBackward(start: $start, days: -$value, calendar: $calendar);
+		return $this->walkBackward(start: $start, days: -$value, calendar: $calendar, collector: $collector);
 	}//end add()
 
 	/**
@@ -377,12 +385,19 @@ final class SlaCalculator {
 	 *
 	 * @return DateTimeImmutable The landing instant.
 	 */
-	private function walkForward(DateTimeImmutable $start, float $days, WorkingCalendar $calendar): DateTimeImmutable {
+	private function walkForward(
+		DateTimeImmutable $start,
+		float $days,
+		WorkingCalendar $calendar,
+		?WalkCollector $collector = null
+	): DateTimeImmutable {
 		$cursor = $start;
 		$remaining = $days;
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
 			$nextMidnight = $this->shift(moment: $cursor->setTime(0, 0, 0), modifier: '+1 day');
-			if ($calendar->isWorkingDay($cursor) === true) {
+			$working = $calendar->isWorkingDay($cursor);
+			$this->record(collector: $collector, day: $cursor, counted: $working, calendar: $calendar);
+			if ($working === true) {
 				$available = (($nextMidnight->getTimestamp() - $cursor->getTimestamp()) / self::DAY);
 				if ($remaining <= ($available + self::EPSILON)) {
 					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', (int)round($remaining * self::DAY)));
@@ -408,7 +423,12 @@ final class SlaCalculator {
 	 *
 	 * @return DateTimeImmutable The landing instant.
 	 */
-	private function walkBackward(DateTimeImmutable $start, float $days, WorkingCalendar $calendar): DateTimeImmutable {
+	private function walkBackward(
+		DateTimeImmutable $start,
+		float $days,
+		WorkingCalendar $calendar,
+		?WalkCollector $collector = null
+	): DateTimeImmutable {
 		$cursor = $start;
 		$remaining = $days;
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
@@ -418,7 +438,9 @@ final class SlaCalculator {
 				$dayStart = $this->shift(moment: $dayStart, modifier: '-1 day');
 			}
 
-			if ($calendar->isWorkingDay($dayStart) === true) {
+			$working = $calendar->isWorkingDay($dayStart);
+			$this->record(collector: $collector, day: $dayStart, counted: $working, calendar: $calendar);
+			if ($working === true) {
 				$available = (($cursor->getTimestamp() - $dayStart->getTimestamp()) / self::DAY);
 				if ($remaining <= ($available + self::EPSILON)) {
 					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', -(int)round($remaining * self::DAY)));
@@ -434,6 +456,41 @@ final class SlaCalculator {
 			message: sprintf('Subtracting %s business days from %s exceeds %d calendar days.', (string)$days, $start->format('c'), self::MAX_WALK_DAYS)
 		);
 	}//end walkBackward()
+
+	/**
+	 * Hand one examined day to the collector, with the rule that skipped it.
+	 *
+	 * The rule NAME comes from the calendar's own `nonWorkingDates()`, the same
+	 * map `isWorkingDay()` consults, so the diagnostic cannot name a rule the
+	 * engine did not apply. A day that is non-working because the working week
+	 * does not include it has no rule, and the collector calls that `weekend`.
+	 *
+	 * @param WalkCollector|null $collector The collector, absent on the arm path.
+	 * @param DateTimeImmutable  $day       The day examined.
+	 * @param bool               $counted   Whether it counted.
+	 * @param WorkingCalendar    $calendar  The calendar.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 */
+	private function record(
+		?WalkCollector $collector,
+		DateTimeImmutable $day,
+		bool $counted,
+		WorkingCalendar $calendar
+	): void {
+		if ($collector === null) {
+			return;
+		}
+
+		$rule = null;
+		if ($counted === false) {
+			$rule = ($calendar->nonWorkingDates(year: (int)$day->format('Y'))[$day->format('Y-m-d')] ?? null);
+		}
+
+		$collector->examine(day: $day, counted: $counted, rule: $rule);
+	}//end record()
 
 	/**
 	 * Apply a relative modifier, refusing PHP's silent `false`.
