@@ -69,8 +69,13 @@ test.describe('reference-options', () => {
 
 	/** The uuids a list response carries, whatever shape it uses. */
 	function uuidsOf(body: Record<string, any>): string[] {
-		const rows = (body.results ?? body.data ?? body.objects ?? []) as Record<string, any>[]
-		return rows.map((row) => row['@self']?.id ?? row.id ?? row.uuid).filter(Boolean)
+		const rows = (body.results ?? body.data ?? body.objects ?? []) as Record<
+			string,
+			any
+		>[]
+		return rows
+			.map((row) => row['@self']?.id ?? row.id ?? row.uuid)
+			.filter(Boolean)
 	}
 
 	test.beforeAll(async ({ request }) => {
@@ -106,13 +111,23 @@ test.describe('reference-options', () => {
 
 		const contacts = `${API}/objects/${registerId}/${contactSchemaId}`
 		orgA = `org-a-${RUN_ID}`
-		const a = await create(request, contacts, { name: 'Ada', organisation: orgA })
+		const a = await create(request, contacts, {
+			name: 'Ada',
+			organisation: orgA,
+		})
 		contactInA = a['@self']?.id ?? a.id ?? a.uuid
-		const b = await create(request, contacts, { name: 'Bob', organisation: `org-b-${RUN_ID}` })
+		const b = await create(request, contacts, {
+			name: 'Bob',
+			organisation: `org-b-${RUN_ID}`,
+		})
 		contactInB = b['@self']?.id ?? b.id ?? b.uuid
 
 		// A case with NO organisation chosen yet: the state a picker opens in.
-		const made = await create(request, `${API}/objects/${registerId}/${caseSchemaId}`, {})
+		const made = await create(
+			request,
+			`${API}/objects/${registerId}/${caseSchemaId}`,
+			{},
+		)
 		caseId = made['@self']?.id ?? made.id ?? made.uuid
 	})
 
@@ -139,7 +154,9 @@ test.describe('reference-options', () => {
 		expect(resp.status(), await resp.text()).toBe(200)
 	})
 
-	test('no organisation chosen means no options, and it says what it needs', async ({ request }) => {
+	test('no organisation chosen means no options, and it says what it needs', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${caseSchemaId}/${caseId}/reference-options?property=contact`,
 			{ headers: JSON_HEADERS },
@@ -155,12 +172,14 @@ test.describe('reference-options', () => {
 		expect(body.needs).toContain('organisation')
 	})
 
-	test('with an organisation, only its contacts are offered', async ({ request }) => {
+	test('with an organisation, only its contacts are offered', async ({
+		request,
+	}) => {
 		// The control for the test above. Without it, "empty" could be passing
 		// because the endpoint never returns anything.
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${caseSchemaId}/${caseId}/reference-options`
-			+ `?property=contact&_draft[organisation]=${encodeURIComponent(String(orgA))}`,
+				+ `?property=contact&_draft[organisation]=${encodeURIComponent(String(orgA))}`,
 			{ headers: JSON_HEADERS },
 		)
 		expect(resp.status(), await resp.text()).toBe(200)
@@ -176,7 +195,9 @@ test.describe('reference-options', () => {
 		expect(body.needs).toEqual([])
 	})
 
-	test('naming no property is refused rather than answered', async ({ request }) => {
+	test('naming no property is refused rather than answered', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${caseSchemaId}/${caseId}/reference-options`,
 			{ headers: JSON_HEADERS },
@@ -196,7 +217,9 @@ test.describe('reference-options', () => {
 		expect(resp.status()).toBe(422)
 	})
 
-	test('a write outside the filter is still refused, so the picker and the save agree', async ({ request }) => {
+	test('a write outside the filter is still refused, so the picker and the save agree', async ({
+		request,
+	}) => {
 		// The two halves of one rule. If this ever diverges from the options
 		// above, one of them is a second evaluator.
 		const resp = await request.post(

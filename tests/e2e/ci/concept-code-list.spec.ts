@@ -107,7 +107,9 @@ test.describe('concept-code-list', () => {
 		}
 	})
 
-	test('the vocabulary publishes the binding, so a form can forward it', async ({ request }) => {
+	test('the vocabulary publishes the binding, so a form can forward it', async ({
+		request,
+	}) => {
 		// The control, and it runs first. Every assertion below is about a key
 		// this endpoint has to name; if it does not, the rest is measuring a
 		// key that only this spec believes in.
@@ -120,11 +122,16 @@ test.describe('concept-code-list', () => {
 		const modifier = (body.modifiers ?? []).find(
 			(row: { key: string }) => row.key === 'conceptScheme',
 		)
-		expect(modifier, 'conceptScheme must be published as a modifier').toBeTruthy()
+		expect(
+			modifier,
+			'conceptScheme must be published as a modifier',
+		).toBeTruthy()
 		expect(modifier.value).toBe('string')
 	})
 
-	test('a schema saves with the binding in both spellings, and reads it back', async ({ request }) => {
+	test('a schema saves with the binding in both spellings, and reads it back', async ({
+		request,
+	}) => {
 		const saved = await create(request, SCHEMAS, {
 			title: `E2E coded ${RUN_ID}`,
 			slug: `e2e-coded-${RUN_ID}`,
@@ -150,7 +157,9 @@ test.describe('concept-code-list', () => {
 		schemaId = saved.id ?? saved['@self']?.id ?? saved.uuid
 		expect(schemaId, 'the schema must have been created').toBeTruthy()
 
-		const read = await request.get(`${SCHEMAS}/${schemaId}`, { headers: JSON_HEADERS })
+		const read = await request.get(`${SCHEMAS}/${schemaId}`, {
+			headers: JSON_HEADERS,
+		})
 		expect(read.ok(), await read.text()).toBeTruthy()
 
 		const properties = (await read.json()).properties ?? {}
@@ -158,11 +167,15 @@ test.describe('concept-code-list', () => {
 		// drops it is the exact shape this change exists to close, and it looks
 		// identical to a working one until somebody opens the form.
 		expect(properties.wijk?.conceptScheme).toBe(SCHEME_URI)
-		expect(properties.buurt?.['x-openregister-concepts']?.scheme).toBe(SCHEME_URI)
+		expect(properties.buurt?.['x-openregister-concepts']?.scheme).toBe(
+			SCHEME_URI,
+		)
 		expect(properties.omschrijving?.type).toBe('string')
 	})
 
-	test('the options of a bound property are the concepts of its scheme', async ({ request }) => {
+	test('the options of a bound property are the concepts of its scheme', async ({
+		request,
+	}) => {
 		// The route is `/api/vocabulary/options`, read out of appinfo/routes.php
 		// rather than guessed from the controller method name: the method is
 		// `propertyOptions` and the URL is not.
@@ -173,7 +186,10 @@ test.describe('concept-code-list', () => {
 		// An instance whose OpenRegister predates the option builder answers
 		// 404 here. That is not this app being broken, so it skips rather than
 		// reddening and saying something untrue about the change under test.
-		test.skip(resp.status() === 404, 'this build has no property-options endpoint')
+		test.skip(
+			resp.status() === 404,
+			'this build has no property-options endpoint',
+		)
 		expect(resp.ok(), await resp.text()).toBeTruthy()
 
 		const body = await resp.json()
@@ -184,7 +200,9 @@ test.describe('concept-code-list', () => {
 		expect(labels).toContain('Noord')
 	})
 
-	test('a property naming two schemes is refused, naming both spellings', async ({ request }) => {
+	test('a property naming two schemes is refused, naming both spellings', async ({
+		request,
+	}) => {
 		const resp = await request.post(SCHEMAS, {
 			headers: JSON_HEADERS,
 			data: {

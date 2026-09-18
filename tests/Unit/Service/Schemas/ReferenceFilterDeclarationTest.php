@@ -78,7 +78,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	public function testTheWorkedExampleParses(): void {
 		$declaration = ReferenceFilterDeclaration::fromProperty(property: $this->contactPerson());
@@ -144,7 +144,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	public function testAnOperandNeitherSchemaDeclaresIsRefused(): void {
 		$declaration = ReferenceFilterDeclaration::fromProperty(property: $this->contactPerson());
@@ -191,7 +191,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	public function testAResolvedOperandBecomesAFilter(): void {
 		$answer = ReferenceFilterDeclaration::fromProperty(property: $this->contactPerson())
@@ -211,7 +211,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-an-unresolved-filter-offers-nothing-and-names-what-it-needs-req-fuc-004
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-an-unresolved-filter-offers-nothing-and-names-what-it-needs-req-fuc-004
 	 */
 	public function testAnUnresolvedOperandOffersNothingAndSaysWhatItNeeds(): void {
 		$declaration = ReferenceFilterDeclaration::fromProperty(property: $this->contactPerson());
@@ -237,7 +237,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-an-unresolved-filter-offers-nothing-and-names-what-it-needs-req-fuc-004
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-an-unresolved-filter-offers-nothing-and-names-what-it-needs-req-fuc-004
 	 */
 	public function testOneUnresolvedConditionDropsTheWholeFilter(): void {
 		$declaration = ReferenceFilterDeclaration::fromProperty(

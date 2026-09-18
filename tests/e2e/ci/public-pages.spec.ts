@@ -35,7 +35,10 @@ const RUN = Math.random().toString(36).slice(2, 10)
 const API = '/index.php/apps/openregister/api'
 
 /** An authenticated context, for building the fixture only. */
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -67,7 +70,9 @@ test.describe('pages and records reached without a session', () => {
 			data: {
 				title: `e2e public pages schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					read: ['authenticated'],
 					create: ['authenticated'],
@@ -90,7 +95,9 @@ test.describe('pages and records reached without a session', () => {
 
 	test.afterAll(async () => {
 		if (registerId !== undefined) {
-			await admin.delete(`${API}/registers/${registerId}`).catch(() => undefined)
+			await admin
+				.delete(`${API}/registers/${registerId}`)
+				.catch(() => undefined)
 		}
 
 		await anon.dispose()
@@ -140,7 +147,12 @@ test.describe('pages and records reached without a session', () => {
 		// The platform's own bookkeeping is not. Before openregister#3818 this
 		// surface answered `jsonSerialize()`, so all four travelled with every
 		// anonymous read.
-		for (const forbidden of ['authorization', 'owner', 'organisation', 'folder']) {
+		for (const forbidden of [
+			'authorization',
+			'owner',
+			'organisation',
+			'folder',
+		]) {
 			expect(
 				served['@self']?.[forbidden],
 				`a share token must not publish @self.${forbidden}`,

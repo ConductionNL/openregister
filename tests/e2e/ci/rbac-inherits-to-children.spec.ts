@@ -171,7 +171,10 @@ test.describe('a grant on a parent reaches its children', () => {
 				`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${uuid}/scope`,
 				{ data: { scope: 'private' } },
 			)
-			expect(put.ok(), `could not make ${uuid} private: ${await put.text()}`).toBeTruthy()
+			expect(
+				put.ok(),
+				`could not make ${uuid} private: ${await put.text()}`,
+			).toBeTruthy()
 		}
 
 		// ONE grant, on the root, read only.
@@ -244,9 +247,13 @@ test.describe('a grant on a parent reaches its children', () => {
 		expect(res.ok(), `list failed: ${await res.text()}`).toBeTruthy()
 
 		const body = await res.json()
-		const rows = (body.results ?? body.objects ?? []) as Array<Record<string, unknown>>
-		const uuids = rows.map(
-			(row) => String((row['@self'] as Record<string, unknown>)?.id ?? row.id ?? row.uuid),
+		const rows = (body.results ?? body.objects ?? []) as Array<
+			Record<string, unknown>
+		>
+		const uuids = rows.map((row) =>
+			String(
+				(row['@self'] as Record<string, unknown>)?.id ?? row.id ?? row.uuid,
+			),
 		)
 
 		expect(uuids, 'the granted root is in the list').toContain(rootUuid)
@@ -267,7 +274,9 @@ test.describe('a grant on a parent reaches its children', () => {
 		)
 		expect(res.ok(), `share listing failed: ${await res.text()}`).toBeTruthy()
 
-		const rows = ((await res.json()).results ?? []) as Array<Record<string, unknown>>
+		const rows = ((await res.json()).results ?? []) as Array<
+			Record<string, unknown>
+		>
 		const inherited = rows.filter((row) => row.inherited === true)
 
 		expect(

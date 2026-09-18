@@ -186,13 +186,19 @@ test.describe('a cross-register read stops at the tenant edge', () => {
 		// pass for the wrong reason.
 		expect(
 			String(mineSelf.organisation ?? ''),
-			'the fixture object did not take its creator\'s organisation, so the assertion below would be vacuous',
+			"the fixture object did not take its creator's organisation, so the assertion below would be vacuous",
 		).toBe(ownerOrg)
 
-		const theirs = await other.post(`${API}/objects/${registerId}/${schemaTwo}`, {
-			data: { key: `other-row-${RUN}` },
-		})
-		expect(theirs.ok(), `object create failed: ${await theirs.text()}`).toBeTruthy()
+		const theirs = await other.post(
+			`${API}/objects/${registerId}/${schemaTwo}`,
+			{
+				data: { key: `other-row-${RUN}` },
+			},
+		)
+		expect(
+			theirs.ok(),
+			`object create failed: ${await theirs.text()}`,
+		).toBeTruthy()
 
 		// The cross-table shape: one register, two schemas, as an ordinary
 		// authenticated user. No admin anywhere in this request.
@@ -266,10 +272,9 @@ test.describe('a cross-register read stops at the tenant edge', () => {
 		)
 		const keys = keysOf(await search.json())
 
-		expect(
-			keys,
-			'control: the caller must still see their own row',
-		).toContain(`other-row-${RUN}`)
+		expect(keys, 'control: the caller must still see their own row').toContain(
+			`other-row-${RUN}`,
+		)
 
 		expect(
 			keys,

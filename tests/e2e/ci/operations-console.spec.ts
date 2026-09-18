@@ -159,9 +159,7 @@ test.describe('one console over what the instance is doing', () => {
 		// Unconditional, and first: a run killed mid-way through the
 		// maintenance case would otherwise leave the whole app shut for the
 		// next lane on this instance.
-		await admin
-			.delete(`${API}/operations/maintenance`)
-			.catch(() => undefined)
+		await admin.delete(`${API}/operations/maintenance`).catch(() => undefined)
 
 		for (const jobId of jobs) {
 			await admin
@@ -382,10 +380,7 @@ test.describe('one console over what the instance is doing', () => {
 		const started = await admin.post(`${API}/operations/run-now`, {
 			data: { job: 'consistency-check' },
 		})
-		expect(
-			started.status(),
-			`run now failed: ${await started.text()}`,
-		).toBe(202)
+		expect(started.status(), `run now failed: ${await started.text()}`).toBe(202)
 
 		const body = await started.json()
 		expect(body.started).toBeTruthy()
@@ -507,10 +502,9 @@ test.describe('one console over what the instance is doing', () => {
 
 		for (const [key, value] of Object.entries(bundle.configuration ?? {})) {
 			if (/password|secret|token|api_?key|credential/i.test(key)) {
-				expect(
-					value,
-					`the bundle carried the value of ${key}`,
-				).toBe('***redacted***')
+				expect(value, `the bundle carried the value of ${key}`).toBe(
+					'***redacted***',
+				)
 			}
 		}
 

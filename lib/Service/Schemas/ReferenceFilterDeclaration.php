@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ namespace OCA\OpenRegister\Service\Schemas;
  * disagreeing about it, which is the shape `NoSecondPermissionEvaluatorTest`
  * exists to stop one layer up.
  *
- * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+ * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
  */
 final class ReferenceFilterDeclaration {
 
@@ -87,7 +87,7 @@ final class ReferenceFilterDeclaration {
 	 *
 	 * @throws ReferenceFilterException When the annotation is present and unusable.
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	public static function fromProperty(array $property, string $path = ''): ?self {
 		$raw = ($property[self::ANNOTATION] ?? null);
@@ -186,7 +186,7 @@ final class ReferenceFilterDeclaration {
 	 *
 	 * @throws ReferenceFilterException When an operand is not declared anywhere.
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	public function assertOperandsExist(array $ownProperties, array $farProperties, string $path = ''): void {
 		foreach ($this->conditions as $condition) {
@@ -226,7 +226,7 @@ final class ReferenceFilterDeclaration {
 	 *
 	 * @return array{filter: array<string, mixed>, needs: array<int, string>} The filter, or what it needs.
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-an-unresolved-filter-offers-nothing-and-names-what-it-needs-req-fuc-004
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-an-unresolved-filter-offers-nothing-and-names-what-it-needs-req-fuc-004
 	 */
 	public function resolve(array $record): array {
 		$filter = [];

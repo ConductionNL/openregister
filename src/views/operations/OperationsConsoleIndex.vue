@@ -262,7 +262,9 @@
 
 						<label class="runFilter">
 							<span>{{ t('openregister', 'Period') }}</span>
-							<select v-model.number="runWindowHours" @change="loadRuns">
+							<select
+								v-model.number="runWindowHours"
+								@change="loadRuns">
 								<option :value="24">
 									{{ t('openregister', 'Last day') }}
 								</option>
@@ -322,7 +324,12 @@
 								<td class="failureCell">
 									{{ run.message || '' }}
 								</td>
-								<td>{{ run.actor || t('openregister', 'The schedule') }}</td>
+								<td>
+									{{
+										run.actor
+										|| t('openregister', 'The schedule')
+									}}
+								</td>
 							</tr>
 						</tbody>
 					</table>

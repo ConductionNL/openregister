@@ -30,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+ * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The scheduled-message sweep.
  *
- * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+ * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
  */
 class ScheduledMessagePolicyTest extends TestCase {
 

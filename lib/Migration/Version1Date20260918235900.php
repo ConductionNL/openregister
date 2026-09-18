@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-timers/spec.md
+ * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -67,9 +67,9 @@ class Version1Date20260918235900 extends SimpleMigrationStep {
 	 * @param Closure(): ISchemaWrapper $schemaClosure The schema.
 	 * @param array<string, mixed>      $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema.
+	 * @return ISchemaWrapper The schema, changed or not.
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -77,7 +77,7 @@ class Version1Date20260918235900 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: self::TABLE) === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
@@ -85,7 +85,7 @@ class Version1Date20260918235900 extends SimpleMigrationStep {
 		// Idempotent, like every other step here: a re-run on an instance that
 		// already has it must not fail the upgrade.
 		if ($table->hasIndex(self::INDEX) === true) {
-			return null;
+			return $schema;
 		}
 
 		if ($table->hasColumn('calendar_slug') === false || $table->hasColumn('state') === false) {
@@ -93,7 +93,7 @@ class Version1Date20260918235900 extends SimpleMigrationStep {
 			// column here would otherwise throw during an upgrade on an
 			// instance that predates the calendar columns.
 			$output->info('openregister_flow_timers has no calendar columns yet; skipping the calendar index');
-			return null;
+			return $schema;
 		}
 
 		// `calendar_slug` LEADS. It is the selective half: one calendar out of

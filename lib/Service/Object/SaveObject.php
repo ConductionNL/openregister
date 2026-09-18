@@ -5111,7 +5111,7 @@ class SaveObject {
 	 *
 	 * @throws ReferenceValidationException When the value is outside the filter.
 	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-property-scope/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	private function assertReferenceMatchesFilter(
 		string $propertyName,

@@ -123,10 +123,14 @@ test.describe('a department by role matrix', () => {
 		}
 
 		const body = await res.json()
-		const rows = (body.results ?? body.objects ?? []) as Array<Record<string, unknown>>
+		const rows = (body.results ?? body.objects ?? []) as Array<
+			Record<string, unknown>
+		>
 
-		return rows.map(
-			(row) => String((row['@self'] as Record<string, unknown>)?.id ?? row.id ?? row.uuid),
+		return rows.map((row) =>
+			String(
+				(row['@self'] as Record<string, unknown>)?.id ?? row.id ?? row.uuid,
+			),
 		)
 	}
 
@@ -138,7 +142,8 @@ test.describe('a department by role matrix', () => {
 		owner = await contextFor(OWNER, PASS)
 		other = await contextFor(OTHER, PASS)
 
-		groupsReady = (await addToGroup(OWNER, ROLE_GROUP))
+		groupsReady =
+			(await addToGroup(OWNER, ROLE_GROUP))
 			&& (await addToGroup(OTHER, ROLE_GROUP))
 			&& (await addToGroup(OWNER, DEPT_OWNER))
 		// 🔴 `other` is deliberately put in the ROLE group and in NO department
@@ -157,7 +162,11 @@ test.describe('a department by role matrix', () => {
 				description: 'e2e',
 				properties: {
 					key: { type: 'string', title: 'Key', maxLength: 255 },
-					department: { type: 'string', title: 'Department', maxLength: 255 },
+					department: {
+						type: 'string',
+						title: 'Department',
+						maxLength: 255,
+					},
 				},
 				authorization: {
 					// The owner still needs to be able to seed the fixture, and
@@ -195,7 +204,9 @@ test.describe('a department by role matrix', () => {
 					matrix: {
 						field: 'afdeling',
 						userSource: { groupPrefix: 'dept:' },
-						rows: [{ value: '$self', group: ROLE_GROUP, actions: ['read'] }],
+						rows: [
+							{ value: '$self', group: ROLE_GROUP, actions: ['read'] },
+						],
 					},
 				},
 			},
@@ -207,7 +218,7 @@ test.describe('a department by role matrix', () => {
 		).toBeGreaterThanOrEqual(400)
 	})
 
-	test('a member of a department sees its objects and not the other department\'s', async () => {
+	test("a member of a department sees its objects and not the other department's", async () => {
 		test.skip(
 			groupsReady === false,
 			'the provisioning API is absent on this instance, so the department groups could not be made',
@@ -233,12 +244,11 @@ test.describe('a department by role matrix', () => {
 
 		expect(
 			seen,
-			'a user with no department must not be admitted to another department\'s object',
+			"a user with no department must not be admitted to another department's object",
 		).not.toContain(vthObject)
-		expect(
-			seen,
-			'nor to any other object of the schema',
-		).not.toContain(belastingenObject)
+		expect(seen, 'nor to any other object of the schema').not.toContain(
+			belastingenObject,
+		)
 	})
 
 	test('the object read agrees with the list', async () => {

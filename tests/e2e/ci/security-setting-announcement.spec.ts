@@ -53,7 +53,10 @@ const NOTIFICATIONS = '/ocs/v2.php/apps/notifications/api/v2/notifications'
 /** A value nobody would set by hand, so a leak of it is unmistakable. */
 const SECRET = `e2e-secret-${Math.random().toString(36).slice(2, 10)}`
 
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -65,7 +68,9 @@ async function contextFor(user: string, password: string): Promise<APIRequestCon
 }
 
 /** Every openregister notification currently sitting in the admin's list. */
-async function notifications(admin: APIRequestContext): Promise<Array<Record<string, any>>> {
+async function notifications(
+	admin: APIRequestContext,
+): Promise<Array<Record<string, any>>> {
 	const res = await admin.get(NOTIFICATIONS)
 	if (!res.ok()) {
 		return []
@@ -88,7 +93,8 @@ async function announcementsFor(
 	const all = await notifications(admin)
 
 	return all.filter(
-		(n) => n.object_type === 'security_setting' && String(n.object_id) === setting,
+		(n) =>
+			n.object_type === 'security_setting' && String(n.object_id) === setting,
 	)
 }
 
@@ -108,7 +114,10 @@ test.describe('a security setting change is announced', () => {
 	})
 
 	test('the beheerteam is told which setting moved, by whom, and to what', async () => {
-		test.skip(!notificationsAvailable, 'the notifications app is not enabled on this instance')
+		test.skip(
+			!notificationsAvailable,
+			'the notifications app is not enabled on this instance',
+		)
 
 		const before = await admin.get(SETTINGS)
 		expect(before.ok(), `settings read failed: ${before.status()}`).toBeTruthy()
@@ -120,20 +129,32 @@ test.describe('a security setting change is announced', () => {
 			const changed = await admin.put(SETTINGS, {
 				data: { rbac: { ...rbac, adminOverride: !rbac.adminOverride } },
 			})
-			expect(changed.ok(), `settings write failed: ${await changed.text()}`).toBeTruthy()
+			expect(
+				changed.ok(),
+				`settings write failed: ${await changed.text()}`,
+			).toBeTruthy()
 
 			const announced = await expect
-				.poll(async () => (await announcementsFor(admin, 'rbac.adminOverride')).length, {
-					timeout: 15000,
-				})
+				.poll(
+					async () =>
+						(await announcementsFor(admin, 'rbac.adminOverride')).length,
+					{
+						timeout: 15000,
+					},
+				)
 				.toBeGreaterThan(0)
-				.then(async () => (await announcementsFor(admin, 'rbac.adminOverride'))[0])
+				.then(
+					async () =>
+						(await announcementsFor(admin, 'rbac.adminOverride'))[0],
+				)
 
 			const text = `${announced.subject ?? ''} ${announced.message ?? ''}`
 			expect(text, 'the announcement does not name the setting').toContain(
 				'Administrators bypass access control',
 			)
-			expect(text, 'the announcement does not name a value').toMatch(/"(on|off)"/)
+			expect(text, 'the announcement does not name a value').toMatch(
+				/"(on|off)"/,
+			)
 		} finally {
 			// Instance-wide security setting: put it back whatever happened.
 			await admin.put(SETTINGS, { data: { rbac } })
@@ -141,40 +162,62 @@ test.describe('a security setting change is announced', () => {
 	})
 
 	test('a changed credential is announced without either value', async () => {
-		test.skip(!notificationsAvailable, 'the notifications app is not enabled on this instance')
+		test.skip(
+			!notificationsAvailable,
+			'the notifications app is not enabled on this instance',
+		)
 
 		const before = await admin.get(SETTINGS)
 		const solr = (await before.json()).solr
 
 		try {
-			const changed = await admin.put(SETTINGS, { data: { solr: { ...solr, password: SECRET } } })
-			expect(changed.ok(), `settings write failed: ${await changed.text()}`).toBeTruthy()
+			const changed = await admin.put(SETTINGS, {
+				data: { solr: { ...solr, password: SECRET } },
+			})
+			expect(
+				changed.ok(),
+				`settings write failed: ${await changed.text()}`,
+			).toBeTruthy()
 
 			const announced = await expect
-				.poll(async () => (await announcementsFor(admin, 'solr.password')).length, {
-					timeout: 15000,
-				})
+				.poll(
+					async () =>
+						(await announcementsFor(admin, 'solr.password')).length,
+					{
+						timeout: 15000,
+					},
+				)
 				.toBeGreaterThan(0)
-				.then(async () => (await announcementsFor(admin, 'solr.password'))[0])
+				.then(
+					async () => (await announcementsFor(admin, 'solr.password'))[0],
+				)
 
 			const text = `${announced.subject ?? ''} ${announced.message ?? ''}`
-			expect(text, 'the announcement does not say which credential moved').toContain(
-				'Search index password',
-			)
-			expect(text, 'the new credential was quoted in a notification').not.toContain(SECRET)
+			expect(
+				text,
+				'the announcement does not say which credential moved',
+			).toContain('Search index password')
+			expect(
+				text,
+				'the new credential was quoted in a notification',
+			).not.toContain(SECRET)
 
 			// Not anywhere in the stored notification, not only in its rendered
 			// text: Nextcloud keeps the parameters in its own table.
-			expect(JSON.stringify(announced), 'the credential is stored in the notification').not.toContain(
-				SECRET,
-			)
+			expect(
+				JSON.stringify(announced),
+				'the credential is stored in the notification',
+			).not.toContain(SECRET)
 		} finally {
 			await admin.put(SETTINGS, { data: { solr } })
 		}
 	})
 
 	test('an ordinary setting does not announce anything', async () => {
-		test.skip(!notificationsAvailable, 'the notifications app is not enabled on this instance')
+		test.skip(
+			!notificationsAvailable,
+			'the notifications app is not enabled on this instance',
+		)
 
 		// The control. Without it, an instance that announces EVERY setting
 		// change would pass both tests above and still be the mailbox full of
@@ -184,10 +227,18 @@ test.describe('a security setting change is announced', () => {
 
 		try {
 			await admin.put(SETTINGS, {
-				data: { retention: { ...retention, readLogRetention: retention.readLogRetention + 1000 } },
+				data: {
+					retention: {
+						...retention,
+						readLogRetention: retention.readLogRetention + 1000,
+					},
+				},
 			})
 
-			const announced = await announcementsFor(admin, 'retention.readLogRetention')
+			const announced = await announcementsFor(
+				admin,
+				'retention.readLogRetention',
+			)
 			expect(announced, 'an unmarked setting was announced').toHaveLength(0)
 		} finally {
 			await admin.put(SETTINGS, { data: { retention } })

@@ -73,8 +73,13 @@ test.describe('query-related-schema-rows', () => {
 
 	/** The uuids a list response carries, whatever shape it uses. */
 	function uuidsOf(body: Record<string, any>): string[] {
-		const rows = (body.results ?? body.data ?? body.objects ?? []) as Record<string, any>[]
-		return rows.map((row) => row['@self']?.id ?? row.id ?? row.uuid).filter(Boolean)
+		const rows = (body.results ?? body.data ?? body.objects ?? []) as Record<
+			string,
+			any
+		>[]
+		return rows
+			.map((row) => row['@self']?.id ?? row.id ?? row.uuid)
+			.filter(Boolean)
 	}
 
 	test.beforeAll(async ({ request }) => {
@@ -141,9 +146,12 @@ test.describe('query-related-schema-rows', () => {
 	})
 
 	test('the control: unfiltered, both cases come back', async ({ request }) => {
-		const resp = await request.get(`${API}/objects/${registerId}/${caseSchemaId}`, {
-			headers: JSON_HEADERS,
-		})
+		const resp = await request.get(
+			`${API}/objects/${registerId}/${caseSchemaId}`,
+			{
+				headers: JSON_HEADERS,
+			},
+		)
 		expect(resp.status(), await resp.text()).toBe(200)
 
 		const uuids = uuidsOf(await resp.json())
@@ -151,11 +159,13 @@ test.describe('query-related-schema-rows', () => {
 		expect(uuids).toContain(caseB)
 	})
 
-	test('a related row narrows the list, and 50 does not answer "at least 100"', async ({ request }) => {
+	test('a related row narrows the list, and 50 does not answer "at least 100"', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${caseSchemaId}`
-			+ `?_related[${propertySchemaId}][case][propertyDefinition][eq]=pd-7`
-			+ `&_related[${propertySchemaId}][case][value][gte]=100`,
+				+ `?_related[${propertySchemaId}][case][propertyDefinition][eq]=pd-7`
+				+ `&_related[${propertySchemaId}][case][value][gte]=100`,
 			{ headers: JSON_HEADERS },
 		)
 		expect(resp.status(), await resp.text()).toBe(200)
@@ -168,12 +178,14 @@ test.describe('query-related-schema-rows', () => {
 		).not.toContain(caseB)
 	})
 
-	test('the other side of the boundary returns the other case', async ({ request }) => {
+	test('the other side of the boundary returns the other case', async ({
+		request,
+	}) => {
 		// The mirror of the test above, so "case B is absent" cannot be passing
 		// because case B is absent from everything.
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${caseSchemaId}`
-			+ `?_related[${propertySchemaId}][case][value][lt]=100`,
+				+ `?_related[${propertySchemaId}][case][value][lt]=100`,
 			{ headers: JSON_HEADERS },
 		)
 		expect(resp.status(), await resp.text()).toBe(200)
@@ -183,13 +195,15 @@ test.describe('query-related-schema-rows', () => {
 		expect(uuids).not.toContain(caseA)
 	})
 
-	test('a misspelt schema is refused, not quietly dropped', async ({ request }) => {
+	test('a misspelt schema is refused, not quietly dropped', async ({
+		request,
+	}) => {
 		// 🔑 THE REFUSAL IS THE FEATURE. A dropped block answers every case in
 		// the register, presented as the answer to a narrow question, and the
 		// response is indistinguishable from a correctly filtered one.
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${caseSchemaId}`
-			+ `?_related[casePropertyy][case][value][gte]=100`,
+				+ `?_related[casePropertyy][case][value][gte]=100`,
 			{ headers: JSON_HEADERS },
 		)
 
@@ -199,13 +213,15 @@ test.describe('query-related-schema-rows', () => {
 		).toBeGreaterThanOrEqual(400)
 	})
 
-	test('facet counts describe the filtered set, not the register', async ({ request }) => {
+	test('facet counts describe the filtered set, not the register', async ({
+		request,
+	}) => {
 		// A facet count that ignores a filter the list honours is worse than no
 		// count: the numbers answer a different question and nothing says so.
 		const resp = await request.get(
 			`${API}/objects/${registerId}/${caseSchemaId}`
-			+ `?_related[${propertySchemaId}][case][value][gte]=100`
-			+ `&_facets[@self][register][type]=terms`,
+				+ `?_related[${propertySchemaId}][case][value][gte]=100`
+				+ `&_facets[@self][register][type]=terms`,
 			{ headers: JSON_HEADERS },
 		)
 		expect(resp.status(), await resp.text()).toBe(200)
@@ -214,7 +230,8 @@ test.describe('query-related-schema-rows', () => {
 		const facets = body.facets ?? body['@self']?.facets ?? {}
 		const buckets = facets['@self']?.register?.buckets ?? []
 		const total = buckets.reduce(
-			(sum: number, bucket: Record<string, any>) => sum + Number(bucket.count ?? 0),
+			(sum: number, bucket: Record<string, any>) =>
+				sum + Number(bucket.count ?? 0),
 			0,
 		)
 

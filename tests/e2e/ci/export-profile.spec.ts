@@ -123,14 +123,22 @@ test.describe('export as its own right over HTTP', () => {
 				title: `e2e export right schema ${RUN}`,
 				description: 'e2e',
 				properties: {
-					zaaknummer: { type: 'string', title: 'Zaaknummer', maxLength: 64 },
+					zaaknummer: {
+						type: 'string',
+						title: 'Zaaknummer',
+						maxLength: 64,
+					},
 					status: {
 						type: 'string',
 						title: 'Status',
 						enum: ['open', 'afgerond'],
 						enumNames: ['Open', 'Afgerond'],
 					},
-					toelichting: { type: 'string', title: 'Toelichting', maxLength: 255 },
+					toelichting: {
+						type: 'string',
+						title: 'Toelichting',
+						maxLength: 255,
+					},
 				},
 				authorization: {
 					read: ['authenticated'],
@@ -148,8 +156,14 @@ test.describe('export as its own right over HTTP', () => {
 			{ zaaknummer: 'Z-001', status: 'afgerond', toelichting: 'eerste' },
 			{ zaaknummer: 'Z-002', status: 'open', toelichting: 'tweede' },
 		]) {
-			const obj = await admin.post(`${API}/objects/${registerId}/${schemaId}`, { data: row })
-			expect(obj.ok(), `object create failed: ${await obj.text()}`).toBeTruthy()
+			const obj = await admin.post(
+				`${API}/objects/${registerId}/${schemaId}`,
+				{ data: row },
+			)
+			expect(
+				obj.ok(),
+				`object create failed: ${await obj.text()}`,
+			).toBeTruthy()
 			objectUuids.push(uuidOf(await obj.json()))
 		}
 	})
@@ -163,7 +177,9 @@ test.describe('export as its own right over HTTP', () => {
 
 		for (const uuid of objectUuids) {
 			if (uuid) {
-				await admin.delete(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+				await admin.delete(
+					`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+				)
 			}
 		}
 
@@ -181,22 +197,34 @@ test.describe('export as its own right over HTTP', () => {
 		// a 403 on the export means nothing if the principal could not read
 		// anything either.
 		const list = await reader.get(`${API}/objects/${registerId}/${schemaId}`)
-		expect(list.status(), `the reader cannot read, so the export refusal proves nothing: ${await list.text()}`).toBe(200)
+		expect(
+			list.status(),
+			`the reader cannot read, so the export refusal proves nothing: ${await list.text()}`,
+		).toBe(200)
 
-		const refused = await reader.get(`${API}/objects/${registerId}/${schemaId}/export?format=csv`)
+		const refused = await reader.get(
+			`${API}/objects/${registerId}/${schemaId}/export?format=csv`,
+		)
 
 		expect(refused.status()).toBe(403)
 
 		const body = await refused.json()
-		expect(body.verb, 'the refusal must name the verb, not the record').toBe('export')
+		expect(body.verb, 'the refusal must name the verb, not the record').toBe(
+			'export',
+		)
 		expect(body.rule).toBe('export-right-missing')
 		expect(String(body.message)).toContain('export right')
 	})
 
 	test('the holder of the export grant still gets the file', async () => {
-		const allowed = await exporter.get(`${API}/objects/${registerId}/${schemaId}/export?format=csv`)
+		const allowed = await exporter.get(
+			`${API}/objects/${registerId}/${schemaId}/export?format=csv`,
+		)
 
-		expect(allowed.status(), `the export grant does not work: ${await allowed.text()}`).toBe(200)
+		expect(
+			allowed.status(),
+			`the export grant does not work: ${await allowed.text()}`,
+		).toBe(200)
 		expect(allowed.headers()['content-type']).toContain('text/csv')
 		expect(await allowed.text()).toContain('Z-001')
 	})
@@ -212,18 +240,25 @@ test.describe('export as its own right over HTTP', () => {
 				format: 'csv',
 			},
 		})
-		expect(created.status(), `profile create failed: ${await created.text()}`).toBe(201)
+		expect(
+			created.status(),
+			`profile create failed: ${await created.text()}`,
+		).toBe(201)
 		storedProfileId = String((await created.json()).id)
 
 		// The reader is refused on the profile run exactly as on the plain
 		// export. Two endpoints, one verb, one answer.
-		const refused = await reader.get(`${API}/export-profiles/${storedProfileId}/run`)
+		const refused = await reader.get(
+			`${API}/export-profiles/${storedProfileId}/run`,
+		)
 		expect(refused.status()).toBe(403)
 		expect((await refused.json()).verb).toBe('export')
 	})
 
 	test('the monthly aanlevering has the profile shape, not the schema one', async () => {
-		const run = await exporter.get(`${API}/export-profiles/${storedProfileId}/run`)
+		const run = await exporter.get(
+			`${API}/export-profiles/${storedProfileId}/run`,
+		)
 		expect(run.status(), `profile run failed: ${await run.text()}`).toBe(200)
 
 		const lines = (await run.text()).split('\n')
@@ -247,10 +282,15 @@ test.describe('export as its own right over HTTP', () => {
 				format: 'csv',
 			},
 		})
-		expect(created.status(), `profile create failed: ${await created.text()}`).toBe(201)
+		expect(
+			created.status(),
+			`profile create failed: ${await created.text()}`,
+		).toBe(201)
 		renderedProfileId = String((await created.json()).id)
 
-		const run = await exporter.get(`${API}/export-profiles/${renderedProfileId}/run`)
+		const run = await exporter.get(
+			`${API}/export-profiles/${renderedProfileId}/run`,
+		)
 		expect(run.status(), `profile run failed: ${await run.text()}`).toBe(200)
 
 		const text = await run.text()
@@ -267,7 +307,9 @@ test.describe('export as its own right over HTTP', () => {
 	})
 
 	test('the stored profile keeps the raw code, so the two modes really differ', async () => {
-		const run = await exporter.get(`${API}/export-profiles/${storedProfileId}/run`)
+		const run = await exporter.get(
+			`${API}/export-profiles/${storedProfileId}/run`,
+		)
 		const text = await run.text()
 
 		expect(text).toContain('"afgerond"')
@@ -276,12 +318,19 @@ test.describe('export as its own right over HTTP', () => {
 	})
 
 	test('an incident can be reconstructed from the trail', async () => {
-		const trail = await admin.get('/index.php/apps/openregister/api/audit-trails?limit=200')
-		expect(trail.status(), `the audit trail is unreadable: ${await trail.text()}`).toBe(200)
+		const trail = await admin.get(
+			'/index.php/apps/openregister/api/audit-trails?limit=200',
+		)
+		expect(
+			trail.status(),
+			`the audit trail is unreadable: ${await trail.text()}`,
+		).toBe(200)
 
 		const body = await trail.json()
 		const rows = (body.results ?? []) as Array<Record<string, unknown>>
-		const ours = rows.filter((row) => String(row.action ?? '').startsWith('export.'))
+		const ours = rows.filter((row) =>
+			String(row.action ?? '').startsWith('export.'),
+		)
 
 		expect(ours.length, 'no export reached the audit trail').toBeGreaterThan(0)
 

@@ -40,7 +40,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notifications/spec.md
+ * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ namespace OCA\OpenRegister\Service\Notification;
 /**
  * Applies an administrator's forced channels and internal-only rule.
  *
- * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notifications/spec.md
+ * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
  */
 class ForcedChannelPolicy {
 
@@ -106,7 +106,7 @@ class ForcedChannelPolicy {
 	 * @return array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string}
 	 *         What will be sent, on what, who decided it, and why nothing is sent when nothing is.
 	 *
-	 * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notifications/spec.md
+	 * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
 	 */
 	public function decide(array $resolved, array $declaration, bool $recipientIsInternal = true): array {
 		$channels = $this->channelsOf(value: ($resolved['channels'] ?? []));
@@ -179,7 +179,7 @@ class ForcedChannelPolicy {
 	 *
 	 * @return array<int,array{code:string,message:string}> The refusals.
 	 *
-	 * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notifications/spec.md
+	 * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
 	 */
 	public function validate(array $declaration): array {
 		$errors = [];

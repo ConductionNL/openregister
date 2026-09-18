@@ -39,7 +39,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/external-register-view-leaf/specs/integration-external-register/spec.md
+ * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service\Integration;
 /**
  * The degrade contract for a leaf that renders an external register record.
  *
- * @spec openspec/changes/external-register-view-leaf/specs/integration-external-register/spec.md
+ * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
  */
 class ExternalRegisterDegrade {
 
@@ -145,7 +145,7 @@ class ExternalRegisterDegrade {
 	 * @return array{state:string,adminActionable:bool,record:array<string,mixed>|null}
 	 *         The state, whether an administrator can act on it, and the record when there is one.
 	 *
-	 * @spec openspec/changes/external-register-view-leaf/specs/integration-external-register/spec.md
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
 	 */
 	public function evaluate(array $lookup): array {
 		$state = $this->stateOf(lookup: $lookup);
@@ -217,7 +217,7 @@ class ExternalRegisterDegrade {
 	 *
 	 * @return bool True only for a register that answered and had nothing.
 	 *
-	 * @spec openspec/changes/external-register-view-leaf/specs/integration-external-register/spec.md
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
 	 */
 	public function meansTheRegisterHasNothing(string $state): bool {
 		return ($state === self::NOT_FOUND);
@@ -236,7 +236,7 @@ class ExternalRegisterDegrade {
 	 *
 	 * @return int Seconds, 0 when the answer must not be reused at all.
 	 *
-	 * @spec openspec/changes/external-register-view-leaf/specs/integration-external-register/spec.md
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
 	 */
 	public function cacheSecondsFor(string $state): int {
 		return match ($state) {

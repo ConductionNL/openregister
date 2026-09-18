@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+ * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use DateTimeImmutable;
 /**
  * The rules a scheduled-message sweep obeys.
  *
- * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+ * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
  */
 class ScheduledMessagePolicy {
 
@@ -121,7 +121,7 @@ class ScheduledMessagePolicy {
 	 *
 	 * @return bool True when the sweep may take it.
 	 *
-	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function isClaimable(array $message, DateTimeImmutable $now): bool {
 		$state = (string)($message['state'] ?? self::PENDING);
@@ -157,7 +157,7 @@ class ScheduledMessagePolicy {
 	 *
 	 * @return bool True when it is due.
 	 *
-	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function isDue(array $message, DateTimeImmutable $now): bool {
 		$sendAt = trim((string)($message['sendAt'] ?? ''));
@@ -191,7 +191,7 @@ class ScheduledMessagePolicy {
 	 * @return array{expect:array<string,mixed>,set:array<string,mixed>}
 	 *         What must still be true, and what to write.
 	 *
-	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function claim(array $message, string $worker, DateTimeImmutable $now): array {
 		return [
@@ -220,7 +220,7 @@ class ScheduledMessagePolicy {
 	 *
 	 * @return array<string,mixed> The fields to write.
 	 *
-	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function afterFailure(array $message, string $error): array {
 		$attempts = (int)($message['attempts'] ?? 0);
@@ -244,7 +244,7 @@ class ScheduledMessagePolicy {
 	 *
 	 * @return array<string,mixed> The fields to write.
 	 *
-	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/messaging/spec.md
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
 	public function afterSuccess(string $messageId): array {
 		return ['state' => self::SENT, 'messageId' => $messageId, 'lastError' => ''];

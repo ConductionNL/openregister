@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/external-register-view-leaf/specs/integration-external-register/spec.md
+ * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The degrade contract.
  *
- * @spec openspec/changes/external-register-view-leaf/specs/integration-external-register/spec.md
+ * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
  */
 class ExternalRegisterDegradeTest extends TestCase {
 

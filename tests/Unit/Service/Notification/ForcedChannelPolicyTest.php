@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notifications/spec.md
+ * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The forced-channel and internal-only layer.
  *
- * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notifications/spec.md
+ * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
  */
 class ForcedChannelPolicyTest extends TestCase {
 

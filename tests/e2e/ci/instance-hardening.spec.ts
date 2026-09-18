@@ -40,7 +40,9 @@ const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
  * breaking.
  */
 async function elevate(request): Promise<void> {
-	const response = await request.post(ELEVATION, { data: { password: ADMIN_PASS } })
+	const response = await request.post(ELEVATION, {
+		data: { password: ADMIN_PASS },
+	})
 	expect(response.status(), 'the password could not be confirmed').toBe(200)
 	expect((await response.json()).elevated).toBe(true)
 }
@@ -196,7 +198,9 @@ test.describe('The refusal', () => {
 })
 
 test.describe('The fresh sign-in, and the statement', () => {
-	test('a write from an open session that never confirmed a password is refused', async ({ browser }) => {
+	test('a write from an open session that never confirmed a password is refused', async ({
+		browser,
+	}) => {
 		// A context of its own, so it cannot inherit an elevation another test
 		// started. It carries the admin credentials and nothing else: the
 		// principal here is a full administrator, and it is still refused.
@@ -213,7 +217,10 @@ test.describe('The fresh sign-in, and the statement', () => {
 				data: { controls: { 'auth.rateLimit.attemptsPerIdentity': 19 } },
 			})
 
-			expect(response.status(), 'an unelevated administration write is forbidden').toBe(403)
+			expect(
+				response.status(),
+				'an unelevated administration write is forbidden',
+			).toBe(403)
 			const body = await response.json()
 			expect(body.elevationRequired).toBe(true)
 			expect(typeof body.periodSeconds).toBe('number')
@@ -242,12 +249,18 @@ test.describe('The fresh sign-in, and the statement', () => {
 		}
 	})
 
-	test('a statement is published, asked, accepted, and asked again at the next version', async ({ request }) => {
+	test('a statement is published, asked, accepted, and asked again at the next version', async ({
+		request,
+	}) => {
 		const version = `e2e-${Math.random().toString(36).slice(2, 8)}`
 
 		await elevate(request)
 		const published = await request.put(STATEMENT, {
-			data: { version, body: 'What this instance does with your data.', title: 'Verwerking' },
+			data: {
+				version,
+				body: 'What this instance does with your data.',
+				title: 'Verwerking',
+			},
 		})
 		expect(published.status(), 'the statement route is registered').toBe(200)
 		expect((await published.json()).version).toBe(version)
@@ -255,24 +268,38 @@ test.describe('The fresh sign-in, and the statement', () => {
 		try {
 			const asked = await (await request.get(STATEMENT)).json()
 			expect(asked.statement.version).toBe(version)
-			expect(asked.needsAcceptance, 'a version nobody accepted is asked').toBe(true)
+			expect(asked.needsAcceptance, 'a version nobody accepted is asked').toBe(
+				true,
+			)
 
-			const stale = await request.post(ACCEPTANCE, { data: { version: 'some-older-version' } })
-			expect(stale.status(), 'accepting a version that is not in force is refused').toBe(400)
+			const stale = await request.post(ACCEPTANCE, {
+				data: { version: 'some-older-version' },
+			})
+			expect(
+				stale.status(),
+				'accepting a version that is not in force is refused',
+			).toBe(400)
 
 			const accepted = await request.post(ACCEPTANCE, { data: { version } })
 			expect(accepted.status()).toBe(200)
 			expect((await accepted.json()).version).toBe(version)
 
 			const after = await (await request.get(STATEMENT)).json()
-			expect(after.needsAcceptance, 'an accepted version is not asked again').toBe(false)
+			expect(
+				after.needsAcceptance,
+				'an accepted version is not asked again',
+			).toBe(false)
 
 			const next = `${version}-b`
 			await elevate(request)
-			await request.put(STATEMENT, { data: { version: next, body: 'Revised.' } })
+			await request.put(STATEMENT, {
+				data: { version: next, body: 'Revised.' },
+			})
 
 			const again = await (await request.get(STATEMENT)).json()
-			expect(again.needsAcceptance, 'a new version asks everybody again').toBe(true)
+			expect(again.needsAcceptance, 'a new version asks everybody again').toBe(
+				true,
+			)
 		} finally {
 			// NOTHING IS LEFT BEHIND. The instance publishes no statement
 			// before this test and publishes none after it, so a re-run and a

@@ -114,9 +114,17 @@ test.describe('a link hands over the fields it declares', () => {
 				title: `e2e link exposure besluit ${RUN}`,
 				description: 'e2e',
 				properties: {
-					zaaknummer: { type: 'string', title: 'Zaaknummer', maxLength: 64 },
+					zaaknummer: {
+						type: 'string',
+						title: 'Zaaknummer',
+						maxLength: 64,
+					},
 					status: { type: 'string', title: 'Status', maxLength: 64 },
-					toelichting: { type: 'string', title: 'Toelichting', maxLength: 255 },
+					toelichting: {
+						type: 'string',
+						title: 'Toelichting',
+						maxLength: 255,
+					},
 				},
 				authorization: OPEN_TO_EVERYONE,
 			},
@@ -134,7 +142,11 @@ test.describe('a link hands over the fields it declares', () => {
 				title: `e2e link exposure zaak ${RUN}`,
 				description: 'e2e',
 				properties: {
-					onderwerp: { type: 'string', title: 'Onderwerp', maxLength: 255 },
+					onderwerp: {
+						type: 'string',
+						title: 'Onderwerp',
+						maxLength: 255,
+					},
 					besluit: {
 						$ref: besluitSlug,
 						'x-openregister-relation': { type: 'gerelateerd' },
@@ -153,7 +165,10 @@ test.describe('a link hands over the fields it declares', () => {
 				authorization: OPEN_TO_EVERYONE,
 			},
 		})
-		expect(zaak.ok(), `near schema create failed: ${await zaak.text()}`).toBeTruthy()
+		expect(
+			zaak.ok(),
+			`near schema create failed: ${await zaak.text()}`,
+		).toBeTruthy()
 		zaakSchemaId = String((await zaak.json()).id)
 	})
 
@@ -188,7 +203,10 @@ test.describe('a link hands over the fields it declares', () => {
 		const res = await reader.get(
 			`${API}/objects/${registerId}/${zaakSchemaId}/${zaakUuid}?_extend=besluit`,
 		)
-		expect(res.ok(), `the extended read failed: ${await res.text()}`).toBeTruthy()
+		expect(
+			res.ok(),
+			`the extended read failed: ${await res.text()}`,
+		).toBeTruthy()
 
 		const far = (await res.json()).besluit
 		expect(
