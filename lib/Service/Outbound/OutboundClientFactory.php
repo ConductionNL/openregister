@@ -65,13 +65,26 @@ class OutboundClientFactory implements IClientService {
 	/**
 	 * A client whose every request goes through the administered proxy.
 	 *
+	 * @param callable|null $handler Optional Guzzle handler. Nextcloud 35 widened
+	 *                               IClientService::newClient() with this parameter,
+	 *                               so the implementation must declare it or PHP
+	 *                               fatals on the signature mismatch on NC 35; an
+	 *                               extra optional parameter stays compatible with
+	 *                               the NC 34 interface too. It is NOT forwarded to
+	 *                               the inner client: the NC 34 OCP stack static
+	 *                               analysis runs against still types newClient() as
+	 *                               nullary, so passing it would fail phpstan there,
+	 *                               and the administered-proxy client has no per-call
+	 *                               handler use anyway.
+	 *
 	 * @inheritDoc
 	 *
 	 * @return IClient The client.
 	 *
 	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
-	public function newClient(): IClient {
+	public function newClient(?callable $handler = null): IClient {
+		unset($handler);
 		return new OutboundHttpClient(
 			inner: $this->clientService->newClient(),
 			proxy: $this->proxy,

@@ -336,6 +336,12 @@ return [
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
 
         ['name' => 'Settings\ConfigurationSettings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
+        // The audit aggregation window. Its own url rather than a key on the
+        // general settings blob, because it changes what the audit trail says
+        // and an administrator should be able to find it by that name.
+        ['name' => 'Settings\AuditSettings#getAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'GET'],
+        ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PATCH'],
+        ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PUT'],
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
@@ -370,6 +376,15 @@ return [
         ['name' => 'Settings\SecuritySettings#clearIpRateLimits', 'url' => '/api/settings/security/unblock-ip', 'verb' => 'POST'],
         ['name' => 'Settings\SecuritySettings#clearUserRateLimits', 'url' => '/api/settings/security/unblock-user', 'verb' => 'POST'],
         ['name' => 'Settings\SecuritySettings#clearAllRateLimits', 'url' => '/api/settings/security/unblock', 'verb' => 'POST'],
+        // Instance hardening - the controls an administrator switches and sees.
+        // Administrator-only on purpose: the report names the security posture of
+        // one gemeente's installation, and a caller that may read it may read what
+        // is NOT switched on. The write paths answer 409 when a change would take a
+        // control below the floor this instance declared for itself.
+        ['name' => 'hardening#report', 'url' => '/api/hardening/report', 'verb' => 'GET'],
+        ['name' => 'hardening#floors', 'url' => '/api/hardening/floors', 'verb' => 'GET'],
+        ['name' => 'hardening#updateControls', 'url' => '/api/hardening/controls', 'verb' => 'PUT'],
+        ['name' => 'hardening#updateFloors', 'url' => '/api/hardening/floors', 'verb' => 'PUT'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
@@ -1174,6 +1189,13 @@ return [
         ['name' => 'objectState#unarchive', 'url' => '/api/objects/{register}/{schema}/{id}/archive', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectState#freeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectState#unfreeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // Correcting a mis-registered value. Its own url rather than a flag on
+        // PATCH, because a correction is its own act: it needs the
+        // `object.correct` right and a reason, and it lands in the trail as a
+        // correction. A flag on the ordinary update would be a flag somebody
+        // forgets, and then the answer to "which of these were corrections" is
+        // wrong in the quiet direction.
+        ['name' => 'corrections#correct', 'url' => '/api/objects/{register}/{schema}/{id}/correct', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Registry subscriptions (registry-subscriptions, finding B22).
         ['name' => 'registrySubscription#subscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registrySubscription#unsubscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
@@ -1335,6 +1357,10 @@ return [
 		// Description and category had NO surface before this: only labels did,
 		// which is why the gap was easy to miss. `file-actions` specifies all three.
 		['name' => 'files#updateMetadata', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/metadata', 'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		// The whole dossier's file metadata in one save. It cannot be mistaken
+		// for the per-file url above it: that one requires `fileId` to be
+		// digits, and `metadata` is not.
+		['name' => 'files#saveMetadataForm', 'url' => '/api/objects/{register}/{schema}/{id}/files/metadata', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
@@ -1352,6 +1378,18 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        [
+            'name' => 'notes#patch',
+            'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}',
+            'verb' => 'PATCH',
+            'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+'],
+        ],
+        [
+            'name' => 'notes#versions',
+            'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}/versions',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+'],
+        ],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
         // Timeline entries under objects: the entry as a record, with its

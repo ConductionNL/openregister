@@ -23,8 +23,11 @@ use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 class Version1Date20260511130000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	private Version1Date20260511130000 $migration;
 
@@ -36,7 +39,7 @@ class Version1Date20260511130000Test extends TestCase {
 	public function testChangeSchemaAddsContextColumnWhenMissing(): void {
 		$output = $this->createMock(IOutput::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->with('context')->willReturn(false);
 		$table->expects($this->once())
 			->method('addColumn')
@@ -63,7 +66,7 @@ class Version1Date20260511130000Test extends TestCase {
 	public function testChangeSchemaIsIdempotentWhenColumnAlreadyExists(): void {
 		$output = $this->createMock(IOutput::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->with('context')->willReturn(true);
 		$table->expects($this->never())->method('addColumn');
 
@@ -72,7 +75,7 @@ class Version1Date20260511130000Test extends TestCase {
 		$schema->method('getTable')->with('openregister_messages')->willReturn($table);
 
 		$result = $this->migration->changeSchema($output, fn () => $schema, []);
-		$this->assertNull($result);
+		$this->assertSame($schema, $result);
 	}//end testChangeSchemaIsIdempotentWhenColumnAlreadyExists()
 
 	public function testChangeSchemaIsNoOpWhenMessagesTableMissing(): void {
@@ -83,13 +86,13 @@ class Version1Date20260511130000Test extends TestCase {
 		$schema->expects($this->never())->method('getTable');
 
 		$result = $this->migration->changeSchema($output, fn () => $schema, []);
-		$this->assertNull($result);
+		$this->assertSame($schema, $result);
 	}//end testChangeSchemaIsNoOpWhenMessagesTableMissing()
 
 	public function testDownRemovesContextColumnWhenPresent(): void {
 		$output = $this->createMock(IOutput::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->with('context')->willReturn(true);
 		$table->expects($this->once())
 			->method('dropColumn')
@@ -106,7 +109,7 @@ class Version1Date20260511130000Test extends TestCase {
 	public function testDownIsIdempotentWhenColumnAlreadyAbsent(): void {
 		$output = $this->createMock(IOutput::class);
 
-		$table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->with('context')->willReturn(false);
 		$table->expects($this->never())->method('dropColumn');
 

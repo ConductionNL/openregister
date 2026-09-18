@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\ScopeAudit;
@@ -84,7 +85,7 @@ class PermissionsControllerTest extends TestCase {
 			request: $this->createMock(originalClassName: IRequest::class),
 			catalogue: new PermissionCatalogue(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger()),
-			denyResolver: new DenyResolver(),
+			denyResolver: new DenyResolver(new DenyEntryMatcher()),
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper,
 			audit: new ScopeAudit()

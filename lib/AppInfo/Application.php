@@ -1456,7 +1456,8 @@ class Application extends App implements IBootstrap {
 					userSession: $container->get('OCP\IUserSession'),
 					userManager: $container->get('OCP\IUserManager'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class)
+					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class),
+					versions: $container->get(\OCA\OpenRegister\Service\NoteVersionService::class)
 				);
 			}
 		);

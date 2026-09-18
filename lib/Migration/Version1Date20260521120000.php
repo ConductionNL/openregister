@@ -78,10 +78,12 @@ class Version1Date20260521120000 extends SimpleMigrationStep {
 	 * @param Closure $schemaClosure The schema closure
 	 * @param array<array-key, mixed> $options Migration options
 	 *
-	 * @return null|ISchemaWrapper Always null — no schema diff
+	 * @return null|ISchemaWrapper The schema, handed back so migrateSchemaOnly() reuses the one snapshot
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		return null;
+		$schema = $schemaClosure();
+
+		return $schema;
 	}//end changeSchema()
 
 	/**

@@ -58,7 +58,7 @@ class Version1Date20260325120000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable($tableName) === false) {
 			$output->info("Table {$tableName} does not exist, skipping migration");
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable($tableName);
@@ -158,7 +158,7 @@ class Version1Date20260325120000 extends SimpleMigrationStep {
 
 		if ($changed === false) {
 			$output->info("All file action columns already exist on {$tableName}, skipping");
-			return null;
+			return $schema;
 		}
 
 		return $schema;

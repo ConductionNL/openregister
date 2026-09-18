@@ -101,17 +101,6 @@ class DenyResolver {
 	public const USER_PREFIX = 'user:';
 
 	/**
-	 * The reserved scope token that describes an agent surface.
-	 *
-	 * It never matches a caller on the grant side, so it must never match one
-	 * on the deny side either — a token that denies but cannot grant would give
-	 * `mcp` a meaning nobody declared.
-	 *
-	 * @var string
-	 */
-	private const SCOPE_MCP = 'mcp';
-
-	/**
 	 * The characters an action verb may use before it reaches a JSON path.
 	 *
 	 * @var string
@@ -124,6 +113,16 @@ class DenyResolver {
 	 * @var string
 	 */
 	private const IMPOSSIBLE_SQL_CONDITION = '1 = 0';
+
+	/**
+	 * The matcher that reads the deny VOCABULARY — whether one entry reaches one caller.
+	 *
+	 * @param DenyEntryMatcher $matcher The deny-entry matcher, autowired by Nextcloud.
+	 */
+	public function __construct(
+		private readonly DenyEntryMatcher $matcher = new DenyEntryMatcher(),
+	) {
+	}//end __construct()
 
 	/**
 	 * The deny sub-block of one authorization block.
@@ -306,38 +305,7 @@ class DenyResolver {
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	public function entryNames(mixed $entry, array $principals): ?string {
-		if (is_string($entry) === true) {
-			if ($entry === self::SCOPE_MCP) {
-				return null;
-			}
-
-			if (in_array(needle: $entry, haystack: $principals, strict: true) === true) {
-				return $entry;
-			}
-
-			return null;
-		}
-
-		if (is_array($entry) === false) {
-			return null;
-		}
-
-		$group = ($entry['group'] ?? null);
-		if (is_string($group) === true && $group !== self::SCOPE_MCP
-			&& in_array(needle: $group, haystack: $principals, strict: true) === true
-		) {
-			return $group;
-		}
-
-		$user = ($entry['user'] ?? null);
-		if (is_string($user) === true && $user !== '') {
-			$named = (self::USER_PREFIX . $user);
-			if (in_array(needle: $named, haystack: $principals, strict: true) === true) {
-				return $named;
-			}
-		}
-
-		return null;
+		return $this->matcher->entryNames(entry: $entry, principals: $principals);
 	}//end entryNames()
 
 	/**
@@ -356,29 +324,12 @@ class DenyResolver {
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
-	public function matchingDenials(?array $authorization, string $action, array $principals): array {
-		$matches = [];
-
-		foreach ($this->entriesFor(authorization: $authorization, action: $action) as $entry) {
-			$named = $this->entryNames(entry: $entry, principals: $principals);
-			if ($named === null) {
-				continue;
-			}
-
-			$conditional = (is_array($entry) === true
-				&& isset($entry['match']) === true
-				&& is_array($entry['match']) === true
-				&& $entry['match'] !== []);
-
-			$matches[] = [
-				'rule' => $entry,
-				'principal' => $named,
-				'action' => $action,
-				'conditional' => $conditional,
-			];
-		}
-
-		return $matches;
+	private function matchingDenials(?array $authorization, string $action, array $principals): array {
+		return $this->matcher->matchingDenials(
+			entries: $this->entriesFor(authorization: $authorization, action: $action),
+			action: $action,
+			principals: $principals
+		);
 	}//end matchingDenials()
 
 	/**

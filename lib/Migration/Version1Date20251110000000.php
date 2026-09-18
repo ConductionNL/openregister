@@ -109,13 +109,13 @@ class Version1Date20251110000000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable('openregister_organisations') === false) {
 			$output->warning(message: '  ⚠️  organisations table not found - skipping hierarchy migration');
-			return null;
+			return $schema;
 		}//end if
 
 		if ($updated === false) {
 			$output->info(message: '');
 			$output->info(message: 'ℹ️  No changes needed - organisation hierarchy already configured');
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: '');

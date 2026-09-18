@@ -51,7 +51,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 		];
 
 		foreach ([$block, (object)$block] as $shape) {
-			$declaration = CodedPropertyDeclaration::fromProperty(
+			$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 				property: [CodedPropertyDeclaration::ANNOTATION => $shape]
 			);
 
@@ -77,12 +77,12 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 */
 	public function testADeclarationWithoutASchemeIsNotADeclaration(): void {
 		$this->assertNull(
-			CodedPropertyDeclaration::fromProperty(
+			(new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 				property: [CodedPropertyDeclaration::ANNOTATION => ['branch' => 'urn:root']]
 			)
 		);
-		$this->assertNull(CodedPropertyDeclaration::fromProperty(property: ['type' => 'string']));
-		$this->assertNull(CodedPropertyDeclaration::fromProperty(property: 'string'));
+		$this->assertNull((new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(property: ['type' => 'string']));
+		$this->assertNull((new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(property: 'string'));
 	}//end testADeclarationWithoutASchemeIsNotADeclaration()
 
 	/**
@@ -92,7 +92,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnknownStorageFormFallsBackToTheUri(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [CodedPropertyDeclaration::ANNOTATION => ['scheme' => 'urn:s', 'store' => 'uir']]
 		);
 
@@ -109,7 +109,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConceptDeclaringNoContextServesEveryContext(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [
 				CodedPropertyDeclaration::ANNOTATION => ['scheme' => 'urn:s', 'contextProperty' => 'zaaktype'],
 			]
@@ -132,7 +132,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnboundPropertyMatchesEveryContext(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [CodedPropertyDeclaration::ANNOTATION => ['scheme' => 'urn:s']]
 		);
 

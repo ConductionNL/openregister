@@ -30,8 +30,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
@@ -39,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -54,49 +53,36 @@ use Psr\Log\LoggerInterface;
 class SchemaMigrationController extends Controller {
 
 	/**
-	 * How many objects a conversion preview reads.
-	 *
-	 * A preview is a decision aid, not an exhaustive migration: reading every
-	 * row of a four-million-row table to answer "what would this cost" is a
-	 * cost of its own. The counts are exact over what was read and the
-	 * response says how many that was.
-	 *
-	 * @var integer
-	 */
-	public const CONVERSION_SCAN_LIMIT = 10000;
-	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param SchemaMapper $schemaMapper Schema lookup.
-	 * @param RegisterMapper $registerMapper Register lookup (resolve population register).
 	 * @param SchemaChangelogMapper $changelogMapper Changelog read.
 	 * @param SchemaRunMapper $runMapper Run read.
 	 * @param SchemaRunEntryMapper $runEntryMapper Run entry read.
 	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
 	 * @param SchemaMigrationService $migrationService Migration engine.
+	 * @param SchemaObjectReader $objectReader Locates a schema's register and reads its stored values.
 	 * @param IJobList $jobList Job list (enqueue runs).
 	 * @param IUserSession $userSession Current user.
 	 * @param LoggerInterface $logger Logger.
 	 * @param PropertyConversionService|null $conversions Publishes and previews a property type change.
-	 * @param MagicMapper|null $objects Reads the stored values a conversion preview is measured over.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaChangelogMapper $changelogMapper,
 		private readonly SchemaRunMapper $runMapper,
 		private readonly SchemaRunEntryMapper $runEntryMapper,
 		private readonly SchemaRevalidationService $revalidationService,
 		private readonly SchemaMigrationService $migrationService,
+		private readonly SchemaObjectReader $objectReader,
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly ?PropertyConversionService $conversions = null,
-		private readonly ?MagicMapper $objects = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -144,7 +130,7 @@ class SchemaMigrationController extends Controller {
 	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
 	 */
 	public function previewConversion(int $id): JSONResponse {
-		if ($this->conversions === null || $this->objects === null) {
+		if ($this->conversions === null || $this->objectReader->canReadValues() === false) {
 			return new JSONResponse(['error' => 'Property conversion is not configured'], 501);
 		}
 
@@ -184,7 +170,7 @@ class SchemaMigrationController extends Controller {
 			);
 		}
 
-		$values = $this->storedValues(schemaId: $id, property: $property);
+		$values = $this->objectReader->storedValues(schemaId: $id, property: $property);
 		$preview = $this->conversions->preview(values: $values, from: $current, to: $target);
 		$preview['property'] = $property;
 		$preview['from'] = $current;
@@ -192,50 +178,6 @@ class SchemaMigrationController extends Controller {
 
 		return new JSONResponse($preview);
 	}//end previewConversion()
-
-	/**
-	 * Every stored value of one property, across the schema's objects.
-	 *
-	 * @param integer $schemaId The schema id.
-	 * @param string $property The property name.
-	 *
-	 * @return array<int,mixed> The stored values, one per object.
-	 */
-	private function storedValues(int $schemaId, string $property): array {
-		$registerId = $this->resolveRegisterId(schemaId: $schemaId);
-		if ($registerId === null) {
-			return [];
-		}
-
-		try {
-			$objects = $this->objects->searchObjects(
-				query: [
-					'@self' => ['register' => $registerId, 'schema' => $schemaId],
-					'_limit' => self::CONVERSION_SCAN_LIMIT,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Throwable $unreadable) {
-			return [];
-		}
-
-		if (is_array($objects) === false) {
-			return [];
-		}
-
-		$values = [];
-		foreach ($objects as $object) {
-			$data = $object->getObject();
-			if (is_array($data) === false) {
-				continue;
-			}
-
-			$values[] = ($data[$property] ?? null);
-		}
-
-		return $values;
-	}//end storedValues()
 
 	/**
 	 * Get a schema's classified changelog, newest-first.
@@ -275,7 +217,7 @@ class SchemaMigrationController extends Controller {
 			return new JSONResponse(['error' => 'Schema not found'], 404);
 		}
 
-		$registerId = $this->resolveRegisterId(schemaId: $id);
+		$registerId = $this->objectReader->resolveRegisterId(schemaId: $id);
 		if ($registerId === null) {
 			return new JSONResponse(['error' => 'No register contains this schema'], 422);
 		}
@@ -391,7 +333,7 @@ class SchemaMigrationController extends Controller {
 			return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => $problems], 422);
 		}
 
-		$registerId = $this->resolveRegisterId(schemaId: $id);
+		$registerId = $this->objectReader->resolveRegisterId(schemaId: $id);
 		if ($registerId === null) {
 			return new JSONResponse(['error' => 'No register contains this schema'], 422);
 		}
@@ -426,7 +368,7 @@ class SchemaMigrationController extends Controller {
 			return new JSONResponse(['error' => 'A "plan" array is required'], 422);
 		}
 
-		$registerId = $this->resolveRegisterId(schemaId: $id);
+		$registerId = $this->objectReader->resolveRegisterId(schemaId: $id);
 		if ($registerId === null) {
 			return new JSONResponse(['error' => 'No register contains this schema'], 422);
 		}
@@ -488,30 +430,6 @@ class SchemaMigrationController extends Controller {
 
 		return new JSONResponse($result->jsonSerialize());
 	}//end rollback()
-
-	/**
-	 * Resolve a register id that contains the given schema.
-	 *
-	 * @param int $schemaId The schema id.
-	 *
-	 * @return int|null A register id, or null when none contains the schema.
-	 */
-	private function resolveRegisterId(int $schemaId): ?int {
-		$explicit = $this->request->getParam('registerId');
-		if ($explicit !== null && is_numeric($explicit) === true) {
-			return (int)$explicit;
-		}
-
-		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-		foreach ($registers as $register) {
-			$schemas = array_map('strval', ($register->getSchemas() ?? []));
-			if (in_array((string)$schemaId, $schemas, true) === true) {
-				return (int)$register->getId();
-			}
-		}
-
-		return null;
-	}//end resolveRegisterId()
 
 	/**
 	 * Read an optional integer query parameter.

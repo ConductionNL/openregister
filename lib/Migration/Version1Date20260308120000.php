@@ -46,13 +46,13 @@ class Version1Date20260308120000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_webhooks') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_webhooks');
 
 		if ($table->hasColumn('mapping') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

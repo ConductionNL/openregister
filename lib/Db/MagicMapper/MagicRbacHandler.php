@@ -120,10 +120,9 @@ class MagicRbacHandler {
 	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
 	 * @param ContainerInterface $container Container for service injection
 	 * @param LoggerInterface $logger Logger for debugging
-	 * @param ObjectScopeResolver|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is not
-	 *                                                      a fatal at existing construction sites.
-	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the same reason.
-	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
+	 * @param RbacResolvers|null $resolvers The shared object-scope, per-object grant and deny-grammar resolvers,
+	 *                                      bundled together; nullable so adding them is not a fatal at existing
+	 *                                      construction sites.
 	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
 	 */
 	public function __construct(
@@ -134,9 +133,7 @@ class MagicRbacHandler {
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
-		private readonly ?ObjectScopeResolver $objectScopeResolver = null,
-		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
-		private readonly ?DenyResolver $denyResolver = null,
+		private readonly ?RbacResolvers $resolvers = null,
 		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
 	) {
 	}//end __construct()
@@ -154,7 +151,7 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	private function denyResolver(): DenyResolver {
-		return ($this->denyResolver ?? new DenyResolver());
+		return ($this->resolvers->denyResolver ?? new DenyResolver());
 	}//end denyResolver()
 
 	/**
@@ -187,7 +184,7 @@ class MagicRbacHandler {
 	 * @return ObjectScopeResolver The one definition of the scope vocabulary.
 	 */
 	private function objectScope(): ObjectScopeResolver {
-		return ($this->objectScopeResolver ?? new ObjectScopeResolver());
+		return ($this->resolvers->objectScopeResolver ?? new ObjectScopeResolver());
 	}//end objectScope()
 
 	/**
@@ -202,8 +199,8 @@ class MagicRbacHandler {
 	 * @return ObjectGrantResolver|null The resolver, or null when unavailable.
 	 */
 	private function objectGrants(): ?ObjectGrantResolver {
-		if ($this->objectGrantResolver !== null) {
-			return $this->objectGrantResolver;
+		if ($this->resolvers?->objectGrantResolver !== null) {
+			return $this->resolvers->objectGrantResolver;
 		}
 
 		try {
@@ -1537,35 +1534,22 @@ class MagicRbacHandler {
 			return ['bypass' => false, 'conditions' => []];
 		}
 
-		// The DENY term. This emitter returns conditions its caller ORs
-		// together, so the term cannot simply be appended: it is folded into
-		// EVERY condition below instead, which is the same AND the QueryBuilder
-		// emitter applies once to the whole query. Folding rather than appending
-		// is what stops the owner condition putting a denied row back.
-		$denyTerm = $this->denyFilterSqlFor(
+		// Assemble the three shared SQL term pieces (deny term, "not private"
+		// row predicate, owner-admit conditions). A null result signals that the
+		// deny term excludes everything, i.e. the deny-all empty-conditions case.
+		$terms = $this->buildRbacSqlTerms(
 			authorization: $authorization,
 			action: $action,
 			userId: $userId,
-			userGroups: $userGroups,
-			columnName: '_authorization'
+			userGroups: $userGroups
 		);
-		if ($denyTerm === false) {
+		if ($terms === null) {
 			return ['bypass' => false, 'conditions' => []];
 		}
 
-		// The "not private" row predicate, from the same builder the
-		// QueryBuilder emitter uses. Note the UNQUALIFIED column name: this
-		// emitter feeds UNION members that carry no table alias, which is why
-		// its owner conditions read `_owner` and not `t._owner`.
-		$notPrivate = $this->reachableRowSqlFor(
-			authorization: $authorization,
-			columnName: '_authorization',
-			uuidColumn: '_uuid',
-			userId: $userId,
-			action: $action
-		);
-
-		$ownerAdmits = $this->ownerAdmitConditionsSql(userGroups: $userGroups, userId: $userId);
+		$denyTerm    = $terms['denyTerm'];
+		$notPrivate  = $terms['notPrivate'];
+		$ownerAdmits = $terms['ownerAdmits'];
 
 		// If no authorization is configured, the schema is open to all — but an
 		// individual OBJECT may still declare itself private, so this is no
@@ -1606,6 +1590,64 @@ class MagicRbacHandler {
 			'conditions' => $this->withDenyTerm(conditions: $conditions, denyTerm: $denyTerm),
 		];
 	}//end buildRbacConditionsSql()
+
+	/**
+	 * Assemble the shared raw-SQL term pieces for {@see buildRbacConditionsSql()}.
+	 *
+	 * Builds the DENY term, the "not private" row predicate and the owner-admit
+	 * conditions from the same emitters the QueryBuilder path uses. All three
+	 * feed UNION members that carry no table alias, hence the UNQUALIFIED column
+	 * names (`_owner`, not `t._owner`).
+	 *
+	 * The DENY term is folded into EVERY OR-ed condition by the caller rather
+	 * than appended, which is the same AND the QueryBuilder emitter applies once
+	 * to the whole query; appending it as one more alternative would let a denied
+	 * row back in. When the deny term excludes everything the emitter returns
+	 * `false`, which this helper surfaces as a null return so the caller can emit
+	 * the deny-all empty-conditions result.
+	 *
+	 * @param array<string, mixed>|null $authorization The effective authorization block, or null when unconfigured.
+	 * @param string $action The CRUD action being filtered.
+	 * @param string|null $userId The current user identifier, or null when unauthenticated.
+	 * @param string[] $userGroups The current user's group IDs.
+	 *
+	 * @return array{denyTerm: string|null, notPrivate: string, ownerAdmits: string[]}|null The term pieces, or null
+	 *                                                                                       when the deny term
+	 *                                                                                       excludes everything.
+	 */
+	private function buildRbacSqlTerms(
+		?array $authorization,
+		string $action,
+		?string $userId,
+		array $userGroups
+	): ?array {
+		$denyTerm = $this->denyFilterSqlFor(
+			authorization: $authorization,
+			action: $action,
+			userId: $userId,
+			userGroups: $userGroups,
+			columnName: '_authorization'
+		);
+		if ($denyTerm === false) {
+			return null;
+		}
+
+		$notPrivate = $this->reachableRowSqlFor(
+			authorization: $authorization,
+			columnName: '_authorization',
+			uuidColumn: '_uuid',
+			userId: $userId,
+			action: $action
+		);
+
+		$ownerAdmits = $this->ownerAdmitConditionsSql(userGroups: $userGroups, userId: $userId);
+
+		return [
+			'denyTerm'    => $denyTerm,
+			'notPrivate'  => $notPrivate,
+			'ownerAdmits' => $ownerAdmits,
+		];
+	}//end buildRbacSqlTerms()
 
 	/**
 	 * Fold the deny term into every OR-ed condition.

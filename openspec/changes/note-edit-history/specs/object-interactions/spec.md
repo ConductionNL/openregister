@@ -16,21 +16,21 @@ edit with HTTP 423.
 - **GIVEN** a note reading "Applicant called" by user A
 - **WHEN** user A edits it to "Applicant called, will send documents"
 - **THEN** the versions list holds "Applicant called" by A, and the note carries `editedBy` A and `versionCount` 1
-- @e2e exclude {proposal only; task 3.1 adds tests/e2e/ci/note-edit-history.spec.ts when the drawer ships}
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
 
 #### Scenario: a locked note cannot be edited
 
 - **GIVEN** a locked note
 - **WHEN** its author tries to edit it
 - **THEN** the response is 423 and no version is written
-- @e2e exclude {lock guard, covered by NoteService unit tests}
+- @e2e exclude {nothing sets the verb yet: the lock ships with notes-leaf-rich-text-lock-export. Asserted in tests/Unit/Service/NoteServiceTest.php::testALockedNoteRefusesTheEditAndWritesNoVersion}
 
 #### Scenario: a colleague with update cannot rewrite another's note
 
 - **GIVEN** a note by user A and user B with `update` but not `manage` on the object
 - **WHEN** user B tries to edit it
 - **THEN** the response is 403
-- @e2e exclude {RBAC guard, covered by unit tests}
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
 
 ### Requirement: A note edit is audited on the object and versions die with the note
 
@@ -42,4 +42,4 @@ the editor. Deleting a note SHALL delete its versions.
 - **GIVEN** an edited note
 - **WHEN** the object's audit trail is read
 - **THEN** it holds a `note.edited` entry with the note id and editor and no note text
-- @e2e exclude {audit entry, covered by unit tests}
+- @e2e tests/e2e/ci/note-edit-history.spec.ts

@@ -68,7 +68,7 @@ class Version1Date20260828120000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_audit_trails') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_audit_trails');
@@ -112,7 +112,7 @@ class Version1Date20260828120000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		$output->info('Added flow_run / flow_node / flow_step and idx_audit_flow_run to openregister_audit_trails');

@@ -76,7 +76,7 @@ class Version1Date20260818090000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_flows') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table   = $schema->getTable('openregister_flows');
@@ -101,7 +101,7 @@ class Version1Date20260818090000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;

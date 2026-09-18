@@ -36,6 +36,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 
 /**
  * Env churn can leave several `openregister_registers` rows sharing a slug.
@@ -47,6 +48,8 @@ use Psr\Log\LoggerInterface;
  * resolution query.
  */
 class RegisterMapperDeterministicFindTest extends TestCase {
+	use ResultRowReaderTrait;
+
 
 	private IDBConnection&MockObject $db;
 
@@ -134,15 +137,21 @@ class RegisterMapperDeterministicFindTest extends TestCase {
 			function (): IResult {
 				$fetched = false;
 				$result = $this->createMock(IResult::class);
-				$result->method('fetch')->willReturnCallback(
-					function () use (&$fetched) {
-						if ($fetched === true) {
-							return false;
-						}
-						$fetched = true;
-						return ['id' => 1, 'uuid' => 'uuid-1', 'slug' => 'shared-slug'];
+
+				// One callback behind BOTH reader names: QBMapper calls
+				// `fetchAssociative()` from NC 35 and `fetch()` up to NC 34, and
+				// `$fetched` is what makes the second read return false. Binding
+				// them separately would give each name its own flag and the guard
+				// fetch would hand back the row a second time.
+				$row = function () use (&$fetched) {
+					if ($fetched === true) {
+						return false;
 					}
-				);
+					$fetched = true;
+					return ['id' => 1, 'uuid' => 'uuid-1', 'slug' => 'shared-slug'];
+				};
+
+				$this->stubRowReader($result, $row);
 				$result->method('closeCursor')->willReturn(true);
 				return $result;
 			}

@@ -96,7 +96,7 @@ class Version1Date20260818230000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_verwerkingsactiviteiten') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_verwerkingsactiviteiten');

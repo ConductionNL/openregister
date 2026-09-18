@@ -77,7 +77,7 @@ class Version1Date20260614100000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_sources') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_sources');
@@ -124,6 +124,6 @@ class Version1Date20260614100000 extends SimpleMigrationStep {
 			return $schema;
 		}
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

@@ -512,7 +512,11 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	public function testGetSettingsUserWithNullDisplayNameFallsBackToUid(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('noname');
-		$user->method('getDisplayName')->willReturn(null);
+		// NC 35 declares `getDisplayName(): string`, so null is refused outright
+		// (NC 32-34 leave it untyped, which is how this passed until now). The
+		// empty string is the same "no display name set" case this test asserts
+		// about, and is valid across the whole declared range.
+		$user->method('getDisplayName')->willReturn('');
 
 		$userManager = $this->createMock(IUserManager::class);
 		$userManager->method('search')->willReturn([$user]);

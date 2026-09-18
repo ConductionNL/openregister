@@ -33,6 +33,7 @@ use OCA\OpenRegister\Event\FileRenamedEvent;
 use OCA\OpenRegister\Event\FileUnlockedEvent;
 use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -2197,6 +2198,74 @@ class FilesController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end updateMetadata()
+
+	/**
+	 * Save every file's name and description on one object in one act.
+	 *
+	 * Body: `files`, a list of rows each naming a `fileId` and carrying a
+	 * `name`, a `description` or both. A key a row leaves out is left alone,
+	 * and an empty description clears it.
+	 *
+	 * One audit entry is written per file actually changed, and a file the
+	 * form left alone writes none. That is the whole point of the endpoint
+	 * existing beside the per-file one: tidying a dossier before it goes out
+	 * means renaming six files, and six round trips is why nobody does it.
+	 *
+	 * One row failing does not roll the others back. The answer lists what
+	 * changed, what was already right, and what was refused, so a person can
+	 * fix the one name that collided instead of retyping five.
+	 *
+	 * @param string $register Register slug.
+	 * @param string $schema Schema slug.
+	 * @param string $id Object ID.
+	 *
+	 * @return JSONResponse What changed, what did not, and what was refused.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @contract tests/Unit/Service/File/FileMetadataFormHandlerTest.php
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function saveMetadataForm(string $register, string $schema, string $id): JSONResponse {
+		$this->setObjectContext(register: $register, schema: $schema);
+
+		try {
+			// ADR-005 / gate-7: the same object-level RBAC the per-file
+			// endpoints apply. Editing six files at once is six mutations.
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
+			$this->objectService->setObject($id);
+			$object = $this->objectService->getObject();
+			if ($object === null) {
+				return new JSONResponse(
+					data: ['error' => $this->translate(text: 'Object not found')],
+					statusCode: 404
+				);
+			}
+
+			$entries = $this->request->getParam('files');
+			if (is_array($entries) === false) {
+				return new JSONResponse(
+					data: ['error' => $this->translate(text: "Send the rows under 'files'.")],
+					statusCode: 400
+				);
+			}
+
+			$handler = new FileMetadataFormHandler(fileService: $this->fileService);
+
+			return new JSONResponse(data: $handler->save(object: $object, entries: $entries));
+		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'You do not have access to this object')],
+				statusCode: 403
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end saveMetadataForm()
 
 	/**
 	 * Update file labels
