@@ -99,6 +99,8 @@ final class WorkingCalendar {
 	 * @param float $hoursPerWorkingDay Working hours in one working day.
 	 * @param array<int, array<string, mixed>> $rules The computed non-working-date rules.
 	 * @param array<string, string> $exceptions Enumerated one-off closures, `Y-m-d` => name.
+	 * @param integer $dayStartsAtMinute Minutes past midnight the working day opens.
+	 * @param string $timezone The zone the organisation's days are counted in.
 	 */
 	private function __construct(
 		private readonly string $slug,
@@ -107,6 +109,8 @@ final class WorkingCalendar {
 		private readonly float $hoursPerWorkingDay,
 		private readonly array $rules,
 		private readonly array $exceptions,
+		private readonly int $dayStartsAtMinute,
+		private readonly string $timezone,
 	) {
 
 	}//end __construct()
@@ -163,7 +167,9 @@ final class WorkingCalendar {
 			workingWeekdays: $weekdays,
 			hoursPerWorkingDay: (float)$hours,
 			rules: $rules,
-			exceptions: $exceptions
+			exceptions: $exceptions,
+			dayStartsAtMinute: self::validDayStart(slug: $slug, value: ($definition['dayStartsAt'] ?? null)),
+			timezone: self::validTimezone(slug: $slug, value: ($definition['timezone'] ?? null))
 		);
 	}//end fromArray()
 
@@ -215,6 +221,68 @@ final class WorkingCalendar {
 	public function getHoursPerWorkingDay(): float {
 		return $this->hoursPerWorkingDay;
 	}//end getHoursPerWorkingDay()
+
+	/**
+	 * The minute of the day the working day opens.
+	 *
+	 * WHY THE CALENDAR CARRIES A TIME OF DAY AT ALL. Until now a calendar
+	 * answered which DAYS are worked and how many hours one of them holds,
+	 * which is everything a deadline needs: "five business days from now"
+	 * never asks what time the office opens. Elapsed business time does ask.
+	 * A case entered at 16:00 on Friday and left at 09:00 on Monday spans one
+	 * working hour or eight depending entirely on where the day starts, and
+	 * there is no honest way to answer without knowing.
+	 *
+	 * The window is start plus `hoursPerWorkingDay`, so the two can never
+	 * disagree: a calendar cannot say the day is eight hours long and then
+	 * describe a nine-hour window.
+	 *
+	 * @return integer Minutes past midnight.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	public function getDayStartsAtMinute(): int {
+		return $this->dayStartsAtMinute;
+	}//end getDayStartsAtMinute()
+
+	/**
+	 * The minute of the day the working day closes.
+	 *
+	 * @return integer Minutes past midnight, never beyond the end of the day.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	public function getDayEndsAtMinute(): int {
+		$end = ($this->dayStartsAtMinute + (int)round($this->hoursPerWorkingDay * 60));
+
+		// A twelve-hour day starting at 18:00 would close at 06:00 the next
+		// morning, which is a second day's worth of bookkeeping for a case
+		// nobody has. Clamped instead, so the window stays inside its day and
+		// the measurement below never has to cross midnight.
+		return min($end, (24 * 60));
+	}//end getDayEndsAtMinute()
+
+	/**
+	 * The zone the organisation counts its days in.
+	 *
+	 * WHY A CALENDAR HAS A ZONE, AND WHY IT IS NOT THE VIEWER'S. A calendar
+	 * date is not an instant: "the term ends on 2 June" becomes a moment only
+	 * once somebody says where midnight is. Without a zone the answer is the
+	 * server's, which means a term computed at 23:30 UTC lands a day early for
+	 * an organisation in Amsterdam and nothing on screen says why.
+	 *
+	 * It is the ORGANISATION's zone and not the signed-in person's. A display
+	 * preference must not move a statutory deadline: two handlers on one case
+	 * would then be owed different days, and the one who travelled would be
+	 * right.
+	 *
+	 * @return string An IANA zone name.
+	 *
+	 * @spec openspec/changes/the-working-calendar-carries-its-zone/specs/flow-business-timers/spec.md
+	 */
+	public function getTimezone(): string {
+		return $this->timezone;
+	}//end getTimezone()
 
 	/**
 	 * Whether the calendar day containing this instant is a working day.
@@ -332,6 +400,80 @@ final class WorkingCalendar {
 	 *
 	 * @throws FlowTimerValidationException When absent, empty or out of range.
 	 */
+	/**
+	 * Validate the opening time, defaulting to 09:00.
+	 *
+	 * `HH:MM`, refused rather than coerced: a calendar that says `9` or
+	 * `9am` and is silently read as midnight would move every elapsed
+	 * business hour on the instance by nine hours, and nothing on screen
+	 * would say why.
+	 *
+	 * @param string $slug The calendar, for the refusal.
+	 * @param mixed $value The declared opening time, or null.
+	 *
+	 * @return integer Minutes past midnight.
+	 *
+	 * @throws FlowTimerValidationException On a malformed time.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	private static function validDayStart(string $slug, mixed $value): int {
+		if ($value === null || (is_string($value) === true && trim($value) === '')) {
+			// 09:00. The default is stated rather than derived, because every
+			// derivation of it (midnight, noon minus half the day) is a
+			// different number and none of them is what an office does.
+			return (9 * 60);
+		}
+
+		if (is_string($value) === false || preg_match('/^([01][0-9]|2[0-3]):([0-5][0-9])$/', trim($value), $parts) !== 1) {
+			throw new FlowTimerValidationException(
+				message: sprintf("Working calendar '%s' declares dayStartsAt '%s'; it must be HH:MM in 24-hour form.", $slug, is_scalar($value) === true ? (string)$value : gettype($value))
+			);
+		}
+
+		return (((int)$parts[1] * 60) + (int)$parts[2]);
+	}//end validDayStart()
+
+	/**
+	 * Validate the zone, defaulting to UTC.
+	 *
+	 * REFUSED RATHER THAN COERCED, and UTC rather than the server's. A zone
+	 * PHP cannot resolve would otherwise fall back to `date_default_timezone`,
+	 * which is whatever the instance happens to be set to, so the same
+	 * calendar would count different days on two servers and neither would
+	 * report anything. UTC as the default is the one answer that is the same
+	 * everywhere, and an organisation that needs another says so.
+	 *
+	 * @param string $slug The calendar, for the refusal.
+	 * @param mixed $value The declared zone, or null.
+	 *
+	 * @return string The zone name.
+	 *
+	 * @throws FlowTimerValidationException On a zone that does not resolve.
+	 *
+	 * @spec openspec/changes/the-working-calendar-carries-its-zone/specs/flow-business-timers/spec.md
+	 */
+	private static function validTimezone(string $slug, mixed $value): string {
+		if ($value === null || (is_string($value) === true && trim($value) === '')) {
+			return 'UTC';
+		}
+
+		if (is_string($value) === false) {
+			throw new FlowTimerValidationException(
+				message: sprintf("Working calendar '%s' declares a timezone that is not a string.", $slug)
+			);
+		}
+
+		$zone = trim($value);
+		if (in_array($zone, DateTimeZone::listIdentifiers(), true) === false) {
+			throw new FlowTimerValidationException(
+				message: sprintf("Working calendar '%s' declares timezone '%s', which is not an IANA zone name.", $slug, $zone)
+			);
+		}
+
+		return $zone;
+	}//end validTimezone()
+
 	private static function validWeekdays(string $slug, mixed $value): array {
 		if (is_array($value) === false || $value === []) {
 			throw new FlowTimerValidationException(

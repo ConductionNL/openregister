@@ -5,7 +5,8 @@
  *
  * The HTTP surface of a bulk action job: the action catalogue, creating a
  * job (which rehearses it), reading its progress and its per-object
- * outcomes, downloading the outcome, committing, cancelling and retrying.
+ * outcomes, downloading the outcome, committing, cancelling, retrying and
+ * undoing.
  *
  * Every route is owner-scoped. A user reads their own jobs; an administrator
  * may read any.
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -53,10 +55,13 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A REST surface over the
  * job record, the action catalogue and the lifecycle service.
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Nine endpoints over one
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Ten endpoints over one
  * resource. Splitting them across controllers to move the number under the
  * threshold would put the same ownership check in two places, which is the
  * failure the threshold exists to prevent.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) The same ten endpoints. Every
+ * public method here is one route, and the count is the size of the resource
+ * rather than a sign the class does two things.
  *
  * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
  */
@@ -75,15 +80,20 @@ class BulkJobsController extends Controller {
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param BulkJobService $service The lifecycle service.
+	 * @param BulkJobReversal $reversal The inverse of a reversible job.
 	 * @param BulkJobMapper $jobMapper Job persistence.
 	 * @param BulkActionRegistry $registry The action catalogue.
 	 * @param IUserSession $userSession Current-user session.
 	 * @param IGroupManager $groupManager Group manager (admin check).
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection.
+	 * Each is a collaborator this REST surface genuinely uses.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly BulkJobService $service,
+		private readonly BulkJobReversal $reversal,
 		private readonly BulkJobMapper $jobMapper,
 		private readonly BulkActionRegistry $registry,
 		private readonly IUserSession $userSession,
@@ -110,6 +120,7 @@ class BulkJobsController extends Controller {
 			data: [
 				'results' => $this->registry->describe(),
 				'ceiling' => $this->service->getCeiling(),
+				'undoCeiling' => $this->service->getUndoCeiling(),
 			]
 		);
 	}//end actions()
@@ -305,6 +316,47 @@ class BulkJobsController extends Controller {
 
 		return new JSONResponse(data: $retried->jsonSerialize(), statusCode: 202);
 	}//end retry()
+
+	/**
+	 * Undo a job: create the reversal that writes its prior values back.
+	 *
+	 * The reversal is returned PREVIEWED, like any other job. The caller reads
+	 * which members it would restore and which it would leave alone, then
+	 * commits it. A reversal that committed itself would be a bulk write with
+	 * no preview, which is the shape this whole capability exists to replace.
+	 *
+	 * @param int $id The id of the job to undo.
+	 *
+	 * @return JSONResponse The previewed reversal, or the refusal.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	#[NoAdminRequired]
+	public function reverse(int $id): JSONResponse {
+		$job = $this->readable(id: $id);
+
+		if ($job instanceof JSONResponse) {
+			return $job;
+		}
+
+		$uid = $this->currentUid();
+
+		if ($uid === null) {
+			return $this->authRequired();
+		}
+
+		$justification = $this->nullableString(value: $this->request->getParam('justification'));
+
+		try {
+			$created = $this->reversal->reverse(original: $job, actorUid: $uid, justification: $justification);
+		} catch (BulkJobRefusedException $exception) {
+			return $this->refusal(exception: $exception);
+		} catch (InvalidArgumentException $exception) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
+		}
+
+		return new JSONResponse(data: $created->jsonSerialize(), statusCode: 201);
+	}//end reverse()
 
 	/**
 	 * A page of the job's per-object outcomes.

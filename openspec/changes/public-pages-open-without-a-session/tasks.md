@@ -23,13 +23,13 @@
 
 - [x] 4.1 `AccessLinkReader::publish()` projects one object for any anonymous surface (D-5).
 - [x] 4.2 `ObjectShareLinkController::show()` uses it instead of `jsonSerialize()` (openregister#3818, D-5).
-- [x] 4.3 Timeline entries are projected onto an allow-list that names no account (D-5).
+- [x] 4.3 Timeline entries are projected onto an allow-list that names no account (D-5). Landed on parity/round2 meanwhile as `Service/Timeline/PublicTimeline` (five keys, notes AND records), so this change delegates to it instead of keeping a second allow-list.
 
 ## 5. Tests
 
 - [x] 5.1 `tests/Unit/AppHost/PublicPageResolverTest.php`: both conditions, the fail-closed manifest, the anonymous redirect, the signed-in fall-through.
 - [x] 5.2 `tests/Unit/AppHost/RoutesTest.php`: the route is opt-in and precedes the catch-all.
-- [x] 5.3 `tests/Unit/Service/Sharing/AccessLinkReaderTest.php`: the published projection and the timeline allow-list.
+- [x] 5.3 `tests/Unit/Service/Sharing/AccessLinkReaderTest.php`: the published projection. The timeline allow-list is asserted in `tests/Unit/Service/Timeline/PublicTimelineTest.php`.
 - [x] 5.4 `tests/e2e/ci/public-pages.spec.ts`: an anonymous request for an undeclared page, and a share token that publishes no bookkeeping.
 - [x] 5.5 `openspec validate public-pages-open-without-a-session --strict`.
 

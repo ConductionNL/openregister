@@ -29,6 +29,7 @@ use InvalidArgumentException;
 use JsonSerializable;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\Entity;
@@ -612,16 +613,48 @@ class Schema extends Entity implements JsonSerializable {
 		}
 
 		foreach ($this->properties as $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& isset($propertyConfig['authorization']) === true
-				&& empty($propertyConfig['authorization']) === false
-			) {
+			if (self::propertyCarriesAuthorization(propertyConfig: $propertyConfig) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end hasPropertyAuthorization()
+
+	/**
+	 * Whether one property config is governed at all.
+	 *
+	 * 🔴 THIS METHOD IS THE REASON `scope` IS NOT INERT, AND THE TRAP IS THAT
+	 * NOTHING WOULD HAVE FAILED WITHOUT IT. `hasPropertyAuthorization()` is a
+	 * SHORT-CIRCUIT: five call sites, on the render, query, export and OAS
+	 * paths, skip property filtering entirely when it answers false. Compiling
+	 * a scope into an authorization block inside
+	 * {@see getPropertyAuthorization()} is therefore not enough on its own,
+	 * because on a schema whose only control is a scope nothing would ever call
+	 * it. The field would be published as scoped and returned to everybody, and
+	 * no test on the compiler itself could see it.
+	 *
+	 * So both gates ask this one question, and a scope answers it.
+	 *
+	 * @param mixed $propertyConfig One property's configuration.
+	 *
+	 * @return bool Whether the property is governed by an authorization block or a scope.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+	 */
+	private static function propertyCarriesAuthorization(mixed $propertyConfig): bool {
+		if (is_array($propertyConfig) === false) {
+			return false;
+		}
+
+		if (empty($propertyConfig['authorization'] ?? null) === false) {
+			return true;
+		}
+
+		$scope = ($propertyConfig[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+
+		return (is_string($scope) === true && trim($scope) !== '');
+	}//end propertyCarriesAuthorization()
 
 	/**
 	 * Get the authorization rules for a specific property.
@@ -642,6 +675,22 @@ class Schema extends Entity implements JsonSerializable {
 
 		$authorization = $propertyConfig['authorization'] ?? null;
 		if (empty($authorization) === true) {
+			// 🔴 A `scope` IS AN AUTHORIZATION BLOCK, AND THIS IS WHERE IT
+			// BECOMES ONE. Compiling it here rather than beside the existing
+			// mechanism is the whole design: `PropertyRbacHandler` already
+			// strips unreadable properties from every read, refuses writes to
+			// them, and keeps them out of exports and the OAS, all by reading
+			// this method. A second evaluator would mean two answers to "may
+			// this person see this field", and the two disagree within a week.
+			//
+			// Without this, `scope` would validate, publish, and enforce
+			// nothing, and the author would believe the field was team-only
+			// BECAUSE the platform accepted the word.
+			$scope = ($propertyConfig[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+			if (is_string($scope) === true && trim($scope) !== '') {
+				return ScopedPropertyDeclaration::authorizationFor(scope: trim($scope));
+			}
+
 			return null;
 		}
 
@@ -661,12 +710,14 @@ class Schema extends Entity implements JsonSerializable {
 		}
 
 		foreach ($this->properties as $propertyName => $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& isset($propertyConfig['authorization']) === true
-				&& empty($propertyConfig['authorization']) === false
-			) {
-				$result[$propertyName] = $propertyConfig['authorization'];
+			if (self::propertyCarriesAuthorization(propertyConfig: $propertyConfig) === false) {
+				continue;
 			}
+
+			// Read through the same compiler the single-property lookup uses, so
+			// a scoped property is listed with the block it actually enforces
+			// rather than with nothing.
+			$result[$propertyName] = $this->getPropertyAuthorization(propertyName: (string)$propertyName);
 		}
 
 		return $result;
@@ -3130,6 +3181,21 @@ class Schema extends Entity implements JsonSerializable {
 		// and the schema author would be reading a 200 on the list they had
 		// just saved. Same silent no-op class as every entry above.
 		self::NOT_SUPPLIED_REASONS_ANNOTATION,
+		// The library of named conditions a rule, guard or field rule may
+		// reference by name (row 11.40). Absent from this list,
+		// setConfiguration() would DROP it, and every rule referencing a name
+		// would then REFUSE — fail-closed, so not a silent no-op this time,
+		// but a schema whose author had just saved the library reading a 200
+		// and watching every one of their rules stop working. Same class of
+		// trap as every entry above, arriving from the other side.
+		'x-openregister-conditions',
+		// The checks an administrator adds, with the sentence each one says
+		// when it refuses (row 11.53). Absent from this list,
+		// setConfiguration() DROPS it and the schema's author reads a 200 on
+		// the save while every violating object keeps saving happily — a
+		// missing CONTROL rather than a missing feature, which is the worst
+		// member of the silent no-op class this list exists to prevent.
+		'x-openregister-validations',
 	];
 
 	/**

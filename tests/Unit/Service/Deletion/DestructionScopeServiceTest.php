@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
+use OCA\OpenRegister\Service\Deletion\DestructionScopeReader;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
@@ -68,6 +69,7 @@ final class DestructionScopeServiceTest extends TestCase {
 		$service = new DestructionScopeService(
 			$this->createMock(AuditTrailMapper::class),
 			new NullLogger(),
+			new DestructionScopeReader(),
 			$notes,
 			$files,
 			null,
@@ -93,7 +95,7 @@ final class DestructionScopeServiceTest extends TestCase {
 		$notes = $this->createMock(NoteService::class);
 		$notes->expects(self::never())->method('deleteNotesForObject');
 
-		$service = new DestructionScopeService($mapper, new NullLogger(), $notes);
+		$service = new DestructionScopeService($mapper, new NullLogger(), new DestructionScopeReader(), $notes);
 
 		$report = $service->destroy($this->object(), null);
 		self::assertSame([], $report['scope']);
@@ -105,14 +107,14 @@ final class DestructionScopeServiceTest extends TestCase {
 		$mapper = $this->createMock(AuditTrailMapper::class);
 		$mapper->expects(self::never())->method('tombstoneForObject');
 
-		$service = new DestructionScopeService($mapper, new NullLogger());
+		$service = new DestructionScopeService($mapper, new NullLogger(), new DestructionScopeReader());
 
 		$this->expectException(DestructionRefusedException::class);
 		$service->destroy($this->object(), $this->schema([DestructionScope::VERSIONS, DestructionScope::NOTES]));
 	}//end testAScopeNobodyCanHonourRefusesBeforeTouchingAnything()
 
 	public function testAnUnknownMemberIsReportedAndRefuses(): void {
-		$service = new DestructionScopeService($this->createMock(AuditTrailMapper::class), new NullLogger());
+		$service = new DestructionScopeService($this->createMock(AuditTrailMapper::class), new NullLogger(), new DestructionScopeReader());
 
 		$preview = $service->preview($this->object(), $this->schema(['everything', DestructionScope::VERSIONS]));
 		self::assertSame(['everything'], $preview['unknown']);
@@ -137,7 +139,7 @@ final class DestructionScopeServiceTest extends TestCase {
 			)
 			->willReturn(7);
 
-		$service = new DestructionScopeService($mapper, new NullLogger());
+		$service = new DestructionScopeService($mapper, new NullLogger(), new DestructionScopeReader());
 		$report = $service->destroy(
 			$this->object(),
 			$this->schema([DestructionScope::VERSIONS, DestructionScope::AUDIT_CONTENT])
@@ -163,6 +165,7 @@ final class DestructionScopeServiceTest extends TestCase {
 		$service = new DestructionScopeService(
 			$this->createMock(AuditTrailMapper::class),
 			new NullLogger(),
+			new DestructionScopeReader(),
 			$notes,
 			null,
 			$tasks

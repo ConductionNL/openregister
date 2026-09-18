@@ -97,13 +97,9 @@ class UniqueConstraintEvaluator {
 		$constraints = [];
 
 		if ($includeLegacy === true) {
-			$legacyProperties = $this->propertyList(value: ($configuration[self::LEGACY_CONFIG_KEY] ?? null));
-			if ($legacyProperties !== []) {
-				$constraints[] = [
-					'name' => implode('+', $legacyProperties),
-					'properties' => $legacyProperties,
-					'action' => self::ACTION_REFUSE,
-				];
+			$legacy = $this->legacyConstraint(value: ($configuration[self::LEGACY_CONFIG_KEY] ?? null));
+			if ($legacy !== null) {
+				$constraints[] = $legacy;
 			}
 		}
 
@@ -113,36 +109,90 @@ class UniqueConstraintEvaluator {
 		}
 
 		foreach ($declared as $key => $entry) {
-			if (is_array($entry) === false) {
-				continue;
+			$constraint = $this->declaredConstraint(key: $key, entry: $entry);
+			if ($constraint !== null) {
+				$constraints[] = $constraint;
 			}
-
-			$properties = $this->propertyList(value: ($entry['properties'] ?? null));
-			if ($properties === []) {
-				continue;
-			}
-
-			$action = strtolower(trim((string)($entry['action'] ?? self::ACTION_REFUSE)));
-			if (in_array($action, [self::ACTION_REFUSE, self::ACTION_REPORT], true) === false) {
-				continue;
-			}
-
-			$name = trim((string)($entry['name'] ?? ''));
-			if ($name === '' && is_string($key) === true) {
-				$name = $key;
-			} elseif ($name === '') {
-				$name = implode('+', $properties);
-			}
-
-			$constraints[] = [
-				'name' => $name,
-				'properties' => $properties,
-				'action' => $action,
-			];
 		}//end foreach
 
 		return $constraints;
 	}//end constraints()
+
+	/**
+	 * The pre-existing `unique` key read as an unnamed refusal, or null.
+	 *
+	 * @param mixed $value The value of the legacy `unique` key.
+	 *
+	 * @return array{name:string,properties:array<int,string>,action:string}|null The constraint, or null when none is declared.
+	 */
+	private function legacyConstraint(mixed $value): ?array {
+		$properties = $this->propertyList(value: $value);
+		if ($properties === []) {
+			return null;
+		}
+
+		return [
+			'name' => implode('+', $properties),
+			'properties' => $properties,
+			'action' => self::ACTION_REFUSE,
+		];
+	}//end legacyConstraint()
+
+	/**
+	 * One declared constraint entry, normalised, or null when it is malformed.
+	 *
+	 * A constraint naming no property, or an action that is neither refuse nor
+	 * report, is dropped rather than guessed at.
+	 *
+	 * @param int|string $key   The declaration key, used as a name fallback.
+	 * @param mixed      $entry The declared entry.
+	 *
+	 * @return array{name:string,properties:array<int,string>,action:string}|null The constraint, or null when malformed.
+	 */
+	private function declaredConstraint(int|string $key, mixed $entry): ?array {
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$properties = $this->propertyList(value: ($entry['properties'] ?? null));
+		if ($properties === []) {
+			return null;
+		}
+
+		$action = strtolower(trim((string)($entry['action'] ?? self::ACTION_REFUSE)));
+		if (in_array($action, [self::ACTION_REFUSE, self::ACTION_REPORT], true) === false) {
+			return null;
+		}
+
+		return [
+			'name' => $this->constraintName(entry: $entry, key: $key, properties: $properties),
+			'properties' => $properties,
+			'action' => $action,
+		];
+	}//end declaredConstraint()
+
+	/**
+	 * The name a declared constraint carries: its own, else its key, else the
+	 * property combination.
+	 *
+	 * @param array<string,mixed> $entry      The declared entry.
+	 * @param int|string          $key        The declaration key.
+	 * @param array<int,string>   $properties The normalised property names.
+	 *
+	 * @return string The resolved name.
+	 */
+	private function constraintName(array $entry, int|string $key, array $properties): string {
+		$name = trim((string)($entry['name'] ?? ''));
+		if ($name !== '') {
+			return $name;
+		}
+
+		if (is_string($key) === true) {
+			return $key;
+		}
+
+		return implode('+', $properties);
+	}//end constraintName()
 
 	/**
 	 * The filters that find the objects breaching one constraint.

@@ -109,6 +109,9 @@ final class TaskInboxCriteria {
 	 *                                 instant.
 	 * @param string $sort One of the SORT_* values.
 	 * @param bool $sortDescending Whether to invert the sort.
+	 * @param string|null $kind When set, only tasks carrying this kind. Last
+	 *                           in the list on purpose: every caller names its
+	 *                           arguments, and appending cannot shift one.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
@@ -127,6 +130,7 @@ final class TaskInboxCriteria {
 		public readonly ?DateTime $dueBefore = null,
 		public readonly string $sort = self::SORT_DUE,
 		public readonly bool $sortDescending = false,
+		public readonly ?string $kind = null,
 	) {
 
 	}//end __construct()

@@ -114,13 +114,13 @@ class Version1Date20251111000000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable('openregister_vectors') === false) {
 			$output->warning(message: '  ⚠️  vectors table not found - skipping model tracking migration');
-			return null;
+			return $schema;
 		}//end if
 
 		if ($updated === false) {
 			$output->info(message: '');
 			$output->info(message: 'ℹ️  No changes needed - embedding model tracking already configured');
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: '');

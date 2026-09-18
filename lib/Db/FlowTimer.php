@@ -82,6 +82,18 @@ use OCP\AppFramework\Db\Entity;
  * @method float|null getBudgetValue()
  * @method void setBudgetValue(?float $budgetValue)
  * @method string|null getBudgetUnit()
+ * @method string|null getRollToWorkingDay()
+ * @method void setRollToWorkingDay(?string $rollToWorkingDay)
+ * @method DateTime|null getUnrolledAt()
+ * @method void setUnrolledAt(?DateTime $unrolledAt)
+ * @method string|null getRolledBy()
+ * @method void setRolledBy(?string $rolledBy)
+ * @method string|null getRollToWorkingDay()
+ * @method void setRollToWorkingDay(?string $rollToWorkingDay)
+ * @method DateTime|null getUnrolledAt()
+ * @method void setUnrolledAt(?DateTime $unrolledAt)
+ * @method string|null getRolledBy()
+ * @method void setRolledBy(?string $rolledBy)
  * @method void setBudgetUnit(?string $budgetUnit)
  * @method float|null getConsumedValue()
  * @method void setConsumedValue(?float $consumedValue)
@@ -336,6 +348,34 @@ class FlowTimer extends Entity implements JsonSerializable {
 	protected ?string $budgetUnit = null;
 
 	/**
+	 * What to do when the deadline lands on a day nobody works.
+	 *
+	 * `none` (the default), `next` or `previous`. NULL means `none`: a term
+	 * armed before this existed keeps the deadline it has.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rollToWorkingDay = null;
+
+	/**
+	 * Where the budget put the deadline, when a roll moved it.
+	 *
+	 * NULL when nothing moved. A value equal to `fireAt` would read as a roll
+	 * that happened and did nothing, which is not the same fact.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $unrolledAt = null;
+
+	/**
+	 * The name of the rule that moved it: the calendar's own name for the day,
+	 * or `weekend`.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rolledBy = null;
+
+	/**
 	 * Completed running time, in the budget unit.
 	 *
 	 * @var float|null
@@ -504,6 +544,9 @@ class FlowTimer extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'anchorAt', type: 'datetime');
 		$this->addType(fieldName: 'budgetValue', type: 'float');
 		$this->addType(fieldName: 'budgetUnit', type: 'string');
+		$this->addType(fieldName: 'rollToWorkingDay', type: 'string');
+		$this->addType(fieldName: 'unrolledAt', type: 'datetime');
+		$this->addType(fieldName: 'rolledBy', type: 'string');
 		$this->addType(fieldName: 'consumedValue', type: 'float');
 		$this->addType(fieldName: 'runningSince', type: 'datetime');
 		$this->addType(fieldName: 'fireAt', type: 'datetime');
@@ -578,6 +621,9 @@ class FlowTimer extends Entity implements JsonSerializable {
 			'anchorAt' => $this->format(value: $this->anchorAt),
 			'budgetValue' => $this->budgetValue,
 			'budgetUnit' => $this->budgetUnit,
+			'rollToWorkingDay' => ($this->rollToWorkingDay ?? 'none'),
+			'unrolledAt' => $this->unrolledAt?->format('c'),
+			'rolledBy' => $this->rolledBy,
 			'consumedValue' => $this->consumedValue,
 			'runningSince' => $this->format(value: $this->runningSince),
 			'fireAt' => $this->format(value: $this->fireAt),

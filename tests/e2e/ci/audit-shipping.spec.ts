@@ -108,7 +108,10 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 				status: 'actief',
 			},
 		})
-		expect(activity.ok(), `activity create failed: ${await activity.text()}`).toBeTruthy()
+		expect(
+			activity.ok(),
+			`activity create failed: ${await activity.text()}`,
+		).toBeTruthy()
 
 		const bound = await admin.post(PURPOSES, {
 			data: {
@@ -117,7 +120,10 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 				activity: `E2E-VA-${RUN}`,
 			},
 		})
-		expect(bound.ok(), `purpose create failed: ${await bound.text()}`).toBeTruthy()
+		expect(
+			bound.ok(),
+			`purpose create failed: ${await bound.text()}`,
+		).toBeTruthy()
 		expect(
 			(await bound.json()).bound,
 			'the purpose did not bind to the activity it names',
@@ -126,10 +132,20 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 		// A purpose naming an activity nothing answers to. Administering it is
 		// allowed; querying under it is not, and those are different things.
 		const unbound = await admin.post(PURPOSES, {
-			data: { code: unboundPurpose, name: 'names nothing', activity: `E2E-MISSING-${RUN}` },
+			data: {
+				code: unboundPurpose,
+				name: 'names nothing',
+				activity: `E2E-MISSING-${RUN}`,
+			},
 		})
-		expect(unbound.ok(), `unbound purpose create failed: ${await unbound.text()}`).toBeTruthy()
-		expect((await unbound.json()).bound, 'a purpose naming nothing must not read as bound').toBeFalsy()
+		expect(
+			unbound.ok(),
+			`unbound purpose create failed: ${await unbound.text()}`,
+		).toBeTruthy()
+		expect(
+			(await unbound.json()).bound,
+			'a purpose naming nothing must not read as bound',
+		).toBeFalsy()
 
 		const reg = await admin.post(`${API}/registers`, {
 			data: { title: `e2e doelbinding register ${RUN}`, description: 'e2e' },
@@ -137,7 +153,9 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 		expect(reg.ok(), `register create failed: ${await reg.text()}`).toBeTruthy()
 		registerId = String((await reg.json()).id)
 
-		const properties = { title: { type: 'string', title: 'Title', maxLength: 255 } }
+		const properties = {
+			title: { type: 'string', title: 'Title', maxLength: 255 },
+		}
 		const authorization = {
 			read: ['authenticated'],
 			create: ['authenticated'],
@@ -156,7 +174,10 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 				'x-openregister-purpose-required': true,
 			},
 		})
-		expect(boundSchema.ok(), `schema create failed: ${await boundSchema.text()}`).toBeTruthy()
+		expect(
+			boundSchema.ok(),
+			`schema create failed: ${await boundSchema.text()}`,
+		).toBeTruthy()
 		boundSchemaId = String((await boundSchema.json()).id)
 
 		// The control. Same shape, no annotation: it separates "doelbinding
@@ -169,7 +190,10 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 				authorization,
 			},
 		})
-		expect(openSchema.ok(), `control schema create failed: ${await openSchema.text()}`).toBeTruthy()
+		expect(
+			openSchema.ok(),
+			`control schema create failed: ${await openSchema.text()}`,
+		).toBeTruthy()
 		openSchemaId = String((await openSchema.json()).id)
 	})
 
@@ -192,11 +216,16 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 		expect(res.ok(), `purpose list failed: ${res.status()}`).toBeTruthy()
 
 		const body = await res.json()
-		const codes = (body.results as Array<Record<string, unknown>>).map((row) => row.code)
-		expect(codes, 'the bound purpose is missing from the list').toContain(boundPurpose)
-		expect(codes, 'the unbound purpose is hidden rather than published as unusable').toContain(
-			unboundPurpose,
+		const codes = (body.results as Array<Record<string, unknown>>).map(
+			(row) => row.code,
 		)
+		expect(codes, 'the bound purpose is missing from the list').toContain(
+			boundPurpose,
+		)
+		expect(
+			codes,
+			'the unbound purpose is hidden rather than published as unusable',
+		).toContain(unboundPurpose)
 	})
 
 	test('a control read of an unannotated schema still needs no purpose', async () => {
@@ -213,7 +242,9 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 		expect(res.status(), 'an unbound read was not refused').toBe(403)
 		const body = await res.json()
 		expect(body.error).toBe('PURPOSE_REFUSED')
-		expect(body.rule, 'the refusal does not say which rule refused').toBe('purpose-missing')
+		expect(body.rule, 'the refusal does not say which rule refused').toBe(
+			'purpose-missing',
+		)
 		expect(
 			body.available,
 			'the refusal offers no purpose the caller could have named',
@@ -221,9 +252,12 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 	})
 
 	test('the same read under a bound purpose runs', async () => {
-		const res = await admin.get(`${API}/objects/${registerId}/${boundSchemaId}`, {
-			headers: { 'X-Processing-Purpose': boundPurpose },
-		})
+		const res = await admin.get(
+			`${API}/objects/${registerId}/${boundSchemaId}`,
+			{
+				headers: { 'X-Processing-Purpose': boundPurpose },
+			},
+		)
 
 		expect(
 			res.status(),
@@ -236,24 +270,33 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 			`${API}/objects/${registerId}/${boundSchemaId}?_purpose=${boundPurpose}`,
 		)
 
-		expect(res.status(), 'the _purpose parameter was not honoured').toBeLessThan(400)
-	})
-
-	test('a purpose that names no processing activity is refused as unbound, not as unknown', async () => {
-		const res = await admin.get(`${API}/objects/${registerId}/${boundSchemaId}`, {
-			headers: { 'X-Processing-Purpose': unboundPurpose },
-		})
-
-		expect(res.status()).toBe(403)
-		expect((await res.json()).rule, 'an unbound purpose was not told apart from an unknown one').toBe(
-			'purpose-unbound',
+		expect(res.status(), 'the _purpose parameter was not honoured').toBeLessThan(
+			400,
 		)
 	})
 
+	test('a purpose that names no processing activity is refused as unbound, not as unknown', async () => {
+		const res = await admin.get(
+			`${API}/objects/${registerId}/${boundSchemaId}`,
+			{
+				headers: { 'X-Processing-Purpose': unboundPurpose },
+			},
+		)
+
+		expect(res.status()).toBe(403)
+		expect(
+			(await res.json()).rule,
+			'an unbound purpose was not told apart from an unknown one',
+		).toBe('purpose-unbound')
+	})
+
 	test('a purpose nobody administered is refused as unknown', async () => {
-		const res = await admin.get(`${API}/objects/${registerId}/${boundSchemaId}`, {
-			headers: { 'X-Processing-Purpose': `never-administered-${RUN}` },
-		})
+		const res = await admin.get(
+			`${API}/objects/${registerId}/${boundSchemaId}`,
+			{
+				headers: { 'X-Processing-Purpose': `never-administered-${RUN}` },
+			},
+		)
 
 		expect(res.status()).toBe(403)
 		const body = await res.json()
@@ -287,7 +330,10 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 		expect(body).toHaveProperty('configured')
 		expect(body).toHaveProperty('unshipped')
 		if (body.configured === false) {
-			expect(body.healthy, 'an unconfigured sink must not report itself healthy').toBeNull()
+			expect(
+				body.healthy,
+				'an unconfigured sink must not report itself healthy',
+			).toBeNull()
 		}
 	})
 })

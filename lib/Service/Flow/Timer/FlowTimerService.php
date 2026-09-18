@@ -580,6 +580,13 @@ class FlowTimerService {
 			'overdueBy' => $overdueBy,
 			'fireAt' => $fireAtText,
 			'state' => (string)$timer->getState(),
+			// Both NULL unless a roll actually moved the deadline. A handler
+			// looking at a term that ends on Tuesday has to be able to read
+			// that Monday was Tweede Paasdag; a date that moved with no
+			// explanation is one somebody will challenge and nobody can
+			// defend.
+			'unrolledAt' => $timer->getUnrolledAt()?->format('c'),
+			'rolledBy' => $timer->getRolledBy(),
 		];
 	}//end describe()
 
@@ -784,6 +791,11 @@ class FlowTimerService {
 		$timer->setOnExpiry($onExpiry);
 		$timer->setBudgetValue((float)$sla['value']);
 		$timer->setBudgetUnit($sla['unit']);
+		// `none` unless the configuration asked for something else. The default
+		// is off deliberately: rolling changes a deadline, and one that moved
+		// because the software thought it should is worse than one that lands
+		// on a Sunday.
+		$timer->setRollToWorkingDay(($sla['rollToWorkingDay'] ?? SlaCalculator::ROLL_NONE));
 		$timer->setConsumedValue(0.0);
 		$timer->setCalendarSlug($this->stringOrNull(value: ($config['calendar'] ?? null)));
 		$timer->setLadderSlug($this->stringOrNull(value: ($config['ladder'] ?? null)));
@@ -898,18 +910,37 @@ class FlowTimerService {
 		if ($timer->getState() !== FlowTimer::STATE_ARMED || $timer->getRunningSince() === null) {
 			$timer->setFireAt(null);
 			$timer->setNextRungAt(null);
+			// A suspended term has no deadline, so it has no rolled deadline
+			// either. Leaving the explanation behind would describe a move that
+			// no longer applies to anything.
+			$timer->setUnrolledAt(null);
+			$timer->setRolledBy(null);
 
 			return;
 		}
 
 		$remaining = ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue());
-		$fireAt = $this->calculator->add(
+		$landed = $this->calculator->add(
 			from: $timer->getRunningSince(),
 			value: max(0.0, $remaining),
 			unit: (string)$timer->getBudgetUnit(),
 			calendar: $calendar
 		);
+
+		// 🔑 THE ROLL IS APPLIED HERE AND ONLY HERE. Every path that moves a
+		// deadline — arm, extend, supersede, suspend, resume — comes through
+		// this method, so the roll cannot be forgotten on one of them, and the
+		// escalation ladder below is measured against the ROLLED moment
+		// because that is the deadline the term actually has.
+		$rolled = $this->calculator->roll(
+			moment: $landed,
+			roll: (string)($timer->getRollToWorkingDay() ?? SlaCalculator::ROLL_NONE),
+			calendar: $calendar
+		);
+		$fireAt = $rolled['at'];
 		$timer->setFireAt($this->mutable(value: $fireAt));
+		$timer->setUnrolledAt($this->mutableOrNull(value: $rolled['unrolledAt']));
+		$timer->setRolledBy($rolled['rolledBy']);
 
 		$rungs = $this->ladder->resolveLadder(timer: $timer)['rungs'];
 		$next = $this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar);
@@ -1373,6 +1404,11 @@ class FlowTimerService {
 		$event->setNewFireAt($newFireAt);
 		$event->setDaysImpact($impact);
 		$event->setBasis($this->stringOrNull(value: $basis));
+		// The ledger carries the explanation, not just the timer. A timer holds
+		// one deadline; an auditor reading why a term ended on Tuesday a year
+		// later is reading the ledger.
+		$event->setUnrolledAt($timer->getUnrolledAt());
+		$event->setRolledBy($timer->getRolledBy());
 		$event->setCreated($this->mutable(value: $moment));
 		$this->events->insert($event);
 	}//end record()

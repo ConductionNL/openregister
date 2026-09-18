@@ -27,6 +27,8 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -79,6 +81,13 @@ class ViewsController extends Controller {
 	private LoggerInterface $logger;
 
 	/**
+	 * Group manager, for the caller's memberships and the admin check.
+	 *
+	 * @var IGroupManager
+	 */
+	private IGroupManager $groupManager;
+
+	/**
 	 * Constructor for ViewsController
 	 *
 	 * @param string $appName The app name
@@ -95,13 +104,127 @@ class ViewsController extends Controller {
 		ViewPresentationService $viewPresentationService,
 		IUserSession $userSession,
 		LoggerInterface $logger,
+		IGroupManager $groupManager,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->viewService = $viewService;
 		$this->viewPresentationService = $viewPresentationService;
 		$this->userSession = $userSession;
 		$this->logger = $logger;
+		$this->groupManager = $groupManager;
 	}//end __construct()
+
+	/**
+	 * The caller's group ids, and whether they administer the instance.
+	 *
+	 * @param string $userId The caller.
+	 *
+	 * @return array{groups: string[], isAdmin: bool} The caller's reach.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	private function reachOf(string $userId): array {
+		$groups = [];
+		$isAdmin = false;
+
+		try {
+			$isAdmin = ($this->groupManager->isAdmin($userId) === true);
+			$user = $this->userSession->getUser();
+			if ($user !== null) {
+				$groups = $this->groupManager->getUserGroupIds($user);
+			}
+		} catch (\Throwable $e) {
+			// An unreadable membership is NOT an authorization. It answers no
+			// groups and no admin, so the caller sees their own views and the
+			// public ones and nothing else, which is the fail-closed direction.
+			$this->logger->warning(
+				'[ViewsController] Could not read the caller\'s groups; treating them as holding none: '
+				. $e->getMessage()
+			);
+		}
+
+		return ['groups' => $groups, 'isAdmin' => $isAdmin];
+	}//end reachOf()
+
+	/**
+	 * Refuse an update that changes fields this caller does not own.
+	 *
+	 * Answers a response to RETURN, or null when the update may proceed. The
+	 * refusal NAMES the fields, because the message a member needs is which
+	 * field was refused rather than that something was.
+	 *
+	 * A view that cannot be read denies rather than falling through: an update
+	 * to a view nobody can resolve is not one this endpoint should guess about.
+	 *
+	 * @param string $id The view id.
+	 * @param string $userId The caller.
+	 * @param array<string, mixed> $data The request body.
+	 *
+	 * @return JSONResponse|null The refusal, or null when allowed.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	private function refuseForbiddenViewFields(string $id, string $userId, array $data): ?JSONResponse {
+		try {
+			$view = $this->viewService->find($id);
+		} catch (\Throwable $e) {
+			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
+		}
+
+		$reach = $this->reachOf(userId: $userId);
+		$resolver = new ViewShareResolver();
+		$serialised = $view->jsonSerialize();
+
+		$mayAdminister = $resolver->mayAdminister(
+			view: $serialised,
+			userId: $userId,
+			isAdmin: $reach['isAdmin']
+		);
+
+		$access = $resolver->accessFor(
+			view: $serialised,
+			userId: $userId,
+			userGroups: $reach['groups']
+		);
+
+		// The request carries pagination and routing keys as well as fields.
+		// Only the ones that name a view property are judged, so a `_limit` on
+		// the body cannot refuse an update a member is entitled to make.
+		$fields = array_intersect_key(
+			$data,
+			array_flip(
+				[
+					'name',
+					'description',
+					'owner',
+					'isPublic',
+					'isDefault',
+					'query',
+					'presentation',
+					'alert',
+					'sharedWith',
+				]
+			)
+		);
+
+		$refused = $resolver->refusedFields(
+			update: $fields,
+			access: ($access ?? ''),
+			mayAdminister: $mayAdminister
+		);
+
+		if ($refused === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'You may not change these fields on this view: ' . implode(', ', $refused),
+				'fields' => $refused,
+			],
+			statusCode: 403
+		);
+	}//end refuseForbiddenViewFields()
 
 	/**
 	 * Get all views for the current user
@@ -155,7 +278,15 @@ class ViewsController extends Controller {
 			}
 
 			// Note: search parameter not currently used in this endpoint.
-			$views = $this->viewService->findAll($userId);
+			// Ledger row 9.4: the caller's own views, the ones shared with a
+			// group they are in, and the public ones, each carrying the access
+			// they hold on it.
+			$reach = $this->reachOf(userId: $userId);
+			$views = $this->viewService->findAllFor(
+				userId: $userId,
+				userGroups: $reach['groups'],
+				isAdmin: $reach['isAdmin']
+			);
 
 			// Apply client-side pagination if parameters are provided.
 			$total = count($views);

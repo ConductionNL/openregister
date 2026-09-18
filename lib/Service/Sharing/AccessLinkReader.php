@@ -47,9 +47,9 @@ namespace OCA\OpenRegister\Service\Sharing;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -92,26 +92,6 @@ class AccessLinkReader {
 	];
 
 	/**
-	 * The timeline keys a link may publish.
-	 *
-	 * An allow-list for the same reason `@self` has one: the note row grows,
-	 * and a key added to it later must be decided rather than published by
-	 * default. `actorId`, `editedBy`, `editedByDisplayName` and `isCurrentUser`
-	 * are deliberately absent, because they name accounts.
-	 *
-	 * @var array<int, string>
-	 */
-	private const PUBLISHABLE_TIMELINE_KEYS = [
-		'id',
-		'message',
-		'actorType',
-		'createdAt',
-		'visibility',
-		'editedAt',
-		'versionCount',
-	];
-
-	/**
 	 * The most objects a view link serves in one answer.
 	 *
 	 * @var int
@@ -124,7 +104,7 @@ class AccessLinkReader {
 	 * @param ObjectService $objects The object read path.
 	 * @param SchemaMapper $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
-	 * @param NoteService $notes Reads the timeline.
+	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
@@ -132,7 +112,7 @@ class AccessLinkReader {
 		private readonly ObjectService $objects,
 		private readonly SchemaMapper $schemas,
 		private readonly PropertyRbacHandler $properties,
-		private readonly NoteService $notes,
+		private readonly PublicTimeline $timeline,
 		private readonly AccessLinkSubject $subjects,
 		private readonly LoggerInterface $logger,
 	) {
@@ -383,62 +363,22 @@ class AccessLinkReader {
 	 * who may manage the object, and a link must publish the public half
 	 * whatever session happens to be around it.
 	 *
+	 * PROJECTED, NOT PASSED THROUGH. This used to hand the link holder each
+	 * public note exactly as the note service shapes it, which carries the
+	 * author's user id and display name: a stranger with a link learned who
+	 * at the organisation wrote every line. It also read notes only, so a
+	 * kinded entry that exists as a record and not as a comment never
+	 * appeared. {@see PublicTimeline} reads both and lets five keys out.
+	 *
 	 * @param ObjectEntity $object The object.
 	 *
-	 * @return array<int, mixed> The published timeline entries.
+	 * @return array<int, array<string, mixed>> The published timeline entries.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
 	private function publicTimeline(ObjectEntity $object): array {
-		try {
-			$entries = $this->notes->getNotesForObject(
-				objectUuid: (string)$object->getUuid(),
-				visibility: TimelineVisibilityService::PUBLIC_ENTRY
-			);
-
-			$published = [];
-			foreach ($entries as $entry) {
-				if (is_array($entry) === false) {
-					continue;
-				}
-
-				$published[] = $this->publishableEntry(entry: $entry);
-			}
-
-			return $published;
-		} catch (Throwable $failure) {
-			$this->logger->warning(
-				'[AccessLinkReader] Could not read the timeline for a link: ' . $failure->getMessage()
-			);
-			return [];
-		}
+		return $this->timeline->forObject(object: $object);
 	}//end publicTimeline()
-
-	/**
-	 * One timeline entry, reduced to what a reader with no account may read.
-	 *
-	 * A public entry is public in its TEXT. The row around it is not: it names
-	 * the account that wrote it, the account that last edited it, and whether
-	 * the caller is that person. An account name is an internal fact about the
-	 * organisation, and a citizen reading their own case has no use for it, so
-	 * the row is projected the way the object is, onto an allow-list.
-	 *
-	 * @param array<string, mixed> $entry The entry as the note service returns it.
-	 *
-	 * @return array<string, mixed> The published entry.
-	 *
-	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
-	 */
-	private function publishableEntry(array $entry): array {
-		$published = [];
-		foreach (self::PUBLISHABLE_TIMELINE_KEYS as $key) {
-			if (array_key_exists($key, $entry) === true) {
-				$published[$key] = $entry[$key];
-			}
-		}
-
-		return $published;
-	}//end publishableEntry()
 
 	/**
 	 * The descriptor of one file the object carries, or null.

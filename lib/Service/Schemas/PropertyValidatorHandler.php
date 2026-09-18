@@ -35,6 +35,10 @@ use OCA\OpenRegister\Service\Search\PropertySearchProfile;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is the TYPES and STRING_FORMATS
+ *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
+ *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
+ *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
  */
 class PropertyValidatorHandler {
 
@@ -507,9 +511,12 @@ class PropertyValidatorHandler {
 		'domains' => ['value' => 'array', 'description' => 'The classes this property may be used on.'],
 		'ranges' => ['value' => 'array', 'description' => 'The classes this property may point at.'],
 		'authorization' => ['value' => 'object', 'description' => 'Which roles or groups may read and write this one property.'],
+		'scope' => ['value' => 'string', 'description' => 'The team or unit this field belongs to. Only they may read or change it.'],
+		'x-openregister-property-source' => ['value' => 'object', 'description' => 'Where this one field\'s values come from: a provider id, what to ask it, and whether the answer is looked up live or offered as a starting value. It binds ONE FIELD, not the whole schema.'],
 		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
 		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
 		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
+		'conceptScheme' => ['value' => 'string', 'description' => 'The SKOS concept scheme this field takes its choices from, by slug. The concepts are the answers, so the list is maintained once in the vocabulary register and every schema binding to it follows. A field carrying both this and an inline enum has two sources, and the scheme is the one that wins.'],
 	];
 
 	/**
@@ -736,6 +743,29 @@ class PropertyValidatorHandler {
 		// had to learn about this annotation to do it.
 		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
 
+		// And a choice property has to resolve to exactly one list of answers.
+		// Same reason, same place, same exception family: a field that offers
+		// nothing, or offers two different things, is not something a reader
+		// can tell apart from a field nobody has configured yet.
+		CodedChoiceDeclaration::assert(property: $property, path: $path);
+
+		// A reference filter is checked here for the same reason: an annotation
+		// that is unusable is a picker that silently offers everything, and the
+		// author is present at save and nowhere near the picker later.
+		// The OPERANDS are checked where both schemas are in hand
+		// (`SchemasController`), because this method sees one property.
+		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
+
+		// A scope that is accepted but not enforced is worse than no scope: the
+		// author believes the field is team-only BECAUSE the platform took the
+		// word. Refusing here is what keeps the published key honest.
+		ScopedPropertyDeclaration::assert(property: $property, path: $path);
+
+		// An `x-` key is accepted without this: assertKeysAreInTheVocabulary()
+		// skips every one of them, so `{"provider": 7}` would save cleanly and
+		// the consumer would read what it could and guess the rest.
+		PropertySourceDeclaration::assert(property: $property, path: $path);
+
 		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {
 			return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');
@@ -761,11 +791,13 @@ class PropertyValidatorHandler {
 		// top-level property and appends for every level under it.
 		$isTopLevel = (substr_count($path, '/') <= 1);
 		if (isset($property['type']) === false) {
-			if ($isTopLevel === true) {
+			// A `$ref` relation and a nested schema both derive their type (and,
+			// for a relation, their UUID column) elsewhere; only a bare top-level
+			// property is refused.
+			if ($isTopLevel === true && isset($property['$ref']) === false) {
 				throw new Exception("Property at '$path' must have a 'type' field");
 			}
 
-			// Untyped nested schema: nothing further here is type-dependent.
 			return true;
 		}
 

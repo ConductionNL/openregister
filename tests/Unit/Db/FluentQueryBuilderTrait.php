@@ -35,11 +35,14 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
+use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 
 /**
  * Builds a recording, fluent query builder and a connection that serves it.
  */
 trait FluentQueryBuilderTrait {
+	use ResultRowReaderTrait;
+
 
 	/**
 	 * Every raw SQL fragment handed to createFunction(), in order.
@@ -163,16 +166,33 @@ trait FluentQueryBuilderTrait {
 
 		$result = $this->createMock(originalClassName: IResult::class);
 		$queue = $rows;
-		$result->method('fetch')->willReturnCallback(
-			static function () use (&$queue): array|false {
-				if ($queue === []) {
-					return false;
-				}
 
-				return array_shift($queue);
+		// BOTH SPELLINGS OF THE ROW READER ARE STUBBED, sharing ONE queue.
+		//
+		// QBMapper calls the result differently per server major: up to NC 34
+		// `findOneQuery()`/`findEntities()` call `fetch()`/`fetchAll()`, and from
+		// NC 35 they call `fetchAssociative()`/`fetchAllAssociative()` (the forms
+		// IResult has recommended since 33.0.0). Stubbing only the older pair
+		// left every mapper test on stable35 reading an EMPTY result from a
+		// builder that had rows: 6 x `DoesNotExistException: Did expect one
+		// result but found none`, a run of `Call to a member function getUuid()
+		// on null`, and 16 `actual size 0 matches expected size 1`.
+		//
+		// Both names are declared on OCP\DB\IResult in 34 AND 35, so
+		// configuring both is safe across the whole declared range rather than
+		// something to switch on the version. They share `$queue` by reference
+		// so a test that reads twice gets two different rows whichever name the
+		// server under test happens to call.
+		$next = static function () use (&$queue): array|false {
+			if ($queue === []) {
+				return false;
 			}
-		);
-		$result->method('fetchAll')->willReturn($rows);
+
+			return array_shift($queue);
+		};
+
+		$this->stubRowReader($result, $next);
+		$this->stubAllRowsReader($result, $rows);
 		$qb->method('executeQuery')->willReturn($result);
 		$qb->method('getTableName')->willReturn('openregister_tasks');
 

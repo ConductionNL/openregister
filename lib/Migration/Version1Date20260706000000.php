@@ -56,7 +56,7 @@ class Version1Date20260706000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_handoff_queue') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_handoff_queue');

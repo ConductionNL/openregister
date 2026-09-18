@@ -82,6 +82,11 @@ return [
 
         // Object-scoped integration sub-resource dispatch —
         // pluggable-integration-registry task 4.2 / tasks.md#task-19.
+        // A declared action bound to a manual flow: one click, several changes,
+        // and a hint about where the handler goes next. The action's own right
+        // authorises it; the flow adds no second permission model (ADR-023).
+        ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
@@ -249,6 +254,10 @@ return [
         // is no CRUD here on purpose: calendars are objects in the flow-timers
         // register and the objects API is their public API (design D-1).
         ['name' => 'workingCalendar#preview', 'url' => '/api/flow-timers/calendars/preview', 'verb' => 'POST'],
+        // The term engine narrating a date you choose (row Q8.18). POST because
+        // it carries a calendar definition and an SLA, not because it writes:
+        // it arms nothing, and nothing on its path holds a mapper.
+        ['name' => 'flowTimerDiagnostic#explain', 'url' => '/api/flow-timers/diagnostic', 'verb' => 'POST'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
@@ -385,6 +394,17 @@ return [
         ['name' => 'hardening#floors', 'url' => '/api/hardening/floors', 'verb' => 'GET'],
         ['name' => 'hardening#updateControls', 'url' => '/api/hardening/controls', 'verb' => 'PUT'],
         ['name' => 'hardening#updateFloors', 'url' => '/api/hardening/floors', 'verb' => 'PUT'],
+        // A write here needs a password confirmed in the last period, not just
+        // an open session (REQ-IHC-002), and `elevate` is throttled because a
+        // correct guess buys the right to weaken every control above.
+        ['name' => 'hardening#elevate', 'url' => '/api/hardening/elevation', 'verb' => 'POST'],
+        // The statement (REQ-IHC-001). The two reads and the acceptance are the
+        // only hardening routes an ordinary account may call, and each answers
+        // about the SESSION's account: no user id is read from the request.
+        ['name' => 'hardening#statement', 'url' => '/api/hardening/statement', 'verb' => 'GET'],
+        ['name' => 'hardening#acceptStatement', 'url' => '/api/hardening/statement/acceptance', 'verb' => 'POST'],
+        ['name' => 'hardening#publishStatement', 'url' => '/api/hardening/statement', 'verb' => 'PUT'],
+        ['name' => 'hardening#withdrawStatement', 'url' => '/api/hardening/statement', 'verb' => 'DELETE'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
@@ -447,6 +467,15 @@ return [
         // Whether the audit trail is actually reaching the organisation's log platform.
         ['name' => 'auditSink#show',        'url' => '/api/audit/sink',             'verb' => 'GET'],
         ['name' => 'auditSink#acknowledge', 'url' => '/api/audit/sink/acknowledge', 'verb' => 'POST'],
+        // Reported content and the copies taken of it. Filing is open to any
+        // authenticated caller; reading a copy is the reviewer group's. `copy`
+        // is registered ABOVE the bare {id} routes so the literal segment wins
+        // over the placeholder.
+        ['name' => 'contentReport#index',  'url' => '/api/content-reports',             'verb' => 'GET'],
+        ['name' => 'contentReport#create', 'url' => '/api/content-reports',             'verb' => 'POST'],
+        ['name' => 'contentReport#copy',   'url' => '/api/content-reports/{id}/copy',   'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contentReport#show',   'url' => '/api/content-reports/{id}',        'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contentReport#update', 'url' => '/api/content-reports/{id}',        'verb' => 'PUT',  'requirements' => ['id' => '[^/]+']],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#access',         'url' => '/api/avg/access',         'verb' => 'GET'],
         ['name' => 'dsar#portability',    'url' => '/api/avg/portability',    'verb' => 'GET'],
@@ -789,6 +818,12 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        // BPMN 2.0 interchange. Export is read-guarded and import is
+        // flow.create-guarded, both inside the controller; the auth posture is
+        // declared there with #[NoAdminRequired] and no CSRF exemption, because
+        // both are called by a browser that has a token to send.
+        ['name' => 'flow#exportBpmn', 'url' => '/api/flows/{id}/bpmn',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#importBpmn', 'url' => '/api/flows/import/bpmn', 'verb' => 'POST'],
 
         // Direct node invocation (or-flow-run-node): run ONE named node of a
         // published flow against ONE subject, authorized against that
@@ -1135,6 +1170,9 @@ return [
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
+        // a longer path must be declared first or the generic one swallows it.
+        ['name' => 'objects#referenceOptions', 'url' => '/api/objects/{register}/{schema}/{id}/reference-options', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -1178,8 +1216,47 @@ return [
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
+            // Whether a row exists in other registers, and nothing about the
+            // row (cross-register-existence-query). NOT a search with fields
+            // removed: the answer is assembled from named values, so a schema
+            // that grows a property grows nothing here. ONE segment, so it
+            // cannot collide with the two-segment `{register}/{schema}` create
+            // route that shares the verb: `exists` is never read as a register
+            // name, because there is no schema segment behind it to match.
+        ['name' => 'objects#exists', 'url' => '/api/objects/exists', 'verb' => 'POST'],
+            // Who has this object open (object-presence). A heartbeat, not a
+            // connection: notify_push says nothing about who is looking at
+            // what, so the client beats every 30 s and the server stops
+            // believing it after 90. Every one of the three goes through the
+            // object's OWN read authorisation, so presence can never tell a
+            // caller that an object exists when they may not read it.
+        ['name' => 'objects#presenceBeat',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#presenceDepart', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#presenceList',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+            // Move an object to another register and schema, keeping its uuid
+            // and everything keyed on it (identity-survives-a-move). NOT a
+            // copy: a second uuid would orphan the audit trail, the versions,
+            // the files, the notes, the watchers, the favourites, the presence
+            // and the timers, silently, which is what closing and refiling
+            // does today.
+        ['name' => 'objects#move', 'url' => '/api/objects/{register}/{schema}/{id}/move', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+            // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
+            // resource at `/lock`, and DELETE is the verb a client reaches for;
+            // `@conduction/nextcloud-vue`'s `useObjectLock.release()` sent
+            // exactly this until nextcloud-vue#1202 changed it to POST
+            // `/unlock`, because this app declared no DELETE and every release
+            // 404ed. The composable reads a 404 as "already released;
+            // idempotent" and returned WITHOUT A WORD, so every release in
+            // every app on that library succeeded loudly and freed nothing.
+            //
+            // Declaring it costs one line and one route, and it turns that 404
+            // into a fact about the object (see `unlock()`: not locked) rather
+            // than a fact about the router. Consumers pinned to 3.2.0 or older
+            // start working; consumers on the fix keep using POST `/unlock`.
+            // One controller method answers both, so the two verbs cannot drift.
+        ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['id' => '[^/]+']],
         // Archive and freeze (object-archive-state). DELETE undoes POST on the
         // same url, which is what makes restore the obvious opposite of
         // archive; a second `/unarchive` url would read as a third state.
@@ -1219,6 +1296,7 @@ return [
         ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#reverse', 'url' => '/api/bulk-jobs/{id}/reverse', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
@@ -1938,6 +2016,17 @@ return [
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+			// Moving a run in flight onto another version of its flow
+			// (migrate-run-between-versions). Never automatic: publishing a
+			// version still moves nothing, and this needs a reason, a named
+			// actor and a marking that fits the target. `dryRun: true` on the
+			// same endpoint answers the verdict without writing, so a preview
+			// and the write cannot disagree about what would happen.
+		['name' => 'flowRun#migrate', 'url' => '/api/flow-runs/{uuid}/migrate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+			// The same act for every run pinned to one version, reporting per
+			// run rather than as a count: the ones that could not move are
+			// exactly the ones somebody has to go and look at.
+		['name' => 'flowRun#migrateRuns', 'url' => '/api/flows/{flow}/migrate-runs', 'verb' => 'POST', 'requirements' => ['flow' => '[^/]+']],
 		// Correlation-addressed signal delivery (flow-approval-consolidation):
 		// same authority as resume, addressed by business key instead of run
 		// uuid, fail-closed on zero and on more than one match. Registered on

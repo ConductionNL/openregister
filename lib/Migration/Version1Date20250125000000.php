@@ -48,7 +48,7 @@ class Version1Date20250125000000 extends SimpleMigrationStep {
 		// This migration might run before the table creation migration.
 		if ($schema->hasTable('openregister_webhooks') === false) {
 			$output->info('ℹ️  Webhooks table does not exist yet, skipping configuration column addition');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_webhooks');
@@ -69,6 +69,6 @@ class Version1Date20250125000000 extends SimpleMigrationStep {
 
 		$output->info('ℹ️  Configuration column already exists in webhooks table');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

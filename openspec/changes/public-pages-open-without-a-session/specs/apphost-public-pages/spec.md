@@ -86,4 +86,4 @@ same projection as the access link.
 - **GIVEN** a public timeline entry written by an employee
 - **WHEN** an anonymous caller reads the record
 - **THEN** the message is served and `actorId`, `editedBy`, `editedByDisplayName` and `isCurrentUser` are absent
-- @e2e exclude {a public timeline entry needs an access link fixture; asserted in AccessLinkReaderTest}
+- @e2e exclude {a public timeline entry needs an access link fixture; asserted in PublicTimelineTest::testANoteLeavesWithoutItsAuthor}
