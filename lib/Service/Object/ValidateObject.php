@@ -352,6 +352,7 @@ class ValidateObject {
 	 * @param IURLGenerator $urlGenerator URL generator.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param IUserManager $userManager Backend consulted by the `user` string format.
+	 * @param NotSuppliedHandler|null $notSuppliedHandler Reads and applies the recorded-incompleteness record.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -362,8 +363,29 @@ class ValidateObject {
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
 		private IUserManager $userManager,
+		// Nullable with a null default so the unit tests that build this class
+		// positionally keep working. The handler has no dependencies of its
+		// own, so the fallback below constructs the real thing rather than
+		// degrading to a no-op: there is no configuration that can make
+		// recorded incompleteness silently stop being enforced.
+		private ?NotSuppliedHandler $notSuppliedHandler = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The not-supplied handler, constructed on first use.
+	 *
+	 * @return NotSuppliedHandler The handler.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function notSupplied(): NotSuppliedHandler {
+		if ($this->notSuppliedHandler === null) {
+			$this->notSuppliedHandler = new NotSuppliedHandler();
+		}
+
+		return $this->notSuppliedHandler;
+	}//end notSupplied()
 
 	/**
 	 * Pre-processes a schema object to resolve all schema references.
@@ -1634,6 +1656,7 @@ class ValidateObject {
 	 * @param Schema|int|null $schema The schema or schema ID to validate against.
 	 * @param object $schemaObject A custom schema object for validation.
 	 * @param int $_depth The depth level for validation (unused).
+	 * @param array<string, string> $notSupplied Properties recorded as not supplied, mapped to their reason codes.
 	 *
 	 * @return ValidationResult The result of the validation.
 	 *
@@ -1649,6 +1672,7 @@ class ValidateObject {
 		Schema|int|string|null $schema = null,
 		object $schemaObject = new stdClass(),
 		int $_depth = 0,
+		array $notSupplied = [],
 	): ValidationResult {
 
 		// Resolve a schema id to its entity once so downstream steps (unique-field
@@ -1663,6 +1687,19 @@ class ValidateObject {
 		$useDefaultSchema = ($schemaObject == new stdClass());
 		if ($useDefaultSchema === true && $schema instanceof Schema) {
 			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
+		}
+
+		// A property recorded as not supplied is excused from being answered.
+		// The excusing is per object, so the prepared-schema cache is bypassed
+		// for this call: a cached schema object with one object's excusals
+		// baked in would excuse them for every other object validated against
+		// that schema in the same request.
+		if ($notSupplied !== [] && $schema instanceof Schema) {
+			$schemaObject = $this->notSupplied()->excuse(
+				schemaObject: $schemaObject,
+				declared: $notSupplied
+			);
+			$useDefaultSchema = false;
 		}
 
 		if ($schema instanceof Schema) {

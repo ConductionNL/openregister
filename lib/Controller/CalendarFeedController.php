@@ -35,6 +35,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -63,7 +64,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const THROTTLE_ACTION = 'openregister_calendar_feed';
+	public const THROTTLE_ACTION = ThrottledSurfaces::CALENDAR_FEED;
 
 	/**
 	 * Constructor.

@@ -65,7 +65,8 @@ class CodedFilterExpanderTest extends TestCase {
 		$this->expander = new CodedFilterExpander(
 			concepts: $concepts,
 			hierarchy: new ConceptHierarchy(lifecycle: $lifecycle),
-			schemas: $this->schemas
+			schemas: $this->schemas,
+			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
 	}//end setUp()
 

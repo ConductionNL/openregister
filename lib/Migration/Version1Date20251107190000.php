@@ -58,7 +58,7 @@ class Version1Date20251107190000 extends SimpleMigrationStep {
 			// Remove is_default column if it exists.
 			if ($table->hasColumn('is_default') === false) {
 				$output->info(message: 'ℹ️  is_default column does not exist in organisations table');
-				return null;
+				return $schema;
 			}
 
 			$table->dropColumn('is_default');
@@ -71,7 +71,7 @@ class Version1Date20251107190000 extends SimpleMigrationStep {
 		}
 
 		if ($updated === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;

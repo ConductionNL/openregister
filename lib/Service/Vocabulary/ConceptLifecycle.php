@@ -291,38 +291,64 @@ class ConceptLifecycle {
 			return [];
 		}
 
-		$required = ($shape['required'] ?? []);
-		if (is_array($required) === false) {
-			$required = [];
-		}
-
-		$fields = ($concept[self::FIELD_FIELDS] ?? []);
-		if (is_array($fields) === false) {
-			$fields = [];
-		}
+		$required = $this->asArray(value: ($shape['required'] ?? []));
+		$fields = $this->asArray(value: ($concept[self::FIELD_FIELDS] ?? []));
 
 		$failed = [];
 		foreach ($properties as $name => $definition) {
 			$name = (string)$name;
-			$present = array_key_exists($name, $fields);
-			$value = ($fields[$name] ?? null);
-
-			if (($present === false || $value === null) && in_array($name, $required, true) === true) {
-				$failed[] = $name;
-				continue;
-			}
-
-			if ($present === false || $value === null) {
-				continue;
-			}
-
-			if ($this->matchesDeclaredType(value: $value, definition: $definition) === false) {
+			if ($this->fieldViolatesShape(name: $name, fields: $fields, required: $required, definition: $definition) === true) {
 				$failed[] = $name;
 			}
 		}//end foreach
 
 		return $failed;
 	}//end validateAgainstShape()
+
+	/**
+	 * Whether a single shape-declared field is missing-when-required or ill-typed.
+	 *
+	 * An absent or null value fails only when the shape lists the field as
+	 * required; a present value fails when it does not satisfy the declared
+	 * type. This is the per-field half of {@see self::validateAgainstShape()},
+	 * pulled out so the caller stays a flat gather-the-failures loop.
+	 *
+	 * @param string              $name       The field name being judged.
+	 * @param array<string,mixed> $fields     The concept's submitted fields.
+	 * @param array<int,mixed>    $required   The shape's required field names.
+	 * @param mixed               $definition The shape property's definition.
+	 *
+	 * @return boolean True when the field is missing-when-required or ill-typed.
+	 */
+	private function fieldViolatesShape(string $name, array $fields, array $required, mixed $definition): bool {
+		$present = array_key_exists($name, $fields);
+		$value = ($fields[$name] ?? null);
+
+		if ($present === false || $value === null) {
+			return in_array($name, $required, true) === true;
+		}
+
+		return $this->matchesDeclaredType(value: $value, definition: $definition) === false;
+	}//end fieldViolatesShape()
+
+	/**
+	 * Coerce a value to an array, treating a non-array as an empty one.
+	 *
+	 * The shape's `required` list and the concept's `fields` map are both
+	 * optional and both must be arrays to be read; a malformed value is an
+	 * absent one, not an error.
+	 *
+	 * @param mixed $value The raw value as stored.
+	 *
+	 * @return array<mixed> The value when it is an array, otherwise an empty array.
+	 */
+	private function asArray(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end asArray()
 
 	/**
 	 * Whether a value satisfies the `type` a shape property declares.

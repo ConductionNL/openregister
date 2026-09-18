@@ -143,7 +143,7 @@ class ProvenanceResolver {
 	 * @param array<int, string> $principals             The caller's principal names.
 	 * @param array|null         $objectAuthorization    The object's own block.
 	 * @param array|null         $schemaAuthorization    The schema's block.
-	 * @param array|null         $registerAuthorization  The register's block.
+	 * @param array|null         $registerAuth  The register's block.
 	 * @param mixed              $roleDefinitions        The register's role definitions.
 	 * @param array|null         $denial                 The denial the resolver found, or null.
 	 * @param bool               $denyEnforced           Whether a denial changes the answer yet.
@@ -157,7 +157,7 @@ class ProvenanceResolver {
 		array $principals,
 		?array $objectAuthorization = null,
 		?array $schemaAuthorization = null,
-		?array $registerAuthorization = null,
+		?array $registerAuth = null,
 		mixed $roleDefinitions = null,
 		?array $denial = null,
 		bool $denyEnforced = true,
@@ -168,7 +168,7 @@ class ProvenanceResolver {
 			levels: [
 				self::SOURCE_OBJECT => $objectAuthorization,
 				self::SOURCE_SCHEMA => $schemaAuthorization,
-				self::SOURCE_REGISTER => $registerAuthorization,
+				self::SOURCE_REGISTER => $registerAuth,
 			],
 			roleDefinitions: $roleDefinitions
 		);
@@ -235,7 +235,7 @@ class ProvenanceResolver {
 				principals: $principals,
 				objectAuthorization: ($blocks['object'] ?? null),
 				schemaAuthorization: ($blocks['schema'] ?? null),
-				registerAuthorization: ($blocks['register'] ?? null),
+				registerAuth: ($blocks['register'] ?? null),
 				roleDefinitions: ($blocks['roleDefinitions'] ?? null),
 				denial: ($denials[$action] ?? null),
 				denyEnforced: $enforced

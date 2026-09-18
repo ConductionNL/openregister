@@ -202,15 +202,26 @@ jobs:
       app-name: openregister
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
-      # THE LIST IS THE WHOLE DECLARED RANGE. appinfo/info.xml declares
-      # <nextcloud min-version="32" max-version="34"/>, so 32, 33 and 34 each get
-      # a leg. Adopting NC 34 by REPLACING the list left 32 and 33 advertised to
-      # the App Store with no job touching them — the declared floor became the
-      # untested end, which is the same drift as never testing 34, reversed.
-      # stable34 leads because newman, playwright and journeydoc-capture all read
-      # `fromJSON(inputs.nextcloud-test-refs)[0]` as their single server, and 34
-      # is the major this app had never been exercised on.
-      nextcloud-test-refs: '["stable34", "stable32", "stable33"]'
+      # NO `nextcloud-test-refs` HERE, DELIBERATELY. Unset, the shared workflow
+      # derives the matrix from appinfo/info.xml, so the tested range and the
+      # declared range cannot disagree.
+      #
+      # THIS BUMP IS WHY IT HAD TO GO. The list read
+      # `["stable34", "stable32", "stable33"]` while info.xml above now declares
+      # NC 32-35, which is gate-65 rule 11 — NC 35 advertised to the App Store
+      # and exercised by nothing. Appending "stable35" would have cleared the
+      # gate for this PR and left the same trap armed for NC 36; more to the
+      # point, it would have armed it on `development` rather than here, because
+      # the gate fires on the manifest/matrix disagreement for EVERY later PR,
+      # not just the one that introduced it.
+      #
+      # The ordering the old list encoded is inert now. newman, playwright and
+      # journeydoc-capture used to read `fromJSON(nextcloud-test-refs)[0]`, so
+      # stable34 had to lead; they now consume the workflow's `single-server`
+      # output — the numerically highest stable branch in the resolved set —
+      # which for the derived path is the matrix action's own `branches-max`.
+      # That output is what keeps those jobs on the newest declared major
+      # without a list order having to mean anything.
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true

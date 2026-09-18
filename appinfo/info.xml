@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.33-unstable.20260916230000</version>
+    <version>2.1.33-unstable.20260918061500</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -111,10 +111,22 @@ Vrij en open source onder de EUPL-licentie.
              the Nextcloud version, so the PHP 8.3 requirement does not itself
              depend on this floor.
 
-             max-version stays 34, which is the fleet-wide value everywhere
-             except openconnector, which declares 35. That split is known and
-             deliberately not resolved here. -->
-        <nextcloud min-version="32" max-version="34"/>
+             max-version is 35 as of 2026-09-15 for Nextcloud 35 readiness.
+             OpenRegister has been run on Nextcloud 35 instances in practice for
+             months, and its upgrade/enable path was re-verified on NC35
+             (PostgreSQL) on 2026-09-15. OpenRegister is the AppHost dependency
+             every consumer app is built on, so it raises this ceiling first —
+             the rest of the fleet can then follow without a clean NC35 occ
+             upgrade disabling OpenRegister underneath them.
+
+             This ceiling is exercised in CI, and this element is what
+             exercises it: the PHPUnit matrix is derived from the range declared
+             here rather than pinned in code-quality.yml, so declaring 35 is
+             precisely what creates the stable35 leg. The tested range and the
+             declared range cannot drift apart. An earlier revision of this
+             paragraph recorded the opposite, which was true only while the
+             workflow still pinned a list of its own. -->
+        <nextcloud min-version="32" max-version="35"/>
     </dependencies>
 
 	<background-jobs>

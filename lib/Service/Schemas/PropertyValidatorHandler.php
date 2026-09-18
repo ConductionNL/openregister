@@ -35,6 +35,10 @@ use OCA\OpenRegister\Service\Search\PropertySearchProfile;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is the TYPES and STRING_FORMATS
+ *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
+ *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
+ *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
  */
 class PropertyValidatorHandler {
 
@@ -476,6 +480,9 @@ class PropertyValidatorHandler {
 		'readOnly' => ['value' => 'boolean', 'description' => 'Show the value, refuse a write.'],
 		'writeOnly' => ['value' => 'boolean', 'description' => 'Accept a write, never read it back.'],
 		'immutable' => ['value' => 'boolean', 'description' => 'Accept the first answer, refuse every change after it.'],
+		'repeatingGroup' => ['value' => 'boolean', 'description' => 'Rows a person adds and removes. Set items to the shape of one row.'],
+		'groupOrdered' => ['value' => 'boolean', 'description' => 'Keep the order the rows were authored in. Needs repeatingGroup.'],
+		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
 		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
@@ -583,6 +590,16 @@ class PropertyValidatorHandler {
 	private array $validStringFormats;
 
 	/**
+	 * The save-time rules a repeating group's declaration has to satisfy.
+	 *
+	 * Its own class: the rules are about one keyword, they read better
+	 * together, and this file is the one every property-shaped change edits.
+	 *
+	 * @var RepeatingGroupDeclarationValidator
+	 */
+	private RepeatingGroupDeclarationValidator $repeatingGroups;
+
+	/**
 	 * Read the two allowlists off the published vocabulary.
 	 *
 	 * @return void
@@ -590,6 +607,7 @@ class PropertyValidatorHandler {
 	public function __construct() {
 		$this->validTypes = array_map('strval', array_keys(self::TYPES));
 		$this->validStringFormats = self::STRING_FORMATS;
+		$this->repeatingGroups = new RepeatingGroupDeclarationValidator();
 	}//end __construct()
 
 	/**
@@ -747,11 +765,13 @@ class PropertyValidatorHandler {
 		// top-level property and appends for every level under it.
 		$isTopLevel = (substr_count($path, '/') <= 1);
 		if (isset($property['type']) === false) {
-			if ($isTopLevel === true) {
+			// A `$ref` relation and a nested schema both derive their type (and,
+			// for a relation, their UUID column) elsewhere; only a bare top-level
+			// property is refused.
+			if ($isTopLevel === true && isset($property['$ref']) === false) {
 				throw new Exception("Property at '$path' must have a 'type' field");
 			}
 
-			// Untyped nested schema: nothing further here is type-dependent.
 			return true;
 		}
 
@@ -803,6 +823,13 @@ class PropertyValidatorHandler {
 				);
 			}
 		}
+
+		// A repeating group is an array of objects that somebody authors row by
+		// row, so the declaration has to hold together before any object is
+		// written against it. Checked here rather than at save time because a
+		// group whose members nobody declared is a schema mistake, and the
+		// schema author is the only person who can fix it.
+		$this->repeatingGroups->validate(property: $property, path: $path);
 
 		// Validate array items if type is array.
 		$hasItems = ($property['items'] ?? null) !== null;

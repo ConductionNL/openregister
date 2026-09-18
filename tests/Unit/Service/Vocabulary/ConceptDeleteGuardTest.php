@@ -55,7 +55,8 @@ class ConceptDeleteGuardTest extends TestCase {
 		$this->guard = new ConceptDeleteGuard(
 			lifecycle: new ConceptLifecycle(),
 			schemas: $this->schemas,
-			objects: $this->objects
+			objects: $this->objects,
+			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
 	}//end setUp()
 

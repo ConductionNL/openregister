@@ -19,17 +19,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Migration\Version1Date20260911050000;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * Locks the column's shape and the step's idempotency.
  */
 class Version1Date20260911050000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	/**
 	 * The column is added nullable, with no default, when it is absent.
@@ -41,12 +43,12 @@ class Version1Date20260911050000Test extends TestCase {
 	 */
 	public function testTheColumnIsAddedNullableWithNoDefault(): void {
 		$added = [];
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(false);
 		$table->method('addColumn')->willReturnCallback(
 			function (string $name, string $type, array $options) use (&$added) {
 				$added[] = ['name' => $name, 'type' => $type, 'options' => $options];
-				return $this->createMock(\Doctrine\DBAL\Schema\Column::class);
+				return $this->createColumnMock();
 			}
 		);
 
@@ -67,13 +69,13 @@ class Version1Date20260911050000Test extends TestCase {
 	}//end testTheColumnIsAddedNullableWithNoDefault()
 
 	/**
-	 * A column that already exists is left alone, and the run returns null so
-	 * Nextcloud records no schema change.
+	 * A column that already exists is left alone; the run still hands the schema
+	 * back so migrateSchemaOnly() reuses one snapshot and the diff is empty.
 	 *
 	 * @return void
 	 */
 	public function testAnExistingColumnIsLeftAlone(): void {
-		$table = $this->createMock(Table::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->with('legal_name')->willReturn(true);
 		$table->expects($this->never())->method('addColumn');
 
@@ -83,7 +85,7 @@ class Version1Date20260911050000Test extends TestCase {
 
 		$step = new Version1Date20260911050000();
 
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
 
 	}//end testAnExistingColumnIsLeftAlone()
 
@@ -99,7 +101,7 @@ class Version1Date20260911050000Test extends TestCase {
 
 		$step = new Version1Date20260911050000();
 
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
 
 	}//end testAMissingTableIsSkipped()
 

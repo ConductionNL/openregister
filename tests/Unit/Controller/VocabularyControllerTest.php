@@ -82,8 +82,12 @@ class VocabularyControllerTest extends TestCase {
 			appName: 'openregister',
 			request: $request,
 			objectService: $this->objectService,
-			schemaMapper: $this->schemaMapper,
-			options: $this->options
+			options: $this->options,
+			declarationResolver: new \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver(
+				schemaMapper: $this->schemaMapper,
+				declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+				request: $request
+			)
 		);
 	}//end setUp()
 

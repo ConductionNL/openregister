@@ -44,12 +44,14 @@ namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -122,9 +124,11 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 			$this->createMock(originalClassName: ConditionMatcher::class),
 			$this->createMock(originalClassName: ContainerInterface::class),
 			new NullLogger(),
-			null,
-			null,
-			new DenyResolver(),
+			new RbacResolvers(
+				objectScopeResolver: null,
+				objectGrantResolver: null,
+				denyResolver: new DenyResolver(new DenyEntryMatcher())
+			),
 			new DenyEnforcementMode($appConfig, new NullLogger())
 		);
 	}//end listHandler()
@@ -158,7 +162,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 			null,
 			null,
 			null,
-			new DenyResolver(),
+			new DenyResolver(new DenyEntryMatcher()),
 			new DenyEnforcementMode($appConfig, new NullLogger())
 		);
 	}//end objectHandler()
@@ -251,7 +255,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 	public function testTheListAndTheObjectReadAgreeOnEveryNodeOfADepthFiveTree(): void {
 		$schema = $this->schema();
 		$objectHandler = $this->objectHandler();
-		$resolver = new DenyResolver();
+		$resolver = new DenyResolver(new DenyEntryMatcher());
 		$principals = $resolver->principalsFor(userId: self::CALLER, userGroups: [self::GROUP]);
 
 		$term = $this->listHandler()->buildRbacConditionsSql($schema, 'read')['conditions'];
