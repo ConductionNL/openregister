@@ -1954,6 +1954,17 @@ return [
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+			// Moving a run in flight onto another version of its flow
+			// (migrate-run-between-versions). Never automatic: publishing a
+			// version still moves nothing, and this needs a reason, a named
+			// actor and a marking that fits the target. `dryRun: true` on the
+			// same endpoint answers the verdict without writing, so a preview
+			// and the write cannot disagree about what would happen.
+		['name' => 'flowRun#migrate', 'url' => '/api/flow-runs/{uuid}/migrate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+			// The same act for every run pinned to one version, reporting per
+			// run rather than as a count: the ones that could not move are
+			// exactly the ones somebody has to go and look at.
+		['name' => 'flowRun#migrateRuns', 'url' => '/api/flows/{flow}/migrate-runs', 'verb' => 'POST', 'requirements' => ['flow' => '[^/]+']],
 		// Correlation-addressed signal delivery (flow-approval-consolidation):
 		// same authority as resume, addressed by business key instead of run
 		// uuid, fail-closed on zero and on more than one match. Registered on
