@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\IAppContainer;
@@ -200,7 +201,7 @@ class QueryHandler {
 			);
 		} elseif ($_viewScopeRequired === true) {
 			// A caller bounded only by a view must never run without one.
-			throw new \Exception('Refusing a view-scoped search without a view to scope it by.');
+			throw new Exception('Refusing a view-scoped search without a view to scope it by.');
 		}
 
 		// Detect if complex rendering is needed (extend, fields, filter, unset).

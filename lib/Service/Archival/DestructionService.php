@@ -245,20 +245,9 @@ class DestructionService {
 			);
 		}
 
-		// 🔴 A RECORDED "KEEP THIS" IS BINDING, AND IT IS BINDING HERE.
-		//
-		// A named reviewer answering `retain` or `transfer` through
-		// DestructionReviewService::recordAnswer() only ever stamped the answer
-		// onto the entry. Nothing removed the entry and nothing downstream read
-		// the stamp, so `approve_all` — the default — handed the entry to
-		// DestructionExecutionJob and the record was hard-deleted anyway. That is
-		// irreversible and on a statutory path.
-		//
-		// Derived from the decisions rather than asked of the approver: the
-		// approver is not the reviewer, and an exclusion the approver has to
-		// remember to type is an exclusion that gets forgotten. It runs AFTER
-		// handlePartialApproval() because that method REPLACES `excludedObjects`,
-		// so withholding first would have its result overwritten.
+		// A recorded retain/transfer is binding; see the method's own docblock for
+		// why it is derived here rather than asked of the approver. Runs AFTER
+		// handlePartialApproval(), which REPLACES `excludedObjects`.
 		$destructionList = $this->withholdDecidedEntries(destructionList: $destructionList);
 
 		// Check if dual approval is required and this is the first approval.
@@ -384,6 +373,18 @@ class DestructionService {
 	 * The reviewer's answer is the authority here, not the approver's action: an
 	 * entry carrying such a decision must not reach DestructionExecutionJob under
 	 * ANY approval action, `approve_all` included.
+	 *
+	 * A RECORDED "KEEP THIS" IS BINDING, AND IT IS BINDING HERE. A named
+	 * reviewer answering `retain` or `transfer` through
+	 * {@see DestructionReviewService::recordAnswer()} only ever stamped the
+	 * answer onto the entry. Nothing removed the entry and nothing downstream
+	 * read the stamp, so `approve_all` — the default — handed the entry to
+	 * {@see DestructionExecutionJob} and the record was hard-deleted anyway.
+	 * That is irreversible and on a statutory path.
+	 *
+	 * Derived from the decisions rather than asked of the approver: the approver
+	 * is not the reviewer, and an exclusion the approver has to remember to type
+	 * is an exclusion that gets forgotten.
 	 *
 	 * NO DATE IS EXTENDED HERE, deliberately, and this is the one thing that
 	 * separates it from {@see self::handlePartialApproval()}. The outcome of a
