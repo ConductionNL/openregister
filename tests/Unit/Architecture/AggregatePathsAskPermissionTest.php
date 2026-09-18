@@ -53,7 +53,6 @@ class AggregatePathsAskPermissionTest extends TestCase {
 	private const ALLOWED = [
 
 
-		'lib/Service/GraphQL/SchemaGenerator/TypeMapperHandler.php' => 'describes shape, not stored values',
 
 		// GUARDED AT THE BOUNDARY, BY ITS ONLY CALLER. `aggregate()` here has
 		// exactly one call site, `AggregationRunner::run()`, which refuses an

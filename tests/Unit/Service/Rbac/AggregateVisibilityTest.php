@@ -66,6 +66,7 @@ class AggregateVisibilityTest extends TestCase {
 		$schema = new Schema();
 		$schema->setProperties([
 			'salary' => ['type' => 'number', 'scope' => 'team-a'],
+			'bonus' => ['type' => 'number', 'scope' => 'team-a'],
 			'name' => ['type' => 'string'],
 		]);
 
@@ -162,10 +163,12 @@ class AggregateVisibilityTest extends TestCase {
 	public function testPartitionNamesWhatItWithheld(): void {
 		$split = $this->visibilityWhereReadIs(false)->partition(
 			$this->governedSchema(),
-			['salary', 'bonus']
+			['salary', 'bonus', 'name']
 		);
 
-		$this->assertSame([], $split['allowed']);
+		// `name` carries no rule of its own, so there is nothing to withhold on
+		// it: it is readable by anyone who may read the object.
+		$this->assertSame(['name'], $split['allowed']);
 		$this->assertSame(['salary', 'bonus'], $split['withheld']);
 	}//end testPartitionNamesWhatItWithheld()
 

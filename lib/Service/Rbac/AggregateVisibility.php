@@ -95,6 +95,21 @@ class AggregateVisibility {
 			return true;
 		}
 
+		// 🔑 THE QUESTION IS PER PROPERTY, NOT PER SCHEMA, AND THAT MATTERS FOR
+		// THE FAIL-CLOSED PATH BELOW. One governed property makes the whole
+		// schema "governed", and asking the schema-level question alone meant
+		// that when the rule could not be resolved, EVERY property vanished,
+		// including ones nobody ever restricted. That protects nothing and
+		// removes the document.
+		//
+		// An ungoverned property is readable by anyone who may read the object,
+		// so `canReadProperty()` already returns true for it. Answering here
+		// changes nothing when the rule is available and keeps the fallback
+		// proportionate when it is not.
+		if ($schema->getPropertyAuthorization($property) === null) {
+			return true;
+		}
+
 		if ($this->rbac === null) {
 			$this->warn(property: $property, reason: 'no property read rule available to ask');
 			return false;
