@@ -13,13 +13,13 @@
  * calculator and a calendar and nothing that can write, so there is no mapper,
  * no connection and no dispatcher to reach for.
  *
- * 🔴 AND IT REFUSES TO NARRATE SOMETHING THE ENGINE WOULD NOT DO. The change
- * asks for a `rollToWorkingDay` in the SLA shape, and `SlaCalculator` HAS NO
- * ROLL: neither `add()` nor the arm path moves a landing off a non-working day.
- * A diagnostic that quietly applied one would print a fire moment the engine
- * would never produce, and it would be believed precisely because it is the
- * diagnostic. So a requested roll is refused, naming why, until the roll exists
- * in the engine. That is the whole point of D-1: the same code path, narrated.
+ * 🔴 AND IT NARRATES ONLY WHAT THE ENGINE WOULD DO. This class used to REFUSE
+ * a `rollToWorkingDay`, because `SlaCalculator` had no roll and a diagnostic
+ * that quietly applied one would print a fire moment the engine never produces
+ * — believed precisely because it is the diagnostic. The engine has the roll
+ * now, and it is the engine's own `SlaCalculator::roll()` that is called here,
+ * not a second implementation of the same walk. That is the whole point of
+ * D-1: the same code path, narrated.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Flow\Timer
@@ -104,13 +104,19 @@ class TermDiagnostic {
 		$collector = new WalkCollector();
 		$start = DateTimeImmutable::createFromInterface($anchor);
 
-		$firesAt = $this->calculator->add(
+		$landed = $this->calculator->add(
 			from: $start,
 			value: (float)$normalised['value'],
 			unit: $normalised['unit'],
 			calendar: $calendar,
 			collector: $collector
 		);
+
+		// The ENGINE'S roll, not a second one. Two implementations of the same
+		// walk would agree until the day they did not, and the diagnostic is
+		// the surface somebody would believe.
+		$rolled = $this->calculator->roll(moment: $landed, roll: $roll, calendar: $calendar);
+		$firesAt = $rolled['at'];
 
 		return [
 			'calendar' => $calendar->getSlug(),
@@ -119,6 +125,10 @@ class TermDiagnostic {
 			'sla' => $normalised,
 			'roll' => $roll,
 			'firesAt' => $firesAt->format(DATE_ATOM),
+			// Absent when the roll changed nothing: `unrolledAt` equal to
+			// `firesAt` would read as a roll that happened and did nothing.
+			'unrolledAt' => $rolled['unrolledAt']?->format(DATE_ATOM),
+			'rolledBy' => $rolled['rolledBy'],
 			'firesOnWorkingDay' => $calendar->isWorkingDay($firesAt),
 			'walk' => $collector->walk(),
 			'skipped' => $collector->skipped(),
@@ -173,13 +183,17 @@ class TermDiagnostic {
 	}//end rungs()
 
 	/**
-	 * The roll the caller asked for, refused when the engine cannot do it.
+	 * The roll the caller asked for.
+	 *
+	 * Accepts the boolean shorthands a hand-written request carries — `true`
+	 * means `next`, `false` and null mean `none` — and refuses anything outside
+	 * the vocabulary rather than defaulting it.
 	 *
 	 * @param array<string, mixed> $sla The submitted SLA.
 	 *
-	 * @return string The roll in effect, which today is always `none`.
+	 * @return string The roll in effect.
 	 *
-	 * @throws FlowTimerValidationException When a roll is asked for.
+	 * @throws FlowTimerValidationException On a roll outside the vocabulary.
 	 */
 	private function validateRoll(array $sla): string {
 		$roll = ($sla['rollToWorkingDay'] ?? 'none');
@@ -198,16 +212,6 @@ class TermDiagnostic {
 					"rollToWorkingDay '%s' is refused: use one of %s.",
 					$roll,
 					implode(', ', self::ROLLS)
-				)
-			);
-		}
-
-		if ($roll !== 'none') {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					'rollToWorkingDay "%s" cannot be explained: SlaCalculator has no roll, so the arm path would not apply one. '
-					. 'A diagnostic that applied it here would print a moment the engine never produces.',
-					$roll
 				)
 			);
 		}

@@ -59,6 +59,51 @@ final class SlaCalculator {
 	public const UNITS = [self::UNIT_HOURS, self::UNIT_BUSINESS_DAYS, self::UNIT_CALENDAR_DAYS];
 
 	/**
+	 * The end date is left where the budget put it. THE DEFAULT, and it is the
+	 * default deliberately: rolling changes a deadline, and a deadline that
+	 * moved without anybody asking is worse than one that lands on a Sunday.
+	 *
+	 * @var string
+	 */
+	public const ROLL_NONE = 'none';
+
+	/**
+	 * Move the end date forward to the first working day. This is the rule the
+	 * Algemene termijnenwet states for a statutory term; whether a given term
+	 * is one, and whether the calendar it is measured against lists the right
+	 * days, are both questions for the administrator, not for this class.
+	 *
+	 * @var string
+	 */
+	public const ROLL_NEXT = 'next';
+
+	/**
+	 * Move the end date back to the last working day.
+	 *
+	 * @var string
+	 */
+	public const ROLL_PREVIOUS = 'previous';
+
+	/**
+	 * The whole roll vocabulary.
+	 *
+	 * @var array<int, string>
+	 */
+	public const ROLLS = [self::ROLL_NONE, self::ROLL_NEXT, self::ROLL_PREVIOUS];
+
+	/**
+	 * Days a roll may walk before it gives up.
+	 *
+	 * A roll crosses a holiday cluster, not a season: the longest in any real
+	 * calendar is a handful of days. A calendar that declares every day
+	 * non-working would otherwise walk until the clock ran out, and the
+	 * deadline would look like a hang.
+	 *
+	 * @var int
+	 */
+	private const MAX_ROLL_DAYS = 400;
+
+	/**
 	 * The accepted SLA value range, inclusive.
 	 */
 	public const MIN_VALUE = 1;
@@ -120,8 +165,123 @@ final class SlaCalculator {
 			);
 		}
 
-		return ['value' => $value, 'unit' => $this->validateUnit(unit: $sla['unit'])];
+		return [
+			'value' => $value,
+			'unit' => $this->validateUnit(unit: $sla['unit']),
+			'rollToWorkingDay' => $this->validateRoll(roll: ($sla['rollToWorkingDay'] ?? self::ROLL_NONE)),
+		];
 	}//end validateSla()
+
+	/**
+	 * Validate a roll name.
+	 *
+	 * An absent roll is `none`, and an unknown one is REFUSED rather than
+	 * defaulted. Read as `none`, a typed `nextWorkingDay` would save, arm and
+	 * behave like a setting nobody made — on a deadline with legal effect,
+	 * which is the worst place for a silent default.
+	 *
+	 * @param mixed $roll The declared roll.
+	 *
+	 * @return string The roll.
+	 *
+	 * @throws FlowTimerValidationException On an unknown roll.
+	 *
+	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 */
+	public function validateRoll(mixed $roll): string {
+		if ($roll === null || $roll === '') {
+			return self::ROLL_NONE;
+		}
+
+		if (is_string($roll) === false || in_array($roll, self::ROLLS, true) === false) {
+			throw new FlowTimerValidationException(
+				message: sprintf(
+					"rollToWorkingDay '%s' is refused: use one of %s.",
+					var_export($roll, true),
+					implode(', ', self::ROLLS)
+				)
+			);
+		}
+
+		return $roll;
+	}//end validateRoll()
+
+	/**
+	 * Move a moment off a non-working day, and say what moved it.
+	 *
+	 * 🔴 IT ANSWERS WHAT IT DID, not just where it landed. A handler looking at
+	 * a term that ends on Tuesday has to be able to read that Monday was Tweede
+	 * Paasdag; a rolled date with no explanation is a date somebody will
+	 * challenge and nobody can defend.
+	 *
+	 * 🔑 THE NAME COMES FROM THE CALENDAR'S OWN RULE, never from a list in this
+	 * class. `weekend` is the only name this code knows, because it is the only
+	 * one it decides; every other name is whatever the administrator called the
+	 * day they declared.
+	 *
+	 * @param DateTimeInterface    $moment   The computed moment.
+	 * @param string               $roll     One of ROLLS.
+	 * @param WorkingCalendar|null $calendar The resolved calendar.
+	 *
+	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
+	 *
+	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 */
+	public function roll(DateTimeInterface $moment, string $roll, ?WorkingCalendar $calendar): array {
+		$at = DateTimeImmutable::createFromInterface($moment);
+		$unrolled = ['at' => $at, 'unrolledAt' => null, 'rolledBy' => null];
+
+		if ($roll === self::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $at) === true) {
+			return $unrolled;
+		}
+
+		// The rule that stopped the FIRST day is the one that moved the term.
+		// Reporting the last day walked past would name Easter Monday for a
+		// term that was really stopped by the Saturday before it.
+		$rolledBy = $this->nonWorkingReason(moment: $at, calendar: $calendar);
+
+		$modifier = '+1 day';
+		if ($roll === self::ROLL_PREVIOUS) {
+			$modifier = '-1 day';
+		}
+
+		$walked = $at;
+		for ($step = 0; $step < self::MAX_ROLL_DAYS; $step++) {
+			$walked = $this->shift(moment: $walked, modifier: $modifier);
+			if ($calendar->isWorkingDay(moment: $walked) === true) {
+				return ['at' => $walked, 'unrolledAt' => $at, 'rolledBy' => $rolledBy];
+			}
+		}
+
+		throw new FlowTimerValidationException(
+			message: sprintf(
+				'No working day within %d days of %s on calendar %s: the calendar declares no working days to roll to.',
+				self::MAX_ROLL_DAYS,
+				$at->format('Y-m-d'),
+				$calendar->getSlug()
+			)
+		);
+	}//end roll()
+
+	/**
+	 * Why a day is not a working day, in the calendar's own words.
+	 *
+	 * @param DateTimeImmutable $moment   The day.
+	 * @param WorkingCalendar   $calendar The calendar.
+	 *
+	 * @return string The declared name, or `weekend`.
+	 */
+	private function nonWorkingReason(DateTimeImmutable $moment, WorkingCalendar $calendar): string {
+		$named = ($calendar->nonWorkingDates(year: (int)$moment->format('Y'))[$moment->format('Y-m-d')] ?? null);
+		if (is_string($named) === true && $named !== '') {
+			return $named;
+		}
+
+		// Not a declared date, so it is a day the working WEEK excludes. This
+		// is the one name this class decides, because it is the one rule it
+		// knows without being told.
+		return 'weekend';
+	}//end nonWorkingReason()
 
 	/**
 	 * Validate a unit name.
