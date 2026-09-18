@@ -1187,6 +1187,20 @@ class Application extends App implements IBootstrap {
 
 			$logger = $container->get('Psr\Log\LoggerInterface');
 
+			// The guard that keeps a local change to an app-shipped schema
+			// alive across an upgrade (row 11.36). Optional on purpose: an
+			// instance whose container cannot build it imports exactly as it
+			// did before the guard existed, which is a known state rather than
+			// a broken one, and an unattended `occ upgrade` must finish.
+			$shippedGuard = null;
+			try {
+				$shippedGuard = $container->get(
+					\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard::class
+				);
+			} catch (\Throwable $e) {
+				$logger->debug('[Application] ShippedConfigurationGuard unavailable for ImportHandler: ' . $e->getMessage());
+			}
+
 			$importHandler = new ConfigurationImportHandler(
 				schemaMapper: $container->get(SchemaMapper::class),
 				registerMapper: $container->get(RegisterMapper::class),
@@ -1198,7 +1212,8 @@ class Application extends App implements IBootstrap {
 				logger: $logger,
 				appDataPath: $appDataPath,
 				uploadHandler: $container->get(ConfigurationUploadHandler::class),
-				objectService: $container->get(ObjectService::class)
+				objectService: $container->get(ObjectService::class),
+				shippedGuard: $shippedGuard
 			);
 
 			// Inject MagicMapper for pre-creating magic mapper tables before seed data import.
@@ -1342,6 +1357,40 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	private function registerConfigurationDeploymentServices(IRegistrationContext $context): void {
+		// The shipped-baseline guard reuses the deployment value store rather
+		// than growing a second place to keep configuration about a schema,
+		// which is why it is registered here beside it and not in a corner of
+		// its own (row 11.36, ADR-012).
+		$context->registerService(
+			\OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore::class,
+			function (ContainerInterface $container) {
+				return new \OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore(
+					values: $container->get(ConfigurationValueStore::class),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		$context->registerService(
+			\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard::class,
+			function (ContainerInterface $container) {
+				$parts = new \OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts();
+				$comparator = new \OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator(parts: $parts);
+
+				return new \OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard(
+					baselines: $container->get(\OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore::class),
+					merge: new \OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge(
+						parts: $parts,
+						comparator: $comparator
+					),
+					comparator: $comparator,
+					audit: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+					session: $container->get('OCP\IUserSession'),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
 		$context->registerService(
 			ConfigurationValueStore::class,
 			function (ContainerInterface $container) {
