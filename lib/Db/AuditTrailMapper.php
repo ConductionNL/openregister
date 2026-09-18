@@ -236,6 +236,126 @@ class AuditTrailMapper extends QBMapper {
 	}//end findByImportJobId()
 
 	/**
+	 * The change history of one object, oldest first, for deriving a projection.
+	 *
+	 * Purged rows are excluded, not skipped afterwards: a tombstoned row's
+	 * `changed` is an empty object, so including it would read as "every field
+	 * became nothing at that moment" and write an interval that never happened.
+	 *
+	 * @param string $objectUuid The object.
+	 * @param int    $limit      Most rows to read.
+	 *
+	 * @return array<int, array{created: string, changed: array}> The changes.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	public function findChangesForObject(string $objectUuid, int $limit = 1000): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('created', 'changed')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid, IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->isNull('purged_at'))
+			->orderBy('created', 'ASC')
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$changes = [];
+		while (($row = $result->fetch()) !== false) {
+			$changed = json_decode((string)($row['changed'] ?? '{}'), true);
+			if (is_array($changed) === false) {
+				$changed = [];
+			}
+
+			$changes[] = [
+				'created' => (string)($row['created'] ?? ''),
+				'changed' => $changed,
+			];
+		}
+
+		$result->closeCursor();
+
+		return $changes;
+	}//end findChangesForObject()
+
+	/**
+	 * Object uuids carrying audit rows, in uuid order, after a cursor.
+	 *
+	 * The cursor is what makes a rebuild resumable: a run takes the next batch
+	 * and stops, and the next run starts where it left off rather than at the
+	 * beginning of a table with millions of rows in it.
+	 *
+	 * @param string $afterUuid The cursor; '' starts at the beginning.
+	 * @param int    $limit     Most uuids to return.
+	 *
+	 * @return string[] The uuids.
+	 *
+	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	public function findObjectUuidsAfter(string $afterUuid, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('object_uuid')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->isNotNull('object_uuid'))
+			->andWhere($qb->expr()->neq('object_uuid', $qb->createNamedParameter('', IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->isNull('purged_at'))
+			->orderBy('object_uuid', 'ASC')
+			->setMaxResults($limit);
+
+		if ($afterUuid !== '') {
+			$qb->andWhere($qb->expr()->gt('object_uuid', $qb->createNamedParameter($afterUuid, IQueryBuilder::PARAM_STR)));
+		}
+
+		$result = $qb->executeQuery();
+		$uuids = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuids[] = (string)$row['object_uuid'];
+		}
+
+		$result->closeCursor();
+
+		return $uuids;
+	}//end findObjectUuidsAfter()
+
+	/**
+	 * The newest purged moment per object, for pruning what derives from it.
+	 *
+	 * A projection is derived data. When the payload it was derived from is
+	 * destroyed, the derivation has to go too, or a filter answers about a
+	 * record nothing else can show.
+	 *
+	 * @param int $limit Most objects to report on.
+	 *
+	 * @return array<string, string> object uuid => newest purged row's `created`.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	public function findPurgedHorizons(int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_uuid')
+			->selectAlias($qb->func()->max('created'), 'horizon')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->isNotNull('purged_at'))
+			->andWhere($qb->expr()->isNotNull('object_uuid'))
+			->groupBy('object_uuid')
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$horizons = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuid = (string)($row['object_uuid'] ?? '');
+			if ($uuid !== '') {
+				$horizons[$uuid] = (string)($row['horizon'] ?? '');
+			}
+		}
+
+		$result->closeCursor();
+
+		return $horizons;
+	}//end findPurgedHorizons()
+
+	/**
 	 * Finds an audit trail by id
 	 *
 	 * @param int $id The id of the audit trail
