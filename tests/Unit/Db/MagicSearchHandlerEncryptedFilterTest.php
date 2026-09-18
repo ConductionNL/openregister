@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -60,7 +61,8 @@ class MagicSearchHandlerEncryptedFilterTest extends TestCase {
 			rbacHandler: $this->rbacHandler,
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: new SchemaTypeConverter(),
-			dateTimeNormalizer: new DateTimeNormalizer($this->logger)
+			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 	}//end setUp()
 
