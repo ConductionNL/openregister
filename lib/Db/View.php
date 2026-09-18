@@ -106,6 +106,13 @@ class View extends Entity implements JsonSerializable {
 	private ?Configuration $managedByConfig = null;
 
 	/**
+	 * The access the current caller holds (transient, not stored in DB)
+	 *
+	 * @var string|null
+	 */
+	private ?string $access = null;
+
+	/**
 	 * Whether the view is public
 	 *
 	 * @var boolean Whether the view is public
@@ -141,6 +148,19 @@ class View extends Entity implements JsonSerializable {
 	protected ?array $presentation = null;
 
 	/**
+	 * Groups this view is shared with, and at which mode.
+	 *
+	 * A list of `{group, mode}` with `mode` one of `read` or `write` (ledger
+	 * row 9.4). A view had `isPublic` and nothing in between: it was private or
+	 * it was everyone's, so a department could not have a view of its own.
+	 *
+	 * @var array|null The shares, or null when the view is shared with nobody.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	protected ?array $sharedWith = [];
+
+	/**
 	 * Array of user IDs who favorited this view
 	 *
 	 * @var array|null User IDs who favorited
@@ -173,6 +193,7 @@ class View extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'isDefault', type: 'boolean');
 		$this->addType(fieldName: 'query', type: 'json');
 		$this->addType(fieldName: 'presentation', type: 'json');
+		$this->addType(fieldName: 'sharedWith', type: 'json');
 		$this->addType(fieldName: 'favoredBy', type: 'json');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
@@ -186,6 +207,60 @@ class View extends Entity implements JsonSerializable {
 	public function getFavoredBy(): array {
 		return $this->favoredBy ?? [];
 	}//end getFavoredBy()
+
+	/**
+	 * The groups this view is shared with.
+	 *
+	 * @return array The shares, empty when it is shared with nobody.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	public function getSharedWith(): array {
+		return ($this->sharedWith ?? []);
+	}//end getSharedWith()
+
+	/**
+	 * Set the groups this view is shared with.
+	 *
+	 * @param array $sharedWith The shares.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	public function setSharedWith(array $sharedWith): void {
+		$this->sharedWith = $sharedWith;
+		$this->markFieldUpdated('sharedWith');
+	}//end setSharedWith()
+
+	/**
+	 * The access the CALLER holds on this view, when somebody resolved it.
+	 *
+	 * Transient, like `managedByConfig` above and for the same reason: it is
+	 * not a property of the view, it is a property of the pair (view, caller),
+	 * and storing it would be a cached answer about whoever happened to ask
+	 * first.
+	 *
+	 * @return string|null One of owner, write, read, or null when unresolved.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	public function getAccess(): ?string {
+		return $this->access;
+	}//end getAccess()
+
+	/**
+	 * Record the access a caller holds, for this request only.
+	 *
+	 * @param string|null $access The resolved access.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	public function setAccess(?string $access): void {
+		$this->access = $access;
+	}//end setAccess()
 
 	/**
 	 * Set the favoredBy array
@@ -241,6 +316,12 @@ class View extends Entity implements JsonSerializable {
 			'isDefault' => $this->isDefault,
 			'query' => $this->query,
 			'presentation' => $this->getPresentationFormatted(),
+			'sharedWith' => ($this->sharedWith ?? []),
+			// `@self.access` is what this CALLER may do, and it is absent
+			// rather than guessed when nobody resolved it: a serialiser that
+			// answered `read` by default would tell a client the view is
+			// read-only on every path that forgot to ask.
+			'@self' => ['access' => $this->access],
 			'favoredBy' => $favoredBy,
 			'quota' => [
 				'storage' => null,
@@ -376,6 +457,7 @@ class View extends Entity implements JsonSerializable {
 			'isDefault' => $object['isDefault'] ?? false,
 			'query' => $object['query'] ?? [],
 			'presentation' => $object['presentation'] ?? null,
+			'sharedWith' => $object['sharedWith'] ?? [],
 			'favoredBy' => $object['favoredBy'] ?? [],
 		];
 
