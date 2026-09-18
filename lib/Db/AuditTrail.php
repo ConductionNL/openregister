@@ -98,6 +98,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFlowStep(?int $flowStep)
  * @method string|null getPurpose()
  * @method void setPurpose(?string $purpose)
+ * @method string|null getConsumer()
+ * @method void setConsumer(?string $consumer)
  * @method string|null getProcessingActivityId()
  * @method void setProcessingActivityId(?string $processingActivityId)
  * @method string|null getVersion()
@@ -460,6 +462,27 @@ class AuditTrail extends Entity implements JsonSerializable {
 	protected ?string $purpose = null;
 
 	/**
+	 * The registered consumer whose token made this write.
+	 *
+	 * ⚠️ DELIBERATELY OUTSIDE the canonical JSON, for the same reason `purpose`
+	 * is and with the same consequence if that is forgotten: a key added to
+	 * jsonSerialize() changes the canonical form of every row ever written and
+	 * invalidates the whole chain (ADR-003 Rule 4). This column is the INDEXED
+	 * projection that makes "everything this koppeling wrote last month" a
+	 * lookup rather than a scan of the largest table in the app. The SEALED
+	 * copy, with the token and its owner beside it, lives in
+	 * `resultSummary['token']`, inside the canonical JSON. Both are written in
+	 * one place ({@see \OCA\OpenRegister\Service\Audit\TokenAttribution}), and
+	 * a disagreement between them is detectable rather than invisible.
+	 *
+	 * Null means no token made this write, which is the ordinary case for a
+	 * person clicking in the interface. It never means the token was unknown.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $consumer = null;
+
+	/**
 	 * Constructor for the AuditTrail class
 	 *
 	 * Sets up field types for all properties
@@ -503,6 +526,7 @@ class AuditTrail extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'flowNode', type: 'string');
 		$this->addType(fieldName: 'flowStep', type: 'integer');
 		$this->addType(fieldName: 'purpose', type: 'string');
+		$this->addType(fieldName: 'consumer', type: 'string');
 	}//end __construct()
 
 	/**

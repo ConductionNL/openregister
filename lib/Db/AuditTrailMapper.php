@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\TokenAttribution;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -170,6 +171,12 @@ class AuditTrailMapper extends QBMapper {
 		// the sealed half of it lives in `resultSummary`, which is inside the
 		// canonical JSON.
 		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		// Which token, whose, and for which consumer. Applied here as well as
+		// in buildAuditTrail() for the same reason the two above are, and
+		// before the INSERT for the same reason again: the sealed half lives in
+		// `resultSummary`, which is inside the canonical JSON.
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
 		$inserted = $this->insert(entity: $auditTrail);
 
@@ -940,6 +947,12 @@ class AuditTrailMapper extends QBMapper {
 		// here, and stamping only the inserts would leave every bulk write
 		// silently unattributed to the purpose it ran under.
 		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		// Token attribution, applied in the shared builder for the same reason
+		// the two above are: `insertAuditTrails()` builds its rows here, so
+		// stamping only the inserts would leave every bulk write by a koppeling
+		// unable to say which koppeling made it.
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
