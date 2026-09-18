@@ -344,7 +344,8 @@ class MagicFacetHandler {
 						field: self::METADATA_PREFIX . $field,
 						interval: $interval,
 						baseQuery: $baseQuery,
-						schema: $schema
+						schema: $schema,
+						register: $register
 					);
 				}
 
@@ -383,7 +384,8 @@ class MagicFacetHandler {
 					field: $columnName,
 					interval: $interval,
 					baseQuery: $baseQuery,
-					schema: $schema
+					schema: $schema,
+					register: $register
 				);
 			}
 
@@ -1226,10 +1228,17 @@ class MagicFacetHandler {
 		);
 
 		if ($this->searchHandler !== null) {
+			// 🔴 THE REGISTER IS PASSED SO `_related` NARROWS THE COUNTS TOO.
+			// A facet count that ignores a filter the list honours is worse than
+			// no count: the user filters cases down to the ones carrying a
+			// property, and the facet beside the result still describes every
+			// case in the register. Nothing looks broken, the numbers are just
+			// answers to a different question.
 			$queryBuilder = $this->searchHandler->buildFilteredQuery(
 				query: $baseQuery,
 				schema: $schema,
-				tableName: $tableName
+				tableName: $tableName,
+				registerId: $register->getId()
 			);
 			$columnRef = "t.{$field}";
 
@@ -1394,6 +1403,7 @@ class MagicFacetHandler {
 		string $interval,
 		array $baseQuery,
 		?Schema $schema = null,
+		?Register $register = null,
 	): array {
 		// Check if column exists.
 		if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
@@ -1417,10 +1427,13 @@ class MagicFacetHandler {
 			throw new LogicException($msg);
 		}
 
+		// Same reason as the terms facet: a histogram that ignores `_related`
+		// draws a shape of the unfiltered set beside a filtered list.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $baseQuery,
 			schema: $schema,
-			tableName: $tableName
+			tableName: $tableName,
+			registerId: $register?->getId()
 		);
 
 		// The date-key SQL expression is platform-specific (TO_CHAR on

@@ -44,7 +44,24 @@
 
 ## 2. Facets and backend
 
-- [ ] 2.1 Facets over a related field.
+- [x] 2.1 Facets over a related field.
+  - 🔴 THE DEFECT WAS IN MY OWN #3923 WIRING, AND ONLY READING THE FACET CALLER
+    SHOWED IT. `MagicFacetHandler` calls `buildFilteredQuery()` WITHOUT a
+    register id, and I had passed the bare `$registerId` parameter instead of
+    the `registerIdFromQuery()` fallback the access-control filter beside it
+    uses. So a facet request carrying `_related` was refused outright even when
+    the query itself named the register.
+  - The worse half is what happens once it is not refused: a facet count that
+    ignores a filter the list honours describes every case in the register
+    beside a narrowed list. Nothing looks broken. The numbers are answers to a
+    different question and there is nothing on screen that could say so. Both
+    facet paths, terms and date histogram, now carry the register.
+  - Pinned by a DERIVED test that reads the handler's own source and requires
+    every `buildFilteredQuery(` call to name a register, so a facet path added
+    later is covered the day it is written. The defect was created by exactly
+    the opposite: a call site that predated the filter and was never revisited.
+    It carries a control, because a renamed method would otherwise make it pass
+    by finding nothing.
 - [~] 2.2 Solr `{!join}` translation with database fallback and response
       attribution.
   - 🔴 OBSOLETE AS WRITTEN, AND THE SOURCE IS WHY, NOT THIS PROPOSAL. There is
@@ -132,12 +149,28 @@
 
 ## 3. Tests
 
-- [~] 3.1 Unit tests on both databases for the clause shape and RBAC.
+- [x] 3.1 Unit tests on both databases for the clause shape and RBAC.
   - `RelatedRowExistsClauseTest`, 13 tests, covering both engines' rendering
     and the access predicate. PARTIAL BY DESIGN: the suite has no database, so
     it asserts the CONSEQUENCE of the live findings rather than the SQL string.
     A renderer test written before running the SQL would have asserted the
     defect and gone green, which is why the live evidence sits in the PR body.
-- [ ] 3.2 `tests/e2e/ci/query-related-schema-rows.spec.ts`: seed a case with
+- [x] 3.2 `tests/e2e/ci/query-related-schema-rows.spec.ts`: seed a case with
       a caseProperty row, filter the case list on the row's value, see the
       case.
+  - WRITTEN AND TAGGED, NOT RUN. There is no Playwright runner on this build
+    host, which is the standing arrangement for this phase. Said plainly rather
+    than implied.
+  - IT ASSERTS THE NEGATIVE, WITH A CONTROL. A dropped filter answers the
+    unfiltered set, which looks like a working filter as long as you only check
+    that the matching case is present. So every assertion pairs "case A is
+    there" with "case B is NOT", the unfiltered request is asserted to return
+    BOTH, and the opposite boundary (`lt 100`) is asserted to return case B, so
+    "case B is absent" cannot pass because case B is absent from everything.
+  - THE TWO VALUES ARE CHOSEN, NOT ARBITRARY: 150 and 50. Under text ordering
+    '50' >= '100' is TRUE, so a `gte 100` filter returning case B is the exact
+    live symptom of the defect this change carried, and returning only case A is
+    the proof. The `value` property is declared as a NUMBER for the same reason:
+    a string column would hide it again.
+  - It also covers the refusal of a misspelt schema and the facet-count
+    agreement from 2.1.
