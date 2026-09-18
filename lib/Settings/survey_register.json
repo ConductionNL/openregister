@@ -1,0 +1,318 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Surveys",
+    "description": "System register for surveys as objects: the survey and its questions, the invitations that ask them, and the answer sets that come back. A satisfaction survey a gemeente runs is a thing with questions, people who may answer it, a rule about when it goes out and an export, not a number on a closed case.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational survey register shipped by OpenRegister; backs the survey object, its invitations and its answer sets."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "surveys": {
+        "slug": "surveys",
+        "title": "Surveys",
+        "version": "1.0.0",
+        "description": "Surveys, their questions, the invitations that ask them and the answers that come back.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "survey",
+          "surveyQuestion",
+          "surveyInvitation",
+          "surveyAnswerSet"
+        ],
+        "folder": "Open Registers/Surveys"
+      }
+    },
+    "schemas": {
+      "survey": {
+        "slug": "survey",
+        "title": "Survey",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A survey as its own object: its questions, who may read the answers, and whether respondents are named.",
+        "description": "A satisfaction survey is a thing, not a rating field on a closed case. It carries its questions, the object type it asks about, whether it is anonymous, and the minimum number of responses below which an anonymous survey's answers are withheld. Anonymity is decided at creation and cannot be changed: switching it on later would hide answers somebody already acted on by name, and switching it off would name respondents who answered on a promise that they would not be.",
+        "required": [
+          "title",
+          "anonymity"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "What this survey is called.",
+            "title": "Title",
+            "maxLength": 255
+          },
+          "introduction": {
+            "type": "string",
+            "description": "Shown above the questions, in the respondent's own language.",
+            "title": "Introduction"
+          },
+          "subjectSchema": {
+            "type": "string",
+            "description": "The slug of the schema this survey asks about, for example a closed case.",
+            "title": "Subject Schema",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "anonymity": {
+            "type": "string",
+            "description": "Whether answers name their respondent. Decided at creation and refused afterwards.",
+            "title": "Anonymity",
+            "enum": [
+              "anonymous",
+              "attributed"
+            ],
+            "default": "attributed",
+            "facetable": true
+          },
+          "minimumResponses": {
+            "type": "integer",
+            "description": "An anonymous survey withholds its answers below this many responses, and says so with the count. Three answers from one team identify the people in it.",
+            "title": "Minimum Responses",
+            "default": 5,
+            "minimum": 1
+          },
+          "allowReopening": {
+            "type": "boolean",
+            "description": "Whether an answered invitation may be followed again. Off by default: a link that can be answered twice cannot be reported on.",
+            "title": "Allow Reopening",
+            "default": false
+          },
+          "readerRoles": {
+            "type": "array",
+            "title": "Reader Roles",
+            "description": "The roles that may read this survey's answer sets.",
+            "items": {
+              "type": "string",
+              "title": "Role"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "description": "Raised whenever the survey is edited while answers exist. Every answer set keeps naming the version it answered.",
+            "title": "Version",
+            "default": 1,
+            "facetable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Whether this survey is being sent.",
+            "title": "Status",
+            "enum": [
+              "draft",
+              "active",
+              "closed"
+            ],
+            "default": "draft",
+            "facetable": true
+          }
+        }
+      },
+      "surveyQuestion": {
+        "slug": "surveyQuestion",
+        "title": "Survey Question",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "One question on a survey, in an order.",
+        "description": "Questions are their own objects so a survey can be edited without rewriting the shape of every answer that already came back.",
+        "required": [
+          "survey",
+          "text",
+          "kind"
+        ],
+        "properties": {
+          "survey": {
+            "type": "string",
+            "description": "The survey this question belongs to.",
+            "title": "Survey",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "text": {
+            "type": "string",
+            "description": "The question, as the respondent reads it.",
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "description": "How it is answered.",
+            "title": "Kind",
+            "enum": [
+              "scale",
+              "choice",
+              "text"
+            ],
+            "default": "scale",
+            "facetable": true
+          },
+          "options": {
+            "type": "array",
+            "title": "Options",
+            "description": "The answers offered, for a choice question.",
+            "items": {
+              "type": "string",
+              "title": "Option"
+            }
+          },
+          "order": {
+            "type": "integer",
+            "description": "Where it sits in the survey.",
+            "title": "Order",
+            "default": 0
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether a submission without it is refused, naming this question.",
+            "title": "Required",
+            "default": false
+          }
+        }
+      },
+      "surveyInvitation": {
+        "slug": "surveyInvitation",
+        "title": "Survey Invitation",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "One person asked one survey about one thing, and what became of the asking.",
+        "description": "The invitation is separate from the answer set so that 'who was asked and never answered' is a question with an answer. A blocked invitation is RECORDED rather than not created: a gap in the response data with no reason beside it reads as nobody being asked.",
+        "required": [
+          "survey",
+          "state"
+        ],
+        "properties": {
+          "survey": {
+            "type": "string",
+            "description": "The survey being asked.",
+            "title": "Survey",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "subjectObject": {
+            "type": "string",
+            "description": "The object it is about, for example the closed case.",
+            "title": "Subject Object",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "respondent": {
+            "type": "string",
+            "description": "Where the invitation was sent. Held on the invitation, never on an anonymous survey's answers.",
+            "title": "Respondent",
+            "maxLength": 255
+          },
+          "token": {
+            "type": "string",
+            "description": "The signed token the link carries.",
+            "title": "Token",
+            "maxLength": 512
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "When the link stops working.",
+            "title": "Expires At",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "description": "What became of it.",
+            "title": "State",
+            "enum": [
+              "sent",
+              "answered",
+              "expired",
+              "blocked"
+            ],
+            "default": "sent",
+            "facetable": true
+          },
+          "blockedReason": {
+            "type": "string",
+            "description": "Why it was never sent, in words. A state of blocked with no reason is a gap nobody can explain.",
+            "title": "Blocked Reason"
+          },
+          "answeredAt": {
+            "type": "string",
+            "description": "When it was answered.",
+            "title": "Answered At",
+            "format": "date-time"
+          }
+        }
+      },
+      "surveyAnswerSet": {
+        "slug": "surveyAnswerSet",
+        "title": "Survey Answer Set",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "What one respondent sent back, and which version of the survey they were answering.",
+        "description": "An answer set names the survey VERSION it answered, so a question edited afterwards never silently changes what somebody is recorded as having been asked. On an anonymous survey it carries no respondent reference at all.",
+        "required": [
+          "survey",
+          "surveyVersion"
+        ],
+        "properties": {
+          "survey": {
+            "type": "string",
+            "description": "The survey answered.",
+            "title": "Survey",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "surveyVersion": {
+            "type": "integer",
+            "description": "The version answered, kept even after the survey moves on.",
+            "title": "Survey Version",
+            "facetable": true
+          },
+          "subjectObject": {
+            "type": "string",
+            "description": "The object it is about.",
+            "title": "Subject Object",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "respondent": {
+            "type": "string",
+            "description": "Who answered. Absent entirely on an anonymous survey, not empty.",
+            "title": "Respondent",
+            "maxLength": 255
+          },
+          "answers": {
+            "type": "array",
+            "title": "Answers",
+            "description": "One entry per question answered.",
+            "items": {
+              "type": "object",
+              "title": "Answer",
+              "description": "One question and what was said to it.",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "description": "The question answered.",
+                  "title": "Question",
+                  "maxLength": 255
+                },
+                "value": {
+                  "type": "string",
+                  "description": "What was answered.",
+                  "title": "Value"
+                }
+              }
+            }
+          },
+          "submittedAt": {
+            "type": "string",
+            "description": "When it came back.",
+            "title": "Submitted At",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
