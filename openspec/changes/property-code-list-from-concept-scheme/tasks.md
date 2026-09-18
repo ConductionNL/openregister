@@ -43,7 +43,19 @@
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/e2e/ci/concept-code-list.spec.ts`: declare a property on a scheme, pick a value in the form, save.
+- [x] 3.1 `tests/e2e/ci/concept-code-list.spec.ts`: declare a property on a scheme, pick a value in the form, save.
+  - Written and tagged, NOT RUN: there is no Playwright runner on the build
+    host, so the nightly owns it. It follows `code-list-lifecycle.spec.ts`,
+    including the per-run uri prefix and the teardown that re-resolves by it.
+  - IT WRITES BOTH SPELLINGS, on two properties of one schema. A spec writing
+    only one would pass while the other silently stopped being read, which is
+    the failure the one-reader factory exists to prevent.
+  - The control runs first and asks the VOCABULARY endpoint for the key. Every
+    other assertion is about a key that endpoint has to name; without it the
+    suite measures a key only this spec believes in.
+  - The options route is `/api/vocabulary/options`, read out of
+    `appinfo/routes.php` rather than guessed from the controller: the method is
+    `propertyOptions` and the URL is not.
 - [ ] 3.2 Unit tests for the validator, the check, deprecation, options paging and labels.
 
 ## 4. Discovery wave 1 (CT-4)
