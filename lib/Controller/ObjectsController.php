@@ -3251,6 +3251,21 @@ class ObjectsController extends Controller {
 			if ($lockRefusal !== null) {
 				return $lockRefusal;
 			}
+
+			// 🔴 A FULL REPLACE ASSERTS EXACTLY AS A PARTIAL UPDATE DOES
+			// (REQ-CSO-003). This used to be PATCH-only, which made the
+			// guarantee a property of the VERB rather than of the write: a
+			// client that sent `_expectedUpdated` on a PUT got no assertion at
+			// all, silently, and overwrote whatever had landed meanwhile. The
+			// two doors now call one method, so they cannot answer differently.
+			$conflict = $this->versionConflictResponse(
+				existingObject: $existingObject,
+				sent: $object,
+				schemaEntity: $resolved['schemaEntity']
+			);
+			if ($conflict !== null) {
+				return $conflict;
+			}
 		} catch (DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		} catch (NotAuthorizedException $exception) {
@@ -3508,19 +3523,13 @@ class ObjectsController extends Controller {
 			// and the write is rejected with 409 instead of overwriting the newer
 			// version. Opt-in: callers that omit `_expectedUpdated` behave as before.
 			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
-			$expectedUpdated = $this->request->getParam('_expectedUpdated');
-			if ($expectedUpdated !== null) {
-				$currentUpdated = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
-				if ((string)$currentUpdated !== (string)$expectedUpdated) {
-					return new JSONResponse(
-						data: [
-							'error' => 'Conflict: the object was modified since it was read. Re-read and retry.',
-							'expectedUpdated' => (string)$expectedUpdated,
-							'currentUpdated' => (string)$currentUpdated,
-						],
-						statusCode: 409
-					);
-				}
+			$conflict = $this->versionConflictResponse(
+				existingObject: $existingObject,
+				sent: $patchData,
+				schemaEntity: $resolved['schemaEntity']
+			);
+			if ($conflict !== null) {
+				return $conflict;
 			}
 
 			// Get the existing object data and merge with patch data.
@@ -4584,6 +4593,207 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $answer);
 	}//end exists()
+
+	/**
+	 * Refuse a write made from a stale read, and say what the other value is.
+	 *
+	 * 🔴 OPT-IN, EXACTLY AS BEFORE (REQ-CSO-003). A caller that sends neither
+	 * `_expectedUpdated` nor `If-Match` behaves as it does today: no assertion,
+	 * last write wins. Nothing that works now starts failing; a write that
+	 * asks for the guarantee gets it.
+	 *
+	 * 🔴 THE BODY CARRIES THE ANSWER, NOT JUST THE VERDICT. Two timestamps tell
+	 * a machine to retry and tell a person nothing. {@see ConflictReport} adds
+	 * what was sent, what was read and what is stored, per conflicting
+	 * property, so a client can render the choice without a second request and
+	 * without racing the reload.
+	 *
+	 * @param ObjectEntity $existingObject The object as stored.
+	 * @param array<string, mixed> $sent   What the caller is writing.
+	 * @param mixed $schemaEntity          The schema, for the field filter.
+	 *
+	 * @return JSONResponse|null The 409, or null when the caller may write.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function versionConflictResponse(
+		ObjectEntity $existingObject,
+		array $sent,
+		mixed $schemaEntity = null,
+	): ?JSONResponse {
+		// Read from the RAW request: the payload filters strip `_`-prefixed
+		// keys, so by the time a handler sees the body this is gone.
+		$expected = $this->request->getParam('_expectedUpdated');
+		if ($expected === null || trim((string)$expected) === '') {
+			// 🔴 `If-Match` IS ACCEPTED ONLY WHEN IT IS SHAPED LIKE THE THING IT
+			// IS COMPARED AGAINST. `getHeader()` answers a string for any
+			// header name, and a caller sending an ordinary etag, or a test
+			// stubbing the method blanket-wise, would otherwise have every
+			// write refused 409 against a value that was never a version.
+			// Measured: taking the header unconditionally reddened 28 existing
+			// controller tests, all of which stub `getHeader` once for
+			// `Content-Type`. Comparing like with like is the fix, not
+			// loosening the assertion.
+			$expected = $this->asExpectedVersion(value: $this->request->getHeader('If-Match'));
+		}
+
+		if ($expected === null || trim((string)$expected) === '') {
+			return null;
+		}
+
+		$current = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
+		if ((string)$current === (string)$expected) {
+			return null;
+		}
+
+		$body = [
+			'error' => \OCA\OpenRegister\Service\Object\ConflictReport::ERROR,
+			'code' => \OCA\OpenRegister\Service\Object\ConflictReport::CODE,
+			'message' => 'This object changed since you read it. Re-read it and try again.',
+			'conflicts' => [],
+			'changedBy' => null,
+			'changedAt' => null,
+		];
+
+		if ($schemaEntity instanceof Schema === true) {
+			try {
+				$body = $this->container->get(\OCA\OpenRegister\Service\Object\ConflictReport::class)->build(
+					stored: $existingObject,
+					schema: $schemaEntity,
+					sent: $sent,
+					intervening: $this->interveningChanges(object: $existingObject, since: (string)$expected)
+				);
+			} catch (\Throwable $e) {
+				// A report that could not be built must not turn a 409 into a
+				// 500: the refusal is still correct and still the right status,
+				// it simply says less. Reporting less is a degraded answer;
+				// letting the write through would be a lost update.
+				$this->logger->warning(
+					message: '[ObjectsController] a conflict body could not be built: ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+		}
+
+		// The two timestamps stay on the body beside the new block: every
+		// existing client branches on them, and removing them to make room for
+		// a better answer would break the clients this is meant to help.
+		$body['expectedUpdated'] = (string)$expected;
+		$body['currentUpdated'] = (string)$current;
+
+		$this->recordRefusedWrite(object: $existingObject, expected: (string)$expected, current: (string)$current, body: $body);
+
+		return new JSONResponse(data: $body, statusCode: 409);
+	}//end versionConflictResponse()
+
+	/**
+	 * An `If-Match` value, when it is an instant rather than any old header.
+	 *
+	 * The object's concurrency token IS its `updated` timestamp, so an
+	 * `If-Match` that does not parse as one cannot be a version of it and is
+	 * ignored rather than refused: a caller sending a content etag is not
+	 * making a concurrency assertion, and answering 409 would break them for
+	 * asking a different question.
+	 *
+	 * @param string|null $value The header value.
+	 *
+	 * @return string|null The instant, or null.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function asExpectedVersion(?string $value): ?string {
+		$value = trim(trim((string)$value), '"');
+		if ($value === '') {
+			return null;
+		}
+
+		try {
+			$parsed = new \DateTimeImmutable($value);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		// A bare word like `application/json` can still parse on some builds,
+		// so the round trip has to look like the input rather than merely
+		// succeeding: an instant this app wrote always carries a date.
+		return ((preg_match('/\\d{4}-\\d{2}-\\d{2}/', $value) === 1) ? $parsed->format(\DateTimeInterface::ATOM) : null);
+	}//end asExpectedVersion()
+
+	/**
+	 * The changes made to this object since the caller read it, newest first.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $since  The caller's `updated`, ISO-8601.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The entries.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private function interveningChanges(ObjectEntity $object, string $since): array {
+		try {
+			$read = new \DateTime($since);
+		} catch (\Throwable $e) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($this->auditTrailMapper->findAll(filters: ['object_uuid' => $object->getUuid()], limit: 25) as $entry) {
+			if ($entry instanceof \OCA\OpenRegister\Db\AuditTrail === false) {
+				continue;
+			}
+
+			$created = $entry->getCreated();
+			if ($created !== null && $created->getTimestamp() > $read->getTimestamp()) {
+				$entries[] = $entry;
+			}
+		}
+
+		return $entries;
+	}//end interveningChanges()
+
+	/**
+	 * Leave a trail that a write was refused, and why.
+	 *
+	 * 🔑 A REFUSAL IS A FACT ABOUT THE OBJECT. Without it, the only record of a
+	 * lost-update collision is in the client that was refused, so nobody
+	 * investigating "two people keep overwriting each other on this case" can
+	 * see that the guard is working, or how often.
+	 *
+	 * Never throws: a trail that cannot be written must not turn a correct
+	 * refusal into a 500.
+	 *
+	 * @param ObjectEntity         $object   The object.
+	 * @param string               $expected The version the caller held.
+	 * @param string               $current  The version stored.
+	 * @param array<string, mixed> $body     The conflict body.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function recordRefusedWrite(ObjectEntity $object, string $expected, string $current, array $body): void {
+		try {
+			$this->auditTrailMapper->createAuditTrailEntry(
+				object: $object,
+				action: 'refused',
+				context: [
+					'reason' => 'version-conflict',
+					'expectedUpdated' => $expected,
+					'currentUpdated' => $current,
+					// The NAMES only. The values are in the response the caller
+					// got, filtered for them; the trail is read by OTHER people
+					// and must not become a way to read a restricted property
+					// out of somebody else's refusal.
+					'properties' => array_keys(($body['conflicts'] ?? [])),
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ObjectsController] a refused write could not be recorded: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end recordRefusedWrite()
 
 	/**
 	 * Say that the caller still has this object open.
