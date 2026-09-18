@@ -4491,7 +4491,7 @@ class ObjectsController extends Controller {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$this->objectService->unlockObject($id);
+			$released = $this->objectService->unlockObject($id);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Exception $e) {
@@ -4503,11 +4503,39 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => $message], statusCode: 500);
 		}
 
+		// 🔴 404 MEANS THIS OBJECT WAS NOT LOCKED, AND IT IS A FACT RATHER THAN
+		// A MISSING ROUTE. A client that releases a lock when its editor closes
+		// has to be able to tell "I handed mine back" from "somebody had
+		// already taken it away", and a 200 for both is how a UI reports
+		// success on a lock it never held. `@conduction/nextcloud-vue`'s
+		// `useObjectLock.release()` already reads 404 as "already released;
+		// idempotent" — before this, that branch was being fed a 404 from the
+		// ROUTER, on a verb this app did not declare, so it was right by
+		// accident and would have gone on being right if the lock had never
+		// worked at all (nextcloud-vue#1202).
+		//
+		// It is not an error: nothing was refused and nothing threw. The status
+		// carries the fact, the body names it, and `locked: false` is true
+		// either way, so a client that only reads that keeps working.
+		if ($released === false) {
+			return new JSONResponse(
+				data: [
+					'message' => 'This object was not locked, so no lock was released.',
+					'error' => 'not-locked',
+					'locked' => false,
+					'released' => false,
+					'uuid' => $id,
+				],
+				statusCode: 404
+			);
+		}
+
 		// Return response with locked status for test compatibility.
 		return new JSONResponse(
 			data: [
 				'message' => 'Object unlocked successfully',
 				'locked' => false,
+				'released' => true,
 				'uuid' => $id,
 			]
 		);
