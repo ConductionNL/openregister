@@ -52,42 +52,94 @@
 
 ## 3. Relative time
 
-> 🔑 **NOT STARTED, and named rather than half-built.** The pure half (offset
-> arithmetic against a clock fixture) would take an hour; the half that matters
-> is D-5, "compiled, not interpreted per row" — 'created more than three working
-> hours ago' over a hundred thousand objects is a query, not a loop — and that
-> needs the working-calendar resolution of `flow-business-timers` and a SQL
-> emitter. Building the arithmetic alone would produce a feature that is correct
-> on ten objects and unusable on a register, which is the shape of thing that
-> gets merged and then quietly never used.
+> 🔑 **Built, and built the way the note said it had to be.** `compile()`
+> resolves the offset to ONE instant through the working calendar and returns a
+> property, an operator and that instant — so the sweep is `WHERE created_at <= ?`
+> and not a hundred thousand walks. The arithmetic is the ENGINE'S OWN:
+> `workingHours` converts through `SlaCalculator::convert()` and is walked by the
+> same `sub()` the timers use, so two screens cannot disagree about one deadline.
 
 
-- [ ] 3.1 Relative time. Not started: see the note under section 3.
-- [ ] 3.2 Business units resolve through the working calendar the record type resolves.
-- [ ] 3.3 The comparison compiles to an indexed query rather than a per-row evaluation.
-- [ ] 3.4 An unresolvable calendar is a refusal at save, not a downgrade at evaluation.
+- [x] 3.1 `{"$age": {"property": "createdAt", "moreThan": {"value": 3, "unit": "workingHours"}}}`,
+      in all four units. Both of the spec's clock scenarios are asserted against
+      the SHIPPED `nl-national` calendar: Friday 16:30 → Monday 09:30 holds,
+      and the same object on Saturday morning does not.
+      🔑 `workingHours` counts HOURS THAT FALL ON WORKING DAYS, which is what
+      the engine's business-day walk counts. A window-aware offset — hours
+      inside 09:00 to 17:00 — is a different number, `elapsedBusinessHours()`
+      measures it and has no inverse, and building one here would be inventing
+      arithmetic the arm path does not do. The unit is named for what it
+      counts.
+- [x] 3.2a Business units resolve through `SlaCalculator` and the calendar,
+      never through arithmetic of this class's own.
+- [ ] 3.2b Which calendar resolves FOR A SCHEMA is the caller's to decide;
+      this takes one and refuses without it. The record-type/unit/instance
+      resolution order belongs to `working-calendar-admin` and is not
+      re-implemented here.
+- [x] 3.3a `compile()` returns `{property, operator, value}` — one instant,
+      one comparison. The PHP verdict applies the SAME compiled comparison, and
+      a test asserts the two agree across three dates, because a sweep selects
+      by query and a save evaluates in PHP.
+- [ ] 3.3b Handing it to `MagicRbacHandler`'s query builder in the sweep
+      itself. The shape the builder needs is what `compile()` returns; joining
+      it in is the sweep's change, not this one.
+- [x] 3.4 Refused at save AND at evaluation, by the same check: `compile()`
+      runs `refusalFor()` every time, so a condition stored before the
+      validator existed meets the refusal at the moment it would otherwise have
+      quietly changed meaning. `SlaCalculator::add()` now also refuses a
+      business unit with a null calendar, which is a second REACHABLE guard
+      rather than a third unreachable one.
 
 ## 4. Administered validations
 
-> 🔑 **NOT STARTED.** It needs the save pipeline's evaluation point and the
-> write-path enumeration test from `rules-engine-operability` (D-7), plus the
-> i18n content path for the message (ADR-025). The condition half it would
-> stand on is what this PR builds; section 4 is the next PR on top of it.
+> 🔑 **Built on the evaluation point, not beside it.**
+> `AdministeredValidationListener` subscribes to the SAME two events
+> `StateFieldRuleListener` does, which is the whole of REQ-RCT-005: every write
+> funnels through the two mapper methods that dispatch them, so a path added
+> later cannot skip a check an administrator wrote, and
+> `RuleEvaluationPointTest` now fails and names it if one tries.
 
 
-- [ ] 4.1 A schema carries validations: a condition, a severity, the properties concerned and a translatable message.
-- [ ] 4.2 A refusing validation refuses the save with the administrator's message and the named properties.
-- [ ] 4.3 A warning validation returns the message and saves.
-- [ ] 4.4 Validations are evaluated in the save pipeline and are covered by the write-path enumeration test.
+- [x] 4.1 `x-openregister-validations`, added to `Schema::ANNOTATION_VOCABULARY`
+      (without which `setConfiguration()` drops it and every violating object
+      saves happily — a missing CONTROL, the worst member of that class).
+      Refused at save: no condition, an unknown severity, no message, a
+      property the schema does not declare. A bare string message is accepted
+      as the fallback language, so the simple case is not the awkward one.
+- [x] 4.2 Verbatim, with the properties, and with EVERY refusal beside the
+      first — a form that can show three problems at once should not make
+      somebody save three times to find them.
+      🔴 An unevaluable condition refuses whatever its declared severity: a
+      check that could not be ASKED has not been passed, and a `warn` that
+      quietly becomes "fine" is how one broken named condition switches off a
+      mandatory control.
+- [x] 4.3a A warning saves, and its message is evaluated and written to the
+      rule run log.
+- [ ] 4.3b RETURNING it with the response. The save events carry `setErrors()`
+      and nothing else — there is no warnings channel on a save response to put
+      it in. Recorded rather than dropped while the channel is missing, and
+      named here rather than left to look like a feature.
+- [x] 4.4 Two new assertions in `RuleEvaluationPointTest`: the listener is
+      subscribed to both events, and it records its verdict. The validation is
+      also a kind in `RuleVocabulary` (order 4, ahead of flows, which moved to
+      5 — a validation refuses BEFORE the object is stored and a flow runs
+      after), so the rule inventory lists it like any other rule.
 
 ## 5. Tests
 
 - [x] 5.1 20 tests, each refusal with a control beside it. Two mutation
       checks: returning false for an unresolvable reference, and a `$before`
       envelope present-but-empty on a create.
-- [ ] 5.2 Unit tests with a clock fixture for the working-hours comparison.
-- [ ] 5.3 Unit tests asserting the administrator's message is returned verbatim in the refusal.
-- [ ] 5.4 An e2e over a save refused by an administered validation showing its own message.
+- [x] 5.2 14 tests with explicit instants, including both spec scenarios, the
+      wall-clock control that proves the weekend test is not passing on a
+      condition that never holds, the compiled threshold, the inverted
+      operator, and the unreadable date that refuses rather than reading as
+      "not due".
+- [x] 5.3 18 tests: verbatim, translated, the regional fallback, the missing
+      message refused at save, the undeclared property, the unknown severity,
+      the named condition inside a validation, and the unevaluable check that
+      refuses.
+- [ ] 5.4 The e2e, which needs a surface rendering the message.
 - [x] 5.5 Recorded in the PR body: one evaluator (`ConditionDialect`), one
       expression vocabulary, one annotation vocabulary. No second evaluator
       and no second dialect.

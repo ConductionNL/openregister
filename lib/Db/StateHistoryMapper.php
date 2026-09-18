@@ -152,6 +152,49 @@ class StateHistoryMapper extends QBMapper {
 	}//end findObjectUuidsChangedBetween()
 
 	/**
+	 * Drop every interval of one object.
+	 *
+	 * Used by the rebuild, which replaces an object's line rather than adding
+	 * to it: a second pass that appended would double every interval and make
+	 * "was ever" true twice.
+	 *
+	 * @param string $objectUuid The object.
+	 *
+	 * @return int Rows removed.
+	 */
+	public function deleteForObject(string $objectUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+
+		return (int)$qb->executeStatement();
+	}//end deleteForObject()
+
+	/**
+	 * Drop the closed intervals of one object that ended at or before a moment.
+	 *
+	 * 🔴 ONLY CLOSED INTERVALS. The open one describes the state the object is
+	 * in now, which the object itself still asserts; it is not derived from the
+	 * purged payload and removing it would make a case sitting in bezwaar for
+	 * ten years invisible to "was ever in bezwaar" the day its oldest audit row
+	 * expired.
+	 *
+	 * @param string            $objectUuid The object.
+	 * @param DateTimeInterface $horizon    The newest purged moment.
+	 *
+	 * @return int Rows removed.
+	 */
+	public function pruneClosedIntervalsBefore(string $objectUuid, DateTimeInterface $horizon): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNotNull('left_at'))
+			->andWhere($qb->expr()->lte('left_at', $qb->createNamedParameter($horizon, IQueryBuilder::PARAM_DATE)));
+
+		return (int)$qb->executeStatement();
+	}//end pruneClosedIntervalsBefore()
+
+	/**
 	 * Run a uuid query and flatten it.
 	 *
 	 * @param IQueryBuilder $queryBuilder The prepared query.

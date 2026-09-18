@@ -509,7 +509,15 @@ class MagicSearchHandler {
 		// unless the query carries `_related`, so every existing call site is
 		// unaffected; when it does, each block becomes an EXISTS subquery
 		// carrying the RELATED schema's own access predicate.
-		$this->applyRelatedRowFilters(qb: $queryBuilder, query: $query, registerId: $registerId);
+		// The SAME register fallback the access-control filter above uses. Passing
+		// the bare parameter here was wrong: the facet path calls this method
+		// without a register id, so a facet request carrying `_related` was
+		// refused even when the query itself named the register.
+		$this->applyRelatedRowFilters(
+			qb: $queryBuilder,
+			query: $query,
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
+		);
 
 		return $queryBuilder;
 	}//end buildFilteredQuery()

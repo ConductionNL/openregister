@@ -150,7 +150,7 @@ final class SlaCalculator {
 	 * @param DateTimeInterface $from The start instant.
 	 * @param float $value The amount; negative subtracts.
 	 * @param string $unit The unit.
-	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and refused when absent, ignored for hours and calendar days.
 	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
 	 *
 	 * @return DateTimeImmutable The resulting instant.
@@ -162,7 +162,7 @@ final class SlaCalculator {
 		DateTimeInterface $from,
 		float $value,
 		string $unit,
-		WorkingCalendar $calendar,
+		?WorkingCalendar $calendar,
 		?WalkCollector $collector = null
 	): DateTimeImmutable {
 		$start = DateTimeImmutable::createFromInterface($from);
@@ -187,6 +187,20 @@ final class SlaCalculator {
 			return $this->shift(moment: $landed, modifier: sprintf('%+d seconds', $sign * (int)round($fraction * self::DAY)));
 		}
 
+		// 🔴 A BUSINESS UNIT WITHOUT A CALENDAR IS REFUSED, not counted as
+		// wall-clock time. The parameter is nullable because `hours` and
+		// `calendarDays` genuinely need no calendar and a caller should not
+		// have to invent one to say "two days"; the units that DO need one
+		// refuse here rather than quietly computing a different deadline.
+		if ($calendar === null) {
+			throw new FlowTimerValidationException(
+				message: sprintf(
+					"Unit '%s' is counted against a working calendar and none was given; it would silently become wall-clock time.",
+					$unit
+				)
+			);
+		}
+
 		if ($value >= 0) {
 			return $this->walkForward(start: $start, days: $value, calendar: $calendar, collector: $collector);
 		}
@@ -206,7 +220,7 @@ final class SlaCalculator {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
-	public function sub(DateTimeInterface $from, float $value, string $unit, WorkingCalendar $calendar): DateTimeImmutable {
+	public function sub(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
 		return $this->add(from: $from, value: -$value, unit: $unit, calendar: $calendar);
 	}//end sub()
 

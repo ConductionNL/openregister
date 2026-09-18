@@ -511,6 +511,7 @@ class PropertyValidatorHandler {
 		'domains' => ['value' => 'array', 'description' => 'The classes this property may be used on.'],
 		'ranges' => ['value' => 'array', 'description' => 'The classes this property may point at.'],
 		'authorization' => ['value' => 'object', 'description' => 'Which roles or groups may read and write this one property.'],
+		'scope' => ['value' => 'string', 'description' => 'The team or unit this field belongs to. Only they may read or change it.'],
 		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
 		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
 		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
@@ -753,6 +754,11 @@ class PropertyValidatorHandler {
 		// The OPERANDS are checked where both schemas are in hand
 		// (`SchemasController`), because this method sees one property.
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
+
+		// A scope that is accepted but not enforced is worse than no scope: the
+		// author believes the field is team-only BECAUSE the platform took the
+		// word. Refusing here is what keeps the published key honest.
+		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 
 		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {

@@ -1,5 +1,38 @@
 # Tasks: scoped-api-tokens
 
+> 🔴 **DO NOT ARCHIVE THIS YET, and not because it cannot be archived.**
+>
+> The structural defect in `specs/auth-system/spec.md` that used to refuse
+> every delta against that spec is fixed (#3918), and `openspec validate
+> scoped-api-tokens --strict` is now clean. That measurement is about
+> ARCHIVABILITY. It is not a measurement of doneness, and the two were
+> conflated once already — by me, in the #3918 PR body — so it is written down
+> here where the next person will meet it.
+>
+> Measured 2026-09-18, of the five requirements in the delta:
+>
+> - **built:** "A token or Consumer may carry a grant narrower than its user"
+>   (#3913).
+> - **partial:** REQ-SAT-003, the required end date — required at issue and
+>   enforced at use, with no warning before it lapses.
+> - **partial:** REQ-SAT-005, the rate limit — carried and validated on the
+>   grant, with no counter, no refusal and no outbound allowlist.
+> - **no implementation at all:** "The effective grant is visible and writes
+>   name the token" (`whoami`, `actorVia`), and REQ-SAT-004, the service
+>   account owned by a team.
+>
+> Archiving folds all five into the canonical spec and moves this change out of
+> `openspec/changes/`. Two of them would then be requirements the system does
+> not meet, stated in the spec with nothing pointing at the gap — and the
+> thirteen open tasks below, each of which carries the reason it is open, would
+> stop being anywhere anyone looks. That is the same failure as a comment
+> claiming coverage elsewhere: it stops people looking without making the thing
+> true.
+>
+> Archive it when REQ-SAT-004 and the visibility requirement have an
+> implementation, or split those two out into their own change and archive the
+> rest.
+
 ## 1. Data
 
 - [x] 1.1a `grant` on `Consumer`, inside the existing

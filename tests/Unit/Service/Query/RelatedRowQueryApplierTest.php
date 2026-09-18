@@ -193,4 +193,35 @@ class RelatedRowQueryApplierTest extends TestCase {
 
 		$this->assertSame(1, $applied);
 	}//end testAResolvableBlockNarrowsTheQuery()
+
+	/**
+	 * 🔴 A REGISTER NAMED IN THE QUERY IS ENOUGH, BECAUSE THE FACET PATH PASSES
+	 * NO REGISTER ID AT ALL.
+	 *
+	 * `MagicFacetHandler` calls `buildFilteredQuery()` without one. The first
+	 * wiring read only the explicit argument, so a facet request carrying
+	 * `_related` was refused even when the query itself named the register, and
+	 * the alternative failure is worse than the refusal: a facet count that
+	 * ignores a filter the list honours describes every case in the register
+	 * beside a narrowed list. Nothing looks broken; the numbers answer a
+	 * different question.
+	 *
+	 * @return void
+	 */
+	public function testTheRegisterMayComeFromTheQueryItself(): void {
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnArgument(0);
+		$qb->expects($this->once())->method('andWhere');
+
+		$query = $this->relatedQuery();
+		$query['register'] = '1';
+
+		$applied = $this->applierFinding([$this->schema()])->apply(
+			qb: $qb,
+			query: $query,
+			register: $this->register()
+		);
+
+		$this->assertSame(1, $applied);
+	}//end testTheRegisterMayComeFromTheQueryItself()
 }//end class

@@ -130,6 +130,7 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\AdministeredValidationListener;
 use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
@@ -3190,6 +3191,14 @@ class Application extends App implements IBootstrap {
 		// questions about.
 		$context->registerEventListener(ObjectCreatingEvent::class, StateFieldRuleListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, StateFieldRuleListener::class);
+
+		// The administrator's own checks, on the SAME two events, which is the
+		// whole of REQ-RCT-005: every write funnels through the two mapper
+		// methods that dispatch these, so a validation cannot be skipped by a
+		// path added later, and RuleEvaluationPointTest names that path if one
+		// tries (row 11.53).
+		$context->registerEventListener(ObjectCreatingEvent::class, AdministeredValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, AdministeredValidationListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
