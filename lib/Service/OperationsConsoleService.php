@@ -50,6 +50,7 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
+use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
@@ -110,13 +111,15 @@ class OperationsConsoleService {
 	public const STATUS_DISPATCHED = 'dispatched';
 
 	/**
-	 * The background jobs whose runs are recorded somewhere readable.
+	 * The background jobs recorded somewhere OTHER than the run log.
 	 *
-	 * One entry today, and that is the finding rather than an oversight:
-	 * `BulkJobRunner`'s runs are the bulk job rows, so the console can say
-	 * how each one came out. Every other job on this instance runs and tells
-	 * nobody. The wrapper that gives the rest a run row grows this list; until
-	 * it lands, the console reports the gap rather than papering over it.
+	 * `BulkJobRunner`'s runs are the bulk job rows, which predate the run log
+	 * and carry more than it does, so it is observed without implementing
+	 * {@see RecordsItsRuns}. Every other observed job is observed because its
+	 * base class writes the row, and is recognised by that interface rather
+	 * than by being named here: a hand-kept list of what a monitor watches is
+	 * exactly how a job goes missing from the monitor, and a missing job reads
+	 * the same as a job that never failed.
 	 *
 	 * @var array<int, string>
 	 */
@@ -421,7 +424,7 @@ class OperationsConsoleService {
 				'name' => substr($class, (strrpos($class, '\\') + 1)),
 				'queued' => 1,
 				'lastRun' => $lastRun,
-				'observed' => in_array($class, self::OBSERVED_JOBS, true),
+				'observed' => $this->isObserved(class: $class),
 			];
 		}
 
@@ -429,6 +432,28 @@ class OperationsConsoleService {
 
 		return array_values($seen);
 	}//end backgroundJobs()
+
+	/**
+	 * Does this job leave a run row behind.
+	 *
+	 * Asked of the class rather than of a list, so a job becomes observed by
+	 * extending the recorded base class and nothing else has to be kept in
+	 * step. `is_subclass_of` takes the class name, so no job is constructed to
+	 * answer a question about the inventory.
+	 *
+	 * @param string $class The job class.
+	 *
+	 * @return bool True when its runs are recorded.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	private function isObserved(string $class): bool {
+		if (in_array($class, self::OBSERVED_JOBS, true) === true) {
+			return true;
+		}
+
+		return is_subclass_of($class, RecordsItsRuns::class);
+	}//end isObserved()
 
 	/**
 	 * One page of the instance's job list, or none when it cannot be read.
