@@ -328,7 +328,11 @@ export default {
 			}
 
 			return {
-				id: raw.id || raw.uid || raw.uuid || `${type}-${++fallbackRelationId}`,
+				id:
+					raw.id
+					|| raw.uid
+					|| raw.uuid
+					|| `${type}-${++fallbackRelationId}`,
 				type,
 				title,
 				subtitle,
