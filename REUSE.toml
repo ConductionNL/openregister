@@ -136,3 +136,46 @@ path = "tests/fixtures/pdf/testdoc.pdf"
 precedence = "override"
 SPDX-FileCopyrightText = "Carlos de Alfonso and the ddn/sapp contributors, https://github.com/dealfonso/sapp"
 SPDX-License-Identifier = "LGPL-3.0-or-later"
+
+# Material Design Icons (Pictogrammers). Review finding on #3857: the blanket
+# above would have stamped the repo's own app artwork "Conduction B.V." while
+# three of these files are upstream glyph paths byte-for-byte. Verified against
+# the installed packages — the `d` attribute of each occurs verbatim in
+# node_modules/@mdi/js/mdi.js and in vue-material-design-icons:
+#   img/lock.svg      == Lock.vue
+#   img/unlock.svg    == LockOpenOutline.vue
+#   img/app-dark.svg  == DatabaseSync.vue
+# node_modules/@mdi/js/LICENSE (Pictogrammers Free License): "# Icons: Apache
+# 2.0 … All other icons are either redistributed under their respective
+# licenses or are distributed under the Apache 2.0 license." Hence
+# LICENSES/Apache-2.0.txt, whose §4 attribution requirement these blocks are.
+[[annotations]]
+path = [
+    "img/lock.svg",
+    "img/unlock.svg",
+    "img/app-dark.svg",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/"
+SPDX-License-Identifier = "Apache-2.0"
+
+# The same MDI `database-sync` glyph, re-exported through Adobe Illustrator
+# (decimal path coordinates instead of MDI's integers, same shape). `img/app.svg`
+# is the glyph alone; `img/app-store.svg` and `docs/static/img/logo.svg` place it
+# inside Conduction's hexagon, which is ours. Two rights holders and two licences
+# in one file is what an `AND` expression is for — the glyph stays Apache-2.0,
+# the hexagon and the composition are EUPL-1.2. Replacing the glyph with our own
+# drawing would collapse these three back to the blanket; until then, silence
+# would be the wrong answer given how this file frames the ordering.
+[[annotations]]
+path = [
+    "img/app.svg",
+    "img/app-store.svg",
+    "docs/static/img/logo.svg",
+]
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "Apache-2.0 AND EUPL-1.2"
