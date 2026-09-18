@@ -3,8 +3,24 @@
 ## 1. A property with a scope
 
 - [ ] 1.1 A `scope` attribute in the published property vocabulary, naming a unit or a team.
+  - 🔴 **DELIBERATELY NOT SHIPPED ON ITS OWN, 2026-09-18.** Publishing `scope`
+    without 1.3 would be an inert declaration, and this one is inert in the
+    dangerous direction: a schema author writes `scope: team-a`, the key
+    validates, the vocabulary publishes it, and the field is readable by
+    everybody. They would believe the field is team-scoped precisely because
+    the platform accepted the word.
+  - That is the same defect as a widget declaring roles nothing reads
+    (dossiq#2947) and as a reporter with no caller (openregister#3896). The
+    difference is that those were visible as "nothing happened"; this one looks
+    like it worked.
+  - So 1.1 lands WITH 1.3, not before it. The read filter, the write refusal and
+    the published key are one change, and section 2's ceiling and promotion sit
+    on top of them.
 - [ ] 1.2 Adding a scoped property is a declared action gated by a group, not by the admin flag.
 - [ ] 1.3 A scoped property is returned, validated and writable only within its scope.
+  - The enforcement 1.1 must not ship without. It touches the object READ path,
+    which is where a scoped property has to disappear for a principal outside
+    the scope, and that is the part no unit test on a fixture can settle.
 - [ ] 1.4 A scoped property is searchable, facetable, groupable and exportable like a schema property.
 
 ## 2. Keeping the schema honest
