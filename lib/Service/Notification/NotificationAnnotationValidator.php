@@ -99,7 +99,18 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @param ScheduledFilterParser|null $filterParser Parser for scheduled filters.
 	 */
-	public function __construct(?ScheduledFilterParser $filterParser = null) {
+	/**
+	 * The administered decisions that are not preferences.
+	 *
+	 * @var ForcedChannelPolicy
+	 */
+	private ForcedChannelPolicy $forcedChannels;
+
+	public function __construct(
+		?ScheduledFilterParser $filterParser = null,
+		?ForcedChannelPolicy $forcedChannels = null,
+	) {
+		$this->forcedChannels = ($forcedChannels ?? new ForcedChannelPolicy());
 		$this->filterParser = ($filterParser ?? new ScheduledFilterParser());
 
 	}//end __construct()
@@ -448,6 +459,20 @@ final class NotificationAnnotationValidator {
 					}
 				}//end foreach
 			}//end if
+
+			// The two administered decisions that are not preferences
+			// (notification-kinds-an-administrator-forces). Both fail SILENTLY
+			// at send time: a force with no reason renders as a preference a
+			// user cannot explain, and an internal kind whose only channels
+			// leave the organisation renders as a kind that never sends. The
+			// rules live in ForcedChannelPolicy so the save and the send read
+			// one interpretation of them rather than two.
+			foreach ($this->forcedChannels->validate(declaration: $spec) as $forcedError) {
+				$errors[] = [
+					'code' => $forcedError['code'],
+					'message' => sprintf('Notification "%s": %s', $name, $forcedError['message']),
+				];
+			}
 
 			$channels = ($spec['channels'] ?? []);
 			if (is_array($channels) === false || count($channels) === 0) {
