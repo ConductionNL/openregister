@@ -3138,6 +3138,13 @@ class Schema extends Entity implements JsonSerializable {
 		// and watching every one of their rules stop working. Same class of
 		// trap as every entry above, arriving from the other side.
 		'x-openregister-conditions',
+		// The checks an administrator adds, with the sentence each one says
+		// when it refuses (row 11.53). Absent from this list,
+		// setConfiguration() DROPS it and the schema's author reads a 200 on
+		// the save while every violating object keeps saving happily — a
+		// missing CONTROL rather than a missing feature, which is the worst
+		// member of the silent no-op class this list exists to prevent.
+		'x-openregister-validations',
 	];
 
 	/**
