@@ -54,6 +54,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
@@ -574,6 +576,52 @@ class FlowController extends Controller {
 
 		return new JSONResponse($flow->jsonSerialize());
 	}//end show()
+
+	/**
+	 * Download one flow as BPMN 2.0 XML.
+	 *
+	 * 🔴 IT IS A SUBSET, AND THE FILE SAYS SO. Every flow exports, because a
+	 * step the standard has no word for leaves as a `serviceTask` carrying its
+	 * real type and configuration in `extensionElements`. What this endpoint
+	 * does NOT do is validate the result against the OMG XSD: the schema is not
+	 * vendored here, so the output is well-formed XML in the standard's
+	 * namespaces and shape, and its schema-validity is unverified. Calling that
+	 * "BPMN 2.0 export" without saying so is the claim this comment refuses.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The XML, or 404 as JSON.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function bpmn(string $id): DataDownloadResponse|JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		$name = preg_replace('/[^A-Za-z0-9_.-]/', '-', (string)($flow->getName() ?? 'flow'));
+		if ($name === null || $name === '') {
+			$name = 'flow';
+		}
+
+		return new DataDownloadResponse(
+			(new FlowBpmnExporter())->export(flow: $flow),
+			$name . '.bpmn',
+			'application/xml'
+		);
+	}//end bpmn()
 
 	/**
 	 * Create a flow.
