@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
@@ -987,6 +988,21 @@ class MagicFacetHandler {
 			// Performance: Comparable or better than pre-computed (~73ms vs ~97ms in benchmarks).
 			$properties = $schema->getProperties() ?? [];
 			foreach ($properties as $propertyKey => $property) {
+				// 🔴 A FACET IS A READ OF THE COLUMN, SO IT OBEYS THE READ RULE.
+				// This loop offered every `facetable` property to every caller
+				// who could see the rows, and a facet over a governed column
+				// hands back its DISTINCT VALUES. The rows were protected and
+				// the value list was not: for a property scoped to one team,
+				// everybody else could read the set of answers without ever
+				// being allowed to read one.
+				//
+				// It is the quiet kind: the response looks like an ordinary
+				// facet, and the property never appears in any object body, so
+				// nothing on screen suggests a leak.
+				if ($this->callerMayFacet(schema: $schema, property: (string)$propertyKey) === false) {
+					continue;
+				}
+
 				// Check if property is marked as facetable (boolean true or config object).
 				$facetable = $property['facetable'] ?? false;
 				if ($facetable === true || (is_array($facetable) === true && empty($facetable) === false)) {
@@ -1121,6 +1137,66 @@ class MagicFacetHandler {
 		// Remove trailing underscores.
 		return rtrim($name, '_');
 	}//end sanitizeColumnName()
+
+	/**
+	 * Whether the caller may be offered a facet over this property.
+	 *
+	 * A facet groups a column and returns its distinct values with counts, which
+	 * is a read of that column for everybody it is offered to. So the question
+	 * is the read question, and it is answered by the ONE thing that already
+	 * answers it: `PropertyRbacHandler`. Asking it here rather than
+	 * reimplementing the rule is the whole point; a second evaluator of "may
+	 * this person see this field" disagrees with the first within a week, and
+	 * the wider one is the one that discloses.
+	 *
+	 * FAILS CLOSED. When the handler cannot be resolved the property is left
+	 * out, because the alternative is offering a facet whose access nobody
+	 * checked.
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool Whether the facet may be offered.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+	 */
+	private function callerMayFacet(Schema $schema, string $property): bool {
+		if ($schema->hasPropertyAuthorization() === false) {
+			// Nothing on this schema is governed at property level, so there is
+			// no question to ask and no handler to resolve.
+			return true;
+		}
+
+		if ($this->container === null) {
+			$this->logger->warning(
+				message: '[MagicFacetHandler] No container to resolve the property read rule; omitting the facet',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property]
+			);
+			return false;
+		}
+
+		try {
+			$rbac = $this->container->get(PropertyRbacHandler::class);
+
+			// The object is empty because a facet is not about one record: it
+			// asks whether this property is readable AT ALL for this caller, not
+			// whether it is readable on some particular row. A conditional rule
+			// that depends on a record therefore does not admit the facet, which
+			// is the safe direction.
+			return $rbac->canReadProperty(schema: $schema, property: $property, object: []);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[MagicFacetHandler] Could not check the property read rule; omitting the facet',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'property' => $property,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return false;
+		}
+	}//end callerMayFacet()
 
 	/**
 	 * Determine facet type based on property definition.
