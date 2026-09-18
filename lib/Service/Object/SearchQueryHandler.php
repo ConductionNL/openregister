@@ -729,7 +729,7 @@ class SearchQueryHandler {
 				);
 				$viewQuery = $view->getQuery();
 
-				if ($_viewScopeRequired === true && $this->viewNarrows(viewQuery: $viewQuery) === false) {
+				if ($_viewScopeRequired === true && (new ViewScopeRule())->narrows(viewQuery: $viewQuery) === false) {
 					// A view that filters on nothing is not a bound. Applying it
 					// would leave the query exactly as wide as it arrived.
 					throw new Exception(
@@ -838,31 +838,6 @@ class SearchQueryHandler {
 
 		return $query;
 	}//end applyViewsToQuery()
-
-	/**
-	 * Whether a view's stored query narrows a search at all.
-	 *
-	 * Mirrors exactly the three filters {@see self::applyViewsToQuery()} knows
-	 * how to apply. A view holding none of them merges nothing into the query,
-	 * which for a caller whose only bound is the view means no bound at all.
-	 *
-	 * @param array<string, mixed>|null $viewQuery The view's stored query.
-	 *
-	 * @return bool True when applying the view narrows the search.
-	 */
-	private function viewNarrows(?array $viewQuery): bool {
-		if ($viewQuery === null) {
-			return false;
-		}
-
-		foreach (['registers', 'schemas', 'searchTerms'] as $key) {
-			if (empty($viewQuery[$key]) === false) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end viewNarrows()
 
 	/**
 	 * Add pagination URLs to search results

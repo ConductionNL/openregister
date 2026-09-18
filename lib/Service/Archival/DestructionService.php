@@ -267,22 +267,11 @@ class DestructionService {
 		}
 
 		// Check dual approval: second approver must be different from first.
-		if ($requiresDual === true && count($destructionList['approvals']) >= 2) {
-			$firstApprover = $destructionList['approvals'][0]['userId'] ?? null;
-			$secondApprover = $destructionList['approvals'][1]['userId'] ?? null;
-			if ($firstApprover === $secondApprover) {
-				$this->logger->warning(
-					message: '[DestructionService] Same archivist cannot provide both approvals',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'approver' => $firstApprover,
-					]
-				);
-				// Remove the invalid second approval.
-				array_pop($destructionList['approvals']);
-				return $destructionList;
-			}
+		if ($requiresDual === true && $this->sameArchivistTwice($destructionList) === true) {
+			// The second approval is not a second pair of eyes; drop it.
+			array_pop($destructionList['approvals']);
+
+			return $destructionList;
 		}
 
 		// Mark as approved and queue execution.
@@ -460,6 +449,40 @@ class DestructionService {
 
 		return $destructionList;
 	}//end withholdDecidedEntries()
+
+	/**
+	 * Whether both approvals on a list came from the same archivist.
+	 *
+	 * Dual sign-off exists to put a second pair of eyes on an irreversible
+	 * action, which one person approving twice does not provide.
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list data.
+	 *
+	 * @return bool True when the first two approvals share an approver.
+	 */
+	private function sameArchivistTwice(array $destructionList): bool {
+		$approvals = ($destructionList['approvals'] ?? []);
+		if (count($approvals) < 2) {
+			return false;
+		}
+
+		$first = ($approvals[0]['userId'] ?? null);
+		$second = ($approvals[1]['userId'] ?? null);
+		if ($first !== $second) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[DestructionService] Same archivist cannot provide both approvals',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'approver' => $first,
+			]
+		);
+
+		return true;
+	}//end sameArchivistTwice()
 
 	/**
 	 * Why one entry was withheld, in the reviewer's own recorded words.
