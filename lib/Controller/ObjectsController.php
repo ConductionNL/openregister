@@ -3258,6 +3258,8 @@ class ObjectsController extends Controller {
 			// client that sent `_expectedUpdated` on a PUT got no assertion at
 			// all, silently, and overwrote whatever had landed meanwhile. The
 			// two doors now call one method, so they cannot answer differently.
+			$this->noteClientSuppliedCause();
+
 			$conflict = $this->versionConflictResponse(
 				existingObject: $existingObject,
 				sent: $object,
@@ -3523,6 +3525,8 @@ class ObjectsController extends Controller {
 			// and the write is rejected with 409 instead of overwriting the newer
 			// version. Opt-in: callers that omit `_expectedUpdated` behave as before.
 			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
+			$this->noteClientSuppliedCause();
+
 			$conflict = $this->versionConflictResponse(
 				existingObject: $existingObject,
 				sent: $patchData,
@@ -4872,6 +4876,37 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $outcome);
 	}//end move()
+
+	/**
+	 * Note, and discard, a cause a request tried to name for itself.
+	 *
+	 * 🔴 A CLIENT THAT CAN CLAIM ITS WRITE WAS A MIGRATION CAN HIDE A WRITE. An
+	 * administrator filtering out the noise of a bulk load would filter out
+	 * exactly the entry somebody wanted buried. So a `cause` in a request is
+	 * never stored, and the ATTEMPT is recorded, because a caller trying to
+	 * label its own writes is itself worth knowing about.
+	 *
+	 * Called from the write doors. It changes nothing about the request: the
+	 * key is already stripped from the payload by the `_`-prefix filter or
+	 * ignored by validation, so this only notices.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function noteClientSuppliedCause(): void {
+		foreach (['cause', '_cause', 'causeRun', '_causeRun'] as $key) {
+			if ($this->request->getParam($key) !== null) {
+				\OCA\OpenRegister\Service\WriteCause::noteClientAttempt();
+				$this->logger->warning(
+					message: '[ObjectsController] a request supplied its own audit cause; it was ignored',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'key' => $key]
+				);
+
+				return;
+			}
+		}
+	}//end noteClientSuppliedCause()
 
 	/**
 	 * Say that the caller still has this object open.

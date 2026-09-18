@@ -60,20 +60,23 @@ class Version1Date20260918101500 extends SimpleMigrationStep {
 	 * @param Closure $schemaClosure The schema closure.
 	 * @param array<array-key, mixed> $options Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when the task
-	 *                             table is absent.
+	 * @return ISchemaWrapper The schema, changed or not.
 	 *
 	 * @spec openspec/changes/the-engine-task-carries-a-kind/specs/flow-tasks/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
 
 		$schema = $schemaClosure();
 
+		// Hands the schema back even with nothing to do: a null return drops
+		// the shared snapshot and makes the next migration re-introspect the
+		// whole database. Inherited fix, one line — see
+		// `SchemaReuseHygieneTest`, which this file was failing.
 		if ($schema->hasTable(tableName: self::TABLE_TASKS) === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(tableName: self::TABLE_TASKS);

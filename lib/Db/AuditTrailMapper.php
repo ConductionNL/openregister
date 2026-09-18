@@ -321,6 +321,13 @@ class AuditTrailMapper extends QBMapper {
 					'flow_run',
 					'flow_node',
 					'flow_step',
+					// The cause and its run. Absent from this allowlist a
+					// filter is not rejected, it is silently DROPPED by the
+					// `continue` below — so `?cause=import` would answer the
+					// WHOLE unfiltered trail with a 200 and read as a load
+					// that had touched everything on the instance.
+					'cause',
+					'cause_run',
 				]
 			) === false
 			) {
@@ -382,6 +389,13 @@ class AuditTrailMapper extends QBMapper {
 					'flow_run',
 					'flow_node',
 					'flow_step',
+					// The cause and its run. Absent from this allowlist a
+					// filter is not rejected, it is silently DROPPED by the
+					// `continue` below — so `?cause=import` would answer the
+					// WHOLE unfiltered trail with a 200 and read as a load
+					// that had touched everything on the instance.
+					'cause',
+					'cause_run',
 				]
 			) === false
 			) {
@@ -783,6 +797,16 @@ class AuditTrailMapper extends QBMapper {
 		if ($importJobId !== null) {
 			$auditTrail->setImportJobId($importJobId);
 		}
+
+		// 🔴 WHY THIS WRITE HAPPENED, from the closed vocabulary, derived from
+		// the ambient acting context and NEVER from the request. Stamped here
+		// in the shared builder for the same reason the flow attribution is:
+		// `insertAuditTrails()` builds its rows through this method, and
+		// stamping only the inserts would leave every bulk write uncaused —
+		// which is precisely the write a filter on cause exists to find.
+		$frame = \OCA\OpenRegister\Service\WriteCause::current();
+		$auditTrail->setCause($frame['cause']);
+		$auditTrail->setCauseRun($frame['run']);
 
 		// Flow attribution — which run, node and step caused this write.
 		// Applied HERE, in the shared builder, and not in the two insert
