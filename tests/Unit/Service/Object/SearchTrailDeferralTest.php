@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrail;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -44,7 +44,7 @@ require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
  * Unit tests for deferred search-trail recording in SearchQueryHandler.
  */
 class SearchTrailDeferralTest extends TestCase {
-	private ViewMapper&MockObject $viewMapper;
+	private ViewScopeApplier&MockObject $viewScope;
 	private SchemaMapper&MockObject $schemaMapper;
 	private SettingsService&MockObject $settingsService;
 	private LoggerInterface&MockObject $logger;
@@ -61,7 +61,7 @@ class SearchTrailDeferralTest extends TestCase {
 		parent::setUp();
 		ShutdownFunctionSpy::reset();
 
-		$this->viewMapper = $this->createMock(ViewMapper::class);
+		$this->viewScope = $this->createMock(ViewScopeApplier::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -69,7 +69,7 @@ class SearchTrailDeferralTest extends TestCase {
 		$this->searchTrailService = $this->createMock(SearchTrailService::class);
 
 		$this->handler = new SearchQueryHandler(
-			viewMapper: $this->viewMapper,
+			viewScope: $this->viewScope,
 			schemaMapper: $this->schemaMapper,
 			settingsService: $this->settingsService,
 			logger: $this->logger,

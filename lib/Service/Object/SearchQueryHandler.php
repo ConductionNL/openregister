@@ -32,7 +32,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -131,7 +130,7 @@ class SearchQueryHandler {
 	/**
 	 * SearchQueryHandler constructor.
 	 *
-	 * @param ViewMapper $viewMapper Mapper for view operations.
+	 * @param ViewScopeApplier $viewScope Merges a view's stored query into a search.
 	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
 	 * @param SettingsService $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
@@ -144,7 +143,7 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly ViewMapper $viewMapper,
+		private readonly ViewScopeApplier $viewScope,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly SettingsService $settingsService,
 		private readonly LoggerInterface $logger,
@@ -657,32 +656,11 @@ class SearchQueryHandler {
 	}//end buildSearchQuery()
 
 	/**
-	 * Apply view filters to a query
+	 * Apply view filters to a query.
 	 *
-	 * Converts view definitions into query parameters by merging view->query into the base query.
-	 * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
-	 *
-	 * ## `$_viewScopeRequired` - when the view IS the bound
-	 *
-	 * For an ordinary authenticated search a view is a convenience: the caller
-	 * is already scoped by RBAC and by its organisation, so a view that cannot
-	 * be resolved may be logged and skipped without widening anything the caller
-	 * could not already see. That is the default, and it stays.
-	 *
-	 * A trusted caller is a different case. When a caller has switched RBAC and
-	 * multitenancy OFF because it carries its own authorization - a published
-	 * access link naming one view - the view filter is the ONLY bound left on
-	 * the query. Skipping it there does not narrow less, it removes the bound
-	 * entirely and answers with arbitrary objects from any organisation. Such a
-	 * caller passes `$_viewScopeRequired: true`, and then every way of failing to
-	 * apply the view throws instead of continuing: an unresolvable view, and a
-	 * view whose query narrows nothing at all. The caller turns that into "this
-	 * link no longer resolves", which is the correct answer.
-	 *
-	 * The view is resolved RBAC- and organisation-exempt in that mode for the
-	 * same reason the caller already reads its schema that way: there is no
-	 * session to judge, and the link is the authorization. What it may NOT do is
-	 * fail open.
+	 * The merge itself lives in {@see ViewScopeApplier}, which owns the
+	 * ViewMapper and the fail-closed contract around `$_viewScopeRequired`.
+	 * This handler keeps the entry point its callers already use.
 	 *
 	 * @param array<string, mixed> $query Base query parameters.
 	 * @param array<int|string> $viewIds View IDs to apply (can be int or string IDs).
@@ -693,150 +671,16 @@ class SearchQueryHandler {
 	 *
 	 * @throws Exception When `$_viewScopeRequired` is true and a view cannot be applied.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  The flag is the fail-closed contract, not a mode switch
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fail-closed contract, not a mode switch
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function applyViewsToQuery(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
-		if (empty($viewIds) === true) {
-			if ($_viewScopeRequired === true) {
-				// A caller whose only bound is the view must not be handed an
-				// unbounded query because the view list arrived empty.
-				throw new Exception('Refusing a view-scoped search without a view to scope it by.');
-			}
-
-			return $query;
-		}
-
-		$this->logger->debug(
-			message: '[SearchQueryHandler] Applying views to query',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'viewIds' => $viewIds,
-				'originalQuery' => array_keys($query),
-			]
+		return $this->viewScope->apply(
+			query: $query,
+			viewIds: $viewIds,
+			_viewScopeRequired: $_viewScopeRequired
 		);
-
-		foreach ($viewIds as $viewId) {
-			try {
-				$view = $this->viewMapper->find(
-					$viewId,
-					_rbac: ($_viewScopeRequired === false),
-					_multitenancy: ($_viewScopeRequired === false)
-				);
-				$viewQuery = $view->getQuery();
-
-				if ($_viewScopeRequired === true && (new ViewScopeRule())->narrows(viewQuery: $viewQuery) === false) {
-					// A view that filters on nothing is not a bound. Applying it
-					// would leave the query exactly as wide as it arrived.
-					throw new Exception(
-						'View "' . (string)$viewId . '" carries no register, schema or search-term filter.'
-					);
-				}
-
-				// Apply registers filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['registers']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$registerValue = $query['@self']['register'] ?? null;
-					$registerArray = [];
-					if (is_array($registerValue) === true) {
-						$registerArray = $registerValue;
-					} elseif ($registerValue !== null && $registerValue !== false) {
-						$registerArray = [$registerValue];
-					}
-
-					$query['@self']['register'] = array_unique(
-						array_merge(
-							$registerArray,
-							$viewQuery['registers']
-						)
-					);
-				}//end if
-
-				// Apply schemas filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['schemas']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$schemaValue = $query['@self']['schema'] ?? null;
-					$schemaArray = [];
-					if (is_array($schemaValue) === true) {
-						$schemaArray = $schemaValue;
-					} elseif ($schemaValue !== null && $schemaValue !== false) {
-						$schemaArray = [$schemaValue];
-					}
-
-					$query['@self']['schema'] = array_unique(
-						array_merge(
-							$schemaArray,
-							$viewQuery['schemas']
-						)
-					);
-				}//end if
-
-				// Apply search terms.
-				if (empty($viewQuery['searchTerms']) === false) {
-					$searchTerms = $viewQuery['searchTerms'];
-					if (is_array($viewQuery['searchTerms']) === true) {
-						$searchTerms = implode(' ', $viewQuery['searchTerms']);
-					}
-
-					// Merge with existing search if present.
-					//
-					// This previously assigned $query['_search'] FIRST and then
-					// appended $searchTerms to it, so the isset() guard could only
-					// ever see the value just written. Two things went wrong: the
-					// caller's own `_search` was discarded (the merge this comment
-					// describes never happened), and the view's terms were appended
-					// to themselves, producing "foo foo". Mirrors the `schemas`
-					// merge above: read what is there, then combine.
-					$existingSearch = ($query['_search'] ?? '');
-					$searchPrefix = '';
-					if (is_string($existingSearch) === true && $existingSearch !== '') {
-						$searchPrefix = $existingSearch . ' ';
-					}
-
-					$query['_search'] = $searchPrefix . $searchTerms;
-				}//end if
-
-				$this->logger->debug(
-					message: '[SearchQueryHandler] Applied view to query',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'registers' => $viewQuery['registers'] ?? [],
-						'schemas' => $viewQuery['schemas'] ?? [],
-						'hasSearchTerms' => empty($viewQuery['searchTerms']) === false,
-					]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[SearchQueryHandler] Failed to apply view',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'error' => $e->getMessage(),
-					]
-				);
-
-				if ($_viewScopeRequired === true) {
-					// Fail closed: for this caller the view was the whole bound,
-					// so swallowing the failure would answer with everything.
-					throw $e;
-				}
-			}//end try
-		}//end foreach
-
-		return $query;
 	}//end applyViewsToQuery()
 
 	/**

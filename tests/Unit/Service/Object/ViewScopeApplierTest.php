@@ -9,7 +9,7 @@ declare(strict_types=1);
  * AccessLinkReader::readView() searches with `_rbac: false` and
  * `_multitenancy: false`, so the view filter is the ONLY thing bounding the
  * read — and it was silently dropped: ViewMapper::find() ran an RBAC check that
- * denies without a user, and applyViewsToQuery() logged the refusal and carried
+ * denies without a user, and the view merge logged the refusal and carried
  * on with the query unmodified. No RBAC, no multitenancy, no view: up to 200
  * arbitrary objects from any organisation on the instance.
  *
@@ -26,37 +26,29 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\Object\SearchQueryHandler;
-use OCA\OpenRegister\Service\SearchTrailService;
-use OCA\OpenRegister\Service\SettingsService;
-use OCP\IRequest;
+use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * Fail-closed tests for SearchQueryHandler::applyViewsToQuery().
+ * Fail-closed tests for ViewScopeApplier::apply().
  */
-class SearchQueryHandlerViewScopeTest extends TestCase {
+class ViewScopeApplierTest extends TestCase {
 	private ViewMapper $viewMapper;
 
 	protected function setUp(): void {
 		$this->viewMapper = $this->createMock(ViewMapper::class);
 	}//end setUp()
 
-	private function handler(): SearchQueryHandler {
-		return new SearchQueryHandler(
+	private function applier(): ViewScopeApplier {
+		return new ViewScopeApplier(
 			$this->viewMapper,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
-			$this->createMock(SearchTrailService::class)
+			$this->createMock(LoggerInterface::class)
 		);
-	}//end handler()
+	}//end applier()
 
 	/**
 	 * A real View: getQuery() is an Entity magic accessor PHPUnit cannot stub.
@@ -77,7 +69,7 @@ class SearchQueryHandlerViewScopeTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$this->handler()->applyViewsToQuery(
+		$this->applier()->apply(
 			query: ['_limit' => 200],
 			viewIds: ['view-uuid'],
 			_viewScopeRequired: true
@@ -87,7 +79,7 @@ class SearchQueryHandlerViewScopeTest extends TestCase {
 	public function testAnUnresolvableViewIsStillToleratedForEveryOtherCaller(): void {
 		$this->viewMapper->method('find')->willThrowException(new RuntimeException('denied'));
 
-		$query = $this->handler()->applyViewsToQuery(
+		$query = $this->applier()->apply(
 			query: ['_limit' => 200],
 			viewIds: ['view-uuid']
 		);
@@ -102,7 +94,7 @@ class SearchQueryHandlerViewScopeTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$this->handler()->applyViewsToQuery(
+		$this->applier()->apply(
 			query: [],
 			viewIds: ['view-uuid'],
 			_viewScopeRequired: true
@@ -112,7 +104,7 @@ class SearchQueryHandlerViewScopeTest extends TestCase {
 	public function testNoViewAtAllThrowsRatherThanRunningUnbounded(): void {
 		$this->expectException(Exception::class);
 
-		$this->handler()->applyViewsToQuery(
+		$this->applier()->apply(
 			query: ['_limit' => 200],
 			viewIds: [],
 			_viewScopeRequired: true
@@ -122,7 +114,7 @@ class SearchQueryHandlerViewScopeTest extends TestCase {
 	public function testAResolvableViewStillNarrowsTheQuery(): void {
 		$this->viewMapper->method('find')->willReturn($this->view(['registers' => [7]]));
 
-		$query = $this->handler()->applyViewsToQuery(
+		$query = $this->applier()->apply(
 			query: [],
 			viewIds: ['view-uuid'],
 			_viewScopeRequired: true
@@ -140,7 +132,7 @@ class SearchQueryHandlerViewScopeTest extends TestCase {
 			->with('view-uuid', false, false)
 			->willReturn($this->view(['registers' => [7]]));
 
-		$this->handler()->applyViewsToQuery(
+		$this->applier()->apply(
 			query: [],
 			viewIds: ['view-uuid'],
 			_viewScopeRequired: true
