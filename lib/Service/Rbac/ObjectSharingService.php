@@ -246,6 +246,15 @@ class ObjectSharingService {
 						'sharedWith' => $share->getSharedWith(),
 						'permissions' => $share->getPermissions(),
 						'expiration' => $share->getExpirationDate()?->format('c'),
+						// Ledger row 13.41: an access review can only be
+						// FINISHED when every grant is either explained or
+						// explicitly local. The provenance answers the first
+						// half; this answers the second, beside it and in the
+						// same row rather than in a second call nobody makes.
+						'inherited' => false,
+						'inheritable' => $this->grantResolver->isInheritable(
+							(string)$object->getUuid()
+						),
 					];
 				}//end foreach
 			}//end foreach

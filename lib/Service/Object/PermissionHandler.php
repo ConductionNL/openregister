@@ -162,6 +162,14 @@ class PermissionHandler {
 		// SHOULD be enforced" was the only thing the spec could say about the
 		// destructive verb. See DestroyRightService.
 		'destroy',
+		// `assign` joins the canonical set HERE as well as in
+		// PermissionCatalogue, and the duplication is the point: this list
+		// decides whether a verb dispatches a custom-scope evaluation, and
+		// the catalogue decides whether a block may name it. A verb in one
+		// and not the other is canonical on one path and custom on the
+		// other, which is two answers to "what kind of verb is this" and
+		// exactly the divergence the catalogue exists to end (row 13.40).
+		'assign',
 	];
 
 	/**

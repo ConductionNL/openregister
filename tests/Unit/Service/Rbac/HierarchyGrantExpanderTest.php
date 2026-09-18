@@ -397,6 +397,132 @@ class HierarchyGrantExpanderTest extends TestCase {
 	}//end testAnotherTreeIsNotReached()
 
 	/**
+	 * 🔴 A grant marked as not inheritable admits its own object and stops there.
+	 *
+	 * Ledger row 13.41: an access review cannot be finished while nothing can
+	 * be marked as local. The object the grant is ON must still be granted —
+	 * the flag says where the access STOPS, not that it never started — and
+	 * that is the half a naive implementation drops.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	public function testANonInheritableGrantStopsAtItsOwnObject(): void {
+		$expander = new HierarchyGrantExpander(
+			descender: $this->descender(
+				['child' => 'root', 'grandchild' => 'child'],
+				$this->table()
+			),
+			logger: $this->logger
+		);
+
+		$result = $expander->expand(
+			granted: ['root' => Constants::PERMISSION_READ],
+			seeds: []
+		);
+
+		$this->assertSame(
+			Constants::PERMISSION_READ,
+			$result['granted']['root'],
+			'the object the grant is written on is still granted'
+		);
+		$this->assertArrayNotHasKey('child', $result['granted']);
+		$this->assertArrayNotHasKey('grandchild', $result['granted']);
+		$this->assertSame([], $result['sources']);
+	}//end testANonInheritableGrantStopsAtItsOwnObject()
+
+	/**
+	 * One local grant does not stop an inheritable one beside it.
+	 *
+	 * The control for the flag. An implementation that dropped the whole
+	 * expansion the moment any grant was local would satisfy the test above
+	 * and take access away from every other tree the caller holds.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	public function testALocalGrantDoesNotStopTheOthers(): void {
+		$expander = new HierarchyGrantExpander(
+			descender: $this->descender(
+				['child' => 'root', 'other-child' => 'other-root'],
+				$this->table()
+			),
+			logger: $this->logger
+		);
+
+		$result = $expander->expand(
+			granted: [
+				'root' => Constants::PERMISSION_READ,
+				'other-root' => Constants::PERMISSION_READ,
+			],
+			seeds: ['other-root' => Constants::PERMISSION_READ]
+		);
+
+		$this->assertArrayNotHasKey('child', $result['granted'], 'the local grant stops');
+		$this->assertArrayHasKey('other-child', $result['granted'], 'the travelling one does not');
+	}//end testALocalGrantDoesNotStopTheOthers()
+
+	/**
+	 * A local grant on a DESCENDANT is not put back by its ancestor.
+	 *
+	 * The subtle half. An administrator who marks a child's grant local has
+	 * said "not below here"; if the descent re-decided that child from the
+	 * root it would restore exactly the inheritance the flag was written to
+	 * stop, and the grandchild would come back with it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	public function testALocalGrantOnAChildIsNotReopenedByItsAncestor(): void {
+		$expander = new HierarchyGrantExpander(
+			descender: $this->descender(
+				['child' => 'root', 'grandchild' => 'child'],
+				$this->table()
+			),
+			logger: $this->logger
+		);
+
+		$result = $expander->expand(
+			granted: [
+				'root' => Constants::PERMISSION_READ,
+				'child' => Constants::PERMISSION_READ,
+			],
+			seeds: ['root' => Constants::PERMISSION_READ]
+		);
+
+		$this->assertArrayHasKey('child', $result['granted']);
+		$this->assertArrayNotHasKey(
+			'grandchild',
+			$result['granted'],
+			'the descent does not walk through an object whose grant is local'
+		);
+	}//end testALocalGrantOnAChildIsNotReopenedByItsAncestor()
+
+	/**
+	 * Passing no seeds at all means every grant travels.
+	 *
+	 * What every caller written before the flag existed meant.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	public function testNoSeedsMeansEveryGrantTravels(): void {
+		$expander = new HierarchyGrantExpander(
+			descender: $this->descender(['child' => 'root'], $this->table()),
+			logger: $this->logger
+		);
+
+		$this->assertArrayHasKey(
+			'child',
+			$expander->expand(granted: ['root' => Constants::PERMISSION_READ])['granted']
+		);
+	}//end testNoSeedsMeansEveryGrantTravels()
+
+	/**
 	 * A caller with no grant at all inherits nothing.
 	 *
 	 * @return void
