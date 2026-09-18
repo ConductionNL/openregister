@@ -825,7 +825,31 @@ class PropertyRbacHandler {
 		// Get rules for this action.
 		$rules = $authorization[$action] ?? [];
 
-		// If action is not configured, property is accessible.
+		// 🔴 "ACCESSIBLE" WAS THE WRONG WORD, AND IT READ AS A FAIL-OPEN.
+		//
+		// This returns true meaning "this layer has no opinion", NOT "anyone may
+		// do it". A property block is a NARROWING on top of the object cascade,
+		// so an action it does not name falls through to the object's own rules,
+		// which still have to pass. The schema cascade is the opposite kind of
+		// declaration: it is the last word, so `MagicRbacHandler::hasPermission()`
+		// returns FALSE on an empty list, denied, because there is nothing left
+		// to fall through to.
+		//
+		// 🔑 SO THE SAME LITERAL MEANS DIFFERENT THINGS IN THE TWO LAYERS, AND
+		// THAT IS CORRECT RATHER THAN A BUG TO HARMONISE. Making this one
+		// fail-closed would not tighten a leak; it would make every action a
+		// property block does not name UNWRITABLE, and measured across the
+		// installed fleet on 2026-09-18 there are 8 property-level blocks and
+		// ALL 8 ARE PARTIAL. Not one names all four actions. A naive
+		// harmonisation would break every one of them, in decidiq and stackiq.
+		//
+		// 🔴 WHAT IS GENUINELY SHARP HERE, and is NOT fixed by this comment: a
+		// property that restricts `read` and says nothing about `update` can be
+		// WRITTEN by anyone who may write the object, including somebody who may
+		// not read it. `stackiq organization.contactpersonen` is exactly that
+		// shape today. That is a blind write, not a disclosure, so it is left as
+		// a declaration each schema author must make deliberately rather than
+		// something this layer guesses at.
 		if (empty($rules) === true) {
 			return true;
 		}
