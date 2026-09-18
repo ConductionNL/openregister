@@ -4,6 +4,21 @@
 
 - [x] 1.1 An `export` verb in the authorization layer, evaluated beside read (D-1).
 - [x] 1.2 Every export path checks it, the API included; the refusal names the verb.
+  - The first branch gated `objects#export`, the export profile endpoints and
+    the whole-set bulk action. Measured on the merge, three more paths carry
+    object data off the instance and did not check: `tmlo#exportSingle`,
+    `tmlo#exportBatch` and `objectRelations#exportGraph`. All three now go
+    through `ExportGate`, which holds the check, the refusal shape and the
+    audit entry in one place so the next path is one call rather than a fourth
+    copy of the control.
+  - **Deliberately not gated, and why.** `registers#export` and
+    `configuration#export` take the schema definitions, not the objects, and
+    are an administrator's act. `auditTrail#export`, `auditQuery#export` and
+    `searchTrail#export` take trails, which have their own admin gate.
+    `user#exportData`, `subjectExport#download` and `gdpr/access-export` are a
+    data subject exercising their own right, and gating those behind an
+    administered verb would let an instance switch off a right it does not
+    grant. `flow#exportBpmn` takes a flow definition.
 - [x] 1.3 A migration granting export wherever read is granted, stated in the release note (D-2).
 
 ## 2. The profile

@@ -16,6 +16,15 @@ import type { APIRequestContext } from '@playwright/test'
  * @e2e data-import-export::one-file-one-value-mode-stated
  * @e2e data-import-export::an-incident-can-be-reconstructed
  *
+ * THE OTHER EXPORT PATHS. REQ-EXP-001 says EVERY export path checks the verb,
+ * and a spec that only exercised `objects#export` would leave that word
+ * untested on the paths most likely to be forgotten. The two that carry object
+ * data off the instance by another route are exercised here: the archival
+ * metadata export (`tmlo#exportSingle` / `#exportBatch`) and the relation
+ * graph CSV (`objectRelations#exportGraph`). Each is asserted the same way as
+ * the main path: the reader CAN read, and is still refused the export, naming
+ * the verb.
+ *
  * WHAT ONLY THIS LAYER CAN PROVE.
  *
  * A verb that holds in a service and not on the wire is not a control. The two
@@ -292,5 +301,82 @@ test.describe('export as its own right over HTTP', () => {
 		expect(body.csvMetadataPrefix).toBe(METADATA_PREFIX)
 		expect(body.valueModes).toEqual(['stored', 'rendered'])
 		expect(body.headers.valueMode).toBe('X-OpenRegister-Export-Value-Mode')
+	})
+	test('the archival metadata export is gated on the same verb', async () => {
+		// The reader can read the objects, asserted above. A refusal here is
+		// therefore about the export verb and not about visibility.
+		const refused = await reader.get(
+			`${API}/tmlo/${registerId}/${schemaId}/export`,
+		)
+
+		expect(
+			refused.status(),
+			'a reader without the export right took the archival metadata',
+		).toBe(403)
+
+		const body = await refused.json()
+		expect(body.verb, 'the refusal must name the verb').toBe('export')
+		expect(body.rule).toBe('export-right-missing')
+	})
+
+	test('the single-object archival export is gated too', async () => {
+		const uuid = objectUuids[0]
+
+		test.skip(uuid === undefined, 'no object was created to export')
+
+		const refused = await reader.get(
+			`${API}/tmlo/${registerId}/${schemaId}/${uuid}/export`,
+		)
+
+		expect(
+			refused.status(),
+			'a reader without the export right took one object as MDTO',
+		).toBe(403)
+		expect((await refused.json()).verb).toBe('export')
+	})
+
+	test('the holder of the export grant still gets the archival metadata', async () => {
+		// The mirror of the refusal: without this, removing the TMLO route
+		// entirely would leave the two cases above green on a 404-shaped 403.
+		const allowed = await exporter.get(
+			`${API}/tmlo/${registerId}/${schemaId}/export`,
+		)
+
+		expect(
+			allowed.status(),
+			`the export grant does not reach the archival export: ${await allowed.text()}`,
+		).toBe(200)
+	})
+
+	test('the relation graph csv is gated on the export verb', async () => {
+		const uuid = objectUuids[0]
+
+		test.skip(uuid === undefined, 'no object was created to export')
+
+		const refused = await reader.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}/graph/export`,
+		)
+
+		expect(
+			refused.status(),
+			'a reader without the export right took the relation graph',
+		).toBe(403)
+		expect((await refused.json()).verb).toBe('export')
+	})
+
+	test('the holder of the export grant still gets the relation graph', async () => {
+		const uuid = objectUuids[0]
+
+		test.skip(uuid === undefined, 'no object was created to export')
+
+		const allowed = await exporter.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}/graph/export`,
+		)
+
+		expect(
+			allowed.status(),
+			`the export grant does not reach the graph export: ${await allowed.text()}`,
+		).toBe(200)
+		expect(allowed.headers()['content-type']).toContain('text/csv')
 	})
 })
