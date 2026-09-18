@@ -42,6 +42,7 @@ use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Registry of all leaves contributed by sibling apps on this NC instance.
@@ -77,13 +78,107 @@ class LeafRegistry {
 	 *
 	 * @return void
 	 */
+	/**
+	 * The one answer to whether an app's leaf can render.
+	 *
+	 * @var LeafBundle
+	 */
+	private readonly LeafBundle $leafBundle;
+
 	public function __construct(
 		private IEventDispatcher $eventDispatcher,
 		private IntegrationRegistry $integrationRegistry,
 		private IAppManager $appManager,
 		private LoggerInterface $logger,
+		// LAST AND NULLABLE so every existing construction keeps working; the
+		// container always supplies it. Built from the app manager this class
+		// already holds when it is absent, so the answer is never a second one.
+		private ?LeafBundle $leafBundleService = null,
 	) {
+		$this->leafBundle = ($leafBundleService ?? new LeafBundle($appManager));
 	}//end __construct()
+
+	/**
+	 * Whether a render surface has the bundle it needs to appear at all.
+	 *
+	 * 🔴 THE FAILURE THIS ENDS IS THAT EVERYTHING REPORTS SUCCESS AND THE
+	 * FEATURE IS ABSENT. A render-surface descriptor from an app that ships no
+	 * leaf bundle reached capability discovery, `getLeaves()` returned it, the
+	 * gate went green on both halves, and the surface rendered NOTHING on every
+	 * consuming page. Nobody was told, because nothing had failed.
+	 *
+	 * Refusing at registration is the only point where it can be said out loud.
+	 * After it, every reader downstream is entitled to believe the leaf renders.
+	 *
+	 * 🔑 THREE CASES ARE DELIBERATELY NOT REFUSED, and each would be a
+	 * regression:
+	 *
+	 * - a leaf with NO render-surface kind: a data provider or agent runner has
+	 *   no client half to load, so a bundle is not its contract;
+	 * - a BUILT-IN leaf, whose `requiredApp` is null: those ride OpenRegister's
+	 *   own bundle, which is already on the page;
+	 * - an app whose PATH cannot be resolved: it is disabled or not installed,
+	 *   and "no bundle" would be a confident wrong reason for an app that is
+	 *   simply not there.
+	 *
+	 * The message names the file the app must build, because "no leaf bundle"
+	 * sends somebody looking at their webpack config with nothing to search
+	 * for. Measured on the development instance, one app had built its leaf
+	 * under a name nothing looks for.
+	 *
+	 * @param LeafDescriptor $descriptor The contributed descriptor.
+	 *
+	 * @return bool Whether it may register.
+	 *
+	 * @spec openspec/changes/a-leaf-that-cannot-render-refuses-to-register/specs/leaf-provider-registration/spec.md
+	 */
+	private function renderSurfaceCanRender(LeafDescriptor $descriptor): bool {
+		if ($descriptor->hasKind(LeafDescriptor::KIND_RENDER_SURFACE) === false) {
+			return true;
+		}
+
+		$providingApp = $descriptor->getRequiredApp();
+		if ($providingApp === null || $providingApp === '') {
+			return true;
+		}
+
+		if ($this->leafBundle->pathFor(appId: $providingApp) === null) {
+			return true;
+		}
+
+		// 🔑 A DISABLED APP IS NOT A DARK LEAF, AND THIS REGISTRY ALREADY SAYS
+		// SO ITS OWN WAY. `describeForCapabilities()` reports such a leaf as
+		// `usable: false`, which is right: enabling the app fixes it, so the
+		// descriptor belongs in the catalogue meanwhile. A MISSING BUNDLE never
+		// fixes itself without a rebuild, which is why that one is refused and
+		// this one is left to the existing mechanism. Overriding it here would
+		// be a second answer to "can this leaf be used".
+		try {
+			if ($this->appManager->isEnabledForUser($providingApp) === false) {
+				return true;
+			}
+		} catch (Throwable) {
+			return true;
+		}
+
+		if ($this->leafBundle->existsFor(appId: $providingApp) === true) {
+			return true;
+		}
+
+		$this->logger->error(
+			sprintf(
+				'[LeafRegistry] leaf "%s" declares a render surface but app "%s" ships no "%s" — '
+				. 'it would report success and render nothing, so it is refused. '
+				. 'Add a "%s" webpack entry to that app.',
+				$descriptor->getId(),
+				$providingApp,
+				$this->leafBundle->expectedFileName(appId: $providingApp),
+				LeafBundle::ENTRY
+			)
+		);
+
+		return false;
+	}//end renderSurfaceCanRender()
 
 	/**
 	 * Dispatch the collect-event once and collect the announced leaves.
@@ -203,6 +298,10 @@ class LeafRegistry {
 					$id
 				)
 			);
+			return;
+		}
+
+		if ($this->renderSurfaceCanRender(descriptor: $descriptor) === false) {
 			return;
 		}
 
