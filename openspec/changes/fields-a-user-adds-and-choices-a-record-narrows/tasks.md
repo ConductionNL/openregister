@@ -29,12 +29,23 @@
     reference-options endpoint. `/api/vocabulary/options` is the CONCEPT one.
     The resolver 3.4 built is the half that endpoint will call, so the rule is
     written once rather than twice.
-- [ ] 3.3 A write of a value outside the filter is refused on the server, naming the filter.
-  - STILL OPEN, and it is the half that makes the feature more than advisory.
-    It hooks `SaveObject::validateReferences()`, and it must call the SAME
-    `resolve()` the options read does: two evaluators of one rule disagree
-    within a week, which is what `NoSecondPermissionEvaluatorTest` exists to
-    stop one layer up.
+- [x] 3.3 A write of a value outside the filter is refused on the server, naming the filter.
+  - `SaveObject::assertReferenceMatchesFilter()`, called from
+    `validateReferences()` right after the existence check, throwing the
+    existing `ReferenceValidationException` so every 422 handler already routes
+    it. No new exception family and no controller change.
+  - IT CALLS THE SAME `resolve()` the options read will. One reader, one
+    resolver; this method only compares. A picker that offers one set and a
+    save path that accepts another is two evaluators of one rule.
+  - AN UNRESOLVED OPERAND REFUSES rather than waving through. The picker would
+    have offered nothing, so no value can be inside the filter. Waving it
+    through would make the server accept precisely the writes the form exists
+    to prevent.
+  - ANYTHING THE COMPARISON DOES NOT RECOGNISE REFUSES: an unknown operator, a
+    missing value on the referenced object, an empty `in` list. Accepting is the
+    direction that discloses.
+  - Costs nothing for a property declaring no filter: the reader returns null
+    before any read is made.
 - [x] 3.4 An unresolved operand returns no options and names the property it needs.
   - `ReferenceFilterDeclaration::resolve()` answers a filter OR a `needs`, never
     both and never a partial filter. ONE unresolved condition drops the WHOLE
