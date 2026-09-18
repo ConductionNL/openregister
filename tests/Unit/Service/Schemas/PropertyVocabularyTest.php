@@ -258,7 +258,11 @@ class PropertyVocabularyTest extends TestCase {
 		// the key being present AND non-null, so a null says "this key is
 		// spelled correctly" without also asserting a value shape. The two
 		// exceptions read presence rather than value, so they get a real one.
-		$samples = ['translatable' => true, 'sourceLanguage' => 'nl'];
+		// 'scope' needs a sample because it is refused when null: a scope that
+		// cannot name a group matches nobody, and publishing one would deny
+		// everybody silently. This prober assigns null to any key without a
+		// sample, which is what caught it.
+		$samples = ['translatable' => true, 'sourceLanguage' => 'nl', 'scope' => 'team-a'];
 
 		foreach ($this->vocabulary->keys() as $key) {
 			if ($key === 'type') {
