@@ -159,6 +159,8 @@ class QueryHandler {
 	 * @param array|null $ids Optional array of IDs to filter by.
 	 * @param string|null $uses Optional uses parameter.
 	 * @param array|null $views Optional view IDs to apply.
+	 * @param bool $_viewScopeRequired Whether the view filter is the caller's only bound,
+	 *                                 making any failure to apply it fatal instead of logged.
 	 *
 	 * @psalm-param array<string, mixed> $query
 	 * @psalm-param array<int, string>|null $ids
@@ -174,6 +176,9 @@ class QueryHandler {
 	 * @phpstan-return array<int, ObjectEntity>|int
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
+	 * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `_rbac` / `_multitenancy` convention
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
@@ -184,10 +189,18 @@ class QueryHandler {
 		?array $ids = null,
 		?string $uses = null,
 		?array $views = null,
+		bool $_viewScopeRequired = false,
 	): array|int {
 		// Apply view filters if provided.
 		if ($views !== null && empty($views) === false) {
-			$query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
+			$query = $this->searchQueryHandler->applyViewsToQuery(
+				query: $query,
+				viewIds: $views,
+				_viewScopeRequired: $_viewScopeRequired
+			);
+		} elseif ($_viewScopeRequired === true) {
+			// A caller bounded only by a view must never run without one.
+			throw new \Exception('Refusing a view-scoped search without a view to scope it by.');
 		}
 
 		// Detect if complex rendering is needed (extend, fields, filter, unset).

@@ -3119,6 +3119,12 @@ class ObjectService implements ObjectServiceInterface
      * @param array|null  $ids           Optional array of IDs to filter by
      * @param string|null $uses          Optional filter by object usage
      * @param array|null  $views         Optional view IDs to apply
+     * @param bool $_viewScopeRequired   Whether the view filter is this caller's ONLY bound.
+     *                                   A caller that switches `$_rbac` and `$_multitenancy`
+     *                                   off because it carries its own authorization (a
+     *                                   published access link naming one view) MUST set this:
+     *                                   it makes an unresolvable or non-narrowing view throw
+     *                                   instead of silently yielding an unbounded search.
      *
      * @psalm-param array<string, mixed> $query
      *
@@ -3127,8 +3133,11 @@ class ObjectService implements ObjectServiceInterface
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `_rbac` / `_multitenancy` convention
      *
      * @spec exclude One-line delegation to QueryHandler::searchObjects(); search behavior owned by zoeken-filteren.
      */
@@ -3138,7 +3147,8 @@ class ObjectService implements ObjectServiceInterface
         bool $_multitenancy=true,
         ?array $ids=null,
         ?string $uses=null,
-        ?array $views=null
+        ?array $views=null,
+        bool $_viewScopeRequired=false
     ): array|int {
         // ARCHITECTURAL DELEGATION: Delegate to QueryHandler for all search operations.
         return $this->queryHandler->searchObjects(
@@ -3147,7 +3157,8 @@ class ObjectService implements ObjectServiceInterface
             _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses,
-            views: $views
+            views: $views,
+            _viewScopeRequired: $_viewScopeRequired
         );
     }//end searchObjects()
 
