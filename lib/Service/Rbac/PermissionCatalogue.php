@@ -135,6 +135,14 @@ class PermissionCatalogue {
 		// be run in the phase that built it. Caught here rather than in
 		// production, which is the only reason this comment is short.
 		DepartmentMatrixCompiler::KEY,
+		// The effective token grant a request carries, written into the block
+		// by `TokenGrantNarrower`. Listed here for exactly the reason above:
+		// a key in a block that is not a control key is read as a VERB, and
+		// every schema whose block had been narrowed would then be refused at
+		// save with "unknown verb: x-openregister-token-grant". The defect the
+		// comment above records cost a whole change; this is the same shape,
+		// and the list is the cure.
+		TokenGrantNarrower::MARKER,
 	];
 
 	/**

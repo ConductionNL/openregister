@@ -85,6 +85,7 @@ class AuthorizationService {
 		private readonly IUserManager $userManager,
 		private readonly IUserSession $userSession,
 		private readonly ConsumerMapper $consumerMapper,
+		private readonly ?\OCA\OpenRegister\Service\Rbac\TokenGrantSource $tokenGrantSource = null,
 	) {
 
 	}//end __construct()
@@ -312,6 +313,20 @@ class AuthorizationService {
 		}
 
 		$this->validatePayload(payload: $payload);
+
+		// 🔴 THIS LINE IS THE ROW. Making the Consumer act AS its Nextcloud
+		// user is what gives a supplier the handler's whole desk: the token
+		// resolves to a person and inherits everything that person may do
+		// (row Q13.20). Binding the Consumer's grant beside it turns the
+		// principal into a filtered one — intersection, never substitution, so
+		// it can only narrow what that user could already do.
+		//
+		// Bound BEFORE the user is set, so there is no window in which the
+		// request is the user with no ceiling on it.
+		$this->tokenGrantSource?->bindFromConsumer(
+			authorizationConfiguration: $authConf,
+			tokenId: (string)($issuer->getUuid() ?? $payload['iss'])
+		);
 
 		$this->userSession->setUser($this->userManager->get($issuer->getUserId()));
 
