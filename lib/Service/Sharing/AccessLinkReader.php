@@ -47,9 +47,9 @@ namespace OCA\OpenRegister\Service\Sharing;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -104,7 +104,7 @@ class AccessLinkReader {
 	 * @param ObjectService $objects The object read path.
 	 * @param SchemaMapper $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
-	 * @param NoteService $notes Reads the timeline.
+	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
@@ -112,7 +112,7 @@ class AccessLinkReader {
 		private readonly ObjectService $objects,
 		private readonly SchemaMapper $schemas,
 		private readonly PropertyRbacHandler $properties,
-		private readonly NoteService $notes,
+		private readonly PublicTimeline $timeline,
 		private readonly AccessLinkSubject $subjects,
 		private readonly LoggerInterface $logger,
 	) {
@@ -273,6 +273,25 @@ class AccessLinkReader {
 	}//end readView()
 
 	/**
+	 * One object, reduced to what an anonymous caller may read.
+	 *
+	 * Public because a link is not the only surface that answers without a
+	 * session: an object share token does too, and it was serving the object
+	 * whole, `@self.authorization` included (openregister#3818). Two surfaces
+	 * with the same audience get the same projection, from here, rather than a
+	 * second allow-list that drifts.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed> The published projection.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
+	 */
+	public function publish(ObjectEntity $object): array {
+		return $this->project(object: $object);
+	}//end publish()
+
+	/**
 	 * One object, reduced to what a link may publish.
 	 *
 	 * @param ObjectEntity $object The object.
@@ -344,24 +363,21 @@ class AccessLinkReader {
 	 * who may manage the object, and a link must publish the public half
 	 * whatever session happens to be around it.
 	 *
+	 * PROJECTED, NOT PASSED THROUGH. This used to hand the link holder each
+	 * public note exactly as the note service shapes it, which carries the
+	 * author's user id and display name: a stranger with a link learned who
+	 * at the organisation wrote every line. It also read notes only, so a
+	 * kinded entry that exists as a record and not as a comment never
+	 * appeared. {@see PublicTimeline} reads both and lets five keys out.
+	 *
 	 * @param ObjectEntity $object The object.
 	 *
-	 * @return array<int, mixed> The published timeline entries.
+	 * @return array<int, array<string, mixed>> The published timeline entries.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
 	private function publicTimeline(ObjectEntity $object): array {
-		try {
-			return $this->notes->getNotesForObject(
-				objectUuid: (string)$object->getUuid(),
-				visibility: TimelineVisibilityService::PUBLIC_ENTRY
-			);
-		} catch (Throwable $failure) {
-			$this->logger->warning(
-				'[AccessLinkReader] Could not read the timeline for a link: ' . $failure->getMessage()
-			);
-			return [];
-		}
+		return $this->timeline->forObject(object: $object);
 	}//end publicTimeline()
 
 	/**

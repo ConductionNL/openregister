@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.33-unstable.20260918000100</version>
+    <version>2.1.32-unstable.20260918145001</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -131,6 +131,9 @@ Vrij en open source onder de EUPL-licentie.
 
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\StateHistoryRebuildJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
@@ -149,6 +152,17 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RuleRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
+		<!--
+			Drops the readers whose heartbeats stopped (object-presence). The
+			PRESENCE LIST is already correct without it, because the read excludes
+			anything outside the window; what the list cannot do is PUSH. A tab
+			closed rather than departed cleanly leaves a row nothing will touch
+			again, and the other readers hold a list with a ghost on it until
+			something else happens to the object. This is what turns that into a
+			departure they are told about, and it is what stops the table growing
+			without bound.
+		-->
+		<job>OCA\OpenRegister\BackgroundJob\PresenceExpiryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
@@ -205,6 +219,11 @@ Vrij en open source onder de EUPL-licentie.
 			     Before that command existed the only evidence was two unrelated
 			     e2e suites dying on `registers slug=flows`. -->
 			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
+			<!-- The surveys register and its four schemas. The descriptor shipped
+			     without a step naming it, so `surveys` was ABSENT on every instance
+			     while `occ upgrade` reported success: exactly the failure the
+			     comment above records, one register later. -->
+			<step>OCA\OpenRegister\Repair\ImportSurveyRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
@@ -354,6 +373,11 @@ Vrij en open source onder de EUPL-licentie.
 			     the `flows` register was never created and every flow step
 			     below it silently operated on nothing. -->
 			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
+			<!-- The surveys register and its four schemas. The descriptor shipped
+			     without a step naming it, so `surveys` was ABSENT on every instance
+			     while `occ upgrade` reported success: exactly the failure the
+			     comment above records, one register later. -->
+			<step>OCA\OpenRegister\Repair\ImportSurveyRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>

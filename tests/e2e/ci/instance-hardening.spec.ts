@@ -17,12 +17,33 @@
  *
  * @e2e openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#an-administrator-reads-what-is-on-and-what-is-not
  * @e2e openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#a-weakening-is-refused-and-recorded
+ * @e2e openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#first-use-asks-and-records-the-answer
+ * @e2e openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#a-new-version-asks-again
  */
 import { expect, test } from '@playwright/test'
 
 const REPORT = '/index.php/apps/openregister/api/hardening/report'
 const FLOORS = '/index.php/apps/openregister/api/hardening/floors'
 const CONTROLS = '/index.php/apps/openregister/api/hardening/controls'
+const ELEVATION = '/index.php/apps/openregister/api/hardening/elevation'
+const STATEMENT = '/index.php/apps/openregister/api/hardening/statement'
+const ACCEPTANCE = '/index.php/apps/openregister/api/hardening/statement/acceptance'
+
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
+
+/**
+ * Confirm the password, so this context may write.
+ *
+ * Every write below needs it since REQ-IHC-002: an open session is not a
+ * confirmed password. A test that forgets this reads 403 with
+ * `elevationRequired`, which is the guard working rather than the route
+ * breaking.
+ */
+async function elevate(request): Promise<void> {
+	const response = await request.post(ELEVATION, { data: { password: ADMIN_PASS } })
+	expect(response.status(), 'the password could not be confirmed').toBe(200)
+	expect((await response.json()).elevated).toBe(true)
+}
 
 test.describe('The hardening report', () => {
 	test('an administrator reads what is on and what is not', async ({
@@ -124,6 +145,7 @@ test.describe('The refusal', () => {
 			(control) => control.id === 'auth.rateLimit.lockoutSeconds',
 		).value
 
+		await elevate(request)
 		const response = await request.put(CONTROLS, {
 			data: { controls: { 'auth.rateLimit.lockoutSeconds': 60 } },
 		})
@@ -150,6 +172,7 @@ test.describe('The refusal', () => {
 	test('a floor weaker than the shipped baseline is refused', async ({
 		request,
 	}) => {
+		await elevate(request)
 		const response = await request.put(FLOORS, {
 			data: { floors: { 'auth.rateLimit.attemptsPerIdentity': 5000 } },
 		})
@@ -163,10 +186,99 @@ test.describe('The refusal', () => {
 	test('a control this instance does not administer is refused', async ({
 		request,
 	}) => {
+		await elevate(request)
 		const response = await request.put(CONTROLS, {
 			data: { controls: { 'password.minimumLength': 4 } },
 		})
 
 		expect(response.status(), 'Nextcloud owns the password policy').toBe(400)
+	})
+})
+
+test.describe('The fresh sign-in, and the statement', () => {
+	test('a write from an open session that never confirmed a password is refused', async ({ browser }) => {
+		// A context of its own, so it cannot inherit an elevation another test
+		// started. It carries the admin credentials and nothing else: the
+		// principal here is a full administrator, and it is still refused.
+		const context = await browser.newContext({
+			extraHTTPHeaders: {
+				Authorization: `Basic ${Buffer.from(
+					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
+				).toString('base64')}`,
+			},
+		})
+
+		try {
+			const response = await context.request.put(CONTROLS, {
+				data: { controls: { 'auth.rateLimit.attemptsPerIdentity': 19 } },
+			})
+
+			expect(response.status(), 'an unelevated administration write is forbidden').toBe(403)
+			const body = await response.json()
+			expect(body.elevationRequired).toBe(true)
+			expect(typeof body.periodSeconds).toBe('number')
+		} finally {
+			await context.dispose()
+		}
+	})
+
+	test('a wrong password elevates nothing', async ({ browser }) => {
+		const context = await browser.newContext({
+			extraHTTPHeaders: {
+				Authorization: `Basic ${Buffer.from(
+					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
+				).toString('base64')}`,
+			},
+		})
+
+		try {
+			const response = await context.request.post(ELEVATION, {
+				data: { password: 'not-the-password' },
+			})
+
+			expect(response.status()).toBe(401)
+		} finally {
+			await context.dispose()
+		}
+	})
+
+	test('a statement is published, asked, accepted, and asked again at the next version', async ({ request }) => {
+		const version = `e2e-${Math.random().toString(36).slice(2, 8)}`
+
+		await elevate(request)
+		const published = await request.put(STATEMENT, {
+			data: { version, body: 'What this instance does with your data.', title: 'Verwerking' },
+		})
+		expect(published.status(), 'the statement route is registered').toBe(200)
+		expect((await published.json()).version).toBe(version)
+
+		try {
+			const asked = await (await request.get(STATEMENT)).json()
+			expect(asked.statement.version).toBe(version)
+			expect(asked.needsAcceptance, 'a version nobody accepted is asked').toBe(true)
+
+			const stale = await request.post(ACCEPTANCE, { data: { version: 'some-older-version' } })
+			expect(stale.status(), 'accepting a version that is not in force is refused').toBe(400)
+
+			const accepted = await request.post(ACCEPTANCE, { data: { version } })
+			expect(accepted.status()).toBe(200)
+			expect((await accepted.json()).version).toBe(version)
+
+			const after = await (await request.get(STATEMENT)).json()
+			expect(after.needsAcceptance, 'an accepted version is not asked again').toBe(false)
+
+			const next = `${version}-b`
+			await elevate(request)
+			await request.put(STATEMENT, { data: { version: next, body: 'Revised.' } })
+
+			const again = await (await request.get(STATEMENT)).json()
+			expect(again.needsAcceptance, 'a new version asks everybody again').toBe(true)
+		} finally {
+			// NOTHING IS LEFT BEHIND. The instance publishes no statement
+			// before this test and publishes none after it, so a re-run and a
+			// real installation both start where they started.
+			await elevate(request)
+			await request.delete(STATEMENT)
+		}
 	})
 })

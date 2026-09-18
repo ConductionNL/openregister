@@ -59,6 +59,16 @@ class AppHostSettingsService {
 	protected const DEFAULT_CONFIG_KEYS = ['register'];
 
 	/**
+	 * The resolved feature declarations, for this request only.
+	 *
+	 * Resolving them reads the register JSON and its fragments off disk, and
+	 * `isFeatureEnabled()` is meant to be callable inside a guard.
+	 *
+	 * @var array<int, mixed>|null
+	 */
+	private ?array $featureDeclarations = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appId The calling (leaf) app id.
@@ -142,14 +152,215 @@ class AppHostSettingsService {
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
 	 */
 	public function updateSettings(array $data): array {
+		// Read BEFORE the write, because after it there is nothing to compare
+		// against: `IAppConfig` has no history, so the old value exists only
+		// in this variable and only for the next three lines (ledger row
+		// Q10.13).
+		$before = $this->getSettings();
+
 		foreach ($this->configKeys() as $key) {
 			if (isset($data[$key]) === true) {
 				$this->appConfig->setValueString($this->appId, $key, (string)$data[$key]);
 			}
 		}
 
-		return $this->getSettings();
+		$after = $this->getSettings();
+		$this->auditSettingsChange(before: $before, after: $after);
+
+		return $after;
 	}//end updateSettings()
+
+	/**
+	 * Record who changed what, on the hash-chained audit trail.
+	 *
+	 * 🔑 THE AUDITOR IS RESOLVED FROM THE CONTAINER AND MAY BE ABSENT. This
+	 * service is the AppHost base every fleet app extends, and it is
+	 * constructed in apps that do not have OpenRegister's own container: a
+	 * hard dependency here would be a fatal on settings pages across the
+	 * fleet. An unresolvable auditor means the change is not recorded, which
+	 * is the state every one of those apps was in before this existed.
+	 *
+	 * 🔴 IT NEVER THROWS. The setting has already been stored by the time this
+	 * runs, so a failure here would report a failed save for a change that in
+	 * fact happened: the value moved and the response denies it.
+	 *
+	 * @param array<string, mixed> $before The settings before the write.
+	 * @param array<string, mixed> $after The settings after it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	private function auditSettingsChange(array $before, array $after): void {
+		try {
+			$auditor = $this->container->get(
+				'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
+			);
+
+			if (method_exists($auditor, 'recordUpdate') === false) {
+				return;
+			}
+
+			$auditor->recordUpdate(
+				$this->appId,
+				$before,
+				$after,
+				$this->secretConfigKeys()
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[AppHost:%s] Settings change was stored but not audited: %s',
+					$this->appId,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end auditSettingsChange()
+
+	/**
+	 * The feature toggles this app declares.
+	 *
+	 * 🔑 THE DECLARATION HAS TO BE READABLE ON THE SERVER. The change names the
+	 * manifest as where an app declares its toggles, and the manifest is a
+	 * client artefact: PHP cannot ask it whether a guard is on. So the
+	 * server-side declaration is the `features` block of the app's register
+	 * configuration, which this service already resolves, and the manifest half
+	 * (task 1.1, in nextcloud-vue) is the same list for the client. When the
+	 * manifest schema lands, one loader feeds both and this hook is where it
+	 * arrives; nothing that reads a toggle changes.
+	 *
+	 * Overridable, like {@see self::configKeys()}.
+	 *
+	 * @return array<int, mixed> The declared toggles.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	protected function featureDeclarations(): array {
+		if ($this->featureDeclarations !== null) {
+			return $this->featureDeclarations;
+		}
+
+		$declarations = [];
+		try {
+			[$data] = $this->resolveRegisterConfiguration();
+			$declared = ($data[FeatureToggleService::DECLARATION_KEY] ?? null);
+			if (is_array($declared) === true) {
+				$declarations = array_values($declared);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] feature declarations unreadable, no toggles offered: %s', $this->appId, $e->getMessage())
+			);
+		}
+
+		$this->featureDeclarations = $declarations;
+
+		return $declarations;
+	}//end featureDeclarations()
+
+	/**
+	 * The effective feature toggles: declared defaults under instance overrides.
+	 *
+	 * @return array<string, bool> The toggles.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function getFeatures(): array {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return [];
+		}
+
+		return $toggles->merged(app: $this->appId, declarations: $this->featureDeclarations());
+	}//end getFeatures()
+
+	/**
+	 * Set instance overrides for declared toggles.
+	 *
+	 * @param array<string, mixed> $overrides The submitted overrides.
+	 *
+	 * @return array<string, bool> The toggles after the write.
+	 *
+	 * @throws \OCA\OpenRegister\AppHost\Exception\FeatureToggleRefusedException When a key is not declared.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function updateFeatures(array $overrides): array {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return [];
+		}
+
+		return $toggles->update(
+			app: $this->appId,
+			declarations: $this->featureDeclarations(),
+			overrides: $overrides
+		);
+	}//end updateFeatures()
+
+	/**
+	 * Whether one declared feature is on.
+	 *
+	 * 🔴 AN ABSENT TOGGLE SERVICE READS FALSE, not true. This service is the
+	 * base every fleet app extends and the toggle service is resolved from the
+	 * container, so "I cannot tell" is a real answer here — and the safe
+	 * reading of it is that the feature is off. Returning true would mean a
+	 * container problem silently switches every guarded feature on.
+	 *
+	 * @param string $key The toggle.
+	 *
+	 * @return bool True when the feature is on.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function isFeatureEnabled(string $key): bool {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return false;
+		}
+
+		return $toggles->isEnabled(app: $this->appId, key: $key, declarations: $this->featureDeclarations());
+	}//end isFeatureEnabled()
+
+	/**
+	 * The toggle service, or null when it cannot be resolved.
+	 *
+	 * @return FeatureToggleService|null The service.
+	 */
+	private function featureToggles(): ?FeatureToggleService {
+		try {
+			$service = $this->container->get(FeatureToggleService::class);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] feature toggle service unavailable; every toggle reads off: %s', $this->appId, $e->getMessage())
+			);
+			return null;
+		}
+
+		if (($service instanceof FeatureToggleService) === false) {
+			return null;
+		}
+
+		return $service;
+	}//end featureToggles()
+
+	/**
+	 * Which of this app's config keys hold a secret.
+	 *
+	 * Overridable hook, like {@see self::configKeys()}. An app that stores a
+	 * token or a password widens this list, and those keys are then recorded
+	 * as CHANGED WITH BOTH VALUES MASKED rather than omitted: the credential
+	 * somebody rotated is the row worth having most, and the trail is
+	 * append-only, so the value itself must never reach it.
+	 *
+	 * @return array<int, string> The secret keys.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	protected function secretConfigKeys(): array {
+		return [];
+	}//end secretConfigKeys()
 
 	/**
 	 * Import the app's register JSON via OpenRegister's ConfigurationService.

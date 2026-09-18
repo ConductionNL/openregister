@@ -46,8 +46,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectFavouriteMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCA\OpenRegister\Db\ObjectViewMapper;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -215,6 +217,7 @@ class MagicSearchHandler {
 		private readonly MagicOrganizationHandler $organizationHandler,
 		private readonly SchemaTypeConverter $schemaTypeConverter,
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
+		private readonly RelatedRowQueryApplier $relatedRows,
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
@@ -502,8 +505,61 @@ class MagicSearchHandler {
 		// relation filters.
 		$this->applyLensAndSearchFilters(qb: $queryBuilder, query: $query, schema: $schema);
 
+		// Narrow by rows of ANOTHER schema that point at this one. Does nothing
+		// unless the query carries `_related`, so every existing call site is
+		// unaffected; when it does, each block becomes an EXISTS subquery
+		// carrying the RELATED schema's own access predicate.
+		// The SAME register fallback the access-control filter above uses. Passing
+		// the bare parameter here was wrong: the facet path calls this method
+		// without a register id, so a facet request carrying `_related` was
+		// refused even when the query itself named the register.
+		$this->applyRelatedRowFilters(
+			qb: $queryBuilder,
+			query: $query,
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
+		);
+
 		return $queryBuilder;
 	}//end buildFilteredQuery()
+
+	/**
+	 * Narrow the query by `_related` blocks, or refuse it.
+	 *
+	 * 🔴 A REFUSAL HERE IS DELIBERATE AND MUST NOT BECOME A LOG LINE. Every
+	 * other filter on this path that cannot be honoured is recorded in
+	 * `$ignoredFilters` and skipped, which is right for a filter that narrows
+	 * nothing. It is wrong for this one: a dropped `_related` block answers the
+	 * UNFILTERED set to a deliberately narrow question, and the caller cannot
+	 * tell from the response that the narrowing was never applied. So the
+	 * exception travels.
+	 *
+	 * @param IQueryBuilder $qb         The query being built.
+	 * @param array<mixed>  $query      The request query.
+	 * @param int|null      $registerId The register, needed to resolve the related table.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
+	 *
+	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function applyRelatedRowFilters(IQueryBuilder $qb, array $query, ?int $registerId): void {
+		if (array_key_exists('_related', $query) === false) {
+			return;
+		}
+
+		if ($registerId === null) {
+			throw new InvalidArgumentException(
+				'A related-row filter needs to know which register to look the related schema up in. '
+				. 'Filtering without it would read a table belonging to another register.'
+			);
+		}
+
+		$register = new Register();
+		$register->setId($registerId);
+
+		$this->relatedRows->apply(qb: $qb, query: $query, register: $register, outerAlias: 't');
+	}//end applyRelatedRowFilters()
 
 	/**
 	 * Apply metadata, object-field and ID filters to the query.

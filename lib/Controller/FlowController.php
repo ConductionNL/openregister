@@ -51,6 +51,11 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Exception\BpmnImportRefused;
+use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -563,6 +568,124 @@ class FlowController extends Controller {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
+	/**
+	 * A flow as BPMN 2.0 XML, for a modeller or an auditor.
+	 *
+	 * Read-guarded: `flow.read` is what lets a caller see the flow at all, and
+	 * exporting shows nothing a reader could not already read. It does NOT go
+	 * through the run authorization — reading a flow and running one are
+	 * different questions, and asking the run question here would refuse an
+	 * auditor who is meant to read it and never run it.
+	 *
+	 * 🔴 IT DOES NOT CLAIM XSD CONFORMANCE. The OMG schema set is not vendored,
+	 * a licence decision this lane did not take, so the file is well-formed
+	 * BPMN-shaped XML carrying the declared namespaces and our extension
+	 * elements. The acceptance criterion "every exported file validates against
+	 * the BPMN 2.0 XSD" is NOT met yet, and is named in `tasks.md`.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The XML, or a refusal.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	#[NoAdminRequired]
+	public function exportBpmn(string $id): DataDownloadResponse|JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => 'No such flow: ' . $id], Http::STATUS_NOT_FOUND);
+		}
+
+		$exporter = new FlowBpmnExporter(vocabulary: new BpmnVocabulary());
+
+		return new DataDownloadResponse(
+			$exporter->export(flow: $flow),
+			sprintf('%s.bpmn', ($flow->getName() ?? $id)),
+			'application/xml'
+		);
+	}//end exportBpmn()
+
+	/**
+	 * A BPMN 2.0 file as a new flow, plus the report of everything it lost.
+	 *
+	 * Guarded by `flow.create`, because it creates one.
+	 *
+	 * 🔴 THE REPORT IS RETURNED WHETHER THE IMPORT SUCCEEDED OR NOT. A lenient
+	 * import that dropped three constructs and answers 201 with a flow and no
+	 * list is the failure this whole change is written against; and a strict
+	 * refusal still owes the author the list, or they have to bisect the file
+	 * by hand.
+	 *
+	 * @return JSONResponse The created flow and the report, or a refusal with the report.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	#[NoAdminRequired]
+	public function importBpmn(): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.create');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		$xml = (string)$this->request->getParam('xml', '');
+		if (trim($xml) === '') {
+			$xml = (string)file_get_contents('php://input');
+		}
+
+		// 🔴 `(bool)'false'` IS TRUE, and a query string carries `?strict=false`
+		// rather than a JSON boolean — so a bare cast would turn every refusal
+		// into a failed import for a caller who asked for the opposite.
+		$strictParam = $this->request->getParam('strict', false);
+		$strict = ($strictParam === true
+			|| (is_string($strictParam) === true
+				&& in_array(strtolower(trim($strictParam)), ['1', 'true', 'yes'], true) === true));
+
+		$importer = new FlowBpmnImporter(vocabulary: new BpmnVocabulary());
+
+		try {
+			$result = $importer->import(xml: $xml, strict: $strict);
+		} catch (BpmnImportRefused $refused) {
+			return new JSONResponse(
+				[
+					'error' => $refused->getMessage(),
+					'report' => $refused->getReport()?->jsonSerialize(),
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		try {
+			// `save()`, not `create()` — FlowService has no `create()`, and a
+			// call to one would have been a fatal at runtime that `php -l`
+			// cannot see and no double would catch, because a mock invents the
+			// method it is asked for. Asserted structurally in the test.
+			$flow = $this->flows->save(data: $result['flow']);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				[
+					'error' => sprintf('The file was read but the flow could not be stored: %s', $e->getMessage()),
+					'report' => $result['report']->jsonSerialize(),
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return new JSONResponse(
+			['flow' => $flow->jsonSerialize(), 'report' => $result['report']->jsonSerialize()],
+			Http::STATUS_CREATED
+		);
+	}//end importBpmn()
+
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $id): JSONResponse {

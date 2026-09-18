@@ -31,6 +31,11 @@ use OCP\IDBConnection;
  * Class BulkJobMemberMapper
  *
  * @template-extends QBMapper<BulkJobMember>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Eleven queries over one
+ * table. Each is one indexed read the engine or the reversal needs, and
+ * splitting them across two mappers to get under the threshold would put two
+ * objects in front of one table without removing a single query.
  */
 class BulkJobMemberMapper extends QBMapper {
 	/**
@@ -161,6 +166,72 @@ class BulkJobMemberMapper extends QBMapper {
 
 		return $counts;
 	}//end countByOutcome()
+
+	/**
+	 * Find one member of a job by the object it covers.
+	 *
+	 * The reversal reads the original job's member row to learn what that job
+	 * wrote and what it wrote over.
+	 *
+	 * @param int    $jobId      The job id.
+	 * @param string $objectUuid The object's uuid.
+	 *
+	 * @return BulkJobMember|null The member, or null when the job never held it.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function findByJobAndObject(int $jobId, string $objectUuid): ?BulkJobMember {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->setMaxResults(1);
+
+		$members = $this->findEntities(query: $qb);
+
+		if ($members === []) {
+			return null;
+		}
+
+		return $members[0];
+	}//end findByJobAndObject()
+
+	/**
+	 * The uuids of the members a job actually WROTE.
+	 *
+	 * The selection of a reversal. A member the job skipped, refused or never
+	 * reached has nothing to undo, and putting it in the reversal would report
+	 * a hundred members where twelve were written (D-1).
+	 *
+	 * The test is `applied_at`, never the outcome column: a previewed member
+	 * carries outcome `applied` and has not been written.
+	 *
+	 * @param int $jobId The job id.
+	 *
+	 * @return array<int, string> The written members' uuids, in id order.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function findWrittenUuidsByJob(int $jobId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_uuid')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('applied_at'))
+			->orderBy('id', 'ASC');
+
+		$result = $qb->executeQuery();
+		$uuids = [];
+
+		foreach ($result->fetchAll() as $row) {
+			$uuids[] = (string)$row['object_uuid'];
+		}
+
+		$result->closeCursor();
+
+		return $uuids;
+	}//end findWrittenUuidsByJob()
 
 	/**
 	 * The uuids already held by a job, for the commit-time delta.

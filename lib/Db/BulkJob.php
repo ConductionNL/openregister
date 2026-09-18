@@ -72,6 +72,14 @@ use OCP\AppFramework\Db\Entity;
  * @method void setReport(?array $report)
  * @method string|null getStartedBy()
  * @method void setStartedBy(?string $startedBy)
+ * @method int|null getReversalWindow()
+ * @method void setReversalWindow(?int $reversalWindow)
+ * @method DateTime|null getReversibleUntil()
+ * @method void setReversibleUntil(?DateTime $reversibleUntil)
+ * @method int|null getReversesJobId()
+ * @method void setReversesJobId(?int $reversesJobId)
+ * @method int|null getReversedByJobId()
+ * @method void setReversedByJobId(?int $reversedByJobId)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -255,6 +263,42 @@ class BulkJob extends Entity implements JsonSerializable {
 	protected ?string $startedBy = null;
 
 	/**
+	 * How long this job stays undoable, in seconds.
+	 *
+	 * Null means the action did not declare itself reversible: no prior value
+	 * was recorded and the reversal route refuses rather than appearing to
+	 * work (D-4).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reversalWindow = null;
+
+	/**
+	 * The deadline the reversal window ends at.
+	 *
+	 * Stamped provisionally at creation so the preview can name it, and again
+	 * when the job reaches a terminal state, because the window runs from when
+	 * the job actually wrote rather than from when somebody opened the dialog.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $reversibleUntil = null;
+
+	/**
+	 * The job this one undoes, when this job is a reversal (D-1).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reversesJobId = null;
+
+	/**
+	 * The reversal of this job, once one has been created.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reversedByJobId = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -290,6 +334,10 @@ class BulkJob extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'cursor', type: 'integer');
 		$this->addType(fieldName: 'report', type: 'json');
 		$this->addType(fieldName: 'startedBy', type: 'string');
+		$this->addType(fieldName: 'reversalWindow', type: 'integer');
+		$this->addType(fieldName: 'reversibleUntil', type: 'datetime');
+		$this->addType(fieldName: 'reversesJobId', type: 'integer');
+		$this->addType(fieldName: 'reversedByJobId', type: 'integer');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
@@ -350,6 +398,22 @@ class BulkJob extends Entity implements JsonSerializable {
 	}//end isActive()
 
 	/**
+	 * Whether this job recorded what it would take to go back.
+	 *
+	 * Reversibility is a property of the ACTION, declared beside it, and this
+	 * column is where the job froze that declaration at creation. Asking the
+	 * registry again at reversal time would let an action that stopped being
+	 * reversible strand jobs that did record their prior values.
+	 *
+	 * @return bool True when the job is undoable in principle.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function isReversible(): bool {
+		return ($this->reversalWindow !== null && $this->reversalWindow > 0);
+	}//end isReversible()
+
+	/**
 	 * JSON serialisation.
 	 *
 	 * @return array<string, mixed> The serialised job.
@@ -377,6 +441,11 @@ class BulkJob extends Entity implements JsonSerializable {
 			'cursor' => $this->cursor,
 			'report' => ($this->report ?? []),
 			'startedBy' => $this->startedBy,
+			'reversible' => $this->isReversible(),
+			'reversalWindow' => $this->reversalWindow,
+			'reversibleUntil' => $this->reversibleUntil?->format(DateTime::ATOM),
+			'reversesJobId' => $this->reversesJobId,
+			'reversedByJobId' => $this->reversedByJobId,
 			'created' => $this->created?->format(DateTime::ATOM),
 			'updated' => $this->updated?->format(DateTime::ATOM),
 		];
