@@ -149,6 +149,17 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RuleRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
+		<!--
+			Drops the readers whose heartbeats stopped (object-presence). The
+			PRESENCE LIST is already correct without it, because the read excludes
+			anything outside the window; what the list cannot do is PUSH. A tab
+			closed rather than departed cleanly leaves a row nothing will touch
+			again, and the other readers hold a list with a ghost on it until
+			something else happens to the object. This is what turns that into a
+			departure they are told about, and it is what stops the table growing
+			without bound.
+		-->
+		<job>OCA\OpenRegister\BackgroundJob\PresenceExpiryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>

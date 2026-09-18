@@ -4586,6 +4586,175 @@ class ObjectsController extends Controller {
 	}//end exists()
 
 	/**
+	 * Say that the caller still has this object open.
+	 *
+	 * 🔴 A HEARTBEAT, NOT A CONNECTION (D-1). notify_push tells the server
+	 * nothing about who is looking at what, so the client says so every 30
+	 * seconds and the server stops believing it after 90. Missing two beats
+	 * reads as gone, which survives a lost socket where connection tracking
+	 * does not.
+	 *
+	 * Reads the object first, so presence is under the object's own RBAC: a
+	 * caller who cannot read it cannot appear on it, and cannot learn from the
+	 * answer that it exists.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema   The schema slug or identifier.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse Who else is present.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	#[NoAdminRequired]
+	public function presenceBeat(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->presenceCaller();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		if ($object === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$beat = $service->heartbeat(userId: $caller, objectUuid: $id);
+		$present = $service->present(objectUuid: $id, exceptUser: $caller);
+
+		// ONLY on an arrival. A renewal that changed nothing is silent, which
+		// is the whole of D-2 and the reason `heartbeat()` reports which it was
+		// rather than leaving the caller to work it out.
+		if ($beat['arrived'] === true) {
+			$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+				->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+		}
+
+		return new JSONResponse(
+			data: ['present' => $present, 'beatSeconds' => \OCA\OpenRegister\Service\PresenceService::BEAT_SECONDS]
+		);
+	}//end presenceBeat()
+
+	/**
+	 * Say that the caller has closed this object.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema   The schema slug or identifier.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse Who is left.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	#[NoAdminRequired]
+	public function presenceDepart(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->presenceCaller();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$left = $service->depart(userId: $caller, objectUuid: $id);
+
+		// A departure by somebody who was not there pushes nothing: there is no
+		// change to tell anybody about, and a page unmounting twice is ordinary.
+		if ($left === true) {
+			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+			if ($object !== null) {
+				$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+			}
+		}
+
+		return new JSONResponse(data: ['present' => $service->present(objectUuid: $id, exceptUser: $caller)]);
+	}//end presenceDepart()
+
+	/**
+	 * Who has this object open.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema   The schema slug or identifier.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse The present readers.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function presenceList(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->presenceCaller();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		if ($this->presenceObject(register: $register, schema: $schema, id: $id) === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		return new JSONResponse(
+			data: [
+				'present' => $this->container->get(\OCA\OpenRegister\Service\PresenceService::class)
+					->present(objectUuid: $id, exceptUser: $caller),
+			]
+		);
+	}//end presenceList()
+
+	/**
+	 * The signed-in caller's uid, or null.
+	 *
+	 * @return string|null The uid.
+	 */
+	private function presenceCaller(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
+
+		return $user->getUID();
+	}//end presenceCaller()
+
+	/**
+	 * Read the object under the caller's own RBAC, or null.
+	 *
+	 * 🔴 THIS IS THE AUTHORISATION, AND IT IS A REAL READ. Presence is served to
+	 * whoever may read the object (D-3), so the check is performing that read
+	 * rather than asking a second question that could answer differently. A
+	 * caller who cannot read the object gets 404 and learns nothing, including
+	 * whether it exists.
+	 *
+	 * @param string $register The register.
+	 * @param string $schema   The schema.
+	 * @param string $id       The object.
+	 *
+	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 */
+	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
+		try {
+			$this->objectService->setRegister(register: $register);
+			$this->objectService->setSchema(schema: $schema);
+			$found = $this->objectService->find($id);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		return (($found instanceof ObjectEntity) ? $found : null);
+	}//end presenceObject()
+
+	/**
 	 * Export objects to specified format
 	 *
 	 * @param string $register The register slug or identifier
