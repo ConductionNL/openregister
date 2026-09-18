@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Schemas;
 
+use OCA\OpenRegister\Service\Schemas\CodedChoiceException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
@@ -334,20 +335,27 @@ class PropertyVocabularyTest extends TestCase {
 			message: 'the vocabulary publishes conceptScheme and the save path must accept a real scheme slug'
 		);
 
-		// And an inline enum beside it still saves. Two sources on one field is
-		// an authoring mistake the CONSUMER reports and resolves by precedence
-		// (dossiq `code-lists-from-concepts`); refusing the write here would
-		// make a stored definition unopenable rather than reported.
-		$this->assertTrue(
-			condition: $this->validator->validateProperty(
-				property: [
-					'type' => 'string',
-					'conceptScheme' => 'wijken',
-					'enum' => ['Centrum', 'Noord'],
-				],
-				path: '/properties/wijk'
-			),
-			message: 'a competing source is a reportable authoring mistake, not a refused save'
+		// 🔴 THIS ASSERTION IS THE OPPOSITE OF WHAT IT SAID IN #3883, AND THE
+		// FIRST VERSION WAS MINE AND WRONG. It read "a competing source is a
+		// reportable authoring mistake, not a refused save", reasoning from
+		// dossiq's `code-lists-from-concepts`, which resolves a scheme against
+		// an inline list by precedence. Those are two different objects: dossiq
+		// resolves it on its own `propertyDefinition` ROW, where an author is
+		// editing and can be shown a warning. This is the compiled SCHEMA
+		// PROPERTY, and `property-code-list-from-concept-scheme` says of it, in
+		// its own words, "Declaring both is refused."
+		//
+		// Refusing here is also the only place it can be refused usefully: by
+		// the time a value is validated, precedence has already silently picked
+		// one, and whichever it picked the author meant the other half the time.
+		$this->expectException(CodedChoiceException::class);
+		$this->validator->validateProperty(
+			property: [
+				'type' => 'string',
+				'conceptScheme' => 'wijken',
+				'enum' => ['Centrum', 'Noord'],
+			],
+			path: '/properties/wijk'
 		);
 	}//end testTheConceptSchemeBindingSavesWithARealSchemeName()
 

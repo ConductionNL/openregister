@@ -142,14 +142,88 @@ class AppHostSettingsService {
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
 	 */
 	public function updateSettings(array $data): array {
+		// Read BEFORE the write, because after it there is nothing to compare
+		// against: `IAppConfig` has no history, so the old value exists only
+		// in this variable and only for the next three lines (ledger row
+		// Q10.13).
+		$before = $this->getSettings();
+
 		foreach ($this->configKeys() as $key) {
 			if (isset($data[$key]) === true) {
 				$this->appConfig->setValueString($this->appId, $key, (string)$data[$key]);
 			}
 		}
 
-		return $this->getSettings();
+		$after = $this->getSettings();
+		$this->auditSettingsChange(before: $before, after: $after);
+
+		return $after;
 	}//end updateSettings()
+
+	/**
+	 * Record who changed what, on the hash-chained audit trail.
+	 *
+	 * 🔑 THE AUDITOR IS RESOLVED FROM THE CONTAINER AND MAY BE ABSENT. This
+	 * service is the AppHost base every fleet app extends, and it is
+	 * constructed in apps that do not have OpenRegister's own container: a
+	 * hard dependency here would be a fatal on settings pages across the
+	 * fleet. An unresolvable auditor means the change is not recorded, which
+	 * is the state every one of those apps was in before this existed.
+	 *
+	 * 🔴 IT NEVER THROWS. The setting has already been stored by the time this
+	 * runs, so a failure here would report a failed save for a change that in
+	 * fact happened: the value moved and the response denies it.
+	 *
+	 * @param array<string, mixed> $before The settings before the write.
+	 * @param array<string, mixed> $after The settings after it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	private function auditSettingsChange(array $before, array $after): void {
+		try {
+			$auditor = $this->container->get(
+				'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
+			);
+
+			if (method_exists($auditor, 'recordUpdate') === false) {
+				return;
+			}
+
+			$auditor->recordUpdate(
+				$this->appId,
+				$before,
+				$after,
+				$this->secretConfigKeys()
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[AppHost:%s] Settings change was stored but not audited: %s',
+					$this->appId,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end auditSettingsChange()
+
+	/**
+	 * Which of this app's config keys hold a secret.
+	 *
+	 * Overridable hook, like {@see self::configKeys()}. An app that stores a
+	 * token or a password widens this list, and those keys are then recorded
+	 * as CHANGED WITH BOTH VALUES MASKED rather than omitted: the credential
+	 * somebody rotated is the row worth having most, and the trail is
+	 * append-only, so the value itself must never reach it.
+	 *
+	 * @return array<int, string> The secret keys.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	protected function secretConfigKeys(): array {
+		return [];
+	}//end secretConfigKeys()
 
 	/**
 	 * Import the app's register JSON via OpenRegister's ConfigurationService.
