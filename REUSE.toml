@@ -44,10 +44,8 @@ SPDX-PackageDownloadLocation = "https://github.com/ConductionNL/openregister"
 # `closest` also means the two Nextcloud-derived files keep their own truth:
 # `.editorconfig` carries "2019 Nextcloud GmbH and Nextcloud contributors /
 # AGPL-3.0-or-later" in its own header, which is why LICENSES/ contains
-# AGPL-3.0-or-later.txt. The three `patches/*.patch` are Conduction's own
-# changes to MIT-licensed upstream code (LLPhant, PhpSpreadsheet); the added
-# lines are ours and the context lines quote upstream under MIT, which permits
-# that. They stay EUPL-1.2 under this blanket. The files that say
+# AGPL-3.0-or-later.txt. The three `patches/*.patch` have a block of their own
+# below. The files that say
 # "Open Register Contributors" instead of "Conduction B.V." keep their own
 # header too — the copyright text differs, the licence does not.
 [[annotations]]
@@ -230,3 +228,22 @@ path = "openspec/changes/archive/**"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Conduction B.V. <info@conduction.nl>"
 SPDX-License-Identifier = "EUPL-1.2"
+
+# Our patches against upstream MIT code. Review finding on #3857 (rjzondervan):
+# the licence conclusion was right — theodo-group/llphant 1.0.1 and
+# phpoffice/phpspreadsheet 5.9.0 are MIT per composer.lock, and 8-14 context
+# lines is nowhere near a substantial portion — but the COPYRIGHT field was
+# not: the blanket asserted "2026 Conduction B.V." over context lines that are
+# demonstrably LLPhant's and PhpSpreadsheet's. That is the ggm-snapshot.json
+# shape again (upstream content plus Conduction's work, same treatment), so it
+# gets the same dual-holder block. The added lines stay ours under EUPL-1.2;
+# the quoted context stays theirs under MIT.
+[[annotations]]
+path = "patches/*.patch"
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "The LLPhant contributors, https://github.com/theodo-group/LLPhant",
+    "The PhpSpreadsheet contributors, https://github.com/PHPOffice/PhpSpreadsheet",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "MIT AND EUPL-1.2"
