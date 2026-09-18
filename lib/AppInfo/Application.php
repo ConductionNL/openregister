@@ -435,6 +435,25 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The feature-toggle reader MUST be shared, for the same reason the
+		// hierarchy descent below it must: it memoises the merged toggle map
+		// FOR THE LIFETIME OF ONE REQUEST, and a container that built it fresh
+		// at each injection point would turn a per-request memo into a
+		// per-injection one — every `isEnabled()` in a loop paying a config
+		// read. Registered explicitly rather than autowired so that a wiring
+		// failure is loud here rather than showing up as every toggle reading
+		// off (ledger row 11.15).
+		$context->registerService(
+			\OCA\OpenRegister\AppHost\Service\FeatureToggleService::class,
+			static function ($c) {
+				return new \OCA\OpenRegister\AppHost\Service\FeatureToggleService(
+					appConfig: $c->get(\OCP\IAppConfig::class),
+					container: $c,
+					logger: $c->get(\Psr\Log\LoggerInterface::class),
+				);
+			}
+		);
+
 		// The object-hierarchy descent MUST be shared, for the reason the three
 		// registrations below it give and one that is sharper here: both of
 		// these memoise FOR THE LIFETIME OF ONE REQUEST, and a container that

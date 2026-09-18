@@ -286,7 +286,20 @@ final class ObjectSearchResultFormatter {
 	private function buildExcerpt(array $object, string $term): string {
 		if ($term !== '') {
 			foreach ($object as $key => $value) {
-				if ($key === '@self' || is_string($value) === false) {
+				// Only the object's OWN properties are excerpt material.
+				// `@self` is metadata, and an `_`-prefixed key is reserved:
+				// it is something the pipeline attached, not something the
+				// schema declares and field-level security rendered. Now that
+				// file text is in scope, that distinction is load-bearing. A
+				// chunk carries the text of a whole FILE, which can hold
+				// values the reader is redacted out of on the object, so an
+				// excerpt drawn from an attached key would leak past a
+				// redaction that the object itself still honours.
+				if ($key === '@self' || str_starts_with((string)$key, '_') === true) {
+					continue;
+				}
+
+				if (is_string($value) === false) {
 					continue;
 				}
 

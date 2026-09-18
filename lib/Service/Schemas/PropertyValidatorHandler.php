@@ -747,6 +747,13 @@ class PropertyValidatorHandler {
 		// can tell apart from a field nobody has configured yet.
 		CodedChoiceDeclaration::assert(property: $property, path: $path);
 
+		// A reference filter is checked here for the same reason: an annotation
+		// that is unusable is a picker that silently offers everything, and the
+		// author is present at save and nowhere near the picker later.
+		// The OPERANDS are checked where both schemas are in hand
+		// (`SchemasController`), because this method sees one property.
+		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
+
 		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {
 			return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');
