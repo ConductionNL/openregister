@@ -68,6 +68,7 @@ class DestructionScopeService {
 	 *
 	 * @param AuditTrailMapper                  $auditTrailMapper Versions and content-bearing audit rows.
 	 * @param LoggerInterface                   $logger           PSR logger.
+	 * @param DestructionScopeReader            $reader           Reads the scope a schema declares.
 	 * @param NoteService|null                  $noteService      Notes on the object.
 	 * @param FileService|null                  $fileService      The object's bound folder.
 	 * @param TaskService|null                  $taskService      CalDAV tasks linked to the object.
@@ -78,6 +79,7 @@ class DestructionScopeService {
 	public function __construct(
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly LoggerInterface $logger,
+		private readonly DestructionScopeReader $reader,
 		private readonly ?NoteService $noteService = null,
 		private readonly ?FileService $fileService = null,
 		private readonly ?TaskService $taskService = null,
@@ -98,7 +100,7 @@ class DestructionScopeService {
 	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	public function preview(ObjectEntity $object, ?Schema $schema): array {
-		$declared = DestructionScope::declaredOn(schema: $schema);
+		$declared = $this->reader->declaredOn(schema: $schema);
 		$counts = [];
 		$unavailable = [];
 		$total = 0;

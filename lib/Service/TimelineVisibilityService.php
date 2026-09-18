@@ -155,6 +155,39 @@ class TimelineVisibilityService {
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
 	public function mayManage(?ObjectEntity $object): bool {
+		return $this->holds(object: $object, action: 'update');
+	}//end mayManage()
+
+	/**
+	 * Whether the caller manages this object.
+	 *
+	 * A second verdict beside {@see mayManage()} because rewriting what a note
+	 * SAYS is not the same right as deciding who may read it. A note is a
+	 * signed statement by its author: a colleague with `update` moves it
+	 * across the counter but never rewrites it, while somebody who manages the
+	 * object may. Fails CLOSED for the same reason.
+	 *
+	 * @param ObjectEntity|null $object The object the note hangs on.
+	 *
+	 * @return boolean True when the caller holds `manage` on the object.
+	 *
+	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 */
+	public function mayManageObject(?ObjectEntity $object): bool {
+		return $this->holds(object: $object, action: 'manage');
+	}//end mayManageObject()
+
+	/**
+	 * Ask the canonical RBAC handler for one action on one object.
+	 *
+	 * @param ObjectEntity|null $object The object being acted on.
+	 * @param string            $action The permission asked for.
+	 *
+	 * @return boolean True when the caller holds it.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
+	 */
+	private function holds(?ObjectEntity $object, string $action): bool {
 		if ($object === null) {
 			return false;
 		}
@@ -168,7 +201,7 @@ class TimelineVisibilityService {
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[TimelineVisibilityService] Schema for object ' . (string)$object->getUuid()
-					. ' could not be resolved; refusing the visibility write',
+					. ' could not be resolved; refusing ' . $action,
 				['exception' => $e]
 			);
 			return false;
@@ -182,13 +215,13 @@ class TimelineVisibilityService {
 
 		return $this->permissionHandler->hasPermission(
 			schema: $schema,
-			action: 'update',
+			action: $action,
 			userId: $userId,
 			objectOwner: $object->getOwner(),
 			_rbac: true,
 			object: $object
 		);
-	}//end mayManage()
+	}//end holds()
 
 	/**
 	 * The filter a read actually gets, whatever it asked for.

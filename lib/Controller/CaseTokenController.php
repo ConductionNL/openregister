@@ -44,6 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\CaseTokenService;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -65,7 +66,7 @@ class CaseTokenController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const THROTTLE_ACTION = 'openregister_case_token';
+	public const THROTTLE_ACTION = ThrottledSurfaces::CASE_TOKEN;
 
 	/**
 	 * Constructor.

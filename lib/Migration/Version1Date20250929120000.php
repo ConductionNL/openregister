@@ -90,12 +90,12 @@ class Version1Date20250929120000 extends SimpleMigrationStep {
 			}
 
 			$output->info(message: 'ℹ️  Searchable column already exists, skipping...');
-			return null;
+			return $schema;
 		}//end if
 
 		$output->info(message: '⚠️  Schemas table not found, skipping searchable column addition');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 
 	/**

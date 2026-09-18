@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use PHPUnit\Framework\TestCase;
@@ -45,7 +46,7 @@ class ProvenanceResolverTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->resolver = new ProvenanceResolver(new DenyResolver());
+		$this->resolver = new ProvenanceResolver(new DenyResolver(new DenyEntryMatcher()));
 	}//end setUp()
 
 	/**
@@ -57,7 +58,7 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return array<int, string> The principal names.
 	 */
 	private function principals(string $userId, array $groups): array {
-		return (new DenyResolver())->principalsFor(userId: $userId, userGroups: $groups);
+		return (new DenyResolver(new DenyEntryMatcher()))->principalsFor(userId: $userId, userGroups: $groups);
 	}//end principals()
 
 	/**
@@ -99,7 +100,7 @@ class ProvenanceResolverTest extends TestCase {
 				principals: $principals,
 				objectAuthorization: $object,
 				schemaAuthorization: $schema,
-				registerAuthorization: $register
+				registerAuth: $register
 			)['source']
 		);
 
@@ -109,7 +110,7 @@ class ProvenanceResolverTest extends TestCase {
 				action: 'read',
 				principals: $principals,
 				schemaAuthorization: $schema,
-				registerAuthorization: $register
+				registerAuth: $register
 			)['source']
 		);
 
@@ -118,7 +119,7 @@ class ProvenanceResolverTest extends TestCase {
 			$this->resolver->forAction(
 				action: 'read',
 				principals: $principals,
-				registerAuthorization: $register
+				registerAuth: $register
 			)['source']
 		);
 	}//end testTheObjectBeatsTheSchemaWhichBeatsTheRegister()

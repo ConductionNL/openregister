@@ -121,6 +121,8 @@ Human-to-human and human-to-system interaction on objects.
 ### Platform
 Infrastructure for multi-tenancy and app interoperability.
 
+- [Instance Hardening](instance-hardening.md): one page of security controls with the floor beside each one, and a refusal for a change that crosses it
+
 - [Multi-Tenancy & SaaS](multi-tenancy.md) — Organisation isolation, quota enforcement, tenant lifecycle
 - [Deep Link Registry](deep-link-registry.md) — Boot-time URL routing from consuming Nextcloud apps
 - [Schema-Scoped Reference Providers](schema-scoped-reference-providers.md) — Reusable base classes letting a consuming app expose one schema as its own Smart Picker entry

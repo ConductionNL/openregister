@@ -76,119 +76,6 @@ class CodedPropertyDeclaration {
 	}//end __construct()
 
 	/**
-	 * Read a declaration off a schema property, or null when it carries none.
-	 *
-	 * A declaration without a `scheme` is not a declaration: it is a typo, and
-	 * returning null makes the property behave as an ordinary string rather
-	 * than as a code list bound to nothing.
-	 *
-	 * @param mixed $property The schema property definition.
-	 *
-	 * @return self|null The declaration, or null.
-	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
-	 */
-	public static function fromProperty(mixed $property): ?self {
-		$raw = null;
-		if (is_array($property) === true) {
-			$raw = ($property[self::ANNOTATION] ?? null);
-		} elseif (is_object($property) === true) {
-			$raw = ($property->{self::ANNOTATION} ?? null);
-		}
-
-		if (is_object($raw) === true) {
-			$raw = (array)$raw;
-		}
-
-		if (is_array($raw) === false) {
-			return null;
-		}
-
-		$scheme = trim((string)($raw['scheme'] ?? ''));
-		if ($scheme === '') {
-			return null;
-		}
-
-		$store = trim((string)($raw['store'] ?? 'uri'));
-		if ($store !== 'notation') {
-			$store = 'uri';
-		}
-
-		$branch = trim((string)($raw['branch'] ?? ''));
-		$contextProperty = trim((string)($raw['contextProperty'] ?? ''));
-		$contextKey = trim((string)($raw['contextKey'] ?? ''));
-
-		$score = ($raw['score'] ?? null);
-		if (is_object($score) === true) {
-			$score = (array)$score;
-		}
-
-		$scoreProperty = '';
-		if (is_array($score) === true) {
-			$scoreProperty = trim((string)($score['property'] ?? ''));
-		} elseif (is_string($score) === true) {
-			$scoreProperty = trim($score);
-		}
-
-		$maxDepth = null;
-		if (isset($raw['maxDepth']) === true && is_numeric($raw['maxDepth']) === true) {
-			$maxDepth = (int)$raw['maxDepth'];
-		}
-
-		// An absent part reads as an empty string above and as null on the
-		// declaration, so the four optional parts are normalised once here
-		// rather than each carrying its own check at the call.
-		if ($branch === '') {
-			$branch = null;
-		}
-
-		if ($contextProperty === '') {
-			$contextProperty = null;
-		}
-
-		if ($contextKey === '') {
-			$contextKey = null;
-		}
-
-		if ($scoreProperty === '') {
-			$scoreProperty = null;
-		}
-
-		return new self(
-			scheme: $scheme,
-			store: $store,
-			allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
-			branch: $branch,
-			leafOnly: (($raw['leafOnly'] ?? false) === true),
-			maxDepth: $maxDepth,
-			contextProperty: $contextProperty,
-			contextKey: $contextKey,
-			scoreProperty: $scoreProperty
-		);
-	}//end fromProperty()
-
-	/**
-	 * Every coded declaration on a schema's properties, keyed by property name.
-	 *
-	 * @param array<string,mixed> $properties The schema's property map.
-	 *
-	 * @return array<string,self> The declarations.
-	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
-	 */
-	public static function fromProperties(array $properties): array {
-		$declarations = [];
-		foreach ($properties as $name => $property) {
-			$declaration = self::fromProperty(property: $property);
-			if ($declaration !== null) {
-				$declarations[(string)$name] = $declaration;
-			}
-		}
-
-		return $declarations;
-	}//end fromProperties()
-
-	/**
 	 * Whether the option set is narrowed by something outside the scheme.
 	 *
 	 * @return boolean True when a context property or key is declared.
@@ -219,6 +106,21 @@ class CodedPropertyDeclaration {
 			return true;
 		}
 
+		return $this->declaresContext(concept: $concept, context: $context);
+	}//end matchesContext()
+
+	/**
+	 * Whether the concept names this context among the ones it serves.
+	 *
+	 * A concept that declares no contexts (absent, empty, or not a list) serves
+	 * every context, so it matches. Otherwise the context must be named.
+	 *
+	 * @param array<string,mixed> $concept The concept's decoded object data.
+	 * @param string $context The context value in play.
+	 *
+	 * @return boolean True when the concept serves this context.
+	 */
+	private function declaresContext(array $concept, string $context): bool {
 		$declared = ($concept['contexts'] ?? null);
 		if (is_string($declared) === true) {
 			$declared = [$declared];
@@ -228,12 +130,6 @@ class CodedPropertyDeclaration {
 			return true;
 		}
 
-		foreach ($declared as $candidate) {
-			if (is_string($candidate) === true && $candidate === $context) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end matchesContext()
+		return in_array(needle: $context, haystack: $declared, strict: true);
+	}//end declaresContext()
 }//end class

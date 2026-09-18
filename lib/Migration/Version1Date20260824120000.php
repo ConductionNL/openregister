@@ -94,13 +94,13 @@ class Version1Date20260824120000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable(self::TABLE) === false) {
 			$output->info('[or-delegated-identity] ' . self::TABLE . ' does not exist; nothing to alter.');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
 
 		if ($table->hasColumn('run_as') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn('run_as', Types::STRING, [

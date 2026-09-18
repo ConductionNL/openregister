@@ -121,6 +121,21 @@ class ObjectsController extends Controller {
 	private readonly ImportService $importService;
 
 	/**
+	 * The `@`-prefixed body keys a client is allowed to send.
+	 *
+	 * Everything else starting with `@` is server-managed metadata and is
+	 * dropped here. The list exists because dropping is SILENT: a key nobody
+	 * allows through is not refused, it simply never reaches the save, and the
+	 * caller reads a 200 on a field that was never stored. `@notSupplied` was
+	 * exactly that on its first day: the handler enforced it, the validator
+	 * excused it, the object stored it, and this filter removed it from every
+	 * create, update and patch before any of that ran.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
+
+	/**
 	 * Constructor for the ObjectsController
 	 *
 	 * @param string $appName The name of the app
@@ -146,7 +161,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder Optional PDOK geocoder (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry Relation resourceUrl resolver (null-safe)
 	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService Optional recovery-window service (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService Optional recovery-window service (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
 	 *
@@ -178,7 +193,7 @@ class ObjectsController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder = null,
 		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
 		private readonly ?\OCP\IURLGenerator $relationUrlGenerator = null,
-		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $deletionWindowService = null,
+		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService = null,
 		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
 		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
 	) {
@@ -202,7 +217,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	private function deletedRefusal(string $id): ?array {
-		if ($this->deletionWindowService === null) {
+		if ($this->windowService === null) {
 			return null;
 		}
 
@@ -223,7 +238,7 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		return $this->deletionWindowService->refusalBody(
+		return $this->windowService->refusalBody(
 			object: $deleted,
 			schema: ($context['schema'] ?? null)
 		);
@@ -2965,7 +2980,7 @@ class ObjectsController extends Controller {
 		$object = array_filter(
 			$object,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3173,7 +3188,7 @@ class ObjectsController extends Controller {
 		$object = array_filter(
 			$object,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3408,7 +3423,7 @@ class ObjectsController extends Controller {
 		$patchData = array_filter(
 			$patchData,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema']) === false,
 			ARRAY_FILTER_USE_KEY
 		);
@@ -3681,7 +3696,7 @@ class ObjectsController extends Controller {
 		$patchData = array_filter(
 			$patchData,
 			fn ($key) => str_starts_with($key, '_') === false
-				&& !($key !== '@self' && str_starts_with($key, '@'))
+				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
 				&& in_array($key, ['uuid', 'register', 'schema', 'id']) === false,
 			ARRAY_FILTER_USE_KEY
 		);

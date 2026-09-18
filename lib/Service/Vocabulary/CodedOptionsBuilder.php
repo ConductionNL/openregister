@@ -70,7 +70,7 @@ class CodedOptionsBuilder {
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
 	 * @param string $language The BCP-47 tag to read labels in.
 	 * @param string|null $context The context value in play, when the subset is bound.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
 	 *
 	 * @return array<int,array<string,mixed>> The options.
 	 *
@@ -80,9 +80,9 @@ class CodedOptionsBuilder {
 		CodedPropertyDeclaration $declaration,
 		string $language = 'nl',
 		?string $context = null,
-		?DateTimeInterface $at = null,
+		?DateTimeInterface $asOf = null,
 	): array {
-		$instant = ($at ?? new DateTimeImmutable());
+		$instant = ($asOf ?? new DateTimeImmutable());
 		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
 		if ($conceptsByUri === []) {
 			return [];
@@ -99,47 +99,84 @@ class CodedOptionsBuilder {
 
 		$options = [];
 		foreach ($candidates as $uri) {
-			$concept = ($conceptsByUri[$uri] ?? []);
-
-			if ($this->lifecycle->isOfferable(
-				concept: $concept,
-				at: $instant,
-				allowDeprecated: $declaration->allowDeprecated
-			) === false
-			) {
-				continue;
+			$option = $this->optionFor(
+				declaration: $declaration,
+				uri: (string)$uri,
+				conceptsByUri: $conceptsByUri,
+				context: $context,
+				language: $language,
+				asOf: $instant
+			);
+			if ($option !== null) {
+				$options[] = $option;
 			}
-
-			if ($declaration->matchesContext(concept: $concept, context: $context) === false) {
-				continue;
-			}
-
-			$leaf = $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $conceptsByUri);
-			if ($declaration->leafOnly === true && $leaf === false) {
-				continue;
-			}
-
-			$value = $uri;
-			if ($declaration->store === 'notation') {
-				$value = trim((string)($concept['notation'] ?? ''));
-				if ($value === '') {
-					continue;
-				}
-			}
-
-			$options[] = [
-				'value' => $value,
-				'uri' => $uri,
-				'label' => $this->hierarchy->labelOf(concept: $concept, language: $language),
-				'notation' => ($concept['notation'] ?? null),
-				'weight' => $this->lifecycle->weightOf(concept: $concept),
-				'leaf' => $leaf,
-				'fields' => ($concept[ConceptLifecycle::FIELD_FIELDS] ?? null),
-			];
 		}//end foreach
 
 		return $options;
 	}//end options()
+
+	/**
+	 * The option for one candidate uri, or null when it is not offerable.
+	 *
+	 * The per-candidate filtering lives here so {@see options()} stays a plain
+	 * gather-loop: a value outside its window, outside the context, or off a
+	 * leaf-only branch returns null and is left out.
+	 *
+	 * @param CodedPropertyDeclaration $declaration The property's declaration.
+	 * @param string $uri The candidate concept uri.
+	 * @param array<string,array<string,mixed>> $conceptsByUri The scheme's concepts.
+	 * @param string|null $context The context value in play, when the subset is bound.
+	 * @param string $language The BCP-47 tag to read labels in.
+	 * @param DateTimeInterface $asOf The instant to judge windows at.
+	 *
+	 * @return array<string,mixed>|null The option, or null to skip this uri.
+	 */
+	private function optionFor(
+		CodedPropertyDeclaration $declaration,
+		string $uri,
+		array $conceptsByUri,
+		?string $context,
+		string $language,
+		DateTimeInterface $asOf,
+	): ?array {
+		$concept = ($conceptsByUri[$uri] ?? []);
+
+		if ($this->lifecycle->isOfferable(
+			concept: $concept,
+			at: $asOf,
+			allowDeprecated: $declaration->allowDeprecated
+		) === false
+		) {
+			return null;
+		}
+
+		if ($declaration->matchesContext(concept: $concept, context: $context) === false) {
+			return null;
+		}
+
+		$leaf = $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $conceptsByUri);
+		if ($declaration->leafOnly === true && $leaf === false) {
+			return null;
+		}
+
+		$value = $uri;
+		if ($declaration->store === 'notation') {
+			$value = trim((string)($concept['notation'] ?? ''));
+			if ($value === '') {
+				return null;
+			}
+		}
+
+		return [
+			'value' => $value,
+			'uri' => $uri,
+			'label' => $this->hierarchy->labelOf(concept: $concept, language: $language),
+			'notation' => ($concept['notation'] ?? null),
+			'weight' => $this->lifecycle->weightOf(concept: $concept),
+			'leaf' => $leaf,
+			'fields' => ($concept[ConceptLifecycle::FIELD_FIELDS] ?? null),
+		];
+	}//end optionFor()
 
 	/**
 	 * The options for one declaration, as a tree.
@@ -151,7 +188,7 @@ class CodedOptionsBuilder {
 	 *
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
 	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
 	 *
 	 * @return array<int,array<string,mixed>> The roots of the tree.
 	 *
@@ -160,9 +197,9 @@ class CodedOptionsBuilder {
 	public function tree(
 		CodedPropertyDeclaration $declaration,
 		string $language = 'nl',
-		?DateTimeInterface $at = null,
+		?DateTimeInterface $asOf = null,
 	): array {
-		$instant = ($at ?? new DateTimeImmutable());
+		$instant = ($asOf ?? new DateTimeImmutable());
 		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
 		if ($conceptsByUri === []) {
 			return [];

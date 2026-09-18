@@ -121,21 +121,14 @@ class UniqueConstraintListener implements IEventListener {
 	 */
 	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		try {
-			$reference = $object->getSchema();
-			if ($reference === null || $reference === '') {
+			$resolved = $this->resolveConstraints(object: $object);
+			if ($resolved === null) {
 				return;
 			}
 
-			$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-			$constraints = $this->evaluator->constraints(configuration: $schema->getConfiguration());
-			if ($constraints === []) {
-				return;
-			}
-
-			$data = $object->getObject();
-			if (is_array($data) === false) {
-				return;
-			}
+			$schema = $resolved['schema'];
+			$constraints = $resolved['constraints'];
+			$data = $resolved['data'];
 
 			$reports = [];
 			foreach ($constraints as $constraint) {
@@ -195,6 +188,35 @@ class UniqueConstraintListener implements IEventListener {
 		}//end try
 
 	}//end evaluate()
+
+	/**
+	 * The schema, its named constraints and the object's data, or null when
+	 * there is nothing to evaluate (no schema, no constraints, or non-array
+	 * data). Pulling the guards out keeps {@see evaluate()} a plain loop.
+	 *
+	 * @param ObjectEntity $object The object the write carries.
+	 *
+	 * @return array{schema: \OCA\OpenRegister\Db\Schema, constraints: array<int,array<string,mixed>>, data: array<string,mixed>}|null
+	 */
+	private function resolveConstraints(ObjectEntity $object): ?array {
+		$reference = $object->getSchema();
+		if ($reference === null || $reference === '') {
+			return null;
+		}
+
+		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		$constraints = $this->evaluator->constraints(configuration: $schema->getConfiguration());
+		if ($constraints === []) {
+			return null;
+		}
+
+		$data = $object->getObject();
+		if (is_array($data) === false) {
+			return null;
+		}
+
+		return ['schema' => $schema, 'constraints' => $constraints, 'data' => $data];
+	}//end resolveConstraints()
 
 	/**
 	 * Write the reported breaches onto the object's validation envelope.
