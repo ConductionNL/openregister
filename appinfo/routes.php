@@ -82,6 +82,11 @@ return [
 
         // Object-scoped integration sub-resource dispatch —
         // pluggable-integration-registry task 4.2 / tasks.md#task-19.
+        // A declared action bound to a manual flow: one click, several changes,
+        // and a hint about where the handler goes next. The action's own right
+        // authorises it; the flow adds no second permission model (ADR-023).
+        ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
