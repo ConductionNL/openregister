@@ -33,10 +33,34 @@
 > than the convention in prose it replaces.
 
 
-- [ ] 2.1 A `partyRelationship` schema: two party references, a type, a period, a provenance.
-- [ ] 2.2 A relationship type declares the party kind at each end, its label and its reciprocal label.
+- [~] 2.1 A `partyRelationship` schema: two party references, a type, a period, a provenance.
+  - 🔴 DO NOT BUILD IT HERE. PIPELINQ ALREADY SHIPS ONE. Measured 2026-09-18 on
+    the development instance: `pipelinq/lib/Settings/pipelinq_register.json`
+    carries `components.schemas.relationship`, titled "Relationship", with
+    `fromContact`, `toContact`, `fromType`, `toType`, `type`, `inverseType`,
+    `category`, `notes`, `startDate`, `endDate`, `strength`.
+  - That is 2.1 almost exactly: two party references, a type, and a period.
+    Building a second `partyRelationship` schema in openregister would be a
+    SECOND DEFINITION OF ONE CONCEPT, at the data-model level, which is the
+    costliest place to have two: two schemas mean two sets of stored rows, and
+    nothing reconciles them afterwards.
+  - Provenance is the one part pipelinq's schema does not carry. It is an
+    addition to THAT schema, not a reason for a new one.
+- [~] 2.2 A relationship type declares the party kind at each end, its label and its reciprocal label.
+  - ALSO ALREADY THERE, in the same schema: `fromType` and `toType` are the
+    party kind at each end, and `type` with `inverseType` are the label and its
+    reciprocal. `category` groups them.
 - [ ] 2.3 Validation refuses a relationship whose ends do not match the declared kinds, and a self-relationship.
+  - GENUINELY UNBUILT, AND IT BELONGS TO PIPELINQ, which owns the schema.
+    Measured: nothing under `pipelinq/lib/` reads `fromContact` or
+    `inverseType`; the only `relationship` hits are social connections and
+    settings, which are a different concept. Openregister validating a schema
+    another app defines would put the rule and the data in separate repositories
+    and let them drift.
 - [ ] 2.4 A party read returns its relationships with the label for the reading direction.
+  - SAME OWNER, same reason. The reading direction is decided by which end the
+    reader came from, which is knowledge about parties, and parties are
+    pipelinq's.
 
 ## 3. What a link exposes
 
