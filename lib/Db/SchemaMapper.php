@@ -68,6 +68,9 @@ use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1090,6 +1093,7 @@ class SchemaMapper extends QBMapper {
 	public function insert(Entity $entity): Entity {
 		// Verify RBAC permission to create.
 		$this->verifyRbacPermission(action: 'create', entityType: 'schema');
+		$this->assertScopedPropertiesAreGoverned(entity: $entity);
 		// Auto-set organisation from active session.
 		$this->setOrganisationOnCreate(entity: $entity);
 
@@ -1103,6 +1107,65 @@ class SchemaMapper extends QBMapper {
 
 		return $entity;
 	}//end insert()
+
+	/**
+	 * Every scoped property on this schema is one its author may add, and one
+	 * the scope has room for.
+	 *
+	 * 🔴 WITHOUT THIS THE TWO RULES WOULD HAVE BEEN CHECKS WITH NO CALLER, which
+	 * is the same shape as no check at all. `ScopedPropertyGovernance` can
+	 * answer both questions perfectly and still protect nothing if the save path
+	 * never asks, and the schema would save, and the refusal would exist only in
+	 * a test.
+	 *
+	 * 🔑 IT RUNS ON INSERT AND ON UPDATE. Only on insert, a scope could be added
+	 * to an existing schema by anybody, and the ceiling could be walked past one
+	 * edit at a time. Schemas that carry no scope at all are untouched, because
+	 * the loop finds nothing.
+	 *
+	 * The governance is assembled here rather than injected because this mapper
+	 * already holds all three of its collaborators, and adding a constructor
+	 * argument to a mapper this widely constructed buys nothing.
+	 *
+	 * @param Entity $entity The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws ScopedPropertyException When a scope is not the caller's, or is full.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/schema-vocabulaire/spec.md
+	 */
+	private function assertScopedPropertiesAreGoverned(Entity $entity): void {
+		if (($entity instanceof Schema) === false) {
+			return;
+		}
+
+		$properties = ($entity->getProperties() ?? []);
+		if ($properties === []) {
+			return;
+		}
+
+		$governance = new ScopedPropertyGovernance(
+			$this->userSession,
+			$this->groupManager,
+			$this->appConfig
+		);
+
+		foreach ($properties as $name => $property) {
+			if (is_array($property) === false) {
+				continue;
+			}
+
+			$scope = ($property[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+			if (is_string($scope) === false || trim($scope) === '') {
+				continue;
+			}
+
+			$scope = trim($scope);
+			$governance->assertMayAddAtScope(scope: $scope, path: (string)$name);
+			$governance->assertBelowCeiling(schema: $entity, scope: $scope, property: (string)$name);
+		}
+	}//end assertScopedPropertiesAreGoverned()
 
 	/**
 	 * Ensures that a schema object has a UUID and a slug.
@@ -2823,6 +2886,7 @@ class SchemaMapper extends QBMapper {
 		$this->verifyRbacPermission(action: 'update', entityType: 'schema');
 		// Verify user has access to this organisation.
 		$this->verifyOrganisationAccess(entity: $entity);
+		$this->assertScopedPropertiesAreGoverned(entity: $entity);
 
 		// Fetch old entity directly without organisation filter for event comparison.
 		$this->traceRead(method: 'update');
