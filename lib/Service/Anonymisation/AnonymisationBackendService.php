@@ -347,6 +347,8 @@ class AnonymisationBackendService {
 	 * @param string $method HTTP method (default POST).
 	 *
 	 * @return array<string, mixed>|null Decoded JSON response, or null on failure.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function requestOpenAnonymiser(string $route, array $params, string $method = 'POST'): ?array {
 		$appId = $this->resolveActiveExAppId();
