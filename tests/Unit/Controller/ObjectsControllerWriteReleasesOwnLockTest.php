@@ -237,4 +237,47 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 		$this->assertIsArray($body['@self']['locked']);
 		$this->assertSame(self::CALLER, $body['@self']['locked']['user']);
 	}//end testAFailedReleaseLeavesTheLockInTheBody()
+
+	/**
+	 * The writer is resolved from the session when the container has no
+	 * `userId`. This decision had never actually run before the expiry fix,
+	 * because every durationless lock was already expired by the time
+	 * `isLocked()` was asked, so a null here would silently stop releasing
+	 * locks rather than refuse anybody.
+	 *
+	 * @return void
+	 */
+	public function testTheWriterIsResolvedFromTheSessionWhenTheContainerHasNoUserId(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn(null);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn(self::CALLER);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
+
+		$this->controller = new ObjectsController(
+			'openregister',
+			$this->request,
+			$this->createMock(IAppConfig::class),
+			$this->createMock(IAppManager::class),
+			$container,
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->objectService,
+			$this->userSession,
+			$this->groupManager,
+			$this->createMock(ExportService::class),
+			$this->createMock(ImportService::class),
+			$this->createMock(WebhookService::class),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$this->objectService->expects($this->once())->method('unlockObject')->willReturn(true);
+
+		$body = $this->updateReturningLock($this->liveLockHeldBy(self::CALLER));
+
+		$this->assertNull($body['@self']['locked']);
+	}//end testTheWriterIsResolvedFromTheSessionWhenTheContainerHasNoUserId()
 }//end class

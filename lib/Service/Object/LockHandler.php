@@ -402,6 +402,12 @@ class LockHandler {
 		return [
 			'uuid' => $objectAfter->getUuid(),
 			'locked' => $objectAfter->getLocked(),
+			// Whether the lock this call just took is actually HELD, read back
+			// off the entity rather than assumed from the fact that the write
+			// did not throw. The endpoint reported `locked: true` as a
+			// literal, so it said yes to a lock that had already expired and
+			// no test could ever have caught it.
+			'held' => $objectAfter->isLocked(),
 		];
 	}//end lockStoredObject()
 

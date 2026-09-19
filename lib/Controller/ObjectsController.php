@@ -3484,7 +3484,7 @@ class ObjectsController extends Controller {
 			return;
 		}
 
-		if ($objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === true) {
+		if ($objectEntity->isLockedBySomeoneElse(userId: $this->writerId()) === true) {
 			return;
 		}
 
@@ -3514,6 +3514,33 @@ class ObjectsController extends Controller {
 
 		$objectEntity->setLocked(null);
 	}//end releaseOwnLockAfterWrite()
+
+	/**
+	 * Who is writing, for the release decision.
+	 *
+	 * The container's `userId` is the canonical answer and is what every
+	 * other guard in this file asks. It is read through a fallback because
+	 * this decision had never actually run: every lock taken without a
+	 * duration expired at the instant it was written, so `isLocked()` above
+	 * was always false and nothing below it was ever reached. A resolution
+	 * that quietly answers null here would not refuse anybody, it would
+	 * silently stop releasing locks, which is the failure this whole path
+	 * exists to prevent.
+	 *
+	 * @return string|null The writer's user id, or null when there is no user.
+	 */
+	private function writerId(): ?string {
+		try {
+			$fromContainer = $this->container->get('userId');
+			if (is_string($fromContainer) === true && $fromContainer !== '') {
+				return $fromContainer;
+			}
+		} catch (\Throwable $e) {
+			// Not registered in this context; the session below is the answer.
+		}
+
+		return $this->userSession->getUser()?->getUID();
+	}//end writerId()
 
 	/**
 	 * Updates an existing object
@@ -4749,8 +4776,15 @@ class ObjectsController extends Controller {
 				duration: $duration
 			);
 
-			// Return response with locked status for test compatibility.
-			return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
+			// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
+			// ASSERTING IT COULD NOT FAIL. `LockHandler` now reports whether
+			// the lock it took is actually held, read back off the entity, and
+			// that is what goes on the wire. The advisory (pre-creation) path
+			// has no entity to read, so it keeps the old answer.
+			$held = ($lockResult['held'] ?? true);
+			unset($lockResult['held']);
+
+			return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Throwable $e) {
