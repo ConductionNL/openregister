@@ -79,6 +79,13 @@ class FlowBpmnImporter {
 	public const LAYOUT_COLUMNS = 6;
 
 	/**
+	 * Reads the file's diagram interchange, and lays a graph out without one.
+	 *
+	 * @var BpmnDiagramLayout
+	 */
+	private BpmnDiagramLayout $layout;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param BpmnVocabulary      $vocabulary The one mapping table.
@@ -88,13 +95,53 @@ class FlowBpmnImporter {
 		private readonly BpmnVocabulary $vocabulary,
 		private readonly BpmnSchemaValidator $validator,
 	) {
+		$this->layout = new BpmnDiagramLayout();
 	}//end __construct()
 
 	/**
 	 * Read a BPMN file into a flow document and a mapping report.
 	 *
-	 * @param string $xml    The file.
-	 * @param bool   $strict Whether a refusal fails the whole import.
+	 * Constructs this importer does not map are REPORTED and the flow is
+	 * still created. A caller that wants the opposite asks
+	 * {@see self::importStrictly()} rather than passing a flag: "import it
+	 * and tell me what was lost" and "refuse unless everything maps" are two
+	 * requests, and a flag dropped between the endpoint and here silently
+	 * turns the second into the first.
+	 *
+	 * @param string $xml The file.
+	 *
+	 * @return array{flow: array<string, mixed>, report: BpmnMappingReport} The result.
+	 *
+	 * @throws BpmnImportRefused When the file cannot be read.
+	 * @throws BpmnSchemaInvalid When the document is not valid BPMN 2.0, which is a different answer.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	public function import(string $xml): array {
+		return $this->read(xml: $xml, strict: false);
+	}//end import()
+
+	/**
+	 * Read a BPMN file, refusing it outright when anything does not map.
+	 *
+	 * @param string $xml The file.
+	 *
+	 * @return array{flow: array<string, mixed>, report: BpmnMappingReport} The result.
+	 *
+	 * @throws BpmnImportRefused When the file cannot be read, or when anything in it is refused.
+	 * @throws BpmnSchemaInvalid When the document is not valid BPMN 2.0, which is a different answer.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	public function importStrictly(string $xml): array {
+		return $this->read(xml: $xml, strict: true);
+	}//end importStrictly()
+
+	/**
+	 * The shared body of {@see self::import()} and {@see self::importStrictly()}.
+	 *
+	 * @param string  $xml    The file.
+	 * @param boolean $strict Whether a refusal fails the whole import.
 	 *
 	 * @return array{flow: array<string, mixed>, report: BpmnMappingReport} The result.
 	 *
@@ -103,7 +150,7 @@ class FlowBpmnImporter {
 	 *
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
-	public function import(string $xml, bool $strict = false): array {
+	private function read(string $xml, bool $strict): array {
 		$document = $this->parse(xml: $xml);
 
 		// 🔴 THE SCHEMA STEP COMES BEFORE THE MAPPING, NOT BESIDE IT. Every
@@ -131,7 +178,7 @@ class FlowBpmnImporter {
 		}
 
 		$report = new BpmnMappingReport();
-		$positions = $this->positions(xpath: $xpath);
+		$positions = $this->layout->positions(xpath: $xpath);
 
 		['nodes' => $nodes, 'edges' => $edges] = $this->graphOf(
 			xpath: $xpath,
@@ -149,12 +196,12 @@ class FlowBpmnImporter {
 		return [
 			'flow' => [
 				'name' => $this->nameOf(process: $processes->item(0)),
-				'nodes' => $this->laidOut(nodes: $nodes, positions: $positions),
+				'nodes' => $this->layout->laidOut(nodes: $nodes, positions: $positions),
 				'edges' => $edges,
 			],
 			'report' => $report,
 		];
-	}//end import()
+	}//end read()
 
 	/**
 	 * The nodes and edges one process element declares.
@@ -353,74 +400,6 @@ class FlowBpmnImporter {
 
 		return $edge;
 	}//end edgeFrom()
-
-	/**
-	 * The diagram positions the file carries, keyed by element id.
-	 *
-	 * @param DOMXPath $xpath The xpath.
-	 *
-	 * @return array<string, array{x: int, y: int}> The positions.
-	 */
-	private function positions(DOMXPath $xpath): array {
-		$positions = [];
-		$shapes = $xpath->query('//bpmndi:BPMNShape');
-		if ($shapes === false) {
-			$shapes = [];
-		}
-
-		foreach ($shapes as $shape) {
-			if (($shape instanceof DOMElement) === false) {
-				continue;
-			}
-
-			$bounds = $xpath->query('./dc:Bounds', $shape);
-			if ($bounds === false || $bounds->length === 0) {
-				continue;
-			}
-
-			$bound = $bounds->item(0);
-			if (($bound instanceof DOMElement) === false) {
-				continue;
-			}
-
-			$positions[trim($shape->getAttribute('bpmnElement'))] = [
-				'x' => (int)$bound->getAttribute('x'),
-				'y' => (int)$bound->getAttribute('y'),
-			];
-		}
-
-		return $positions;
-	}//end positions()
-
-	/**
-	 * The nodes with their positions, laid out when the file carried none.
-	 *
-	 * 🔴 NOT A PILE AT THE ORIGIN. A file with no diagram interchange is the
-	 * common case for a hand-written or generated BPMN, and importing one into
-	 * a heap of overlapping boxes reads as "the import is broken" rather than
-	 * as "this file had no layout".
-	 *
-	 * @param array<int, array<string, mixed>>      $nodes     The nodes.
-	 * @param array<string, array{x: int, y: int}>  $positions The file's positions.
-	 *
-	 * @return array<int, array<string, mixed>> The nodes.
-	 */
-	private function laidOut(array $nodes, array $positions): array {
-		foreach ($nodes as $index => $node) {
-			$id = (string)($node['id'] ?? '');
-			if (array_key_exists($id, $positions) === true) {
-				$nodes[$index]['position'] = $positions[$id];
-				continue;
-			}
-
-			$nodes[$index]['position'] = [
-				'x' => (($index % self::LAYOUT_COLUMNS) * self::LAYOUT_X),
-				'y' => ((int)floor($index / self::LAYOUT_COLUMNS) * self::LAYOUT_Y),
-			];
-		}
-
-		return $nodes;
-	}//end laidOut()
 
 	/**
 	 * The process name, or an empty string.

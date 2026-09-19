@@ -678,7 +678,14 @@ class FlowController extends Controller {
 		);
 
 		try {
-			$result = $importer->import(xml: $xml, strict: $strict);
+			// The two are separate calls, not a flag: "import it and tell me
+			// what was lost" and "refuse unless everything maps" are two
+			// requests, and a flag dropped in the middle silently turns the
+			// second into the first.
+			$result = match ($strict) {
+				true => $importer->importStrictly(xml: $xml),
+				false => $importer->import(xml: $xml),
+			};
 		} catch (BpmnSchemaInvalid $invalid) {
 			// 🔴 A DIFFERENT ANSWER FROM A REFUSAL, deliberately. There is no
 			// report here and there must not be one: nothing was mapped, so
