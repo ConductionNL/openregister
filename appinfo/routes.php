@@ -2108,6 +2108,19 @@ return [
 		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+		// THERE IS NO `DELETE /api/flow-tasks/{uuid}`, AND THAT IS A DECISION,
+		// not an omission. `cancel` is how a task stops: it writes the
+		// terminal state, an outcome and a reason, and the audit entry that
+		// records who ended it. A hard delete would remove the row that the
+		// audit entries, the candidate index, the typed relations and the
+		// calendar projection all hang off, and with it the only evidence
+		// that the task ever existed. That evidence is most needed in exactly
+		// the case that made us ask: a task somebody else put on your list.
+		// The removal path is therefore cancel, by the requester or by an
+		// administrator, which is stricter than create and leaves a record.
+		// Notes and events DO carry a delete because they are leaves: a note
+		// is somebody's own text, and removing one leaves the task and its
+		// history standing.
 
 		// The notes and calendar leaves, anchored on the TASK. Both leaves
 		// were reachable only under /api/objects/{register}/{schema}/{id},
