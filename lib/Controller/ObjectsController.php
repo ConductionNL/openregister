@@ -969,6 +969,33 @@ class ObjectsController extends Controller {
 			);
 		}
 
+		// DOELBINDING, BEFORE ANY ROW IS FETCHED.
+		//
+		// index() reaches this method by returning early, twenty lines BEFORE
+		// its own purpose check, whenever the request names more than one schema
+		// or register. So `?schemas={bound},anythingElse` returned in full the
+		// rows that `GET /objects/{register}/{bound}` refuses with 403 - one
+		// extra, even unrelated, schema id defeated an AVG purpose-binding
+		// control.
+		//
+		// The guard belongs here rather than at that call site: this method IS
+		// the fan-out, and a check on the caller would have to be repeated,
+		// correctly, by every future caller. objects() is the second one today.
+		//
+		// Refused when ANY pair is refused. A purpose-bound schema must not be
+		// launderable by listing it alongside one that is not.
+		foreach ($pairs as $pair) {
+			$refusal = $this->refuseUnboundPurpose(
+				resolved: [
+					'registerEntity' => $pair['register'],
+					'schemaEntity' => $pair['schema'],
+				]
+			);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+		}
+
 		// Build search query WITHOUT register/schema to avoid filtering.
 		// Cross-table search handles multiple register+schema pairs internally.
 		$query = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
@@ -2436,6 +2463,22 @@ class ObjectsController extends Controller {
 
 				$resolvedRegisterId = $resolved['register'];
 				$resolvedSchemaId = $resolved['schema'];
+
+				// DOELBINDING. This endpoint is @PublicPage and reads the same
+				// data as index(), which has guarded its single-schema branch
+				// since PurposeGuard landed - this one guarded nothing, on any
+				// branch. A schema that refuses show() for want of a declared
+				// purpose answered here in full, without authentication.
+				//
+				// Placed on the resolution rather than per branch: both branches
+				// below (magic-mapper and the searchObjectsPaginated fallback)
+				// descend from this point, and the multi-schema branch above is
+				// guarded inside crossTableSearch() itself. A per-branch check
+				// would reproduce the gap the next time a branch is added.
+				$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+				if ($refusal !== null) {
+					return $refusal;
+				}
 
 				// Check if magic mapping is enabled for this register+schema.
 				$registerEntity = $resolved['registerEntity'] ?? null;
