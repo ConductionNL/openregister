@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
+use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
@@ -356,9 +357,16 @@ class TaskController extends Controller {
 	/**
 	 * Create a task.
 	 *
+	 * The one verb with no task to have a relationship with, so its
+	 * authorization is about the SUBJECT instead: an object the caller may
+	 * not read is an object they may not put a task on, and the refusal is
+	 * the 404 that object's own endpoint gives them
+	 * ({@see \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard}).
+	 *
 	 * @return JSONResponse The created task, or a named refusal.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -632,6 +640,14 @@ class TaskController extends Controller {
 			);
 		} catch (TaskValidationException $refused) {
 			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (TaskSubjectNotFoundException $missing) {
+			// The object a task names is not there for this caller, either
+			// because it is not there at all or because they may not read it.
+			// 404 with the object endpoint's own words, so the two are
+			// indistinguishable and a create cannot be used to find out which
+			// objects exist. This catch sits ABOVE the write refusal because
+			// both are about the subject and only this one is about access.
+			return new JSONResponse(['error' => $missing->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (TaskSubjectWriteRefusedException $refused) {
 			// The payload passed the form and the SUBJECT refused it, on the
 			// ordinary save path: not malformed, not completed.
