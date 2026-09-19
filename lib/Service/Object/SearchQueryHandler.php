@@ -32,7 +32,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -131,7 +130,7 @@ class SearchQueryHandler {
 	/**
 	 * SearchQueryHandler constructor.
 	 *
-	 * @param ViewMapper $viewMapper Mapper for view operations.
+	 * @param ViewScopeApplier $viewScope Merges a view's stored query into a search.
 	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
 	 * @param SettingsService $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
@@ -144,7 +143,7 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly ViewMapper $viewMapper,
+		private readonly ViewScopeApplier $viewScope,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly SettingsService $settingsService,
 		private readonly LoggerInterface $logger,
@@ -657,135 +656,31 @@ class SearchQueryHandler {
 	}//end buildSearchQuery()
 
 	/**
-	 * Apply view filters to a query
+	 * Apply view filters to a query.
 	 *
-	 * Converts view definitions into query parameters by merging view->query into the base query.
-	 * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
+	 * The merge itself lives in {@see ViewScopeApplier}, which owns the
+	 * ViewMapper and the fail-closed contract around `$_viewScopeRequired`.
+	 * This handler keeps the entry point its callers already use.
 	 *
 	 * @param array<string, mixed> $query Base query parameters.
 	 * @param array<int|string> $viewIds View IDs to apply (can be int or string IDs).
+	 * @param bool $_viewScopeRequired Whether the view filter is load-bearing for this
+	 *                                 caller, making any failure to apply it fatal.
 	 *
 	 * @return array<string, mixed> Query with view filters applied
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
+	 * @throws Exception When `$_viewScopeRequired` is true and a view cannot be applied.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fail-closed contract, not a mode switch
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function applyViewsToQuery(array $query, array $viewIds): array {
-		if (empty($viewIds) === true) {
-			return $query;
-		}
-
-		$this->logger->debug(
-			message: '[SearchQueryHandler] Applying views to query',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'viewIds' => $viewIds,
-				'originalQuery' => array_keys($query),
-			]
+	public function applyViewsToQuery(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
+		return $this->viewScope->apply(
+			query: $query,
+			viewIds: $viewIds,
+			_viewScopeRequired: $_viewScopeRequired
 		);
-
-		foreach ($viewIds as $viewId) {
-			try {
-				$view = $this->viewMapper->find($viewId);
-				$viewQuery = $view->getQuery();
-
-				// Apply registers filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['registers']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$registerValue = $query['@self']['register'] ?? null;
-					$registerArray = [];
-					if (is_array($registerValue) === true) {
-						$registerArray = $registerValue;
-					} elseif ($registerValue !== null && $registerValue !== false) {
-						$registerArray = [$registerValue];
-					}
-
-					$query['@self']['register'] = array_unique(
-						array_merge(
-							$registerArray,
-							$viewQuery['registers']
-						)
-					);
-				}//end if
-
-				// Apply schemas filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['schemas']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$schemaValue = $query['@self']['schema'] ?? null;
-					$schemaArray = [];
-					if (is_array($schemaValue) === true) {
-						$schemaArray = $schemaValue;
-					} elseif ($schemaValue !== null && $schemaValue !== false) {
-						$schemaArray = [$schemaValue];
-					}
-
-					$query['@self']['schema'] = array_unique(
-						array_merge(
-							$schemaArray,
-							$viewQuery['schemas']
-						)
-					);
-				}//end if
-
-				// Apply search terms.
-				if (empty($viewQuery['searchTerms']) === false) {
-					$searchTerms = $viewQuery['searchTerms'];
-					if (is_array($viewQuery['searchTerms']) === true) {
-						$searchTerms = implode(' ', $viewQuery['searchTerms']);
-					}
-
-					// Merge with existing search if present.
-					//
-					// This previously assigned $query['_search'] FIRST and then
-					// appended $searchTerms to it, so the isset() guard could only
-					// ever see the value just written. Two things went wrong: the
-					// caller's own `_search` was discarded (the merge this comment
-					// describes never happened), and the view's terms were appended
-					// to themselves, producing "foo foo". Mirrors the `schemas`
-					// merge above: read what is there, then combine.
-					$existingSearch = ($query['_search'] ?? '');
-					$searchPrefix = '';
-					if (is_string($existingSearch) === true && $existingSearch !== '') {
-						$searchPrefix = $existingSearch . ' ';
-					}
-
-					$query['_search'] = $searchPrefix . $searchTerms;
-				}//end if
-
-				$this->logger->debug(
-					message: '[SearchQueryHandler] Applied view to query',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'registers' => $viewQuery['registers'] ?? [],
-						'schemas' => $viewQuery['schemas'] ?? [],
-						'hasSearchTerms' => empty($viewQuery['searchTerms']) === false,
-					]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[SearchQueryHandler] Failed to apply view',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return $query;
 	}//end applyViewsToQuery()
 
 	/**

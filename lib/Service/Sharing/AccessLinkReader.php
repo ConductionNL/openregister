@@ -243,11 +243,23 @@ class AccessLinkReader {
 		}
 
 		try {
+			// `_viewScopeRequired: true` is not decoration. RBAC and multitenancy
+			// are off here because there is no session to judge, which leaves the
+			// view as the ONLY bound on this query. The shared search path used to
+			// log an unresolvable view and carry on with the query unchanged - and
+			// the view IS unresolvable here, because ViewMapper::find() ran an RBAC
+			// read check against an anonymous caller. The result was a link serving
+			// up to MAX_VIEW_OBJECTS arbitrary objects from any organisation. With
+			// the flag the view is resolved exempt (the link is the authorization,
+			// exactly as for the schema read in filteredProperties()) and every way
+			// of failing to apply it throws, which the catch below turns into "this
+			// link no longer resolves".
 			$results = $this->objects->searchObjects(
 				query: ['_limit' => self::MAX_VIEW_OBJECTS],
 				_rbac: false,
 				_multitenancy: false,
-				views: [$viewId]
+				views: [$viewId],
+				_viewScopeRequired: true
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(

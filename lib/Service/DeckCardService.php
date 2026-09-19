@@ -601,6 +601,8 @@ class DeckCardService {
 	 * @param int $boardId The Deck board ID.
 	 *
 	 * @return bool True when the caller may read the board.
+	 *
+	 * @spec openspec/specs/integration-deck/spec.md
 	 */
 	protected function userCanAccessBoard(int $boardId): bool {
 		if (class_exists('OCA\\Deck\\Service\\BoardService') === false) {
