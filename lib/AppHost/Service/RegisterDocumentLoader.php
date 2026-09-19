@@ -72,6 +72,8 @@ class RegisterDocumentLoader {
 	 * generic service lives inside OpenRegister itself and has no `__DIR__`
 	 * relative to the calling (leaf) app.
 	 *
+	 * @param string $appId The leaf app whose register document is read.
+	 *
 	 * @return array{0: array<string, mixed>|null, 1: string} `[$data, $version]`;
 	 *                                                        `$data` is `null` when
 	 *                                                        no register JSON was found.

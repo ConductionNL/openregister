@@ -51,7 +51,6 @@ use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 /**
  * Serves the hardening report and administers the controls behind it.
@@ -77,7 +76,6 @@ class HardeningController extends Controller {
 	 * @param HardeningSettingsService $settingsService Applies a change, or refuses it.
 	 * @param HardeningPolicy $policy Reads the floors in force.
 	 * @param ElevationService $elevation Guards the administration writes with a fresh sign-in.
-	 * @param IUserSession $userSession Names the account, which is never read from the request.
 	 *
 	 * @return void
 	 */
@@ -88,7 +86,6 @@ class HardeningController extends Controller {
 		private readonly HardeningSettingsService $settingsService,
 		private readonly HardeningPolicy $policy,
 		private readonly ElevationService $elevation,
-		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

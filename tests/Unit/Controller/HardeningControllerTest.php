@@ -133,7 +133,6 @@ class HardeningControllerTest extends TestCase {
 			$this->settings,
 			new HardeningPolicy($appConfig),
 			$this->elevation,
-			$userSession,
 		);
 	}
 

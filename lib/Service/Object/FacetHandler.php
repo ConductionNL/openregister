@@ -40,7 +40,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -76,7 +75,6 @@ class FacetHandler {
 	 * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
 	 * @param SchemaMapper $schemaMapper Schema database mapper.
 	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
-	 * @param IUserSession $userSession User session for tenant isolation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
 	 * @param PropertyRbacHandler|null $propertyRbac Withholds a facet over a property the caller may not read.
 	 *                                               Nullable and last so no construction site shifts; absent, a
@@ -90,7 +88,6 @@ class FacetHandler {
 		private readonly MagicMapper $unifiedObjectMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly FacetResponseCache $responseCache,
-		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,

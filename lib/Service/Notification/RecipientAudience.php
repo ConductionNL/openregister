@@ -39,14 +39,10 @@ namespace OCA\OpenRegister\Service\Notification;
  */
 enum RecipientAudience: string {
 
-	/**
-	 * The recipient holds an account in this organisation.
-	 */
+	// The recipient holds an account in this organisation.
 	case Internal = 'internal';
 
-	/**
-	 * The recipient is reachable only from outside the organisation.
-	 */
+	// The recipient is reachable only from outside the organisation.
 	case External = 'external';
 
 	/**

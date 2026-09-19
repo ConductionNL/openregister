@@ -71,6 +71,7 @@ class FlowShareableConfigType implements IShareableConfigType {
 	 *
 	 * @param FlowMapper $mapper Writes flow definitions on install.
 	 * @param FlowService $flows Reads flows the CALLER is allowed to see.
+	 * @param FlowCaller $caller Who is installing, and which organisation they write into.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,

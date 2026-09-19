@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 
 /**

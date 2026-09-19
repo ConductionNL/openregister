@@ -87,12 +87,12 @@ class FlowRunController extends Controller {
 	 * @param FlowRunService $runner Retries, requeues and runs.
 	 * @param FlowLocator $resolvers Resolves a flow id to its document.
 	 * @param IUserSession $userSession Attributes a retried run to the caller.
+	 * @param OrganisationService $organisationService Scopes the active-runs list to the caller's tenant.
 	 * @param FlowRunnableGuard $guard Whether the caller may run the flow a run belongs to.
 	 *                                 REQUIRED, unlike the collaborators below: a run
 	 *                                 endpoint with no guard is the IDOR this controller
 	 *                                 was written to close, so there is no "absent" case
 	 *                                 for it to scope to.
-	 * @param OrganisationService $organisationService Scopes the active-runs list to the caller's tenant.
 	 * @param IGroupManager|null $groupManager Distinguishes an administrator, who gets
 	 *                                         the unscoped run history. Nullable so
 	 *                                         adding it is not a fatal at existing

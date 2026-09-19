@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCP\ICache;
 use OCP\ICacheFactory;
-use OCP\IMemcache;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -71,9 +71,14 @@ class FacetResponseCache {
 	/**
 	 * Distributed cache for facet responses.
 	 *
-	 * @var IMemcache|null
+	 * Typed as `ICache`, which is what `ICacheFactory` actually returns and
+	 * all this class asks of it (`get` and `set`). The property used to
+	 * declare `IMemcache`, a promise the factory never made; only the two
+	 * methods above are called, so nothing narrower is needed.
+	 *
+	 * @var ICache|null
 	 */
-	private ?IMemcache $facetCache = null;
+	private ?ICache $facetCache = null;
 
 	/**
 	 * Constructor.

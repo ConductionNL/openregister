@@ -146,7 +146,6 @@ final class FacetFreshnessTest extends TestCase {
 				facetCacheVersion: $this->versions,
 				logger: $logger
 			),
-			$userSession,
 			$logger
 		);
 	}//end setUp()
