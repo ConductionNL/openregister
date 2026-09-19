@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
+use UnexpectedValueException;
 
 /**
  * Starts the flow when someone runs it.
@@ -117,32 +119,49 @@ class TriggerManualNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 	}//end isAvailableForScope()
 
 	/**
-	 * A manual trigger takes no configuration.
+	 * A manual trigger takes one key: where the person goes afterwards.
 	 *
-	 * Naming the vocabulary as EMPTY is not the same as saying nothing: an
-	 * empty list lets the preflight report a key written here in another
-	 * node's dialect, which would otherwise be stored, ignored, and reported as
-	 * a healthy step.
+	 * Naming the vocabulary is not the same as saying nothing: the list lets
+	 * the preflight report a key written here in another node's dialect, which
+	 * would otherwise be stored, ignored, and reported as a healthy step.
 	 *
-	 * @return array<int, string> The accepted config keys — none.
+	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
 	 */
 	public function configKeys(): array {
-		return [];
+		return ['next'];
 	}//end configKeys()
 
 	/**
-	 * Nothing to require.
+	 * Refuse a `next` outside the vocabulary.
+	 *
+	 * Nothing is REQUIRED — a manual trigger with no `next` means `stay`, which
+	 * is what running a flow from a record did before this key existed. But a
+	 * word outside the vocabulary is refused rather than defaulted: silently
+	 * read as `stay`, a typed `nextItem` would author, save and behave like a
+	 * setting nobody made, and the author would have no way to see it.
 	 *
 	 * @param array $config The node configuration.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 * @throws UnexpectedValueException When `next` is not one of the three words.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
 	 */
 	public function validateConfig(array $config): void {
+		if (array_key_exists('next', $config) === false || $config['next'] === null || $config['next'] === '') {
+			return;
+		}
 
+		if (FlowNextHint::read(raw: $config['next']) === null) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'"next" must be one of "stay", "next" or "list".'
+				)
+			);
+		}
 	}//end validateConfig()
 
 	/**

@@ -735,6 +735,45 @@ class ExportService {
 	}//end populateSheet()
 
 	/**
+	 * How many objects an export with these filters would carry.
+	 *
+	 * Used where the produced artefact cannot be counted after the fact. A
+	 * rendered pdf is a box tree, not rows, so the audit trail would otherwise
+	 * have to name a guess. Every other format counts off its own
+	 * bytes, which is one query cheaper and cannot drift from the file.
+	 *
+	 * @param Register|null $register Optional register to export.
+	 * @param Schema|null   $schema   Optional schema to export.
+	 * @param array         $filters  Optional filters to apply.
+	 *
+	 * @return int The object count this export would write.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	public function countExportRows(?Register $register = null, ?Schema $schema = null, array $filters = []): int {
+		return count($this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters));
+	}//end countExportRows()
+
+	/**
+	 * The objects an export with these filters would carry.
+	 *
+	 * The export profile projects its own field set onto these, so it needs the
+	 * entities rather than a written file. Selection stays here: one place
+	 * decides what an export sees, and RBAC and multi-tenancy are applied in it.
+	 *
+	 * @param Register|null $register Optional register to export.
+	 * @param Schema|null   $schema   Optional schema to export.
+	 * @param array         $filters  Optional filters to apply.
+	 *
+	 * @return ObjectEntity[] The objects this export would write.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	public function fetchExportObjects(?Register $register = null, ?Schema $schema = null, array $filters = []): array {
+		return $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
+	}//end fetchExportObjects()
+
+	/**
 	 * Fetch all objects matching the given register, schema and filters for export.
 	 *
 	 * Builds the query with RBAC, multi-tenancy and metadata filters, then returns

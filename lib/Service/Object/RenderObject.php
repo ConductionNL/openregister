@@ -58,6 +58,8 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Relation\LinkExposure;
+use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\IRequest;
@@ -172,6 +174,26 @@ class RenderObject {
 	 * @var boolean
 	 */
 	private bool $pageRenderActive = false;
+
+	/**
+	 * The relation vocabulary reader, created on first use.
+	 *
+	 * Held rather than constructed per call because it memoises a schema's
+	 * descriptors, and a page render asks the same schema the same question
+	 * once per row. Not injected: it is a pure resolver with no dependencies,
+	 * and threading it through this constructor would touch every caller and
+	 * every test that builds one.
+	 *
+	 * @var RelationTypeResolver|null
+	 */
+	private ?RelationTypeResolver $relationTypes = null;
+
+	/**
+	 * The link exposure rule, created on first use.
+	 *
+	 * @var LinkExposure|null
+	 */
+	private ?LinkExposure $linkExposure = null;
 
 	/**
 	 * Constructor for RenderObject handler.
@@ -2932,6 +2954,9 @@ class RenderObject {
 	 * @param int $depth The current depth.
 	 * @param bool $allFlag If we extend all or not.
 	 * @param array $visitedIds All ids we already handled.
+	 * @param array $exposures The relation descriptors that declare a field set, keyed by
+	 *                         the property the link hangs on. Empty for every schema that
+	 *                         declares none, which is every schema written so far.
 	 *
 	 * @return array
 	 *
@@ -2950,6 +2975,7 @@ class RenderObject {
 		int $depth,
 		bool $allFlag = false,
 		array $visitedIds = [],
+		array $exposures = [],
 	): array {
 		$data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
@@ -2995,13 +3021,22 @@ class RenderObject {
 					fn ($v) => $v !== null
 						&& (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
 				);
+				$descriptor = ($exposures[$key] ?? null);
 				$renderedValue = array_map(
-					function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
+					function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds, $descriptor) {
 						// If already an extended object (has 'id' and '@self' keys), return as-is.
 						// This prevents double-processing when extend is called multiple times.
 						if (is_array($identifier) === true) {
 							if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
-								return $identifier;
+								// Already extended, by the wildcard pass above or by an
+								// earlier call. The exposure still applies: an extend that
+								// arrives here pre-rendered is the same far record reached
+								// through the same link, and skipping the projection because
+								// somebody else did the loading would be a control that any
+								// caller can step around by asking for the wildcard form.
+								// Projecting twice is harmless, a withheld field stays
+								// withheld.
+								return $this->applyLinkExposure(rendered: $identifier, descriptor: $descriptor);
 							}
 
 							return null;
@@ -3034,7 +3069,7 @@ class RenderObject {
 							$subExtend = array_merge(['all'], $keyExtends);
 						}
 
-						return $this->renderEntity(
+						$rendered = $this->renderEntity(
 							entity: $object,
 							_extend: $subExtend,
 							depth: $depth + 1,
@@ -3043,6 +3078,8 @@ class RenderObject {
 							unset: [],
 							visitedIds: $visitedIds
 						)->jsonSerialize();
+
+						return $this->applyLinkExposure(rendered: $rendered, descriptor: $descriptor);
 					},
 					$value
 				);
@@ -3097,15 +3134,18 @@ class RenderObject {
 				$subExtend = array_merge(['all'], $keyExtends);
 			}
 
-			$rendered = $this->renderEntity(
-				entity: $object,
-				_extend: $subExtend,
-				depth: $depth + 1,
-				filter: [],
-				fields: [],
-				unset: [],
-				visitedIds: $visitedIds
-			)->jsonSerialize();
+			$rendered = $this->applyLinkExposure(
+				rendered: $this->renderEntity(
+					entity: $object,
+					_extend: $subExtend,
+					depth: $depth + 1,
+					filter: [],
+					fields: [],
+					unset: [],
+					visitedIds: $visitedIds
+				)->jsonSerialize(),
+				descriptor: ($exposures[$key] ?? null)
+			);
 
 			if (in_array($object->getUuid(), $visitedIds, true) === true) {
 				$rendered = ['@circular' => true, 'id' => $object->getUuid()];
@@ -3121,6 +3161,100 @@ class RenderObject {
 
 		return $dataDot->jsonSerialize();
 	}//end handleExtendDot()
+
+
+	/**
+	 * The relation descriptors that declare a field set, keyed by property.
+	 *
+	 * Resolved through {@see RelationTypeResolver}, which is the one reader of
+	 * `x-openregister-relation-types`. Reading the annotation here instead
+	 * would be a second reader of one vocabulary, and the two would drift.
+	 *
+	 * Empty for a schema that declares no exposure, which is every schema
+	 * written before this change: an undeclared `exposes` narrows nothing.
+	 *
+	 * @param Schema|null $schema The schema being rendered.
+	 *
+	 * @return array<string, array<string, mixed>> The descriptors, keyed by property name.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function exposuresFor(?Schema $schema): array {
+		if ($schema === null) {
+			return [];
+		}
+
+		if ($this->relationTypes === null) {
+			$this->relationTypes = new RelationTypeResolver();
+		}
+
+		if ($this->linkExposure === null) {
+			$this->linkExposure = new LinkExposure();
+		}
+
+		$exposures = [];
+		foreach ($this->relationTypes->descriptors(schema: $schema) as $property => $descriptor) {
+			if ($this->linkExposure->declaresExposure(relationType: $descriptor) === true) {
+				$exposures[(string)$property] = $descriptor;
+			}
+		}
+
+		return $exposures;
+	}//end exposuresFor()
+
+	/**
+	 * Narrow one extended far record to what its link declares it exposes.
+	 *
+	 * 🔑 THERE IS NO SECOND PERMISSION EVALUATOR HERE, and that is the design
+	 * (D-4). The readable set is whatever survived `renderEntity()`, which has
+	 * already run the far schema's own property rules through
+	 * `PropertyRbacHandler`. This takes that answer as its argument and
+	 * intersects the declared set with it, so a link can carry a reader to a
+	 * record they could not otherwise open and can never show them a field
+	 * their own rules withhold.
+	 *
+	 * 🔴 `@self` AND `id` ARE NOT PROPERTIES AND ARE NEVER WITHHELD. They are
+	 * the render envelope: marking `id` withheld would break every client that
+	 * follows the link it was handed, and it would say "you may not see this
+	 * record's identity" about a record the link exists to point at. The
+	 * exposure decides which FIELDS travel, not whether the link is there.
+	 *
+	 * @param array<string, mixed>      $rendered   The far record as renderEntity answered it.
+	 * @param array<string, mixed>|null $descriptor The relation descriptor, or null when the link declares none.
+	 *
+	 * @return array<string, mixed> The projection.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function applyLinkExposure(array $rendered, ?array $descriptor): array {
+		if ($descriptor === null) {
+			return $rendered;
+		}
+
+		if ($this->linkExposure === null) {
+			$this->linkExposure = new LinkExposure();
+		}
+
+		$envelope = [];
+		$body = [];
+		foreach ($rendered as $property => $value) {
+			$property = (string)$property;
+			if ($property === '@self' || $property === 'id' || str_starts_with($property, '@') === true) {
+				$envelope[$property] = $value;
+				continue;
+			}
+
+			$body[$property] = $value;
+		}
+
+		$projected = $this->linkExposure->project(
+			farObject: $body,
+			relationType: $descriptor,
+			readable: array_map('strval', array_keys($body))
+		);
+
+		return array_merge($projected, $envelope);
+	}//end applyLinkExposure()
 
 	/**
 	 * Extends an object with additional data based on the extension configuration
@@ -3222,7 +3356,8 @@ class RenderObject {
 			_extend: $_extend,
 			depth: $depth,
 			allFlag: in_array('all', $_extend, true),
-			visitedIds: $visitedIds
+			visitedIds: $visitedIds,
+			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
 
 		return $objectDataDot;

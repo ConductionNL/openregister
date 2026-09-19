@@ -37,14 +37,15 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
+use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
@@ -52,6 +53,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
+use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -59,6 +62,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * PermissionHandler class
@@ -161,6 +165,21 @@ class PermissionHandler {
 		// SHOULD be enforced" was the only thing the spec could say about the
 		// destructive verb. See DestroyRightService.
 		'destroy',
+		// `export` is a SECOND, narrower right than `read`. Reading a record and
+		// taking the set off the instance are different acts, and an export
+		// gated behind `read` is an export every reader holds. Deliberately NOT
+		// in the fail-closed write lists below: an export reads, and shipping it
+		// denied would break every instance on upgrade (design D-2). See
+		// ExportRightService for the read fallback that keeps that promise.
+		'export',
+		// `assign` joins the canonical set HERE as well as in
+		// PermissionCatalogue, and the duplication is the point: this list
+		// decides whether a verb dispatches a custom-scope evaluation, and
+		// the catalogue decides whether a block may name it. A verb in one
+		// and not the other is canonical on one path and custom on the
+		// other, which is two answers to "what kind of verb is this" and
+		// exactly the divergence the catalogue exists to end (row 13.40).
+		'assign',
 	];
 
 	/**
@@ -270,6 +289,8 @@ class PermissionHandler {
 	 * @param GrantConstraints|null $grantConstraints Reads an entry's end and the area it is confined to; nullable for the same reason.
 	 * @param DerivedGrantStore|null $derivedGrantStore Access derived from identity claims; nullable, and absent means none.
 	 * @param DerivedGrantResolver|null $derivedGrantResolver Reads a derived grant in one area; nullable for the same reason.
+	 * @param TokenGrantSource|null $tokenGrantSource Reads the grant the request's API token carries; nullable for the same reason.
+	 * @param TokenGrantNarrower|null $tokenGrantNarrower Narrows the block to that token's grant; nullable for the same reason.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -292,6 +313,8 @@ class PermissionHandler {
 		private readonly ?GrantConstraints $grantConstraints = null,
 		private readonly ?DerivedGrantStore $derivedGrantStore = null,
 		private readonly ?DerivedGrantResolver $derivedGrantResolver = null,
+		private readonly ?TokenGrantSource $tokenGrantSource = null,
+		private readonly ?TokenGrantNarrower $tokenGrantNarrower = null,
 	) {
 	}//end __construct()
 
@@ -1941,6 +1964,20 @@ class PermissionHandler {
 		?array $objectData = null,
 		?string $objectOrganisation = null,
 	): bool {
+		// 🔴 THE TOKEN CEILING IS CONSULTED FIRST, AHEAD OF THE ADMIN AND OWNER
+		// BYPASSES BELOW. Both of those return true without looking at the
+		// block at all, so a grant that only rewrote the block would narrow a
+		// supplier and leave the administrator who issued them the token
+		// unnarrowed — and would let any token write its holder's OWN objects,
+		// which is most of what a supplier's token touches. A grant is a filter
+		// over its holder's rights, and a filter that the most privileged
+		// caller escapes is not one (row Q13.20, D-1).
+		if ($this->tokenGrantNarrower !== null
+			&& $this->tokenGrantNarrower->markerPermits(authorization: $authorization, action: $action) === false
+		) {
+			return false;
+		}
+
 		// Admin group always has all permissions.
 		if ($groupId === 'admin' || $userGroup === 'admin') {
 			return true;
@@ -2550,6 +2587,17 @@ class PermissionHandler {
 			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
 		);
 
+		// THE DEPARTMENT BY ROLE MATRIX IS COMPILED HERE, and here only (row
+		// B13). This method is the one step every path takes — the object read,
+		// the relation check and both list emitters all resolve through it, and
+		// `MagicRbacHandler::resolveSchemaAuthorization()` delegates to it —
+		// so a matrix row becomes an ordinary conditional scope before anything
+		// evaluates anything. That is what makes the PHP verdict and the SQL
+		// verdict identical BY CONSTRUCTION rather than by two implementations
+		// agreeing, which is the property rbac-scopes requires and the one a
+		// second enforcement path would quietly break.
+		$authorization = $this->compileDepartmentMatrix(authorization: $authorization);
+
 		// THE END AND THE AREA ARE READ HERE, with the mcp strip, because this
 		// is the one step every path takes: the object read, the relation check
 		// and both list emitters all resolve through this method. A grant that
@@ -2561,11 +2609,119 @@ class PermissionHandler {
 		// pays one array scan.
 		$constraints = $this->grantConstraints();
 		if ($constraints->declaresAnyConstraint(authorization: $authorization) === false) {
+			return $this->narrowByToken(authorization: $authorization, schema: $schema);
+		}
+
+		return $this->narrowByToken(
+			authorization: $constraints->apply(authorization: $authorization, area: $this->areaOf(schema: $schema)),
+			schema: $schema
+		);
+	}//end resolveAuthorization()
+
+	/**
+	 * Intersect the resolved block with the grant of the token in force.
+	 *
+	 * Applied HERE, at the end of the one step every path takes, for the same
+	 * reason the department matrix is compiled here: the object read, the
+	 * relation check and both list emitters resolve through this method, and
+	 * `MagicRbacHandler` delegates to it. A grant applied anywhere else would
+	 * be a grant that binds on one surface and not on another (row Q13.20).
+	 *
+	 * @param array<string, mixed>|null $authorization The resolved block.
+	 * @param Schema                    $schema        The schema being resolved.
+	 *
+	 * @return array<string, mixed>|null The block to evaluate.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	private function narrowByToken(?array $authorization, Schema $schema): ?array {
+		if ($this->tokenGrantNarrower === null) {
 			return $authorization;
 		}
 
-		return $constraints->apply(authorization: $authorization, area: $this->areaOf(schema: $schema));
-	}//end resolveAuthorization()
+		$grant = $this->tokenGrantSource?->current();
+		if ($grant === null) {
+			return $authorization;
+		}
+
+		$registerSlug = null;
+		try {
+			$register = $this->getRegisterForSchema(schema: $schema);
+			if ($register !== null) {
+				$registerSlug = $register->getSlug();
+			}
+		} catch (Throwable $e) {
+			// A register we cannot name is a register the grant cannot be
+			// checked against. That narrows rather than widens: a grant scoped
+			// by register will not cover it.
+			$registerSlug = null;
+		}
+
+		return $this->tokenGrantNarrower->narrow(
+			authorization: $authorization,
+			grant: $grant,
+			schemaSlug: $schema->getSlug(),
+			registerSlug: $registerSlug
+		);
+	}//end narrowByToken()
+
+	/**
+	 * Compile the schema's department matrix into the block, if it declares one.
+	 *
+	 * The caller's own values are resolved from their Nextcloud groups by the
+	 * declared prefix. THE PERSON-SCHEMA USER SOURCE IS NOT RESOLVED HERE and a
+	 * matrix declaring one compiles nothing rather than compiling something
+	 * narrower: reading a person object to decide authorization means resolving
+	 * an object through the resolver that is mid-decision, and half a rule is
+	 * worse than none. `tasks.md` records it as open.
+	 *
+	 * A failure compiles NOTHING and leaves the block as it was. That is the
+	 * fail-closed direction for a matrix, which only ever ADDS ways to be
+	 * admitted: without it the caller falls back to whatever the schema said
+	 * before, and nobody is admitted by an error.
+	 *
+	 * @param array<string, mixed>|null $authorization The resolved block.
+	 *
+	 * @return array<string, mixed>|null The block, with the matrix's rules in it.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	private function compileDepartmentMatrix(?array $authorization): ?array {
+		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return $authorization;
+		}
+
+		try {
+			$compiler = new DepartmentMatrixCompiler();
+
+			$userId = $this->userSession->getUser()?->getUID();
+			$userGroups = [];
+			if ($userId !== null) {
+				$userObj = $this->userManager->get($userId);
+				if ($userObj !== null) {
+					$userGroups = $this->groupManager->getUserGroupIds($userObj);
+				}
+			}
+
+			return $compiler->merge(
+				authorization: $authorization,
+				compiled: $compiler->compile(
+					matrix: $matrix,
+					ownValues: $compiler->valuesFromGroups(
+						source: ($matrix['userSource'] ?? null),
+						userGroups: $userGroups
+					)
+				)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[PermissionHandler] Could not compile a department matrix; the schema keeps its own rules',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return $authorization;
+		}
+	}//end compileDepartmentMatrix()
 
 	/**
 	 * The shared reader of an entry's end and its area.
@@ -2816,6 +2972,30 @@ class PermissionHandler {
 			// reindex the block's action keys on the way through.
 			if ($key === DenyResolver::DENY_KEY) {
 				$stripped[$key] = self::stripMcpScope(authorization: $rules);
+				continue;
+			}
+
+			// 🔴 A CONTROL KEY THAT HAPPENS TO BE AN ARRAY IS NOT A RULE LIST,
+			// and reading it as one does not fail — it REINDEXES. The reindex
+			// is what made the whole department matrix inert: `matrix` is the
+			// map `{field, userSource, rows}`, `stripMcpFromRuleList()` walks
+			// its VALUES and appends them to a fresh list, and what reached
+			// `compileDepartmentMatrix()` was `['department', {...}, [...]]`
+			// with every key gone. `$matrix['field']` was then absent,
+			// `compile()` returned nothing, `merge()` left the block alone, and
+			// the schema ended up granting `read` to nobody at all. Measured on
+			// a live instance 2026-09-19: an identical rule written by hand as
+			// a conditional scope narrowed the list correctly, and the same
+			// rule expressed as a matrix admitted no one.
+			//
+			// `roles` has exactly the same shape and was losing its role names
+			// the same way.
+			//
+			// The comment above about carrying control keys through untouched
+			// was already the intent; it only covered the ones that are not
+			// arrays.
+			if (in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true) {
+				$stripped[$key] = $rules;
 				continue;
 			}
 

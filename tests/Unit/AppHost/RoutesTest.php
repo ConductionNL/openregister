@@ -187,4 +187,132 @@ class RoutesTest extends TestCase {
 			['name' => 'pets#index', 'url' => '/api/pets/all', 'verb' => 'GET'],
 		]);
 	}//end testDuplicateNameWithinExtraThrows()
+	/**
+	 * The public page route is opt-in, so no app gets it by accident.
+	 *
+	 * An app that aliases the generic dashboard controller has `publicPage()`,
+	 * and an app that wrote its own does not: handing everybody the route would
+	 * answer HTTP 500 on the apps that never asked for it.
+	 *
+	 * @return void
+	 */
+	public function testThePublicPageRouteIsAbsentUnlessTheAppAsksForIt(): void {
+		$this->assertNotContains('dashboard#publicPage', $this->names(Routes::standard()));
+		$this->assertContains('dashboard#publicPage', $this->names(Routes::standard([], publicPages: true)));
+	}//end testThePublicPageRouteIsAbsentUnlessTheAppAsksForIt()
+
+	/**
+	 * The public route precedes the catch-all, and the app's own routes precede it.
+	 *
+	 * Order is the whole behaviour here: the catch-all matches `/{path}` with
+	 * `.+`, so a public route merged after it would never be reached and an
+	 * anonymous visitor would meet the login on a page the app declared public.
+	 *
+	 * @return void
+	 */
+	public function testThePublicPageRouteSitsAfterExtraAndBeforeTheCatchAll(): void {
+		$names = $this->names(Routes::standard(
+			[['name' => 'status#show', 'url' => '/public/status/{token}', 'verb' => 'GET']],
+			publicPages: true
+		));
+
+		$extra = array_search('status#show', $names, true);
+		$public = array_search('dashboard#publicPage', $names, true);
+		$catchAll = array_search('dashboard#catchAll', $names, true);
+
+		$this->assertLessThan($public, $extra, "an app's own public route must win over the generic one");
+		$this->assertLessThan($catchAll, $public, 'the public route must precede the SPA catch-all');
+	}//end testThePublicPageRouteSitsAfterExtraAndBeforeTheCatchAll()
+
+	/**
+	 * The catch-all is not the public route, in either shape of the table.
+	 *
+	 * @return void
+	 */
+	public function testTheCatchAllKeepsItsOwnAddressAndStaysLast(): void {
+		$routes = Routes::standard([], publicPages: true)['routes'];
+		$last = $routes[array_key_last($routes)];
+
+		$this->assertSame('dashboard#catchAll', $last['name']);
+		$this->assertNotSame('/public/{path}', $last['url']);
+	}//end testTheCatchAllKeepsItsOwnAddressAndStaysLast()
+
+	/**
+	 * A postfixed pair on one action is a legitimate table, not a duplicate.
+	 *
+	 * Nextcloud names a route `strtolower($app . '.' . $controller . '.'
+	 * . $action . $postfix)`, so a `postfix` is the only way to give a second
+	 * verb on the same action its own registration. The guard used to compare
+	 * names WITHOUT the postfix, which refused exactly the pair that fixes the
+	 * problem the guard exists for.
+	 *
+	 * @return void
+	 */
+	public function testAPostfixedPairOnOneActionIsAccepted(): void {
+		$routes = Routes::standard(
+			[
+				['name' => 'pets#update', 'url' => '/api/pets', 'verb' => 'PUT'],
+				['name' => 'pets#update', 'url' => '/api/pets', 'verb' => 'PATCH', 'postfix' => 'patch'],
+			]
+		)['routes'];
+
+		$keys = array_map(static fn ($r) => strtolower($r['name'] . ($r['postfix'] ?? '')), $routes);
+
+		$this->assertContains('pets#update', $keys, 'the unpostfixed half must register');
+		$this->assertContains('pets#updatepatch', $keys, 'the postfixed half must register under its own name');
+	}//end testAPostfixedPairOnOneActionIsAccepted()
+
+	/**
+	 * An extra route carrying a postfix replaces no canonical route.
+	 *
+	 * The override map was keyed on the name alone, so an app adding a second,
+	 * postfixed verb on a canonical action DELETED the canonical entry it was
+	 * not replacing. Nothing warned; the route simply stopped existing.
+	 *
+	 * @return void
+	 */
+	public function testAPostfixedExtraDoesNotDeleteTheCanonicalRoute(): void {
+		$routes = Routes::standard(
+			[['name' => 'settings#update', 'url' => '/api/settings/alt', 'verb' => 'PATCH', 'postfix' => 'alt']]
+		)['routes'];
+
+		$keys = array_map(static fn ($r) => strtolower($r['name'] . ($r['postfix'] ?? '')), $routes);
+
+		$this->assertContains('settings#update', $keys, 'the canonical PUT on /api/settings must survive');
+		$this->assertContains('settings#updatealt', $keys, "the app's own PATCH must register beside it");
+	}//end testAPostfixedExtraDoesNotDeleteTheCanonicalRoute()
+
+	/**
+	 * An unpostfixed extra on a canonical name still overrides it, once.
+	 *
+	 * The control for the two tests above: keying on the registration key must
+	 * not turn the deliberate override into a duplicate.
+	 *
+	 * @return void
+	 */
+	public function testAnUnpostfixedExtraStillOverridesTheCanonicalRoute(): void {
+		$routes = Routes::standard(
+			[['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT']]
+		)['routes'];
+
+		$keys = array_map(static fn ($r) => strtolower($r['name'] . ($r['postfix'] ?? '')), $routes);
+
+		$this->assertCount(1, array_keys($keys, 'settings#update', true));
+	}//end testAnUnpostfixedExtraStillOverridesTheCanonicalRoute()
+
+	/**
+	 * An extra route the catch-all would swallow is refused, not swallowed.
+	 *
+	 * The canonical half the `$extra` guard cannot see: the catch-all and the
+	 * public page route are appended AFTER `$extra`, so an entry registering
+	 * under either name was replaced by it rather than overriding it.
+	 *
+	 * @return void
+	 */
+	public function testAnExtraRouteTheCatchAllWouldReplaceIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('dashboard#catchall');
+
+		Routes::standard([['name' => 'dashboard#catchAll', 'url' => '/api/mine', 'verb' => 'GET']]);
+	}//end testAnExtraRouteTheCatchAllWouldReplaceIsRefused()
 }//end class

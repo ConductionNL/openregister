@@ -235,6 +235,57 @@ class ContentSearchHandlerTest extends TestCase {
 	// Dedup on object id (ZKN-CONTENT-002/-003)
 	// =========================================================================
 
+	/**
+	 * The one plausible disclosure route of content search, closed.
+	 *
+	 * A chunk is a fragment of a FILE. The text in a file can hold values the
+	 * reader is redacted out of on the object, so a chunk hit must be appended
+	 * as the owning object and nothing else. If chunk text ever rode along on
+	 * the row, the object would stay correctly filtered while the search
+	 * result beside it leaked, which is exactly the shape a redaction bug
+	 * takes: the guard works and the thing next to it does not.
+	 *
+	 * @return void
+	 */
+	public function testAnAppendedRowCarriesNoneOfTheChunksText(): void {
+		$secret = 'BSN 000000000 en rekening NL00BANK0000000000';
+
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				[
+					'entity_type' => 'object',
+					'entity_id' => '42',
+					'score' => 0.8,
+					'chunk_text' => 'Bijlage bij de zaak: ' . $secret,
+					'text_content' => 'Bijlage bij de zaak: ' . $secret,
+					'chunk_index' => 0,
+					'metadata' => ['filename' => 'bijlage.pdf'],
+				],
+			]
+		);
+
+		$this->objectMapper->method('find')->with(42)->willReturn($this->makeObject(42));
+
+		$result = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'rekening'],
+			results: [],
+			total: 0,
+			limit: 20
+		);
+
+		$this->assertCount(1, $result['results']);
+		$row = $result['results'][0];
+		$this->assertInstanceOf(ObjectEntity::class, $row);
+
+		$serialised = json_encode($row->jsonSerialize());
+		$this->assertStringNotContainsString(
+			$secret,
+			(string)$serialised,
+			'file text must never ride along on the row a chunk hit produced'
+		);
+		$this->assertStringNotContainsString('bijlage.pdf', (string)$serialised);
+	}//end testAnAppendedRowCarriesNoneOfTheChunksText()
+
 	public function testObjectAlreadyMatchedByMetadataArmIsNotDuplicated(): void {
 		$existing = $this->makeObject(42);
 

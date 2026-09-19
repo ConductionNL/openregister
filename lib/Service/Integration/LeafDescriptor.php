@@ -115,6 +115,58 @@ final class LeafDescriptor {
 	 *
 	 * @var array<int,string>
 	 */
+	/**
+	 * How a render surface's bundle reaches the page: the shared `leaves` entry.
+	 *
+	 * The app builds `js/<app>-leaves.js` and OpenRegister's `LeafScriptListener`
+	 * puts it on the pages that need it. THIS IS THE ONLY CONVENTION THE
+	 * PLATFORM CAN VERIFY, because it is the only one where the platform does
+	 * the loading, so it is the only one whose absence is provable.
+	 */
+	public const LOADS_VIA_SHARED_ENTRY = 'shared-entry';
+
+	/**
+	 * How a render surface's bundle reaches the page: the app loads it itself.
+	 *
+	 * Typically `Util::addInitScript()` in the app's own `Application::boot()`,
+	 * putting a small registration bundle on EVERY page so the leaf registers
+	 * wherever another app renders the integration registry. hermiq and decidiq
+	 * both do this, and openregister#3954 nearly refused both of them for
+	 * shipping no `<app>-leaves.js`, which they do not need.
+	 */
+	public const LOADS_VIA_OWN_SCRIPT = 'own-script';
+
+	/**
+	 * How a render surface's bundle reaches the page: it is already there.
+	 *
+	 * A built-in leaf rides OpenRegister's own bundle. There is nothing to load
+	 * and nothing to check.
+	 */
+	public const LOADS_ALREADY_PRESENT = 'already-present';
+
+	/**
+	 * The conventions are named, not inferred, and that is the whole point. 🔴
+	 *
+	 * Issue openregister#3954 tried to infer this from the filesystem and was wrong
+	 * twice in one measurement: it read hermiq and decidiq as dark because they
+	 * ship no `<app>-leaves.js`, when both load their own bundle on every page.
+	 * Whether a bundle reaches the page is a fact about the PAGE; the registry
+	 * sees only the filesystem.
+	 *
+	 * 🔑 IF A FOURTH CONVENTION APPEARS, ADD IT HERE RATHER THAN FOLDING IT
+	 * INTO ONE OF THESE. `own-script` means "the app guarantees it"; a genuinely
+	 * different mechanism that the platform could verify deserves its own name,
+	 * because the whole value of this list is that `shared-entry` is checkable
+	 * and the others are taken on the app's word.
+	 *
+	 * @var array<int, string>
+	 */
+	public const VALID_LOAD_STRATEGIES = [
+		self::LOADS_VIA_SHARED_ENTRY,
+		self::LOADS_VIA_OWN_SCRIPT,
+		self::LOADS_ALREADY_PRESENT,
+	];
+
 	public const VALID_RENDER_MODES = [
 		self::RENDER_MODE_COMPONENT,
 		self::RENDER_MODE_MOUNT,
@@ -141,6 +193,9 @@ final class LeafDescriptor {
 	 *                           or `mount` (a `mount`/`unmount` pair the host invokes
 	 *                           against a bare DOM element, crossing a Vue major). One of
 	 *                           VALID_RENDER_MODES; validated at registration.
+	 * @param string|null $loadStrategy How the render bundle reaches the page: one of VALID_LOAD_STRATEGIES,
+	 *                                  or null when the descriptor has not said. Null is silence, not a claim,
+	 *                                  so a descriptor written before this existed is not refused for it.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A flat immutable value object: each parameter is one
 	 * independent, optional piece of leaf discovery metadata, not a collaborator to bundle into an object.
@@ -158,8 +213,33 @@ final class LeafDescriptor {
 		private ?string $referenceType = null,
 		private ?string $requiresPermission = null,
 		private string $renderMode = self::RENDER_MODE_COMPONENT,
+		// 🔑 NULL MEANS "HAS NOT SAID", AND IS NOT THE SAME AS ANY OF THE THREE.
+		// A descriptor written before this existed declares nothing, and must
+		// not be refused for that: it is silence, not a claim. Only a
+		// descriptor that CLAIMS the shared entry can be checked against it.
+		private ?string $loadStrategy = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * How this leaf's render bundle reaches the page, if it has said.
+	 *
+	 * @return string|null One of VALID_LOAD_STRATEGIES, or null when unstated.
+	 */
+	public function getLoadStrategy(): ?string {
+		return $this->loadStrategy;
+	}//end getLoadStrategy()
+
+	/**
+	 * Whether this leaf claims the one convention the platform can verify.
+	 *
+	 * @return bool Whether it declares the shared entry.
+	 *
+	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+	 */
+	public function claimsSharedEntry(): bool {
+		return ($this->loadStrategy === self::LOADS_VIA_SHARED_ENTRY);
+	}//end claimsSharedEntry()
 
 	/**
 	 * Stable kebab-case identifier, equal to the JS registration id.

@@ -35,6 +35,8 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -65,6 +67,8 @@ class ObjectRelationsController extends Controller {
 	 * @param RelationGraphService $graphs The bounded graph walk.
 	 * @param ObjectService $objectService Reads and writes objects, with RBAC.
 	 * @param IUserSession $userSession Current-user session.
+	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
+	 * @param SchemaMapper $schemaMapper Resolves the object's schema, whose rule carries the verb.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
@@ -75,6 +79,8 @@ class ObjectRelationsController extends Controller {
 		private readonly RelationGraphService $graphs,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
+		private readonly ExportGate $exportGate,
+		private readonly SchemaMapper $schemaMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -499,6 +505,21 @@ class ObjectRelationsController extends Controller {
 			return $this->notReadable();
 		}
 
+		// REQ-EXP-001: a relation graph as a CSV is the object's data leaving
+		// the instance, so it is an export and is checked against the export
+		// verb, not against the read the caller already passed above. A
+		// principal holding read without export meets the same refusal here as
+		// on every other export path.
+		$refusal = $this->exportGate->refusalFor(
+			schema: $this->schemaOf(object: $object),
+			profile: 'relation-graph',
+			registerId: $this->registerIdOf(object: $object)
+		);
+
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		$uuid = (string)$object->getUuid();
 		$export = $this->graphs->export(
 			rootUuid: $uuid,
@@ -556,6 +577,47 @@ class ObjectRelationsController extends Controller {
 			return null;
 		}
 	}//end readable()
+
+	/**
+	 * The schema an object belongs to, when it resolves.
+	 *
+	 * Returning null on an unresolvable schema is deliberate and safe: the
+	 * right service treats a schema it cannot read as a refusal, because an
+	 * unreadable rule refuses. Swallowing the failure into an allow is the
+	 * fail-open this verb exists to prevent.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return \OCA\OpenRegister\Db\Schema|null The schema.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 */
+	private function schemaOf(ObjectEntity $object): ?\OCA\OpenRegister\Db\Schema {
+		try {
+			return $this->schemaMapper->find($object->getSchema());
+		} catch (\Throwable $exception) {
+			return null;
+		}
+	}//end schemaOf()
+
+	/**
+	 * The register an object belongs to, as an id, for the audit entry.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return int|null The register id.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function registerIdOf(ObjectEntity $object): ?int {
+		$register = $object->getRegister();
+
+		if (is_numeric($register) === false) {
+			return null;
+		}
+
+		return (int)$register;
+	}//end registerIdOf()
 
 	/**
 	 * The one answer a caller who may not read the object gets.

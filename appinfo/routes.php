@@ -82,6 +82,11 @@ return [
 
         // Object-scoped integration sub-resource dispatch —
         // pluggable-integration-registry task 4.2 / tasks.md#task-19.
+        // A declared action bound to a manual flow: one click, several changes,
+        // and a hint about where the handler goes next. The action's own right
+        // authorises it; the flow adds no second permission model (ADR-023).
+        ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
@@ -249,6 +254,10 @@ return [
         // is no CRUD here on purpose: calendars are objects in the flow-timers
         // register and the objects API is their public API (design D-1).
         ['name' => 'workingCalendar#preview', 'url' => '/api/flow-timers/calendars/preview', 'verb' => 'POST'],
+        // The term engine narrating a date you choose (row Q8.18). POST because
+        // it carries a calendar definition and an SLA, not because it writes:
+        // it arms nothing, and nothing on its path holds a mapper.
+        ['name' => 'flowTimerDiagnostic#explain', 'url' => '/api/flow-timers/diagnostic', 'verb' => 'POST'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
@@ -265,29 +274,29 @@ return [
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
         ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
-        ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH', 'postfix' => 'patch'],
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
 
         ['name' => 'Settings\ConfigurationSettings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PATCH'],
-        ['name' => 'Settings\ConfigurationSettings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
+        ['name' => 'Settings\ConfigurationSettings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT', 'postfix' => 'put'],
 
         ['name' => 'Settings\ConfigurationSettings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PATCH'],
-        ['name' => 'Settings\ConfigurationSettings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
+        ['name' => 'Settings\ConfigurationSettings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT', 'postfix' => 'put'],
 
         ['name' => 'Settings\ConfigurationSettings#getOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PATCH'],
-        ['name' => 'Settings\ConfigurationSettings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PUT'],
+        ['name' => 'Settings\ConfigurationSettings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PUT', 'postfix' => 'put'],
 
         ['name' => 'Settings\LlmSettings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#getDatabaseInfo', 'url' => '/api/settings/database', 'verb' => 'GET'],
         ['name' => 'settings#refreshDatabaseInfo', 'url' => '/api/settings/database/refresh', 'verb' => 'POST'],
         ['name' => 'Settings\LlmSettings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
         ['name' => 'Settings\LlmSettings#patchLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
-        ['name' => 'Settings\LlmSettings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],
+        ['name' => 'Settings\LlmSettings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT', 'postfix' => 'put'],
         ['name' => 'Settings\LlmSettings#testEmbedding', 'url' => '/api/vectors/test-embedding', 'verb' => 'POST'],
         ['name' => 'Settings\LlmSettings#testChat', 'url' => '/api/llm/test-chat', 'verb' => 'POST'],
         ['name' => 'Settings\LlmSettings#getOllamaModels', 'url' => '/api/llm/ollama-models', 'verb' => 'GET'],
@@ -295,7 +304,7 @@ return [
         ['name' => 'Settings\LlmSettings#clearAllEmbeddings', 'url' => '/api/vectors/clear-all', 'verb' => 'DELETE'],
         ['name' => 'Settings\FileSettings#getFileSettings', 'url' => '/api/settings/files', 'verb' => 'GET'],
         ['name' => 'Settings\FileSettings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PATCH'],
-        ['name' => 'Settings\FileSettings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],
+        ['name' => 'Settings\FileSettings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT', 'postfix' => 'put'],
         ['name' => 'Settings\FileSettings#getFileExtractionStats', 'url' => '/api/settings/files/stats', 'verb' => 'GET'],
         ['name' => 'Settings\FileSettings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'Settings\FileSettings#testPresidioConnection', 'url' => '/api/settings/files/test-presidio', 'verb' => 'POST'],
@@ -305,11 +314,11 @@ return [
         ['name' => 'anonymisationBackend#getBackendState', 'url' => '/api/admin/anonymisation/backend-state', 'verb' => 'GET'],
         ['name' => 'anonymisationBackend#testConnection', 'url' => '/api/admin/anonymisation/test-connection', 'verb' => 'POST'],
 
-        ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET'],
+        ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET', 'postfix' => 'vectorize'],
         ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'POST'],
         ['name' => 'Settings\ConfigurationSettings#patchObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PATCH'],
-        ['name' => 'Settings\ConfigurationSettings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PUT'],
+        ['name' => 'Settings\ConfigurationSettings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PUT', 'postfix' => 'put'],
 
         // Object vectorization endpoints.
         ['name' => 'objects#vectorizeBatch', 'url' => '/api/objects/vectorize/batch', 'verb' => 'POST'],
@@ -341,7 +350,7 @@ return [
         // and an administrator should be able to find it by that name.
         ['name' => 'Settings\AuditSettings#getAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'GET'],
         ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PATCH'],
-        ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PUT'],
+        ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PUT', 'postfix' => 'put'],
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
@@ -350,7 +359,7 @@ return [
         // Debug endpoints for type filtering issue.
         ['name' => 'settings#debugTypeFiltering', 'url' => '/api/debug/type-filtering', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PATCH'],
-        ['name' => 'Settings\ConfigurationSettings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT'],
+        ['name' => 'Settings\ConfigurationSettings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT', 'postfix' => 'put'],
 
         ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],
 
@@ -385,6 +394,17 @@ return [
         ['name' => 'hardening#floors', 'url' => '/api/hardening/floors', 'verb' => 'GET'],
         ['name' => 'hardening#updateControls', 'url' => '/api/hardening/controls', 'verb' => 'PUT'],
         ['name' => 'hardening#updateFloors', 'url' => '/api/hardening/floors', 'verb' => 'PUT'],
+        // A write here needs a password confirmed in the last period, not just
+        // an open session (REQ-IHC-002), and `elevate` is throttled because a
+        // correct guess buys the right to weaken every control above.
+        ['name' => 'hardening#elevate', 'url' => '/api/hardening/elevation', 'verb' => 'POST'],
+        // The statement (REQ-IHC-001). The two reads and the acceptance are the
+        // only hardening routes an ordinary account may call, and each answers
+        // about the SESSION's account: no user id is read from the request.
+        ['name' => 'hardening#statement', 'url' => '/api/hardening/statement', 'verb' => 'GET'],
+        ['name' => 'hardening#acceptStatement', 'url' => '/api/hardening/statement/acceptance', 'verb' => 'POST'],
+        ['name' => 'hardening#publishStatement', 'url' => '/api/hardening/statement', 'verb' => 'PUT'],
+        ['name' => 'hardening#withdrawStatement', 'url' => '/api/hardening/statement', 'verb' => 'DELETE'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
@@ -447,6 +467,15 @@ return [
         // Whether the audit trail is actually reaching the organisation's log platform.
         ['name' => 'auditSink#show',        'url' => '/api/audit/sink',             'verb' => 'GET'],
         ['name' => 'auditSink#acknowledge', 'url' => '/api/audit/sink/acknowledge', 'verb' => 'POST'],
+        // Reported content and the copies taken of it. Filing is open to any
+        // authenticated caller; reading a copy is the reviewer group's. `copy`
+        // is registered ABOVE the bare {id} routes so the literal segment wins
+        // over the placeholder.
+        ['name' => 'contentReport#index',  'url' => '/api/content-reports',             'verb' => 'GET'],
+        ['name' => 'contentReport#create', 'url' => '/api/content-reports',             'verb' => 'POST'],
+        ['name' => 'contentReport#copy',   'url' => '/api/content-reports/{id}/copy',   'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contentReport#show',   'url' => '/api/content-reports/{id}',        'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contentReport#update', 'url' => '/api/content-reports/{id}',        'verb' => 'PUT',  'requirements' => ['id' => '[^/]+']],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#access',         'url' => '/api/avg/access',         'verb' => 'GET'],
         ['name' => 'dsar#portability',    'url' => '/api/avg/portability',    'verb' => 'GET'],
@@ -789,6 +818,12 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        // BPMN 2.0 interchange. Export is read-guarded and import is
+        // flow.create-guarded, both inside the controller; the auth posture is
+        // declared there with #[NoAdminRequired] and no CSRF exemption, because
+        // both are called by a browser that has a token to send.
+        ['name' => 'flow#exportBpmn', 'url' => '/api/flows/{id}/bpmn',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#importBpmn', 'url' => '/api/flows/import/bpmn', 'verb' => 'POST'],
 
         // Direct node invocation (or-flow-run-node): run ONE named node of a
         // published flow against ONE subject, authorized against that
@@ -1135,6 +1170,9 @@ return [
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
+        // a longer path must be declared first or the generic one swallows it.
+        ['name' => 'objects#referenceOptions', 'url' => '/api/objects/{register}/{schema}/{id}/reference-options', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -1178,8 +1216,47 @@ return [
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
+            // Whether a row exists in other registers, and nothing about the
+            // row (cross-register-existence-query). NOT a search with fields
+            // removed: the answer is assembled from named values, so a schema
+            // that grows a property grows nothing here. ONE segment, so it
+            // cannot collide with the two-segment `{register}/{schema}` create
+            // route that shares the verb: `exists` is never read as a register
+            // name, because there is no schema segment behind it to match.
+        ['name' => 'objects#exists', 'url' => '/api/objects/exists', 'verb' => 'POST'],
+            // Who has this object open (object-presence). A heartbeat, not a
+            // connection: notify_push says nothing about who is looking at
+            // what, so the client beats every 30 s and the server stops
+            // believing it after 90. Every one of the three goes through the
+            // object's OWN read authorisation, so presence can never tell a
+            // caller that an object exists when they may not read it.
+        ['name' => 'objects#presenceBeat',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#presenceDepart', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#presenceList',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+            // Move an object to another register and schema, keeping its uuid
+            // and everything keyed on it (identity-survives-a-move). NOT a
+            // copy: a second uuid would orphan the audit trail, the versions,
+            // the files, the notes, the watchers, the favourites, the presence
+            // and the timers, silently, which is what closing and refiling
+            // does today.
+        ['name' => 'objects#move', 'url' => '/api/objects/{register}/{schema}/{id}/move', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+            // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
+            // resource at `/lock`, and DELETE is the verb a client reaches for;
+            // `@conduction/nextcloud-vue`'s `useObjectLock.release()` sent
+            // exactly this until nextcloud-vue#1202 changed it to POST
+            // `/unlock`, because this app declared no DELETE and every release
+            // 404ed. The composable reads a 404 as "already released;
+            // idempotent" and returned WITHOUT A WORD, so every release in
+            // every app on that library succeeded loudly and freed nothing.
+            //
+            // Declaring it costs one line and one route, and it turns that 404
+            // into a fact about the object (see `unlock()`: not locked) rather
+            // than a fact about the router. Consumers pinned to 3.2.0 or older
+            // start working; consumers on the fix keep using POST `/unlock`.
+            // One controller method answers both, so the two verbs cannot drift.
+        ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['id' => '[^/]+']],
         // Archive and freeze (object-archive-state). DELETE undoes POST on the
         // same url, which is what makes restore the obvious opposite of
         // archive; a second `/unarchive` url would read as a third state.
@@ -1220,6 +1297,37 @@ return [
         ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         ['name' => 'bulkJobs#reverse', 'url' => '/api/bulk-jobs/{id}/reverse', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        // Pause and resume — a hold that keeps the cursor, against cancel,
+        // which throws it away. The operations console drives both.
+        ['name' => 'bulkJobs#pause', 'url' => '/api/bulk-jobs/{id}/pause', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#resume', 'url' => '/api/bulk-jobs/{id}/resume', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        // Operations console — one read over what the instance is doing:
+        // the panes with their counts, the job pane's rows with the verbs
+        // each row allows, and the rules engine's recent runs. Administrators
+        // only, and by the middleware: no method here carries
+        // #[NoAdminRequired], so a non-administrator is rejected before the
+        // controller is constructed. The acting verbs stay on the resources
+        // that own them (bulkJobs#pause / #resume / #retry / #cancel).
+        ['name' => 'operationsConsole#index', 'url' => '/api/operations/console', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#jobs', 'url' => '/api/operations/jobs', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#ruleRuns', 'url' => '/api/operations/rule-runs', 'verb' => 'GET'],
+        // The run history and the acts over it. Run now, the schedule, the
+        // repair and maintenance mode are writes, so they carry no
+        // #[NoCSRFRequired] and are refused without a token.
+        ['name' => 'operationsConsole#runs', 'url' => '/api/operations/runs', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#runNow', 'url' => '/api/operations/run-now', 'verb' => 'POST'],
+        ['name' => 'operationsConsole#schedule', 'url' => '/api/operations/schedule', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#schedule', 'url' => '/api/operations/schedule', 'verb' => 'PUT', 'postfix' => 'administer'],
+        ['name' => 'operationsConsole#alerts', 'url' => '/api/operations/alerts', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#administerAlerts', 'url' => '/api/operations/alerts', 'verb' => 'PUT'],
+        ['name' => 'operationsConsole#consistency', 'url' => '/api/operations/consistency', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#repairPlan', 'url' => '/api/operations/repair-plan', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#repair', 'url' => '/api/operations/repair', 'verb' => 'POST'],
+        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'POST', 'postfix' => 'enter'],
+        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
+        ['name' => 'operationsConsole#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
+        ['name' => 'operationsConsole#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
@@ -1637,7 +1745,7 @@ return [
         ['name' => 'organisation#create', 'url' => '/api/organisations', 'verb' => 'POST'],
         ['name' => 'organisation#search', 'url' => '/api/organisations/search', 'verb' => 'GET'],
         ['name' => 'organisation#stats', 'url' => '/api/organisations/stats', 'verb' => 'GET'],
-        ['name' => 'organisation#stats', 'url' => '/api/organisations/statistics', 'verb' => 'GET'],
+        ['name' => 'organisation#stats', 'url' => '/api/organisations/statistics', 'verb' => 'GET', 'postfix' => 'statistics'],
         ['name' => 'organisation#clearCache', 'url' => '/api/organisations/clear-cache', 'verb' => 'POST'],
         ['name' => 'organisation#getActive', 'url' => '/api/organisations/active', 'verb' => 'GET'],
         ['name' => 'organisation#show', 'url' => '/api/organisations/{uuid}', 'verb' => 'GET'],
@@ -1810,6 +1918,20 @@ return [
 		['name' => 'webhooks#allLogs', 'url' => '/api/webhooks/logs', 'verb' => 'GET'],
 		['name' => 'webhooks#retry', 'url' => '/api/webhooks/logs/{logId}/retry', 'verb' => 'POST', 'requirements' => ['logId' => '\d+']],
 
+		// Export profiles (export-as-its-own-right): a named, ordered field set
+		// with a value mode and a format, owned by a user and independent of
+		// any saved view's columns. `run` produces the file and checks the
+		// export verb in the service, so an integration meets the same refusal
+		// a browser does. `contract` publishes what a consumer needs to read a
+		// produced file without guessing.
+		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
+		['name' => 'exportProfiles#contract', 'url' => '/api/export-profiles/contract', 'verb' => 'GET'],
+		['name' => 'exportProfiles#create', 'url' => '/api/export-profiles', 'verb' => 'POST'],
+		['name' => 'exportProfiles#show', 'url' => '/api/export-profiles/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'exportProfiles#update', 'url' => '/api/export-profiles/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'exportProfiles#destroy', 'url' => '/api/export-profiles/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'exportProfiles#run', 'url' => '/api/export-profiles/{id}/run', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+
 		// Scheduled reports (scheduled-report-jobs): owner-scoped recurring
 		// ExportService exports, delivered to Files + notification. Admin may
 		// list all via ?all=true. run-now queues ScheduledReportRunNowJob and
@@ -1863,7 +1985,7 @@ return [
 		// Retention management: archival settings.
 		['name' => 'Settings\ConfigurationSettings#getArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'GET'],
 		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PUT'],
-		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PATCH'],
+		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PATCH', 'postfix' => 'patch'],
 
 		// Retention management: destruction list approval workflow.
 		['name' => 'retention#approveDestructionList', 'url' => '/api/retention/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -1901,7 +2023,7 @@ return [
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
 		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PUT'],
-		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PATCH'],
+		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PATCH', 'postfix' => 'patch'],
 		['name' => 'Settings\EdepotSettings#testEdepotConnection', 'url' => '/api/settings/edepot/test', 'verb' => 'POST'],
 
 		// e-Depot transfer management.
@@ -1939,6 +2061,17 @@ return [
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+			// Moving a run in flight onto another version of its flow
+			// (migrate-run-between-versions). Never automatic: publishing a
+			// version still moves nothing, and this needs a reason, a named
+			// actor and a marking that fits the target. `dryRun: true` on the
+			// same endpoint answers the verdict without writing, so a preview
+			// and the write cannot disagree about what would happen.
+		['name' => 'flowRun#migrate', 'url' => '/api/flow-runs/{uuid}/migrate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+			// The same act for every run pinned to one version, reporting per
+			// run rather than as a count: the ones that could not move are
+			// exactly the ones somebody has to go and look at.
+		['name' => 'flowRun#migrateRuns', 'url' => '/api/flows/{flow}/migrate-runs', 'verb' => 'POST', 'requirements' => ['flow' => '[^/]+']],
 		// Correlation-addressed signal delivery (flow-approval-consolidation):
 		// same authority as resume, addressed by business key instead of run
 		// uuid, fail-closed on zero and on more than one match. Registered on

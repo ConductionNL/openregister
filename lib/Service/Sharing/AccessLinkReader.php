@@ -285,6 +285,25 @@ class AccessLinkReader {
 	}//end readView()
 
 	/**
+	 * One object, reduced to what an anonymous caller may read.
+	 *
+	 * Public because a link is not the only surface that answers without a
+	 * session: an object share token does too, and it was serving the object
+	 * whole, `@self.authorization` included (openregister#3818). Two surfaces
+	 * with the same audience get the same projection, from here, rather than a
+	 * second allow-list that drifts.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed> The published projection.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
+	 */
+	public function publish(ObjectEntity $object): array {
+		return $this->project(object: $object);
+	}//end publish()
+
+	/**
 	 * One object, reduced to what a link may publish.
 	 *
 	 * @param ObjectEntity $object The object.

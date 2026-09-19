@@ -93,6 +93,10 @@ class HardeningPolicy {
 		'auth.rateLimit.windowSeconds' => ['hardening_auth_window_seconds', 900, 'atLeast'],
 		'auth.rateLimit.lockoutSeconds' => ['hardening_auth_lockout_seconds', 900, 'atLeast'],
 		'origins.allowlistEntries' => [self::ORIGINS_KEY, 0, 'atLeast'],
+		// How long an elevated administration session lasts. `atMost`, because
+		// a LONGER window is a weaker instance: the fresh sign-in stops being
+		// fresh. See ElevationService.
+		'admin.elevationSeconds' => ['hardening_admin_elevation_seconds', 900, 'atMost'],
 	];
 
 	/**

@@ -197,6 +197,56 @@ class NotificationHistoryMapper extends QBMapper {
 	}//end findFiltered()
 
 	/**
+	 * How the dispatches in a window came out, grouped by outcome.
+	 *
+	 * The dispatcher writes a status per attempt, and it writes more than two:
+	 * `dispatched`, and then every reason a notice never reached anybody, from
+	 * `rate-limited` to `preference-off` to `recipient-unresolved`. Grouping
+	 * rather than counting a list of known statuses is deliberate: whatever the
+	 * dispatcher learns to write next appears on the console by itself, instead
+	 * of being silently dropped into neither column.
+	 *
+	 * Index-backed on `(status, dispatched_at)` (`or_notif_hist_status_idx`),
+	 * which is the pair this groups and windows on (ADR-009).
+	 *
+	 * @param DateTime|null $since Only dispatches at or after this moment.
+	 *
+	 * @return array<string, int> Status to count, for the statuses in use.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countByStatus(?DateTime $since = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('status')
+			->selectAlias($qb->createFunction('COUNT(*)'), 'status_count')
+			->from($this->getTableName())
+			->groupBy('status');
+
+		if ($since !== null) {
+			$qb->where(
+				$qb->expr()->gte('dispatched_at', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$counts = [];
+
+		foreach ($result->fetchAll() as $row) {
+			$status = ($row['status'] ?? null);
+
+			if ($status === null || $status === '') {
+				continue;
+			}
+
+			$counts[(string)$status] = (int)($row['status_count'] ?? 0);
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByStatus()
+
+	/**
 	 * Count rows matching the same filters as `findFiltered()`.
 	 *
 	 * @param array<string, string|null> $filters Filter map.
