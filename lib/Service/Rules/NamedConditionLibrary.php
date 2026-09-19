@@ -149,30 +149,43 @@ class NamedConditionLibrary {
 
 		$names = [];
 		foreach ($node as $key => $value) {
-			if (in_array((string)$key, self::BRANCHES, true) === false) {
+			if (in_array((string)$key, self::BRANCHES, true) === false || is_array($value) === false) {
 				continue;
 			}
 
-			if (is_array($value) === false) {
-				continue;
-			}
-
-			// `{"not": {...}}` carries one node; `{"and": [...]}` carries a
-			// list of them. Both spellings appear in the corpus.
-			$children = [$value];
-			if ($this->isList(value: $value) === true) {
-				$children = $value;
-			}
-
-			foreach ($children as $child) {
-				foreach ($this->referencesIn(node: $child) as $name) {
-					$names[] = $name;
-				}
-			}
+			$names = array_merge($names, $this->referencesUnder(value: $value));
 		}
 
 		return $names;
 	}//end referencesIn()
+
+	/**
+	 * The names referenced under ONE branch key.
+	 *
+	 * `{"not": {...}}` carries one node; `{"and": [...]}` carries a list of
+	 * them. Both spellings appear in the corpus.
+	 *
+	 * @param array<string|int, mixed> $value What the branch key carries.
+	 *
+	 * @return array<int, string> The names, in order of appearance.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function referencesUnder(array $value): array {
+		$children = [$value];
+		if ($this->isList(value: $value) === true) {
+			$children = $value;
+		}
+
+		$names = [];
+		foreach ($children as $child) {
+			foreach ($this->referencesIn(node: $child) as $name) {
+				$names[] = $name;
+			}
+		}
+
+		return $names;
+	}//end referencesUnder()
 
 	/**
 	 * Why a library and the nodes referencing it may not be saved, or null.

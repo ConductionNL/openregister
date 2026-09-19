@@ -157,33 +157,17 @@ class NamedConditionEvaluator {
 		$value = $node[$op];
 
 		if ($op === 'not' || $op === '!') {
-			$child = $value;
-			if (is_array($value) === true && array_is_list($value) === true) {
-				$child = ($value[0] ?? null);
-			}
-
-			return ($this->holds(node: $child, document: $document, library: $library, depth: $depth) === false);
+			return $this->holdsNegation(value: $value, document: $document, library: $library, depth: $depth);
 		}
 
 		if (($op === 'and' || $op === 'or') && is_array($value) === true) {
-			$children = [$value];
-			if (array_is_list($value) === true) {
-				$children = $value;
-			}
-
-			foreach ($children as $child) {
-				$holds = $this->holds(node: $child, document: $document, library: $library, depth: $depth);
-
-				if ($op === 'and' && $holds === false) {
-					return false;
-				}
-
-				if ($op === 'or' && $holds === true) {
-					return true;
-				}
-			}
-
-			return ($op === 'and');
+			return $this->holdsJunction(
+				op: $op,
+				value: $value,
+				document: $document,
+				library: $library,
+				depth: $depth
+			);
 		}
 
 		throw new ConditionRefusedException(
@@ -191,4 +175,66 @@ class NamedConditionEvaluator {
 			why: sprintf('a named condition sits inside "%s", which this evaluator cannot compose', $op)
 		);
 	}//end holdsBranch()
+
+	/**
+	 * Whether a `not` branch holds.
+	 *
+	 * `{"not": {...}}` and `{"not": [{...}]}` both appear in the corpus, so a
+	 * single-element list is read as the node it wraps.
+	 *
+	 * @param mixed                $value    What the branch carries.
+	 * @param array<string, mixed> $document The document.
+	 * @param array<string, mixed> $library  The library.
+	 * @param int                  $depth    The depth.
+	 *
+	 * @return bool True when the negation holds.
+	 *
+	 * @throws ConditionRefusedException When the child shape is one this cannot compose.
+	 */
+	private function holdsNegation(mixed $value, array $document, array $library, int $depth): bool {
+		$child = $value;
+		if (is_array($value) === true && array_is_list($value) === true) {
+			$child = ($value[0] ?? null);
+		}
+
+		return ($this->holds(node: $child, document: $document, library: $library, depth: $depth) === false);
+	}//end holdsNegation()
+
+	/**
+	 * Whether an `and` or `or` branch holds.
+	 *
+	 * Short-circuits exactly as it did: `and` stops on the first child that
+	 * does not hold, `or` on the first that does, and an empty list is true for
+	 * `and` and false for `or`.
+	 *
+	 * @param string               $op       Either 'and' or 'or'.
+	 * @param array<mixed>         $value    The child or children.
+	 * @param array<string, mixed> $document The document.
+	 * @param array<string, mixed> $library  The library.
+	 * @param int                  $depth    The depth.
+	 *
+	 * @return bool True when the junction holds.
+	 *
+	 * @throws ConditionRefusedException When a child shape is one this cannot compose.
+	 */
+	private function holdsJunction(string $op, array $value, array $document, array $library, int $depth): bool {
+		$children = [$value];
+		if (array_is_list($value) === true) {
+			$children = $value;
+		}
+
+		foreach ($children as $child) {
+			$holds = $this->holds(node: $child, document: $document, library: $library, depth: $depth);
+
+			if ($op === 'and' && $holds === false) {
+				return false;
+			}
+
+			if ($op === 'or' && $holds === true) {
+				return true;
+			}
+		}
+
+		return ($op === 'and');
+	}//end holdsJunction()
 }//end class
