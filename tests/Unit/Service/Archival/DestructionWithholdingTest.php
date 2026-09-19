@@ -179,6 +179,32 @@ class DestructionWithholdingTest extends TestCase {
 		);
 	}//end testApprovingTwiceWithholdsNothingTwice()
 
+	public function testASecondPassDoesNotOverwriteTheFirstPassExclusionRecord(): void {
+		// The dual sign-off sequence. handlePartialApproval() used to ASSIGN
+		// excludedObjects rather than merge, so pass 2 replaced it with only its
+		// own exclusions; withholdDecidedEntries() then found nothing left in
+		// `objects` and returned early, and the retained and transferred entries
+		// vanished from the record. The objects stayed safe - they were already
+		// out of `objects` - but a destruction certificate is exactly the document
+		// that must name what was withheld and why.
+		$firstPass = $this->service->approveList(
+			destructionList: $this->listWithDecisions(),
+			action: 'approve_all'
+		);
+
+		$this->assertSame(['keep-me', 'move-me'], $this->uuidsOf($firstPass['excludedObjects']));
+
+		$secondPass = $this->service->approveList(
+			destructionList: $firstPass,
+			action: 'approve_partial',
+			excludedIds: ['destroy-me']
+		);
+
+		$this->assertContains('keep-me', $this->uuidsOf($secondPass['excludedObjects']));
+		$this->assertContains('move-me', $this->uuidsOf($secondPass['excludedObjects']));
+		$this->assertContains('destroy-me', $this->uuidsOf($secondPass['excludedObjects']));
+	}//end testASecondPassDoesNotOverwriteTheFirstPassExclusionRecord()
+
 	public function testAnEntryWithNoDecisionIsStillDestroyed(): void {
 		$list = $this->listWithDecisions();
 		$list['objects'] = [['uuid' => 'undecided']];

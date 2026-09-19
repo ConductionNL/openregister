@@ -151,6 +151,36 @@ class ViewScopeApplierTest extends TestCase {
 		$this->assertContains(7, $query['@self']['register']);
 	}//end testAResolvableViewStillNarrowsTheQuery()
 
+	public function testAMergedBoundStaysAListEvenWhenTheViewRepeatsAnId(): void {
+		// array_unique() PRESERVES keys, so [7, 7, 8] becomes [0 => 7, 2 => 8] —
+		// a gapped array. MagicMapper decides between "one id" and "several" by
+		// counting, and a gapped bound is exactly the shape that reads wrong
+		// there. array_values() in mergeIds() is what keeps it a list.
+		$this->viewMapper->method('find')->willReturn($this->view(['registers' => [7, 8]]));
+
+		$query = $this->applier()->apply(
+			query: ['@self' => ['register' => 7]],
+			viewIds: ['view-uuid'],
+			_viewScopeRequired: true
+		);
+
+		$this->assertTrue(array_is_list($query['@self']['register']));
+		$this->assertSame([7, 8], $query['@self']['register']);
+	}//end testAMergedBoundStaysAListEvenWhenTheViewRepeatsAnId()
+
+	public function testASchemaBoundIsMergedTheSameWay(): void {
+		$this->viewMapper->method('find')->willReturn($this->view(['schemas' => [4, 5]]));
+
+		$query = $this->applier()->apply(
+			query: ['@self' => ['schema' => 4]],
+			viewIds: ['view-uuid'],
+			_viewScopeRequired: true
+		);
+
+		$this->assertTrue(array_is_list($query['@self']['schema']));
+		$this->assertSame([4, 5], $query['@self']['schema']);
+	}//end testASchemaBoundIsMergedTheSameWay()
+
 	public function testTheViewIsResolvedExemptSoAnAnonymousCallerCanOpenTheLink(): void {
 		// The link IS the authorization. Exempting RBAC alone is not enough:
 		// an anonymous caller has no active organisation, so the tenancy filter
