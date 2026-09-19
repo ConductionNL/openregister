@@ -244,8 +244,13 @@ interface ObjectServiceInterface {
 	 * @param ?array  $ids           Restrict the search to these ids.
 	 * @param ?string $uses          Restrict to objects used by this one.
 	 * @param ?array  $views         Restrict the search to these views.
+	 * @param bool    $_viewScopeRequired Whether the view filter is load-bearing for
+	 *                                    this caller, making any failure to apply it
+	 *                                    fatal rather than logged and skipped.
 	 *
 	 * @return array|int Results, or a count when the query asks for one.
+	 *
+	 * @throws Exception When `$_viewScopeRequired` is true and no view can be applied.
 	 */
 	public function searchObjects(
 		array $query=[],
@@ -253,7 +258,8 @@ interface ObjectServiceInterface {
 		bool $_multitenancy=true,
 		?array $ids=null,
 		?string $uses=null,
-		?array $views=null
+		?array $views=null,
+		bool $_viewScopeRequired=false
 	): array|int;
 
 	/**
