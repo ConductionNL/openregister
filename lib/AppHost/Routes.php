@@ -91,16 +91,14 @@ class Routes {
 	 * `$extra` itself throws, since Symfony silently replaces same-named routes
 	 * and that is always a mistake.
 	 *
-	 * `$publicPages` adds ONE more route, `dashboard#publicPage` on
-	 * `/public/{path}`, just before the catch-all. It is opt-in because it
-	 * needs a `publicPage()` method on the app's dashboard controller: an app
-	 * that aliases the generic one has it already, and an app that writes its
-	 * own would answer HTTP 500 on a route it never asked for. What the route
-	 * serves is still decided per page by the app's manifest, so switching it
-	 * on opens nothing by itself.
+	 * An app that also serves manifest-declared public pages calls
+	 * {@see self::standardWithPublicPages()} instead. The two are separate
+	 * entry points rather than one with a flag: the public-page route needs a
+	 * `publicPage()` method on the app's dashboard controller, so the choice
+	 * is about what the app HAS, not about a setting, and a call site reads
+	 * better saying which table it wants than passing `true`.
 	 *
 	 * @param array<int, array<string, mixed>> $extra App-specific routes.
-	 * @param bool $publicPages Whether the app serves manifest-declared public pages.
 	 *
 	 * @return array{routes: array<int, array<string, mixed>>}
 	 *
@@ -109,7 +107,46 @@ class Routes {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
 	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
 	 */
-	public static function standard(array $extra = [], bool $publicPages = false): array {
+	public static function standard(array $extra = []): array {
+		return self::build(extra: $extra, publicPages: false);
+	}//end standard()
+
+	/**
+	 * The canonical route table plus the public-page route.
+	 *
+	 * Adds ONE more route, `dashboard#publicPage` on `/public/{path}`, just
+	 * before the catch-all. It is a separate entry point because it needs a
+	 * `publicPage()` method on the app's dashboard controller: an app that
+	 * aliases the generic one has it already, and an app that writes its own
+	 * would answer HTTP 500 on a route it never asked for. What the route
+	 * serves is still decided per page by the app's manifest, so calling this
+	 * opens nothing by itself.
+	 *
+	 * @param array<int, array<string, mixed>> $extra App-specific routes.
+	 *
+	 * @return array{routes: array<int, array<string, mixed>>}
+	 *
+	 * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
+	 */
+	public static function standardWithPublicPages(array $extra = []): array {
+		return self::build(extra: $extra, publicPages: true);
+	}//end standardWithPublicPages()
+
+	/**
+	 * Build the merged table, with or without the public-page route.
+	 *
+	 * @param array<int, array<string, mixed>> $extra       App-specific routes.
+	 * @param boolean                          $publicPages Whether to append the public-page route.
+	 *
+	 * @return array{routes: array<int, array<string, mixed>>}
+	 *
+	 * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+	 */
+	private static function build(array $extra, bool $publicPages): array {
 		self::assertNoDuplicateNames(extra: $extra);
 
 		$extraKeys = [];
@@ -149,7 +186,7 @@ class Routes {
 		self::assertEveryRouteRegisters(routes: $merged);
 
 		return ['routes' => $merged];
-	}//end standard()
+	}//end build()
 
 	/**
 	 * The route that serves a declared public page without a session.

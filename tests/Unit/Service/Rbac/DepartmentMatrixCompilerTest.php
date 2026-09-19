@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use PHPUnit\Framework\TestCase;
 
@@ -53,6 +54,13 @@ class DepartmentMatrixCompilerTest extends TestCase {
 	private DepartmentMatrixCompiler $compiler;
 
 	/**
+	 * The declaration-time checks, which moved out of the compiler.
+	 *
+	 * @var DepartmentMatrixValidator
+	 */
+	private DepartmentMatrixValidator $validator;
+
+	/**
 	 * Set up the compiler.
 	 *
 	 * @return void
@@ -60,6 +68,7 @@ class DepartmentMatrixCompilerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->compiler = new DepartmentMatrixCompiler();
+		$this->validator = new DepartmentMatrixValidator();
 	}//end setUp()
 
 	/**
@@ -405,7 +414,7 @@ class DepartmentMatrixCompilerTest extends TestCase {
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
 	 */
 	public function testAMatrixOnAMissingFieldIsRefused(): void {
-		$findings = $this->compiler->validate(
+		$findings = $this->validator->validate(
 			properties: ['department' => ['type' => 'string']],
 			authorization: [
 				DepartmentMatrixCompiler::KEY => [
@@ -431,14 +440,14 @@ class DepartmentMatrixCompilerTest extends TestCase {
 	public function testAValidMatrixAndNoMatrixBothPass(): void {
 		$properties = ['department' => ['type' => 'string']];
 
-		$this->assertSame([], $this->compiler->validate(properties: $properties, authorization: null));
+		$this->assertSame([], $this->validator->validate(properties: $properties, authorization: null));
 		$this->assertSame(
 			[],
-			$this->compiler->validate(properties: $properties, authorization: ['read' => ['admin']])
+			$this->validator->validate(properties: $properties, authorization: ['read' => ['admin']])
 		);
 		$this->assertSame(
 			[],
-			$this->compiler->validate(
+			$this->validator->validate(
 				properties: $properties,
 				authorization: [
 					DepartmentMatrixCompiler::KEY => [
@@ -466,7 +475,7 @@ class DepartmentMatrixCompilerTest extends TestCase {
 		$this->assertContains(
 			'matrix.no-user-source',
 			$codes(
-				$this->compiler->validate(
+				$this->validator->validate(
 					properties: $properties,
 					authorization: [
 						DepartmentMatrixCompiler::KEY => [
@@ -481,7 +490,7 @@ class DepartmentMatrixCompilerTest extends TestCase {
 		$this->assertContains(
 			'matrix.no-rows',
 			$codes(
-				$this->compiler->validate(
+				$this->validator->validate(
 					properties: $properties,
 					authorization: [
 						DepartmentMatrixCompiler::KEY => [
@@ -497,7 +506,7 @@ class DepartmentMatrixCompilerTest extends TestCase {
 		$this->assertContains(
 			'matrix.unknown-action',
 			$codes(
-				$this->compiler->validate(
+				$this->validator->validate(
 					properties: $properties,
 					authorization: [
 						DepartmentMatrixCompiler::KEY => [
@@ -513,7 +522,7 @@ class DepartmentMatrixCompilerTest extends TestCase {
 		$this->assertContains(
 			'matrix.no-group',
 			$codes(
-				$this->compiler->validate(
+				$this->validator->validate(
 					properties: $properties,
 					authorization: [
 						DepartmentMatrixCompiler::KEY => [

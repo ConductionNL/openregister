@@ -2067,11 +2067,11 @@ return [
 			// actor and a marking that fits the target. `dryRun: true` on the
 			// same endpoint answers the verdict without writing, so a preview
 			// and the write cannot disagree about what would happen.
-		['name' => 'flowRun#migrate', 'url' => '/api/flow-runs/{uuid}/migrate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRunMigration#migrate', 'url' => '/api/flow-runs/{uuid}/migrate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 			// The same act for every run pinned to one version, reporting per
 			// run rather than as a count: the ones that could not move are
 			// exactly the ones somebody has to go and look at.
-		['name' => 'flowRun#migrateRuns', 'url' => '/api/flows/{flow}/migrate-runs', 'verb' => 'POST', 'requirements' => ['flow' => '[^/]+']],
+		['name' => 'flowRunMigration#migrateRuns', 'url' => '/api/flows/{flow}/migrate-runs', 'verb' => 'POST', 'requirements' => ['flow' => '[^/]+']],
 		// Correlation-addressed signal delivery (flow-approval-consolidation):
 		// same authority as resume, addressed by business key instead of run
 		// uuid, fail-closed on zero and on more than one match. Registered on
@@ -2079,7 +2079,7 @@ return [
 		// uuid-addressed routes.
 		['name' => 'flowRun#signalByKey', 'url' => '/api/flow-run-signals/{key}', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
-		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		['name' => 'flowTestRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
 		// The fleet-generic task (flow-task-entity): the inbox and the
 		// lifecycle verbs. Named for the `flow-tasks` CAPABILITY, not for a
 		// flow requirement — a standalone task with run_uuid null is served

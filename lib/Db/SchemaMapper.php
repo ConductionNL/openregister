@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
@@ -2364,7 +2365,7 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		$findings = (new DepartmentMatrixCompiler())->validate(
+		$findings = (new DepartmentMatrixValidator())->validate(
 			properties: ($schema->getProperties() ?? []),
 			authorization: $authorization
 		);

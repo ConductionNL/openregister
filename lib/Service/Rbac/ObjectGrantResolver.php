@@ -141,6 +141,13 @@ class ObjectGrantResolver {
 	private array $notInheritable = [];
 
 	/**
+	 * Reads what a share declares about a grant.
+	 *
+	 * @var ShareGrantAttributes
+	 */
+	private ShareGrantAttributes $shareAttributes;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
@@ -154,6 +161,7 @@ class ObjectGrantResolver {
 		private readonly ContainerInterface $container,
 		private readonly ?HierarchyGrantExpander $hierarchy = null,
 	) {
+		$this->shareAttributes = new ShareGrantAttributes();
 	}//end __construct()
 
 	/**
@@ -411,7 +419,7 @@ class ObjectGrantResolver {
 			}
 
 			foreach ($shares as $share) {
-				$uuid = $this->objectUuidOf(share: $share);
+				$uuid = $this->shareAttributes->objectUuidOf(share: $share);
 				if ($uuid === null) {
 					continue;
 				}
@@ -426,7 +434,7 @@ class ObjectGrantResolver {
 				// in the permission integer, because core's bitmask has no room
 				// for a verb it does not define. Unioned across overlapping
 				// grants for the same reason the bitmask is.
-				$verbs = $this->verbsOf(share: $share);
+				$verbs = $this->shareAttributes->verbsOf(share: $share);
 				if (empty($verbs) === false) {
 					$this->verbs[$uuid] = array_values(
 						array_unique(array_merge(($this->verbs[$uuid] ?? []), $verbs))
@@ -444,7 +452,7 @@ class ObjectGrantResolver {
 				// nothing: the two together are an administrator who wrote
 				// "not below here" once, and the widest-wins rule that composes
 				// the BITMASK must not quietly overrule that.
-				if ($this->inheritableOf(share: $share) === false) {
+				if ($this->shareAttributes->inheritableOf(share: $share) === false) {
 					$this->notInheritable[$uuid] = true;
 				}
 			}//end foreach
@@ -466,27 +474,6 @@ class ObjectGrantResolver {
 			]
 		);
 	}//end collectForType()
-
-	/**
-	 * The attribute scope OpenRegister's extension verbs live under.
-	 *
-	 * @var string
-	 */
-	public const VERB_ATTRIBUTE_SCOPE = 'openregister';
-
-	/**
-	 * The attribute key holding the verb list.
-	 *
-	 * @var string
-	 */
-	public const VERB_ATTRIBUTE_KEY = 'verbs';
-
-	/**
-	 * The attribute key marking a grant as not travelling to descendants.
-	 *
-	 * @var string
-	 */
-	public const INHERITABLE_ATTRIBUTE_KEY = 'inheritable';
 
 	/**
 	 * Whether a grant carries one EXTENSION verb for this caller.
@@ -522,51 +509,6 @@ class ObjectGrantResolver {
 	}//end grantCarriesVerb()
 
 	/**
-	 * Whether a grant travels to the object's descendants.
-	 *
-	 * Rides in the same attribute bag as the extension verbs, for the same
-	 * reason ADR-010 puts them there: core's share record has no field for a
-	 * concept core does not have.
-	 *
-	 * DEFAULTS TO TRUE, and that direction is the point. Every grant written
-	 * before this flag existed meant "inheritable", because inheritance was
-	 * how they were resolved; defaulting to false would silently remove access
-	 * from every one of them, which is a lock-out nobody asked for and which
-	 * would be blamed on the hierarchy change rather than on this one.
-	 *
-	 * Only an explicit, recognisable FALSE turns it off. A malformed value is
-	 * read as inheritable rather than guessed at, so a typo cannot quietly
-	 * narrow a grant either.
-	 *
-	 * @param IShare $share The share.
-	 *
-	 * @return bool False only when the grant is explicitly marked as local.
-	 *
-	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
-	 */
-	private function inheritableOf(IShare $share): bool {
-		try {
-			$attributes = $share->getAttributes();
-			if ($attributes === null) {
-				return true;
-			}
-
-			$raw = $attributes->getAttribute(
-				self::VERB_ATTRIBUTE_SCOPE,
-				self::INHERITABLE_ATTRIBUTE_KEY
-			);
-		} catch (Throwable $e) {
-			return true;
-		}
-
-		if ($raw === false || $raw === 0 || $raw === '0' || $raw === 'false') {
-			return false;
-		}
-
-		return true;
-	}//end inheritableOf()
-
-	/**
 	 * Whether this object's grant travels to its descendants.
 	 *
 	 * Read by the scopes surface beside the provenance, so an access review can
@@ -582,79 +524,6 @@ class ObjectGrantResolver {
 	public function isInheritable(string $objectUuid): bool {
 		return (array_key_exists($objectUuid, $this->notInheritable) === false);
 	}//end isInheritable()
-
-	/**
-	 * The extension verbs one share carries.
-	 *
-	 * @param IShare $share The share.
-	 *
-	 * @return string[] The verbs, empty when it carries none.
-	 */
-	private function verbsOf(IShare $share): array {
-		try {
-			$attributes = $share->getAttributes();
-			if ($attributes === null) {
-				return [];
-			}
-
-			$raw = $attributes->getAttribute(self::VERB_ATTRIBUTE_SCOPE, self::VERB_ATTRIBUTE_KEY);
-		} catch (Throwable $e) {
-			return [];
-		}
-
-		if (is_string($raw) === true) {
-			$raw = json_decode($raw, true);
-		}
-
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		return array_values(
-			array_filter($raw, static fn ($verb) => is_string($verb) === true && $verb !== '')
-		);
-	}//end verbsOf()
-
-	/**
-	 * The object UUID a share grants, or null when it grants no object.
-	 *
-	 * An object's folder is named after its UUID — the convention
-	 * `FolderManagementHandler` creates and `FileMapper::findOwningObjectUuid()`
-	 * already relies on. A share on a FILE inside that folder is a file share
-	 * and grants no object.
-	 *
-	 * @param IShare $share The share to inspect.
-	 *
-	 * @return string|null The granted object's UUID, or null.
-	 */
-	private function objectUuidOf(IShare $share): ?string {
-		try {
-			if ($share->getNodeType() !== 'folder') {
-				return null;
-			}
-
-			// `getNode()` is typed to return a Node and `getName()` a string, so
-			// neither is re-checked here — both throw instead when the node has
-			// gone, which the catch below is for.
-			$name = $share->getNode()->getName();
-		} catch (Throwable $e) {
-			// A share whose node has gone is not a grant. Core will clean it up.
-			return null;
-		}
-
-		if ($name === '') {
-			return null;
-		}
-
-		// Only accept something UUID-shaped. Register and schema folders sit in
-		// the same tree, and admitting one of those by name would turn a share
-		// of a CONTAINER into a grant on an object that merely shares its name.
-		if (preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $name) !== 1) {
-			return null;
-		}
-
-		return $name;
-	}//end objectUuidOf()
 
 	/**
 	 * Resolve core's share manager lazily.
