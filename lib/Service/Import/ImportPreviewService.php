@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 /**
@@ -589,6 +590,32 @@ class ImportPreviewService {
 
 		if ($decision['decision'] === ImportPreviewRow::DECISION_UPDATE) {
 			$object['@self']['id'] = $decision['targetUuid'];
+		}
+
+		if ($decision['decision'] === ImportPreviewRow::DECISION_CREATE) {
+			// A CREATE ROW GETS ITS UUID HERE, NOT AT WRITE TIME.
+			//
+			// writeBatch() hands the batch to saveObjects() and, on any throw,
+			// walks the whole batch row by row on the stated assumption that a
+			// throw means nothing was written. That does not hold underneath:
+			// MagicBulkHandler::bulkUpsert() commits each CHUNK in its own
+			// transaction and rolls back only the failing one, so when chunk 3
+			// fails, chunks 1-2 are already durable. The row-by-row retry then
+			// re-sent them - and a CREATE payload carried no id, so saveObject()
+			// minted a NEW uuid and the committed rows were duplicated, then
+			// reported as succeeded because for those rows the retry did work.
+			//
+			// UPDATE rows were never affected: their targetUuid above makes the
+			// retry idempotent by uuid. This gives CREATE rows the same property
+			// rather than inventing a second mechanism. `new ObjectEntity()`
+			// honours a supplied uuid (SaveObject::createObject), so the retry
+			// upserts the row it already wrote instead of adding a twin.
+			//
+			// It also closes the re-run half: findPendingWrites() still sees an
+			// unstamped row after a failed commit, and a later commit() used to
+			// duplicate it again. With the uuid on the stored payload, the
+			// re-run targets the same object.
+			$object['@self']['id'] = Uuid::v4()->toRfc4122();
 		}
 
 		return [
