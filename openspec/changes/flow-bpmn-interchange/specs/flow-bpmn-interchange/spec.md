@@ -167,6 +167,13 @@ from `xsd:QName` to `xsd:string` in their vendored copies, and Flowable adds
 `skipExpression`; when our own output and the unmodified schema disagree, the
 output is what changes.
 
+Reading them from disk SHALL work on a running instance. Nextcloud's
+bootstrap makes libxml's external entity loader return null for every
+resource, the primary document included, so a validation that hands libxml a
+path reads nothing and refuses every document. Validation SHALL therefore
+make the five files, and only those five, reachable for the duration of the
+call, and SHALL leave the host's own resolver in force afterwards.
+
 A provenance file beside the schemas SHALL record the source URL, the fetch
 date, the BPMN version, and a SHA-256 per file, together with the
 specification's copyright line and its licence reference, because the files
@@ -180,6 +187,17 @@ a vendored schema reddens by file name.
 - **WHEN** any of the five files is changed
 - **THEN** the checksum test MUST fail naming that file
 - @e2e exclude covered by BpmnSchemaProvenanceTest
+
+#### Scenario: Validation reads the vendored set where the host blocks entity loading
+
+- **GIVEN** a host whose libxml entity resolver returns null for every
+  resource, which is what Nextcloud installs
+- **WHEN** a flow is exported or a file is imported
+- **THEN** validation MUST read the root schema and every include and import
+  reached from it
+- **AND** it MUST NOT read any other file and MUST NOT reach the network
+- **AND** the resolver in force before the call MUST be in force after it
+- @e2e exclude covered by BpmnSchemaResolutionTest
 
 #### Scenario: The attribution the files cannot carry is recorded beside them
 
