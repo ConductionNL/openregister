@@ -37,6 +37,8 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
@@ -108,6 +110,9 @@ class FacetHandler {
 	 * @param IUserSession $userSession User session for tenant isolation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
 	 * @param FacetCacheVersion $facetCacheVersion Per-scope freshness counter folded into the response cache key.
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds a facet over a property the caller may not read.
+	 *                                               Nullable and last so no construction site shifts; absent, a
+	 *                                               governed property is withheld, which is the safe direction.
 	 *
 	 * @return void
 	 *
@@ -125,6 +130,10 @@ class FacetHandler {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly FacetCacheVersion $facetCacheVersion,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED property is withheld, which is the safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 		// Initialize facet response caching.
 		try {
@@ -1321,6 +1330,20 @@ class FacetHandler {
 				$schemaId = $schema->getId();
 				$properties = $schema->getProperties() ?? [];
 				foreach ($properties as $propertyKey => $property) {
+					// 🔴 ADVERTISING A FACETABLE FIELD IS THE FIRST HALF OF THE
+					// LEAK AND THE EASIER HALF TO MISS. Even before any values
+					// are computed, naming a governed property here tells a
+					// caller the field exists and invites them to ask for its
+					// buckets. Withholding it at the source means there is no
+					// second place to remember.
+					if ($this->aggregateVisibility()->maySummarise(
+						schema: $schema,
+						property: (string)$propertyKey
+					) === false
+					) {
+						continue;
+					}
+
 					// Encrypted properties are never facetable, even when a schema
 					// author also sets `facetable: true` on one by mistake — the
 					// magic-table value is ciphertext (or, once
@@ -1432,4 +1455,13 @@ class FacetHandler {
 		// All other types use terms aggregation.
 		return 'terms';
 	}//end determineFacetTypeFromProperty()
+	/**
+	 * The shared answer to "may a summary over this property be shown".
+	 *
+	 * @return AggregateVisibility The answer.
+	 */
+	private function aggregateVisibility(): AggregateVisibility {
+		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
+	}//end aggregateVisibility()
+
 }//end class

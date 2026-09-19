@@ -59,6 +59,51 @@ final class SlaCalculator {
 	public const UNITS = [self::UNIT_HOURS, self::UNIT_BUSINESS_DAYS, self::UNIT_CALENDAR_DAYS];
 
 	/**
+	 * The end date is left where the budget put it. THE DEFAULT, and it is the
+	 * default deliberately: rolling changes a deadline, and a deadline that
+	 * moved without anybody asking is worse than one that lands on a Sunday.
+	 *
+	 * @var string
+	 */
+	public const ROLL_NONE = 'none';
+
+	/**
+	 * Move the end date forward to the first working day. This is the rule the
+	 * Algemene termijnenwet states for a statutory term; whether a given term
+	 * is one, and whether the calendar it is measured against lists the right
+	 * days, are both questions for the administrator, not for this class.
+	 *
+	 * @var string
+	 */
+	public const ROLL_NEXT = 'next';
+
+	/**
+	 * Move the end date back to the last working day.
+	 *
+	 * @var string
+	 */
+	public const ROLL_PREVIOUS = 'previous';
+
+	/**
+	 * The whole roll vocabulary.
+	 *
+	 * @var array<int, string>
+	 */
+	public const ROLLS = [self::ROLL_NONE, self::ROLL_NEXT, self::ROLL_PREVIOUS];
+
+	/**
+	 * Days a roll may walk before it gives up.
+	 *
+	 * A roll crosses a holiday cluster, not a season: the longest in any real
+	 * calendar is a handful of days. A calendar that declares every day
+	 * non-working would otherwise walk until the clock ran out, and the
+	 * deadline would look like a hang.
+	 *
+	 * @var int
+	 */
+	private const MAX_ROLL_DAYS = 400;
+
+	/**
 	 * The accepted SLA value range, inclusive.
 	 */
 	public const MIN_VALUE = 1;
@@ -87,6 +132,29 @@ final class SlaCalculator {
 	 * @var float
 	 */
 	private const EPSILON = 0.0000001;
+
+	/**
+	 * The walk over a calendar's declared service hours.
+	 *
+	 * @var ServiceHoursClock
+	 */
+	private readonly ServiceHoursClock $hoursClock;
+
+	/**
+	 * Constructor.
+	 *
+	 * The clock defaults rather than being required, because this class is
+	 * also constructed directly in a dozen tests and in two consumers that
+	 * predate it, and a required argument would turn a wiring change into a
+	 * fatal error on an upgraded instance.
+	 *
+	 * @param ServiceHoursClock|null $hoursClock The service-hours walk, or null for the default.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function __construct(?ServiceHoursClock $hoursClock = null) {
+		$this->hoursClock = ($hoursClock ?? new ServiceHoursClock());
+	}//end __construct()
 
 	/**
 	 * Validate an SLA of shape `{value, unit}`.
@@ -120,8 +188,123 @@ final class SlaCalculator {
 			);
 		}
 
-		return ['value' => $value, 'unit' => $this->validateUnit(unit: $sla['unit'])];
+		return [
+			'value' => $value,
+			'unit' => $this->validateUnit(unit: $sla['unit']),
+			'rollToWorkingDay' => $this->validateRoll(roll: ($sla['rollToWorkingDay'] ?? self::ROLL_NONE)),
+		];
 	}//end validateSla()
+
+	/**
+	 * Validate a roll name.
+	 *
+	 * An absent roll is `none`, and an unknown one is REFUSED rather than
+	 * defaulted. Read as `none`, a typed `nextWorkingDay` would save, arm and
+	 * behave like a setting nobody made — on a deadline with legal effect,
+	 * which is the worst place for a silent default.
+	 *
+	 * @param mixed $roll The declared roll.
+	 *
+	 * @return string The roll.
+	 *
+	 * @throws FlowTimerValidationException On an unknown roll.
+	 *
+	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 */
+	public function validateRoll(mixed $roll): string {
+		if ($roll === null || $roll === '') {
+			return self::ROLL_NONE;
+		}
+
+		if (is_string($roll) === false || in_array($roll, self::ROLLS, true) === false) {
+			throw new FlowTimerValidationException(
+				message: sprintf(
+					"rollToWorkingDay '%s' is refused: use one of %s.",
+					var_export($roll, true),
+					implode(', ', self::ROLLS)
+				)
+			);
+		}
+
+		return $roll;
+	}//end validateRoll()
+
+	/**
+	 * Move a moment off a non-working day, and say what moved it.
+	 *
+	 * 🔴 IT ANSWERS WHAT IT DID, not just where it landed. A handler looking at
+	 * a term that ends on Tuesday has to be able to read that Monday was Tweede
+	 * Paasdag; a rolled date with no explanation is a date somebody will
+	 * challenge and nobody can defend.
+	 *
+	 * 🔑 THE NAME COMES FROM THE CALENDAR'S OWN RULE, never from a list in this
+	 * class. `weekend` is the only name this code knows, because it is the only
+	 * one it decides; every other name is whatever the administrator called the
+	 * day they declared.
+	 *
+	 * @param DateTimeInterface    $moment   The computed moment.
+	 * @param string               $roll     One of ROLLS.
+	 * @param WorkingCalendar|null $calendar The resolved calendar.
+	 *
+	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
+	 *
+	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 */
+	public function roll(DateTimeInterface $moment, string $roll, ?WorkingCalendar $calendar): array {
+		$instant = DateTimeImmutable::createFromInterface($moment);
+		$unrolled = ['at' => $instant, 'unrolledAt' => null, 'rolledBy' => null];
+
+		if ($roll === self::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
+			return $unrolled;
+		}
+
+		// The rule that stopped the FIRST day is the one that moved the term.
+		// Reporting the last day walked past would name Easter Monday for a
+		// term that was really stopped by the Saturday before it.
+		$rolledBy = $this->nonWorkingReason(moment: $instant, calendar: $calendar);
+
+		$modifier = '+1 day';
+		if ($roll === self::ROLL_PREVIOUS) {
+			$modifier = '-1 day';
+		}
+
+		$walked = $instant;
+		for ($step = 0; $step < self::MAX_ROLL_DAYS; $step++) {
+			$walked = $this->shift(moment: $walked, modifier: $modifier);
+			if ($calendar->isWorkingDay(moment: $walked) === true) {
+				return ['at' => $walked, 'unrolledAt' => $instant, 'rolledBy' => $rolledBy];
+			}
+		}
+
+		throw new FlowTimerValidationException(
+			message: sprintf(
+				'No working day within %d days of %s on calendar %s: the calendar declares no working days to roll to.',
+				self::MAX_ROLL_DAYS,
+				$instant->format('Y-m-d'),
+				$calendar->getSlug()
+			)
+		);
+	}//end roll()
+
+	/**
+	 * Why a day is not a working day, in the calendar's own words.
+	 *
+	 * @param DateTimeImmutable $moment   The day.
+	 * @param WorkingCalendar   $calendar The calendar.
+	 *
+	 * @return string The declared name, or `weekend`.
+	 */
+	private function nonWorkingReason(DateTimeImmutable $moment, WorkingCalendar $calendar): string {
+		$named = ($calendar->nonWorkingDates(year: (int)$moment->format('Y'))[$moment->format('Y-m-d')] ?? null);
+		if (is_string($named) === true && $named !== '') {
+			return $named;
+		}
+
+		// Not a declared date, so it is a day the working WEEK excludes. This
+		// is the one name this class decides, because it is the one rule it
+		// knows without being told.
+		return 'weekend';
+	}//end nonWorkingReason()
 
 	/**
 	 * Validate a unit name.
@@ -150,17 +333,45 @@ final class SlaCalculator {
 	 * @param DateTimeInterface $from The start instant.
 	 * @param float $value The amount; negative subtracts.
 	 * @param string $unit The unit.
-	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and
+	 *        refused when absent, ignored for hours and calendar days.
+	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function add(DateTimeInterface $from, float $value, string $unit, WorkingCalendar $calendar): DateTimeImmutable {
+	public function add(
+		DateTimeInterface $from,
+		float $value,
+		string $unit,
+		?WorkingCalendar $calendar,
+		?WalkCollector $collector = null
+	): DateTimeImmutable {
 		$start = DateTimeImmutable::createFromInterface($from);
 		$this->validateUnit(unit: $unit);
 
 		if ($unit === self::UNIT_HOURS) {
+			// Service hours, when the administrator declared any. An hours
+			// term then advances only while the organisation is open, which is
+			// the difference between a four-hour answer owed on Friday evening
+			// and one owed on Monday morning.
+			//
+			// Only forward. A negative hours term is an offset read BACK from
+			// a moment, and walking windows backwards is a second walk with
+			// its own edge cases; until an escalation rung needs it, the
+			// backward path keeps the wall clock it has always had, and says
+			// so rather than pretending to be window-aware.
+			if ($calendar !== null && $value > 0 && $calendar->getServiceHours()->areDeclared() === true) {
+				return $this->hoursClock->due(
+					from: $start,
+					hours: $value,
+					calendar: $calendar,
+					windows: $calendar->getServiceHours()
+				);
+			}
+
 			return $this->shift(moment: $start, modifier: sprintf('%+d seconds', (int)round($value * 3600)));
 		}
 
@@ -179,11 +390,25 @@ final class SlaCalculator {
 			return $this->shift(moment: $landed, modifier: sprintf('%+d seconds', $sign * (int)round($fraction * self::DAY)));
 		}
 
-		if ($value >= 0) {
-			return $this->walkForward(start: $start, days: $value, calendar: $calendar);
+		// 🔴 A BUSINESS UNIT WITHOUT A CALENDAR IS REFUSED, not counted as
+		// wall-clock time. The parameter is nullable because `hours` and
+		// `calendarDays` genuinely need no calendar and a caller should not
+		// have to invent one to say "two days"; the units that DO need one
+		// refuse here rather than quietly computing a different deadline.
+		if ($calendar === null) {
+			throw new FlowTimerValidationException(
+				message: sprintf(
+					"Unit '%s' is counted against a working calendar and none was given; it would silently become wall-clock time.",
+					$unit
+				)
+			);
 		}
 
-		return $this->walkBackward(start: $start, days: -$value, calendar: $calendar);
+		if ($value >= 0) {
+			return $this->walkForward(start: $start, days: $value, calendar: $calendar, collector: $collector);
+		}
+
+		return $this->walkBackward(start: $start, days: -$value, calendar: $calendar, collector: $collector);
 	}//end add()
 
 	/**
@@ -198,7 +423,7 @@ final class SlaCalculator {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
-	public function sub(DateTimeInterface $from, float $value, string $unit, WorkingCalendar $calendar): DateTimeImmutable {
+	public function sub(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
 		return $this->add(from: $from, value: -$value, unit: $unit, calendar: $calendar);
 	}//end sub()
 
@@ -264,6 +489,91 @@ final class SlaCalculator {
 	}//end measure()
 
 	/**
+	 * How many WORKING hours lie between two instants.
+	 *
+	 * NOT THE SAME QUESTION AS `measure(..., UNIT_HOURS, ...)`, and the
+	 * difference is the whole point of this method. That one answers wall
+	 * clock: seconds divided by 3600, weekends and nights included, which is
+	 * right for a deadline expressed in hours. This one answers how much of
+	 * that interval the organisation was actually open, which is what a
+	 * report comparing two teams has to count. A phase entered at 16:00 on
+	 * Friday and left at 09:00 on Monday is 65 wall-clock hours and one
+	 * working hour, and reporting the first rewards whoever draws the Friday
+	 * afternoon cases.
+	 *
+	 * `measure(..., UNIT_BUSINESS_DAYS, ...)` cannot stand in for it either.
+	 * It counts fractions of a CALENDAR day on working days, so the same
+	 * interval reads 0.71 business days, and converting that at eight hours a
+	 * day gives 5.67: a number that counts Friday evening and Monday before
+	 * dawn as work. Both are defensible for a deadline and neither is
+	 * elapsed working time.
+	 *
+	 * Negative when `to` precedes `from`, like `measure()`.
+	 *
+	 * @param DateTimeInterface $from The start.
+	 * @param DateTimeInterface $to The end.
+	 * @param WorkingCalendar $calendar The resolved calendar, which supplies the
+	 *                                  working weekdays, the non-working dates
+	 *                                  and the hours of the day.
+	 *
+	 * @return float The working hours between the two instants.
+	 *
+	 * @throws FlowTimerValidationException When the interval is longer than the walk allows.
+	 *
+	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 */
+	public function elapsedBusinessHours(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar): float {
+		if ($to->getTimestamp() < $from->getTimestamp()) {
+			return -$this->elapsedBusinessHours(from: $to, to: $from, calendar: $calendar);
+		}
+
+		if ($calendar->getServiceHours()->areDeclared() === true) {
+			return $this->hoursClock->elapsed(
+				from: $from,
+				to: $to,
+				calendar: $calendar,
+				windows: $calendar->getServiceHours()
+			);
+		}
+
+		$cursor = DateTimeImmutable::createFromInterface($from);
+		$end = DateTimeImmutable::createFromInterface($to);
+		$opensAt = $calendar->getDayStartsAtMinute();
+		$closesAt = $calendar->getDayEndsAtMinute();
+		$total = 0.0;
+
+		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
+			if ($cursor >= $end) {
+				return $total;
+			}
+
+			$midnight = $cursor->setTime(0, 0, 0);
+			$nextMidnight = $this->shift(moment: $midnight, modifier: '+1 day');
+
+			if ($calendar->isWorkingDay($cursor) === true) {
+				$opens = $midnight->getTimestamp() + ($opensAt * 60);
+				$closes = $midnight->getTimestamp() + ($closesAt * 60);
+
+				// The overlap of [cursor, min(end, nextMidnight)] with the
+				// day's window. An interval entirely outside it contributes
+				// nothing, which is how a Monday 00:00 to 09:00 stretch adds
+				// zero rather than nine.
+				$segmentEnd = min($end->getTimestamp(), $nextMidnight->getTimestamp());
+				$overlap = (min($segmentEnd, $closes) - max($cursor->getTimestamp(), $opens));
+				if ($overlap > 0) {
+					$total += ($overlap / 3600);
+				}
+			}
+
+			$cursor = $nextMidnight;
+		}
+
+		throw new FlowTimerValidationException(
+			message: sprintf('Measuring working hours between %s and %s exceeds %d calendar days.', $from->format('c'), $to->format('c'), self::MAX_WALK_DAYS)
+		);
+	}//end elapsedBusinessHours()
+
+	/**
 	 * Convert an amount between units, through hours as the pivot: one business
 	 * day is the calendar's working hours, one calendar day is 24 hours.
 	 *
@@ -298,15 +608,23 @@ final class SlaCalculator {
 	 * @param DateTimeImmutable $start The start.
 	 * @param float $days Business days to add (>= 0).
 	 * @param WorkingCalendar $calendar The calendar.
+	 * @param WalkCollector|null $collector Records each day the walk consumed, or null when nobody is watching.
 	 *
 	 * @return DateTimeImmutable The landing instant.
 	 */
-	private function walkForward(DateTimeImmutable $start, float $days, WorkingCalendar $calendar): DateTimeImmutable {
+	private function walkForward(
+		DateTimeImmutable $start,
+		float $days,
+		WorkingCalendar $calendar,
+		?WalkCollector $collector = null
+	): DateTimeImmutable {
 		$cursor = $start;
 		$remaining = $days;
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
 			$nextMidnight = $this->shift(moment: $cursor->setTime(0, 0, 0), modifier: '+1 day');
-			if ($calendar->isWorkingDay($cursor) === true) {
+			$working = $calendar->isWorkingDay($cursor);
+			$this->record(collector: $collector, day: $cursor, counted: $working, calendar: $calendar);
+			if ($working === true) {
 				$available = (($nextMidnight->getTimestamp() - $cursor->getTimestamp()) / self::DAY);
 				if ($remaining <= ($available + self::EPSILON)) {
 					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', (int)round($remaining * self::DAY)));
@@ -329,10 +647,16 @@ final class SlaCalculator {
 	 * @param DateTimeImmutable $start The start.
 	 * @param float $days Business days to subtract (>= 0).
 	 * @param WorkingCalendar $calendar The calendar.
+	 * @param WalkCollector|null $collector Records each day the walk consumed, or null when nobody is watching.
 	 *
 	 * @return DateTimeImmutable The landing instant.
 	 */
-	private function walkBackward(DateTimeImmutable $start, float $days, WorkingCalendar $calendar): DateTimeImmutable {
+	private function walkBackward(
+		DateTimeImmutable $start,
+		float $days,
+		WorkingCalendar $calendar,
+		?WalkCollector $collector = null
+	): DateTimeImmutable {
 		$cursor = $start;
 		$remaining = $days;
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
@@ -342,7 +666,9 @@ final class SlaCalculator {
 				$dayStart = $this->shift(moment: $dayStart, modifier: '-1 day');
 			}
 
-			if ($calendar->isWorkingDay($dayStart) === true) {
+			$working = $calendar->isWorkingDay($dayStart);
+			$this->record(collector: $collector, day: $dayStart, counted: $working, calendar: $calendar);
+			if ($working === true) {
 				$available = (($cursor->getTimestamp() - $dayStart->getTimestamp()) / self::DAY);
 				if ($remaining <= ($available + self::EPSILON)) {
 					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', -(int)round($remaining * self::DAY)));
@@ -358,6 +684,41 @@ final class SlaCalculator {
 			message: sprintf('Subtracting %s business days from %s exceeds %d calendar days.', (string)$days, $start->format('c'), self::MAX_WALK_DAYS)
 		);
 	}//end walkBackward()
+
+	/**
+	 * Hand one examined day to the collector, with the rule that skipped it.
+	 *
+	 * The rule NAME comes from the calendar's own `nonWorkingDates()`, the same
+	 * map `isWorkingDay()` consults, so the diagnostic cannot name a rule the
+	 * engine did not apply. A day that is non-working because the working week
+	 * does not include it has no rule, and the collector calls that `weekend`.
+	 *
+	 * @param WalkCollector|null $collector The collector, absent on the arm path.
+	 * @param DateTimeImmutable  $day       The day examined.
+	 * @param bool               $counted   Whether it counted.
+	 * @param WorkingCalendar    $calendar  The calendar.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 */
+	private function record(
+		?WalkCollector $collector,
+		DateTimeImmutable $day,
+		bool $counted,
+		WorkingCalendar $calendar
+	): void {
+		if ($collector === null) {
+			return;
+		}
+
+		$rule = null;
+		if ($counted === false) {
+			$rule = ($calendar->nonWorkingDates(year: (int)$day->format('Y'))[$day->format('Y-m-d')] ?? null);
+		}
+
+		$collector->examine(day: $day, counted: $counted, rule: $rule);
+	}//end record()
 
 	/**
 	 * Apply a relative modifier, refusing PHP's silent `false`.

@@ -278,7 +278,7 @@ class RelationTypeResolver {
 			$inverse = self::FALLBACK_INVERSE_LABEL;
 		}
 
-		return [
+		$descriptor = [
 			'property' => $name,
 			'type' => $type,
 			'label' => $label,
@@ -286,6 +286,28 @@ class RelationTypeResolver {
 			'symmetric' => $symmetric,
 			'inherits' => $this->inheritsOf(declaration: $merged),
 		];
+
+		// What the link exposes rides the descriptor rather than being read
+		// from the vocabulary a second time. There is one reader of
+		// `x-openregister-relation-types` and it is this class; a render path
+		// that parsed the annotation for itself would be a second reader of one
+		// vocabulary, which is the thing this resolver exists to prevent.
+		//
+		// The key is added only when it is DECLARED. An absent key means the
+		// link narrows nothing, which is what every relation type does today
+		// and what every existing schema must keep doing; a present-but-empty
+		// list means it exposes nothing, which is a different statement and a
+		// legitimate one. Writing an empty list for "undeclared" would turn
+		// every existing link into one that hands over nothing.
+		if (array_key_exists(LinkExposure::KEY, $merged) === true
+			&& is_array($merged[LinkExposure::KEY]) === true
+		) {
+			$descriptor[LinkExposure::KEY] = array_values(
+				array_map(static fn (mixed $property): string => (string)$property, $merged[LinkExposure::KEY])
+			);
+		}
+
+		return $descriptor;
 	}//end describe()
 
 	/**

@@ -104,12 +104,7 @@ class CodedPropertyDeclarationFactory {
 	 * @return array<string,mixed>|null The annotation, or null when absent.
 	 */
 	private function rawAnnotation(mixed $property): ?array {
-		$raw = null;
-		if (is_array($property) === true) {
-			$raw = ($property[CodedPropertyDeclaration::ANNOTATION] ?? null);
-		} elseif (is_object($property) === true) {
-			$raw = ($property->{CodedPropertyDeclaration::ANNOTATION} ?? null);
-		}
+		$raw = $this->readKey(property: $property, key: CodedPropertyDeclaration::ANNOTATION);
 
 		if (is_object($raw) === true) {
 			$raw = (array)$raw;
@@ -119,8 +114,69 @@ class CodedPropertyDeclarationFactory {
 			return $raw;
 		}
 
+		// THE SIMPLE SPELLING, READ BY THE SAME READER ON PURPOSE.
+		// `conceptScheme` is the published vocabulary modifier (openregister
+		// #3883): a scheme slug and nothing else, which is what a case-type
+		// editor writes and what dossiq forwards. The annotation above is the
+		// same binding with the options a hierarchy needs.
+		//
+		// They are ONE declaration here rather than two readers, because two
+		// readers of one capability is how the validator and the option builder
+		// end up disagreeing about which field is coded. A property carrying
+		// both is refused by {@see self::competingSpellings()} rather than
+		// silently resolved, for the same reason.
+		$simple = $this->nonEmpty(value: $this->readKey(
+			property: $property,
+			key: CodedPropertyDeclaration::SIMPLE_ANNOTATION
+		));
+		if ($simple !== null) {
+			return ['scheme' => $simple];
+		}
+
 		return null;
 	}//end rawAnnotation()
+
+	/**
+	 * One key off a property, whether it arrived as an array or an object.
+	 *
+	 * @param mixed  $property The schema property definition.
+	 * @param string $key      The key to read.
+	 *
+	 * @return mixed The value, or null.
+	 */
+	private function readKey(mixed $property, string $key): mixed {
+		if (is_array($property) === true) {
+			return ($property[$key] ?? null);
+		}
+
+		if (is_object($property) === true) {
+			return ($property->{$key} ?? null);
+		}
+
+		return null;
+	}//end readKey()
+
+	/**
+	 * Whether a property declares its code list in both spellings at once.
+	 *
+	 * Two spellings on one property is an authoring mistake, and the dangerous
+	 * version is the silent one: the validator reads the annotation, the editor
+	 * reads the modifier, and nothing says which scheme a value is checked
+	 * against. Reported, so it is fixed, rather than resolved by precedence.
+	 *
+	 * @param mixed $property The schema property definition.
+	 *
+	 * @return bool True when both are present.
+	 *
+	 * @spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md
+	 */
+	public function competingSpellings(mixed $property): bool {
+		$annotation = $this->readKey(property: $property, key: CodedPropertyDeclaration::ANNOTATION);
+		$simple = $this->readKey(property: $property, key: CodedPropertyDeclaration::SIMPLE_ANNOTATION);
+
+		return (($annotation !== null && $annotation !== [])
+			&& $this->nonEmpty(value: $simple) !== null);
+	}//end competingSpellings()
 
 	/**
 	 * A trimmed non-empty string off a raw value, or null.

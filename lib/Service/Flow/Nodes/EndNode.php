@@ -115,7 +115,10 @@ class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNode
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
-		return ['error', 'message'];
+		// `next` overrides the manual trigger's hint for the run that reached
+		// THIS ending: "close and notify" and "close and move on" can be one
+		// flow with two endings.
+		return ['error', 'message', 'next'];
 	}//end configKeys()
 
 	/**

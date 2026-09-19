@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -82,6 +83,9 @@ class FlowService {
 	 * @param IUserSession $userSession Identifies the acting user.
 	 * @param LoggerInterface $logger Records refusals and failures.
 	 * @param ContainerInterface $container Resolves OrganisationService lazily.
+	 * @param FlowRunAuthorization|null $runAuthorization Judges whether the caller may act on a run. Nullable
+	 *                                                    and last so no construction site shifts; absent, the
+	 *                                                    guarded actions refuse, which scopes.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,
@@ -94,6 +98,7 @@ class FlowService {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
+		private readonly ?FlowRunAuthorization $runAuthorization = null,
 	) {
 
 	}//end __construct()
@@ -207,6 +212,40 @@ class FlowService {
 
 		return $flow;
 	}//end find()
+
+	/**
+	 * Refuse unless this caller may run THIS flow.
+	 *
+	 * 🔴 THE CONTROL LIVES HERE BECAUSE THIS IS WHERE THE FLOW IS READ. The
+	 * `scope: private` declared on the `flow` schema governs the object store,
+	 * which `MigrateRegisterFlowsToTable` drained precisely because nothing
+	 * reads it — so a reader of that declaration believed a run answered to the
+	 * flow's owner while it answered to `flow.run`, seeded `@authenticated`,
+	 * plus an organisation. Put the decision beside `find()` and a run path that
+	 * forgets to ask is one that also forgot to resolve the flow, which none of
+	 * them can do.
+	 *
+	 * @param Flow $flow The flow being run.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowRunRefused When the caller may not run it.
+	 *
+	 * @spec openspec/changes/flow-runs-honour-their-declaration/specs/flow-engine/spec.md
+	 */
+	public function assertRunnable(Flow $flow): void {
+		$authorization = ($this->runAuthorization ?? new FlowRunAuthorization());
+
+		$verdict = $authorization->verdictFor(flow: $flow);
+		if ($verdict === FlowRunAuthorization::ALLOWED) {
+			return;
+		}
+
+		throw new FlowRunRefused(
+			verdict: $verdict,
+			message: $authorization->messageFor(verdict: $verdict)
+		);
+	}//end assertRunnable()
 
 	/**
 	 * Make the CALLING user the flow's owner — the adoption seam.
@@ -683,6 +722,7 @@ class FlowService {
 		string $trigger = Flow::TRIGGER_MANUAL
 	): FlowRun {
 		$flow = $this->find(uuid: $uuid);
+		$this->assertRunnable(flow: $flow);
 
 		$run = $this->runner->queue(
 			flowId: (string)$flow->getUuid(),

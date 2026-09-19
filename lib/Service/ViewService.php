@@ -156,6 +156,32 @@ class ViewService {
 	}//end findAll()
 
 	/**
+	 * Every view this caller may see, each carrying the access they hold.
+	 *
+	 * The union `view-group-share` adds to `findAll()`: the caller's own views,
+	 * the views shared with a group they are in, and the public ones, each with
+	 * `@self.access`. `findAll()` is left alone rather than widened, because it
+	 * is called from paths that mean "the views this OWNER has" and silently
+	 * turning that into "and everything shared with them" would change what
+	 * those paths count.
+	 *
+	 * @param string $userId The caller.
+	 * @param string[] $userGroups The caller's group ids.
+	 * @param bool $isAdmin Whether the caller administers the instance.
+	 *
+	 * @return array The views.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	public function findAllFor(string $userId, array $userGroups, bool $isAdmin = false): array {
+		return $this->viewMapper->findAllFor(
+			userId: $userId,
+			userGroups: $userGroups,
+			isAdmin: $isAdmin
+		);
+	}//end findAllFor()
+
+	/**
 	 * Create a new view
 	 *
 	 * Creates a new view entity with specified properties. If view is set as default,

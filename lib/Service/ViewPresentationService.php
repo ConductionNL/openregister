@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Db\View;
 use OCP\AppFramework\Db\Entity;
 use Psr\Log\LoggerInterface;
@@ -72,6 +74,9 @@ class ViewPresentationService {
 	 * @param SchemaMapper $schemaMapper Schema mapper for enum/property discovery
 	 * @param ObjectService $objectService Object service for the paginated object query
 	 * @param LoggerInterface $logger Logger for error tracking
+	 * @param PropertyRbacHandler|null $propertyRbac Judges whether the caller may group on a governed property.
+	 *                                               Nullable and last so no construction site shifts; absent, a
+	 *                                               governed grouping property is refused, which is safe
 	 *
 	 * @return void
 	 */
@@ -79,11 +84,25 @@ class ViewPresentationService {
 		SchemaMapper $schemaMapper,
 		ObjectService $objectService,
 		LoggerInterface $logger,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED grouping property is refused, which is the safe
+		// direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->objectService = $objectService;
 		$this->logger = $logger;
 	}//end __construct()
+
+	/**
+	 * The shared answer to "may a summary over this property be shown".
+	 *
+	 * @return AggregateVisibility The answer.
+	 */
+	private function aggregateVisibility(): AggregateVisibility {
+		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
+	}//end aggregateVisibility()
 
 	/**
 	 * Build the kanban board for a view: one column per distinct value of
@@ -124,6 +143,22 @@ class ViewPresentationService {
 		}
 
 		$schema = $this->schemaMapper->find($schemaRef);
+
+		// 🔴 A COLUMN HEADING IS A VALUE. This board is one column per DISTINCT
+		// VALUE of `groupByField`, so a governed grouping property becomes a row
+		// of headings naming every value it holds, to anybody who may open the
+		// view. The cards inside the columns are stripped correctly by the
+		// render path, which is exactly what makes this hard to notice: the
+		// board looks empty and correct while its headings are the leak.
+		if ($this->aggregateVisibility()->maySummarise(schema: $schema, property: $groupByField) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'This board groups on \'%s\', which you may not read, so it cannot be drawn for you.',
+					$groupByField
+				)
+			);
+		}
+
 		$properties = $schema->getProperties();
 
 		$columnOrder = $kanbanConfig['columnOrder'] ?? null;
