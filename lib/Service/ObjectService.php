@@ -545,6 +545,78 @@ class ObjectService implements ObjectServiceInterface
         }
     }//end runAs()
 
+
+    /**
+     * Run a callable AS AN ANONYMOUS CALLER, whatever the session holds.
+     *
+     * The narrowing counterpart of runAs(): the subject is cleared instead of
+     * replaced. Every reader of `IUserSession::getUser()` in the RBAC and
+     * organisation layers then sees no user — no admin bypass, no `_owner`
+     * grant, no group rules, no `inheritFromPublic` widening — and only the
+     * `public` group's rules decide what comes back. The permission caches
+     * are keyed by UID and so stay correct by construction, as with runAs().
+     *
+     * Clearing the subject is not enough on its own. Two guards trust a call
+     * WITHOUT a user: the CLI bypass in the RBAC filters and
+     * {@see SystemOperationContext}. Under occ or PHPUnit an empty session
+     * would therefore be judged as the system, which is the opposite of what
+     * is asked. {@see AnonymousEvaluationContext} closes both doors for the
+     * duration of the call.
+     *
+     * This exists for public endpoints whose contract is uniform visibility —
+     * OpenCatalogi's `/api/search` (SCH-PFTS-001, WOO-536) — where a signed-in
+     * administrator must see exactly what an anonymous caller sees. It is a
+     * server-side primitive only: nothing in the request can switch it on or
+     * off (WOO-578). It restores the previous subject in a `finally`, so
+     * nesting composes and a throw never leaks the cleared identity forward.
+     *
+     * @param callable $operation The operation to execute as an anonymous caller.
+     *
+     * @return mixed Whatever the callable returns.
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
+     */
+    public function runAsAnonymous(callable $operation)
+    {
+        // INCOGNITO MODE, NOT setVolatileActiveUser(null).
+        //
+        // `setVolatileActiveUser(null)` looks like the obvious inverse of what
+        // runAs() does, and it is wrong here. In `Session::getUser()`, null is not
+        // "there is no user" — it is "not resolved yet":
+        //
+        //     if (is_null($this->activeUser)) {
+        //         $uid = $this->session->get('user_id');   // still the signed-in user
+        //         ...
+        //         $this->activeUser = $this->manager->get($uid);
+        //     }
+        //
+        // So on a real request the very next getUser() re-reads `user_id` from the
+        // PHP session and hands back the same admin — the scope would be a no-op
+        // exactly where it is supposed to bite. runAs() escapes this only because
+        // it writes a NON-null user.
+        //
+        // `OC_User::isIncognitoMode()` is checked FIRST in getUser(), before the
+        // activeUser fallback, and returns null unconditionally. It is what core
+        // itself uses to serve a public link while a session exists — see
+        // ShareController, PublicAuth and BearerAuth. The volatile clear stays as
+        // well, so the memoised copy does not survive the scope either.
+        $previousIncognito = \OC_User::isIncognitoMode();
+        $previousUser      = $this->userSession->getUser();
+
+        \OC_User::setIncognitoMode(true);
+        $this->userSession->setVolatileActiveUser(null);
+
+        try {
+            return AnonymousEvaluationContext::run($operation);
+        } finally {
+            // ALWAYS restore, including on a throw — see runAs(). Restore the
+            // PREVIOUS incognito state rather than switching it off, so nesting
+            // inside a genuinely incognito request composes.
+            $this->userSession->setVolatileActiveUser($previousUser);
+            \OC_User::setIncognitoMode($previousIncognito);
+        }
+    }//end runAsAnonymous()
+
     /**
      * Set the current register context.
      *
