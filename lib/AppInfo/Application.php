@@ -1235,101 +1235,7 @@ class Application extends App implements IBootstrap {
 		$importHandlerFactory = function (
 			ContainerInterface $container,
 		): \OCA\OpenRegister\Service\Configuration\ImportHandler {
-			$dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-			$appDataPath = $dataDir . '/appdata_openregister';
-
-			$logger = $container->get('Psr\Log\LoggerInterface');
-
-			// The guard that keeps a local change to an app-shipped schema
-			// alive across an upgrade (row 11.36). Optional on purpose: an
-			// instance whose container cannot build it imports exactly as it
-			// did before the guard existed, which is a known state rather than
-			// a broken one, and an unattended `occ upgrade` must finish.
-			$shippedGuard = null;
-			try {
-				$shippedGuard = $container->get(
-					ShippedConfigurationGuard::class
-				);
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] ShippedConfigurationGuard unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			$importHandler = new ConfigurationImportHandler(
-				schemaMapper: $container->get(SchemaMapper::class),
-				registerMapper: $container->get(RegisterMapper::class),
-				objectEntityMapper: $container->get(MagicMapper::class),
-				configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-				mappingMapper: $container->get(MappingMapper::class),
-				client: new Client(),
-				appConfig: $container->get('OCP\IAppConfig'),
-				logger: $logger,
-				appDataPath: $appDataPath,
-				uploadHandler: $container->get(ConfigurationUploadHandler::class),
-				objectService: $container->get(ObjectService::class),
-				shippedGuard: $shippedGuard
-			);
-
-			// Inject MagicMapper for pre-creating magic mapper tables before seed data import.
-			$importHandler->setMagicMapper($container->get(MagicMapper::class));
-
-			// Inject MagicMapper for routing seed data to correct magic table.
-			$importHandler->setObjectMapper($container->get(MagicMapper::class));
-
-
-			// Optional: services used by seed-related-items to attach files /
-			// notes / tasks. Wrapped in try/catch so a missing dependency
-			// doesn't break import for apps that don't seed related items.
-			try {
-				$importHandler->setFileService($container->get(\OCA\OpenRegister\Service\FileService::class));
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] FileService unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			try {
-				$importHandler->setNoteService($container->get(\OCA\OpenRegister\Service\NoteService::class));
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] NoteService unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			try {
-				$importHandler->setTaskService($container->get(\OCA\OpenRegister\Service\TaskService::class));
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] TaskService unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			try {
-				$importHandler->setUserSession($container->get('OCP\IUserSession'));
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] IUserSession unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			// Optional: group/user managers used to resolve a fallback admin
-			// acting user when import runs without a logged-in session
-			// (occ/installer/cron). Wrapped so a missing dependency never
-			// breaks import.
-			try {
-				$importHandler->setGroupManager($container->get('OCP\IGroupManager'));
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] IGroupManager unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			try {
-				$importHandler->setUserManager($container->get('OCP\IUserManager'));
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] IUserManager unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			// Optional: creates the Nextcloud groups the imported configuration
-			// declares, so a group named in an authorization block always exists.
-			try {
-				$importHandler->setGroupProvisioner(
-					$container->get(\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class)
-				);
-			} catch (\Throwable $e) {
-				$logger->debug('[Application] GroupProvisioner unavailable for ImportHandler: ' . $e->getMessage());
-			}
-
-			return $importHandler;
+			return $this->buildImportHandler(container: $container);
 		};
 
 		// Register under alias.
@@ -1395,6 +1301,112 @@ class Application extends App implements IBootstrap {
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 	}//end registerConfigurationServices()
+
+	/**
+	 * Build the configuration ImportHandler with everything it can reach.
+	 *
+	 * Lifted out of the registration closure so the registration reads as a
+	 * list of registrations. The wiring below is unchanged, including which
+	 * parts of it are allowed to be missing.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationImportHandler The handler.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private function buildImportHandler(ContainerInterface $container): ConfigurationImportHandler {
+		$dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+		$appDataPath = $dataDir . '/appdata_openregister';
+
+		$logger = $container->get('Psr\Log\LoggerInterface');
+
+		// The guard that keeps a local change to an app-shipped schema alive
+		// across an upgrade (row 11.36). Optional on purpose: an instance whose
+		// container cannot build it imports exactly as it did before the guard
+		// existed, which is a known state rather than a broken one, and an
+		// unattended `occ upgrade` must finish.
+		$shippedGuard = null;
+		try {
+			$shippedGuard = $container->get(ShippedConfigurationGuard::class);
+		} catch (\Throwable $e) {
+			$logger->debug('[Application] ShippedConfigurationGuard unavailable for ImportHandler: ' . $e->getMessage());
+		}
+
+		$importHandler = new ConfigurationImportHandler(
+			schemaMapper: $container->get(SchemaMapper::class),
+			registerMapper: $container->get(RegisterMapper::class),
+			objectEntityMapper: $container->get(MagicMapper::class),
+			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+			mappingMapper: $container->get(MappingMapper::class),
+			client: new Client(),
+			appConfig: $container->get('OCP\IAppConfig'),
+			logger: $logger,
+			appDataPath: $appDataPath,
+			uploadHandler: $container->get(ConfigurationUploadHandler::class),
+			objectService: $container->get(ObjectService::class),
+			shippedGuard: $shippedGuard
+		);
+
+		// Inject MagicMapper for pre-creating magic mapper tables before seed
+		// data import, and for routing seed data to the correct magic table.
+		$importHandler->setMagicMapper($container->get(MagicMapper::class));
+		$importHandler->setObjectMapper($container->get(MagicMapper::class));
+
+		$this->attachOptionalImportServices(
+			importHandler: $importHandler,
+			container: $container,
+			logger: $logger
+		);
+
+		return $importHandler;
+	}//end buildImportHandler()
+
+	/**
+	 * Attach the import services that are allowed to be missing.
+	 *
+	 * Each of these is optional on purpose, and each `catch` says which one
+	 * was not there. A missing dependency must not break import for an app
+	 * that does not seed related items, does not run under a session, or does
+	 * not provision groups.
+	 *
+	 * @param ConfigurationImportHandler $importHandler The handler being built.
+	 * @param ContainerInterface         $container     The container.
+	 * @param LoggerInterface            $logger        Where an absence is noted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private function attachOptionalImportServices(
+		ConfigurationImportHandler $importHandler,
+		ContainerInterface $container,
+		LoggerInterface $logger
+	): void {
+		// Setter => [service id, the name the log line used before this list existed].
+		$optional = [
+			'setFileService' => [\OCA\OpenRegister\Service\FileService::class, 'FileService'],
+			'setNoteService' => [\OCA\OpenRegister\Service\NoteService::class, 'NoteService'],
+			'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
+			'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
+			'setGroupManager' => ['OCP\IGroupManager', 'IGroupManager'],
+			'setUserManager' => ['OCP\IUserManager', 'IUserManager'],
+			'setGroupProvisioner' => [
+				\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class,
+				'GroupProvisioner',
+			],
+		];
+
+		foreach ($optional as $setter => $service) {
+			[$id, $label] = $service;
+
+			try {
+				$importHandler->{$setter}($container->get($id));
+			} catch (\Throwable $e) {
+				$logger->debug('[Application] ' . $label . ' unavailable for ImportHandler: ' . $e->getMessage());
+			}
+		}
+	}//end attachOptionalImportServices()
 
 	/**
 	 * Register the configuration deployment lifecycle.

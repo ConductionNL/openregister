@@ -81,36 +81,7 @@ class AttachTargetFilter {
 	 * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md
 	 */
 	public function offerableSchemas(array $candidates, ?array $declared = null): array {
-		$offerable = [];
-
-		foreach ($candidates as $candidate) {
-			if (is_array($candidate) === false) {
-				continue;
-			}
-
-			// The two conditions are different failures and both are silent
-			// without this: a schema the caller cannot write fails on click,
-			// and a schema with no files leaf accepts the pick and then has
-			// nowhere to put the file.
-			if (($candidate['writable'] ?? false) !== true) {
-				continue;
-			}
-
-			if (($candidate['hasFilesLeaf'] ?? false) !== true) {
-				continue;
-			}
-
-			$schema = trim((string)($candidate['schema'] ?? ''));
-			if ($schema === '') {
-				continue;
-			}
-
-			$offerable[$schema] = [
-				'schema' => $schema,
-				'register' => (string)($candidate['register'] ?? ''),
-				'label' => trim((string)($candidate['label'] ?? $schema)),
-			];
-		}
+		$offerable = $this->offerableBySchema(candidates: $candidates);
 
 		if (is_array($declared) === false) {
 			return array_values($offerable);
@@ -130,6 +101,46 @@ class AttachTargetFilter {
 
 		return $pinned;
 	}//end offerableSchemas()
+
+	/**
+	 * The candidates that may actually be offered, keyed by schema.
+	 *
+	 * The two conditions are different failures and both are silent without
+	 * this: a schema the caller cannot write fails on click, and a schema with
+	 * no files leaf accepts the pick and then has nowhere to put the file.
+	 *
+	 * @param array<int,array<string,mixed>> $candidates Each: `schema`, `register`, `label`, `writable`, `hasFilesLeaf`.
+	 *
+	 * @return array<string,array<string,mixed>> The offerable schemas, keyed by slug.
+	 *
+	 * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md
+	 */
+	private function offerableBySchema(array $candidates): array {
+		$offerable = [];
+
+		foreach ($candidates as $candidate) {
+			if (is_array($candidate) === false) {
+				continue;
+			}
+
+			if (($candidate['writable'] ?? false) !== true || ($candidate['hasFilesLeaf'] ?? false) !== true) {
+				continue;
+			}
+
+			$schema = trim((string)($candidate['schema'] ?? ''));
+			if ($schema === '') {
+				continue;
+			}
+
+			$offerable[$schema] = [
+				'schema' => $schema,
+				'register' => (string)($candidate['register'] ?? ''),
+				'label' => trim((string)($candidate['label'] ?? $schema)),
+			];
+		}
+
+		return $offerable;
+	}//end offerableBySchema()
 
 	/**
 	 * Whether this caller may attach this file at all.

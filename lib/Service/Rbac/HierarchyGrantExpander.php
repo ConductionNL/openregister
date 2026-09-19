@@ -266,96 +266,172 @@ class HierarchyGrantExpander {
 				return;
 			}
 
-			try {
-				$children = $this->descender->childrenOf(
-					table: $hierarchy['table'],
-					parentColumn: $hierarchy['parentColumn'],
-					parentUuids: array_keys($frontier)
-				);
-			} catch (Throwable $e) {
-				$this->logger->error(
-					message: '[HierarchyGrantExpander] A level of the hierarchy could not be read; the descent stops here',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaId' => $hierarchy['schemaId'],
-						'depth' => $depth,
-						'exception' => $e->getMessage(),
-					]
-				);
+			$children = $this->childrenOrNull(hierarchy: $hierarchy, frontier: $frontier, depth: $depth);
+			if ($children === null) {
 				return;
 			}
 
-			$next = [];
-			foreach ($children as $childUuid => $parentUuid) {
-				$childUuid = (string)$childUuid;
-				$parentUuid = (string)$parentUuid;
+			$next = $this->absorbLevel(
+				hierarchy: $hierarchy,
+				children: $children,
+				frontier: $frontier,
+				seen: $seen,
+				granted: $granted,
+				sources: $sources,
+				added: $added
+			);
 
-				if (isset($seen[$childUuid]) === true) {
-					// A cycle, or a diamond. Either way this object has already
-					// been decided and re-deciding it is how a walk never ends.
-					// A CYCLE ADDS NOTHING: the object keeps whatever grant it
-					// already had, which for an object nobody was invited to is
-					// none at all.
-					$this->logger->info(
-						message: '[HierarchyGrantExpander] The parent chain returns to an object already resolved; that branch grants nothing further',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaId' => $hierarchy['schemaId'],
-							'object' => $childUuid,
-							'reason' => 'cycle-or-revisit',
-						]
-					);
-					continue;
-				}
-
-				$added++;
-				if ($added > self::MAX_DESCENDANTS) {
-					$this->logger->warning(
-						message: '[HierarchyGrantExpander] The descent passed its descendant bound; nothing below this point is inherited',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaId' => $hierarchy['schemaId'],
-							'bound' => self::MAX_DESCENDANTS,
-						]
-					);
-					return;
-				}
-
-				$from = ($frontier[$parentUuid] ?? null);
-				if ($from === null) {
-					continue;
-				}
-
-				$mask = $this->narrow(mask: $from['mask'], verbs: $hierarchy['verbs']);
-				$seen[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
-				$next[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
-
-				// 🔴 A DIRECT GRANT IS NEVER OVERWRITTEN. The inherited one is
-				// the weaker claim by construction, and the spec keeps the
-				// existing most-specific-wins resolution: a person given
-				// `update` on the child keeps it even where the root grants
-				// only `read`.
-				if (array_key_exists($childUuid, $granted) === true) {
-					continue;
-				}
-
-				if ($mask === 0) {
-					// The schema narrowed every verb away. Recording a grant of
-					// nothing would put the object in the list and refuse every
-					// action on it, which reads as a broken object.
-					continue;
-				}
-
-				$granted[$childUuid] = $mask;
-				$sources[$childUuid] = $from['root'];
-			}//end foreach
+			// The descendant bound was passed. Nothing below this point is
+			// inherited, and stopping here is the whole point of the bound.
+			if ($next === null) {
+				return;
+			}
 
 			$frontier = $next;
 		}//end for
 	}//end expandOne()
+
+	/**
+	 * One level of children, or null when the level could not be read.
+	 *
+	 * A level that cannot be read stops the descent rather than skipping to the
+	 * next one: the objects below it would otherwise be reached from nowhere.
+	 *
+	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
+	 * @param array<string, array{mask: int, root: string}> $frontier The current frontier.
+	 * @param integer $depth Which level this is, for the log.
+	 *
+	 * @return array<string, string>|null Child uuid => parent uuid, or null.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function childrenOrNull(array $hierarchy, array $frontier, int $depth): ?array {
+		try {
+			return $this->descender->childrenOf(
+				table: $hierarchy['table'],
+				parentColumn: $hierarchy['parentColumn'],
+				parentUuids: array_keys($frontier)
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[HierarchyGrantExpander] A level of the hierarchy could not be read; the descent stops here',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schemaId' => $hierarchy['schemaId'],
+					'depth' => $depth,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return null;
+		}
+	}//end childrenOrNull()
+
+	/**
+	 * Absorb one level of children, returning the next frontier.
+	 *
+	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
+	 * @param array<string, string> $children Child uuid => parent uuid.
+	 * @param array<string, array{mask: int, root: string}> $frontier The current frontier.
+	 * @param array<string, array{mask: int, root: string}> $seen Everything decided so far, modified in place.
+	 * @param array<string, int> $granted The grant map, modified in place.
+	 * @param array<string, string> $sources The provenance map, modified in place.
+	 * @param integer $added How many descendants the descent has taken, modified in place.
+	 *
+	 * @return array<string, array{mask: int, root: string}>|null The next frontier, or null when the bound was passed.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function absorbLevel(
+		array $hierarchy,
+		array $children,
+		array $frontier,
+		array &$seen,
+		array &$granted,
+		array &$sources,
+		int &$added
+	): ?array {
+		$next = [];
+
+		foreach ($children as $childUuid => $parentUuid) {
+			$childUuid = (string)$childUuid;
+			$parentUuid = (string)$parentUuid;
+
+			if (isset($seen[$childUuid]) === true) {
+				$this->logRevisit(hierarchy: $hierarchy, childUuid: $childUuid);
+				continue;
+			}
+
+			$added++;
+			if ($added > self::MAX_DESCENDANTS) {
+				$this->logger->warning(
+					message: '[HierarchyGrantExpander] The descent passed its descendant bound; nothing below this point is inherited',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schemaId' => $hierarchy['schemaId'],
+						'bound' => self::MAX_DESCENDANTS,
+					]
+				);
+				return null;
+			}
+
+			$from = ($frontier[$parentUuid] ?? null);
+			if ($from === null) {
+				continue;
+			}
+
+			$mask = $this->narrow(mask: $from['mask'], verbs: $hierarchy['verbs']);
+			$seen[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
+			$next[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
+
+			// 🔴 A DIRECT GRANT IS NEVER OVERWRITTEN. The inherited one is the
+			// weaker claim by construction, and the spec keeps the existing
+			// most-specific-wins resolution: a person given `update` on the
+			// child keeps it even where the root grants only `read`.
+			//
+			// A mask of 0 is skipped for the mirror reason: the schema narrowed
+			// every verb away, and recording a grant of nothing would put the
+			// object in the list and refuse every action on it, which reads as
+			// a broken object.
+			if (array_key_exists($childUuid, $granted) === true || $mask === 0) {
+				continue;
+			}
+
+			$granted[$childUuid] = $mask;
+			$sources[$childUuid] = $from['root'];
+		}//end foreach
+
+		return $next;
+	}//end absorbLevel()
+
+	/**
+	 * Note that the parent chain returned to an object already resolved.
+	 *
+	 * A cycle, or a diamond. Either way this object has already been decided
+	 * and re-deciding it is how a walk never ends. A CYCLE ADDS NOTHING: the
+	 * object keeps whatever grant it already had, which for an object nobody
+	 * was invited to is none at all.
+	 *
+	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
+	 * @param string $childUuid The object reached a second time.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function logRevisit(array $hierarchy, string $childUuid): void {
+		$this->logger->info(
+			message: '[HierarchyGrantExpander] The parent chain returns to an object already resolved; that branch grants nothing further',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $hierarchy['schemaId'],
+				'object' => $childUuid,
+				'reason' => 'cycle-or-revisit',
+			]
+		);
+	}//end logRevisit()
 
 	/**
 	 * The ancestor's bitmask, narrowed by what the schema lets travel down.

@@ -138,31 +138,12 @@ class FlowRunMigrationService {
 
 		$sourceNodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: (int)$run->getFlowVersion());
 
-		$marking = [];
-		$unmapped = [];
-		foreach ($this->markingOf(run: $run) as $place => $tokens) {
-			[$nodeId, $suffix] = $this->splitPlace(place: (string)$place);
-			$targetId = ($mapping[$nodeId] ?? $nodeId);
-
-			if (array_key_exists($targetId, $nodes) === false) {
-				$unmapped[] = (string)$place;
-				continue;
-			}
-
-			// THE KIND HAS TO MATCH TOO. A mapping that points a user task at a
-			// gateway would land a token somewhere the engine cannot resume
-			// from, and the run would park forever with nothing saying why.
-			// An UNKNOWN kind on either side is not a mismatch: a graph that
-			// does not declare one has nothing to disagree about.
-			$from = $this->kindOf(node: ($sourceNodes[$nodeId] ?? []));
-			$to = $this->kindOf(node: $nodes[$targetId]);
-			if ($from !== '' && $to !== '' && $from !== $to) {
-				$unmapped[] = (string)$place;
-				continue;
-			}
-
-			$marking[$targetId . $suffix] = (int)$tokens;
-		}
+		['marking' => $marking, 'unmapped' => $unmapped] = $this->remapMarking(
+			run: $run,
+			nodes: $nodes,
+			sourceNodes: $sourceNodes,
+			mapping: $mapping
+		);
 
 		if ($unmapped !== []) {
 			$unmappedPronoun = 'them';
@@ -182,6 +163,52 @@ class FlowRunMigrationService {
 
 		return ['ok' => true, 'marking' => $marking, 'unmapped' => [], 'reason' => ''];
 	}//end validate()
+
+	/**
+	 * Where each token would land on the target version, and what would not.
+	 *
+	 * @param FlowRun               $run         The run.
+	 * @param array<string, mixed>  $nodes       The target version's nodes, by id.
+	 * @param array<string, mixed>|null $sourceNodes The run's own version's nodes, by id.
+	 * @param array<string, string> $mapping     Old node id to new node id.
+	 *
+	 * @return array{marking: array<string, int>, unmapped: array<int, string>} The remapped marking.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function remapMarking(FlowRun $run, array $nodes, ?array $sourceNodes, array $mapping): array {
+		$marking = [];
+		$unmapped = [];
+
+		foreach ($this->markingOf(run: $run) as $place => $tokens) {
+			[$nodeId, $suffix] = $this->splitPlace(place: (string)$place);
+			$targetId = ($mapping[$nodeId] ?? $nodeId);
+
+			if (array_key_exists($targetId, $nodes) === false) {
+				$unmapped[] = (string)$place;
+				continue;
+			}
+
+			// THE KIND HAS TO MATCH TOO. A mapping that points a user task at a
+			// gateway would land a token somewhere the engine cannot resume
+			// from, and the run would park forever with nothing saying why.
+			// An UNKNOWN kind on either side is not a mismatch: a graph that
+			// does not declare one has nothing to disagree about.
+			$from = $this->kindOf(node: (($sourceNodes ?? [])[$nodeId] ?? []));
+			$to = $this->kindOf(node: $nodes[$targetId]);
+			if ($from !== '' && $to !== '' && $from !== $to) {
+				$unmapped[] = (string)$place;
+				continue;
+			}
+
+			$marking[$targetId . $suffix] = (int)$tokens;
+		}
+
+		return [
+			'marking' => $marking,
+			'unmapped' => $unmapped,
+		];
+	}//end remapMarking()
 
 	/**
 	 * Move one run to another version, or say what moving it would do.
@@ -366,14 +393,8 @@ class FlowRunMigrationService {
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	public function migrateRunForSubject(string $subjectUuid, string $targetDefinitionRef, string $actorUid): array {
-		$live = [];
-		try {
-			foreach ($this->runs->findActive(subject: $subjectUuid) as $run) {
-				if ($run instanceof FlowRun === true) {
-					$live[] = $run;
-				}
-			}
-		} catch (Throwable $e) {
+		$live = $this->liveRunsOf(subjectUuid: $subjectUuid);
+		if ($live === null) {
 			// An unreadable run store is NOT "no runs". Saying so lets the
 			// caller stop rather than proceed on an answer nobody checked.
 			return [
@@ -436,6 +457,35 @@ class FlowRunMigrationService {
 			'runs' => $outcomes,
 		];
 	}//end migrateRunForSubject()
+
+	/**
+	 * The runs still in progress on one object, or null when they cannot be read.
+	 *
+	 * Null and the empty array are DIFFERENT answers and the caller acts on
+	 * each differently: no runs means there is nothing to migrate, while an
+	 * unreadable store means nobody knows.
+	 *
+	 * @param string $subjectUuid The object the runs are about.
+	 *
+	 * @return array<int, FlowRun>|null The live runs, or null.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function liveRunsOf(string $subjectUuid): ?array {
+		$live = [];
+
+		try {
+			foreach ($this->runs->findActive(subject: $subjectUuid) as $run) {
+				if ($run instanceof FlowRun === true) {
+					$live[] = $run;
+				}
+			}
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		return $live;
+	}//end liveRunsOf()
 
 	/**
 	 * The runs still pinned to one version, bounded.

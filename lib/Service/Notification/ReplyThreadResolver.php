@@ -111,37 +111,19 @@ class ReplyThreadResolver {
 		$firstMatch = null;
 
 		foreach (self::HEADER_ORDER as $header) {
-			foreach ($this->referencesIn(headers: $headers, header: $header) as $messageId) {
-				$link = $lookup($messageId);
-				if (is_array($link) === false) {
-					continue;
-				}
-
-				$objectUuid = trim((string)($link['objectUuid'] ?? ''));
-				if ($objectUuid === '') {
-					continue;
-				}
-
-				if (isset($objects[$objectUuid]) === false) {
-					$objects[$objectUuid] = true;
-				}
-
-				if ($firstMatch === null) {
-					$firstMatch = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
-				}
-			}
+			$this->scanHeader(
+				headers: $headers,
+				header: $header,
+				lookup: $lookup,
+				objects: $objects,
+				firstMatch: $firstMatch
+			);
 
 			// `In-Reply-To` is the direct parent, so a single unambiguous hit
 			// there is the answer and `References` is not consulted. Walking
 			// on would only add ancestors that can disagree with it.
 			if (count($objects) === 1 && $firstMatch !== null && $firstMatch['matchedOn'] === $header) {
-				return [
-					'state' => self::THREADED,
-					'objectUuid' => $firstMatch['objectUuid'],
-					'matchedOn' => $header,
-					'messageId' => $firstMatch['messageId'],
-					'candidates' => [],
-				];
+				return $this->threaded(hit: $firstMatch);
 			}
 
 			if (count($objects) > 1) {
@@ -163,13 +145,7 @@ class ReplyThreadResolver {
 		}
 
 		if ($firstMatch !== null) {
-			return [
-				'state' => self::THREADED,
-				'objectUuid' => $firstMatch['objectUuid'],
-				'matchedOn' => $firstMatch['matchedOn'],
-				'messageId' => $firstMatch['messageId'],
-				'candidates' => [],
-			];
+			return $this->threaded(hit: $firstMatch);
 		}
 
 		// Named, never empty: the reply is real and somebody has to see it.
@@ -181,6 +157,62 @@ class ReplyThreadResolver {
 			'candidates' => [],
 		];
 	}//end resolve()
+
+	/**
+	 * Walk one header's references, collecting the objects they point at.
+	 *
+	 * Both accumulators are passed by reference because the walk is a fold
+	 * across TWO headers: `References` adds to what `In-Reply-To` already
+	 * found, and the earliest match keeps its place.
+	 *
+	 * @param array<string,mixed>      $headers    The reply's headers.
+	 * @param string                   $header     Which header to read.
+	 * @param callable                 $lookup     `fn(string $messageId): ?array`.
+	 * @param array<string,true>       $objects    Objects seen so far, keyed by uuid.
+	 * @param array<string,string>|null $firstMatch The earliest match, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	private function scanHeader(array $headers, string $header, callable $lookup, array &$objects, ?array &$firstMatch): void {
+		foreach ($this->referencesIn(headers: $headers, header: $header) as $messageId) {
+			$link = $lookup($messageId);
+			if (is_array($link) === false) {
+				continue;
+			}
+
+			$objectUuid = trim((string)($link['objectUuid'] ?? ''));
+			if ($objectUuid === '') {
+				continue;
+			}
+
+			$objects[$objectUuid] = true;
+
+			if ($firstMatch === null) {
+				$firstMatch = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
+			}
+		}
+	}//end scanHeader()
+
+	/**
+	 * The threaded answer for a match.
+	 *
+	 * @param array<string,string> $hit The match: objectUuid, matchedOn, messageId.
+	 *
+	 * @return array{state:string,objectUuid:string,matchedOn:string,messageId:string,candidates:array<int,string>} The answer.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	private function threaded(array $hit): array {
+		return [
+			'state' => self::THREADED,
+			'objectUuid' => $hit['objectUuid'],
+			'matchedOn' => $hit['matchedOn'],
+			'messageId' => $hit['messageId'],
+			'candidates' => [],
+		];
+	}//end threaded()
 
 	/**
 	 * The message ids one header carries, nearest ancestor first.

@@ -72,7 +72,26 @@ class TokenGrantValidator {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
 	public function refusalFor(array $grant, array $issuerVerbs, DateTimeInterface $now): ?string {
-		$verbs = ($grant['verbs'] ?? null);
+		// The four checks run in the ORDER they used to, and each returns the
+		// same sentence it used to, because the first refusal is the one the
+		// caller shows and reordering them would change which one that is.
+		return ($this->verbRefusal(verbs: ($grant['verbs'] ?? null), issuerVerbs: $issuerVerbs)
+			?? $this->expiryRefusal(grant: $grant, now: $now)
+			?? $this->axisRefusal(grant: $grant)
+			?? $this->rateLimitRefusal(rateLimit: ($grant['rateLimit'] ?? null)));
+	}//end refusalFor()
+
+	/**
+	 * Why the grant's verb list may not be issued, or null when it may.
+	 *
+	 * @param mixed              $verbs       The submitted verb list, unchecked.
+	 * @param array<int, string> $issuerVerbs The verbs the issuer themselves holds.
+	 *
+	 * @return string|null The reason, or null.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	private function verbRefusal(mixed $verbs, array $issuerVerbs): ?string {
 		if (is_array($verbs) === false || $verbs === []) {
 			return 'a grant must name at least one verb; an empty list is not "every verb", it is a filter that filters nothing';
 		}
@@ -94,6 +113,20 @@ class TokenGrantValidator {
 			}
 		}
 
+		return null;
+	}//end verbRefusal()
+
+	/**
+	 * Why the grant's end date may not be issued, or null when it may.
+	 *
+	 * @param array<string, mixed> $grant The submitted grant.
+	 * @param DateTimeInterface    $now   The moment of issue.
+	 *
+	 * @return string|null The reason, or null.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	private function expiryRefusal(array $grant, DateTimeInterface $now): ?string {
 		$expiresAt = ($grant['expiresAt'] ?? null);
 		if (is_string($expiresAt) === false || $expiresAt === '') {
 			return 'a grant must carry an end date; a token without one is not issued';
@@ -108,15 +141,32 @@ class TokenGrantValidator {
 			return 'the end date is in the past, so the token would be issued already lapsed';
 		}
 
+		return null;
+	}//end expiryRefusal()
+
+	/**
+	 * Why the grant's register and schema axes may not be issued.
+	 *
+	 * @param array<string, mixed> $grant The submitted grant.
+	 *
+	 * @return string|null The reason, or null.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	private function axisRefusal(array $grant): ?string {
 		foreach (['registers', 'schemas'] as $axis) {
-			if (array_key_exists($axis, $grant) === true && is_array($grant[$axis]) === false) {
+			if (array_key_exists($axis, $grant) === false) {
+				continue;
+			}
+
+			if (is_array($grant[$axis]) === false) {
 				return sprintf('"%s" must be a list of slugs when it is present at all', $axis);
 			}
 
 			// A present-but-empty axis is refused rather than silently read as
 			// "every one": the two readings are opposite, and the empty list is
 			// the one a form produces when nobody chose anything.
-			if (array_key_exists($axis, $grant) === true && $grant[$axis] === []) {
+			if ($grant[$axis] === []) {
 				return sprintf(
 					'"%s" is present but empty; leave it out to mean "not scoped by %s", because an empty list reads as both "none" and "all"',
 					$axis,
@@ -125,13 +175,25 @@ class TokenGrantValidator {
 			}
 		}
 
-		$rateLimit = ($grant['rateLimit'] ?? null);
+		return null;
+	}//end axisRefusal()
+
+	/**
+	 * Why the grant's rate limit may not be issued, or null when it may.
+	 *
+	 * @param mixed $rateLimit The submitted rate limit, unchecked.
+	 *
+	 * @return string|null The reason, or null.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	private function rateLimitRefusal(mixed $rateLimit): ?string {
 		if ($rateLimit !== null && (is_numeric($rateLimit) === false || (int)$rateLimit < 1)) {
 			return 'a rate limit must be a positive number of calls per minute';
 		}
 
 		return null;
-	}//end refusalFor()
+	}//end rateLimitRefusal()
 
 	/**
 	 * Whether a grant lapses soon enough to warn its holder about (C40.2).

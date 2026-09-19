@@ -173,65 +173,7 @@ class CalendarRecompute {
 
 		foreach ($timers as $timer) {
 			$counts['examined']++;
-
-			$verdict = $this->dependency->verdictFor(
-				timerCalendarSlug: $timer->getCalendarSlug(),
-				organisation: $timer->getOrganisation(),
-				changedSlug: $slug
-			);
-
-			if ($verdict === CalendarDependency::UNRESOLVABLE) {
-				$counts['unresolvable']++;
-				continue;
-			}
-
-			if ($verdict === CalendarDependency::INDEPENDENT) {
-				$counts['unchanged']++;
-				continue;
-			}
-
-			// 🔑 A SUSPENDED TIMER IS NOT SUPERSEDED, and D-5 says why without
-			// quite saying this: its remaining budget is re-projected against
-			// the calendar at RESUME, so its moment is already going to be
-			// right. It has no stored `fireAt` either — `recompute()` nulls it
-			// for anything not armed — so "did the moment move" has nothing to
-			// compare, and superseding it would write a successor with no fire
-			// moment. Counted separately rather than folded into `unchanged`,
-			// because "will be correct later" and "is correct now" are
-			// different facts.
-			if ($timer->getState() !== FlowTimer::STATE_ARMED) {
-				$counts['deferred']++;
-				continue;
-			}
-
-			$projected = $this->projectedFireAt(timer: $timer, slug: $slug);
-			if ($projected === null) {
-				$counts['unresolvable']++;
-				continue;
-			}
-
-			$stored = $timer->getFireAt();
-			if ($stored !== null && $stored->getTimestamp() === $projected) {
-				$counts['unchanged']++;
-				continue;
-			}
-
-			try {
-				$supersede($timer);
-				$counts['moved']++;
-			} catch (Throwable $e) {
-				// One timer that cannot be superseded must not abandon the
-				// rest: the batch is thousands of other people's deadlines.
-				$counts['unresolvable']++;
-				$this->logger->error(
-					sprintf(
-						'[CalendarRecompute] timer %s could not be superseded for %s: %s',
-						(string)$timer->getUuid(),
-						$slug,
-						$e->getMessage()
-					)
-				);
-			}//end try
+			$counts[$this->outcomeFor(timer: $timer, slug: $slug, supersede: $supersede)]++;
 		}//end foreach
 
 		$this->logger->info(
@@ -249,6 +191,73 @@ class CalendarRecompute {
 
 		return $counts;
 	}//end recomputeBatch()
+
+	/**
+	 * What became of ONE timer, as the counter key to raise.
+	 *
+	 * @param FlowTimer                $timer     The timer.
+	 * @param string                   $slug      The changed calendar.
+	 * @param callable(FlowTimer):void $supersede What to do with a timer whose moment moved.
+	 *
+	 * @return string One of moved, unchanged, deferred or unresolvable.
+	 *
+	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
+	 */
+	private function outcomeFor(FlowTimer $timer, string $slug, callable $supersede): string {
+		$verdict = $this->dependency->verdictFor(
+			timerCalendarSlug: $timer->getCalendarSlug(),
+			organisation: $timer->getOrganisation(),
+			changedSlug: $slug
+		);
+
+		if ($verdict === CalendarDependency::UNRESOLVABLE) {
+			return 'unresolvable';
+		}
+
+		if ($verdict === CalendarDependency::INDEPENDENT) {
+			return 'unchanged';
+		}
+
+		// 🔑 A SUSPENDED TIMER IS NOT SUPERSEDED, and D-5 says why without
+		// quite saying this: its remaining budget is re-projected against the
+		// calendar at RESUME, so its moment is already going to be right. It
+		// has no stored `fireAt` either — `recompute()` nulls it for anything
+		// not armed — so "did the moment move" has nothing to compare, and
+		// superseding it would write a successor with no fire moment. Counted
+		// separately rather than folded into `unchanged`, because "will be
+		// correct later" and "is correct now" are different facts.
+		if ($timer->getState() !== FlowTimer::STATE_ARMED) {
+			return 'deferred';
+		}
+
+		$projected = $this->projectedFireAt(timer: $timer, slug: $slug);
+		if ($projected === null) {
+			return 'unresolvable';
+		}
+
+		$stored = $timer->getFireAt();
+		if ($stored !== null && $stored->getTimestamp() === $projected) {
+			return 'unchanged';
+		}
+
+		try {
+			$supersede($timer);
+			return 'moved';
+		} catch (Throwable $e) {
+			// One timer that cannot be superseded must not abandon the rest:
+			// the batch is thousands of other people's deadlines.
+			$this->logger->error(
+				sprintf(
+					'[CalendarRecompute] timer %s could not be superseded for %s: %s',
+					(string)$timer->getUuid(),
+					$slug,
+					$e->getMessage()
+				)
+			);
+
+			return 'unresolvable';
+		}//end try
+	}//end outcomeFor()
 
 	/**
 	 * The fire moment this timer would have under the changed calendar.

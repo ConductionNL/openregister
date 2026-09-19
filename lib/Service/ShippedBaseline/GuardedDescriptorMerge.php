@@ -83,21 +83,21 @@ class GuardedDescriptorMerge {
 	public function merge(array $baseline, array $live, array $incoming, array $decisions = []): array {
 		$states = $this->comparator->states(baseline: $baseline, live: $live, incoming: $incoming);
 
-		$b = $this->parts->flatten(descriptor: $baseline);
-		$l = $this->parts->flatten(descriptor: $live);
-		$incomingParts = $this->parts->flatten(descriptor: $incoming);
+		$sources = [
+			'baseline' => $this->parts->flatten(descriptor: $baseline),
+			'live' => $this->parts->flatten(descriptor: $live),
+			'incoming' => $this->parts->flatten(descriptor: $incoming),
+		];
 
-		$mergedParts = [];
-		$nextBaseline = [];
-		$applied = [];
-		$preserved = [];
-		$conflicts = [];
+		$acc = [
+			'mergedParts' => [],
+			'nextBaseline' => [],
+			'applied' => [],
+			'preserved' => [],
+			'conflicts' => [],
+		];
 
 		foreach ($states as $path => $state) {
-			$hasIncoming = array_key_exists($path, $incomingParts);
-			$hasLive = array_key_exists($path, $l);
-			$hasBaseline = array_key_exists($path, $b);
-
 			$decided = in_array($path, $decisions, true);
 
 			// A decided conflict is taken from upstream, and is the only way a
@@ -106,107 +106,177 @@ class GuardedDescriptorMerge {
 			// and not as a flag on this class.
 			if ($state === DivergenceComparator::BOTH && $decided === true) {
 				$state = DivergenceComparator::UPSTREAM;
-				$applied[] = $path;
+				$acc['applied'][] = $path;
 			}
 
-			switch ($state) {
-				case DivergenceComparator::UPSTREAM:
-					if ($hasIncoming === true) {
-						$mergedParts[$path] = $incomingParts[$path];
-						$nextBaseline[$path] = $incomingParts[$path];
-						if ($decided === false) {
-							$applied[] = $path;
-						}
-					}
-
-					// Absent from the incoming and unchanged locally: the app
-					// removed it, and nobody locally disagreed. It is dropped
-					// from both the merged definition and the new baseline.
-					if ($hasIncoming === false && $decided === false) {
-						$applied[] = $path;
-					}
-				break;
-
-				case DivergenceComparator::LOCAL:
-					if ($hasLive === true) {
-						$mergedParts[$path] = $l[$path];
-					}
-
-					// Recorded as preserved whether the local change ADDED the
-					// part or REMOVED it. A part the instance deleted is a
-					// local decision like any other, and leaving it out of the
-					// list would report the upgrade as having preserved less
-					// than it did.
-					$preserved[] = $path;
-
-					// The baseline keeps what the app shipped, so two upgrades
-					// later the report still names the version this part
-					// diverged from (D-5).
-					if ($hasBaseline === true) {
-						$nextBaseline[$path] = $b[$path];
-					}
-				break;
-
-				case DivergenceComparator::BOTH:
-					if ($hasLive === true) {
-						$mergedParts[$path] = $l[$path];
-					}
-
-					if ($hasBaseline === true) {
-						$nextBaseline[$path] = $b[$path];
-					}
-
-					$shippedValue = null;
-					if ($hasIncoming === true) {
-						$shippedValue = $incomingParts[$path];
-					}
-
-					$liveValue = null;
-					if ($hasLive === true) {
-						$liveValue = $l[$path];
-					}
-
-					$conflicts[] = [
-						'path' => $path,
-						'shipped' => $shippedValue,
-						'live' => $liveValue,
-						'shippedPresent' => $hasIncoming,
-						'livePresent' => $hasLive,
-					];
-				break;
-
-				case DivergenceComparator::CONVERGED:
-					// Both sides moved to the same value: nothing to write and
-					// nothing to decide, but the baseline follows, because the
-					// app now ships what the instance already runs.
-					if ($hasLive === true) {
-						$mergedParts[$path] = $l[$path];
-					}
-
-					if ($hasIncoming === true) {
-						$nextBaseline[$path] = $incomingParts[$path];
-					}
-				break;
-
-				default:
-					// Unchanged: live, baseline and incoming all agree.
-					if ($hasLive === true) {
-						$mergedParts[$path] = $l[$path];
-					}
-
-					if ($hasIncoming === true) {
-						$nextBaseline[$path] = $incomingParts[$path];
-					}
-				break;
-			}//end switch
+			$this->foldPath(
+				acc: $acc,
+				path: $path,
+				state: (string)$state,
+				decided: $decided,
+				sources: $sources
+			);
 		}//end foreach
 
 		return [
-			'merged' => $this->parts->unflatten(parts: $mergedParts),
-			'applied' => $applied,
-			'preserved' => $preserved,
-			'conflicts' => $conflicts,
-			'baseline' => $this->parts->unflatten(parts: $nextBaseline),
+			'merged' => $this->parts->unflatten(parts: $acc['mergedParts']),
+			'applied' => $acc['applied'],
+			'preserved' => $acc['preserved'],
+			'conflicts' => $acc['conflicts'],
+			'baseline' => $this->parts->unflatten(parts: $acc['nextBaseline']),
 		];
 	}//end merge()
+
+	/**
+	 * Fold ONE path's divergence state into the running result.
+	 *
+	 * Split out of `merge()` purely so each state's rule is readable on its
+	 * own. The dispatch order and every branch inside it are unchanged, which
+	 * matters because these five rules decide what an upgrade overwrites.
+	 *
+	 * @param array<string, mixed> $acc     The running result, mutated in place.
+	 * @param string|integer       $path    The flattened descriptor path.
+	 * @param string               $state   The divergence state for this path.
+	 * @param boolean              $decided Whether an administrator took this path from upstream.
+	 * @param array<string, array<string|int, mixed>> $sources The flattened baseline, live and incoming parts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function foldPath(array &$acc, string|int $path, string $state, bool $decided, array $sources): void {
+		switch ($state) {
+			case DivergenceComparator::UPSTREAM:
+				$this->foldUpstream(acc: $acc, path: $path, decided: $decided, sources: $sources);
+			break;
+
+			case DivergenceComparator::LOCAL:
+				$this->foldLocal(acc: $acc, path: $path, sources: $sources);
+			break;
+
+			case DivergenceComparator::BOTH:
+				$this->foldConflict(acc: $acc, path: $path, sources: $sources);
+			break;
+
+			default:
+				// CONVERGED and UNCHANGED write the same thing: the live value
+				// stands, and the baseline follows what the app now ships.
+				// They were two identical branches before this split.
+				$this->foldSettled(acc: $acc, path: $path, sources: $sources);
+			break;
+		}//end switch
+	}//end foldPath()
+
+	/**
+	 * Fold a path only the app changed.
+	 *
+	 * @param array<string, mixed> $acc     The running result, mutated in place.
+	 * @param string|integer       $path    The flattened descriptor path.
+	 * @param boolean              $decided Whether an administrator took this path from upstream.
+	 * @param array<string, array<string|int, mixed>> $sources The flattened parts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function foldUpstream(array &$acc, string|int $path, bool $decided, array $sources): void {
+		if (array_key_exists($path, $sources['incoming']) === true) {
+			$acc['mergedParts'][$path] = $sources['incoming'][$path];
+			$acc['nextBaseline'][$path] = $sources['incoming'][$path];
+			if ($decided === false) {
+				$acc['applied'][] = $path;
+			}
+
+			return;
+		}
+
+		// Absent from the incoming and unchanged locally: the app removed it,
+		// and nobody locally disagreed. It is dropped from both the merged
+		// definition and the new baseline.
+		if ($decided === false) {
+			$acc['applied'][] = $path;
+		}
+	}//end foldUpstream()
+
+	/**
+	 * Fold a path only the instance changed.
+	 *
+	 * @param array<string, mixed> $acc     The running result, mutated in place.
+	 * @param string|integer       $path    The flattened descriptor path.
+	 * @param array<string, array<string|int, mixed>> $sources The flattened parts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function foldLocal(array &$acc, string|int $path, array $sources): void {
+		if (array_key_exists($path, $sources['live']) === true) {
+			$acc['mergedParts'][$path] = $sources['live'][$path];
+		}
+
+		// Recorded as preserved whether the local change ADDED the part or
+		// REMOVED it. A part the instance deleted is a local decision like any
+		// other, and leaving it out of the list would report the upgrade as
+		// having preserved less than it did.
+		$acc['preserved'][] = $path;
+
+		// The baseline keeps what the app shipped, so two upgrades later the
+		// report still names the version this part diverged from (D-5).
+		if (array_key_exists($path, $sources['baseline']) === true) {
+			$acc['nextBaseline'][$path] = $sources['baseline'][$path];
+		}
+	}//end foldLocal()
+
+	/**
+	 * Fold a path both sides changed, differently.
+	 *
+	 * @param array<string, mixed> $acc     The running result, mutated in place.
+	 * @param string|integer       $path    The flattened descriptor path.
+	 * @param array<string, array<string|int, mixed>> $sources The flattened parts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function foldConflict(array &$acc, string|int $path, array $sources): void {
+		$hasIncoming = array_key_exists($path, $sources['incoming']);
+		$hasLive = array_key_exists($path, $sources['live']);
+
+		if ($hasLive === true) {
+			$acc['mergedParts'][$path] = $sources['live'][$path];
+		}
+
+		if (array_key_exists($path, $sources['baseline']) === true) {
+			$acc['nextBaseline'][$path] = $sources['baseline'][$path];
+		}
+
+		$acc['conflicts'][] = [
+			'path' => $path,
+			'shipped' => ($sources['incoming'][$path] ?? null),
+			'live' => ($sources['live'][$path] ?? null),
+			'shippedPresent' => $hasIncoming,
+			'livePresent' => $hasLive,
+		];
+	}//end foldConflict()
+
+	/**
+	 * Fold a path neither side disputes.
+	 *
+	 * @param array<string, mixed> $acc     The running result, mutated in place.
+	 * @param string|integer       $path    The flattened descriptor path.
+	 * @param array<string, array<string|int, mixed>> $sources The flattened parts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function foldSettled(array &$acc, string|int $path, array $sources): void {
+		if (array_key_exists($path, $sources['live']) === true) {
+			$acc['mergedParts'][$path] = $sources['live'][$path];
+		}
+
+		if (array_key_exists($path, $sources['incoming']) === true) {
+			$acc['nextBaseline'][$path] = $sources['incoming'][$path];
+		}
+	}//end foldSettled()
 }//end class

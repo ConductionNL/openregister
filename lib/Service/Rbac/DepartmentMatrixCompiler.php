@@ -150,11 +150,40 @@ class DepartmentMatrixCompiler {
 			return [];
 		}
 
-		// Values are gathered PER (action, group) and only then turned into one
-		// rule, which is what D-1's "rows sharing a group merge into one scope"
-		// asks for. Emitting a rule per row would work and would put four
-		// predicates in an OR where one `$in` belongs.
+		$byActionGroup = $this->gatherByActionGroup(rows: $rows, ownValues: $ownValues);
+
+		$compiled = [];
+		foreach ($byActionGroup as $action => $groups) {
+			foreach ($groups as $group => $values) {
+				sort($values);
+				$compiled[$action][] = [
+					'group' => $group,
+					'match' => [$field => ['$in' => $values]],
+				];
+			}
+		}
+
+		return $compiled;
+	}//end compile()
+
+	/**
+	 * Gather the declared values per action and per group.
+	 *
+	 * Values are gathered PER (action, group) and only then turned into one
+	 * rule, which is what D-1's "rows sharing a group merge into one scope"
+	 * asks for. Emitting a rule per row would work and would put four
+	 * predicates in an OR where one `$in` belongs.
+	 *
+	 * @param array<int|string, mixed> $rows      The declared rows.
+	 * @param string[]                 $ownValues The caller's own field values, for `$self`.
+	 *
+	 * @return array<string, array<string, array<int, string>>> Values by action, then group.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	private function gatherByActionGroup(array $rows, array $ownValues): array {
 		$byActionGroup = [];
+
 		foreach ($rows as $row) {
 			if (is_array($row) === false) {
 				continue;
@@ -181,19 +210,8 @@ class DepartmentMatrixCompiler {
 			}
 		}//end foreach
 
-		$compiled = [];
-		foreach ($byActionGroup as $action => $groups) {
-			foreach ($groups as $group => $values) {
-				sort($values);
-				$compiled[$action][] = [
-					'group' => $group,
-					'match' => [$field => ['$in' => $values]],
-				];
-			}
-		}
-
-		return $compiled;
-	}//end compile()
+		return $byActionGroup;
+	}//end gatherByActionGroup()
 
 	/**
 	 * Merge compiled rules into an authorization block.
@@ -403,41 +421,63 @@ class DepartmentMatrixCompiler {
 
 		$findings = [];
 		foreach ($rows as $index => $row) {
-			if (is_array($row) === false) {
-				$findings[] = [
-					'code' => 'matrix.bad-row',
-					'message' => 'Row ' . (string)$index . ' is not an object.',
-				];
-				continue;
-			}
-
-			if (trim((string)($row['group'] ?? '')) === '') {
-				$findings[] = [
-					'code' => 'matrix.no-group',
-					'message' => 'Row ' . (string)$index . ' names no role group.',
-				];
-			}
-
-			$actions = ($row['actions'] ?? null);
-			if (is_array($actions) === false || count($actions) === 0) {
-				$findings[] = [
-					'code' => 'matrix.no-actions',
-					'message' => 'Row ' . (string)$index . ' grants no action.',
-				];
-				continue;
-			}
-
-			foreach ($actions as $action) {
-				if (in_array(trim((string)$action), self::ACTIONS, true) === false) {
-					$findings[] = [
-						'code' => 'matrix.unknown-action',
-						'message' => 'Row ' . (string)$index . ' names the action "'
-							. trim((string)$action) . '", which is not one this engine resolves.',
-					];
-				}
-			}
+			$findings = array_merge($findings, $this->rowFindings(row: $row, index: $index));
 		}//end foreach
 
 		return $findings;
 	}//end validateRows()
+
+	/**
+	 * Findings for ONE row.
+	 *
+	 * Every message names the row by index, because a matrix is a table an
+	 * administrator typed and "a row is wrong" sends them back to read all of
+	 * them.
+	 *
+	 * @param mixed          $row   The declared row.
+	 * @param string|integer $index Which row it is.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	private function rowFindings(mixed $row, string|int $index): array {
+		if (is_array($row) === false) {
+			return [
+				[
+					'code' => 'matrix.bad-row',
+					'message' => 'Row ' . (string)$index . ' is not an object.',
+				],
+			];
+		}
+
+		$findings = [];
+		if (trim((string)($row['group'] ?? '')) === '') {
+			$findings[] = [
+				'code' => 'matrix.no-group',
+				'message' => 'Row ' . (string)$index . ' names no role group.',
+			];
+		}
+
+		$actions = ($row['actions'] ?? null);
+		if (is_array($actions) === false || count($actions) === 0) {
+			$findings[] = [
+				'code' => 'matrix.no-actions',
+				'message' => 'Row ' . (string)$index . ' grants no action.',
+			];
+			return $findings;
+		}
+
+		foreach ($actions as $action) {
+			if (in_array(trim((string)$action), self::ACTIONS, true) === false) {
+				$findings[] = [
+					'code' => 'matrix.unknown-action',
+					'message' => 'Row ' . (string)$index . ' names the action "'
+						. trim((string)$action) . '", which is not one this engine resolves.',
+				];
+			}
+		}
+
+		return $findings;
+	}//end rowFindings()
 }//end class
