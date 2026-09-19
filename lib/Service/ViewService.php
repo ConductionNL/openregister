@@ -30,6 +30,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -165,20 +166,14 @@ class ViewService {
 	 * turning that into "and everything shared with them" would change what
 	 * those paths count.
 	 *
-	 * @param string $userId The caller.
-	 * @param string[] $userGroups The caller's group ids.
-	 * @param bool $isAdmin Whether the caller administers the instance.
+	 * @param ViewerReach $reach The caller, their groups and whether they administer the instance.
 	 *
 	 * @return array The views.
 	 *
 	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
 	 */
-	public function findAllFor(string $userId, array $userGroups, bool $isAdmin = false): array {
-		return $this->viewMapper->findAllFor(
-			userId: $userId,
-			userGroups: $userGroups,
-			isAdmin: $isAdmin
-		);
+	public function findAllFor(ViewerReach $reach): array {
+		return $this->viewMapper->findAllFor(reach: $reach);
 	}//end findAllFor()
 
 	/**

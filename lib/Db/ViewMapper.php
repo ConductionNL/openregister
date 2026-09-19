@@ -27,6 +27,7 @@ use DateTime;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -302,15 +303,13 @@ class ViewMapper extends QBMapper {
 	 * access: a row with a null access reaching a client is a row somebody
 	 * renders.
 	 *
-	 * @param string $userId The caller.
-	 * @param string[] $userGroups The caller's group ids.
-	 * @param bool $isAdmin Whether the caller administers the instance.
+	 * @param ViewerReach $reach The caller, their groups and whether they administer the instance.
 	 *
 	 * @return View[] The views, each with its `access` set.
 	 *
 	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
 	 */
-	public function findAllFor(string $userId, array $userGroups, bool $isAdmin = false): array {
+	public function findAllFor(ViewerReach $reach): array {
 		$this->verifyRbacPermission(action: 'read', entityType: 'view');
 
 		$qb = $this->db->getQueryBuilder();
@@ -318,7 +317,7 @@ class ViewMapper extends QBMapper {
 			->from($this->getTableName())
 			->where(
 				$qb->expr()->orX(
-					$qb->expr()->eq('owner', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('owner', $qb->createNamedParameter($reach->userId, IQueryBuilder::PARAM_STR)),
 					$qb->expr()->eq('is_public', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)),
 					$qb->expr()->isNotNull('shared_with')
 				)
@@ -334,8 +333,8 @@ class ViewMapper extends QBMapper {
 
 			$access = $resolver->accessFor(
 				view: $view,
-				userId: $userId,
-				userGroups: $userGroups
+				userId: $reach->userId,
+				userGroups: $reach->groups
 			);
 
 			// An administrator reaches every view, and reaches it AS an
@@ -343,7 +342,7 @@ class ViewMapper extends QBMapper {
 			// the view grants, and calling that `owner` would put a level on a
 			// row they cannot hand back.
 			if ($access === null) {
-				if ($isAdmin === false) {
+				if ($reach->isAdmin === false) {
 					continue;
 				}
 
