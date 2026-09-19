@@ -163,6 +163,9 @@ class TypeMapperHandler {
 	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
 	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
 	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
+	 *                                               last so no construction site shifts; absent, a governed
+	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
 		array $scalars,

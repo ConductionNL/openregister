@@ -138,6 +138,9 @@ class OasService {
 	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
 	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
 	 * @param ?OasRequestValidator $metaValidator Optional validator for the vendored OAS 3.1 meta-schema check.
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
+	 *                                               last so no construction site shifts; absent, a governed
+	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
 		RegisterMapper $registerMapper,

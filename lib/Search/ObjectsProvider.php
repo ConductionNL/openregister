@@ -167,6 +167,9 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @param LoggerInterface $logger Logger for debugging search operations
 	 * @param SchemaMapper $schemaMapper Schema mapper for the searchable-schema opt-out
 	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
+	 * @param RegisterMapper|null $registerMapper Resolves a register named in a search scope. Nullable and last
+	 *                                            so no positional caller shifts; absent, a scope naming a
+	 *                                            register narrows nothing, which is the pre-scope behaviour
 	 *
 	 * @return void
 	 *

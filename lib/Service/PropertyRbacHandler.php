@@ -71,6 +71,9 @@ class PropertyRbacHandler {
 	 * @param ConditionMatcher $conditionMatcher Condition matcher for match expressions
 	 * @param LoggerInterface $logger Logger for debugging
 	 * @param StateFieldRuleResolver $stateFieldRules Resolver for the lifecycle state's field rules
+	 * @param RevealCollector|null $reveals Records which governed properties were revealed to the caller.
+	 *                                      Nullable and last so no construction site shifts; absent, nothing
+	 *                                      is recorded and the verdict is unchanged
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,

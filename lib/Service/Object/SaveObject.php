@@ -5246,6 +5246,19 @@ class SaveObject {
 		return null;
 	}//end readReferencedObject()
 
+	/**
+	 * Refuse a reference that points at no object, or at a cycle.
+	 *
+	 * @param string $propertyName The property carrying the reference, named in the refusal.
+	 * @param string $uuid The referenced object's uuid.
+	 * @param string $schemaRef The schema the reference declares.
+	 * @param string|null $register The register to look in, or null for the object's own.
+	 *
+	 * @throws CircularReferenceException When the reference closes a cycle back onto an object being saved.
+	 * @throws ReferenceValidationException When the reference resolves to no stored object.
+	 *
+	 * @return void
+	 */
 	private function validateReferenceExists(
 		string $propertyName,
 		string $uuid,

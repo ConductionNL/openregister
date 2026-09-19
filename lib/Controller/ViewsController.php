@@ -96,6 +96,7 @@ class ViewsController extends Controller {
 	 * @param ViewPresentationService $viewPresentationService The view presentation (kanban/calendar) service
 	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger The logger
+	 * @param IGroupManager $groupManager Tells an administrator from an ordinary caller
 	 */
 	public function __construct(
 		string $appName,

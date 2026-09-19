@@ -193,6 +193,9 @@ final class LeafDescriptor {
 	 *                           or `mount` (a `mount`/`unmount` pair the host invokes
 	 *                           against a bare DOM element, crossing a Vue major). One of
 	 *                           VALID_RENDER_MODES; validated at registration.
+	 * @param string|null $loadStrategy How the render bundle reaches the page: one of VALID_LOAD_STRATEGIES,
+	 *                                  or null when the descriptor has not said. Null is silence, not a claim,
+	 *                                  so a descriptor written before this existed is not refused for it.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A flat immutable value object: each parameter is one
 	 * independent, optional piece of leaf discovery metadata, not a collaborator to bundle into an object.

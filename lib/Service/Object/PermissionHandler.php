@@ -289,6 +289,8 @@ class PermissionHandler {
 	 * @param GrantConstraints|null $grantConstraints Reads an entry's end and the area it is confined to; nullable for the same reason.
 	 * @param DerivedGrantStore|null $derivedGrantStore Access derived from identity claims; nullable, and absent means none.
 	 * @param DerivedGrantResolver|null $derivedGrantResolver Reads a derived grant in one area; nullable for the same reason.
+	 * @param TokenGrantSource|null $tokenGrantSource Reads the grant the request's API token carries; nullable for the same reason.
+	 * @param TokenGrantNarrower|null $tokenGrantNarrower Narrows the block to that token's grant; nullable for the same reason.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */

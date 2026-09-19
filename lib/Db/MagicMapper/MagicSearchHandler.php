@@ -209,6 +209,8 @@ class MagicSearchHandler {
 	 * @param MagicOrganizationHandler $organizationHandler Organization handler for multi-tenancy
 	 * @param SchemaTypeConverter $schemaTypeConverter Schema-driven type converter for row values
 	 * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for date/date-time property formats
+	 * @param RelatedRowQueryApplier $relatedRows Applies a filter that reaches through a reference into the
+	 *                                            related schema's own rows
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,

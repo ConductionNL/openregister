@@ -151,6 +151,9 @@ class AggregationRunner {
 	 * @param DbalObjectSourceProvider|null $dbalSourceProvider Provider that computes aggregations live against an
 	 *                                                          external DBAL virtual register; null disables the
 	 *                                                          DBAL path.
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds an aggregation over a property the caller may
+	 *                                               not read. Nullable and last so no construction site
+	 *                                               shifts; absent, a governed property is withheld.
 	 *
 	 * @return void
 	 *

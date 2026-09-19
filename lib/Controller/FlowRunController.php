@@ -124,6 +124,10 @@ class FlowRunController extends Controller {
 	 *                                appended last for the same reason as the other
 	 *                                four: absent must SCOPE (fail closed to a
 	 *                                refusal), never widen to "allowed".
+	 * @param FlowRunMigrationService|null $migrations Moves suspended runs onto a newer flow version.
+	 *                                                 Nullable and appended for the same reason as the
+	 *                                                 five above; absent, the migration endpoints report
+	 *                                                 the surface unavailable.
 	 */
 	public function __construct(
 		string $appName,

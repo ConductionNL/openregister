@@ -110,6 +110,9 @@ class FacetHandler {
 	 * @param IUserSession $userSession User session for tenant isolation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
 	 * @param FacetCacheVersion $facetCacheVersion Per-scope freshness counter folded into the response cache key.
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds a facet over a property the caller may not read.
+	 *                                               Nullable and last so no construction site shifts; absent, a
+	 *                                               governed property is withheld, which is the safe direction.
 	 *
 	 * @return void
 	 *

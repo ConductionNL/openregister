@@ -1470,6 +1470,7 @@ class MagicFacetHandler {
 	 * @param string $interval The histogram interval (day, week, month, year).
 	 * @param array $baseQuery Base query filters to apply.
 	 * @param Schema|null $schema The schema for property type checking.
+	 * @param Register|null $register The register the table belongs to, for the register-scoped property lookup.
 	 *
 	 * @return array Facet result with type, interval, and buckets.
 	 *

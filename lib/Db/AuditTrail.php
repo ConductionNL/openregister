@@ -425,6 +425,11 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 */
 	protected ?string $causeRun = null;
 
+	/**
+	 * The flow run this write belonged to, when a flow caused it.
+	 *
+	 * @var string|null Run id of the attributing flow run.
+	 */
 	protected ?string $flowRun = null;
 
 	/**

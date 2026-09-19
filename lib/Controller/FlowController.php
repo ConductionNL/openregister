@@ -727,6 +727,13 @@ class FlowController extends Controller {
 		);
 	}//end importBpmn()
 
+	/**
+	 * One flow, by its uuid.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The flow, or 404 when no flow carries that uuid.
+	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $id): JSONResponse {

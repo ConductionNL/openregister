@@ -608,6 +608,7 @@ final class SlaCalculator {
 	 * @param DateTimeImmutable $start The start.
 	 * @param float $days Business days to add (>= 0).
 	 * @param WorkingCalendar $calendar The calendar.
+	 * @param WalkCollector|null $collector Records each day the walk consumed, or null when nobody is watching.
 	 *
 	 * @return DateTimeImmutable The landing instant.
 	 */
@@ -646,6 +647,7 @@ final class SlaCalculator {
 	 * @param DateTimeImmutable $start The start.
 	 * @param float $days Business days to subtract (>= 0).
 	 * @param WorkingCalendar $calendar The calendar.
+	 * @param WalkCollector|null $collector Records each day the walk consumed, or null when nobody is watching.
 	 *
 	 * @return DateTimeImmutable The landing instant.
 	 */

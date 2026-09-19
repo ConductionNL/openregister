@@ -518,6 +518,16 @@ final class WorkingCalendar {
 		return $zone;
 	}//end validTimezone()
 
+	/**
+	 * The working weekdays a calendar declares, as ISO numbers.
+	 *
+	 * @param string $slug The calendar, named in the refusal.
+	 * @param mixed $value The declared value.
+	 *
+	 * @throws FlowTimerValidationException When the list is empty or holds a day outside 1..7.
+	 *
+	 * @return array<int, int> The weekdays, ISO 1..7.
+	 */
 	private static function validWeekdays(string $slug, mixed $value): array {
 		if (is_array($value) === false || $value === []) {
 			throw new FlowTimerValidationException(

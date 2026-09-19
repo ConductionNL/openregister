@@ -219,11 +219,16 @@ class FlowBpmnExporter {
 		$element->appendChild($extensions);
 
 		if ($eventDefinition !== null) {
+			$definitionConfig = [];
+			if (is_array($config) === true) {
+				$definitionConfig = $config;
+			}
+
 			$element->appendChild(
 				$this->eventDefinition(
 					document: $document,
 					definition: $eventDefinition,
-					config: (is_array($config) === true ? $config : [])
+					config: $definitionConfig
 				)
 			);
 		}

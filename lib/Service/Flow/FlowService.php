@@ -83,6 +83,9 @@ class FlowService {
 	 * @param IUserSession $userSession Identifies the acting user.
 	 * @param LoggerInterface $logger Records refusals and failures.
 	 * @param ContainerInterface $container Resolves OrganisationService lazily.
+	 * @param FlowRunAuthorization|null $runAuthorization Judges whether the caller may act on a run. Nullable
+	 *                                                    and last so no construction site shifts; absent, the
+	 *                                                    guarded actions refuse, which scopes.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,

@@ -74,6 +74,9 @@ class ViewPresentationService {
 	 * @param SchemaMapper $schemaMapper Schema mapper for enum/property discovery
 	 * @param ObjectService $objectService Object service for the paginated object query
 	 * @param LoggerInterface $logger Logger for error tracking
+	 * @param PropertyRbacHandler|null $propertyRbac Judges whether the caller may group on a governed property.
+	 *                                               Nullable and last so no construction site shifts; absent, a
+	 *                                               governed grouping property is refused, which is safe
 	 *
 	 * @return void
 	 */

@@ -267,6 +267,10 @@ class MagicRbacHandler {
 	 *
 	 * @param array $userGroups The caller's group IDs.
 	 * @param string|null $userId The caller.
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return string[] SQL conditions to OR together.
 	 */
@@ -366,6 +370,7 @@ class MagicRbacHandler {
 	 * @param string|null $userId        The caller.
 	 * @param string[]    $userGroups    The caller's group IDs.
 	 * @param string      $columnName    The `_authorization` column as this emitter references it.
+	 * @param string      $columnPrefix  Table alias to qualify each column with, empty for an unaliased UNION member.
 	 *
 	 * @return string|false|null The predicate, false when the caller is denied
 	 *                           outright, or null when nothing is enforced yet.
@@ -1561,6 +1566,10 @@ class MagicRbacHandler {
 	 *
 	 * @param Schema $schema Schema with authorization configuration.
 	 * @param string $action CRUD action to check (default: 'read').
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return array{bypass: bool, conditions: string[]} Result with:
 	 *                                                   - 'bypass' => true means no filtering needed (user has full access)
@@ -1680,6 +1689,10 @@ class MagicRbacHandler {
 	 * @param string $action The CRUD action being filtered.
 	 * @param string|null $userId The current user identifier, or null when unauthenticated.
 	 * @param string[] $userGroups The current user's group IDs.
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return array{denyTerm: string|null, notPrivate: string, ownerAdmits: string[]}|null The term pieces, or null
 	 *                                                                                       when the deny term
@@ -1767,6 +1780,10 @@ class MagicRbacHandler {
 	 * @param array $userGroups The caller's group IDs.
 	 * @param string|null $userId The caller.
 	 * @param string $notPrivate The reachable-row predicate to AND each rule with.
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return string[] SQL conditions to OR together.
 	 */
@@ -1817,6 +1834,10 @@ class MagicRbacHandler {
 	 * @param array $userGroups User's group IDs.
 	 * @param string|null $userId Current user ID.
 	 * @param bool $inheritFromPublic Whether auth users inherit public rights.
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -1856,6 +1877,10 @@ class MagicRbacHandler {
 	 * @param array $userGroups User's group IDs.
 	 * @param string|null $userId Current user ID.
 	 * @param bool $inheritFromPublic Whether auth users inherit public rights.
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -1902,6 +1927,10 @@ class MagicRbacHandler {
 	 * Build SQL conditions for match criteria.
 	 *
 	 * @param array $match Match conditions.
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return string|null SQL expression or null if invalid.
 	 */
@@ -1933,6 +1962,10 @@ class MagicRbacHandler {
 	 *
 	 * @param string $property Property name.
 	 * @param mixed $value Value or operator object.
+	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
+	 *                             UNION member. Unqualified, a column name still parses inside a
+	 *                             subquery and binds to the innermost FROM, which is silently wrong
+	 *                             the moment the related table does not carry it.
 	 *
 	 * @return string|null SQL expression or null.
 	 */

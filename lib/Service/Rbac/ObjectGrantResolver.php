@@ -145,6 +145,9 @@ class ObjectGrantResolver {
 	 *
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface $container App container the share manager is resolved from on demand.
+	 * @param HierarchyGrantExpander|null $hierarchy Expands a grant down every declared hierarchy. Nullable and
+	 *                                               last so adding it is not a fatal at an existing construction
+	 *                                               site; absent means nothing is inherited, which scopes.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,

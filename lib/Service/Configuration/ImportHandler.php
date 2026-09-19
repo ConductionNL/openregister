@@ -1467,6 +1467,14 @@ class ImportHandler {
 		);
 	}//end recordShippedBaseline()
 
+	/**
+	 * Whether an incoming schema says anything different from the stored one.
+	 *
+	 * @param array<string, mixed> $data The incoming schema definition.
+	 * @param Schema $existing The schema already stored.
+	 *
+	 * @return bool True when the properties, the required list, the authorization or the annotations differ.
+	 */
 	private function schemaContentDiffers(array $data, Schema $existing): bool {
 		$fields = [
 			'properties' => $existing->getProperties(),

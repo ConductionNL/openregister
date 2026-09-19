@@ -188,8 +188,9 @@ class BpmnSchemaValidator {
 	/**
 	 * The element a libxml schema message names, or an empty string.
 	 *
-	 * libxml writes `Element '{ns}local': ...`; the namespace is noise to an
-	 * author looking at their own file, so only the local name comes back.
+	 * A libxml message reads `Element '{ns}local': ...`, and the namespace is
+	 * noise to an author looking at their own file, so only the local name
+	 * comes back.
 	 *
 	 * @param string $message The libxml message.
 	 *

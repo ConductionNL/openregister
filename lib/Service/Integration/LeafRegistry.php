@@ -69,22 +69,25 @@ class LeafRegistry {
 	private array $descriptors = [];
 
 	/**
-	 * Constructor.
-	 *
-	 * @param IEventDispatcher $eventDispatcher Dispatcher for the collect-event.
-	 * @param IntegrationRegistry $integrationRegistry Shared provider registry (data leaves land here).
-	 * @param IAppManager $appManager App manager (usability check).
-	 * @param LoggerInterface $logger Logger for collision, validation, collection warnings.
-	 *
-	 * @return void
-	 */
-	/**
 	 * The one answer to whether an app's leaf can render.
 	 *
 	 * @var LeafBundle
 	 */
 	private readonly LeafBundle $leafBundle;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param IEventDispatcher $eventDispatcher Dispatcher for the collect-event.
+	 * @param IntegrationRegistry $integrationRegistry Shared provider registry (data leaves land here).
+	 * @param IAppManager $appManager App manager (usability check).
+	 * @param LoggerInterface $logger Logger for collision, validation, collection warnings.
+	 * @param LeafBundle|null $leafBundleService Answers whether an app's leaf can render. Nullable and last so
+	 *                                           no construction site shifts; absent, one is built from the app
+	 *                                           manager this class already holds.
+	 *
+	 * @return void
+	 */
 	public function __construct(
 		private IEventDispatcher $eventDispatcher,
 		private IntegrationRegistry $integrationRegistry,
