@@ -85,6 +85,8 @@ class BpmnSchemaValidator {
 	 * The directory holding the five vendored schema files.
 	 *
 	 * @return string The absolute path.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function schemaDirectory(): string {
 		return (__DIR__ . DIRECTORY_SEPARATOR . 'schema');
@@ -94,6 +96,8 @@ class BpmnSchemaValidator {
 	 * The root schema file the validation runs against.
 	 *
 	 * @return string The absolute path.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function rootSchema(): string {
 		return ($this->schemaDirectory() . DIRECTORY_SEPARATOR . self::ROOT_SCHEMA);
@@ -109,6 +113,8 @@ class BpmnSchemaValidator {
 	 * @param DOMDocument $document The parsed document.
 	 *
 	 * @return array{message: string, line: int, element: string}|null The violation.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function firstViolation(DOMDocument $document): ?array {
 		$previous = libxml_use_internal_errors(true);
@@ -157,6 +163,8 @@ class BpmnSchemaValidator {
 	 * @return void
 	 *
 	 * @throws BpmnSchemaInvalid When it does not validate.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function assertValid(DOMDocument $document, string $subject = 'The file'): void {
 		$violation = $this->firstViolation(document: $document);
