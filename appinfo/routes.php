@@ -1320,14 +1320,14 @@ return [
         ['name' => 'operationsConsole#schedule', 'url' => '/api/operations/schedule', 'verb' => 'PUT', 'postfix' => 'administer'],
         ['name' => 'operationsConsole#alerts', 'url' => '/api/operations/alerts', 'verb' => 'GET'],
         ['name' => 'operationsConsole#administerAlerts', 'url' => '/api/operations/alerts', 'verb' => 'PUT'],
-        ['name' => 'operationsConsole#consistency', 'url' => '/api/operations/consistency', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#repairPlan', 'url' => '/api/operations/repair-plan', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#repair', 'url' => '/api/operations/repair', 'verb' => 'POST'],
-        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'POST', 'postfix' => 'enter'],
-        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
-        ['name' => 'operationsConsole#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        ['name' => 'operationsConsistency#consistency', 'url' => '/api/operations/consistency', 'verb' => 'GET'],
+        ['name' => 'operationsConsistency#repairPlan', 'url' => '/api/operations/repair-plan', 'verb' => 'GET'],
+        ['name' => 'operationsConsistency#repair', 'url' => '/api/operations/repair', 'verb' => 'POST'],
+        ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'GET'],
+        ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'POST', 'postfix' => 'enter'],
+        ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
+        ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
+        ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.

@@ -29,6 +29,8 @@ namespace Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsConsistencyController;
+use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Service\OperationsConsoleService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -126,11 +128,30 @@ final class OperationsConsoleControllerTest extends TestCase {
 			$this->request,
 			$this->console,
 			$this->jobsService,
-			$this->createMock(\OCA\OpenRegister\Service\Operations\ConsistencyCheckService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Operations\ConsistencyRepairService::class),
+			$this->createMock(\OCA\OpenRegister\Service\Operations\JobAlertService::class),
+			$session
+		);
+	}
+
+	/**
+	 * The maintenance and facts surface, which moved to its own controller.
+	 *
+	 * @return OperationsMaintenanceController The controller.
+	 */
+	private function maintenanceController(): OperationsMaintenanceController {
+		$session = $this->createMock(\OCP\IUserSession::class);
+
+		if ($this->uid !== null) {
+			$user = $this->createMock(\OCP\IUser::class);
+			$user->method('getUID')->willReturn($this->uid);
+			$session->method('getUser')->willReturn($user);
+		}
+
+		return new OperationsMaintenanceController(
+			'openregister',
+			$this->request,
 			$this->maintenance,
 			$this->bundle,
-			$this->createMock(\OCA\OpenRegister\Service\Operations\JobAlertService::class),
 			$session
 		);
 	}
@@ -211,14 +232,14 @@ final class OperationsConsoleControllerTest extends TestCase {
 		$this->maintenance->expects($this->once())->method('leave')->willReturn(['holds' => false]);
 
 		$this->method = 'GET';
-		$this->assertFalse($this->controller()->maintenance()->getData()['holds']);
+		$this->assertFalse($this->maintenanceController()->maintenance()->getData()['holds']);
 
 		$this->method = 'POST';
 		$this->params['message'] = 'onderhoud tot 14:00';
-		$this->assertTrue($this->controller()->maintenance()->getData()['holds']);
+		$this->assertTrue($this->maintenanceController()->maintenance()->getData()['holds']);
 
 		$this->method = 'DELETE';
-		$this->assertFalse($this->controller()->maintenance()->getData()['holds']);
+		$this->assertFalse($this->maintenanceController()->maintenance()->getData()['holds']);
 	}
 
 	/**
@@ -232,7 +253,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 	public function testTheFactsEndpointAnswersTheVersionAndTheBuild(): void {
 		$this->bundle->method('facts')->willReturn(['version' => '2.1.32', 'build' => 'a6ab296']);
 
-		$facts = $this->controller()->facts()->getData();
+		$facts = $this->maintenanceController()->facts()->getData();
 
 		$this->assertSame('2.1.32', $facts['version']);
 		$this->assertSame('a6ab296', $facts['build']);
@@ -338,6 +359,55 @@ final class OperationsConsoleControllerTest extends TestCase {
 		);
 		$this->assertSame([], $reflected->getAttributes(PublicPage::class), $method.'() is reachable anonymously.');
 	}
+
+	/**
+	 * The same posture on the two controllers the surface was split into.
+	 *
+	 * 🔴 THE SPLIT MUST NOT HAVE MOVED THE BARRIER. These endpoints have no
+	 * in-body admin check by design: the middleware refuses a
+	 * non-administrator before the controller is built, and it does that only
+	 * while none of them declares `#[NoAdminRequired]`. Moving a method to a
+	 * new class is exactly the moment an attribute gets added "to match the
+	 * neighbours", so it is asserted here rather than assumed.
+	 *
+	 * @param string $controller The controller class.
+	 * @param string $method     The controller method.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider movedOperationsEndpoints
+	 */
+	public function testTheMovedOperationsEndpointsStayAdministratorOnly(string $controller, string $method): void {
+		$reflected = new ReflectionMethod($controller, $method);
+
+		$this->assertSame(
+			[],
+			$reflected->getAttributes(NoAdminRequired::class),
+			$controller.'::'.$method.'() carries #[NoAdminRequired], which hands an operations endpoint to any '
+			.'signed-in user. The middleware is the only barrier these have.'
+		);
+		$this->assertSame(
+			[],
+			$reflected->getAttributes(PublicPage::class),
+			$controller.'::'.$method.'() is reachable anonymously.'
+		);
+	}//end testTheMovedOperationsEndpointsStayAdministratorOnly()
+
+	/**
+	 * Every endpoint that moved out of the console controller.
+	 *
+	 * @return array<string, array<int, string>> The controller and method pairs.
+	 */
+	public static function movedOperationsEndpoints(): array {
+		return [
+			'consistency check' => [OperationsConsistencyController::class, 'consistency'],
+			'repair plan' => [OperationsConsistencyController::class, 'repairPlan'],
+			'repair' => [OperationsConsistencyController::class, 'repair'],
+			'maintenance' => [OperationsMaintenanceController::class, 'maintenance'],
+			'support bundle' => [OperationsMaintenanceController::class, 'supportBundle'],
+			'facts' => [OperationsMaintenanceController::class, 'facts'],
+		];
+	}//end movedOperationsEndpoints()
 
 	/**
 	 * The console's three reads.

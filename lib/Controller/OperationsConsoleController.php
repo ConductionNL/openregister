@@ -40,16 +40,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Exception\ConsistencyCheckWouldWriteException;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
-use OCA\OpenRegister\Exception\RepairRefusedException;
 use OCA\OpenRegister\Service\OperationsConsoleService;
-use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
-use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
-use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
-use OCA\OpenRegister\Service\Operations\SupportBundleService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -71,10 +65,6 @@ class OperationsConsoleController extends Controller {
 	 * @param IRequest                  $request     HTTP request.
 	 * @param OperationsConsoleService  $console     The read model.
 	 * @param OperationsJobsService     $jobsService The run history, run now and the schedule.
-	 * @param ConsistencyCheckService   $check       The read-only consistency check.
-	 * @param ConsistencyRepairService  $repair      The repair, as a separate act.
-	 * @param MaintenanceModeService    $maintenance Maintenance mode.
-	 * @param SupportBundleService      $bundle      The support bundle and the instance facts.
 	 * @param JobAlertService           $alerts      The administered failure threshold.
 	 * @param IUserSession              $userSession Names the administrator acting.
 	 *
@@ -87,10 +77,6 @@ class OperationsConsoleController extends Controller {
 		IRequest $request,
 		private readonly OperationsConsoleService $console,
 		private readonly OperationsJobsService $jobsService,
-		private readonly ConsistencyCheckService $check,
-		private readonly ConsistencyRepairService $repair,
-		private readonly MaintenanceModeService $maintenance,
-		private readonly SupportBundleService $bundle,
 		private readonly JobAlertService $alerts,
 		private readonly IUserSession $userSession,
 	) {
@@ -299,149 +285,6 @@ class OperationsConsoleController extends Controller {
 			)
 		);
 	}//end administerAlerts()
-
-	/**
-	 * The read-only consistency check.
-	 *
-	 * @return JSONResponse The findings.
-	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
-	 */
-	#[NoCSRFRequired]
-	public function consistency(): JSONResponse {
-		try {
-			return new JSONResponse(data: $this->check->check());
-		} catch (ConsistencyCheckWouldWriteException $refusal) {
-			return new JSONResponse(
-				[
-					'error' => 'would-write',
-					'probe' => $refusal->getProbe(),
-					'message' => $refusal->getMessage(),
-				],
-				Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}
-	}//end consistency()
-
-	/**
-	 * What a repair would change, without changing it.
-	 *
-	 * @return JSONResponse The plan.
-	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
-	 */
-	#[NoCSRFRequired]
-	public function repairPlan(): JSONResponse {
-		return $this->repairing(apply: false);
-	}//end repairPlan()
-
-	/**
-	 * Apply a repair, as this administrator.
-	 *
-	 * @return JSONResponse What was changed.
-	 *
-	 * @auth admin-only applying a repair declares no NoAdminRequired attribute, so the
-	 *       middleware refuses a non-administrator before this controller is
-	 *       built, and CSRF stays required on the write.
-	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
-	 */
-	public function repair(): JSONResponse {
-		return $this->repairing(apply: true);
-	}//end repair()
-
-	/**
-	 * Maintenance mode: read it, enter it or leave it.
-	 *
-	 * @return JSONResponse The mode in force.
-	 *
-	 * @auth admin-only entering or leaving maintenance declares no NoAdminRequired attribute,
-	 *       so the middleware refuses a non-administrator before this
-	 *       controller is built, and CSRF stays required on the write.
-	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
-	 */
-	public function maintenance(): JSONResponse {
-		$method = $this->request->getMethod();
-
-		if ($method === 'GET') {
-			return new JSONResponse(data: $this->maintenance->state());
-		}
-
-		if ($method === 'DELETE') {
-			return new JSONResponse(data: $this->maintenance->leave(actor: $this->actor()));
-		}
-
-		return new JSONResponse(
-			data: $this->maintenance->enter(
-				actor: $this->actor(),
-				message: $this->stringParam(name: 'message')
-			)
-		);
-	}//end maintenance()
-
-	/**
-	 * The support bundle, redacted where it was built.
-	 *
-	 * @return JSONResponse The bundle.
-	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
-	 */
-	#[NoCSRFRequired]
-	public function supportBundle(): JSONResponse {
-		return new JSONResponse(data: $this->bundle->build());
-	}//end supportBundle()
-
-	/**
-	 * The instance facts: version, build, dependencies and licence.
-	 *
-	 * @return JSONResponse The facts.
-	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
-	 */
-	#[NoCSRFRequired]
-	public function facts(): JSONResponse {
-		return new JSONResponse(data: $this->bundle->facts());
-	}//end facts()
-
-	/**
-	 * The plan-or-apply half both repair endpoints share.
-	 *
-	 * @param bool $apply False to say what would change, true to change it.
-	 *
-	 * @return JSONResponse The plan, or what was changed.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two endpoints are the
-	 * two acts D-5 separates; this is their shared body, not a switch a caller
-	 * reaches.
-	 */
-	private function repairing(bool $apply): JSONResponse {
-		$slug = $this->stringParam(name: 'check');
-
-		if ($slug === null) {
-			return new JSONResponse(
-				['error' => 'no-check', 'message' => 'Name the check whose finding this repairs.'],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		try {
-			if ($apply === false) {
-				return new JSONResponse(data: $this->repair->plan(slug: $slug));
-			}
-
-			return new JSONResponse(data: $this->repair->apply(slug: $slug, actor: $this->actor()));
-		} catch (RepairRefusedException $refusal) {
-			return new JSONResponse(
-				[
-					'error' => 'refused',
-					'reason' => $refusal->getReason(),
-					'message' => $refusal->getMessage(),
-				],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-	}//end repairing()
 
 	/**
 	 * The uid acting.
