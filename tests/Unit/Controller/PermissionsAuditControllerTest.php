@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The contract of the three permission reads.
+ * The contract of the three admin-only permission reports.
  *
  * These are the endpoints a role editor and an auditor call, so the shape is
  * the product. A field renamed here breaks a consumer that cannot be seen from
@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\PermissionsController;
+use OCA\OpenRegister\Controller\PermissionsAuditController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -35,6 +35,8 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
+use OCA\OpenRegister\Service\Rbac\PermissionReportScope;
 use OCA\OpenRegister\Service\Rbac\ScopeAudit;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -49,7 +51,7 @@ use Psr\Log\NullLogger;
  *
  * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
  */
-class PermissionsControllerTest extends TestCase {
+class PermissionsAuditControllerTest extends TestCase {
 
 	/**
 	 * A controller reading one register and one schema, in one deny mode.
@@ -58,14 +60,14 @@ class PermissionsControllerTest extends TestCase {
 	 * @param Register[]   $registers The registers the mappers answer with.
 	 * @param Schema[]     $schemas   The schemas the mappers answer with.
 	 *
-	 * @return PermissionsController The controller under test.
+	 * @return PermissionsAuditController The controller under test.
 	 */
 	private function controllerFor(
 		string $mode,
 		array $registers = [],
 		array $schemas = [],
 		bool $isAdmin = true,
-	): PermissionsController {
+	): PermissionsAuditController {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($mode);
 
@@ -84,17 +86,21 @@ class PermissionsControllerTest extends TestCase {
 		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('findAll')->willReturn($schemas);
 
-		return new PermissionsController(
+		return new PermissionsAuditController(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			catalogue: new PermissionCatalogue(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger()),
 			denyResolver: new DenyResolver(new DenyEntryMatcher()),
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			scope: new PermissionReportScope(
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper
+			),
 			audit: new ScopeAudit(),
-			userSession: $this->sessionFor(isAdmin: $isAdmin),
-			groupManager: $this->groupManagerFor(isAdmin: $isAdmin)
+			adminGate: new AdminGate(
+				userSession: $this->sessionFor(isAdmin: $isAdmin),
+				groupManager: $this->groupManagerFor(isAdmin: $isAdmin)
+			)
 		);
 	}//end controllerFor()
 
@@ -257,25 +263,6 @@ class PermissionsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testTheCatalogueIsPublishedWithItsShape(): void {
-		$response = $this->controllerFor(mode: DenyEnforcementMode::MODE_STAGING)->index();
-
-		$this->assertSame(200, $response->getStatus());
-		$body = $response->getData();
-
-		$this->assertArrayHasKey('permissions', $body);
-		$this->assertArrayHasKey('denyEnforcement', $body);
-		$this->assertSame(DenyEnforcementMode::MODE_STAGING, $body['denyEnforcement']);
-
-		$verbs = array_column($body['permissions'], 'verb');
-		$this->assertSame(['read', 'create', 'update', 'delete', 'destroy', 'list', 'manage'], $verbs);
-
-		foreach ($body['permissions'] as $entry) {
-			foreach (['verb', 'app', 'description', 'levels', 'canonical'] as $key) {
-				$this->assertArrayHasKey($key, $entry, sprintf('a catalogue entry lost its "%s" key', $key));
-			}
-		}
-	}//end testTheCatalogueIsPublishedWithItsShape()
 
 	/**
 	 * 🔴 The preview reports a deny that has never fired.
@@ -441,12 +428,5 @@ class PermissionsControllerTest extends TestCase {
 		$this->assertSame(403, $controller->compareRoles(register: '1')->getStatus());
 	}//end testTheThreeReportsRefuseANonAdminWith403()
 
-	public function testTheCatalogueStaysOpenToAnyAuthenticatedCaller(): void {
-		// index() is a vocabulary, not a secret, and keeps #[NoAdminRequired]
-		// with no gate. A regression that gated it too would break role editors.
-		$controller = $this->controllerFor(mode: 'staging', isAdmin: false);
-
-		$this->assertSame(200, $controller->index()->getStatus());
-	}//end testTheCatalogueStaysOpenToAnyAuthenticatedCaller()
 
 }//end class
