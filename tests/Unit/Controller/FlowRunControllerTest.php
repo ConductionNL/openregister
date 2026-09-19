@@ -1175,4 +1175,98 @@ class FlowRunControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 	}//end testTestChecksTheEditRightBeforeResolvingTheFlow()
 
+	// =========================================================================
+	// migrateRuns — the bulk move. It shipped publicly reachable with no
+	// contract test, which is gate-25's finding. The two things worth pinning
+	// are that it FAILS CLOSED without its collaborator, and that it refuses
+	// an unexplained move: the reason is kept on every run it touches.
+	// =========================================================================
+
+	/**
+	 * Build the controller with a migration service, which the default
+	 * fixture leaves absent.
+	 *
+	 * @param mixed $migrations The migration service double.
+	 *
+	 * @return FlowRunController The controller.
+	 */
+	private function controllerWithMigrations($migrations): FlowRunController {
+		return new FlowRunController(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $this->userSession,
+			organisationService: $this->organisations,
+			flows: $this->flows,
+			access: $this->access,
+			migrations: $migrations
+		);
+	}//end controllerWithMigrations()
+
+	/**
+	 * Without the collaborator there is no validator, so the endpoint refuses
+	 * rather than moving runs unvalidated. That is the silent move the whole
+	 * surface exists to prevent.
+	 *
+	 * @return void
+	 */
+	public function testMigrateRunsFailsClosedWhenMigrationIsNotAvailable(): void {
+		$response = $this->controller->migrateRuns('flow-1');
+
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+	}//end testMigrateRunsFailsClosedWhenMigrationIsNotAvailable()
+
+	/**
+	 * An unexplained bulk move is refused, and nothing is migrated. The reason
+	 * is written onto every run the move touches, so a move without one leaves
+	 * an administrator with runs whose version changed and no record of why.
+	 *
+	 * @return void
+	 */
+	public function testMigrateRunsRefusesAMoveWithNoReasonAndMovesNothing(): void {
+		$migrations = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowRunMigrationService::class);
+		$migrations->expects($this->never())->method('migrateRunsOfVersion');
+
+		$flow = new \OCA\OpenRegister\Db\Flow();
+		$flow->setUuid('flow-1');
+		$this->flows->method('find')->willReturn($flow);
+		$this->params(['reason' => '   ']);
+
+		$response = $this->controllerWithMigrations($migrations)->migrateRuns('flow-1');
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertStringContainsString('reason', $response->getData()['error']);
+	}//end testMigrateRunsRefusesAMoveWithNoReasonAndMovesNothing()
+
+	/**
+	 * An explained move reaches the service with the caller as the actor, and
+	 * the endpoint answers the per-run report rather than a count. A bulk
+	 * migration that answered only a count would leave an administrator
+	 * believing every run moved, and the ones that did not are exactly the
+	 * ones somebody has to go and look at.
+	 *
+	 * @return void
+	 */
+	public function testMigrateRunsReportsPerRunAndNamesTheActor(): void {
+		$report = ['migrated' => 1, 'skipped' => 1, 'results' => [['run' => 'r1', 'moved' => true], ['run' => 'r2', 'moved' => false]]];
+
+		$migrations = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowRunMigrationService::class);
+		$migrations->expects($this->once())
+			->method('migrateRunsOfVersion')
+			->with('flow-1', 3, 4, 'the node was renamed', 'alice', [])
+			->willReturn($report);
+
+		$flow = new \OCA\OpenRegister\Db\Flow();
+		$flow->setUuid('flow-1');
+		$this->flows->method('find')->willReturn($flow);
+		$this->params(['reason' => 'the node was renamed', 'sourceVersion' => 3, 'targetVersion' => 4]);
+
+		$response = $this->controllerWithMigrations($migrations)->migrateRuns('flow-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertCount(2, $response->getData()['results']);
+	}//end testMigrateRunsReportsPerRunAndNamesTheActor()
+
 }//end class
