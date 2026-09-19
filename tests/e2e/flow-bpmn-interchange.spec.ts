@@ -39,22 +39,22 @@ const API_HEADERS = {
 	).toString('base64')}`,
 }
 
-const HEAD
-	= '<?xml version="1.0" encoding="UTF-8"?>\n'
+const HEAD =
+	'<?xml version="1.0" encoding="UTF-8"?>\n'
 	+ '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"'
 	+ ' id="Definitions_1" targetNamespace="urn:openregister:e2e">\n'
 
 /** A file that is XML, is BPMN-shaped, and is not valid BPMN: the flow goes nowhere. */
-const MALFORMED
-	= `${HEAD}  <bpmn:process id="Process_1" isExecutable="false">\n`
+const MALFORMED =
+	`${HEAD}  <bpmn:process id="Process_1" isExecutable="false">\n`
 	+ '    <bpmn:startEvent id="s1" name="Start"/>\n'
 	+ '    <bpmn:serviceTask id="t1" name="Doe iets"/>\n'
 	+ '    <bpmn:sequenceFlow id="f1" sourceRef="s1"/>\n'
 	+ '  </bpmn:process>\n</bpmn:definitions>\n'
 
 /** Valid BPMN carrying an event sub-process, which the engine cannot express. */
-const VALID_BUT_UNSUPPORTED
-	= `${HEAD}  <bpmn:process id="Process_1" name="${RUN_ID} unsupported" isExecutable="false">\n`
+const VALID_BUT_UNSUPPORTED =
+	`${HEAD}  <bpmn:process id="Process_1" name="${RUN_ID} unsupported" isExecutable="false">\n`
 	+ '    <bpmn:startEvent id="s1" name="Start"/>\n'
 	+ '    <bpmn:subProcess id="sub1" name="Bij een fout" triggeredByEvent="true"/>\n'
 	+ '    <bpmn:endEvent id="e1" name="Klaar"/>\n'
@@ -89,14 +89,19 @@ test.describe('BPMN interchange over the API', () => {
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md#requirement-bpmn-import-accepts-a-documented-subset-and-reports-every-loss
 	 * Scenario: Malformed and unsupported are two different answers
 	 */
-	test('a malformed file is answered as malformed, and creates nothing', async ({ request }) => {
+	test('a malformed file is answered as malformed, and creates nothing', async ({
+		request,
+	}) => {
 		const before = await request.get('/apps/openregister/api/flows?limit=500')
 		const countBefore = ((await before.json()).results ?? []).length
 
-		const response = await request.post('/apps/openregister/api/flows/import/bpmn', {
-			headers: { ...API_HEADERS, 'Content-Type': 'application/xml' },
-			data: MALFORMED,
-		})
+		const response = await request.post(
+			'/apps/openregister/api/flows/import/bpmn',
+			{
+				headers: { ...API_HEADERS, 'Content-Type': 'application/xml' },
+				data: MALFORMED,
+			},
+		)
 
 		expect(response.status()).toBe(422)
 
@@ -116,11 +121,16 @@ test.describe('BPMN interchange over the API', () => {
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md#requirement-bpmn-import-accepts-a-documented-subset-and-reports-every-loss
 	 * Scenario: Malformed and unsupported are two different answers
 	 */
-	test('a valid file we cannot fully express still imports, with the construct named', async ({ request }) => {
-		const response = await request.post('/apps/openregister/api/flows/import/bpmn', {
-			headers: { ...API_HEADERS, 'Content-Type': 'application/xml' },
-			data: VALID_BUT_UNSUPPORTED,
-		})
+	test('a valid file we cannot fully express still imports, with the construct named', async ({
+		request,
+	}) => {
+		const response = await request.post(
+			'/apps/openregister/api/flows/import/bpmn',
+			{
+				headers: { ...API_HEADERS, 'Content-Type': 'application/xml' },
+				data: VALID_BUT_UNSUPPORTED,
+			},
+		)
 
 		expect(response.status()).toBe(201)
 
@@ -140,11 +150,19 @@ test.describe('BPMN interchange over the API', () => {
 	/**
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md#requirement-a-flow-exports-to-conformant-bpmn-20-xml
 	 */
-	test('what the export hands back is a BPMN document, served as XML', async ({ request }) => {
+	test('what the export hands back is a BPMN document, served as XML', async ({
+		request,
+	}) => {
 		const made = await request.post('/apps/openregister/api/flows', {
 			data: {
 				name: `${RUN_ID} export`,
-				nodes: [{ id: 'start', name: 'Start', type: 'openregister.trigger-manual' }],
+				nodes: [
+					{
+						id: 'start',
+						name: 'Start',
+						type: 'openregister.trigger-manual',
+					},
+				],
 				edges: [],
 			},
 		})
@@ -153,11 +171,15 @@ test.describe('BPMN interchange over the API', () => {
 		const flow = await made.json()
 		created.push(String(flow.id))
 
-		const exported = await request.get(`/apps/openregister/api/flows/${flow.id}/bpmn`)
+		const exported = await request.get(
+			`/apps/openregister/api/flows/${flow.id}/bpmn`,
+		)
 
 		expect(exported.status()).toBe(200)
 		expect(exported.headers()['content-type']).toContain('xml')
-		expect(await exported.text()).toContain('http://www.omg.org/spec/BPMN/20100524/MODEL')
+		expect(await exported.text()).toContain(
+			'http://www.omg.org/spec/BPMN/20100524/MODEL',
+		)
 	})
 })
 
@@ -165,16 +187,27 @@ test.describe('BPMN interchange refuses the anonymous caller', () => {
 	// The least privileged principal that should be refused: nobody at all.
 	// Import creates a flow, so an unauthenticated POST must never reach the
 	// importer, let alone the store.
-	test.use({ storageState: NO_SESSION, extraHTTPHeaders: { 'OCS-APIRequest': 'true' } })
+	test.use({
+		storageState: NO_SESSION,
+		extraHTTPHeaders: { 'OCS-APIRequest': 'true' },
+	})
 
 	/**
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md#requirement-bpmn-import-accepts-a-documented-subset-and-reports-every-loss
 	 */
-	test('an unauthenticated import is refused before anything is read', async ({ request }) => {
-		const response = await request.post('/apps/openregister/api/flows/import/bpmn', {
-			headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/xml' },
-			data: VALID_BUT_UNSUPPORTED,
-		})
+	test('an unauthenticated import is refused before anything is read', async ({
+		request,
+	}) => {
+		const response = await request.post(
+			'/apps/openregister/api/flows/import/bpmn',
+			{
+				headers: {
+					'OCS-APIRequest': 'true',
+					'Content-Type': 'application/xml',
+				},
+				data: VALID_BUT_UNSUPPORTED,
+			},
+		)
 
 		expect([401, 403]).toContain(response.status())
 	})
