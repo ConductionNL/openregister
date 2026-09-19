@@ -761,8 +761,12 @@ class PropertyValidatorHandler {
 		// A reference filter is checked here for the same reason: an annotation
 		// that is unusable is a picker that silently offers everything, and the
 		// author is present at save and nowhere near the picker later.
-		// The OPERANDS are checked where both schemas are in hand
-		// (`SchemasController`), because this method sees one property.
+		// The OPERANDS are checked where both schemas are in hand, because
+		// this method sees one property: `ReferenceFilterOperandGuard`, which
+		// `SchemasController::validateReferenceFilterOperands()` calls on
+		// create and on update. That sentence used to say "SchemasController"
+		// and nothing there mentioned the declaration, so the operand check
+		// was dead code for as long as the comment stopped anyone looking.
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 
 		// A scope that is accepted but not enforced is worse than no scope: the

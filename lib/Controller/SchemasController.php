@@ -56,6 +56,8 @@ use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\SchemaService;
@@ -123,6 +125,18 @@ class SchemasController extends Controller {
 	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
 
 	/**
+	 * The call site for the reference-filter operand check.
+	 *
+	 * Built here for the same reason as the resolver above: it is a stateless
+	 * collaborator over the `SchemaMapper` this class already holds, so every
+	 * existing unit test keeps exercising the real path instead of a mock of
+	 * the thing under test.
+	 *
+	 * @var ReferenceFilterOperandGuard
+	 */
+	private readonly ReferenceFilterOperandGuard $referenceFilterOperands;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for schema operations.
@@ -179,6 +193,7 @@ class SchemasController extends Controller {
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper
 		);
+		$this->referenceFilterOperands = new ReferenceFilterOperandGuard(schemaMapper: $schemaMapper);
 	}//end __construct()
 
 	/**
@@ -616,6 +631,47 @@ class SchemasController extends Controller {
 	}//end validateSemanticRoles()
 
 	/**
+	 * Refuse a reference filter that reads a property nobody declares.
+	 *
+	 * 🔴 THIS IS THE CALL SITE `assertOperandsExist()` SHIPPED WITHOUT. The
+	 * comment beside `PropertyValidatorHandler::validateProperty()` said the
+	 * operands were checked "in SchemasController", and this class did not
+	 * mention the declaration at all, so the check was dead code with a full
+	 * set of messages nobody could ever read. `validateProperty()` sees one
+	 * property and cannot answer the question: it needs both schemas.
+	 *
+	 * The refusal is a 422 in the same family as the semantic-role and
+	 * generated-identifier refusals, and it names the property and which of
+	 * the two schemas is missing the operand.
+	 *
+	 * @param array<string, mixed> $data The incoming schema payload.
+	 *
+	 * @return JSONResponse|null A 422 naming the operand, or null when there is nothing to refuse.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	private function validateReferenceFilterOperands(array $data): ?JSONResponse {
+		$properties = ($data['properties'] ?? null);
+		if (is_array($properties) === false) {
+			return null;
+		}
+
+		try {
+			$this->referenceFilterOperands->assertProperties(properties: $properties);
+		} catch (ReferenceFilterException $e) {
+			return new JSONResponse(
+				data: [
+					'error' => $e->getMessage(),
+					'errors' => $e->getErrors(),
+				],
+				statusCode: 422
+			);
+		}
+
+		return null;
+	}//end validateReferenceFilterOperands()
+
+	/**
 	 * The language the caller asked for, defaulting to Dutch.
 	 *
 	 * @return string The BCP-47 tag.
@@ -760,6 +816,13 @@ class SchemasController extends Controller {
 		$roleError = $this->validateSemanticRoles(data: $data);
 		if ($roleError !== null) {
 			return $roleError;
+		}
+
+		// Refuse a reference filter reading a property neither schema
+		// declares, before the write, while the author is still here.
+		$operandError = $this->validateReferenceFilterOperands(data: $data);
+		if ($operandError !== null) {
+			return $operandError;
 		}
 
 		// Refuse a register context that does not resolve BEFORE writing the schema.
@@ -1035,6 +1098,13 @@ class SchemasController extends Controller {
 		$roleError = $this->validateSemanticRoles(data: $data);
 		if ($roleError !== null) {
 			return $roleError;
+		}
+
+		// Refuse a reference filter reading a property neither schema
+		// declares, before the write, while the author is still here.
+		$operandError = $this->validateReferenceFilterOperands(data: $data);
+		if ($operandError !== null) {
+			return $operandError;
 		}
 
 		// Capture prior authorization so a change can be audit-logged below.
