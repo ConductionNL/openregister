@@ -45,6 +45,17 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<NotificationHistory>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Ten named queries and one
+ * writer, each a distinct question this table answers with its own predicate
+ * set: record a delivery, list and count it under a filter, count by status,
+ * and the five per-recipient state changes (read, read-for-subject, snooze,
+ * archive, archive-by-object) plus the ownership-scoped read they all lean on.
+ * The five state changes are separate precisely BECAUSE each writes a
+ * different column under a different `recipient` predicate; collapsing them
+ * into one generic updater would move the choice of column and of guard into
+ * the caller, which is where a per-recipient guard is easiest to forget. Same
+ * argument {@see FlowTimerMapper} and {@see ContactLinkMapper} make.
  */
 class NotificationHistoryMapper extends QBMapper {
 	/**

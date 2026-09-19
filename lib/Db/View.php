@@ -66,6 +66,16 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Sixteen of the eighteen ARE the
+ * columns of `oc_openregister_views`, one property each, the way every other
+ * entity in this directory is built ({@see Task}, {@see ScheduledReport},
+ * {@see TimelineEntry} and sixteen more carry this same suppression for the
+ * same reason). Reducing the count would mean folding columns together, which
+ * is a migration and a change to stored data, not a refactor. The remaining
+ * two — `$managedByConfig` and `$access` — are transient decorations set per
+ * request and never written, and merging those two into one bag would hide
+ * what they are to move a number by one.
  */
 class View extends Entity implements JsonSerializable {
 
