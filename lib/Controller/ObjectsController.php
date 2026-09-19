@@ -210,13 +210,36 @@ class ObjectsController extends Controller {
 	 * separate from the read above: the read excludes deleted rows by design,
 	 * and widening it would leak soft-deleted content into every list.
 	 *
-	 * @param string $id The identifier the caller asked for.
+	 * SCOPED EXACTLY AS THE READ IT STANDS IN FOR. This used to look up a bare
+	 * uuid with `_rbac: false` and `_multitenancy: false` and no register
+	 * constraint at all, which made it strictly more permissive than the read
+	 * it is a fallback message for. `show()` reaches it precisely when the
+	 * scoped find() answered null - the case show()'s own docblock says must be
+	 * a bare 404, "so an unauthorized caller cannot distinguish 'exists but
+	 * forbidden' from 'does not exist'". A caller in one organisation could name
+	 * any uuid from any other and be told, in a 404-shaped body, that the object
+	 * exists, that it is in the trash, and exactly when it stops being
+	 * restorable. The register and schema in the URL were not even used to
+	 * constrain it, so any uuid from any tenant worked the same way.
+	 *
+	 * The caller's own flags are passed in rather than assumed, so an admin -
+	 * who reads exempt on the primary path - still gets the helpful answer.
+	 *
+	 * @param string   $id              The identifier the caller asked for.
+	 * @param bool     $rbac            The caller's own RBAC posture, as used by the read.
+	 * @param bool     $multitenancy    The caller's own tenancy posture, as used by the read.
+	 * @param int|null $registerIdScope The register named in the URL, so the lookup cannot wander.
 	 *
 	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
 	 *
 	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
-	private function deletedRefusal(string $id): ?array {
+	private function deletedRefusal(
+		string $id,
+		bool $rbac,
+		bool $multitenancy,
+		?int $registerIdScope = null,
+	): ?array {
 		if ($this->windowService === null) {
 			return null;
 		}
@@ -226,8 +249,9 @@ class ObjectsController extends Controller {
 			$context = $magicMapper->findAcrossAllSources(
 				identifier: $id,
 				includeDeleted: true,
-				_rbac: false,
-				_multitenancy: false
+				_rbac: $rbac,
+				_multitenancy: $multitenancy,
+				registerIdScope: $registerIdScope
 			);
 		} catch (\Throwable $e) {
 			return null;
@@ -967,6 +991,33 @@ class ObjectsController extends Controller {
 				],
 				statusCode: 404
 			);
+		}
+
+		// DOELBINDING, BEFORE ANY ROW IS FETCHED.
+		//
+		// index() reaches this method by returning early, twenty lines BEFORE
+		// its own purpose check, whenever the request names more than one schema
+		// or register. So `?schemas={bound},anythingElse` returned in full the
+		// rows that `GET /objects/{register}/{bound}` refuses with 403 - one
+		// extra, even unrelated, schema id defeated an AVG purpose-binding
+		// control.
+		//
+		// The guard belongs here rather than at that call site: this method IS
+		// the fan-out, and a check on the caller would have to be repeated,
+		// correctly, by every future caller. objects() is the second one today.
+		//
+		// Refused when ANY pair is refused. A purpose-bound schema must not be
+		// launderable by listing it alongside one that is not.
+		foreach ($pairs as $pair) {
+			$refusal = $this->refuseUnboundPurpose(
+				resolved: [
+					'registerEntity' => $pair['register'],
+					'schemaEntity' => $pair['schema'],
+				]
+			);
+			if ($refusal !== null) {
+				return $refusal;
+			}
 		}
 
 		// Build search query WITHOUT register/schema to avoid filtering.
@@ -2437,6 +2488,22 @@ class ObjectsController extends Controller {
 				$resolvedRegisterId = $resolved['register'];
 				$resolvedSchemaId = $resolved['schema'];
 
+				// DOELBINDING. This endpoint is @PublicPage and reads the same
+				// data as index(), which has guarded its single-schema branch
+				// since PurposeGuard landed - this one guarded nothing, on any
+				// branch. A schema that refuses show() for want of a declared
+				// purpose answered here in full, without authentication.
+				//
+				// Placed on the resolution rather than per branch: both branches
+				// below (magic-mapper and the searchObjectsPaginated fallback)
+				// descend from this point, and the multi-schema branch above is
+				// guarded inside crossTableSearch() itself. A per-branch check
+				// would reproduce the gap the next time a branch is added.
+				$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+				if ($refusal !== null) {
+					return $refusal;
+				}
+
 				// Check if magic mapping is enabled for this register+schema.
 				$registerEntity = $resolved['registerEntity'] ?? null;
 				$schemaEntity = $resolved['schemaEntity'] ?? null;
@@ -2685,7 +2752,17 @@ class ObjectsController extends Controller {
 				// a soft-deleted object is the answer that makes a caseworker
 				// think their work is gone, when it is in the trash with a
 				// stated window still open.
-				$deletedRefusal = $this->deletedRefusal(id: $id);
+				$registerScope = null;
+				if (is_numeric($resolved['register']) === true) {
+					$registerScope = (int)$resolved['register'];
+				}
+
+				$deletedRefusal = $this->deletedRefusal(
+					id: $id,
+					rbac: $rbac,
+					multitenancy: $multi,
+					registerIdScope: $registerScope
+				);
 				if ($deletedRefusal !== null) {
 					return new JSONResponse(data: $deletedRefusal, statusCode: Http::STATUS_NOT_FOUND);
 				}
