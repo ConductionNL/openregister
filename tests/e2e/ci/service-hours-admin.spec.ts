@@ -127,7 +127,10 @@ test.describe('service-hours-admin', () => {
 		// that stored anything, and an undeclared property is dropped by the
 		// object store with a 200 and no message.
 		const stored = await findOurCalendar(request)
-		expect(stored, 'the calendar is still readable after the save').not.toBeNull()
+		expect(
+			stored,
+			'the calendar is still readable after the save',
+		).not.toBeNull()
 		expect(
 			stored?.serviceHours?.monday,
 			'the opening hours survived the write, so the schema declares them',
