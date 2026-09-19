@@ -93,6 +93,7 @@ class QueryHandler {
 	 * @param IRequest $request Request object.
 	 * @param HistoryNarrowing|null $historyNarrowing Resolves a history predicate to the ids the query keeps.
 	 * @param SearchDictionaryProvider|null $dictionary The administered synonym and stopword dictionary.
+	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid on a ready-made query.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -114,8 +115,45 @@ class QueryHandler {
 		// handler, in production wiring and in tests, keeps working unchanged.
 		private readonly ?HistoryNarrowing $historyNarrowing = null,
 		private readonly ?SearchDictionaryProvider $dictionary = null,
+		private readonly ?SearchReferenceResolver $referenceResolver = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Resolve the register and schema references a ready-made query carries.
+	 *
+	 * `@self.register`, `@self.schema` and their `_register` / `_schema` and
+	 * plural spellings arrive here as ids, uuids or slugs, because the caller
+	 * built the query by hand. Downstream they meet `(int)`, and `(int)'zaken'`
+	 * is `0`: the search then ran against a register that cannot exist and
+	 * reported nothing found. filinq's download gate read that as "no agreement
+	 * rule", dossiq's cascades read it as "nothing linked".
+	 *
+	 * A reference is resolved when it needs resolving and refused when it names
+	 * nothing. Both are what the write path already did with the same value.
+	 *
+	 * @param array $query The search query.
+	 *
+	 * @phpstan-param array<string, mixed> $query
+	 * @psalm-param   array<string, mixed> $query
+	 *
+	 * @return array The query with every register/schema reference resolved.
+	 *
+	 * @phpstan-return array<string, mixed>
+	 * @psalm-return   array<string, mixed>
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
+	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function normaliseReferences(array $query): array {
+		if ($this->referenceResolver === null) {
+			return $query;
+		}
+
+		return $this->referenceResolver->normaliseQuery(query: $query);
+	}//end normaliseReferences()
 
 	/**
 	 * Count search objects matching the query.
@@ -145,6 +183,11 @@ class QueryHandler {
 		?array $ids = null,
 		?string $uses = null,
 	): int {
+		// A count is where the empty page hurt most: dossiq persisted a usage
+		// right as false from a count that never ran, because the schema
+		// reference behind it int-cast to 0. Resolve or refuse, never zero.
+		$query = $this->normaliseReferences(query: $query);
+
 		$activeOrgUuid = null;
 		if ($_multitenancy === true) {
 			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
@@ -202,6 +245,12 @@ class QueryHandler {
 		?array $views = null,
 		bool $_viewScopeRequired = false,
 	): array|int {
+		// A caller that hands a ready-made query instead of going through
+		// buildSearchQuery() reaches the same int-cast further down, in
+		// MagicMapper. Resolve here too, so a slug means the same thing on both
+		// routes (openregister#3990).
+		$query = $this->normaliseReferences(query: $query);
+
 		// Apply view filters if provided.
 		if ($views !== null && empty($views) === false) {
 			$query = $this->searchQueryHandler->applyViewsToQuery(
@@ -380,6 +429,10 @@ class QueryHandler {
 	): array {
 		$startTime = microtime(true);
 		$metrics = [];
+
+		// Same seam as searchObjects(): a register or schema reference that
+		// names nothing is refused here, never answered with an empty page.
+		$query = $this->normaliseReferences(query: $query);
 
 		// Extract pagination parameters (limit=0 is valid for count/facets-only requests).
 		// Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
