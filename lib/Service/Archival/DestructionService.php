@@ -349,8 +349,20 @@ class DestructionService {
 			$approved[] = $objectEntry;
 		}
 
+		// MERGED, not assigned. On the second pass of a dual sign-off this used to
+		// overwrite, dropping the record of what the FIRST pass withheld -
+		// withholdDecidedEntries() then finds nothing left in `objects` and returns
+		// early, so the retained and transferred entries vanish from
+		// `excludedObjects` entirely. The records stay safe either way, because
+		// they are already out of `objects`; what was lost was the exclusion
+		// RECORD, on a path whose whole output is a destruction certificate.
+		$existingExcluded = ($destructionList['excludedObjects'] ?? []);
+		if (is_array($existingExcluded) === false) {
+			$existingExcluded = [];
+		}
+
 		$destructionList['objects'] = $approved;
-		$destructionList['excludedObjects'] = $excluded;
+		$destructionList['excludedObjects'] = array_merge($existingExcluded, $excluded);
 		$destructionList['objectCount'] = count($approved);
 
 		return $destructionList;
@@ -385,6 +397,10 @@ class DestructionService {
 	 *
 	 * Idempotent: an entry already moved to `excludedObjects` is no longer in
 	 * `objects`, so a second approval (dual sign-off) finds nothing left to move.
+	 * That holds for `objects`. It holds for `excludedObjects` only because
+	 * handlePartialApproval() now MERGES that key rather than assigning it -
+	 * while it assigned, a second pass overwrote the first pass's record of what
+	 * had been withheld, losing the exclusion record though not the protection.
 	 *
 	 * Public because `RetentionController::approveDestructionList()` is a fully
 	 * independent approval implementation that never calls `approveList()`. The
