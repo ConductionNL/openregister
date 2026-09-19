@@ -65,6 +65,13 @@ class BpmnSchemaResolutionTest extends TestCase {
 	private BpmnSchemaValidator $validator;
 
 	/**
+	 * The resolver that was in force before this test installed its own.
+	 *
+	 * @var callable|null
+	 */
+	private $previousEntityLoader = null;
+
+	/**
 	 * Install the entity loader a booted Nextcloud installs.
 	 *
 	 * Carrying the condition into the test is the whole point: without it a
@@ -76,19 +83,25 @@ class BpmnSchemaResolutionTest extends TestCase {
 		parent::setUp();
 
 		$this->validator = new BpmnSchemaValidator();
+
+		if (function_exists('libxml_get_external_entity_loader') === true) {
+			$this->previousEntityLoader = libxml_get_external_entity_loader();
+		}
+
 		libxml_set_external_entity_loader(static fn (): mixed => null);
 	}//end setUp()
 
 	/**
-	 * Leave the process as a bare PHP process starts.
+	 * Put the resolver back, rather than clearing it.
 	 *
-	 * PHP 8.4 can hand the previous resolver back, 8.3 and below cannot, and
-	 * clearing it is the state this suite runs in otherwise.
+	 * 🔴 A TEST THAT CLEARS NEXTCLOUD'S XXE GUARD HIDES THIS VERY BUG for
+	 * every test that runs after it, because from then on reading a schema
+	 * from disk works again. So the previous resolver goes back exactly.
 	 *
 	 * @return void
 	 */
 	protected function tearDown(): void {
-		libxml_set_external_entity_loader(null);
+		libxml_set_external_entity_loader($this->previousEntityLoader);
 
 		parent::tearDown();
 	}//end tearDown()
