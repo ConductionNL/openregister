@@ -123,7 +123,7 @@ class BpmnSchemaValidator {
 		// 🔴 NO NETWORK. The schema set is on disk precisely so that validation
 		// never reaches omg.org from inside a request: an air-gapped install
 		// would otherwise skip validation silently or hang on it.
-		$valid = $document->schemaValidate($this->rootSchema(), LIBXML_NONET);
+		$valid = $this->validateAgainstVendoredSet(document: $document);
 
 		$errors = libxml_get_errors();
 		libxml_clear_errors();
@@ -153,6 +153,176 @@ class BpmnSchemaValidator {
 			'element' => $this->elementIn(message: (string)$first->message),
 		];
 	}//end firstViolation()
+
+	/**
+	 * Validate against the vendored set, with the schema files reachable.
+	 *
+	 * 🔴 NEXTCLOUD'S XXE GUARD BLOCKS OUR OWN SCHEMA FILES. `lib/base.php`
+	 * installs `libxml_set_external_entity_loader(static fn () => null)`, and
+	 * that resolver answers for the PRIMARY document too, not only for
+	 * entities a document references. `DOMDocument::schemaValidate($path)`
+	 * therefore cannot read `BPMN20.xsd` off the local disk on any running
+	 * instance: it returns false with "Failed to load external entity because
+	 * the resolver function returned null", every export was refused as
+	 * invalid BPMN and every import was refused as malformed. A bare PHP
+	 * process installs no such loader, which is why the suite was green while
+	 * the feature could not run at all. `MdtoElementCatalogue` carried the
+	 * same bug before this one.
+	 *
+	 * 🔑 WHY A SCOPED LOADER AND NOT `schemaValidateSource()`. The MDTO schema
+	 * imports nothing, so reading its bytes and validating the source is
+	 * enough there. `BPMN20.xsd` includes `Semantic.xsd` and imports
+	 * `BPMNDI.xsd`, which imports `DI.xsd` and `DC.xsd`, and libxml resolves
+	 * every one of those through the same loader, asking for them by their
+	 * bare relative name. So the loader is swapped for one that serves the
+	 * five vendored files and nothing else, and the previous one is put back
+	 * before returning, including when validation throws.
+	 *
+	 * @param DOMDocument $document The parsed document.
+	 *
+	 * @return bool Whether the document validates.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function validateAgainstVendoredSet(DOMDocument $document): bool {
+		$restore = $this->installVendoredSchemaLoader();
+
+		try {
+			return $document->schemaValidate($this->rootSchema(), LIBXML_NONET);
+		} finally {
+			$restore();
+		}
+	}//end validateAgainstVendoredSet()
+
+	/**
+	 * The vendored file a schema reference names, or null when it names another.
+	 *
+	 * 🔴 THIS IS THE WHOLE OF THE WIDENING, SO IT IS AS NARROW AS IT CAN BE.
+	 * Only the five files in the vendored directory resolve, by name and after
+	 * `realpath()`, so `../../config/config.php`, a symlink out of the
+	 * directory and `http://omg.org/...` all come back null and libxml is told
+	 * nothing could be loaded. Validation reaches no network and no file the
+	 * schema set does not consist of.
+	 *
+	 * libxml asks for the root by absolute path and for the includes and
+	 * imports by their bare relative name, so a relative reference resolves
+	 * against the vendored directory rather than the working directory.
+	 *
+	 * @param string $systemId The system id libxml asks for.
+	 *
+	 * @return string|null The absolute path, or null when it is not ours.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	public function resolveSchemaReference(string $systemId): ?string {
+		$path = $systemId;
+		if (str_starts_with($path, 'file://') === true) {
+			$path = substr($path, strlen('file://'));
+		}
+
+		$path = rawurldecode($path);
+		if ($path === '') {
+			return null;
+		}
+
+		$directory = realpath($this->schemaDirectory());
+		if ($directory === false) {
+			return null;
+		}
+
+		if (str_starts_with($path, DIRECTORY_SEPARATOR) === false) {
+			$path = ($directory . DIRECTORY_SEPARATOR . $path);
+		}
+
+		$resolved = realpath($path);
+		if ($resolved === false || dirname($resolved) !== $directory) {
+			return null;
+		}
+
+		if (array_key_exists(basename($resolved), self::CHECKSUMS) === false) {
+			return null;
+		}
+
+		return $resolved;
+	}//end resolveSchemaReference()
+
+	/**
+	 * Install the scoped loader and answer how to put the previous one back.
+	 *
+	 * @return callable(): void The restore.
+	 */
+	private function installVendoredSchemaLoader(): callable {
+		$restore = $this->entityLoaderRestore();
+
+		libxml_set_external_entity_loader(
+			function (?string $publicId, string $systemId) {
+				$path = $this->resolveSchemaReference(systemId: $systemId);
+				if ($path === null) {
+					return null;
+				}
+
+				$handle = fopen($path, 'rb');
+				if ($handle === false) {
+					return null;
+				}
+
+				return $handle;
+			}
+		);
+
+		return $restore;
+	}//end installVendoredSchemaLoader()
+
+	/**
+	 * How to put back the entity loader that was in force.
+	 *
+	 * PHP 8.4 hands the current resolver back, so it goes back exactly. Below
+	 * that there is no way to read it, and restoring the wrong thing is worse
+	 * than restoring the equivalent: the BEHAVIOUR is probed instead, and a
+	 * process that was refusing to load a local file is left refusing it,
+	 * which is the state Nextcloud installs.
+	 *
+	 * @return callable(): void The restore.
+	 */
+	private function entityLoaderRestore(): callable {
+		if (function_exists('libxml_get_external_entity_loader') === true) {
+			$previous = libxml_get_external_entity_loader();
+
+			return static function () use ($previous): void {
+				libxml_set_external_entity_loader($previous);
+			};
+		}
+
+		$blocked = $this->entityLoadingIsBlocked();
+
+		return static function () use ($blocked): void {
+			if ($blocked === true) {
+				libxml_set_external_entity_loader(static fn (): mixed => null);
+				return;
+			}
+
+			libxml_set_external_entity_loader(null);
+		};
+	}//end entityLoaderRestore()
+
+	/**
+	 * Whether the current loader refuses a readable local file.
+	 *
+	 * The probe reads the root schema, which is 2 KB and certainly present;
+	 * its own libxml errors are cleared so they cannot be mistaken for a
+	 * violation of the document under validation.
+	 *
+	 * @return bool True when a loader is blocking local reads.
+	 */
+	private function entityLoadingIsBlocked(): bool {
+		$probe    = new DOMDocument();
+		$previous = libxml_use_internal_errors(true);
+		$loaded   = $probe->load($this->rootSchema(), LIBXML_NONET);
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+
+		return ($loaded === false);
+	}//end entityLoadingIsBlocked()
 
 	/**
 	 * Refuse a document that does not validate, naming the first violation.
