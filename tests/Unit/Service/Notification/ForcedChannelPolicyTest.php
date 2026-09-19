@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Notification\ForcedChannelPolicy;
+use OCA\OpenRegister\Service\Notification\RecipientAudience;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -74,7 +75,8 @@ class ForcedChannelPolicyTest extends TestCase {
 	public function testAForcedChannelSurvivesAUserWhoSwitchedItOff(): void {
 		$decision = $this->policy->decide(
 			$this->resolved([], false),
-			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'Awb 4:3a verlangt een ontvangstbevestiging.']]
+			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'Awb 4:3a verlangt een ontvangstbevestiging.']],
+			RecipientAudience::Internal
 		);
 
 		$this->assertTrue($decision['enabled']);
@@ -87,7 +89,8 @@ class ForcedChannelPolicyTest extends TestCase {
 	public function testForcingAddsToThePreferenceRatherThanReplacingIt(): void {
 		$decision = $this->policy->decide(
 			$this->resolved(['email']),
-			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'proces']]
+			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'proces']],
+			RecipientAudience::Internal
 		);
 
 		// The e-mail somebody chose is still there. Substituting the forced
@@ -97,7 +100,7 @@ class ForcedChannelPolicyTest extends TestCase {
 	}//end testForcingAddsToThePreferenceRatherThanReplacingIt()
 
 	public function testAKindNobodyForcedIsLeftExactlyAsTheMergeResolvedIt(): void {
-		$decision = $this->policy->decide($this->resolved(['email']), []);
+		$decision = $this->policy->decide($this->resolved(['email']), [], RecipientAudience::Internal);
 
 		$this->assertSame(['email'], $decision['channels']);
 		$this->assertFalse($decision['forced']);
@@ -115,7 +118,7 @@ class ForcedChannelPolicyTest extends TestCase {
 		$decision = $this->policy->decide(
 			$this->resolved(['email']),
 			['internalOnly' => true],
-			false
+			RecipientAudience::External
 		);
 
 		$this->assertSame(ForcedChannelPolicy::REFUSED_EXTERNAL, $decision['refusal']);
@@ -127,8 +130,44 @@ class ForcedChannelPolicyTest extends TestCase {
 		$this->assertNotSame('', $decision['refusal'], 'an absence must never stand in for the refusal');
 	}//end testAnInternalKindRefusedOutsideReturnsTheRefusalNotAnEmptyList()
 
+	/**
+	 * A force does not buy its way past the organisation boundary.
+	 *
+	 * The audience used to be `bool $recipientIsInternal = true`, so a caller
+	 * that did not pass it got the permissive half of the pair and this
+	 * refusal never ran. The argument is now a required
+	 * {@see RecipientAudience}, which is why this case can be stated at all:
+	 * every call site names the side it is on.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorForcedChannelStillStopsAtTheOrganisationBoundary(): void {
+		$decision = $this->policy->decide(
+			$this->resolved([]),
+			[
+				'internalOnly' => true,
+				'forcedChannels' => ['channels' => ['email'], 'reason' => 'proces'],
+			],
+			RecipientAudience::External
+		);
+
+		$this->assertSame(ForcedChannelPolicy::REFUSED_EXTERNAL, $decision['refusal']);
+		$this->assertFalse($decision['enabled']);
+		$this->assertSame([], $decision['channels'], 'a forced channel is still a channel that leaves the organisation');
+	}//end testAnAdministratorForcedChannelStillStopsAtTheOrganisationBoundary()
+
+	/**
+	 * The enum answers the one question the policy asks of it.
+	 *
+	 * @return void
+	 */
+	public function testTheAudienceEnumKnowsWhichSideItIsOn(): void {
+		$this->assertTrue(RecipientAudience::Internal->isInternal());
+		$this->assertFalse(RecipientAudience::External->isInternal());
+	}//end testTheAudienceEnumKnowsWhichSideItIsOn()
+
 	public function testAKindThatSimplyHasNoChannelsCarriesNoRefusal(): void {
-		$decision = $this->policy->decide($this->resolved([]), []);
+		$decision = $this->policy->decide($this->resolved([]), [], RecipientAudience::Internal);
 
 		// The control for the test above: same empty list, no refusal, and the
 		// two are told apart by the refusal alone.
@@ -141,7 +180,7 @@ class ForcedChannelPolicyTest extends TestCase {
 		$decision = $this->policy->decide(
 			$this->resolved(['email', 'nc-notification', 'webhook']),
 			['internalOnly' => true],
-			true
+			RecipientAudience::Internal
 		);
 
 		// Even to somebody inside the organisation: the channel is the leak,
@@ -152,7 +191,7 @@ class ForcedChannelPolicyTest extends TestCase {
 	}//end testAnInternalKindNeverGoesOutOnAChannelThatCanLeave()
 
 	public function testAnInternalKindWithOnlyExternalChannelsSendsNothing(): void {
-		$decision = $this->policy->decide($this->resolved(['email']), ['internalOnly' => true], true);
+		$decision = $this->policy->decide($this->resolved(['email']), ['internalOnly' => true], RecipientAudience::Internal);
 
 		$this->assertSame([], $decision['channels']);
 		$this->assertFalse($decision['enabled']);
