@@ -224,54 +224,80 @@ class ViewShareResolver {
 		$findings = [];
 		$seen = [];
 		foreach ($sharedWith as $index => $share) {
-			if (is_array($share) === false) {
-				$findings[] = [
-					'code' => 'share.not-an-object',
-					'message' => 'Share ' . (string)$index . ' is not an object.',
-				];
-				continue;
-			}
-
-			$group = trim((string)($share['group'] ?? ''));
-			$mode = trim((string)($share['mode'] ?? ''));
-
-			if ($group === '') {
-				$findings[] = [
-					'code' => 'share.no-group',
-					'message' => 'Share ' . (string)$index . ' names no group.',
-				];
-				continue;
-			}
-
-			if (in_array($mode, self::MODES, true) === false) {
-				$findings[] = [
-					'code' => 'share.bad-mode',
-					'message' => 'Share with "' . $group . '" must be read or write, not "' . $mode . '".',
-				];
-			}
-
-			if (isset($seen[$group]) === true) {
-				// Two shares with one group is an authoring mistake with a
-				// silent consequence: which one wins depends on the order they
-				// happen to be stored in.
-				$findings[] = [
-					'code' => 'share.duplicate-group',
-					'message' => 'The group "' . $group . '" is shared with twice.',
-				];
-			}
-
-			$seen[$group] = true;
-
-			if ($groupExists($group) !== true) {
-				$findings[] = [
-					'code' => 'share.unknown-group',
-					'message' => 'The group "' . $group . '" does not exist.',
-				];
-			}
+			$findings = array_merge(
+				$findings,
+				$this->shareFindings(share: $share, index: $index, groupExists: $groupExists, seen: $seen)
+			);
 		}//end foreach
 
 		return $findings;
 	}//end validateShares()
+
+	/**
+	 * Findings for ONE declared share.
+	 *
+	 * `$seen` carries across the whole list because the duplicate-group finding
+	 * is about the list, not about this entry: two shares with one group is an
+	 * authoring mistake with a silent consequence, since which one wins depends
+	 * on the order they happen to be stored in.
+	 *
+	 * @param mixed          $share       The declared share.
+	 * @param string|integer $index       Which share it is.
+	 * @param callable       $groupExists Answers whether a group id exists.
+	 * @param array<string, true> $seen   Groups already shared with, updated in place.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	private function shareFindings(mixed $share, string|int $index, callable $groupExists, array &$seen): array {
+		if (is_array($share) === false) {
+			return [
+				[
+					'code' => 'share.not-an-object',
+					'message' => 'Share ' . (string)$index . ' is not an object.',
+				],
+			];
+		}
+
+		$group = trim((string)($share['group'] ?? ''));
+		$mode = trim((string)($share['mode'] ?? ''));
+
+		if ($group === '') {
+			return [
+				[
+					'code' => 'share.no-group',
+					'message' => 'Share ' . (string)$index . ' names no group.',
+				],
+			];
+		}
+
+		$findings = [];
+		if (in_array($mode, self::MODES, true) === false) {
+			$findings[] = [
+				'code' => 'share.bad-mode',
+				'message' => 'Share with "' . $group . '" must be read or write, not "' . $mode . '".',
+			];
+		}
+
+		if (isset($seen[$group]) === true) {
+			$findings[] = [
+				'code' => 'share.duplicate-group',
+				'message' => 'The group "' . $group . '" is shared with twice.',
+			];
+		}
+
+		$seen[$group] = true;
+
+		if ($groupExists($group) !== true) {
+			$findings[] = [
+				'code' => 'share.unknown-group',
+				'message' => 'The group "' . $group . '" does not exist.',
+			];
+		}
+
+		return $findings;
+	}//end shareFindings()
 
 	/**
 	 * The share list of a view, normalised and with the unusable entries gone.

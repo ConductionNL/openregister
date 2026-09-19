@@ -83,24 +83,7 @@ class StateHistoryRebuild {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function intervalsFor(array $changes, string $property): array {
-		$moves = [];
-		foreach ($changes as $change) {
-			$entry = ((array)($change['changed'] ?? []))[$property] ?? null;
-			if (is_array($entry) === false || array_key_exists('new', $entry) === false) {
-				continue;
-			}
-
-			$stampedAt = $this->moment(raw: ($change['created'] ?? null));
-			if ($stampedAt === null) {
-				continue;
-			}
-
-			$moves[] = [
-				'old' => ($entry['old'] ?? null),
-				'new' => ($entry['new'] ?? null),
-				'at' => $stampedAt,
-			];
-		}//end foreach
+		$moves = $this->movesIn(changes: $changes, property: $property);
 
 		if ($moves === []) {
 			return [];
@@ -128,6 +111,45 @@ class StateHistoryRebuild {
 
 		return $intervals;
 	}//end intervalsFor()
+
+	/**
+	 * The recorded moves of one property, oldest first.
+	 *
+	 * A change that does not touch this property, or that carries no usable
+	 * timestamp, is SKIPPED rather than given a guessed one. An interval with
+	 * an invented boundary is worse than one that is not there: it answers a
+	 * "was it ever" question with a confident wrong yes.
+	 *
+	 * @param array<int, array{created?: mixed, changed?: mixed}> $changes  The change rows, oldest first.
+	 * @param string                                              $property The declared lifecycle property.
+	 *
+	 * @return array<int, array{old: mixed, new: mixed, at: DateTime}> The moves.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function movesIn(array $changes, string $property): array {
+		$moves = [];
+
+		foreach ($changes as $change) {
+			$entry = ((array)($change['changed'] ?? []))[$property] ?? null;
+			if (is_array($entry) === false || array_key_exists('new', $entry) === false) {
+				continue;
+			}
+
+			$stampedAt = $this->moment(raw: ($change['created'] ?? null));
+			if ($stampedAt === null) {
+				continue;
+			}
+
+			$moves[] = [
+				'old' => ($entry['old'] ?? null),
+				'new' => ($entry['new'] ?? null),
+				'at' => $stampedAt,
+			];
+		}//end foreach
+
+		return $moves;
+	}//end movesIn()
 
 	/**
 	 * Rebuild one object's line.

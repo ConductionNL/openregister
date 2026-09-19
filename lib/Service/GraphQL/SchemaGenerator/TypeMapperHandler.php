@@ -339,33 +339,7 @@ class TypeMapperHandler {
 		}
 
 		$typeName = ($this->typeNameConverter)($filterSlug, $schema->getId());
-		$fields = [];
-
-		$properties = $schema->getProperties() ?? [];
-		foreach ($properties as $name => $property) {
-			if (is_array(value: $property) === false) {
-				continue;
-			}
-
-			// A GraphQL type IS a description of the shape, and a field name is
-			// information. A governed property named here can be introspected by
-			// anyone who can reach the endpoint, and the governed names are the
-			// ones worth protecting: a property carries an authorization block
-			// or a scope precisely because it is sensitive.
-			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
-				continue;
-			}
-
-			$fieldName = ($this->fieldNameConverter)($name);
-
-			// Each filter field accepts the base type or a comparison object.
-			$baseType = $this->mapPropertyToGraphQLType(property: $property);
-			// Simple types use the base type; complex types use JSON for filtering.
-			$fields[$fieldName] = $baseType;
-			if ($baseType instanceof ObjectType || $baseType instanceof \GraphQL\Type\Definition\ListOfType) {
-				$fields[$fieldName] = $this->scalars['JSON'];
-			}
-		}
+		$fields = $this->filterFieldsFor(schema: $schema);
 
 		if (empty($fields) === true) {
 			$fields['_empty'] = [
@@ -384,6 +358,48 @@ class TypeMapperHandler {
 		$this->inputTypes[$key] = $inputType;
 		return $inputType;
 	}//end getFilterInputType()
+
+	/**
+	 * The filterable fields of one schema, keyed by GraphQL field name.
+	 *
+	 * A GraphQL type IS a description of the shape, and a field name is
+	 * information. A governed property named here can be introspected by anyone
+	 * who can reach the endpoint, and the governed names are the ones worth
+	 * protecting: a property carries an authorization block or a scope
+	 * precisely because it is sensitive.
+	 *
+	 * @param RegisterSchema $schema The register schema
+	 *
+	 * @return array<string, mixed> The fields
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function filterFieldsFor(RegisterSchema $schema): array {
+		$fields = [];
+
+		$properties = $schema->getProperties() ?? [];
+		foreach ($properties as $name => $property) {
+			if (is_array(value: $property) === false) {
+				continue;
+			}
+
+			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
+				continue;
+			}
+
+			$fieldName = ($this->fieldNameConverter)($name);
+
+			// Each filter field accepts the base type or a comparison object.
+			// Simple types use the base type; complex types use JSON.
+			$baseType = $this->mapPropertyToGraphQLType(property: $property);
+			$fields[$fieldName] = $baseType;
+			if ($baseType instanceof ObjectType || $baseType instanceof \GraphQL\Type\Definition\ListOfType) {
+				$fields[$fieldName] = $this->scalars['JSON'];
+			}
+		}
+
+		return $fields;
+	}//end filterFieldsFor()
 
 	/**
 	 * Get a create input type for a schema.

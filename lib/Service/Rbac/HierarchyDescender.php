@@ -266,16 +266,7 @@ class HierarchyDescender {
 			return [];
 		}
 
-		$hierarchy = null;
-		foreach ($this->hierarchicalTables() as $candidate) {
-			if ($candidate['schemaId'] === $schemaId
-				&& $candidate['table'] === (MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId)
-			) {
-				$hierarchy = $candidate;
-				break;
-			}
-		}
-
+		$hierarchy = $this->hierarchyFor(registerId: $registerId, schemaId: $schemaId);
 		if ($hierarchy === null) {
 			return [];
 		}
@@ -302,6 +293,32 @@ class HierarchyDescender {
 
 		return $ancestors;
 	}//end ancestorsOf()
+
+	/**
+	 * The hierarchy declaration for one register and schema, or null.
+	 *
+	 * Matched on BOTH the schema id and the table name. A schema id alone would
+	 * match the same schema in another register, whose rows are a different
+	 * tenant's, which is the widening direction.
+	 *
+	 * @param integer $registerId The register.
+	 * @param integer $schemaId   The schema.
+	 *
+	 * @return array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int}|null The declaration, or null.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function hierarchyFor(int $registerId, int $schemaId): ?array {
+		$table = (MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId);
+
+		foreach ($this->hierarchicalTables() as $candidate) {
+			if ($candidate['schemaId'] === $schemaId && $candidate['table'] === $table) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end hierarchyFor()
 
 	/**
 	 * The uuid one row names as its parent, or null.
