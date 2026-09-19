@@ -210,13 +210,36 @@ class ObjectsController extends Controller {
 	 * separate from the read above: the read excludes deleted rows by design,
 	 * and widening it would leak soft-deleted content into every list.
 	 *
-	 * @param string $id The identifier the caller asked for.
+	 * SCOPED EXACTLY AS THE READ IT STANDS IN FOR. This used to look up a bare
+	 * uuid with `_rbac: false` and `_multitenancy: false` and no register
+	 * constraint at all, which made it strictly more permissive than the read
+	 * it is a fallback message for. `show()` reaches it precisely when the
+	 * scoped find() answered null - the case show()'s own docblock says must be
+	 * a bare 404, "so an unauthorized caller cannot distinguish 'exists but
+	 * forbidden' from 'does not exist'". A caller in one organisation could name
+	 * any uuid from any other and be told, in a 404-shaped body, that the object
+	 * exists, that it is in the trash, and exactly when it stops being
+	 * restorable. The register and schema in the URL were not even used to
+	 * constrain it, so any uuid from any tenant worked the same way.
+	 *
+	 * The caller's own flags are passed in rather than assumed, so an admin -
+	 * who reads exempt on the primary path - still gets the helpful answer.
+	 *
+	 * @param string   $id              The identifier the caller asked for.
+	 * @param bool     $rbac            The caller's own RBAC posture, as used by the read.
+	 * @param bool     $multitenancy    The caller's own tenancy posture, as used by the read.
+	 * @param int|null $registerIdScope The register named in the URL, so the lookup cannot wander.
 	 *
 	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
 	 *
 	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
-	private function deletedRefusal(string $id): ?array {
+	private function deletedRefusal(
+		string $id,
+		bool $rbac,
+		bool $multitenancy,
+		?int $registerIdScope = null,
+	): ?array {
 		if ($this->windowService === null) {
 			return null;
 		}
@@ -226,8 +249,9 @@ class ObjectsController extends Controller {
 			$context = $magicMapper->findAcrossAllSources(
 				identifier: $id,
 				includeDeleted: true,
-				_rbac: false,
-				_multitenancy: false
+				_rbac: $rbac,
+				_multitenancy: $multitenancy,
+				registerIdScope: $registerIdScope
 			);
 		} catch (\Throwable $e) {
 			return null;
@@ -2728,7 +2752,17 @@ class ObjectsController extends Controller {
 				// a soft-deleted object is the answer that makes a caseworker
 				// think their work is gone, when it is in the trash with a
 				// stated window still open.
-				$deletedRefusal = $this->deletedRefusal(id: $id);
+				$registerScope = null;
+				if (is_numeric($resolved['register']) === true) {
+					$registerScope = (int)$resolved['register'];
+				}
+
+				$deletedRefusal = $this->deletedRefusal(
+					id: $id,
+					rbac: $rbac,
+					multitenancy: $multi,
+					registerIdScope: $registerScope
+				);
 				if ($deletedRefusal !== null) {
 					return new JSONResponse(data: $deletedRefusal, statusCode: Http::STATUS_NOT_FOUND);
 				}
