@@ -132,41 +132,16 @@ final class ViewAlert implements JsonSerializable {
 			throw new InvalidArgumentException('alert: an alert is an object with an operator and a threshold.');
 		}
 
-		$operator = ($raw['operator'] ?? null);
-		if (is_string($operator) === false || in_array($operator, self::OPERATORS, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'alert.operator: use one of %s; got %s.',
-					implode(', ', self::OPERATORS),
-					var_export($operator, true)
-				)
-			);
-		}
-
-		$threshold = ($raw['threshold'] ?? null);
-		if (is_int($threshold) === false || $threshold < 0) {
-			throw new InvalidArgumentException(
-				sprintf('alert.threshold: a count threshold is a whole number of rows, zero or more; got %s.', var_export($threshold, true))
-			);
-		}
-
-		$recipients = self::stringList(raw: ($raw['recipients'] ?? []), field: 'alert.recipients');
-		if ($recipients === []) {
-			// An alert nobody hears is a query run on a timer forever. It is
-			// not a smaller alert; it is a cost with no reader.
-			throw new InvalidArgumentException('alert.recipients: name at least one recipient, or the alert has nobody to tell.');
-		}
+		// The four field checks run in the ORDER they used to, and `channels`
+		// still sits between recipients and every, because each one throws and
+		// reordering them would change WHICH field a malformed alert names.
+		$operator = self::validOperator(raw: ($raw['operator'] ?? null));
+		$threshold = self::validThreshold(raw: ($raw['threshold'] ?? null));
+		$recipients = self::validRecipients(raw: ($raw['recipients'] ?? []));
 
 		$channels = self::stringList(raw: ($raw['channels'] ?? []), field: 'alert.channels');
 		if ($channels === []) {
 			$channels = ['nc-notification'];
-		}
-
-		$every = ($raw['every'] ?? self::MIN_EVERY);
-		if (is_int($every) === false || $every < self::MIN_EVERY) {
-			throw new InvalidArgumentException(
-				sprintf('alert.every: evaluate at most once every %d seconds; got %s.', self::MIN_EVERY, var_export($every, true))
-			);
 		}
 
 		return new self(
@@ -174,9 +149,99 @@ final class ViewAlert implements JsonSerializable {
 			threshold: $threshold,
 			recipients: $recipients,
 			channels: $channels,
-			every: $every
+			every: self::validEvery(raw: ($raw['every'] ?? self::MIN_EVERY))
 		);
 	}//end parse()
+
+	/**
+	 * The declared operator, or a refusal naming the field.
+	 *
+	 * @param mixed $raw The declared operator.
+	 *
+	 * @return string The operator.
+	 *
+	 * @throws InvalidArgumentException When it is not one this class knows.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	private static function validOperator(mixed $raw): string {
+		if (is_string($raw) === false || in_array($raw, self::OPERATORS, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'alert.operator: use one of %s; got %s.',
+					implode(', ', self::OPERATORS),
+					var_export($raw, true)
+				)
+			);
+		}
+
+		return $raw;
+	}//end validOperator()
+
+	/**
+	 * The declared threshold, or a refusal naming the field.
+	 *
+	 * @param mixed $raw The declared threshold.
+	 *
+	 * @return integer The threshold.
+	 *
+	 * @throws InvalidArgumentException When it is not a whole count of rows.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	private static function validThreshold(mixed $raw): int {
+		if (is_int($raw) === false || $raw < 0) {
+			throw new InvalidArgumentException(
+				sprintf('alert.threshold: a count threshold is a whole number of rows, zero or more; got %s.', var_export($raw, true))
+			);
+		}
+
+		return $raw;
+	}//end validThreshold()
+
+	/**
+	 * The declared recipients, or a refusal naming the field.
+	 *
+	 * An alert nobody hears is a query run on a timer forever. It is not a
+	 * smaller alert; it is a cost with no reader.
+	 *
+	 * @param mixed $raw The declared recipients.
+	 *
+	 * @return array<int, string> The recipients.
+	 *
+	 * @throws InvalidArgumentException When the list is empty or unreadable.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	private static function validRecipients(mixed $raw): array {
+		$recipients = self::stringList(raw: $raw, field: 'alert.recipients');
+		if ($recipients === []) {
+			throw new InvalidArgumentException('alert.recipients: name at least one recipient, or the alert has nobody to tell.');
+		}
+
+		return $recipients;
+	}//end validRecipients()
+
+	/**
+	 * The declared evaluation interval, or a refusal naming the field.
+	 *
+	 * @param mixed $raw The declared interval in seconds.
+	 *
+	 * @return integer The interval.
+	 *
+	 * @throws InvalidArgumentException When it is under the floor.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	private static function validEvery(mixed $raw): int {
+		if (is_int($raw) === false || $raw < self::MIN_EVERY) {
+			throw new InvalidArgumentException(
+				sprintf('alert.every: evaluate at most once every %d seconds; got %s.', self::MIN_EVERY, var_export($raw, true))
+			);
+		}
+
+		return $raw;
+	}//end validEvery()
 
 	/**
 	 * Whether a count is on the far side of the line.

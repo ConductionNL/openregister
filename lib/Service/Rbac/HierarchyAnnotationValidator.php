@@ -90,16 +90,7 @@ class HierarchyAnnotationValidator {
 			];
 		}
 
-		$findings = [];
-		foreach (array_keys($annotation) as $key) {
-			if (in_array((string)$key, self::KNOWN_KEYS, true) === false) {
-				$findings[] = [
-					'code' => 'hierarchy.unknown-key',
-					'message' => 'Unknown key "' . (string)$key . '" was ignored.',
-					'severity' => 'warning',
-				];
-			}
-		}
+		$findings = $this->unknownKeyFindings(annotation: $annotation);
 
 		$parent = trim((string)($annotation['parent'] ?? ($annotation['parentField'] ?? '')));
 		if ($parent === '') {
@@ -124,43 +115,110 @@ class HierarchyAnnotationValidator {
 			)
 		);
 
-		if (array_key_exists('maxDepth', $annotation) === true) {
-			$depth = $annotation['maxDepth'];
-			if (is_int($depth) === false || $depth < 1) {
-				$findings[] = $this->error(
-					code: 'hierarchy.bad-depth',
-					message: 'maxDepth must be a positive integer.'
-				);
-			}
-		}
+		$findings = array_merge(
+			$findings,
+			$this->maxDepthFindings(annotation: $annotation),
+			$this->inheritedVerbsFindings(annotation: $annotation)
+		);
 
-		if (array_key_exists('inheritedVerbs', $annotation) === true) {
-			$verbs = $annotation['inheritedVerbs'];
-			if (is_array($verbs) === false) {
-				$findings[] = $this->error(
-					code: 'hierarchy.bad-verbs',
-					message: 'inheritedVerbs must be a list of verbs.'
-				);
-			}
+		return $findings;
+	}//end validate()
 
-			$verbList = [];
-			if (is_array($verbs) === true) {
-				$verbList = $verbs;
-			}
-
-			foreach ($verbList as $verb) {
-				if (is_string($verb) === false || trim($verb) === '') {
-					$findings[] = $this->error(
-						code: 'hierarchy.bad-verbs',
-						message: 'inheritedVerbs must hold non-empty verb names.'
-					);
-					break;
-				}
+	/**
+	 * A warning for every annotation key this validator does not know.
+	 *
+	 * An unknown key is IGNORED rather than refused, so the warning is the only
+	 * thing standing between a typo and an annotation that quietly does less
+	 * than its author wrote.
+	 *
+	 * @param array<string, mixed> $annotation The hierarchy annotation.
+	 *
+	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function unknownKeyFindings(array $annotation): array {
+		$findings = [];
+		foreach (array_keys($annotation) as $key) {
+			if (in_array((string)$key, self::KNOWN_KEYS, true) === false) {
+				$findings[] = [
+					'code' => 'hierarchy.unknown-key',
+					'message' => 'Unknown key "' . (string)$key . '" was ignored.',
+					'severity' => 'warning',
+				];
 			}
 		}
 
 		return $findings;
-	}//end validate()
+	}//end unknownKeyFindings()
+
+	/**
+	 * Findings for the optional `maxDepth` key.
+	 *
+	 * @param array<string, mixed> $annotation The hierarchy annotation.
+	 *
+	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function maxDepthFindings(array $annotation): array {
+		if (array_key_exists('maxDepth', $annotation) === false) {
+			return [];
+		}
+
+		$depth = $annotation['maxDepth'];
+		if (is_int($depth) === false || $depth < 1) {
+			return [
+				$this->error(
+					code: 'hierarchy.bad-depth',
+					message: 'maxDepth must be a positive integer.'
+				),
+			];
+		}
+
+		return [];
+	}//end maxDepthFindings()
+
+	/**
+	 * Findings for the optional `inheritedVerbs` key.
+	 *
+	 * A non-list and a list holding a blank name are BOTH reported when both
+	 * are true, which is what the sequential version did: the shape error does
+	 * not stop the member check, it just leaves nothing for it to walk.
+	 *
+	 * @param array<string, mixed> $annotation The hierarchy annotation.
+	 *
+	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function inheritedVerbsFindings(array $annotation): array {
+		if (array_key_exists('inheritedVerbs', $annotation) === false) {
+			return [];
+		}
+
+		$findings = [];
+		$verbs = $annotation['inheritedVerbs'];
+		if (is_array($verbs) === false) {
+			$findings[] = $this->error(
+				code: 'hierarchy.bad-verbs',
+				message: 'inheritedVerbs must be a list of verbs.'
+			);
+			$verbs = [];
+		}
+
+		foreach ($verbs as $verb) {
+			if (is_string($verb) === false || trim($verb) === '') {
+				$findings[] = $this->error(
+					code: 'hierarchy.bad-verbs',
+					message: 'inheritedVerbs must hold non-empty verb names.'
+				);
+				break;
+			}
+		}
+
+		return $findings;
+	}//end inheritedVerbsFindings()
 
 	/**
 	 * Whether the named property is a reference to this same schema.

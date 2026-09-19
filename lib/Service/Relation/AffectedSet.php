@@ -98,6 +98,51 @@ class AffectedSet {
 		$edges = (array)($graph['edges'] ?? []);
 		$nodes = (array)($graph['nodes'] ?? []);
 
+		['kept' => $kept, 'pruned' => $pruned] = $this->partitionEdges(
+			edges: $edges,
+			types: $types,
+			prune: $prune
+		);
+
+		$reachable = $this->reachableFrom(root: $root, edges: $kept);
+
+		['objects' => $objects, 'parties' => $parties] = $this->classifyNodes(
+			nodes: $nodes,
+			root: $root,
+			reachable: $reachable,
+			partySchemas: $partySchemas
+		);
+
+		return [
+			'root' => $root,
+			'objects' => $objects,
+			'parties' => $parties,
+			'pruned' => $pruned,
+			// Passed through rather than recomputed: the walk is the only thing
+			// that knows whether it stopped early, and an affected set that
+			// reported "not truncated" over a truncated walk would be a
+			// complete-looking answer to an incomplete question.
+			'truncated' => (bool)($graph['truncated'] ?? false),
+			'truncatedBy' => ($graph['truncatedBy'] ?? null),
+		];
+	}//end derive()
+
+	/**
+	 * Split the walk's edges into the ones that survive and the ones cut.
+	 *
+	 * Pruning is checked BEFORE the type filter, as it always has been: a type
+	 * that is both pruned and kept is pruned, and it is reported as pruned
+	 * rather than silently dropped by the filter.
+	 *
+	 * @param array<int, mixed>       $edges The walk's edges.
+	 * @param array<int, string>|null $types Relation types to keep, or null for all.
+	 * @param array<int, string>      $prune Relation types to cut.
+	 *
+	 * @return array{kept: array<int, mixed>, pruned: array<int, array{type: string, at: string, to: string}>} The split.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function partitionEdges(array $edges, ?array $types, array $prune): array {
 		$kept = [];
 		$pruned = [];
 
@@ -124,10 +169,31 @@ class AffectedSet {
 			$kept[] = $edge;
 		}//end foreach
 
-		$reachable = $this->reachableFrom(root: $root, edges: $kept);
+		return [
+			'kept' => $kept,
+			'pruned' => $pruned,
+		];
+	}//end partitionEdges()
 
+	/**
+	 * Split the reachable nodes into plain objects and parties.
+	 *
+	 * The root itself is never in either list: it is what the question was
+	 * about, not something the question affected.
+	 *
+	 * @param array<int, mixed>     $nodes        The walk's nodes.
+	 * @param string                $root         The object the walk started from.
+	 * @param array<string, mixed>  $reachable    Path by uuid, from the surviving edges.
+	 * @param array<int, string>    $partySchemas Which schemas are parties.
+	 *
+	 * @return array{objects: array<int, array<string, mixed>>, parties: array<int, array<string, mixed>>} The split.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function classifyNodes(array $nodes, string $root, array $reachable, array $partySchemas): array {
 		$objects = [];
 		$parties = [];
+
 		foreach ($nodes as $node) {
 			if (is_array($node) === false) {
 				continue;
@@ -152,18 +218,10 @@ class AffectedSet {
 		}//end foreach
 
 		return [
-			'root' => $root,
 			'objects' => $objects,
 			'parties' => $parties,
-			'pruned' => $pruned,
-			// Passed through rather than recomputed: the walk is the only thing
-			// that knows whether it stopped early, and an affected set that
-			// reported "not truncated" over a truncated walk would be a
-			// complete-looking answer to an incomplete question.
-			'truncated' => (bool)($graph['truncated'] ?? false),
-			'truncatedBy' => ($graph['truncatedBy'] ?? null),
 		];
-	}//end derive()
+	}//end classifyNodes()
 
 	/**
 	 * Which nodes remain reachable, and by which path.
