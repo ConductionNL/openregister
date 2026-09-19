@@ -1383,7 +1383,7 @@ class Application extends App implements IBootstrap {
 		ContainerInterface $container,
 		LoggerInterface $logger
 	): void {
-		// setter => [service id, the name the log line used before this list existed]
+		// Setter => [service id, the name the log line used before this list existed].
 		$optional = [
 			'setFileService' => [\OCA\OpenRegister\Service\FileService::class, 'FileService'],
 			'setNoteService' => [\OCA\OpenRegister\Service\NoteService::class, 'NoteService'],
