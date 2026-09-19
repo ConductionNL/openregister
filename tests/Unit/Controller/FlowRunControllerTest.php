@@ -75,6 +75,13 @@ class FlowRunControllerTest extends TestCase {
 	private \OCA\OpenRegister\Service\Flow\FlowService&MockObject $flows;
 
 	/**
+	 * Which flows the caller owns, for the history scoping.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowCaller&MockObject
+	 */
+	private \OCA\OpenRegister\Service\Flow\FlowCaller&MockObject $flowOwnership;
+
+	/**
 	 * User session mock.
 	 *
 	 * @var IUserSession&MockObject
@@ -103,6 +110,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->resolvers = $this->createMock(FlowLocator::class);
 		$this->organisations = $this->createMock(OrganisationService::class);
 		$this->flows = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
+		$this->flowOwnership = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowCaller::class);
 
 		// A session is required for the history read to return anything: the
 		// scoping rule is "runs you triggered, plus runs of flows you own", and
@@ -135,7 +143,7 @@ class FlowRunControllerTest extends TestCase {
 			userSession: $this->userSession,
 			organisationService: $this->organisations,
 			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
-			flows: $this->flows
+			flowOwnership: $this->flowOwnership
 		);
 	}//end setUp()
 
@@ -445,7 +453,7 @@ class FlowRunControllerTest extends TestCase {
 	 */
 	public function testTheHistoryReadIsScopedToTheCaller(): void {
 		$this->params([]);
-		$this->flows->method('idsOwnedByCaller')->willReturn(['owned-flow']);
+		$this->flowOwnership->method('idsOwnedByCaller')->willReturn(['owned-flow']);
 
 		$this->mapper->expects($this->once())
 			->method('findAllRuns')
@@ -483,7 +491,7 @@ class FlowRunControllerTest extends TestCase {
 			userSession: $session,
 			organisationService: $this->organisations,
 			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
-			flows: $this->flows
+			flowOwnership: $this->flowOwnership
 		);
 
 		$this->mapper->expects($this->never())->method('findAllRuns');
@@ -694,7 +702,7 @@ class FlowRunControllerTest extends TestCase {
 			organisationService: $this->organisations,
 			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
 			groupManager: $groupManager,
-			flows: $this->flows
+			flowOwnership: $this->flowOwnership
 		);
 	}//end controllerWith()
 

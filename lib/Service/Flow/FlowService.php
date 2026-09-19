@@ -71,6 +71,13 @@ class FlowService {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
+	 * Who is asking, and which flows are theirs.
+	 *
+	 * @var FlowCaller
+	 */
+	private FlowCaller $caller;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowMapper $mapper Reads and writes flow definitions.
@@ -100,6 +107,12 @@ class FlowService {
 		private readonly ContainerInterface $container,
 		private readonly ?FlowRunAuthorization $runAuthorization = null,
 	) {
+		$this->caller = new FlowCaller(
+			mapper: $mapper,
+			userSession: $userSession,
+			container: $container,
+			logger: $logger
+		);
 
 	}//end __construct()
 
@@ -123,7 +136,7 @@ class FlowService {
 		int $limit = 100,
 		int $offset = 0,
 	): array {
-		$organisation = $this->activeOrganisation();
+		$organisation = $this->caller->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
 			return [];
@@ -151,42 +164,13 @@ class FlowService {
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	public function count(?string $app = null, ?string $applicationSlug = null): int {
-		$organisation = $this->activeOrganisation();
+		$organisation = $this->caller->activeOrganisation();
 		if ($organisation === null) {
 			return 0;
 		}
 
 		return $this->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
 	}//end count()
-
-	/**
-	 * The ids of the flows the acting user owns.
-	 *
-	 * Used by the run-history visibility rule, which shows a caller the runs
-	 * they triggered PLUS the runs of flows they own — the second half matters
-	 * because `triggered_by` is null for cron- and trigger-fired runs.
-	 *
-	 * @return array<int, string> The flow uuids.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	public function idsOwnedByCaller(): array {
-		$uid = $this->actingUser();
-		if ($uid === null) {
-			return [];
-		}
-
-		try {
-			return $this->mapper->findIdsOwnedBy($uid);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowService] Could not list the caller\'s owned flows: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [];
-		}
-
-	}//end idsOwnedByCaller()
 
 	/**
 	 * Load one flow the caller is allowed to see.
@@ -206,7 +190,7 @@ class FlowService {
 	public function find(string $uuid): Flow {
 		$flow = $this->mapper->findByUuid($uuid);
 
-		if ($flow->belongsTo($this->activeOrganisation()) === false) {
+		if ($flow->belongsTo($this->caller->activeOrganisation()) === false) {
 			throw new DoesNotExistException('No such flow');
 		}
 
@@ -287,7 +271,7 @@ class FlowService {
 	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
 	 */
 	public function adopt(Flow $flow): Flow {
-		$uid = $this->actingUser();
+		$uid = $this->caller->actingUser();
 		if ($uid === null) {
 			throw new FlowAdoptionRefused(
 				reason: FlowAdoptionRefused::REASON_NO_ACTING_USER,
@@ -729,7 +713,7 @@ class FlowService {
 			subject: $subject,
 			trigger: $trigger,
 			context: $context,
-			user: $this->actingUser()
+			user: $this->caller->actingUser()
 		);
 
 		if ($sync === false) {
@@ -747,75 +731,6 @@ class FlowService {
 		// swallows for the opposite reason — one bad run must not stop a queue.
 		return $this->advancer->advance(run: $run, rethrow: true);
 	}//end run()
-
-	/**
-	 * The owner and organisation a flow written by THIS caller must carry.
-	 *
-	 * 🔴 PUBLIC BECAUSE IT HAS A SECOND WRITER. `flowToSave()` is not the only
-	 * path that inserts a Flow: `FlowShareableConfigType::deserialise()` writes
-	 * one when a federated bundle is installed, and it used to stamp nulls —
-	 * reproducing, on that path, the permanent orphan the refusal below exists
-	 * to prevent. Two writers each deriving ownership their own way is how the
-	 * rule came to hold on one of them and not the other; this is the one place
-	 * that decides it.
-	 *
-	 * @return array{owner: string|null, organisation: string|null} The caller's ownership, either field null when it does not resolve.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	public function callerOwnership(): array {
-		return [
-			'owner'        => $this->actingUser(),
-			'organisation' => $this->activeOrganisation(),
-		];
-	}//end callerOwnership()
-
-	/**
-	 * The acting user's uid, or null when there is no session.
-	 *
-	 * @return string|null The uid.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	private function actingUser(): ?string {
-		$uid = (string)($this->userSession->getUser()?->getUID() ?? '');
-		if ($uid === '') {
-			return null;
-		}
-
-		return $uid;
-	}//end actingUser()
-
-	/**
-	 * The caller's active organisation uuid, or null when none resolves.
-	 *
-	 * Resolved lazily through the container for the same reason
-	 * `FlowRunService` does it: this service is reachable from paths that run
-	 * without a session, and dragging the whole organisation/RBAC graph in to
-	 * read a value that will be null there is wasted work.
-	 *
-	 * @return string|null The organisation uuid.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	private function activeOrganisation(): ?string {
-		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				message: '[FlowService] Could not resolve the active organisation: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		if ((string)$uuid === '') {
-			return null;
-		}
-
-		return (string)$uuid;
-	}//end activeOrganisation()
 
 	/**
 	 * Mint a v4 uuid.

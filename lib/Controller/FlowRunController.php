@@ -36,7 +36,7 @@ use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -98,10 +98,10 @@ class FlowRunController extends Controller {
 	 *                                         adding it is not a fatal at existing
 	 *                                         construction sites; absent means "not an
 	 *                                         admin", which SCOPES rather than widens.
-	 * @param FlowService|null $flows Reads which flows the caller owns, from the
-	 *                                native flow store. Nullable for the same
-	 *                                reason as $groupManager: absent yields no
-	 *                                owned ids, which scopes rather than widens.
+	 * @param FlowCaller|null $flowOwnership Reads which flows the caller owns, from the
+	 *                                       native flow store. Nullable for the same
+	 *                                       reason as $groupManager: absent yields no
+	 *                                       owned ids, which scopes rather than widens.
 	 * @param AuditFlowAttribution|null $auditTrails Reads the attribution stamped on
 	 *                                           audit rows, for the objects a run
 	 *                                           touched. Nullable and LAST so
@@ -128,7 +128,7 @@ class FlowRunController extends Controller {
 		private readonly OrganisationService $organisationService,
 		private readonly FlowRunnableGuard $guard,
 		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?FlowService $flows = null,
+		private readonly ?FlowCaller $flowOwnership = null,
 		// Appended LAST and nullable on purpose: a new constructor argument
 		// inserted anywhere else shifts every positional caller, and the
 		// resulting TypeError names the argument AFTER the one that moved.
@@ -915,11 +915,11 @@ class FlowRunController extends Controller {
 		// register named by `flow_register`/`flow_schema` config — a store that
 		// no longer exists. The visibility RULE is unchanged (D7): a caller sees
 		// the runs they triggered plus the runs of flows they own.
-		if ($this->flows === null) {
+		if ($this->flowOwnership === null) {
 			return [];
 		}
 
-		return $this->flows->idsOwnedByCaller();
+		return $this->flowOwnership->idsOwnedByCaller();
 	}//end flowIdsOwnedByCaller()
 
 }//end class

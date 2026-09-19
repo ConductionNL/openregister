@@ -80,7 +80,7 @@ class FlowRunSignalByKeyTest extends TestCase {
 			userSession: $userSession,
 			organisationService: $this->createMock(OrganisationService::class),
 			guard: new FlowRunnableGuard(flows: $this->flows, access: null),
-			flows: $this->flows
+			flowOwnership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowCaller::class)
 		);
 	}//end setUp()
 
