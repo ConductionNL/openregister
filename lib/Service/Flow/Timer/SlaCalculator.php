@@ -134,6 +134,29 @@ final class SlaCalculator {
 	private const EPSILON = 0.0000001;
 
 	/**
+	 * The walk over a calendar's declared service hours.
+	 *
+	 * @var ServiceHoursClock
+	 */
+	private readonly ServiceHoursClock $hoursClock;
+
+	/**
+	 * Constructor.
+	 *
+	 * The clock defaults rather than being required, because this class is
+	 * also constructed directly in a dozen tests and in two consumers that
+	 * predate it, and a required argument would turn a wiring change into a
+	 * fatal error on an upgraded instance.
+	 *
+	 * @param ServiceHoursClock|null $hoursClock The service-hours walk, or null for the default.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function __construct(?ServiceHoursClock $hoursClock = null) {
+		$this->hoursClock = ($hoursClock ?? new ServiceHoursClock());
+	}//end __construct()
+
+	/**
 	 * Validate an SLA of shape `{value, unit}`.
 	 *
 	 * @param mixed $sla The declared SLA.
@@ -330,6 +353,25 @@ final class SlaCalculator {
 		$this->validateUnit(unit: $unit);
 
 		if ($unit === self::UNIT_HOURS) {
+			// Service hours, when the administrator declared any. An hours
+			// term then advances only while the organisation is open, which is
+			// the difference between a four-hour answer owed on Friday evening
+			// and one owed on Monday morning.
+			//
+			// Only forward. A negative hours term is an offset read BACK from
+			// a moment, and walking windows backwards is a second walk with
+			// its own edge cases; until an escalation rung needs it, the
+			// backward path keeps the wall clock it has always had, and says
+			// so rather than pretending to be window-aware.
+			if ($calendar !== null && $value > 0 && $calendar->getServiceHours()->areDeclared() === true) {
+				return $this->hoursClock->due(
+					from: $start,
+					hours: $value,
+					calendar: $calendar,
+					windows: $calendar->getServiceHours()
+				);
+			}
+
 			return $this->shift(moment: $start, modifier: sprintf('%+d seconds', (int)round($value * 3600)));
 		}
 
@@ -483,6 +525,15 @@ final class SlaCalculator {
 	public function elapsedBusinessHours(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar): float {
 		if ($to->getTimestamp() < $from->getTimestamp()) {
 			return -$this->elapsedBusinessHours(from: $to, to: $from, calendar: $calendar);
+		}
+
+		if ($calendar->getServiceHours()->areDeclared() === true) {
+			return $this->hoursClock->elapsed(
+				from: $from,
+				to: $to,
+				calendar: $calendar,
+				windows: $calendar->getServiceHours()
+			);
 		}
 
 		$cursor = DateTimeImmutable::createFromInterface($from);

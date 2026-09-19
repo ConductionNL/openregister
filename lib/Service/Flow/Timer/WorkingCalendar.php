@@ -101,6 +101,7 @@ final class WorkingCalendar {
 	 * @param array<string, string> $exceptions Enumerated one-off closures, `Y-m-d` => name.
 	 * @param integer $dayStartsAtMinute Minutes past midnight the working day opens.
 	 * @param string $timezone The zone the organisation's days are counted in.
+	 * @param ServiceHours $serviceHours The hours of the day the clock runs, per weekday.
 	 */
 	private function __construct(
 		private readonly string $slug,
@@ -111,6 +112,7 @@ final class WorkingCalendar {
 		private readonly array $exceptions,
 		private readonly int $dayStartsAtMinute,
 		private readonly string $timezone,
+		private readonly ServiceHours $serviceHours,
 	) {
 
 	}//end __construct()
@@ -161,17 +163,50 @@ final class WorkingCalendar {
 			$organisation = trim((string)$definition['organisation']);
 		}
 
+		// 🔴 THE WINDOWS WIN OVER THE SCALAR, THEY DO NOT SIT BESIDE IT. A
+		// calendar declaring both has two answers to "how long is a working
+		// day", and a term computed from one while a report reads the other
+		// is the disagreement nobody can see on screen. Deriving the scalar
+		// from the windows leaves one answer. A calendar declaring no windows
+		// keeps the scalar it always had.
+		$serviceHours = ServiceHours::fromArray(
+			value: ($definition['serviceHours'] ?? null),
+			workingWeekdays: $weekdays,
+			slug: $slug
+		);
+		$hoursPerDay = (float)$hours;
+		if ($serviceHours->areDeclared() === true) {
+			$hoursPerDay = $serviceHours->derivedHoursPerWorkingDay();
+		}
+
 		return new self(
 			slug: $slug,
 			organisation: $organisation,
 			workingWeekdays: $weekdays,
-			hoursPerWorkingDay: (float)$hours,
+			hoursPerWorkingDay: $hoursPerDay,
 			rules: $rules,
 			exceptions: $exceptions,
 			dayStartsAtMinute: self::validDayStart(slug: $slug, value: ($definition['dayStartsAt'] ?? null)),
-			timezone: self::validTimezone(slug: $slug, value: ($definition['timezone'] ?? null))
+			timezone: self::validTimezone(slug: $slug, value: ($definition['timezone'] ?? null)),
+			serviceHours: $serviceHours
 		);
 	}//end fromArray()
+
+	/**
+	 * The hours of the day this calendar's clock runs, per weekday.
+	 *
+	 * Empty on a calendar that declares none, and every caller has to ask
+	 * {@see ServiceHours::areDeclared()} before using it: an undeclared
+	 * calendar counts hours exactly as it did before service hours existed,
+	 * which is what lets an instance upgrade without recomputing live terms.
+	 *
+	 * @return ServiceHours The declared windows.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function getServiceHours(): ServiceHours {
+		return $this->serviceHours;
+	}//end getServiceHours()
 
 	/**
 	 * The calendar's name.

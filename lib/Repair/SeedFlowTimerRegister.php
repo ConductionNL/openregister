@@ -58,11 +58,15 @@ class SeedFlowTimerRegister implements IRepairStep {
 	 * so a descriptor edited without a bump lands on fresh installs only and
 	 * is invisible on every instance that already ran the step. 1.1.0 carries
 	 * the authorization block (read authenticated, write administrator) onto
-	 * the register and both schemas.
+	 * the register and both schemas. 1.2.0 declares `serviceHours` on the
+	 * working calendar and stops requiring `rules`: until it landed, an
+	 * administrator's opening hours were dropped by the object store because
+	 * the schema had never heard of the property, and a calendar without a
+	 * holiday list could not be saved at all.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.1.0';
+	private const REGISTER_VERSION = '1.2.0';
 
 	/**
 	 * Constructor.
