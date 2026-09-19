@@ -41,6 +41,13 @@
  * these three report to admins only, which is what an authorization-model
  * auditor is. No UI calls them; the routes exist for operators.
  *
+ * They reach admin-only the way the rest of this app does - `#[NoAdminRequired]`
+ * plus an explicit `isCurrentUserAdmin()` gate, as `WebhooksController` does -
+ * rather than by omitting the attribute and letting SecurityMiddleware refuse.
+ * Both are admin-only; only the framework path throws `NotAdminException` and
+ * hands back a differently shaped 403 than every other route here. These are
+ * documented operator routes, so someone will eventually script against them.
+ *
  * If per-caller scoping is wanted later, the pattern is
  * `ScopesController::resolveRegisters()`: read with `_rbac: false`, keep
  * multitenancy ON, and compute the verdict per entity downstream.
@@ -76,7 +83,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Publishes the grantable permission set and the staged deny report.
@@ -96,6 +105,8 @@ class PermissionsController extends Controller {
 	 * @param RegisterMapper      $registerMapper Register lookup.
 	 * @param SchemaMapper        $schemaMapper   Schema lookup.
 	 * @param ScopeAudit          $audit          Assembles the per-rule audit.
+	 * @param IUserSession|null   $userSession    Resolves the caller for the admin gate.
+	 * @param IGroupManager|null  $groupManager   Answers whether that caller is an admin.
 	 */
 	public function __construct(
 		string $appName,
@@ -106,10 +117,51 @@ class PermissionsController extends Controller {
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ScopeAudit $audit = new ScopeAudit(),
+		private readonly ?IUserSession $userSession = null,
+		private readonly ?IGroupManager $groupManager = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
+
+	/**
+	 * Whether the caller is an instance administrator.
+	 *
+	 * Fails closed when either collaborator is absent, so a controller built
+	 * without them refuses rather than reports.
+	 *
+	 * @return bool True when the signed-in caller is an admin.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function isCurrentUserAdmin(): bool {
+		if ($this->userSession === null || $this->groupManager === null) {
+			return false;
+		}
+
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isCurrentUserAdmin()
+
+	/**
+	 * Build a 403 response for callers without admin rights.
+	 *
+	 * @return JSONResponse JSON 403 response with a generic error message.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 */
+	private function forbiddenResponse(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'Administrator privileges are required to read the authorization model',
+			],
+			statusCode: 403
+		);
+	}//end forbiddenResponse()
 
 	/**
 	 * Every permission that may be granted on this instance.
@@ -166,8 +218,14 @@ class PermissionsController extends Controller {
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
+	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function denyPreview(?string $register = null, ?string $schema = null): JSONResponse {
+		// Reading what enforcement would refuse is admin-only (see the class docblock).
+		if ($this->isCurrentUserAdmin() === false) {
+			return $this->forbiddenResponse();
+		}
+
 		$rules = [];
 
 		foreach ($this->registersFor(filter: $register) as $reg) {
@@ -225,8 +283,14 @@ class PermissionsController extends Controller {
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
+	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function scopeAudit(?string $register = null, ?string $schema = null): JSONResponse {
+		// The per-rule audit names holders and principals, so it is admin-only.
+		if ($this->isCurrentUserAdmin() === false) {
+			return $this->forbiddenResponse();
+		}
+
 		$rows = $this->audit->rows(
 			registers: $this->registersFor(filter: $register),
 			schemas: $this->schemasFor(filter: $schema)
@@ -260,8 +324,14 @@ class PermissionsController extends Controller {
 	 *
 	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
+	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function compareRoles(string $register, ?string $roles = null): JSONResponse {
+		// Comparing roles discloses the authorization model, so it is admin-only.
+		if ($this->isCurrentUserAdmin() === false) {
+			return $this->forbiddenResponse();
+		}
+
 		$found = $this->registersFor(filter: $register);
 		if ($found === []) {
 			return new JSONResponse(['error' => sprintf('No register named "%s".', $register)], 404);

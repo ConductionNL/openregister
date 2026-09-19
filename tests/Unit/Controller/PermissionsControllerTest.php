@@ -37,7 +37,10 @@ use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\ScopeAudit;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -61,6 +64,7 @@ class PermissionsControllerTest extends TestCase {
 		string $mode,
 		array $registers = [],
 		array $schemas = [],
+		bool $isAdmin = true,
 	): PermissionsController {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($mode);
@@ -88,9 +92,42 @@ class PermissionsControllerTest extends TestCase {
 			denyResolver: new DenyResolver(new DenyEntryMatcher()),
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper,
-			audit: new ScopeAudit()
+			audit: new ScopeAudit(),
+			userSession: $this->sessionFor(isAdmin: $isAdmin),
+			groupManager: $this->groupManagerFor(isAdmin: $isAdmin)
 		);
 	}//end controllerFor()
+
+	/**
+	 * A signed-in caller.
+	 *
+	 * @param bool $isAdmin Unused here; the session only has to answer a user.
+	 *
+	 * @return IUserSession The session.
+	 */
+	private function sessionFor(bool $isAdmin): IUserSession {
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn('alice');
+
+		$session = $this->createMock(originalClassName: IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		return $session;
+	}//end sessionFor()
+
+	/**
+	 * A group manager that answers the wanted verdict.
+	 *
+	 * @param bool $isAdmin Whether the caller is an instance administrator.
+	 *
+	 * @return IGroupManager The group manager.
+	 */
+	private function groupManagerFor(bool $isAdmin): IGroupManager {
+		$groupManager = $this->createMock(originalClassName: IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn($isAdmin);
+
+		return $groupManager;
+	}//end groupManagerFor()
 
 	/**
 	 * A register carrying an authorization block and a role set.
@@ -391,4 +428,25 @@ class PermissionsControllerTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 		$this->assertStringContainsString('geen-register', $response->getData()['error']);
 	}//end testAnUnknownRegisterIsRefusedWith404()
+
+	public function testTheThreeReportsRefuseANonAdminWith403(): void {
+		// They are admin-only the WebhooksController way: #[NoAdminRequired] plus
+		// an explicit gate, rather than by omitting the attribute and letting
+		// SecurityMiddleware throw a differently shaped 403 than the rest of the
+		// app. These assert the gate, which is the half this repo owns.
+		$controller = $this->controllerFor(mode: 'staging', isAdmin: false);
+
+		$this->assertSame(403, $controller->denyPreview()->getStatus());
+		$this->assertSame(403, $controller->scopeAudit()->getStatus());
+		$this->assertSame(403, $controller->compareRoles(register: '1')->getStatus());
+	}//end testTheThreeReportsRefuseANonAdminWith403()
+
+	public function testTheCatalogueStaysOpenToAnyAuthenticatedCaller(): void {
+		// index() is a vocabulary, not a secret, and keeps #[NoAdminRequired]
+		// with no gate. A regression that gated it too would break role editors.
+		$controller = $this->controllerFor(mode: 'staging', isAdmin: false);
+
+		$this->assertSame(200, $controller->index()->getStatus());
+	}//end testTheCatalogueStaysOpenToAnyAuthenticatedCaller()
+
 }//end class
