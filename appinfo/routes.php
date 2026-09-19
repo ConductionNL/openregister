@@ -442,9 +442,9 @@ return [
         // the rules as written rather than a log of what has fired, so a deny
         // nobody has hit yet is still in the report (D15).
         ['name' => 'permissions#index',       'url' => '/api/permissions',              'verb' => 'GET'],
-        ['name' => 'permissions#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
-        ['name' => 'permissions#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
-        ['name' => 'permissions#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
+        ['name' => 'permissionsAudit#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
+        ['name' => 'permissionsAudit#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
+        ['name' => 'permissionsAudit#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
         // Administrator only: the route carries no NoAdminRequired, so the
         // framework refuses everybody else before the method runs.
         ['name' => 'derivedGrants#reapply', 'url' => '/api/permissions/derived-grants/reapply', 'verb' => 'POST'],

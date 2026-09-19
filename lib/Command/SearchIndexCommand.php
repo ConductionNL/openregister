@@ -58,6 +58,8 @@ class SearchIndexCommand extends Command {
 	 * Declare the name, the action and the options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/search-index/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:tables:search-index')
@@ -101,6 +103,8 @@ class SearchIndexCommand extends Command {
 	 * @return int 0 when nothing failed, 1 otherwise.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per action, plus the argument guard.
+	 *
+	 * @spec openspec/specs/search-index/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$action = (string)$input->getArgument('action');

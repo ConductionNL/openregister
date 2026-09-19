@@ -10111,6 +10111,95 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end getFacetableFieldsFromSchemas()
 
 	/**
+	 * Whether the query names more registers or schemas than the single-table
+	 * path can answer for.
+	 *
+	 * Schemas decide it: the UNION path resolves one table per schema, so a
+	 * register set with no schema set has nothing to union and is left to the
+	 * caller's own fail-closed branch rather than guessed at.
+	 *
+	 * @param mixed $registerRaw The register bound exactly as the query carries it.
+	 * @param mixed $schemaRaw The schema bound exactly as the query carries it.
+	 *
+	 * @return bool True when the search must go through the multi-schema path.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function namesSeveral(mixed $registerRaw, mixed $schemaRaw): bool {
+		$schemaIds = $this->identifierList(value: $schemaRaw);
+		if (count($schemaIds) === 0) {
+			return false;
+		}
+
+		return (count($schemaIds) > 1 || count($this->identifierList(value: $registerRaw)) > 1);
+	}//end namesSeveral()
+
+	/**
+	 * The numeric ids a register or schema bound names.
+	 *
+	 * @param mixed $value A single id, a list of them, or null.
+	 *
+	 * @return array<int, int> The de-duplicated numeric ids, list-indexed.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function identifierList(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		$candidates = [$value];
+		if (is_array($value) === true) {
+			$candidates = $value;
+		}
+
+		$ids = [];
+		foreach ($candidates as $candidate) {
+			if (is_int($candidate) === true
+				|| (is_string($candidate) === true && ctype_digit($candidate) === true)
+			) {
+				$ids[(int)$candidate] = true;
+			}
+		}
+
+		return array_keys($ids);
+	}//end identifierList()
+
+	/**
+	 * The one identifier a bound names, or null when it names none or several.
+	 *
+	 * Returning the value as stored rather than as an int is deliberate: the
+	 * mappers resolve an id, a uuid or a slug, and only a caller that already
+	 * knows the bound is numeric may narrow it.
+	 *
+	 * @param mixed $value A single identifier, a list holding exactly one, or null.
+	 *
+	 * @return string|int|null The sole identifier, or null when there is not exactly one.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function soleIdentifier(mixed $value): string|int|null {
+		if (is_array($value) === false) {
+			if (is_string($value) === true || is_int($value) === true) {
+				return $value;
+			}
+
+			return null;
+		}
+
+		$values = array_values($value);
+		if (count($values) !== 1) {
+			return null;
+		}
+
+		if (is_string($values[0]) === true || is_int($values[0]) === true) {
+			return $values[0];
+		}
+
+		return null;
+	}//end soleIdentifier()
+
+	/**
 	 * Search objects.
 	 *
 	 * @param array $query Search query
@@ -10133,13 +10222,42 @@ class MagicMapper extends AbstractObjectMapper {
 		?array $ids = null,
 		?string $uses = null,
 	): array|int {
-		$registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
-		$schemaId = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+		// A view-scoped search reaches this entry point with `@self.register` and
+		// `@self.schema` as ARRAYS - ViewScopeApplier merges a view's registers
+		// and schemas into lists. `(int)` on a non-empty array is 1, silently and
+		// without a warning, so such a read targeted register 1 / schema 1 rather
+		// than the ones the view names. On an anonymous access link the view is
+		// the ONLY bound left on the query, which made that somebody else's data.
+		// searchObjectsPaginated() has branched on the array form since the
+		// unified-search work; this entry point never did.
+		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
+			$result = $this->searchObjectsPaginatedMultiSchema(
+				searchQuery: $query,
+				countQuery: $query,
+				registerIds: $this->identifierList(value: $registerRaw),
+				schemaIds: $this->identifierList(value: $schemaRaw),
+				activeOrgUuid: $_activeOrgUuid,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy,
+				ids: $ids,
+				uses: $uses
+			);
+
+			return ($result['results'] ?? []);
+		}
+
+		$registerId = $this->soleIdentifier(value: $registerRaw);
+		$schemaId = $this->soleIdentifier(value: $schemaRaw);
 
 		if ($registerId !== null && $schemaId !== null) {
 			try {
-				$register = $this->registerMapper->find((int)$registerId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
+				// Passed through as given, NOT cast: find() resolves an id, a uuid
+				// or a slug, and `(int)` turned every non-numeric identifier into 0.
+				$register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 
 				$query['_rbac'] = $_rbac;
 				$query['_multitenancy'] = $_multitenancy;
@@ -10190,13 +10308,34 @@ class MagicMapper extends AbstractObjectMapper {
 		?array $ids = null,
 		?string $uses = null,
 	): int {
-		$registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
-		$schemaId = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+		// Same array collapse as searchObjects(): a count that silently answered
+		// for register 1 is the same defect wearing a different return type.
+		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
+			$result = $this->searchObjectsPaginatedMultiSchema(
+				searchQuery: $query,
+				countQuery: $query,
+				registerIds: $this->identifierList(value: $registerRaw),
+				schemaIds: $this->identifierList(value: $schemaRaw),
+				activeOrgUuid: $_activeOrgUuid,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy,
+				ids: $ids,
+				uses: $uses
+			);
+
+			return (int)($result['total'] ?? 0);
+		}
+
+		$registerId = $this->soleIdentifier(value: $registerRaw);
+		$schemaId = $this->soleIdentifier(value: $schemaRaw);
 
 		if ($registerId !== null && $schemaId !== null) {
 			try {
-				$register = $this->registerMapper->find((int)$registerId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
+				$register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 
 				return $this->countObjectsInRegisterSchemaTable(
 					query: $query,
