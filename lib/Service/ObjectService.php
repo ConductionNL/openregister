@@ -3054,6 +3054,15 @@ class ObjectService implements ObjectServiceInterface
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      *
+     * A reference that names no register or schema is REFUSED here rather than
+     * answered with an empty page, which is what the int-cast used to do
+     * (openregister#3990). The published contract in lib/Contract/ is mirrored
+     * in hydra-gates and is left untouched on purpose: changing it means
+     * changing both copies in one change (ADR-084).
+     *
+     * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When the register reference names no register.
+     * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When the schema reference names no schema.
+     *
      * @spec exclude One-line delegation to SearchQueryHandler::buildSearchQuery(); query-building owned by zoeken-filteren.
      */
     public function buildSearchQuery(

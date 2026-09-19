@@ -381,23 +381,37 @@ class ObjectsProvider implements IFilteringProvider {
 		// Add filters to @self metadata section. When an explicit schema
 		// filter targets a non-searchable schema, the opt-out wins: return
 		// an empty (complete) result set rather than leaking it.
+		// The reference travels as written. It used to be int-cast here, and
+		// `(int)'zaakregister'` is `0`, so a scope filter spelled with a slug
+		// searched a register that cannot exist and answered nothing found.
+		// ObjectService resolves the reference now, and refuses one that names
+		// no register instead of reporting an empty result (openregister#3990).
 		if (empty($register) === false) {
-			$searchQuery['@self']['register'] = (int)$register;
+			$registerRef = trim((string)$register);
+			if (ctype_digit($registerRef) === true) {
+				$searchQuery['@self']['register'] = (int)$registerRef;
+			} else {
+				$searchQuery['@self']['register'] = $registerRef;
+			}
 		}
 
 		// The schema chunks this search fans out over. A single null chunk
 		// means "the explicit schema filter already in the query".
 		$schemaChunks = [null];
 		if (empty($schema) === false) {
-			$schemaId = (int)$schema;
-			if (in_array($schemaId, $nonSearchableIds, true) === true) {
+			// The opt-out list is numeric, so a slug has to be resolved before
+			// it can be compared against it. A reference that resolves to
+			// nothing is NOT swallowed here: it travels as written, so the one
+			// refusal lives in ObjectService and names the reference.
+			$schemaId = $this->schemaIdOf(reference: $schema);
+			if ($schemaId !== null && in_array($schemaId, $nonSearchableIds, true) === true) {
 				return SearchResult::complete(
 					name: $this->getSectionName(),
 					entries: []
 				);
 			}
 
-			$searchQuery['@self']['schema'] = $schemaId;
+			$searchQuery['@self']['schema'] = ($schemaId ?? $schema);
 		}
 
 		if (empty($schema) === true) {
@@ -766,6 +780,35 @@ class ObjectsProvider implements IFilteringProvider {
 	private function getSectionName(): string {
 		return $this->l10n->t('Open Register Objects');
 	}//end getSectionName()
+
+	/**
+	 * The numeric id a schema reference names, when it names one.
+	 *
+	 * A filter value typed into unified search can be an id, a uuid or a slug.
+	 * Only the id could ever be compared against the opt-out list, so the other
+	 * two are resolved here. Null means "this reference resolves to nothing as
+	 * far as this provider can tell", and the reference is then passed on
+	 * unchanged so that the search path refuses it by name rather than this
+	 * provider quietly returning an empty section.
+	 *
+	 * @param string $reference The schema id, uuid or slug from the filter.
+	 *
+	 * @return int|null The schema id, or null when the reference does not resolve.
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function schemaIdOf(string $reference): ?int {
+		$trimmed = trim($reference);
+		if (ctype_digit($trimmed) === true && (int)$trimmed > 0) {
+			return (int)$trimmed;
+		}
+
+		try {
+			return (int)$this->schemaMapper->find($trimmed, _rbac: false, _multitenancy: false)->getId();
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end schemaIdOf()
 
 	/**
 	 * Resolve the request-scoped set of non-searchable schema IDs.
