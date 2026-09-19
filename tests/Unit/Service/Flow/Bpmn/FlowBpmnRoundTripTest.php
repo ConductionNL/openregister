@@ -27,6 +27,7 @@ use DOMXPath;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport;
+use OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter;
@@ -43,7 +44,7 @@ class FlowBpmnRoundTripTest extends TestCase {
 	 * @return FlowBpmnExporter The exporter.
 	 */
 	private function exporter(): FlowBpmnExporter {
-		return new FlowBpmnExporter(vocabulary: new BpmnVocabulary());
+		return new FlowBpmnExporter(vocabulary: new BpmnVocabulary(), validator: new BpmnSchemaValidator());
 	}//end exporter()
 
 	/**
@@ -52,7 +53,7 @@ class FlowBpmnRoundTripTest extends TestCase {
 	 * @return FlowBpmnImporter The importer.
 	 */
 	private function importer(): FlowBpmnImporter {
-		return new FlowBpmnImporter(vocabulary: new BpmnVocabulary());
+		return new FlowBpmnImporter(vocabulary: new BpmnVocabulary(), validator: new BpmnSchemaValidator());
 	}//end importer()
 
 	/**
@@ -422,7 +423,7 @@ class FlowBpmnRoundTripTest extends TestCase {
 		$flow->setNodes([['id' => 'start', 'type' => 'openregister.trigger-manual']]);
 		$flow->setEdges([['id' => 'nowhere', 'from' => 'start', 'to' => 'deleted-node']]);
 
-		$xml = (new FlowBpmnExporter(new BpmnVocabulary()))->export(flow: $flow);
+		$xml = (new FlowBpmnExporter(new BpmnVocabulary(), new BpmnSchemaValidator()))->export(flow: $flow);
 		$document = new DOMDocument();
 		$this->assertTrue($document->loadXML($xml));
 

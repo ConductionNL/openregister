@@ -40,6 +40,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
+use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
+use OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter;
@@ -578,11 +580,11 @@ class FlowController extends Controller {
 	 * different questions, and asking the run question here would refuse an
 	 * auditor who is meant to read it and never run it.
 	 *
-	 * 🔴 IT DOES NOT CLAIM XSD CONFORMANCE. The OMG schema set is not vendored,
-	 * a licence decision this lane did not take, so the file is well-formed
-	 * BPMN-shaped XML carrying the declared namespaces and our extension
-	 * elements. The acceptance criterion "every exported file validates against
-	 * the BPMN 2.0 XSD" is NOT met yet, and is named in `tasks.md`.
+	 * 🔑 THE FILE IS VALIDATED AGAINST THE VENDORED OMG XSD BEFORE IT IS SENT.
+	 * A document that does not validate never leaves: the caller gets an error
+	 * naming the element and the line instead of a file their modeller refuses
+	 * to open, because "Camunda cannot open this" is not something a user can
+	 * act on.
 	 *
 	 * @param string $id The flow uuid.
 	 *
@@ -605,10 +607,29 @@ class FlowController extends Controller {
 			return new JSONResponse(['error' => 'No such flow: ' . $id], Http::STATUS_NOT_FOUND);
 		}
 
-		$exporter = new FlowBpmnExporter(vocabulary: new BpmnVocabulary());
+		$exporter = new FlowBpmnExporter(
+			vocabulary: new BpmnVocabulary(),
+			validator: new BpmnSchemaValidator()
+		);
+
+		try {
+			$xml = $exporter->export(flow: $flow);
+		} catch (BpmnSchemaInvalid $invalid) {
+			// Our own output failed the standard's schema, which is a bug in
+			// the serializer rather than anything the caller did — so it is
+			// reported as one, with the element that broke it.
+			return new JSONResponse(
+				[
+					'error' => $invalid->getMessage(),
+					'element' => $invalid->getElement(),
+					'line' => $invalid->getViolationLine(),
+				],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 
 		return new DataDownloadResponse(
-			$exporter->export(flow: $flow),
+			$xml,
 			sprintf('%s.bpmn', ($flow->getName() ?? $id)),
 			'application/xml'
 		);
@@ -651,14 +672,33 @@ class FlowController extends Controller {
 			|| (is_string($strictParam) === true
 				&& in_array(strtolower(trim($strictParam)), ['1', 'true', 'yes'], true) === true));
 
-		$importer = new FlowBpmnImporter(vocabulary: new BpmnVocabulary());
+		$importer = new FlowBpmnImporter(
+			vocabulary: new BpmnVocabulary(),
+			validator: new BpmnSchemaValidator()
+		);
 
 		try {
 			$result = $importer->import(xml: $xml, strict: $strict);
+		} catch (BpmnSchemaInvalid $invalid) {
+			// 🔴 A DIFFERENT ANSWER FROM A REFUSAL, deliberately. There is no
+			// report here and there must not be one: nothing was mapped, so
+			// every sentence a report could carry would be about constructs
+			// when the problem is the document. `malformed` is what tells the
+			// caller which of the two answers they got.
+			return new JSONResponse(
+				[
+					'error' => $invalid->getMessage(),
+					'malformed' => true,
+					'element' => $invalid->getElement(),
+					'line' => $invalid->getViolationLine(),
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
 		} catch (BpmnImportRefused $refused) {
 			return new JSONResponse(
 				[
 					'error' => $refused->getMessage(),
+					'malformed' => false,
 					'report' => $refused->getReport()?->jsonSerialize(),
 				],
 				Http::STATUS_UNPROCESSABLE_ENTITY
