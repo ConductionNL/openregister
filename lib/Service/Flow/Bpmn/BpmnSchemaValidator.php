@@ -250,6 +250,14 @@ class BpmnSchemaValidator {
 	 * Install the scoped loader and answer how to put the previous one back.
 	 *
 	 * @return callable(): void The restore.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$publicId` on the loader
+	 * below is PHP's signature, not ours: `libxml_set_external_entity_loader()`
+	 * calls its callback with `(publicId, systemId)`, and `$systemId` -- the one
+	 * this resolver actually reads -- is the SECOND positional argument, so the
+	 * first cannot be dropped. Same shape as the `lib/Migration` exclusion in
+	 * `phpmd-unusedparams.xml`: an interface-mandated parameter a body does not
+	 * need.
 	 */
 	private function installVendoredSchemaLoader(): callable {
 		$restore = $this->entityLoaderRestore();
