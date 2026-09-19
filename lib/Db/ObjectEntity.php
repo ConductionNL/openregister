@@ -1714,41 +1714,98 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			}
 
 			// Same holder: extend the lock.
-			$newExpiration = clone $now;
-			$newExpiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
-
 			$this->setLocked(
-				[
-					'kind' => $kind,
-					'runUuid' => ($runUuid ?? null),
-					'user' => $userId,
-					'process' => ($process ?? $lock['process']),
-					'created' => $lock['created'],
-					'duration' => $duration,
-					'expiration' => $newExpiration->format('c'),
-				]
+				$this->lockPayload(
+					kind: $kind,
+					runUuid: $runUuid,
+					userId: $userId,
+					process: ($process ?? $lock['process']),
+					created: $lock['created'],
+					duration: $duration,
+					now: $now
+				)
 			);
 			return true;
 		}//end if
 
 		// Create new lock.
-		$expiration = clone $now;
-		$expiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
-
 		$this->setLocked(
-			[
-				'kind' => $kind,
-				'runUuid' => ($runUuid ?? null),
-				'user' => $userId,
-				'process' => $process,
-				'created' => $now->format('c'),
-				'duration' => $duration,
-				'expiration' => $expiration->format('c'),
-			]
+			$this->lockPayload(
+				kind: $kind,
+				runUuid: $runUuid,
+				userId: $userId,
+				process: $process,
+				created: $now->format('c'),
+				duration: $duration,
+				now: $now
+			)
 		);
 
 		return true;
 	}//end lock()
+
+	/**
+	 * The stored shape of a lock.
+	 *
+	 * 🔴 A LOCK WITH NO DURATION CARRIES NO EXPIRATION, AND THAT IS THE WHOLE
+	 * POINT OF THIS METHOD. Both callers used to write
+	 * `now + ('PT' . ($duration ?? 0) . 'S')`, so a lock taken without a
+	 * duration expired at the instant it was taken: `isLocked()` answers
+	 * `$now < $expiration`, which is already false by the time the next
+	 * request arrives. `POST /lock` still answered `locked: true`, because the
+	 * controller writes that literal rather than reading the object back, so
+	 * the caller was told they held a lock that had never held anybody out. A
+	 * second editor was never kept out, the owner's own release answered 404
+	 * naming a lock that was not there, and nothing anywhere said so.
+	 *
+	 * Leaving the key out is not a new convention: `isLocked()` has always
+	 * ended "if no expiration info, treat as permanently locked (until
+	 * explicitly unlocked)", which is exactly what a lock with no duration
+	 * means. The `?? 0` was writing an expiration precisely so that branch
+	 * could never be reached.
+	 *
+	 * @param string      $kind     User lock or run lock.
+	 * @param string|null $runUuid  The holding run, for a run lock.
+	 * @param string      $userId   The holder.
+	 * @param string|null $process  What the lock was taken for.
+	 * @param mixed       $created  When the lock was first taken.
+	 * @param int|null    $duration How long it lasts, or null for "until released".
+	 * @param DateTime    $now      The clock, so a take and an extend agree.
+	 *
+	 * @return array<string, mixed> The payload to store.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	private function lockPayload(
+		string $kind,
+		?string $runUuid,
+		string $userId,
+		?string $process,
+		mixed $created,
+		?int $duration,
+		DateTime $now,
+	): array {
+		$payload = [
+			'kind' => $kind,
+			'runUuid' => ($runUuid ?? null),
+			'user' => $userId,
+			'process' => $process,
+			'created' => $created,
+			'duration' => $duration,
+		];
+
+		if ($duration === null) {
+			// No expiration key at all. See the note above: a zero-second one
+			// is not "no expiry", it is "expired".
+			return $payload;
+		}
+
+		$expiration = clone $now;
+		$expiration->add(new DateInterval('PT' . $duration . 'S'));
+		$payload['expiration'] = $expiration->format('c');
+
+		return $payload;
+	}//end lockPayload()
 
 	/**
 	 * Unlock the object

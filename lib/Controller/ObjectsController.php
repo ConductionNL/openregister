@@ -3436,6 +3436,113 @@ class ObjectsController extends Controller {
 	}//end create()
 
 	/**
+	 * Release the lock this writer holds, after their own write has landed.
+	 *
+	 * A save is a check-in: the writer hands their lock back, so the next
+	 * editor is not kept out by a lock nobody is using any more. Only the
+	 * writer's OWN lock goes. A run-held lock must survive somebody else's
+	 * write: without that test an administrator's write would silently strip
+	 * a run's lock as a side effect of a guard it had just passed.
+	 *
+	 * NO `runUuid` IS ASKED FOR HERE, DELIBERATELY, and it is the one guard in
+	 * this file that omits it. This decides a RELEASE, not a refusal: asking
+	 * it as the run would make a run's own write drop the run's own lock the
+	 * moment it saved, and the lock is meant to outlive every write the run
+	 * makes. Asked as a person, a run-held lock reads as somebody else's and
+	 * is left alone, which is what this test is for.
+	 *
+	 * 🔴 THE ENTITY WE ARE ABOUT TO SERIALISE IS CLEARED WHEN THE RELEASE
+	 * HAPPENS, AND THAT IS THE POINT OF THIS METHOD RATHER THAN A DETAIL OF
+	 * IT. `unlockObject()` re-reads the row, releases it there and hands back
+	 * a boolean; the entity in this request keeps the lock payload it was
+	 * loaded with. So the response to a successful write reported a lock that
+	 * the very same request had just released, and a client that trusts the
+	 * body it was handed, such as `@conduction/nextcloud-vue`'s
+	 * `useObjectLock`, goes on believing it holds a lock until its release
+	 * answers 404. Nothing persists this clear: the row is already unlocked
+	 * and the entity is discarded after it is serialised.
+	 *
+	 * The re-read is why the cheap `isLocked()` test comes first at all:
+	 * `unlock()` resolves the identifier back to its register and schema, and
+	 * unscoped that is a scan across every magic table on the instance. It
+	 * then returns immediately when the object holds no lock (the
+	 * openregister#195 idempotence branch), which is the normal case for this
+	 * defensive post-save release. We already hold the saved entity, so the
+	 * question is free here and the scan is pure waste, measured at about
+	 * 780 ms of a 1.3 s update.
+	 *
+	 * @param ObjectEntity $objectEntity The entity the write just saved, and
+	 *                                   the one whose serialisation answers
+	 *                                   the caller.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
+	 */
+	private function releaseOwnLockAfterWrite(ObjectEntity $objectEntity): void {
+		if ($objectEntity->isLocked() === false) {
+			return;
+		}
+
+		if ($objectEntity->isLockedBySomeoneElse(userId: $this->writerId()) === true) {
+			return;
+		}
+
+		try {
+			$this->objectService->unlockObject($objectEntity->getUuid());
+		} catch (\Exception $e) {
+			// The write succeeded, so a failed release is not the caller's
+			// problem and must not turn a 200 into an error. The entity keeps
+			// its lock payload, which is then the truth: the lock is still on
+			// the row.
+			//
+			// NOTE: must be the global \Exception. The unqualified `Exception`
+			// resolves to OCP\DB\Exception here (see the `use` block) and
+			// would NOT catch the \Exception thrown by LockHandler::unlock(),
+			// which then surfaced as a spurious 403. See openregister#195.
+			$this->logger->debug(
+				message: '[ObjectsController] Failed to release the writer own lock after a write',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $objectEntity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
+			return;
+		}
+
+		$objectEntity->setLocked(null);
+	}//end releaseOwnLockAfterWrite()
+
+	/**
+	 * Who is writing, for the release decision.
+	 *
+	 * The container's `userId` is the canonical answer and is what every
+	 * other guard in this file asks. It is read through a fallback because
+	 * this decision had never actually run: every lock taken without a
+	 * duration expired at the instant it was written, so `isLocked()` above
+	 * was always false and nothing below it was ever reached. A resolution
+	 * that quietly answers null here would not refuse anybody, it would
+	 * silently stop releasing locks, which is the failure this whole path
+	 * exists to prevent.
+	 *
+	 * @return string|null The writer's user id, or null when there is no user.
+	 */
+	private function writerId(): ?string {
+		try {
+			$fromContainer = $this->container->get('userId');
+			if (is_string($fromContainer) === true && $fromContainer !== '') {
+				return $fromContainer;
+			}
+		} catch (\Throwable $e) {
+			// Not registered in this context; the session below is the answer.
+		}
+
+		return $this->userSession->getUser()?->getUID();
+	}//end writerId()
+
+	/**
 	 * Updates an existing object
 	 *
 	 * Takes the request data, persist: validates it against the schema, silent: and updates an existing object
@@ -3611,41 +3718,9 @@ class ObjectsController extends Controller {
 				uploadedFiles: $uploadedFilesValue
 			);
 
-			// Unlock the object after saving — but only if it is actually locked.
-			//
-			// unlock() must resolve the identifier back to its register/schema
-			// before it can do anything, and unscoped that is a scan across every
-			// magic table on the instance. It then returns immediately when the
-			// object holds no lock (LockHandler::unlock, the openregister#195
-			// idempotence branch), which is the normal case for this defensive
-			// post-save unlock. We already hold the saved entity, so the "is it
-			// locked" question is free here and the scan is pure waste — measured
-			// at ~780 ms of a ~1.3 s update.
-			try {
-				// Release ONLY a lock this writer actually holds. A run-held
-				// lock must survive somebody else's write: without this test
-				// an administrator's write would silently strip a run's lock
-				// as a side effect of a guard it had just passed.
-				//
-				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
-				// this file that omits it. This decides a RELEASE, not a
-				// refusal: asking it as the run would make a run's own write
-				// drop the run's own lock the moment it saved — the lock is
-				// meant to outlive every write the run makes. Asked as a
-				// person, a run-held lock reads as somebody else's and is
-				// left alone, which is what this test is for.
-				if ($objectEntity->isLocked() === true
-					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
-				) {
-					$this->objectService->unlockObject($objectEntity->getUuid());
-				}
-			} catch (\Exception $e) {
-				// Ignore unlock errors since the update was successful.
-				// NOTE: must be the global \Exception — the unqualified `Exception`
-				// resolves to OCP\DB\Exception here (see `use` block) and would NOT
-				// catch the \Exception thrown by LockHandler::unlock(), which then
-				// surfaced as a spurious 403. See openregister#195.
-			}
+			// A save is a check-in: the writer's own lock goes back, and the
+			// entity we are about to serialise stops claiming it.
+			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
 
 			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.unlocked');
 
@@ -3870,45 +3945,9 @@ class ObjectsController extends Controller {
 				]
 			);
 
-			// Unlock the object after saving — but only if it is actually locked.
-			//
-			// unlock() must resolve the identifier back to its register/schema
-			// before it can do anything, and unscoped that is a scan across every
-			// magic table on the instance. It then returns immediately when the
-			// object holds no lock (LockHandler::unlock, the openregister#195
-			// idempotence branch), which is the normal case for this defensive
-			// post-save unlock. We already hold the saved entity, so the "is it
-			// locked" question is free here and the scan is pure waste — measured
-			// at ~780 ms of a ~1.3 s update.
-			try {
-				// Release ONLY a lock this writer actually holds. A run-held
-				// lock must survive somebody else's write: without this test
-				// an administrator's write would silently strip a run's lock
-				// as a side effect of a guard it had just passed.
-				//
-				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
-				// this file that omits it. This decides a RELEASE, not a
-				// refusal: asking it as the run would make a run's own write
-				// drop the run's own lock the moment it saved — the lock is
-				// meant to outlive every write the run makes. Asked as a
-				// person, a run-held lock reads as somebody else's and is
-				// left alone, which is what this test is for.
-				if ($objectEntity->isLocked() === true
-					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
-				) {
-					$this->objectService->unlockObject($objectEntity->getUuid());
-				}
-			} catch (\Exception $e) {
-				// Ignore unlock errors since the update was successful (e.g., magic table objects).
-				$this->logger->debug(
-					message: '[ObjectsController] Failed to unlock after patch',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'exception' => $e->getMessage(),
-					]
-				);
-			}
+			// A save is a check-in: the writer's own lock goes back, and the
+			// entity we are about to serialise stops claiming it.
+			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
 
 			$this->logger->debug(
 				message: '[ObjectsController] PATCH: Starting to prepare response',
@@ -4083,37 +4122,9 @@ class ObjectsController extends Controller {
 				uploadedFiles: $uploadedFilesValue
 			);
 
-			// Unlock the object after saving — but only if it is actually locked.
-			//
-			// unlock() must resolve the identifier back to its register/schema
-			// before it can do anything, and unscoped that is a scan across every
-			// magic table on the instance. It then returns immediately when the
-			// object holds no lock (LockHandler::unlock, the openregister#195
-			// idempotence branch), which is the normal case for this defensive
-			// post-save unlock. We already hold the saved entity, so the "is it
-			// locked" question is free here and the scan is pure waste — measured
-			// at ~780 ms of a ~1.3 s update.
-			try {
-				// Release ONLY a lock this writer actually holds. A run-held
-				// lock must survive somebody else's write: without this test
-				// an administrator's write would silently strip a run's lock
-				// as a side effect of a guard it had just passed.
-				//
-				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
-				// this file that omits it. This decides a RELEASE, not a
-				// refusal: asking it as the run would make a run's own write
-				// drop the run's own lock the moment it saved — the lock is
-				// meant to outlive every write the run makes. Asked as a
-				// person, a run-held lock reads as somebody else's and is
-				// left alone, which is what this test is for.
-				if ($objectEntity->isLocked() === true
-					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
-				) {
-					$this->objectService->unlockObject($objectEntity->getUuid());
-				}
-			} catch (\Exception $e) {
-				// Ignore unlock errors since the update was successful.
-			}
+			// A save is a check-in: the writer's own lock goes back, and the
+			// entity we are about to serialise stops claiming it.
+			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
 
 			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
 		} catch (AppendOnlyException $exception) {
@@ -4765,8 +4776,15 @@ class ObjectsController extends Controller {
 				duration: $duration
 			);
 
-			// Return response with locked status for test compatibility.
-			return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
+			// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
+			// ASSERTING IT COULD NOT FAIL. `LockHandler` now reports whether
+			// the lock it took is actually held, read back off the entity, and
+			// that is what goes on the wire. The advisory (pre-creation) path
+			// has no entity to read, so it keeps the old answer.
+			$held = ($lockResult['held'] ?? true);
+			unset($lockResult['held']);
+
+			return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Throwable $e) {
