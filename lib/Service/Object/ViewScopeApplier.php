@@ -36,19 +36,25 @@ use Psr\Log\LoggerInterface;
  */
 class ViewScopeApplier {
 	/**
-	 * The stored-query keys that actually constrain a search.
+	 * The stored-query keys that can BOUND a search, as opposed to merely
+	 * narrowing one.
+	 *
+	 * `searchTerms` is deliberately absent. It narrows - it is merged into
+	 * `_search` - but it sets no register or schema, so a searchTerms-only view
+	 * reaches the mapper with no register/schema context at all. Today that is
+	 * inert rather than leaking: MagicMapper takes its no-context branch, logs
+	 * and returns []. "Correct outcome reached by accident" is not the contract
+	 * this class advertises, and the accident is one register-resolution change
+	 * away from becoming a real unbounded read.
 	 *
 	 * These MUST stay in step with the filters {@see self::apply()} knows how to
-	 * merge. A view holding none of them merges nothing, and for a caller whose
-	 * only bound is the view, "applied successfully" and "no bound at all" are
-	 * the same outcome.
+	 * merge into `@self`.
 	 *
 	 * @var array<int, string>
 	 */
-	private const NARROWING_FILTERS = [
+	private const BOUNDING_FILTERS = [
 		'registers',
 		'schemas',
-		'searchTerms',
 	];
 
 	/**
@@ -83,7 +89,7 @@ class ViewScopeApplier {
 	 * entirely and answers with arbitrary objects from any organisation. Such a
 	 * caller passes `$_viewScopeRequired: true`, and then every way of failing to
 	 * apply the view throws instead of continuing: an unresolvable view, and a
-	 * view whose query narrows nothing at all. The caller turns that into "this
+	 * view whose query bounds nothing at all. The caller turns that into "this
 	 * link no longer resolves", which is the correct answer.
 	 *
 	 * The view is resolved RBAC- and organisation-exempt in that mode for the
@@ -165,7 +171,7 @@ class ViewScopeApplier {
 	 *
 	 * @return array<string, mixed> Query with this view's filters applied.
 	 *
-	 * @throws Exception When the view cannot be resolved, or narrows nothing while required.
+	 * @throws Exception When the view cannot be resolved, or bounds nothing while required.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fail-closed contract, not a mode switch
 	 *
@@ -179,11 +185,11 @@ class ViewScopeApplier {
 		);
 		$viewQuery = $view->getQuery();
 
-		if ($_viewScopeRequired === true && $this->narrows(viewQuery: $viewQuery) === false) {
-			// A view that filters on nothing is not a bound. Applying it
-			// would leave the query exactly as wide as it arrived.
+		if ($_viewScopeRequired === true && $this->bounds(viewQuery: $viewQuery) === false) {
+			// A view that sets no register and no schema is not a bound. Applying
+			// it would leave the query exactly as wide as it arrived.
 			throw new Exception(
-				'View "' . (string)$viewId . '" carries no register, schema or search-term filter.'
+				'View "' . (string)$viewId . '" carries no register or schema filter.'
 			);
 		}
 
@@ -268,25 +274,30 @@ class ViewScopeApplier {
 	}//end mergeIds()
 
 	/**
-	 * Whether a view's stored query narrows a search at all.
+	 * Whether a view's stored query BOUNDS a search.
+	 *
+	 * Asked only of a caller whose sole bound is the view, so the question is
+	 * not "does this view change the result" but "does this view constrain what
+	 * may be reached at all". See {@see self::BOUNDING_FILTERS} for why a
+	 * search-term-only view answers false.
 	 *
 	 * @param array<string, mixed>|null $viewQuery The view's stored query.
 	 *
-	 * @return bool True when applying the view narrows the search.
+	 * @return bool True when the view names a register or a schema.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function narrows(?array $viewQuery): bool {
+	private function bounds(?array $viewQuery): bool {
 		if ($viewQuery === null) {
 			return false;
 		}
 
-		foreach (self::NARROWING_FILTERS as $key) {
+		foreach (self::BOUNDING_FILTERS as $key) {
 			if (empty($viewQuery[$key]) === false) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end narrows()
+	}//end bounds()
 }//end class

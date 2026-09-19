@@ -101,6 +101,34 @@ class ViewScopeApplierTest extends TestCase {
 		);
 	}//end testAViewThatNarrowsNothingThrows()
 
+	public function testASearchTermOnlyViewThrowsBecauseItSetsNoRegisterOrSchema(): void {
+		// It narrows - the terms are merged into _search - but it sets neither
+		// register nor schema, so the query reaches the mapper with no context at
+		// all. That is inert today only because MagicMapper takes its no-context
+		// branch and returns []; "correct outcome reached by accident" is not the
+		// contract this class advertises, and the accident is one
+		// register-resolution change away from being a real unbounded read.
+		$this->viewMapper->method('find')->willReturn($this->view(['searchTerms' => 'invoice']));
+
+		$this->expectException(Exception::class);
+
+		$this->applier()->apply(
+			query: [],
+			viewIds: ['view-uuid'],
+			_viewScopeRequired: true
+		);
+	}//end testASearchTermOnlyViewThrowsBecauseItSetsNoRegisterOrSchema()
+
+	public function testASearchTermOnlyViewIsStillAppliedForEveryOtherCaller(): void {
+		// Unflagged callers are already bounded by RBAC and their organisation,
+		// so a search-term view remains an ordinary convenience there.
+		$this->viewMapper->method('find')->willReturn($this->view(['searchTerms' => 'invoice']));
+
+		$query = $this->applier()->apply(query: [], viewIds: ['view-uuid']);
+
+		$this->assertSame('invoice', $query['_search']);
+	}//end testASearchTermOnlyViewIsStillAppliedForEveryOtherCaller()
+
 	public function testNoViewAtAllThrowsRatherThanRunningUnbounded(): void {
 		$this->expectException(Exception::class);
 
