@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Flow\Bpmn;
 
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
@@ -132,10 +133,50 @@ class FlowBpmnImporter {
 		$report = new BpmnMappingReport();
 		$positions = $this->positions(xpath: $xpath);
 
+		['nodes' => $nodes, 'edges' => $edges] = $this->graphOf(
+			xpath: $xpath,
+			process: $processes->item(0),
+			report: $report
+		);
+
+		if ($strict === true && $report->failsStrict() === true) {
+			throw new BpmnImportRefused(
+				message: 'The file contains constructs this importer refuses, and strict was requested, so no flow was created.',
+				report: $report
+			);
+		}
+
+		return [
+			'flow' => [
+				'name' => $this->nameOf(process: $processes->item(0)),
+				'nodes' => $this->laidOut(nodes: $nodes, positions: $positions),
+				'edges' => $edges,
+			],
+			'report' => $report,
+		];
+	}//end import()
+
+	/**
+	 * The nodes and edges one process element declares.
+	 *
+	 * A child that is neither a sequence flow nor a mappable construct is
+	 * DROPPED, and the report is where it says so. This walk records; it never
+	 * refuses, because a refusal without a report tells an author nothing
+	 * about the rest of their file.
+	 *
+	 * @param DOMXPath          $xpath   The xpath, with the BPMN namespaces registered.
+	 * @param DOMNode|null      $process The single bpmn:process element.
+	 * @param BpmnMappingReport $report  The report, written to as constructs are read.
+	 *
+	 * @return array{nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>} The graph.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function graphOf(DOMXPath $xpath, ?DOMNode $process, BpmnMappingReport $report): array {
 		$nodes = [];
 		$edges = [];
 
-		$children = $xpath->query('./*', $processes->item(0));
+		$children = $xpath->query('./*', $process);
 		if ($children === false) {
 			$children = [];
 		}
@@ -156,22 +197,11 @@ class FlowBpmnImporter {
 			}
 		}
 
-		if ($strict === true && $report->failsStrict() === true) {
-			throw new BpmnImportRefused(
-				message: 'The file contains constructs this importer refuses, and strict was requested, so no flow was created.',
-				report: $report
-			);
-		}
-
 		return [
-			'flow' => [
-				'name' => $this->nameOf(process: $processes->item(0)),
-				'nodes' => $this->laidOut(nodes: $nodes, positions: $positions),
-				'edges' => $edges,
-			],
-			'report' => $report,
+			'nodes' => $nodes,
+			'edges' => $edges,
 		];
-	}//end import()
+	}//end graphOf()
 
 	/**
 	 * One node, and its entry in the report.
