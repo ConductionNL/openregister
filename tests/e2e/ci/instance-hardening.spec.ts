@@ -225,7 +225,11 @@ test.describe('The fresh sign-in, and the statement', () => {
 			expect(body.elevationRequired).toBe(true)
 			expect(typeof body.periodSeconds).toBe('number')
 		} finally {
-			await context.dispose()
+			// `close()`, not `dispose()`. A BrowserContext has no `dispose()`
+			// — that belongs to APIRequestContext — so this line threw a
+			// TypeError AFTER the assertions above had already passed, and
+			// reddened two tests whose substantive claims hold.
+			await context.close()
 		}
 	})
 
@@ -245,7 +249,11 @@ test.describe('The fresh sign-in, and the statement', () => {
 
 			expect(response.status()).toBe(401)
 		} finally {
-			await context.dispose()
+			// `close()`, not `dispose()`. A BrowserContext has no `dispose()`
+			// — that belongs to APIRequestContext — so this line threw a
+			// TypeError AFTER the assertions above had already passed, and
+			// reddened two tests whose substantive claims hold.
+			await context.close()
 		}
 	})
 

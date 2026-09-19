@@ -740,6 +740,30 @@ class ValidateObject {
 			unset($propertySchema->{'$ref'});
 		}
 
+		// 🔴 AND FROM A PROPERTY THAT DECLARES NO TYPE AT ALL, which is the one
+		// shape every branch above misses. `{"$ref": "besluit"}` on its own is
+		// not an array, not an object and not a string, so the slug survived
+		// into Opis and every object write of that schema failed with
+		// `Unresolved reference: schema:///besluit#` — a message that names
+		// neither the property nor the schema. The schema itself saved with a
+		// 200, so the author read a success and then could not store anything.
+		// Measured 2026-09-19 on tests/e2e/ci/link-exposure.spec.ts, whose
+		// disclosure assertion never ran for this reason.
+		//
+		// A ref that could genuinely be a JSON Schema reference — a fragment
+		// or a URI — is left alone: this app writes slugs, and dropping
+		// something that resolves would change validation rather than restore
+		// it.
+		$bareRef = ($propertySchema->{'$ref'} ?? null);
+		if (($propertySchema->type ?? null) === null
+			&& is_string($bareRef) === true
+			&& $bareRef !== ''
+			&& str_contains($bareRef, '#') === false
+			&& str_contains($bareRef, '/') === false
+		) {
+			unset($propertySchema->{'$ref'});
+		}
+
 		// Recursively transform nested properties.
 		if (($propertySchema->properties ?? null) !== null) {
 			foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {
