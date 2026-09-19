@@ -150,7 +150,10 @@ class AccessLinkMintGuardTest extends TestCase {
 	public function testAViewTheCallerCanResolveCanBePublished(): void {
 		// Resolved under the caller's OWN rules: no _rbac/_multitenancy
 		// overrides, so a view in another organisation throws below.
-		$this->views->expects($this->once())->method('find')->with('view-uuid')
+		// All three arguments, not just the first: ->with('view-uuid') alone would
+		// still be satisfied by a regression to find($viewId, false, false), which
+		// is the exact thing this guard must never do.
+		$this->views->expects($this->once())->method('find')->with('view-uuid', true, true)
 			->willReturn($this->view(['registers' => [7], 'schemas' => [4]]));
 		$this->objects->expects($this->never())->method('searchObjects');
 

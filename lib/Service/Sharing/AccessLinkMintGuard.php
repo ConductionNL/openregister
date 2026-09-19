@@ -157,7 +157,10 @@ class AccessLinkMintGuard {
 		// defaults — asks the question this method's name claims to ask, and a
 		// refusal is a refusal rather than a quietly widened search.
 		try {
-			$view = $this->views->find($viewId);
+			// Flags stated rather than defaulted. They ARE the property this guard
+			// exists to hold - resolving the view exempt is precisely what it must
+			// not do - and a test cannot pin an argument that was never passed.
+			$view = $this->views->find($viewId, _rbac: true, _multitenancy: true);
 		} catch (Throwable $denied) {
 			unset($denied);
 			return false;
