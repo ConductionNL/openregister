@@ -120,6 +120,68 @@ class ServiceHoursClock {
 	}//end due()
 
 	/**
+	 * How much open service time lies between two instants.
+	 *
+	 * The mirror of {@see due()}, and it exists for the same reason the two
+	 * halves of every other unit live side by side: a deadline computed
+	 * inside the windows and an elapsed figure measured across one unbroken
+	 * block disagree by the length of the lunch break, and the report and the
+	 * badge then say different things about one case. Whoever reads them
+	 * cannot tell which is wrong.
+	 *
+	 * @param DateTimeInterface $from     The earlier instant.
+	 * @param DateTimeInterface $to       The later instant; equal or earlier yields 0.0.
+	 * @param WorkingCalendar   $calendar The calendar deciding the days.
+	 * @param ServiceHours      $windows  Its declared windows.
+	 *
+	 * @return float The open hours between the two.
+	 *
+	 * @throws FlowTimerValidationException When the span exceeds the bounded walk.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function elapsed(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar, ServiceHours $windows): float {
+		$zone = new DateTimeZone($calendar->getTimezone());
+		$start = (new DateTimeImmutable('@'.$from->getTimestamp()))->setTimezone($zone);
+		$end = (new DateTimeImmutable('@'.$to->getTimestamp()))->setTimezone($zone);
+
+		if ($end <= $start) {
+			return 0.0;
+		}
+
+		$day = $start->setTime(0, 0);
+		$minutes = 0;
+
+		for ($crossed = 0; $crossed <= self::MAX_WALK_DAYS; $crossed++) {
+			if ($day > $end) {
+				return round(($minutes / 60), 4);
+			}
+
+			if ($calendar->isWorkingDay($day) === true) {
+				foreach ($windows->forWeekday(iso: (int)$day->format('N')) as $window) {
+					$opens = $this->atMinute(day: $day, minute: $window['start']);
+					$closes = $this->atMinute(day: $day, minute: $window['end']);
+					$overlap = (min($closes->getTimestamp(), $end->getTimestamp()) - max($opens->getTimestamp(), $start->getTimestamp()));
+					if ($overlap > 0) {
+						$minutes += intdiv($overlap, 60);
+					}
+				}
+			}
+
+			$day = $day->modify('+1 day')->setTime(0, 0);
+		}//end for
+
+		throw new FlowTimerValidationException(
+			message: sprintf(
+				'Measuring service hours between %s and %s exceeds %d calendar days.',
+				$from->format('c'),
+				$to->format('c'),
+				self::MAX_WALK_DAYS
+			)
+		);
+	}//end elapsed()
+
+	/**
 	 * The diagnostic that explains one computed term.
 	 *
 	 * The answer explains itself or it cannot be argued with. A handler told a

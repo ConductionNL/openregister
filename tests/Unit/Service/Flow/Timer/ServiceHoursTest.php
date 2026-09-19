@@ -6,8 +6,12 @@ declare(strict_types=1);
  * Service hours: when the clock runs, and what is refused at write time.
  *
  * The scenario the change is named for is a four-hour term armed on Friday at
- * 16:00 against a nine-to-five calendar. It is due on Monday at 11:00: one hour
- * on the Friday, three on the Monday. Before this, the answer came from a single
+ * 16:00 against a nine-to-five calendar. It is due on Monday at 12:00: one hour
+ * on the Friday, then three from Monday's opening. This docblock said 11:00
+ * while the test below asserted 12:00, which is how a reader could be told the
+ * wrong answer by the file that holds the right one. REQ-SHR-001 now states
+ * the rule in terms of the configured window and carries the same worked
+ * example. Before this, the answer came from a single
  * opening minute and a day length, which is right only for an organisation whose
  * day is one unbroken block and wrong by the lunch break for one that closes at
  * midday.
