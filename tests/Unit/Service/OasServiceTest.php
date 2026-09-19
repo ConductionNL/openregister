@@ -84,6 +84,22 @@ class OasServiceTest extends TestCase {
 	}
 
 	/**
+	 * The RBAC annotator the service builds, for the questions that moved to it.
+	 *
+	 * Reached through the service rather than constructed here on purpose: the
+	 * tests below are about what the GENERATED DOCUMENT says, so they have to
+	 * exercise the annotator the generator actually uses.
+	 *
+	 * @return \OCA\OpenRegister\Service\Oas\OasRbacAnnotator The annotator.
+	 */
+	private function annotator(): \OCA\OpenRegister\Service\Oas\OasRbacAnnotator {
+		$ref = new \ReflectionClass($this->service);
+		$prop = $ref->getProperty('rbacAnnotator');
+		$prop->setAccessible(true);
+		return $prop->getValue($this->service);
+	}
+
+	/**
 	 * Helper to invoke a private method on the OasService via reflection.
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
@@ -1070,27 +1086,27 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testExtractGroupFromRuleString(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', ['admin']);
+		$result = $this->annotator()->extractGroupFromRule('admin');
 		$this->assertSame('admin', $result);
 	}
 
 	public function testExtractGroupFromRuleArrayWithGroup(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [['group' => 'editors']]);
+		$result = $this->annotator()->extractGroupFromRule(['group' => 'editors']);
 		$this->assertSame('editors', $result);
 	}
 
 	public function testExtractGroupFromRuleArrayWithoutGroup(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [['role' => 'manager']]);
+		$result = $this->annotator()->extractGroupFromRule(['role' => 'manager']);
 		$this->assertNull($result);
 	}
 
 	public function testExtractGroupFromRuleNull(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [null]);
+		$result = $this->annotator()->extractGroupFromRule(null);
 		$this->assertNull($result);
 	}
 
 	public function testExtractGroupFromRuleInteger(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [42]);
+		$result = $this->annotator()->extractGroupFromRule(42);
 		$this->assertNull($result);
 	}
 
@@ -1099,17 +1115,17 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testGetScopeDescriptionAdmin(): void {
-		$result = $this->invokePrivateMethod('getScopeDescription', ['admin']);
+		$result = $this->annotator()->getScopeDescription('admin');
 		$this->assertSame('Full administrative access', $result);
 	}
 
 	public function testGetScopeDescriptionPublic(): void {
-		$result = $this->invokePrivateMethod('getScopeDescription', ['public']);
+		$result = $this->annotator()->getScopeDescription('public');
 		$this->assertSame('Public (unauthenticated) access', $result);
 	}
 
 	public function testGetScopeDescriptionCustomGroup(): void {
-		$result = $this->invokePrivateMethod('getScopeDescription', ['editors']);
+		$result = $this->annotator()->getScopeDescription('editors');
 		$this->assertSame('Access for editors group', $result);
 	}
 
@@ -1172,7 +1188,7 @@ class OasServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertSame([], $result['createGroups']);
 		$this->assertSame([], $result['readGroups']);
@@ -1188,7 +1204,7 @@ class OasServiceTest extends TestCase {
 			'delete' => ['admin'],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertContains('admin', $result['createGroups']);
 		$this->assertContains('editors', $result['createGroups']);
@@ -1212,7 +1228,7 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertContains('admin', $result['createGroups']);
 		$this->assertContains('managers', $result['readGroups']);
@@ -1231,7 +1247,7 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertContains('editors', $result['createGroups']);
 		$this->assertContains('viewers', $result['readGroups']);
@@ -1260,7 +1276,7 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		// admin and editors should appear only once each
 		$this->assertCount(2, $result['readGroups']);
@@ -1274,7 +1290,7 @@ class OasServiceTest extends TestCase {
 			'invalid' => 'not-an-array',
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		// Should not crash, should return empty groups
 		$this->assertSame([], $result['createGroups']);
@@ -1290,7 +1306,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['editors', 'viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['editors', 'viewers']);
 
 		$this->assertStringContainsString('Required scopes', $operation['description']);
 		$this->assertStringContainsString('`admin`', $operation['description']);
@@ -1305,7 +1321,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['viewers']);
 
 		$this->assertStringContainsString('`admin`', $operation['description']);
 	}
@@ -1316,7 +1332,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['admin', 'viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['admin', 'viewers']);
 
 		// admin should not be duplicated
 		$this->assertSame(1, substr_count($operation['description'], '`admin`'));
@@ -1328,7 +1344,7 @@ class OasServiceTest extends TestCase {
 			'responses' => ['200' => ['description' => 'OK']],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, []]);
+		$this->annotator()->applyRbacToOperation($operation, []);
 
 		$this->assertArrayHasKey('403', $operation['responses']);
 		$this->assertStringContainsString('Forbidden', $operation['responses']['403']['description']);
@@ -1340,7 +1356,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, []]);
+		$this->annotator()->applyRbacToOperation($operation, []);
 
 		// Should still include admin
 		$this->assertStringContainsString('`admin`', $operation['description']);
@@ -2747,7 +2763,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['behandelaars', 'redacteuren']]);
+		$this->annotator()->applyRbacToOperation($operation, ['behandelaars', 'redacteuren']);
 
 		$this->assertArrayHasKey('security', $operation);
 		$this->assertCount(
@@ -2772,7 +2788,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, []]);
+		$this->annotator()->applyRbacToOperation($operation, []);
 
 		$this->assertSame(['admin'], $operation['security'][0]['oauth2']);
 		$this->assertSame([], $operation['security'][1]['basicAuth']);
@@ -2784,7 +2800,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['admin', 'admin', 'redacteuren']]);
+		$this->annotator()->applyRbacToOperation($operation, ['admin', 'admin', 'redacteuren']);
 
 		$oauth2Scopes = $operation['security'][0]['oauth2'];
 		$adminCount = count(array_filter($oauth2Scopes, static fn (string $g): bool => $g === 'admin'));
@@ -2799,7 +2815,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['behandelaars']]);
+		$this->annotator()->applyRbacToOperation($operation, ['behandelaars']);
 
 		$this->assertSame(
 			'admin',
@@ -2817,7 +2833,7 @@ class OasServiceTest extends TestCase {
 			'tags' => ['Items'],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['viewers']);
 
 		// Existing 200 response is preserved.
 		$this->assertArrayHasKey('200', $operation['responses']);

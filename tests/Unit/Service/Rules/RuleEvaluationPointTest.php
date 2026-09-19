@@ -252,14 +252,31 @@ class RuleEvaluationPointTest extends TestCase {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function testTheAdministeredValidationsRecordTheirVerdict(): void {
-		$source = (string)file_get_contents($this->lib() . '/Listener/AdministeredValidationListener.php');
+		// The decision moved out of the listener into the enforcer, and the
+		// writing into AdministeredValidationRunLog. The property this pins is
+		// unchanged: both verdicts still reach the run log, and BOTH ends are
+		// asserted so a recorder nobody calls reads as red rather than green.
+		$enforcer = (string)file_get_contents($this->lib() . '/Service/Rules/AdministeredValidationEnforcer.php');
+
+		$this->assertStringContainsString(
+			needle: 'recordWarning(',
+			haystack: $enforcer,
+			message: 'AdministeredValidationEnforcer no longer records a warning; the run log has a blind spot.'
+		);
+		$this->assertStringContainsString(
+			needle: 'recordRefusal(',
+			haystack: $enforcer,
+			message: 'AdministeredValidationEnforcer no longer records a refusal; the run log has a blind spot.'
+		);
+
+		$runLog = (string)file_get_contents($this->lib() . '/Service/Rules/AdministeredValidationRunLog.php');
 
 		$this->assertStringContainsString(
 			needle: 'RuleRunRecorder',
-			haystack: $source,
-			message: 'AdministeredValidationListener no longer records its verdict; the run log has a blind spot.'
+			haystack: $runLog,
+			message: 'AdministeredValidationRunLog no longer writes to the rule run log.'
 		);
-		$this->assertStringContainsString(needle: '->record(', haystack: $source);
+		$this->assertStringContainsString(needle: '->record(', haystack: $runLog);
 
 	}//end testTheAdministeredValidationsRecordTheirVerdict()
 

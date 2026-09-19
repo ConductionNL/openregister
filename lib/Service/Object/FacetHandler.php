@@ -40,8 +40,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
-use OCP\ICacheFactory;
-use OCP\IMemcache;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -73,43 +71,13 @@ use Psr\Log\LoggerInterface;
  */
 class FacetHandler {
 	/**
-	 * Cache TTL for facet responses (1 hour).
-	 *
-	 * This TTL is the CEILING on staleness, not the invalidation. A cached entry
-	 * is unreachable as soon as an object write bumps the freshness token folded
-	 * into its key (see FacetCacheVersion). It used to be the only invalidation
-	 * besides a schema change and an admin cache flush, which is how a folder pane
-	 * came to offer a category nobody had (openregister#3560).
-	 *
-	 * @var int
-	 */
-	private const FACET_CACHE_TTL = 3600;
-
-	/**
-	 * Cache TTL for collection-wide facets (1 hour).
-	 *
-	 * Collection-wide facets change even less frequently.
-	 *
-	 * @var int
-	 */
-	private const COLLECTION_FACET_TTL = 3600;
-
-	/**
-	 * Distributed cache for facet responses.
-	 *
-	 * @var IMemcache|null
-	 */
-	private ?IMemcache $facetCache = null;
-
-	/**
 	 * Constructor for FacetHandler.
 	 *
 	 * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
 	 * @param SchemaMapper $schemaMapper Schema database mapper.
-	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching.
+	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
 	 * @param IUserSession $userSession User session for tenant isolation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
-	 * @param FacetCacheVersion $facetCacheVersion Per-scope freshness counter folded into the response cache key.
 	 * @param PropertyRbacHandler|null $propertyRbac Withholds a facet over a property the caller may not read.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed property is withheld, which is the safe direction.
@@ -121,36 +89,14 @@ class FacetHandler {
 	public function __construct(
 		private readonly MagicMapper $unifiedObjectMapper,
 		private readonly SchemaMapper $schemaMapper,
-		/**
-		 * Logger for facet operations
-		 *
-		 * @psalm-suppress UnusedProperty
-		 */
-		private readonly ICacheFactory $cacheFactory,
+		private readonly FacetResponseCache $responseCache,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly FacetCacheVersion $facetCacheVersion,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
 		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
-		// Initialize facet response caching.
-		try {
-			$this->facetCache = $this->cacheFactory->createDistributed('openregister_facets');
-		} catch (\Exception $e) {
-			// Fallback to local cache if distributed cache unavailable.
-			try {
-				$this->facetCache = $this->cacheFactory->createLocal('openregister_facets');
-			} catch (\Exception $e) {
-				// No caching available - will skip cache operations.
-				$this->facetCache = null;
-				$this->logger->warning(
-					message: '[FacetHandler] Facet caching unavailable',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-			}
-		}
 	}//end __construct()
 
 	/**
@@ -210,8 +156,8 @@ class FacetHandler {
 		unset($facetQuery['_limit'], $facetQuery['_offset'], $facetQuery['_page'], $facetQuery['_facetable']);
 
 		// **RESPONSE CACHING**: Check cache first for identical requests.
-		$cacheKey = $this->generateFacetCacheKey(facetQuery: $facetQuery, facetConfig: $facetConfig);
-		$cached = $this->getCachedFacetResponse(cacheKey: $cacheKey);
+		$cacheKey = $this->responseCache->keyFor(facetQuery: $facetQuery, facetConfig: $facetConfig);
+		$cached = $this->responseCache->get(cacheKey: $cacheKey);
 		if ($cached !== null) {
 			return $cached;
 		}
@@ -232,7 +178,7 @@ class FacetHandler {
 		$result['performance_metadata']['total_execution_time_ms'] = $executionTime;
 
 		// **CACHE RESULTS**: Store for future requests.
-		$this->cacheFacetResponse(cacheKey: $cacheKey, result: $result);
+		$this->responseCache->put(cacheKey: $cacheKey, result: $result);
 
 		$this->logger->debug(
 			message: '[FacetHandler] FacetHandler completed facet calculation',
@@ -951,204 +897,6 @@ class FacetHandler {
 
 		return 'string';
 	}//end inferDataType()
-
-	/**
-	 * Generate cache key for facet responses.
-	 *
-	 * @param array $facetQuery Query for faceting (without pagination).
-	 * @param array $facetConfig Facet configuration.
-	 *
-	 * @return string Cache key.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md
-	 */
-	private function generateFacetCacheKey(array $facetQuery, array $facetConfig): string {
-		// **RBAC COMPLIANCE**: Include user context for role-based access control.
-		$user = $this->userSession->getUser();
-		$userId = 'anonymous';
-		if ($user !== null) {
-			$userId = $user->getUID();
-		}
-
-		// Get organization context if available.
-		$orgId = null;
-		if (($facetQuery['@self']['organisation'] ?? null) !== null) {
-			$orgId = $facetQuery['@self']['organisation'];
-		}
-
-		// Create RBAC-aware cache key.
-		$cacheData = [
-			'facets' => $facetConfig,
-			'filters' => array_diff_key($facetQuery, ['_facets' => true]),
-			'user' => $userId,
-			'org' => $orgId,
-			'version' => '2.0',
-			// Increment to invalidate when RBAC logic changes.
-			// **FRESHNESS**: an object write bumps the counter for its (register,
-			// schema) scope, which changes this token, which changes the key. So a
-			// facet computed before the write is unreachable after it, and the
-			// bucket list beside a live `results` array can no longer be an hour
-			// old (openregister#3560). Without this the only invalidation was the
-			// TTL, a schema change, or an admin cache flush.
-			'freshness' => $this->facetFreshnessToken(facetQuery: $facetQuery),
-		];
-
-		return 'facet_rbac_' . md5(json_encode($cacheData));
-	}//end generateFacetCacheKey()
-
-	/**
-	 * Freshness token for the scopes this facet query reads from.
-	 *
-	 * The scope is taken from the query itself, which already carries numeric
-	 * register and schema ids by the time faceting runs (the numeric-ID contract
-	 * on ObjectService::searchObjects; ObjectsController resolves the slugs in the
-	 * URL before building the query). Those are the same ids ObjectEntity stores,
-	 * so the counter a write bumps is the counter this read consults. Deriving the
-	 * scope from the query costs no database work, which matters because the whole
-	 * point of the cache is to avoid the aggregation underneath it.
-	 *
-	 * @param array $facetQuery Query for faceting (without pagination).
-	 *
-	 * @psalm-param   array<string, mixed> $facetQuery
-	 * @phpstan-param array<string, mixed> $facetQuery
-	 *
-	 * @return string Token that changes when any covered scope is written to.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
-	 */
-	private function facetFreshnessToken(array $facetQuery): string {
-		$registers = $this->scopeIdsFromQuery(
-			values: [
-				($facetQuery['@self']['registers'] ?? null),
-				($facetQuery['@self']['register'] ?? null),
-				($facetQuery['_registers'] ?? null),
-			]
-		);
-
-		$schemas = $this->scopeIdsFromQuery(
-			values: [
-				($facetQuery['@self']['schemas'] ?? null),
-				($facetQuery['@self']['schema'] ?? null),
-				($facetQuery['_schemas'] ?? null),
-			]
-		);
-
-		return $this->facetCacheVersion->tokenForScope(registers: $registers, schemas: $schemas);
-	}//end facetFreshnessToken()
-
-	/**
-	 * Flatten the register/schema positions of a query into a list of id strings.
-	 *
-	 * Each position may be absent, a scalar id, or a list of ids. Anything that is
-	 * not a scalar is dropped rather than guessed: an unrecognised shape widens the
-	 * scope to the global counter, which over-invalidates but never under-invalidates.
-	 *
-	 * @param array $values Candidate values from the query, most specific first.
-	 *
-	 * @psalm-param   array<int, mixed> $values
-	 * @phpstan-param array<int, mixed> $values
-	 *
-	 * @return array<int, string> Distinct id strings, possibly empty.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
-	 */
-	private function scopeIdsFromQuery(array $values): array {
-		$ids = [];
-
-		foreach ($values as $value) {
-			if ($value === null) {
-				continue;
-			}
-
-			$candidates = [$value];
-			if (is_array($value) === true) {
-				$candidates = $value;
-			}
-
-			foreach ($candidates as $candidate) {
-				if (is_int($candidate) === true || is_string($candidate) === true) {
-					$candidate = (string)$candidate;
-					if ($candidate !== '') {
-						$ids[] = $candidate;
-					}
-				}
-			}
-		}
-
-		return array_values(array_unique($ids));
-	}//end scopeIdsFromQuery()
-
-	/**
-	 * Get cached facet response.
-	 *
-	 * @param string $cacheKey Cache key to lookup.
-	 *
-	 * @return array|null Cached response or null if not found.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md
-	 */
-	private function getCachedFacetResponse(string $cacheKey): ?array {
-		if ($this->facetCache === null) {
-			return null;
-		}
-
-		try {
-			$cached = $this->facetCache->get($cacheKey);
-			if ($cached !== null) {
-				$this->logger->debug(
-					message: '[FacetHandler] Facet response cache hit',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'cacheKey' => $cacheKey]
-				);
-				// Add cache metadata.
-				$cached['performance_metadata']['cache_hit'] = true;
-				return $cached;
-			}
-		} catch (\Exception $e) {
-			// Cache get failed, continue without cache.
-		}
-
-		return null;
-	}//end getCachedFacetResponse()
-
-	/**
-	 * Cache facet response for future requests.
-	 *
-	 * @param string $cacheKey Cache key.
-	 * @param array $result Facet result to cache.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md
-	 */
-	private function cacheFacetResponse(string $cacheKey, array $result): void {
-		if ($this->facetCache === null) {
-			return;
-		}
-
-		try {
-			// Use different TTL based on strategy.
-			$fallbackUsed = $result['performance_metadata']['fallback_used'] ?? false;
-			$ttl = self::FACET_CACHE_TTL;
-			if ($fallbackUsed === true) {
-				$ttl = self::COLLECTION_FACET_TTL;
-			}
-
-			$this->facetCache->set($cacheKey, $result, $ttl);
-
-			$this->logger->debug(
-				message: '[FacetHandler] Facet response cached',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'cacheKey' => $cacheKey,
-					'ttl' => $ttl,
-					'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
-				]
-			);
-		} catch (\Exception $e) {
-			// Cache set failed, continue without caching.
-		}//end try
-	}//end cacheFacetResponse()
 
 	/**
 	 * Count total results across all facet buckets.

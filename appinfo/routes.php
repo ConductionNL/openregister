@@ -401,10 +401,10 @@ return [
         // The statement (REQ-IHC-001). The two reads and the acceptance are the
         // only hardening routes an ordinary account may call, and each answers
         // about the SESSION's account: no user id is read from the request.
-        ['name' => 'hardening#statement', 'url' => '/api/hardening/statement', 'verb' => 'GET'],
-        ['name' => 'hardening#acceptStatement', 'url' => '/api/hardening/statement/acceptance', 'verb' => 'POST'],
-        ['name' => 'hardening#publishStatement', 'url' => '/api/hardening/statement', 'verb' => 'PUT'],
-        ['name' => 'hardening#withdrawStatement', 'url' => '/api/hardening/statement', 'verb' => 'DELETE'],
+        ['name' => 'hardeningStatement#statement', 'url' => '/api/hardening/statement', 'verb' => 'GET'],
+        ['name' => 'hardeningStatement#acceptStatement', 'url' => '/api/hardening/statement/acceptance', 'verb' => 'POST'],
+        ['name' => 'hardeningStatement#publishStatement', 'url' => '/api/hardening/statement', 'verb' => 'PUT'],
+        ['name' => 'hardeningStatement#withdrawStatement', 'url' => '/api/hardening/statement', 'verb' => 'DELETE'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],

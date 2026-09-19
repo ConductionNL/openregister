@@ -459,7 +459,7 @@ class FlowService {
 			return $this->find(uuid: $uuid);
 		}
 
-		['owner' => $owner, 'organisation' => $organisation] = $this->callerOwnership();
+		['owner' => $owner, 'organisation' => $organisation] = $this->caller->ownership();
 
 		// REFUSE rather than stamp nulls. `Flow::belongsTo()` is fail-closed on
 		// both sides, so a flow with no organisation belongs to nobody: it does
