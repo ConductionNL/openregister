@@ -59,6 +59,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Support\PermissionBit;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -379,7 +380,7 @@ class HierarchyGrantExpander {
 
 		$allowed = 0;
 		foreach ($verbs as $verb) {
-			$bit = ObjectGrantResolver::permissionBitFor(action: $verb);
+			$bit = PermissionBit::forAction(action: $verb);
 			if ($bit !== null) {
 				$allowed |= $bit;
 			}

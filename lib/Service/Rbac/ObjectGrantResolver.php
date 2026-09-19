@@ -50,7 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCP\Constants;
+use OCA\OpenRegister\Support\PermissionBit;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -250,33 +250,6 @@ class ObjectGrantResolver {
 	}//end inheritedFrom()
 
 	/**
-	 * The core permission bit an action requires, as a static.
-	 *
-	 * The same table {@see self::permissionFor()} answers from, reachable
-	 * without an instance so the hierarchy expander can narrow a mask by the
-	 * verbs a schema lets travel down. ONE table, not two: a second copy of
-	 * this map is a second answer to "which bit is update", and the day they
-	 * disagree an inherited grant carries a verb the ancestor never had.
-	 *
-	 * @param string $action The action.
-	 *
-	 * @return integer|null The bit, or null when the action has none.
-	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
-	 */
-	public static function permissionBitFor(string $action): ?int {
-		$bits = [
-			'read' => Constants::PERMISSION_READ,
-			'update' => Constants::PERMISSION_UPDATE,
-			'create' => Constants::PERMISSION_CREATE,
-			'delete' => Constants::PERMISSION_DELETE,
-			'share' => Constants::PERMISSION_SHARE,
-		];
-
-		return ($bits[$action] ?? null);
-	}//end permissionBitFor()
-
-	/**
 	 * Whether the caller holds any grant at all.
 	 *
 	 * The list emitters use this to decide whether the grant branch is worth
@@ -301,6 +274,12 @@ class ObjectGrantResolver {
 	 * grants visibility only and an extension verb is enforced at the endpoint
 	 * that performs it.
 	 *
+	 * The table itself lives in {@see PermissionBit}, so the hierarchy expander
+	 * can reach the SAME answer without an instance of this service. ONE table,
+	 * not two: a second copy of this map is a second answer to "which bit is
+	 * update", and the day they disagree an inherited grant carries a verb the
+	 * ancestor never had.
+	 *
 	 * @param string $action The action being decided.
 	 *
 	 * @return integer|null The required bit, or null when the action has none.
@@ -308,7 +287,7 @@ class ObjectGrantResolver {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function permissionFor(string $action): ?int {
-		return self::permissionBitFor(action: $action);
+		return PermissionBit::forAction(action: $action);
 	}//end permissionFor()
 
 	/**
