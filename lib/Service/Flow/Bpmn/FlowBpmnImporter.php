@@ -10,17 +10,14 @@
  * less AND say so element by element — and the third, which is what happens by
  * default, leaves an author with a flow that looks complete and is not.
  *
- * 🔴 IT DOES NOT VALIDATE AGAINST THE OMG XSD, and this is the one requirement
- * that genuinely waits on somebody else's decision. The spec says "The importer
- * SHALL validate the file against the BPMN 2.0 XSD before mapping, and refuse a
- * non-validating file naming the first violation". The schema set is a
- * licence-checked third-party artefact that a build lane should not vendor on
- * its own judgement, so this importer checks that the document PARSES and that
- * it contains exactly one `bpmn:process`, and refuses otherwise. That is a
- * strictly weaker check, it is stated here rather than implied, and the
- * mapping report is not a substitute for it: a malformed document would have
- * its XML problems attributed to process constructs, which is exactly what the
- * XSD step exists to prevent.
+ * 🔴 IT VALIDATES AGAINST THE VENDORED OMG XSD BEFORE IT MAPS ANYTHING, and
+ * that is a DIFFERENT ANSWER from the mapping report. "Your file is malformed,
+ * at this element, on this line" is `BpmnSchemaInvalid`; "we cannot express
+ * this construct" is a refusal in the report. Before the schema step there was
+ * only the second answer, so a malformed file was walked into a flow with
+ * missing nodes and read as a successful import. A mapping report over a
+ * malformed document attributes XML problems to process constructs, which is
+ * precisely what validating first prevents.
  *
  * 🔑 AND IT NEVER GUESSES A TYPE FROM A NAME. A `serviceTask` with no
  * openregister extension imports typeless and is listed as needing one. A flow
@@ -50,6 +47,7 @@ use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
+use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 
 /**
  * Reads a documented BPMN subset into a flow document, reporting every loss.
@@ -82,10 +80,12 @@ class FlowBpmnImporter {
 	/**
 	 * Constructor.
 	 *
-	 * @param BpmnVocabulary $vocabulary The one mapping table.
+	 * @param BpmnVocabulary      $vocabulary The one mapping table.
+	 * @param BpmnSchemaValidator $validator  The vendored OMG schema set.
 	 */
 	public function __construct(
 		private readonly BpmnVocabulary $vocabulary,
+		private readonly BpmnSchemaValidator $validator,
 	) {
 	}//end __construct()
 
@@ -98,11 +98,19 @@ class FlowBpmnImporter {
 	 * @return array{flow: array<string, mixed>, report: BpmnMappingReport} The result.
 	 *
 	 * @throws BpmnImportRefused When the file cannot be read, or when strict meets a refusal.
+	 * @throws BpmnSchemaInvalid When the document is not valid BPMN 2.0, which is a different answer.
 	 *
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function import(string $xml, bool $strict = false): array {
 		$document = $this->parse(xml: $xml);
+
+		// 🔴 THE SCHEMA STEP COMES BEFORE THE MAPPING, NOT BESIDE IT. Every
+		// verdict below reads a construct and says what became of it; run that
+		// over a document that is not BPMN and the author is told their
+		// process is unsupported when what is wrong is their XML.
+		$this->validator->assertValid(document: $document);
+
 		$xpath = new DOMXPath($document);
 		$xpath->registerNamespace('bpmn', FlowBpmnExporter::NS_BPMN);
 		$xpath->registerNamespace('bpmndi', FlowBpmnExporter::NS_BPMNDI);

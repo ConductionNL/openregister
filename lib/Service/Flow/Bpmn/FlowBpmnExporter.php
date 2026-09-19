@@ -10,12 +10,11 @@
  * from the gateway kind would pick one of the two by table order. The extension
  * element says which, so the importer never has to guess.
  *
- * 🔴 IT VALIDATES NOTHING AGAINST THE OMG XSD, and says so rather than
- * implying otherwise. The schema set is a licence-checked third-party artefact
- * this lane did not vendor, so "every exported file validates against the BPMN
- * 2.0 XSD" is NOT asserted here. What is asserted is that the output parses,
- * carries the declared namespaces, and round-trips through our own importer.
- * That is a weaker claim, and it is the one the tests make.
+ * 🔴 EVERY EXPORT IS VALIDATED AGAINST THE VENDORED OMG XSD BEFORE IT LEAVES,
+ * and a document that does not validate is never handed to a caller. A
+ * serializer regression is then a failing export here rather than "Camunda
+ * cannot open your file" a week later, and the schema is the unmodified one:
+ * when our output and the standard disagree, the output is what changes.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Flow\Bpmn
@@ -39,6 +38,7 @@ namespace OCA\OpenRegister\Service\Flow\Bpmn;
 use DOMDocument;
 use DOMElement;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 
 /**
  * Serialises a flow's node/edge graph to a `bpmn:process` with diagram interchange.
@@ -69,6 +69,18 @@ class FlowBpmnExporter {
 	public const NS_DC = 'http://www.omg.org/spec/DD/20100524/DC';
 
 	/**
+	 * The shared DI namespace an edge's waypoints live in.
+	 *
+	 * 🔑 NOT `NS_BPMNDI`. `bpmndi:BPMNEdge` extends `di:LabeledEdge`, so its
+	 * waypoints are `di:waypoint` in the DD namespace, and the schema requires
+	 * at least two of them: an edge drawn with none is a file every modeller
+	 * refuses.
+	 *
+	 * @var string
+	 */
+	public const NS_DI = 'http://www.omg.org/spec/DD/20100524/DI';
+
+	/**
 	 * Default node width, when the canvas gave none.
 	 *
 	 * @var int
@@ -92,19 +104,23 @@ class FlowBpmnExporter {
 	/**
 	 * Constructor.
 	 *
-	 * @param BpmnVocabulary $vocabulary The one mapping table.
+	 * @param BpmnVocabulary      $vocabulary The one mapping table.
+	 * @param BpmnSchemaValidator $validator  The vendored OMG schema set.
 	 */
 	public function __construct(
 		private readonly BpmnVocabulary $vocabulary,
+		private readonly BpmnSchemaValidator $validator,
 	) {
 	}//end __construct()
 
 	/**
-	 * A flow as BPMN 2.0 XML.
+	 * A flow as BPMN 2.0 XML, validated before it is returned.
 	 *
 	 * @param Flow $flow The flow.
 	 *
 	 * @return string The XML.
+	 *
+	 * @throws BpmnSchemaInvalid When our own output does not validate, which is a bug here.
 	 *
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
@@ -115,6 +131,7 @@ class FlowBpmnExporter {
 		$definitions = $document->createElementNS(self::NS_BPMN, 'bpmn:definitions');
 		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:bpmndi', self::NS_BPMNDI);
 		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:dc', self::NS_DC);
+		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:di', self::NS_DI);
 		$definitions->setAttributeNS(
 			'http://www.w3.org/2000/xmlns/',
 			'xmlns:' . BpmnVocabulary::EXTENSION_PREFIX,
@@ -149,6 +166,12 @@ class FlowBpmnExporter {
 			$this->diagram(document: $document, processId: $processId, nodes: $nodes, edges: $edges)
 		);
 
+		// 🔴 THE BOUNDARY CHECK RUNS ON OUR OWN OUTPUT TOO. An export that does
+		// not validate is a serializer bug, and the user must not be the one
+		// who discovers it: a file Camunda refuses is indistinguishable, to
+		// them, from a product that cannot export.
+		$this->validator->assertValid(document: $document, subject: 'The exported flow');
+
 		return (string)$document->saveXML();
 	}//end export()
 
@@ -164,25 +187,11 @@ class FlowBpmnExporter {
 		$type = (string)($node['type'] ?? '');
 		$kind = $this->vocabulary->elementFor(nodeType: $type);
 
-		// `intermediateCatchEvent:message` is one element with a child event
-		// definition, not an element called that. The colon is the
-		// vocabulary's way of naming the pair; it is resolved here, in the one
-		// place that writes XML.
-		$eventDefinition = null;
-		$elementName = $kind;
-		if (str_contains($kind, ':') === true) {
-			[$elementName, $eventDefinition] = explode(':', $kind, 2);
-		}
+		[$elementName, $eventDefinition] = $this->resolve(kind: $kind);
 
 		$element = $document->createElementNS(self::NS_BPMN, 'bpmn:' . $elementName);
 		$element->setAttribute('id', $this->idOf(value: (string)($node['id'] ?? '')));
 		$element->setAttribute('name', (string)($node['name'] ?? $node['id'] ?? ''));
-
-		if ($eventDefinition !== null) {
-			$element->appendChild(
-				$document->createElementNS(self::NS_BPMN, 'bpmn:' . $eventDefinition . 'EventDefinition')
-			);
-		}
 
 		$extensions = $document->createElementNS(self::NS_BPMN, 'bpmn:extensionElements');
 		$typeElement = $document->createElementNS(
@@ -202,10 +211,114 @@ class FlowBpmnExporter {
 			$extensions->appendChild($configElement);
 		}
 
+		// 🔴 `extensionElements` COMES FIRST, BEFORE THE EVENT DEFINITION.
+		// `tBaseElement` puts it at the head of the sequence every BPMN element
+		// inherits, and an event definition written before it fails the schema
+		// on a document that is otherwise perfectly readable — which is exactly
+		// the class of mistake a validated boundary is for.
 		$element->appendChild($extensions);
+
+		if ($eventDefinition !== null) {
+			$element->appendChild(
+				$this->eventDefinition(
+					document: $document,
+					definition: $eventDefinition,
+					config: (is_array($config) === true ? $config : [])
+				)
+			);
+		}
 
 		return $element;
 	}//end nodeElement()
+
+	/**
+	 * A vocabulary kind as an element name and an optional event definition.
+	 *
+	 * The vocabulary names an event and its definition as one kind, in two
+	 * spellings: `intermediateCatchEvent:message` for the catch events and
+	 * `timerStartEvent` for the start and end events, because the second is
+	 * what the importer reads off a parsed file and the two tables have to
+	 * meet on the same word. Neither is a BPMN element: both are an event
+	 * element with a definition child, and this is the one place that knows it.
+	 *
+	 * @param string $kind The vocabulary kind.
+	 *
+	 * @return array{0: string, 1: string|null} The element name and the definition.
+	 */
+	private function resolve(string $kind): array {
+		if (str_contains($kind, ':') === true) {
+			[$name, $definition] = explode(':', $kind, 2);
+			return [$name, $definition];
+		}
+
+		$matched = [];
+		if (preg_match('/^(timer|message|conditional|terminate|error|signal)(StartEvent|EndEvent)$/', $kind, $matched) === 1) {
+			return [lcfirst($matched[2]), $matched[1]];
+		}
+
+		return [$kind, null];
+	}//end resolve()
+
+	/**
+	 * One event definition, with the content its type requires.
+	 *
+	 * 🔑 A CONDITIONAL EVENT DEFINITION IS NOT ALLOWED TO BE EMPTY: the schema
+	 * requires a `condition`, and the subject the trigger listens for is what
+	 * belongs in it. A timer's cycle is optional to the schema and required by
+	 * our own spec, which says the cron travels in the `timerEventDefinition`.
+	 *
+	 * @param DOMDocument          $document   The document.
+	 * @param string               $definition The definition kind.
+	 * @param array<string, mixed> $config     The node's config.
+	 *
+	 * @return DOMElement The definition.
+	 */
+	private function eventDefinition(DOMDocument $document, string $definition, array $config): DOMElement {
+		$element = $document->createElementNS(self::NS_BPMN, 'bpmn:' . $definition . 'EventDefinition');
+
+		if ($definition === 'timer') {
+			$cron = trim((string)($config['cron'] ?? ''));
+			if ($cron !== '') {
+				$element->appendChild($document->createElementNS(self::NS_BPMN, 'bpmn:timeCycle', $cron));
+			}
+
+			return $element;
+		}
+
+		if ($definition === 'conditional') {
+			$element->appendChild(
+				$document->createElementNS(self::NS_BPMN, 'bpmn:condition', $this->subjectOf(config: $config))
+			);
+		}
+
+		return $element;
+	}//end eventDefinition()
+
+	/**
+	 * The subject an object trigger listens for, as a condition sentence.
+	 *
+	 * @param array<string, mixed> $config The node's config.
+	 *
+	 * @return string The condition.
+	 */
+	private function subjectOf(array $config): string {
+		$parts = [];
+		foreach (['event', 'register', 'schema'] as $key) {
+			$value = trim((string)($config[$key] ?? ''));
+			if ($value !== '') {
+				$parts[] = sprintf('%s == "%s"', $key, $value);
+			}
+		}
+
+		if ($parts === []) {
+			// 🔑 NOT AN EMPTY CONDITION. The schema forbids one, and "any
+			// object event" is the honest reading of a trigger that names no
+			// subject — which is what the engine does with it.
+			return 'true';
+		}
+
+		return implode(' and ', $parts);
+	}//end subjectOf()
 
 	/**
 	 * One edge as a sequence flow.
@@ -256,6 +369,15 @@ class FlowBpmnExporter {
 		$plane->setAttribute('bpmnElement', $processId);
 		$diagram->appendChild($plane);
 
+		$centres = [];
+		foreach ($nodes as $index => $node) {
+			[$left, $top] = $this->positionOf(node: $node, index: (int)$index);
+			$centres[$this->idOf(value: (string)($node['id'] ?? ''))] = [
+				(int)($left + intdiv(self::WIDTH, 2)),
+				(int)($top + intdiv(self::HEIGHT, 2)),
+			];
+		}
+
 		foreach ($nodes as $index => $node) {
 			$id = $this->idOf(value: (string)($node['id'] ?? ''));
 			$shape = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNShape');
@@ -278,6 +400,19 @@ class FlowBpmnExporter {
 			$element = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNEdge');
 			$element->setAttribute('id', 'Edge_' . $id);
 			$element->setAttribute('bpmnElement', $id);
+
+			// 🔴 TWO WAYPOINTS, ALWAYS. `di:Edge` requires `minOccurs="2"`, so
+			// an edge drawn without them is not a diagram with a missing line:
+			// it fails the schema and every modeller refuses the whole file.
+			$from = ($centres[$this->idOf(value: (string)($edge['from'] ?? ''))] ?? [0, 0]);
+			$to = ($centres[$this->idOf(value: (string)($edge['to'] ?? ''))] ?? [0, 0]);
+			foreach ([$from, $to] as $point) {
+				$waypoint = $document->createElementNS(self::NS_DI, 'di:waypoint');
+				$waypoint->setAttribute('x', (string)$point[0]);
+				$waypoint->setAttribute('y', (string)$point[1]);
+				$element->appendChild($waypoint);
+			}
+
 			$plane->appendChild($element);
 		}
 

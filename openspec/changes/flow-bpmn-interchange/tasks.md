@@ -1,10 +1,9 @@
 # Tasks: flow-bpmn-interchange
 
-> 🔑 **Built in two passes.** #3944 built the VOCABULARY and the REPORT;
-> this pass builds the two serialisers, the round trip and the two endpoints.
-> Everything that does not need the vendored schema set is done; the one
-> requirement that genuinely waits on the licence decision is named below and
-> is not worked around.
+> 🔑 **Built in three passes.** #3944 built the VOCABULARY and the REPORT; the
+> second built the two serialisers, the round trip and the two endpoints; this
+> one vendors the OMG schema set and validates both directions against it.
+> Nothing now waits on a decision.
 >
 > The first pass's note, kept because it is still the reason those two came
 > first: Those are the two pieces everything else rests on and the two that can
@@ -17,11 +16,17 @@
 
 ## Groundwork
 
-- [ ] Vendor the OMG BPMN 2.0 XSD set. NOT DONE HERE, deliberately: it is a
-      licence-checked third-party artefact fetched from omg.org, and vendoring
-      one on a build-lane's judgement is the kind of thing that is discovered
-      six months later in a licence audit. It wants a person who can say yes to
-      the licence.
+- [x] Vendor the OMG BPMN 2.0 XSD set, pinned and unmodified, in
+      `lib/Service/Flow/Bpmn/schema/`. The decision was taken by a person, with
+      the licence question open, which is why the copy is unmodified and
+      `PROVENANCE.md` beside it records the source URL, the fetch date, the
+      version, a SHA-256 per file, the specification's copyright line and its
+      licence reference. The files carry no notice of any kind, so the
+      attribution cannot travel in them and has to sit beside them.
+      🔴 Camunda and Flowable both widen `calledElement` to `xsd:string` in
+      their copies and Flowable adds `skipExpression`. We do not.
+      `BpmnSchemaProvenanceTest` hashes the five files against
+      `BpmnSchemaValidator::CHECKSUMS`, so a silent edit reddens by file name.
 - [x] `BpmnVocabulary` declares the namespace, the prefix and the two
       elements — and the MAPPING itself, for the same reason: two copies drift,
       and the drift shows up as a file that does not round-trip through its own
@@ -48,12 +53,21 @@
       `application/xml` with a download filename; route registered in
       `appinfo/routes.php` with its auth posture (gate-5/29).
 - [x] Exporter unit tests over every mapping row plus a fallback task.
-- [ ] 🔴 **XSD validation of the output. THIS IS THE REQUIREMENT THAT WAITS ON
-      THE LICENCE DECISION**, and it is not worked around. The acceptance
-      criterion "every exported file validates against the BPMN 2.0 XSD" is NOT
-      met. What the tests assert instead is strictly weaker and says so: the
-      output is well-formed XML, carries the declared namespaces, and
-      round-trips through our own importer.
+- [x] XSD validation of the output, and the three things the unmodified schema
+      rejected when it was first pointed at what we emit. None of them was
+      worked around in the schema:
+      1. `timerStartEvent` and `conditionalStartEvent` were written as element
+         names. BPMN has no such elements: they are a `startEvent` with a
+         definition child, which is what the importer already reads, so the
+         two tables were meeting on a word only one of them could spell.
+      2. `extensionElements` was written AFTER the event definition.
+         `tBaseElement` puts it at the head of the sequence every element
+         inherits, so the order was wrong on every event node.
+      3. `bpmndi:BPMNEdge` carried no waypoints. `di:Edge` requires at least
+         two, so every exported diagram was a file a modeller refuses whole.
+      A `conditionalEventDefinition` also may not be empty, so the trigger's
+      subject now travels in its `condition`, and the schedule's cron in the
+      timer's `timeCycle` as the spec always said it should.
 
 ## Import
 
@@ -77,12 +91,14 @@
       producing the flow document plus a `BpmnMappingReport` of
       `mapped`/`approximated`/`refused` entries (element id, kind, verdict,
       action sentence).
-- [ ] 🔴 **XSD validation before mapping — the same licence wait.** The
-      importer checks that the document PARSES and that it holds exactly one
-      `bpmn:process`, and refuses otherwise. That is weaker, it is stated in
-      the class docblock, and the mapping report is NOT a substitute: a
-      malformed document would have its XML problems attributed to process
-      constructs, which is what the XSD step exists to prevent.
+- [x] XSD validation before mapping, raising `BpmnSchemaInvalid` with the
+      element and the line. It is a DIFFERENT EXCEPTION from
+      `BpmnImportRefused` and a different response shape (`malformed: true`,
+      no report), because the two answers are the point: a mapping report over
+      a malformed document attributes XML problems to process constructs. The
+      ordering is asserted by which exception comes out of a two-process file:
+      with the real validator the importer's own refusal wins, with a
+      validator that refuses it never gets to speak.
 - [x] Reverse mappings incl. the tolerated widenings (userTask →
       await-signal; inclusive gateway with default → route; terminate end →
       end; ISO-8601 timer cycles → cron where expressible).
@@ -120,7 +136,9 @@
 
 ## Acceptance criteria
 
-- Every exported file validates against the BPMN 2.0 XSD.
+- Every exported file validates against the BPMN 2.0 XSD. ✅ asserted against
+  the vendored, unmodified set, with the exporter built on a permissive
+  validator double so the assertion itself reddens rather than the call.
 - Our own files round-trip exactly, including canvas positions.
 - No construct is ever imported silently below its meaning: every
   approximation and refusal appears in the report by element id.
@@ -151,3 +169,18 @@ revival of the duplicate branch that produced them (openregister#3946, closed).
   by a deleted node turns the export into something nobody can open. The engine
   refuses a dangling edge at build time, but a document assembled from a stored
   node list can still carry one, and the export is where it becomes fatal.
+
+## Follow-up, 2026-09-19
+
+Vendoring pass. Three things this pass deliberately did NOT do, so they are
+findings rather than silent gaps:
+
+- **`config.error` does not produce an error end event, and neither the
+  converging parallel gateway for `join: true` nor the diverging one for a
+  multi-out node is emitted.** Those three rows of the mapping table are
+  ticked above but are not in `BpmnVocabulary::EXPORT`, so they export as a
+  plain end event and a plain node. The output is valid BPMN either way, which
+  is why validation did not surface them; they are a mapping gap, not a schema
+  one, and they belong to whoever takes the mapping table next.
+- **Multipart upload** still wants a file-handling path of its own.
+- **The UI follow-up** against nextcloud-vue is still open.
