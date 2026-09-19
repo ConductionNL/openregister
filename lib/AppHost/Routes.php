@@ -112,18 +112,22 @@ class Routes {
 	public static function standard(array $extra = [], bool $publicPages = false): array {
 		self::assertNoDuplicateNames(extra: $extra);
 
-		$extraNames = [];
+		$extraKeys = [];
 		foreach ($extra as $route) {
 			if (isset($route['name']) === true) {
-				$extraNames[(string)$route['name']] = true;
+				$extraKeys[self::registrationKey(route: $route)] = true;
 			}
 		}
 
 		// Canonical routes, minus the SPA catch-all (appended last).
 		$canonical = [];
 		foreach (self::canonicalRoutes() as $route) {
-			// An $extra route with the same name overrides the canonical one.
-			if (isset($extraNames[$route['name']]) === true) {
+			// An $extra route that registers under the same key overrides the
+			// canonical one. The key, not the name: an $extra entry carrying a
+			// `postfix` registers under a DIFFERENT name, so it replaces
+			// nothing, and dropping the canonical entry for it would delete a
+			// route no one asked to delete.
+			if (isset($extraKeys[self::registrationKey(route: $route)]) === true) {
 				continue;
 			}
 
@@ -136,6 +140,13 @@ class Routes {
 		}
 
 		$merged[] = self::catchAllRoute();
+
+		// The canonical half, which the override above does not reach. The
+		// catch-all and the public page route are appended AFTER `$extra`, so
+		// an `$extra` entry registering under either name is silently replaced
+		// by it rather than overriding it. Assert on the whole merged set, so
+		// the answer is about what registers and not about what was declared.
+		self::assertEveryRouteRegisters(routes: $merged);
 
 		return ['routes' => $merged];
 	}//end standard()
@@ -245,13 +256,36 @@ class Routes {
 	}//end catchAllRoute()
 
 	/**
-	 * Guard against duplicate route names within the caller's `$extra` set.
+	 * The name Nextcloud actually registers a route under, minus the app id.
+	 *
+	 * `OC\AppFramework\Routing\RouteParser::processRoute()` builds
+	 * `strtolower($appName . '.' . $controller . '.' . $action . $postfix)`,
+	 * and `RouteCollection::add()` OVERWRITES an entry of the same name.
+	 * Neither the URL nor the verb is part of it, so two entries on one
+	 * controller action are one route unless a `postfix` separates them, and
+	 * the last one declared is the one that exists.
+	 *
+	 * @param array<string, mixed> $route One route entry.
+	 *
+	 * @return string The registration key.
+	 */
+	private static function registrationKey(array $route): string {
+		return strtolower((string)($route['name'] ?? '') . (string)($route['postfix'] ?? ''));
+	}//end registrationKey()
+
+	/**
+	 * Guard against two `$extra` routes registering under one name.
+	 *
+	 * Keyed on the registration key rather than on the name, because a
+	 * `postfix` is exactly how an app gives a second route on the same
+	 * controller action its own name. Comparing names alone refused that
+	 * legitimate pair and so blocked the one available remedy.
 	 *
 	 * @param array<int, array<string, mixed>> $extra App-specific routes.
 	 *
 	 * @return void
 	 *
-	 * @throws \InvalidArgumentException When two `$extra` routes share a name.
+	 * @throws \InvalidArgumentException When two `$extra` routes register alike.
 	 */
 	private static function assertNoDuplicateNames(array $extra): void {
 		$seen = [];
@@ -260,12 +294,47 @@ class Routes {
 				continue;
 			}
 
-			$name = (string)$route['name'];
-			if (isset($seen[$name]) === true) {
-				throw new InvalidArgumentException(sprintf('Duplicate route name "%s" in AppHost Routes::standard($extra)', $name));
+			$key = self::registrationKey(route: $route);
+			if (isset($seen[$key]) === true) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'Duplicate route name "%s" in AppHost Routes::standard($extra). Give one of them its own "postfix".',
+						$key
+					)
+				);
 			}
 
-			$seen[$name] = true;
+			$seen[$key] = true;
 		}
 	}//end assertNoDuplicateNames()
+
+	/**
+	 * Every entry in the merged table must survive registration.
+	 *
+	 * @param array<int, array<string, mixed>> $routes The merged route table.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When two entries register alike.
+	 */
+	private static function assertEveryRouteRegisters(array $routes): void {
+		$seen = [];
+		foreach ($routes as $route) {
+			$key = self::registrationKey(route: $route);
+			if (isset($seen[$key]) === true) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'Route "%s" registers twice in AppHost Routes::standard(): %s %s replaces %s %s. Give one of them its own "postfix".',
+						$key,
+						(string)($route['verb'] ?? 'GET'),
+						(string)($route['url'] ?? '?'),
+						(string)($seen[$key]['verb'] ?? 'GET'),
+						(string)($seen[$key]['url'] ?? '?')
+					)
+				);
+			}
+
+			$seen[$key] = $route;
+		}
+	}//end assertEveryRouteRegisters()
 }//end class

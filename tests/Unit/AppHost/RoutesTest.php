@@ -236,4 +236,83 @@ class RoutesTest extends TestCase {
 		$this->assertSame('dashboard#catchAll', $last['name']);
 		$this->assertNotSame('/public/{path}', $last['url']);
 	}//end testTheCatchAllKeepsItsOwnAddressAndStaysLast()
+
+	/**
+	 * A postfixed pair on one action is a legitimate table, not a duplicate.
+	 *
+	 * Nextcloud names a route `strtolower($app . '.' . $controller . '.'
+	 * . $action . $postfix)`, so a `postfix` is the only way to give a second
+	 * verb on the same action its own registration. The guard used to compare
+	 * names WITHOUT the postfix, which refused exactly the pair that fixes the
+	 * problem the guard exists for.
+	 *
+	 * @return void
+	 */
+	public function testAPostfixedPairOnOneActionIsAccepted(): void {
+		$routes = Routes::standard(
+			[
+				['name' => 'pets#update', 'url' => '/api/pets', 'verb' => 'PUT'],
+				['name' => 'pets#update', 'url' => '/api/pets', 'verb' => 'PATCH', 'postfix' => 'patch'],
+			]
+		)['routes'];
+
+		$keys = array_map(static fn ($r) => strtolower($r['name'] . ($r['postfix'] ?? '')), $routes);
+
+		$this->assertContains('pets#update', $keys, 'the unpostfixed half must register');
+		$this->assertContains('pets#updatepatch', $keys, 'the postfixed half must register under its own name');
+	}//end testAPostfixedPairOnOneActionIsAccepted()
+
+	/**
+	 * An extra route carrying a postfix replaces no canonical route.
+	 *
+	 * The override map was keyed on the name alone, so an app adding a second,
+	 * postfixed verb on a canonical action DELETED the canonical entry it was
+	 * not replacing. Nothing warned; the route simply stopped existing.
+	 *
+	 * @return void
+	 */
+	public function testAPostfixedExtraDoesNotDeleteTheCanonicalRoute(): void {
+		$routes = Routes::standard(
+			[['name' => 'settings#update', 'url' => '/api/settings/alt', 'verb' => 'PATCH', 'postfix' => 'alt']]
+		)['routes'];
+
+		$keys = array_map(static fn ($r) => strtolower($r['name'] . ($r['postfix'] ?? '')), $routes);
+
+		$this->assertContains('settings#update', $keys, 'the canonical PUT on /api/settings must survive');
+		$this->assertContains('settings#updatealt', $keys, "the app's own PATCH must register beside it");
+	}//end testAPostfixedExtraDoesNotDeleteTheCanonicalRoute()
+
+	/**
+	 * An unpostfixed extra on a canonical name still overrides it, once.
+	 *
+	 * The control for the two tests above: keying on the registration key must
+	 * not turn the deliberate override into a duplicate.
+	 *
+	 * @return void
+	 */
+	public function testAnUnpostfixedExtraStillOverridesTheCanonicalRoute(): void {
+		$routes = Routes::standard(
+			[['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT']]
+		)['routes'];
+
+		$keys = array_map(static fn ($r) => strtolower($r['name'] . ($r['postfix'] ?? '')), $routes);
+
+		$this->assertCount(1, array_keys($keys, 'settings#update', true));
+	}//end testAnUnpostfixedExtraStillOverridesTheCanonicalRoute()
+
+	/**
+	 * An extra route the catch-all would swallow is refused, not swallowed.
+	 *
+	 * The canonical half the `$extra` guard cannot see: the catch-all and the
+	 * public page route are appended AFTER `$extra`, so an entry registering
+	 * under either name was replaced by it rather than overriding it.
+	 *
+	 * @return void
+	 */
+	public function testAnExtraRouteTheCatchAllWouldReplaceIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('dashboard#catchall');
+
+		Routes::standard([['name' => 'dashboard#catchAll', 'url' => '/api/mine', 'verb' => 'GET']]);
+	}//end testAnExtraRouteTheCatchAllWouldReplaceIsRefused()
 }//end class
