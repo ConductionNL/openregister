@@ -292,11 +292,36 @@ class ShippedConfigurationGuard {
 		}
 
 		$parts = new DescriptorParts();
-		$shippedParts = $parts->flatten(descriptor: $baseline['definition']);
-		$liveParts = $parts->flatten(descriptor: $live);
+		$flat = [
+			'shipped' => $parts->flatten(descriptor: $baseline['definition']),
+			'live' => $parts->flatten(descriptor: $live),
+		];
 
-		$hasShipped = array_key_exists($path, $shippedParts);
-		$hasLive = array_key_exists($path, $liveParts);
+		$refusal = $this->resetRefusal(path: $path, flat: $flat, live: $live);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->resetPreview(path: $path, flat: $flat, parts: $parts);
+	}//end previewReset()
+
+	/**
+	 * Why one part cannot be reset, or null when it can.
+	 *
+	 * Both answers carry `applicable: false` AND a reason. A reset that simply
+	 * did nothing would look from the outside exactly like one that worked.
+	 *
+	 * @param string                                  $path The part to reset.
+	 * @param array<string, array<string|int, mixed>> $flat The flattened shipped and live parts.
+	 * @param array<string, mixed>                    $live What the instance runs.
+	 *
+	 * @return array{applicable: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}|null The refusal, or null.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function resetRefusal(string $path, array $flat, array $live): ?array {
+		$hasShipped = array_key_exists($path, $flat['shipped']);
+		$hasLive = array_key_exists($path, $flat['live']);
 
 		if ($hasShipped === false && $hasLive === false) {
 			return [
@@ -308,19 +333,37 @@ class ShippedConfigurationGuard {
 			];
 		}
 
-		if ($hasShipped === true && $hasLive === true && $shippedParts[$path] === $liveParts[$path]) {
+		if ($hasShipped === true && $hasLive === true && $flat['shipped'][$path] === $flat['live'][$path]) {
 			return [
 				'applicable' => false,
 				'reason' => sprintf('"%s" already matches what was shipped', $path),
-				'from' => $liveParts[$path],
-				'to' => $shippedParts[$path],
+				'from' => $flat['live'][$path],
+				'to' => $flat['shipped'][$path],
 				'definition' => $live,
 			];
 		}
 
-		$next = $liveParts;
+		return null;
+	}//end resetRefusal()
+
+	/**
+	 * What resetting one part would change it from, and to.
+	 *
+	 * @param string                                  $path  The part to reset.
+	 * @param array<string, array<string|int, mixed>> $flat  The flattened shipped and live parts.
+	 * @param DescriptorParts                         $parts The flattener, reused for the round trip.
+	 *
+	 * @return array{applicable: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>} The preview.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function resetPreview(string $path, array $flat, DescriptorParts $parts): array {
+		$hasShipped = array_key_exists($path, $flat['shipped']);
+		$hasLive = array_key_exists($path, $flat['live']);
+
+		$next = $flat['live'];
 		if ($hasShipped === true) {
-			$next[$path] = $shippedParts[$path];
+			$next[$path] = $flat['shipped'][$path];
 		}
 
 		if ($hasShipped === false) {
@@ -331,12 +374,12 @@ class ShippedConfigurationGuard {
 
 		$from = null;
 		if ($hasLive === true) {
-			$from = $liveParts[$path];
+			$from = $flat['live'][$path];
 		}
 
 		$to = null;
 		if ($hasShipped === true) {
-			$to = $shippedParts[$path];
+			$to = $flat['shipped'][$path];
 		}
 
 		return [
@@ -346,7 +389,7 @@ class ShippedConfigurationGuard {
 			'to' => $to,
 			'definition' => $parts->unflatten(parts: $next),
 		];
-	}//end previewReset()
+	}//end resetPreview()
 
 	/**
 	 * Reset one part to the shipped baseline, as a recorded act.

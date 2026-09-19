@@ -110,34 +110,57 @@ class RelatedRowFilterParser {
 				);
 			}
 
-			foreach ($byForeignKey as $foreignKey => $block) {
-				$key = trim((string)$foreignKey);
-				if ($key === '' || is_array($block) === false || $block === []) {
-					throw new InvalidArgumentException(
-						sprintf(
-							'%s[%s][%s] must carry at least one condition.',
-							self::KEY,
-							$schemaSlug,
-							(string)$foreignKey
-						)
-					);
-				}
-
-				foreach ($this->blocks(block: $block) as $conditions) {
-					$filters[] = new RelatedRowFilter(
-						schema: $schemaSlug,
-						foreignKey: $key,
-						conditions: $this->conditions(
-							raw: $conditions,
-							path: sprintf('%s[%s][%s]', self::KEY, $schemaSlug, $key)
-						)
-					);
-				}
-			}
+			$filters = array_merge(
+				$filters,
+				$this->filtersForSchema(schemaSlug: $schemaSlug, byForeignKey: $byForeignKey)
+			);
 		}
 
 		return $filters;
 	}//end parse()
+
+	/**
+	 * The filters one schema block declares, in the order written.
+	 *
+	 * @param string                   $schemaSlug   The schema the block names.
+	 * @param array<string|int, mixed> $byForeignKey The block, keyed by foreign key.
+	 *
+	 * @return array<int, RelatedRowFilter> The filters.
+	 *
+	 * @throws InvalidArgumentException When a foreign key block is unusable.
+	 *
+	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function filtersForSchema(string $schemaSlug, array $byForeignKey): array {
+		$filters = [];
+
+		foreach ($byForeignKey as $foreignKey => $block) {
+			$key = trim((string)$foreignKey);
+			if ($key === '' || is_array($block) === false || $block === []) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'%s[%s][%s] must carry at least one condition.',
+						self::KEY,
+						$schemaSlug,
+						(string)$foreignKey
+					)
+				);
+			}
+
+			foreach ($this->blocks(block: $block) as $conditions) {
+				$filters[] = new RelatedRowFilter(
+					schema: $schemaSlug,
+					foreignKey: $key,
+					conditions: $this->conditions(
+						raw: $conditions,
+						path: sprintf('%s[%s][%s]', self::KEY, $schemaSlug, $key)
+					)
+				);
+			}
+		}
+
+		return $filters;
+	}//end filtersForSchema()
 
 	/**
 	 * One block, or the several a numeric suffix asked for.
@@ -204,45 +227,10 @@ class RelatedRowFilterParser {
 				);
 			}
 
-			// `field=value` is the `eq` shorthand, the same shorthand the
-			// object's own filters use. `field[op]=value` names the operator.
-			if (is_array($value) === false) {
-				$conditions[] = ['field' => $name, 'operator' => 'eq', 'value' => $value];
-				continue;
-			}
-
-			if ($value === []) {
-				throw new InvalidArgumentException(
-					sprintf('The condition %s[%s] carries no value.', $path, $name)
-				);
-			}
-
-			// A bare list is the `in` shorthand: `field[]=a&field[]=b`.
-			if (array_is_list($value) === true) {
-				$conditions[] = ['field' => $name, 'operator' => 'in', 'value' => $value];
-				continue;
-			}
-
-			foreach ($value as $operator => $operand) {
-				$op = trim((string)$operator);
-				if (in_array($op, self::OPERATORS, true) === false) {
-					throw new InvalidArgumentException(
-						sprintf(
-							'The condition %s[%s] uses operator \'%s\'. It must be one of: %s.',
-							$path,
-							$name,
-							$op,
-							implode(', ', self::OPERATORS)
-						)
-					);
-				}
-
-				if ($op === 'in' && is_array($operand) === false) {
-					$operand = array_map('trim', explode(',', (string)$operand));
-				}
-
-				$conditions[] = ['field' => $name, 'operator' => $op, 'value' => $operand];
-			}
+			$conditions = array_merge(
+				$conditions,
+				$this->conditionsFor(name: $name, value: $value, path: $path)
+			);
 		}
 
 		if ($conditions === []) {
@@ -251,4 +239,61 @@ class RelatedRowFilterParser {
 
 		return $conditions;
 	}//end conditions()
+
+	/**
+	 * The conditions ONE field declares.
+	 *
+	 * Three spellings, all of them in use: `field=value` is the `eq` shorthand
+	 * the object's own filters use, a bare list `field[]=a&field[]=b` is the
+	 * `in` shorthand, and `field[op]=value` names the operator outright.
+	 *
+	 * @param string $name  The field name, already trimmed and non-empty.
+	 * @param mixed  $value The declared value in any of the three spellings.
+	 * @param string $path  The block's path, for the message.
+	 *
+	 * @return array<int, array{field: string, operator: string, value: mixed}> The conditions.
+	 *
+	 * @throws InvalidArgumentException When the condition is unusable.
+	 *
+	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function conditionsFor(string $name, mixed $value, string $path): array {
+		if (is_array($value) === false) {
+			return [['field' => $name, 'operator' => 'eq', 'value' => $value]];
+		}
+
+		if ($value === []) {
+			throw new InvalidArgumentException(
+				sprintf('The condition %s[%s] carries no value.', $path, $name)
+			);
+		}
+
+		if (array_is_list($value) === true) {
+			return [['field' => $name, 'operator' => 'in', 'value' => $value]];
+		}
+
+		$conditions = [];
+		foreach ($value as $operator => $operand) {
+			$op = trim((string)$operator);
+			if (in_array($op, self::OPERATORS, true) === false) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'The condition %s[%s] uses operator \'%s\'. It must be one of: %s.',
+						$path,
+						$name,
+						$op,
+						implode(', ', self::OPERATORS)
+					)
+				);
+			}
+
+			if ($op === 'in' && is_array($operand) === false) {
+				$operand = array_map('trim', explode(',', (string)$operand));
+			}
+
+			$conditions[] = ['field' => $name, 'operator' => $op, 'value' => $operand];
+		}
+
+		return $conditions;
+	}//end conditionsFor()
 }//end class

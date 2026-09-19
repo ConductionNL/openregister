@@ -117,41 +117,105 @@ final class MacroActionBinding {
 	public static function refusals(array $configuration): array {
 		$refusals = [];
 		foreach (self::declarations(configuration: $configuration) as $action => $definition) {
-			$hasMacro = array_key_exists('macro', $definition);
-			$hasFlow = array_key_exists('flow', $definition);
-
-			if ($hasMacro === false && $hasFlow === false) {
-				continue;
-			}
-
-			if ($hasMacro === true && is_bool($definition['macro']) === false) {
-				$refusals[] = sprintf('Action "%s": "macro" must be true or false.', $action);
-			}
-
-			if ($hasFlow === true
-				&& (is_string($definition['flow']) === false || trim((string)$definition['flow']) === '')
-			) {
-				$refusals[] = sprintf('Action "%s": "flow" must name a flow.', $action);
-				continue;
-			}
-
-			// A macro with nothing to run is the mistake this refusal exists
-			// for: the action would save, appear in the menu, and do nothing
-			// when clicked, which is indistinguishable from a flow that ran and
-			// changed nothing.
-			if (($definition['macro'] ?? false) === true && $hasFlow === false) {
-				$refusals[] = sprintf('Action "%s": "macro" is true but no "flow" is named.', $action);
-			}
-
-			// The mirror: a flow nothing will ever run. Saved quietly, it reads
-			// as a bound macro to anyone looking at the schema afterwards.
-			if ($hasFlow === true && ($definition['macro'] ?? false) !== true) {
-				$refusals[] = sprintf('Action "%s": "flow" is named but "macro" is not true.', $action);
-			}
+			$refusals = array_merge(
+				$refusals,
+				self::refusalsFor(action: $action, definition: $definition)
+			);
 		}//end foreach
 
 		return $refusals;
 	}//end refusals()
+
+	/**
+	 * Why ONE declared action's macro binding may not be saved.
+	 *
+	 * @param string               $action     The action key.
+	 * @param array<string, mixed> $definition The action's definition.
+	 *
+	 * @return string[] The refusals, empty when this action's shape is sound.
+	 *
+	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	private static function refusalsFor(string $action, array $definition): array {
+		$hasMacro = array_key_exists('macro', $definition);
+		$hasFlow = array_key_exists('flow', $definition);
+
+		if ($hasMacro === false && $hasFlow === false) {
+			return [];
+		}
+
+		$refusals = [];
+		if ($hasMacro === true && is_bool($definition['macro']) === false) {
+			$refusals[] = sprintf('Action "%s": "macro" must be true or false.', $action);
+		}
+
+		// An unnamed flow stops the checks below, as it always has: the two
+		// pairing refusals are about a flow that IS named, and reporting them
+		// as well would name the same mistake twice.
+		if (self::namesNoFlow(definition: $definition, hasFlow: $hasFlow) === true) {
+			$refusals[] = sprintf('Action "%s": "flow" must name a flow.', $action);
+			return $refusals;
+		}
+
+		return array_merge(
+			$refusals,
+			self::pairingRefusals(action: $action, definition: $definition, hasFlow: $hasFlow)
+		);
+	}//end refusalsFor()
+
+	/**
+	 * Whether a present `flow` key names nothing usable.
+	 *
+	 * @param array<string, mixed> $definition The action's definition.
+	 * @param boolean              $hasFlow    Whether the key is present at all.
+	 *
+	 * @return bool True when `flow` is present but empty or not a string.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	private static function namesNoFlow(array $definition, bool $hasFlow): bool {
+		if ($hasFlow === false) {
+			return false;
+		}
+
+		return (is_string($definition['flow']) === false || trim((string)$definition['flow']) === '');
+	}//end namesNoFlow()
+
+	/**
+	 * Why a macro and its flow do not pair up.
+	 *
+	 * @param string               $action     The action key.
+	 * @param array<string, mixed> $definition The action's definition.
+	 * @param boolean              $hasFlow    Whether a `flow` key is present.
+	 *
+	 * @return string[] The refusals, empty when the pair is sound.
+	 *
+	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	private static function pairingRefusals(string $action, array $definition, bool $hasFlow): array {
+		$isMacro = (($definition['macro'] ?? false) === true);
+		$refusals = [];
+
+		// A macro with nothing to run is the mistake this refusal exists for:
+		// the action would save, appear in the menu, and do nothing when
+		// clicked, which is indistinguishable from a flow that ran and changed
+		// nothing.
+		if ($isMacro === true && $hasFlow === false) {
+			$refusals[] = sprintf('Action "%s": "macro" is true but no "flow" is named.', $action);
+		}
+
+		// The mirror: a flow nothing will ever run. Saved quietly, it reads as
+		// a bound macro to anyone looking at the schema afterwards.
+		if ($hasFlow === true && $isMacro === false) {
+			$refusals[] = sprintf('Action "%s": "flow" is named but "macro" is not true.', $action);
+		}
+
+		return $refusals;
+	}//end pairingRefusals()
 
 	/**
 	 * The declared-action definitions, normalised.

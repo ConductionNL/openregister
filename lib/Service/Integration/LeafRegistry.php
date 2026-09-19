@@ -286,52 +286,9 @@ class LeafRegistry {
 	private function collectLeaf(LeafDescriptor $descriptor, ?IntegrationProvider $provider): void {
 		$id = $descriptor->getId();
 
-		if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $id) === 0) {
-			$this->logger->warning(
-				sprintf('[LeafRegistry] leaf id "%s" is not kebab-case — skipping', $id)
-			);
-			return;
-		}
-
-		$kinds = $descriptor->getKinds();
-		if ($kinds === []) {
-			$this->logger->warning(
-				sprintf('[LeafRegistry] leaf "%s" declares no kinds — skipping', $id)
-			);
-			return;
-		}
-
-		$unknown = array_diff($kinds, LeafDescriptor::VALID_KINDS);
-		if ($unknown !== []) {
-			$this->logger->warning(
-				sprintf(
-					'[LeafRegistry] leaf "%s" declares unknown kind(s) "%s" — skipping',
-					$id,
-					implode(', ', $unknown)
-				)
-			);
-			return;
-		}
-
-		$renderMode = $descriptor->getRenderMode();
-		if (in_array($renderMode, LeafDescriptor::VALID_RENDER_MODES, true) === false) {
-			$this->logger->warning(
-				sprintf(
-					'[LeafRegistry] leaf "%s" declares unknown renderMode "%s" — skipping',
-					$id,
-					$renderMode
-				)
-			);
-			return;
-		}
-
-		if ($descriptor->hasKind(LeafDescriptor::KIND_DATA_PROVIDER) === true && $provider === null) {
-			$this->logger->warning(
-				sprintf(
-					'[LeafRegistry] leaf "%s" declares the data-provider kind but supplied no provider — skipping',
-					$id
-				)
-			);
+		$refusal = $this->refusalForLeaf(descriptor: $descriptor, provider: $provider);
+		if ($refusal !== null) {
+			$this->logger->warning($refusal);
 			return;
 		}
 
@@ -356,6 +313,60 @@ class LeafRegistry {
 		}
 
 	}//end collectLeaf()
+
+	/**
+	 * Why a contributed leaf is skipped, or null when it is kept.
+	 *
+	 * Every refusal names the leaf and says what is wrong with it. A leaf that
+	 * vanished without a line in the log looks exactly like an app that never
+	 * contributed one.
+	 *
+	 * @param LeafDescriptor           $descriptor The contributed descriptor.
+	 * @param IntegrationProvider|null $provider   The accompanying provider, or null.
+	 *
+	 * @return string|null The warning to log, or null when the leaf is sound.
+	 *
+	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+	 */
+	private function refusalForLeaf(LeafDescriptor $descriptor, ?IntegrationProvider $provider): ?string {
+		$id = $descriptor->getId();
+
+		if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $id) === 0) {
+			return sprintf('[LeafRegistry] leaf id "%s" is not kebab-case — skipping', $id);
+		}
+
+		$kinds = $descriptor->getKinds();
+		if ($kinds === []) {
+			return sprintf('[LeafRegistry] leaf "%s" declares no kinds — skipping', $id);
+		}
+
+		$unknown = array_diff($kinds, LeafDescriptor::VALID_KINDS);
+		if ($unknown !== []) {
+			return sprintf(
+				'[LeafRegistry] leaf "%s" declares unknown kind(s) "%s" — skipping',
+				$id,
+				implode(', ', $unknown)
+			);
+		}
+
+		$renderMode = $descriptor->getRenderMode();
+		if (in_array($renderMode, LeafDescriptor::VALID_RENDER_MODES, true) === false) {
+			return sprintf(
+				'[LeafRegistry] leaf "%s" declares unknown renderMode "%s" — skipping',
+				$id,
+				$renderMode
+			);
+		}
+
+		if ($descriptor->hasKind(LeafDescriptor::KIND_DATA_PROVIDER) === true && $provider === null) {
+			return sprintf(
+				'[LeafRegistry] leaf "%s" declares the data-provider kind but supplied no provider — skipping',
+				$id
+			);
+		}
+
+		return null;
+	}//end refusalForLeaf()
 
 	/**
 	 * Every collected leaf descriptor.

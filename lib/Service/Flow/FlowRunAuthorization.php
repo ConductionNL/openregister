@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
+use OCP\IUser;
 use Throwable;
 
 /**
@@ -155,6 +156,25 @@ class FlowRunAuthorization {
 			return self::NO_OWNER;
 		}
 
+		return $this->verdictForOwnedFlow(owner: $owner, user: $user);
+	}//end verdictFor()
+
+	/**
+	 * The verdict once the flow is known to have an owner and a caller.
+	 *
+	 * The three ways in stay in their order: administrator, then the owner
+	 * themselves, then the named right. Each lookup that throws is UNDECIDABLE
+	 * rather than a refusal with a reason, because a check that could not run
+	 * has not decided anything.
+	 *
+	 * @param string $owner The flow's owner uid, already trimmed and non-empty.
+	 * @param IUser  $user  The signed-in caller.
+	 *
+	 * @return string The verdict.
+	 *
+	 * @spec openspec/changes/flow-runs-honour-their-declaration/specs/flow-engine/spec.md
+	 */
+	private function verdictForOwnedFlow(string $owner, IUser $user): string {
 		try {
 			if ($this->access->callerIsAdmin() === true) {
 				return self::ALLOWED;
@@ -176,7 +196,7 @@ class FlowRunAuthorization {
 		}
 
 		return self::NOT_YOURS;
-	}//end verdictFor()
+	}//end verdictForOwnedFlow()
 
 	/**
 	 * Whether this caller may run this flow.

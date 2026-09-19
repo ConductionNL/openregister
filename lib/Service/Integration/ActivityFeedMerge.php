@@ -189,24 +189,71 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-reads-are-hidden-unless-asked-for
 	 */
 	private function admits(array $row, array $options): bool {
+		return ($this->admitsKind(row: $row, options: $options) === true
+			&& $this->admitsRead(row: $row, options: $options) === true
+			&& $this->admitsWindow(row: $row, options: $options) === true);
+	}//end admits()
+
+	/**
+	 * Whether the row's kind is one the caller asked for.
+	 *
+	 * An absent or empty kind list means every kind, not none.
+	 *
+	 * @param array<string,mixed> $row     The normalised row.
+	 * @param array<string,mixed> $options The caller's options.
+	 *
+	 * @return bool True when the kind is admitted.
+	 *
+	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-reads-are-hidden-unless-asked-for
+	 */
+	private function admitsKind(array $row, array $options): bool {
 		$kinds = ($options['kinds'] ?? null);
 		if (is_array($kinds) === true && $kinds !== [] && in_array($row['kind'], $kinds, true) === false) {
 			return false;
 		}
 
-		// Reads are excluded unless asked for, and ONLY audit rows can be
-		// reads: a note is not a read of anything, and excluding a note
-		// because its action happens to be spelled `read` would empty a chip
-		// the reader turned on.
+		return true;
+	}//end admitsKind()
+
+	/**
+	 * Whether the row survives the read filter.
+	 *
+	 * Reads are excluded unless asked for, and ONLY audit rows can be reads: a
+	 * note is not a read of anything, and excluding a note because its action
+	 * happens to be spelled `read` would empty a chip the reader turned on.
+	 *
+	 * @param array<string,mixed> $row     The normalised row.
+	 * @param array<string,mixed> $options The caller's options.
+	 *
+	 * @return bool True when the row is not a hidden read.
+	 *
+	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-reads-are-hidden-unless-asked-for
+	 */
+	private function admitsRead(array $row, array $options): bool {
 		$includeReads = (($options['includeReads'] ?? false) === true);
 		if ($includeReads === false && $row['kind'] === 'audit' && $row['action'] === self::READ_ACTION) {
 			return false;
 		}
 
+		return true;
+	}//end admitsRead()
+
+	/**
+	 * Whether the row's timestamp falls inside the requested window.
+	 *
+	 * The `before` cursor is STRICT: a row exactly on it is the last row of the
+	 * previous page and would otherwise be shown twice.
+	 *
+	 * @param array<string,mixed> $row     The normalised row.
+	 * @param array<string,mixed> $options The caller's options.
+	 *
+	 * @return bool True when the timestamp is admitted.
+	 *
+	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-reads-are-hidden-unless-asked-for
+	 */
+	private function admitsWindow(array $row, array $options): bool {
 		$before = ($options['before'] ?? null);
 		if (is_int($before) === true && $row['timestamp'] >= $before) {
-			// Strictly older than the cursor: a row exactly on it is the last
-			// row of the previous page and would be shown twice.
 			return false;
 		}
 
@@ -221,7 +268,7 @@ class ActivityFeedMerge {
 		}
 
 		return true;
-	}//end admits()
+	}//end admitsWindow()
 
 	/**
 	 * The rows in the order a history is read.

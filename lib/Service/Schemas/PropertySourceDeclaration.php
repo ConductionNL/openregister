@@ -142,52 +142,8 @@ final class PropertySourceDeclaration {
 			);
 		}
 
-		$provider = ($raw['provider'] ?? null);
-		if (is_string($provider) === false || trim($provider) === '') {
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' must name a provider. Without one there is nothing to ask for the values.',
-					self::ANNOTATION,
-					$path
-				)
-			);
-		}
-
-		$provider = trim($provider);
-		if (preg_match(self::PROVIDER_PATTERN, $provider) !== 1) {
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' names the provider \'%s\', which is not a provider id. '
-					. 'A typo here becomes an empty list in a form, with nothing to say why.',
-					self::ANNOTATION,
-					$path,
-					$provider
-				)
-			);
-		}
-
-		// The mode is optional and defaults to `live`, which is what a
-		// registry-backed field is for: the value is looked up when it is used.
-		// `default` is the weaker promise and has to be asked for by name.
-		$mode = ($raw['mode'] ?? self::MODE_LIVE);
-		if (is_string($mode) === false || in_array($mode, self::MODES, true) === false) {
-			$shownMode = gettype($mode);
-			if (is_scalar($mode) === true) {
-				$shownMode = (string)$mode;
-			}
-
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' has mode \'%s\'. It must be one of: %s. '
-					. 'A mode nobody knows would be read as a guess, and the two modes differ in '
-					. 'whether a person may change what the provider returned.',
-					self::ANNOTATION,
-					$path,
-					$shownMode,
-					implode(', ', self::MODES)
-				)
-			);
-		}
+		$provider = self::validProvider(raw: $raw, path: $path);
+		$mode = self::validMode(raw: $raw, path: $path);
 
 		$config = ($raw['config'] ?? []);
 		if (is_array($config) === false) {
@@ -220,6 +176,86 @@ final class PropertySourceDeclaration {
 
 		return new self(provider: $provider, mode: $mode, config: $config);
 	}//end fromProperty()
+
+	/**
+	 * The declared provider id, refusing anything that is not one.
+	 *
+	 * @param array<string, mixed> $raw  The declaration block.
+	 * @param string               $path Where the property sits, for the message.
+	 *
+	 * @return string The provider id, trimmed.
+	 *
+	 * @throws PropertySourceException When no usable provider is named.
+	 *
+	 * @spec openspec/changes/property-source-vocabulary/specs/schema-vocabulaire/spec.md
+	 */
+	private static function validProvider(array $raw, string $path): string {
+		$provider = ($raw['provider'] ?? null);
+		if (is_string($provider) === false || trim($provider) === '') {
+			throw new PropertySourceException(
+				sprintf(
+					'\'%s\' at \'%s\' must name a provider. Without one there is nothing to ask for the values.',
+					self::ANNOTATION,
+					$path
+				)
+			);
+		}
+
+		$provider = trim($provider);
+		if (preg_match(self::PROVIDER_PATTERN, $provider) !== 1) {
+			throw new PropertySourceException(
+				sprintf(
+					'\'%s\' at \'%s\' names the provider \'%s\', which is not a provider id. '
+					. 'A typo here becomes an empty list in a form, with nothing to say why.',
+					self::ANNOTATION,
+					$path,
+					$provider
+				)
+			);
+		}
+
+		return $provider;
+	}//end validProvider()
+
+	/**
+	 * The declared mode, refusing anything this class does not know.
+	 *
+	 * The mode is optional and defaults to `live`, which is what a
+	 * registry-backed field is for: the value is looked up when it is used.
+	 * `default` is the weaker promise and has to be asked for by name.
+	 *
+	 * @param array<string, mixed> $raw  The declaration block.
+	 * @param string               $path Where the property sits, for the message.
+	 *
+	 * @return string The mode.
+	 *
+	 * @throws PropertySourceException When the mode is not one of the two.
+	 *
+	 * @spec openspec/changes/property-source-vocabulary/specs/schema-vocabulaire/spec.md
+	 */
+	private static function validMode(array $raw, string $path): string {
+		$mode = ($raw['mode'] ?? self::MODE_LIVE);
+		if (is_string($mode) === true && in_array($mode, self::MODES, true) === true) {
+			return $mode;
+		}
+
+		$shownMode = gettype($mode);
+		if (is_scalar($mode) === true) {
+			$shownMode = (string)$mode;
+		}
+
+		throw new PropertySourceException(
+			sprintf(
+				'\'%s\' at \'%s\' has mode \'%s\'. It must be one of: %s. '
+				. 'A mode nobody knows would be read as a guess, and the two modes differ in '
+				. 'whether a person may change what the provider returned.',
+				self::ANNOTATION,
+				$path,
+				$shownMode,
+				implode(', ', self::MODES)
+			)
+		);
+	}//end validMode()
 
 	/**
 	 * Refuse a property whose declaration cannot be honoured.

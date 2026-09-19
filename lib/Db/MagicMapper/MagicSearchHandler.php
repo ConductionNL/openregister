@@ -753,73 +753,17 @@ class MagicSearchHandler {
 		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$_rbac = $query['_rbac'] ?? true;
 
-		// 1. Deleted filter.
-		if ($includeDeleted === false) {
-			$conditions[] = '_deleted IS NULL';
-		}
-
-		// 1b. Archive filter. Spelled here as well as in applyBasicFilters()
-		// because the two paths build the same WHERE by different means and a
-		// condition added to only one of them is exactly the drift the comment
-		// on step 3 below records: the UNION path silently returned MORE rows
-		// than the single-table path for the same query. Too many rows is the
-		// dangerous direction, and an archived record surfacing in a working
-		// list is that failure with a record attached.
-		$archivedMode = $this->resolveArchivedMode(query: $query);
-		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
-			$conditions[] = '_archived IS NULL';
-		}
-
-		if ($archivedMode === self::ARCHIVED_ONLY) {
-			$conditions[] = '_archived IS NOT NULL';
-		}
-
-		// 1c. Multitenancy: the organisation boundary.
-		//
-		// This used to be missing here, and missing meant OPEN. The RBAC half of
-		// this method has carried the scope-and-grant predicate since
-		// object-level-sharing landed, so the union path decided private scope
-		// and per-object grants correctly while returning rows from OTHER
-		// organisations — measured by
-		// `PrivateScopeParityIntegrationTest::testUnionPathDoesNotCrossTheTenantEdge`,
-		// which asserted the leak so that closing it would fail the test rather
-		// than pass unnoticed.
-		//
-		// The decision is the SAME one the QueryBuilder path takes
-		// (multitenancyApplies()); only the rendering differs, because these
-		// callers build SQL by string concatenation and cannot bind parameters.
-		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
-		$resolvedMultitenancy = $this->resolveMultitenancyFlag(
-			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
-			multitenancyExplicit: $multitenancyExplicit,
-			schema: $schema
-		);
-
-		$multitenancyApplies = $this->multitenancyApplies(
-			schema: $schema,
-			_rbac: $this->flagFromQuery(value: $_rbac),
-			_multitenancy: $resolvedMultitenancy,
-			multitenancyExplicit: $multitenancyExplicit
-		);
-
-		if ($multitenancyApplies === true) {
-			$orgCondition = $this->buildOrganizationConditionSql(
+		$conditions = array_merge(
+			$conditions,
+			$this->lifecycleConditionsSql(query: $query, includeDeleted: $includeDeleted),
+			$this->boundaryConditionsSql(
+				query: $query,
 				schema: $schema,
-				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
-				connection: $connection
-			);
-			if ($orgCondition !== null) {
-				$conditions[] = $orgCondition;
-			}
-		}
-
-		// 2. RBAC filter (role-based access control).
-		if ($_rbac === true) {
-			$rbacCondition = $this->buildRbacConditionSql(schema: $schema);
-			if ($rbacCondition !== null) {
-				$conditions[] = $rbacCondition;
-			}
-		}
+				rbac: $_rbac,
+				connection: $connection,
+				registerId: $registerId
+			)
+		);
 
 		// 3. `@self` metadata filters.
 		// This step was missing entirely: the comment numbering jumped 2 → 4 and
@@ -874,6 +818,112 @@ class MagicSearchHandler {
 
 		return $conditions;
 	}//end buildWhereConditionsSql()
+
+	/**
+	 * The deleted and archived predicates, as SQL fragments.
+	 *
+	 * Spelled here as well as in `applyBasicFilters()` because the two paths
+	 * build the same WHERE by different means, and a condition added to only
+	 * one of them is exactly the drift that made the UNION path silently
+	 * return MORE rows than the single-table path for the same query. Too many
+	 * rows is the dangerous direction, and an archived record surfacing in a
+	 * working list is that failure with a record attached.
+	 *
+	 * @param array      $query          The query parameters.
+	 * @param boolean    $includeDeleted Whether deleted rows were asked for.
+	 *
+	 * @return string[] The conditions, without leading AND.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 */
+	private function lifecycleConditionsSql(array $query, bool $includeDeleted): array {
+		$conditions = [];
+
+		if ($includeDeleted === false) {
+			$conditions[] = '_deleted IS NULL';
+		}
+
+		$archivedMode = $this->resolveArchivedMode(query: $query);
+		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+			$conditions[] = '_archived IS NULL';
+		}
+
+		if ($archivedMode === self::ARCHIVED_ONLY) {
+			$conditions[] = '_archived IS NOT NULL';
+		}
+
+		return $conditions;
+	}//end lifecycleConditionsSql()
+
+	/**
+	 * The organisation and RBAC predicates, as SQL fragments.
+	 *
+	 * The organisation boundary used to be missing here, and missing meant
+	 * OPEN. The RBAC half has carried the scope-and-grant predicate since
+	 * object-level-sharing landed, so the union path decided private scope and
+	 * per-object grants correctly while returning rows from OTHER
+	 * organisations, measured by
+	 * `PrivateScopeParityIntegrationTest::testUnionPathDoesNotCrossTheTenantEdge`,
+	 * which asserted the leak so that closing it would fail the test rather
+	 * than pass unnoticed.
+	 *
+	 * The decision is the SAME one the QueryBuilder path takes
+	 * (`multitenancyApplies()`); only the rendering differs, because these
+	 * callers build SQL by string concatenation and cannot bind parameters.
+	 *
+	 * @param array      $query      The query parameters.
+	 * @param Schema     $schema     The schema for property filtering.
+	 * @param mixed      $rbac       The raw `_rbac` flag as the caller wrote it.
+	 * @param mixed      $connection The connection, for value quoting.
+	 * @param integer|null $registerId The register whose table this is built for.
+	 *
+	 * @return string[] The conditions, without leading AND.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function boundaryConditionsSql(
+		array $query,
+		Schema $schema,
+		mixed $rbac,
+		mixed $connection,
+		?int $registerId
+	): array {
+		$conditions = [];
+
+		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
+		$resolvedMultitenancy = $this->resolveMultitenancyFlag(
+			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
+			multitenancyExplicit: $multitenancyExplicit,
+			schema: $schema
+		);
+
+		$multitenancyApplies = $this->multitenancyApplies(
+			schema: $schema,
+			_rbac: $this->flagFromQuery(value: $rbac),
+			_multitenancy: $resolvedMultitenancy,
+			multitenancyExplicit: $multitenancyExplicit
+		);
+
+		if ($multitenancyApplies === true) {
+			$orgCondition = $this->buildOrganizationConditionSql(
+				schema: $schema,
+				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
+				connection: $connection
+			);
+			if ($orgCondition !== null) {
+				$conditions[] = $orgCondition;
+			}
+		}
+
+		if ($rbac === true) {
+			$rbacCondition = $this->buildRbacConditionSql(schema: $schema);
+			if ($rbacCondition !== null) {
+				$conditions[] = $rbacCondition;
+			}
+		}
+
+		return $conditions;
+	}//end boundaryConditionsSql()
 
 	/**
 	 * Read a reserved boolean flag out of a query, failing closed.

@@ -199,14 +199,7 @@ class RelativeTimeCondition {
 			return sprintf('"%s" must name the date property it compares', self::KEY);
 		}
 
-		$comparison = null;
-		foreach (self::COMPARISONS as $candidate) {
-			if (array_key_exists($candidate, $declaration) === true) {
-				$comparison = $candidate;
-				break;
-			}
-		}
-
+		$comparison = $this->comparisonIn(declaration: $declaration);
 		if ($comparison === null) {
 			return sprintf(
 				'"%s" on "%s" must declare one of %s',
@@ -216,7 +209,49 @@ class RelativeTimeCondition {
 			);
 		}
 
-		$offset = $declaration[$comparison];
+		return $this->offsetRefusal(
+			offset: $declaration[$comparison],
+			comparison: $comparison,
+			property: $property,
+			calendar: $calendar
+		);
+	}//end refusalFor()
+
+	/**
+	 * Which comparison the declaration names, or null when it names none.
+	 *
+	 * The FIRST match wins, as it always has: a declaration naming two
+	 * comparisons is read as the earlier one rather than refused.
+	 *
+	 * @param array<string, mixed> $declaration The condition body.
+	 *
+	 * @return string|null The comparison key, or null.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function comparisonIn(array $declaration): ?string {
+		foreach (self::COMPARISONS as $candidate) {
+			if (array_key_exists($candidate, $declaration) === true) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end comparisonIn()
+
+	/**
+	 * Why the declared offset may not be saved, or null when it may.
+	 *
+	 * @param mixed                $offset     The declared {value, unit} block.
+	 * @param string               $comparison The comparison it sits under.
+	 * @param string               $property   The date property being compared.
+	 * @param WorkingCalendar|null $calendar   The calendar for this schema.
+	 *
+	 * @return string|null The reason.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function offsetRefusal(mixed $offset, string $comparison, string $property, ?WorkingCalendar $calendar): ?string {
 		if (is_array($offset) === false) {
 			return sprintf('"%s" on "%s" must be {value, unit}', $comparison, $property);
 		}
@@ -254,7 +289,7 @@ class RelativeTimeCondition {
 		}
 
 		return null;
-	}//end refusalFor()
+	}//end offsetRefusal()
 
 	/**
 	 * Compile the condition into one indexed comparison (D-5, task 3.3).
