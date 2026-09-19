@@ -148,25 +148,45 @@
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
 						</AppTab>
+						<!--
+							The object's own facts, from its `@self` block, grouped by
+							the shared widget into Identity, Location, Ownership,
+							Lifecycle and Archiving. This is the only place OR's own UI
+							draws the resolved archival decision (`@self._retention`):
+							appraisal, retention period, disposal date and record
+							state. It is the same widget dossiq and the other leaf
+							apps mount, deliberately: a second, OR-local rendering of
+							those facts would drift from theirs the first time the
+							resolver's vocabulary moves, which it already has once
+							(openregister#3584).
+						-->
+						<AppTab :title="t('openregister', 'Metadata')">
+							<CnObjectMetadataWidget
+								:objectData="objectStore.objectItem" />
+						</AppTab>
+						<!--
+							Both relation tabs read the /uses and /used endpoints
+							rather than the raw relation map on the object. The map
+							holds a property path and a uuid, which is what the Uses
+							tab used to show; the endpoints resolve the far object
+							AND say what the link is called from this side, so the
+							same row reads "blocks" here and "blocked by" over
+							there (relation-types-with-inverses).
+						-->
 						<AppTab :title="t('openregister', 'Uses')">
-							<div
-								v-if="
-									objectStore.objectItem?.relations
-									&& Object.keys(objectStore.objectItem.relations)
-										.length > 0
-								">
+							<div v-if="objectStore.uses?.results?.length">
 								<NcListItem
-									v-for="(relation, key) in objectStore.objectItem
-										?.relations"
-									:key="key"
-									:name="key"
+									v-for="(relation, key) in objectStore.uses
+										.results"
+									:key="`uses-${relationKey(relation, key)}`"
+									:name="relationTitle(relation)"
 									:bold="false"
 									:forceDisplayActions="true">
 									<template #icon>
 										<CubeOutline disableMenu :size="44" />
 									</template>
 									<template #subname>
-										{{ relation }}
+										{{ relationLabel(relation) }}
 									</template>
 								</NcListItem>
 							</div>
@@ -175,30 +195,31 @@
 							</div>
 						</AppTab>
 						<AppTab :title="t('openregister', 'Used by')">
-							<div v-if="objectStore.relations?.length">
+							<div v-if="objectStore.used?.results?.length">
 								<NcListItem
-									v-for="(relation, key) in objectStore.relations"
-									:key="key"
-									:name="relation.id"
+									v-for="(relation, key) in objectStore.used
+										.results"
+									:key="`used-${relationKey(relation, key)}`"
+									:name="relationTitle(relation)"
 									:bold="false"
 									:forceDisplayActions="true">
 									<template #icon>
 										<CubeOutline disableMenu :size="44" />
 									</template>
 									<template #subname>
-										{{ relation.uri }}
+										{{ relationLabel(relation) }}
 									</template>
 								</NcListItem>
 								<CnPagination
 									v-if="
 										!relationsLoading
-										&& objectStore.relations?.total
+										&& objectStore.used?.total
 											> pagination.relations.limit
 									"
 									class="tabPagination"
 									:currentPage="pagination.relations.currentPage"
 									:totalPages="relationsTotalPages"
-									:totalItems="objectStore.relations?.total"
+									:totalItems="objectStore.used?.total"
 									:currentPageSize="pagination.relations.limit"
 									:minItemsToShow="10"
 									@pageChanged="
@@ -206,7 +227,25 @@
 									"
 									@pageSizeChanged="onRelationsPageSizeChanged" />
 							</div>
-							<div v-else class="tabPanel">No relations found</div>
+							<div v-else class="tabPanel">
+								{{ t('openregister', 'No relations found') }}
+							</div>
+						</AppTab>
+						<!--
+							The reverse view (objects-as-the-hinge-between-cases):
+							the records that point at this object, grouped by
+							schema, each with its status and when it last changed.
+							The Used by tab above lists them flat and ungrouped;
+							this one is what makes an address readable as a
+							history rather than a list of uuids.
+						-->
+						<AppTab
+							v-if="relationContext"
+							:title="t('openregister', 'Referenced by')">
+							<ReferencedByTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab :title="t('openregister', 'Files')">
 							<NcButton
@@ -480,6 +519,7 @@
 import {
 	CnIntegrationWidget,
 	CnObjectAccessTab,
+	CnObjectMetadataWidget,
 	CnPagination,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
@@ -510,6 +550,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
+import ReferencedByTab from '../../components/object-relations/ReferencedByTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
@@ -545,8 +586,10 @@ export default {
 		ContactsTab,
 		DeckTab,
 		RelationsTab,
+		ReferencedByTab,
 		CnIntegrationWidget,
 		CnObjectAccessTab,
+		CnObjectMetadataWidget,
 	},
 
 	/**
@@ -601,7 +644,6 @@ export default {
 			auditTrailLoading: false,
 			auditTrails: [],
 			relationsLoading: false,
-			relations: [],
 			activeAttachment: null,
 			fileLoading: false,
 			// Guard against the race where deep-link navigation primes
@@ -624,7 +666,7 @@ export default {
 
 				relations: {
 					limit: 200,
-					currentPage: objectStore.relations?.page || 1,
+					currentPage: objectStore.used?.page || 1,
 				},
 			},
 		}
@@ -697,8 +739,7 @@ export default {
 		relationsTotalPages() {
 			return (
 				Math.ceil(
-					(objectStore.relations?.total || 0)
-						/ this.pagination.relations.limit,
+					(objectStore.used?.total || 0) / this.pagination.relations.limit,
 				) || 1
 			)
 		},
@@ -954,26 +995,94 @@ export default {
 		 * @return {void}
 		 */
 		getRelations() {
-			if (
-				!objectStore.objectItem?.id
-				|| typeof objectStore.getRelations !== 'function'
-			) {
+			// `objectStore.getRelations` never existed: relationsPlugin installs
+			// `fetchUses` / `fetchUsed` as the actions and `getUses` / `getUsed`
+			// as GETTERS, so the old guard's typeof test was false on every
+			// render and both tabs were dark from the day they were written.
+			const objectId = objectStore.objectItem?.id
+			if (!objectId || typeof objectStore.fetchUsed !== 'function') {
 				return
 			}
+
+			const type = objectStore.currentType
+			const limit = this.pagination.relations.limit
+			const offset = (this.pagination.relations.currentPage - 1) * limit
+
+			// `_limit` / `_offset`, not `limit` / `page`: RelationHandler reads
+			// the underscored names and silently paginates at its own defaults
+			// for anything else.
 			this.relationsLoading = true
 
-			objectStore
-				.getRelations(objectStore.objectItem.id, {
-					limit: this.pagination.relations.limit,
-					page: this.pagination.relations.currentPage,
+			const incoming = objectStore.fetchUsed(type, objectId, {
+				_limit: limit,
+				_offset: offset,
+			})
+
+			let outgoing = Promise.resolve([])
+			if (typeof objectStore.fetchUses === 'function') {
+				outgoing = objectStore.fetchUses(type, objectId, {
+					_limit: limit,
 				})
-				.then(({ data }) => {
-					this.relations = data
-					this.relationsLoading = false
-				})
-				.finally(() => {
-					this.relationsLoading = false
-				})
+			}
+
+			Promise.all([incoming, outgoing]).finally(() => {
+				this.relationsLoading = false
+			})
+		},
+
+		/**
+		 * A stable key for one relation row.
+		 *
+		 * @param {object} relation - The relation row
+		 * @param {number|string} index - Its position in the list
+		 * @spec exclude UI plumbing — list key derivation
+		 * @return {string}
+		 */
+		relationKey(relation, index) {
+			return String(
+				relation?.['@self']?.id || relation?.id || relation?.uuid || index,
+			)
+		},
+
+		/**
+		 * What to call the object at the other end of a relation.
+		 *
+		 * @param {object} relation - The relation row
+		 * @spec exclude UI plumbing — display-name derivation
+		 * @return {string}
+		 */
+		relationTitle(relation) {
+			const self = relation?.['@self'] || {}
+			return String(
+				self.name
+					|| self.title
+					|| relation?.title
+					|| relation?.name
+					|| self.id
+					|| relation?.id
+					|| '',
+			)
+		},
+
+		/**
+		 * What the link reads as from this side.
+		 *
+		 * The backend already picked the right half of the label pair for the
+		 * direction and put it on `displayLabel`, so this never chooses between
+		 * `label` and `inverseLabel` — choosing here is how the reverse panel
+		 * ends up showing the near label.
+		 *
+		 * @param {object} relation - The relation row
+		 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+		 * @return {string}
+		 */
+		relationLabel(relation) {
+			return String(
+				relation?.relation?.displayLabel
+					|| relation?.['@self']?.uri
+					|| relation?.uri
+					|| '',
+			)
 		},
 
 		// Page-size handlers. Each mirrors the other paginated views'

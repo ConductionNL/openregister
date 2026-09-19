@@ -28,16 +28,21 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Audit\AuditAggregationService;
+use OCA\OpenRegister\Service\Audit\AuditSink;
+use OCA\OpenRegister\Service\Audit\PurposeAttribution;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * The AuditTrailMapper class handles audit trail operations and object reversions
@@ -59,20 +64,11 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
+ *   for the same reason: this is the one place an audit row is written, and every entry
+ *   point that writes one has to go through it or the hash chain has a second author.
  */
 class AuditTrailMapper extends QBMapper {
-
-	/**
-	 * Largest a single `changed` property value may be, in bytes.
-	 *
-	 * 64 KB is far above any real field-level change and far below the 62 MB
-	 * single entry measured on the dev instance. An audit trail records THAT a
-	 * property changed and by whom; storing a multi-megabyte copy of the value
-	 * is a backup of the object filed under a different name.
-	 *
-	 * @var integer
-	 */
-	private const MAX_CHANGED_VALUE_BYTES = 65536;
 
 	/**
 	 * Request-scoped import-job tag.
@@ -100,6 +96,7 @@ class AuditTrailMapper extends QBMapper {
 	 * @param IUserSession $userSession User session service
 	 * @param IRequest $request Current request
 	 * @param LoggerInterface $logger Logger
+	 * @param AuditTrailPayloadHelper $payloadHelper Dependency-free payload conversion/reversion helpers
 	 */
 	public function __construct(
 		IDBConnection $db,
@@ -107,6 +104,7 @@ class AuditTrailMapper extends QBMapper {
 		private readonly IUserSession $userSession,
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,
+		private readonly AuditTrailPayloadHelper $payloadHelper = new AuditTrailPayloadHelper(),
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
 	}//end __construct()
@@ -166,7 +164,18 @@ class AuditTrailMapper extends QBMapper {
 		// after insert would be outside the hash it is later given.
 		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
 
-		return $this->insert(entity: $auditTrail);
+		// The purpose the caller declared for the read that produced this row.
+		// Applied here as well as in buildAuditTrail() for the same reason the
+		// flow attribution is, and before the INSERT for the same reason again:
+		// the sealed half of it lives in `resultSummary`, which is inside the
+		// canonical JSON.
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		$inserted = $this->insert(entity: $auditTrail);
+
+		$this->shipToSink(entries: [$inserted]);
+
+		return $inserted;
 	}//end insertHashChained()
 
 	/**
@@ -379,12 +388,19 @@ class AuditTrailMapper extends QBMapper {
 				continue;
 			}
 
-			$direction = 'ASC';
-			if (strtoupper($direction) === 'DESC') {
-				$direction = 'DESC';
+			// The default is assigned to a SEPARATE name. Writing it back over
+			// `$direction` first, then testing `$direction`, compares the
+			// default with itself, so the branch can never be taken and every
+			// sort this mapper is given comes back ASCENDING. `findAll()`
+			// defaults to `['created' => 'DESC']` and returned oldest-first
+			// regardless, which is how a case history read bottom-up on the
+			// page while both the caller and this signature said newest-first.
+			$order = 'ASC';
+			if (strtoupper((string)$direction) === 'DESC') {
+				$order = 'DESC';
 			}
 
-			$qb->addOrderBy($field, $direction);
+			$qb->addOrderBy($field, $order);
 		}//end foreach
 
 		// Apply pagination.
@@ -430,9 +446,138 @@ class AuditTrailMapper extends QBMapper {
 	): AuditTrail {
 		$auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
 
+		// Nothing merges unless an administrator set a window, so this is a
+		// no-op on every instance that did not ask for it.
+		$merged = $this->mergeIntoAggregationWindow(candidate: $auditTrail);
+		if ($merged !== null) {
+			return $merged;
+		}
+
 		// Insert the new AuditTrail, sealed into the hash chain, and return it.
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createAuditTrail()
+
+	/**
+	 * Fold an edit into the entry already written, when a window says to.
+	 *
+	 * Returns the amended entry, or null when the edit is its own entry. Null
+	 * is the answer in every case that is not unambiguously a merge: no window,
+	 * not an update, no previous entry, a different actor, a different object,
+	 * too long ago, or an entry that is already sealed.
+	 *
+	 * ⚠️ THE SEALED CHECK IS NOT A BELT-AND-BRACES GUARD, IT IS THE RULE.
+	 * Amending an unsealed row is ordinary writing, because `insertHashChained`
+	 * deliberately leaves sealing to `AuditSealJob` and an unsealed row is not
+	 * yet in the chain. Amending a SEALED row would change a row the chain
+	 * covers, which `verifyChain()` reports as tampering and which it would be.
+	 * So a sealed row ends the window early and the edit gets its own entry,
+	 * which is the conservative direction: more entries, never fewer.
+	 *
+	 * Fail-soft throughout. Aggregation is a convenience; recording the edit is
+	 * not. Anything that goes wrong here answers null and the ordinary insert
+	 * happens, so the worst case is an entry that was not merged.
+	 *
+	 * @param AuditTrail $candidate The entry that would otherwise be inserted.
+	 *
+	 * @return AuditTrail|null The amended entry, or null to insert normally.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 */
+	private function mergeIntoAggregationWindow(AuditTrail $candidate): ?AuditTrail {
+		if ($candidate->getAction() !== 'update' || $candidate->getObjectUuid() === null) {
+			return null;
+		}
+
+		try {
+			// Resolved here rather than injected: the constructor is mocked by a
+			// long tail of tests that build this mapper positionally, and the
+			// window is read once per audited write on instances that set one.
+			$appConfig = $this->container->get(IAppConfig::class);
+			if (($appConfig instanceof IAppConfig) === false) {
+				return null;
+			}
+
+			$aggregation = new AuditAggregationService(appConfig: $appConfig);
+			$window = $aggregation->windowSeconds();
+			if ($window === 0) {
+				return null;
+			}
+
+			$previous = $this->findMergeCandidate(candidate: $candidate);
+			if ($previous === null) {
+				return null;
+			}
+
+			$within = $aggregation->isWithinWindow(
+				previous: $previous->getCreated(),
+				now: ($candidate->getCreated() ?? new DateTime()),
+				window: $window
+			);
+			if ($within === false) {
+				return null;
+			}
+
+			$previous->setChanged(
+				$aggregation->fold(previous: $previous->getChanged(), incoming: $candidate->getChanged())
+			);
+
+			return $this->update(entity: $previous);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[AuditTrailMapper] Could not fold an edit into the aggregation window',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'objectUuid' => $candidate->getObjectUuid(),
+					'error' => $e->getMessage(),
+				]
+			);
+
+			return null;
+		}//end try
+	}//end mergeIntoAggregationWindow()
+
+	/**
+	 * The entry an edit would fold into, if one exists.
+	 *
+	 * Same object, same actor, still an update, and not yet sealed. Ordered by
+	 * id rather than by `created` because the chain is walked in id order and
+	 * two rows can share a second.
+	 *
+	 * @param AuditTrail $candidate The entry that would otherwise be inserted.
+	 *
+	 * @return AuditTrail|null The entry to amend, or null.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 */
+	private function findMergeCandidate(AuditTrail $candidate): ?AuditTrail {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($candidate->getObjectUuid())))
+			->andWhere($qb->expr()->eq('action', $qb->createNamedParameter('update')))
+			->andWhere($qb->expr()->isNull('hash'))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		// Same actor, and an entry with no actor only ever merges with another
+		// one that has none. Folding a system write into a person's entry would
+		// put their name on a change they did not make.
+		$actor = $candidate->getUser();
+		$sameActor = $qb->expr()->isNull('user');
+		if ($actor !== null) {
+			$sameActor = $qb->expr()->eq('user', $qb->createNamedParameter($actor));
+		}
+
+		$qb->andWhere($sameActor);
+
+		$found = $this->findEntities(query: $qb);
+		if ($found === []) {
+			return null;
+		}
+
+		return $found[0];
+	}//end findMergeCandidate()
 
 	/**
 	 * Build (but do not persist) an audit trail entity for object changes.
@@ -458,6 +603,8 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function buildAuditTrail(
 		?ObjectEntity $old = null,
@@ -557,6 +704,31 @@ class AuditTrailMapper extends QBMapper {
 			];
 		}
 
+		// Mark a row an automatic lifecycle transition produced, so an auditor
+		// can tell a move a user asked for from a move a rule made on that
+		// user's save. Applied HERE, before the row is built and sealed, for
+		// the reason AuditFlowAttribution is applied at the same point: the
+		// hash chain covers whatever is in the row, so a field added after the
+		// insert would sit outside the hash it is later given. The row is still
+		// attributed to the acting user, because that is who the move acted as.
+		// Read off the request-scoped pass through the container rather than an
+		// injected dependency: this mapper is constructed in contexts where the
+		// lifecycle services are not wired, and an audit row must never fail to
+		// be built because of that. A resolution failure means "no automatic move
+		// in flight", which is the pre-existing behaviour.
+		$automaticAction = null;
+		try {
+			$automaticAction = $this->container
+				->get(\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class)
+				->applyingAction();
+		} catch (\Throwable $passUnavailable) {
+			$automaticAction = null;
+		}
+
+		if ($automaticAction !== null) {
+			$changed['automaticTransition'] = $automaticAction;
+		}
+
 		// Get the current user.
 		$user = $this->userSession->getUser();
 
@@ -567,7 +739,7 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setObject($objectEntity->getId());
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
-		$auditTrail->setChanged($this->capChangedPayload(changed: $changed));
+		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
 
 		$auditTrail->setUser('System');
 		$auditTrail->setUserName('System');
@@ -582,6 +754,15 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setCreated(new DateTime());
 		$auditTrail->setRegister($objectEntity->getRegister());
 		$auditTrail->setSchema($objectEntity->getSchema());
+
+		// The object version this change produced. `oc_openregister_audit_trails`
+		// has carried a `version` column and AuditTrail a `version` property
+		// since the table was created, and nothing ever wrote either — because
+		// nothing wrote the object's version either. Now that ObjectVersionHandler
+		// maintains it, the audit row can say which version each entry left
+		// behind, which is what makes "revert to version X" answerable from the
+		// trail rather than by counting rows.
+		$auditTrail->setVersion($objectEntity->getVersion());
 
 		// AVG / GDPR Art 30 trigger contract — resolve the
 		// processing-activity reference and tag the audit row. Resolution
@@ -609,6 +790,12 @@ class AuditTrailMapper extends QBMapper {
 		// through this same method, and stamping the inserts instead would have
 		// left every bulk write in a flow silently unattributed.
 		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+
+		// Doelbinding attribution, applied in the shared builder for the same
+		// reason the flow attribution is: `insertAuditTrails()` builds its rows
+		// here, and stamping only the inserts would leave every bulk write
+		// silently unattributed to the purpose it ran under.
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
@@ -815,7 +1002,7 @@ class AuditTrailMapper extends QBMapper {
 			$placeholders = [];
 			foreach ($properties as $property) {
 				$getter = 'get' . ucfirst($property);
-				$parameters[] = $this->toDatabaseValue(
+				$parameters[] = $this->payloadHelper->toDatabaseValue(
 					value: $auditTrail->$getter(),
 					type: ($fieldTypes[$property] ?? 'string')
 				);
@@ -855,39 +1042,12 @@ class AuditTrailMapper extends QBMapper {
 		// See insertHashChained() for why: one sealer means unsealed rows form a
 		// contiguous tail, which is the property that makes a fan-out
 		// impossible rather than merely unlikely.
+
+		// Shipped AFTER the ids are read back, so a line in the file can be
+		// pointed at the row it came from. A bulk write that shipped before the
+		// readback would put `"id":null` on every line of an import.
+		$this->shipToSink(entries: $chunk);
 	}//end insertAuditTrailChunk()
-
-	/**
-	 * Convert an entity property value to its database representation.
-	 *
-	 * Mirrors the conversions QBMapper::insert() applies through parameter
-	 * types: json fields are json_encode'd and datetime fields are formatted
-	 * with the platform datetime format (`Y-m-d H:i:s`).
-	 *
-	 * @param mixed $value The property value
-	 * @param string $type The declared entity field type
-	 *
-	 * @return mixed The database-ready value
-	 */
-	private function toDatabaseValue(mixed $value, string $type): mixed {
-		if ($value === null) {
-			return null;
-		}
-
-		if ($type === 'json') {
-			return json_encode($value);
-		}
-
-		if ($type === 'datetime' && $value instanceof \DateTimeInterface) {
-			return $value->format('Y-m-d H:i:s');
-		}
-
-		if ($type === 'boolean' || $type === 'bool') {
-			return (int)$value;
-		}
-
-		return $value;
-	}//end toDatabaseValue()
 
 	/**
 	 * Resolve the AVG / GDPR Art 30 processing-activity uuid for this
@@ -1097,7 +1257,7 @@ class AuditTrailMapper extends QBMapper {
 		}
 
 		if (is_string($until) === true) {
-			if ($this->isSemanticVersion(version: $until) === false) {
+			if ($this->payloadHelper->isSemanticVersion(version: $until) === false) {
 				// Handle audit trail ID.
 				$qb->andWhere(
 					$qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -1116,7 +1276,7 @@ class AuditTrailMapper extends QBMapper {
 				);
 			}
 
-			if ($this->isSemanticVersion(version: $until) === true) {
+			if ($this->payloadHelper->isSemanticVersion(version: $until) === true) {
 				// Handle semantic version.
 				$qb->andWhere(
 					$qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -1126,17 +1286,6 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUntil()
-
-	/**
-	 * Check if a string is a semantic version
-	 *
-	 * @param string $version The version string to check
-	 *
-	 * @return bool True if string is a semantic version
-	 */
-	private function isSemanticVersion(string $version): bool {
-		return (preg_match('/^\d+\.\d+\.\d+$/', $version) === 1);
-	}//end isSemanticVersion()
 
 	/**
 	 * Revert an object to a previous state
@@ -1173,7 +1322,7 @@ class AuditTrailMapper extends QBMapper {
 
 		// Apply changes in reverse.
 		foreach ($auditTrails as $audit) {
-			$this->revertChanges(object: $revertedObject, audit: $audit);
+			$this->payloadHelper->revertChanges(object: $revertedObject, audit: $audit);
 		}
 
 		// Handle versioning.
@@ -1185,30 +1334,6 @@ class AuditTrailMapper extends QBMapper {
 
 		return $revertedObject;
 	}//end revertObject()
-
-	/**
-	 * Helper function to revert changes from an audit trail entry
-	 *
-	 * @param ObjectEntity $object The object to apply reversions to
-	 * @param AuditTrail $audit The audit trail entry
-	 *
-	 * @return void
-	 */
-	private function revertChanges(ObjectEntity $object, AuditTrail $audit): void {
-		$changes = $audit->getChanges();
-
-		// Iterate through each change and apply the reverse.
-		foreach ($changes as $field => $change) {
-			if (($change['old'] ?? null) !== null) {
-				// Use reflection to set the value if it's a protected property.
-				$reflection = new ReflectionClass($object);
-				$property = $reflection->getProperty($field);
-
-				// Note: setAccessible() is no longer needed in PHP 8.1+ for same-class properties.
-				$property->setValue($object, $change['old']);
-			}
-		}
-	}//end revertChanges()
 
 	/**
 	 * Get statistics for audit trails with optional filtering
@@ -1790,50 +1915,6 @@ class AuditTrailMapper extends QBMapper {
 	 * @phpstan-return bool
 	 */
 	/**
-	 * Bound what a single audit entry's `changed` payload may hold.
-	 *
-	 * MEASURED 2026-08-14: `oc_openregister_audit_trails` was 3,404 MB — 28% of
-	 * a 12 GB database — and ONE row's `changed` payload was **61,910,691 bytes**.
-	 * A 62 MB audit entry is a copy of an object, not a record of a change, and
-	 * it is charged to every backup, every replica and every TOAST read.
-	 *
-	 * A per-property value over the threshold is replaced by a descriptor
-	 * recording what was elided and how large it was, so the entry still says
-	 * THAT the property changed and roughly how much — only the bytes go. The
-	 * property list, the action, the actor and the hash chain are untouched,
-	 * which is what an audit trail is actually for.
-	 *
-	 * ⚠️ Retention alone does not solve this: {@see clearLogs()} only prunes rows
-	 * that have EXPIRED, so an unexpired 62 MB row sits there for its full
-	 * retention period regardless.
-	 *
-	 * @param array|null $changed The changed-properties map.
-	 *
-	 * @return array|null The map with oversized values replaced by descriptors.
-	 */
-	private function capChangedPayload(?array $changed): ?array {
-		if ($changed === null) {
-			return null;
-		}
-
-		foreach ($changed as $property => $value) {
-			$encoded = json_encode($value);
-			if ($encoded === false || strlen($encoded) <= self::MAX_CHANGED_VALUE_BYTES) {
-				continue;
-			}
-
-			$changed[$property] = [
-				'elided' => true,
-				'reason' => 'value exceeded the ' . self::MAX_CHANGED_VALUE_BYTES
-					. '-byte audit payload ceiling',
-				'bytes' => strlen($encoded),
-			];
-		}
-
-		return $changed;
-	}//end capChangedPayload()
-
-	/**
 	 * Tombstone every audit-trail entry.
 	 *
 	 * ⚠️ Tombstones rather than deletes: the payload is destroyed but the row and
@@ -1898,6 +1979,139 @@ class AuditTrailMapper extends QBMapper {
 	}//end clearLogs()
 
 	/**
+	 * Count the audit rows that belong to one object, excluding the evidence
+	 * of its own destruction.
+	 *
+	 * Already-tombstoned rows are excluded: their payload is gone, so there is
+	 * nothing left to destroy and counting them would make a preview promise
+	 * work it will not do.
+	 *
+	 * @param string $objectUuid The object's UUID.
+	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
+	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 *
+	 * @return int The number of rows that would be tombstoned.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function countForObject(
+		string $objectUuid,
+		?array $onlyActions = null,
+		array $excludeActions = [],
+	): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'row_count'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNull('purged_at'));
+
+		if ($onlyActions !== null && $onlyActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		if ($excludeActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countForObject()
+
+	/**
+	 * Read the audit rows of one object, by action, newest first.
+	 *
+	 * Keyed on `object_uuid` rather than the numeric `object` id, because the
+	 * caller this exists for reads a destruction record AFTER the object row
+	 * is gone and the numeric id resolves to nothing.
+	 *
+	 * @param string $objectUuid The object's UUID.
+	 * @param array<int, string> $actions Actions to return; every action when empty.
+	 * @param int $limit Maximum rows.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, newest first.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function findForObjectByAction(string $objectUuid, array $actions = [], int $limit = 50): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('created', 'DESC')
+			->setMaxResults($limit);
+
+		if ($actions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($actions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findForObjectByAction()
+
+	/**
+	 * Tombstone the audit rows that belong to one object.
+	 *
+	 * ⚠️ Tombstones rather than deletes, for the same reason {@see clearLogs()}
+	 * does: the table carries a SHA-256 chain and physically removing a row
+	 * mid-chain is indistinguishable from tampering (or#2265). The payload and
+	 * the personal identifiers go; the row, its `created` and its hash pair
+	 * stay, so the destruction stays provable.
+	 *
+	 * Rows whose action is listed in `$excludeActions` are never touched. That
+	 * is how the evidence of a destruction survives the destruction it
+	 * describes.
+	 *
+	 * @param string $objectUuid The object's UUID.
+	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
+	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 *
+	 * @return int The number of rows tombstoned.
+	 *
+	 * @throws \Exception When the statement fails.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function tombstoneForObject(
+		string $objectUuid,
+		?array $onlyActions = null,
+		array $excludeActions = [],
+	): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update('openregister_audit_trails')
+			->set('purged_at', $qb->createFunction('NOW()'))
+			->set('changed', $qb->createNamedParameter('{}'))
+			->set('user', $qb->createNamedParameter(''))
+			->set('user_name', $qb->createNamedParameter(null))
+			->set('session', $qb->createNamedParameter(null))
+			->set('request', $qb->createNamedParameter(null))
+			->set('ip_address', $qb->createNamedParameter(null))
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNull('purged_at'));
+
+		if ($onlyActions !== null && $onlyActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($onlyActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		if ($excludeActions !== []) {
+			$qb->andWhere(
+				$qb->expr()->notIn('action', $qb->createNamedParameter($excludeActions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		return (int)$qb->executeStatement();
+	}//end tombstoneForObject()
+
+	/**
 	 * Clear all audit trail logs (not just expired ones)
 	 *
 	 * This method deletes all audit trail logs from the database
@@ -1947,6 +2161,8 @@ class AuditTrailMapper extends QBMapper {
 	 * @return int Number of audit trails updated
 	 *
 	 * @throws \Exception Database operation exceptions
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-support-minimum-10-year-retention
 	 */
 	public function setExpiryDate(int $retentionMs): int {
 		try {
@@ -1956,14 +2172,19 @@ class AuditTrailMapper extends QBMapper {
 			// Get the query builder.
 			$qb = $this->db->getQueryBuilder();
 
+			// DATE_ADD is MySQL and MariaDB only, so the interval is spelled per
+			// platform. SearchTrailMapper::setExpiryDate() already learned this
+			// the hard way when the hourly LogCleanUpTask started calling it; the
+			// audit-trail twin kept the MySQL-only expression, which would throw
+			// on every PostgreSQL install the moment anything calls it.
+			$expiresExpression = sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds);
+			if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
+				$expiresExpression = sprintf("created + INTERVAL '%d seconds'", $retentionSeconds);
+			}
+
 			// Update audit trails that don't have an expiry date set.
 			$qb->update($this->getTableName())
-				->set(
-					'expires',
-					$qb->createFunction(
-						sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
-					)
-				)
+				->set('expires', $qb->createFunction($expiresExpression))
 				->where($qb->expr()->isNull('expires'));
 
 			// Execute the update and return number of affected rows.
@@ -2052,13 +2273,32 @@ class AuditTrailMapper extends QBMapper {
 	}//end getStatisticsGroupedBySchema()
 
 	/**
-	 * Create a custom audit trail entry for archival operations.
+	 * Create a custom audit trail entry for archival operations, or for any
+	 * other caller that needs a non-CRUD action recorded with an explicit
+	 * actor.
+	 *
+	 * `$actorId`/`$actorName` exist for callers acting on behalf of a
+	 * non-human principal — e.g. `registry-subscriptions`' inbound update
+	 * endpoint, which authenticates as a connector's app-password account
+	 * but must audit the REGISTRY (`registry:brp`) as the actor, not
+	 * whichever Nextcloud account the app password happens to belong to.
+	 * Omit both to keep the previous session-derived behavior unchanged.
 	 *
 	 * @param ObjectEntity $object The object the entry relates to
 	 * @param string $action The archival action (e.g., archival.destroyed)
 	 * @param array $context Additional context data
+	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
+	 * @param string|null $actorName Explicit actor display name, paired with $actorId.
+	 * @param string|null $ipAddress The calling address, for callers that have one and must record it.
+	 *
+	 * `$ipAddress` exists for a principal that is not a session at all: an
+	 * access link is opened by somebody with no account, and reconstructing a
+	 * wrong publication needs where it was opened from as much as when. Omit it
+	 * and the column is left exactly as before, so no existing caller changes.
 	 *
 	 * @return AuditTrail The created audit trail entry
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
@@ -2066,11 +2306,30 @@ class AuditTrailMapper extends QBMapper {
 		ObjectEntity $object,
 		string $action,
 		array $context = [],
+		?string $actorId = null,
+		?string $actorName = null,
+		?string $ipAddress = null,
 	): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
+		$userId = $actorId;
+		$userName = $actorName;
+		if ($userId === null) {
+			$user = $this->userSession->getUser();
+			$userId = 'system';
+			$userName = 'System';
+			if ($user !== null) {
+				$userId = $user->getUID();
+				// SECURITY / AVG: keep `user_name` populated even though the
+				// migration (Version1Date20260423100000) relaxed NOT NULL on
+				// the column to support referential-integrity rows that have
+				// no displayable actor. Without this default, every audit row
+				// produced through this entry point would persist with a NULL
+				// `user_name` — undermining GDPR Art 30 §4 supervisor review.
+				$userName = $user->getDisplayName();
+			}
+		}
+
+		if ($userName === null) {
+			$userName = $userId;
 		}
 
 		$auditTrail = new AuditTrail();
@@ -2082,19 +2341,10 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($context);
 		$auditTrail->setUser($userId);
-
-		// SECURITY / AVG: keep `user_name` populated even though the
-		// migration (Version1Date20260423100000) relaxed NOT NULL on
-		// the column to support referential-integrity rows that have
-		// no displayable actor. Without this default, every audit row
-		// produced through this entry point would persist with a NULL
-		// `user_name` — undermining GDPR Art 30 §4 supervisor review.
-		$userName = 'System';
-		if ($user !== null) {
-			$userName = $user->getDisplayName();
-		}
-
 		$auditTrail->setUserName($userName);
+		if ($ipAddress !== null && trim($ipAddress) !== '') {
+			$auditTrail->setIpAddress(trim($ipAddress));
+		}
 
 		$auditTrail->setCreated(new DateTime());
 
@@ -2339,4 +2589,404 @@ class AuditTrailMapper extends QBMapper {
 			'total' => (int)($row['total_count'] ?? 0),
 		];
 	}//end findByActor()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a write that was
+	 * refused because the resource is shared master data held by another
+	 * organisation.
+	 *
+	 * A gemeenschappelijke regeling shares its code lists, its case types and
+	 * its parties across several legal entities, and the read path now hands a
+	 * consumer the holder's rows. The moment a consumer can SEE the holder's
+	 * code list, "they tried to change it" becomes a question an auditor asks
+	 * and a 403 alone cannot answer. This is the answer.
+	 *
+	 * Object-less by construction, following
+	 * {@see createPartyQueryRefusalEntry()}: there is no object, because the
+	 * write never happened. `object` has been nullable since
+	 * Version1Date20260423100000 for exactly this shape of row.
+	 *
+	 * 🔑 THE ACTOR IS PSEUDONYMOUS AND THE CONTEXT IS REDACTED BEFORE IT
+	 * ARRIVES. This method persists what it is handed; REQ-SLE-003 is enforced
+	 * by {@see \OCA\OpenRegister\Service\TenantLogRedactor} at the call site,
+	 * because the same context also goes to the log and the two must not
+	 * disagree about what a line may carry.
+	 *
+	 * @param string $holderOrganisation UUID of the organisation that holds the shared resource.
+	 * @param string $sourceOrganisation UUID of the organisation that attempted the write.
+	 * @param string $resourceType Either `register` or `schema`.
+	 * @param array $context Already-redacted refusal context.
+	 * @param int|null $register Register id the write targeted, when known.
+	 * @param int|null $schema Schema id the write targeted, when known.
+	 * @param string|null $objectUuid Object uuid the caller named, when it named one.
+	 * @param string|null $actorId Acting user id, or null for a system context.
+	 * @param string|null $actorReference Pseudonymous actor reference for the `user_name` column.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	public function createSharedMasterDataRefusalEntry(
+		string $holderOrganisation,
+		string $sourceOrganisation,
+		string $resourceType,
+		array $context = [],
+		?int $register = null,
+		?int $schema = null,
+		?string $objectUuid = null,
+		?string $actorId = null,
+		?string $actorReference = null,
+	): AuditTrail {
+		$userId = $actorId;
+		if ($userId === null || $userId === '') {
+			$userId = 'system';
+		}
+
+		$userName = $actorReference;
+		if ($userName === null || $userName === '') {
+			$userName = $userId;
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('shared_master_data_write_denied');
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setObjectUuid($objectUuid);
+		$auditTrail->setOrganisationId($sourceOrganisation);
+		$auditTrail->setResultSummary(
+			array_merge(
+				$context,
+				[
+					'holderOrganisation' => $holderOrganisation,
+					'sourceOrganisation' => $sourceOrganisation,
+					'resourceType' => $resourceType,
+					'outcome' => 'refused',
+				]
+			)
+		);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+
+	}//end createSharedMasterDataRefusalEntry()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a party query that
+	 * was refused for exceeding the administered cap.
+	 *
+	 * A refusal is the interesting event, not the search: proportionality is
+	 * the duty a functionaris gegevensbescherming asks about, and "who tried
+	 * to pull four hundred people out of the register" is the question the
+	 * trail has to answer. The entry carries no result, because there was
+	 * none — that is the point of a refusal rather than a truncation.
+	 *
+	 * The query text is recorded verbatim so the attempt can be read back.
+	 * It is a search term an authenticated caller typed, not a record about a
+	 * person, and the trail is already the instance's protected surface.
+	 *
+	 * @param string $query The query that was refused.
+	 * @param int $cap The administered maximum result count.
+	 * @param int $would How many parties the query would have matched.
+	 * @param int|null $schema Schema id searched, when the query named one.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 */
+	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('party.query-refused');
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary(
+			[
+				'query' => $query,
+				'cap' => $cap,
+				'wouldHaveMatched' => $would,
+				'returned' => 0,
+			]
+		);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createPartyQueryRefusalEntry()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a read that was
+	 * refused because it named no usable purpose.
+	 *
+	 * The refusal is the interesting event, exactly as it is for a party query
+	 * over the cap: "who tried to read the BRP without naming a grondslag" is
+	 * a question the functionaris gegevensbescherming asks, and a refusal that
+	 * leaves no trace answers it with silence.
+	 *
+	 * The purpose is quoted back verbatim. It is a short administered code the
+	 * caller itself sent, not a record about a person.
+	 *
+	 * @param string      $rule     Which refusal it was, one of PurposeRefusedException's RULE_ constants.
+	 * @param string|null $purpose  The purpose the caller named, or null when none was.
+	 * @param int|null    $register The register that was being read, when known.
+	 * @param int|null    $schema   The schema that was being read, when known.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	public function createPurposeRefusalEntry(
+		string $rule,
+		?string $purpose = null,
+		?int $register = null,
+		?int $schema = null,
+	): AuditTrail {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction(PurposeGuard::ACTION_REFUSED);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary(
+			[
+				'rule' => $rule,
+				'declaredPurpose' => $purpose,
+				'refused' => true,
+			]
+		);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createPurposeRefusalEntry()
+
+	/**
+	 * Count audit rows per purpose over a period.
+	 *
+	 * This is the report the doelbinding requirement exists for: "a month of
+	 * queries under three purposes, each purpose carrying its own count". It
+	 * groups on the `purpose` COLUMN rather than on the sealed copy in
+	 * `result_summary`, because a `GROUP BY` inside a JSON document is not
+	 * portable across the databases this app supports, which is exactly why
+	 * the column exists.
+	 *
+	 * Rows with no purpose are counted too, under the key `null`. An
+	 * unattributed read is a finding, not a row to hide from the report.
+	 *
+	 * @param DateTime|null $from Start of the period, inclusive.
+	 * @param DateTime|null $to   End of the period, inclusive.
+	 *
+	 * @return array<string, int> Purpose code to count, unattributed rows under `null`.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	public function countByPurpose(?DateTime $from = null, ?DateTime $to = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('purpose')
+			->selectAlias($qb->createFunction('COUNT(*)'), 'entry_count')
+			->from($this->getTableName())
+			->groupBy('purpose');
+
+		if ($from !== null) {
+			$qb->andWhere(
+				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		if ($to !== null) {
+			$qb->andWhere(
+				$qb->expr()->lte('created', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$counts = [];
+		while (($row = $result->fetch()) !== false) {
+			$key = 'null';
+			if ($row['purpose'] !== null && $row['purpose'] !== '') {
+				$key = (string)$row['purpose'];
+			}
+
+			$counts[$key] = (int)$row['entry_count'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByPurpose()
+
+	/**
+	 * Hand freshly written rows to the configured file sink.
+	 *
+	 * Fail-soft, deliberately and completely. The database row IS the trail;
+	 * the file is a copy for something else to read (D-1). An audited write
+	 * that threw because a log directory was full would mean a filesystem
+	 * problem could stop people saving objects, which is a worse failure than
+	 * the one this exists to prevent. The gap is recorded instead, and the
+	 * operations console reports it.
+	 *
+	 * @param AuditTrail[] $entries The rows just written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function shipToSink(array $entries): void {
+		try {
+			/*
+			 * @var AuditSink $sink
+			 */
+
+			$sink = $this->container->get(AuditSink::class);
+		} catch (Throwable $e) {
+			// Not registered yet, e.g. during a migration before service
+			// registration completes.
+			return;
+		}
+
+		if (($sink instanceof AuditSink) === false || $sink->isConfigured() === false) {
+			return;
+		}
+
+		try {
+			$sink->setFailureRecorder(
+				function (AuditTrail $unshipped, string $error): void {
+					$this->recordSinkGap(unshipped: $unshipped, error: $error);
+				}
+			);
+			$sink->shipMany(entries: $entries);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[AuditSink] Shipping failed outright; the database entries are unaffected.',
+				context: ['error' => $e->getMessage()]
+			);
+		}
+	}//end shipToSink()
+
+	/**
+	 * Record on the trail that an entry did not reach the sink.
+	 *
+	 * Written straight through `insert()` rather than through
+	 * `insertHashChained()` on purpose: the chained path ships what it writes,
+	 * and shipping the record of a broken sink into that same broken sink is
+	 * how a failure becomes a loop.
+	 *
+	 * @param AuditTrail $unshipped The entry that did not ship.
+	 * @param string     $error     What went wrong.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function recordSinkGap(AuditTrail $unshipped, string $error): void {
+		$gap = new AuditTrail();
+		$gap->setUuid((string)Uuid::v4());
+		$gap->setAction(AuditSink::ACTION_SINK_FAILED);
+		$gap->setResultSummary(
+			[
+				'error' => $error,
+				'firstUnshippedUuid' => $unshipped->getUuid(),
+				'firstUnshippedId' => $unshipped->getId(),
+			]
+		);
+		$gap->setUser('system');
+		$gap->setUserName('System');
+		$gap->setCreated(new DateTime());
+
+		$this->insert(entity: $gap);
+	}//end recordSinkGap()
+
+	/**
+	 * Record one change to a security control, or one refused attempt at a change.
+	 *
+	 * WHY THE REFUSAL IS AUDITED TOO. A weakening that was refused is the most
+	 * interesting row on the page: somebody tried to turn the lockout down, and
+	 * the instance said no. An audit trail that only holds the changes that
+	 * succeeded cannot tell a security officer that anybody tried.
+	 *
+	 * No object, no register and no schema: a control is instance-wide, and
+	 * attaching it to an arbitrary object would put it on that object's timeline
+	 * where it does not belong. Same shape as
+	 * {@see createPartyQueryRefusalEntry()}.
+	 *
+	 * @param string $control The control identifier.
+	 * @param int|string|array $before The value before the change.
+	 * @param int|string|array $after The value asked for.
+	 * @param bool $accepted Whether the change was made.
+	 * @param string $refusal The refusal, when the change was not made.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 */
+	public function createHardeningChangeEntry(
+		string $control,
+		int|string|array $before,
+		int|string|array $after,
+		bool $accepted,
+		string $refusal = '',
+	): AuditTrail {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$action = 'hardening.refused';
+		if ($accepted === true) {
+			$action = 'hardening.changed';
+		}
+
+		$summary = [
+			'control' => $control,
+			'before' => $before,
+			'after' => $after,
+			'accepted' => $accepted,
+		];
+		if ($refusal !== '') {
+			$summary['refusal'] = $refusal;
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction($action);
+		$auditTrail->setResultSummary($summary);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createHardeningChangeEntry()
 }//end class

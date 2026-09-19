@@ -5,7 +5,7 @@
  * Spec-coverage e2e tests for: mdm-frontend (ADR-045 #3).
  *
  * TAG CONVENTION: each test carries
- *   @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#<scenario-slug>
+ *   @e2e `openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#<scenario-slug>`
  *
  * Methodology: drive the real UI. The five MDM views live under the hash-mode
  * router (`/index.php/apps/openregister/<route>`); the shared
@@ -118,8 +118,8 @@ async function gotoScoped(page: Page, route: string): Promise<boolean> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#mdm-group-appears-in-the-app-navigation
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#each-mdm-route-renders-its-own-view-component
+// @e2e openspec/specs/mdm-frontend/spec.md#mdm-group-appears-in-the-app-navigation
+// @e2e openspec/specs/mdm-frontend/spec.md#each-mdm-route-renders-its-own-view-component
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — navigation group', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -159,9 +159,9 @@ test.describe('mdm-frontend — navigation group', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#schema-select-is-disabled-until-a-register-is-chosen
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#ncselect-carries-an-accessible-label
-// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selects-expose-stable-test-handles
+// @e2e openspec/specs/mdm-frontend/spec.md#schema-select-is-disabled-until-a-register-is-chosen
+// @e2e openspec/specs/mdm-frontend/spec.md#ncselect-carries-an-accessible-label
+// @e2e openspec/specs/mdm-views-route-scoping/spec.md#scenario-selects-expose-stable-test-handles
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — register/schema selector', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -188,9 +188,9 @@ test.describe('mdm-frontend — register/schema selector', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
-// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
-// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
+// @e2e openspec/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
+// @e2e openspec/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
+// @e2e openspec/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — selection persistence', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -228,9 +228,9 @@ test.describe('mdm-frontend — selection persistence', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#kpi-cards-and-histogram-reflect-the-stats-envelope
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#lowest-quality-table-lists-scored-objects
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#empty-state-on-an-unscored-schema
+// @e2e openspec/specs/mdm-frontend/spec.md#kpi-cards-and-histogram-reflect-the-stats-envelope
+// @e2e openspec/specs/mdm-frontend/spec.md#lowest-quality-table-lists-scored-objects
+// @e2e openspec/specs/mdm-frontend/spec.md#empty-state-on-an-unscored-schema
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — Data Quality dashboard', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -283,7 +283,7 @@ test.describe('mdm-frontend — Data Quality dashboard', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#candidate-pairs-render-with-score-and-matched-attributes
+// @e2e openspec/specs/mdm-frontend/spec.md#candidate-pairs-render-with-score-and-matched-attributes
 // NOTE: mdm-frontend's original "no-merge-or-write-action-is-present" scenario
 // (DuplicatesIndex is strictly read-only) is superseded by mdm-merge-ui (#C),
 // which adds the per-pair "Merge" action by design — see
@@ -318,8 +318,8 @@ test.describe('mdm-frontend — Duplicate Candidates', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#master-entities-show-quality-columns
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#golden-record-detail-shows-attribute-provenance
+// @e2e openspec/specs/mdm-frontend/spec.md#master-entities-show-quality-columns
+// @e2e openspec/specs/mdm-frontend/spec.md#golden-record-detail-shows-attribute-provenance
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — Master entities + golden record', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -388,8 +388,8 @@ test.describe('mdm-frontend — Master entities + golden record', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#per-webhook-health-counts-render
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#empty-state-when-no-webhooks-are-configured
+// @e2e openspec/specs/mdm-frontend/spec.md#per-webhook-health-counts-render
+// @e2e openspec/specs/mdm-frontend/spec.md#empty-state-when-no-webhooks-are-configured
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — Queue / sync health', () => {
 	test.use({ storageState: STORAGE_STATE })

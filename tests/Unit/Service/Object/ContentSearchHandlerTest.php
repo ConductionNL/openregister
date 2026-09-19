@@ -483,4 +483,78 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 		$this->assertSame(53, $pageThree['total']);
 	}//end testTotalIsStableAcrossPagesForSameQuery()
+
+	// =========================================================================
+	// Array scope and the per-request candidate memo (unified-search chunks)
+	// =========================================================================
+
+	/**
+	 * The unified-search provider passes its searchable allow-list as
+	 * `@self.schema`. `(int)` of a non-empty array is 1 in PHP, so that list
+	 * used to scope every hit to schema id 1: the object in schema 3 was
+	 * dropped and the object in schema 1 let through. Asserted both ways.
+	 */
+	public function testAnArraySchemaScopeOnSelfIsHonoured(): void {
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '42', 'score' => 0.8, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
+				['entity_type' => 'object', 'entity_id' => '43', 'score' => 0.7, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$inScope = $this->makeObject(42, schema: '3');
+		$this->objectMapper->method('find')->willReturnCallback(
+			fn (int|string $identifier) => ((int)$identifier === 42) ? $inScope : $this->makeObject(43, schema: '1')
+		);
+
+		$result = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'dakkapel', '@self' => ['schema' => [2, 3]]],
+			results: [],
+			total: 0,
+			limit: 20
+		);
+
+		$this->assertSame([$inScope], $result['results']);
+		$this->assertSame(1, $result['total']);
+	}//end testAnArraySchemaScopeOnSelfIsHonoured()
+
+	/**
+	 * One search over 1,272 schemas reaches this handler 26 times, once per
+	 * schema chunk. The chunk-store query and the owner resolves are the
+	 * same every time; only the scope differs. They must run once.
+	 */
+	public function testChunkCandidatesAreFetchedAndResolvedOnceAcrossTheChunksOfOneSearch(): void {
+		$this->chunkMapper->expects($this->once())->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '42', 'score' => 0.8, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$owner = $this->makeObject(42, schema: '3');
+		$this->objectMapper->expects($this->once())->method('find')->willReturn($owner);
+
+		$totals = [];
+		foreach ([[1, 2], [3, 4], [5, 6]] as $chunk) {
+			$result = $this->handler->augmentWithChunkMatches(
+				query: ['_search' => 'dakkapel', '@self' => ['schema' => $chunk]],
+				results: [],
+				total: 0,
+				limit: 20
+			);
+			$totals[] = $result['total'];
+		}
+
+		$this->assertSame([0, 1, 0], $totals, 'the owner is appended by exactly the chunk that holds its schema');
+	}//end testChunkCandidatesAreFetchedAndResolvedOnceAcrossTheChunksOfOneSearch()
+
+	/**
+	 * The memo is keyed on the term AND the guard flags: a different term is
+	 * a different chunk query, and a relaxed guard resolves a different set.
+	 */
+	public function testTheCandidateMemoIsKeyedOnTermAndGuardFlags(): void {
+		$this->chunkMapper->expects($this->exactly(3))->method('searchByKeyword')->willReturn([]);
+
+		$this->handler->augmentWithChunkMatches(query: ['_search' => 'a'], results: [], total: 0, limit: 5);
+		$this->handler->augmentWithChunkMatches(query: ['_search' => 'a'], results: [], total: 0, limit: 5);
+		$this->handler->augmentWithChunkMatches(query: ['_search' => 'b'], results: [], total: 0, limit: 5);
+		$this->handler->augmentWithChunkMatches(query: ['_search' => 'a'], results: [], total: 0, limit: 5, _rbac: false);
+	}//end testTheCandidateMemoIsKeyedOnTermAndGuardFlags()
 }//end class

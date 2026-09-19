@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\MappingService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
@@ -47,7 +48,7 @@ use UnexpectedValueException;
 /**
  * Transforms the item list through a stored mapping.
  */
-class MapNode implements IFlowNode, IFlowNodeConfigKeys {
+class MapNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *
@@ -270,4 +271,28 @@ class MapNode implements IFlowNode, IFlowNodeConfigKeys {
 		);
 
 	}//end resolve()
+
+	/**
+	 * What kind of step this is. Reshapes each item.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
+
+	}//end getCategory()
 }//end class

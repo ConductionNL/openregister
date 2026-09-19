@@ -53,6 +53,15 @@ use Psr\Log\LoggerInterface;
  * definition of the rule: it does not re-read the annotation, and it does not
  * restate the condition. Change the rule in one place and every door moves.
  *
+ * A LEGAL HOLD IS THE SECOND THING THIS GUARD ANSWERS, and the only one that
+ * is a property of the record rather than of its schema. It is read from
+ * {@see \OCA\OpenRegister\Db\ObjectEntity::hasActiveLegalHold()}, the single
+ * definition of "held", so the guard has no opinion of its own here either.
+ * Note that {@see self::cascadeRefusal()} is handed a uuid rather than a
+ * record, so it cannot ask the hold question; that gap is open on purpose and
+ * tracked separately. There is deliberately NO cascade wording for this ground:
+ * an entry nobody can reach reads as coverage that does not exist.
+ *
  * FAILS CLOSED. A record whose schema cannot be resolved is refused, because an
  * unresolvable schema is precisely the case where the annotation cannot be read
  * and the record might be retained. That refusal is reported under its own
@@ -68,6 +77,13 @@ class ArchivalRetentionGuard {
 	 * @var string
 	 */
 	public const GROUND_ARCHIVAL = 'ARCHIVAL_RETENTION_OBLIGATION';
+
+	/**
+	 * Ground: an active legal hold keeps this record, whatever its schema says.
+	 *
+	 * @var string
+	 */
+	public const GROUND_LEGAL_HOLD = 'ACTIVE_LEGAL_HOLD';
 
 	/**
 	 * Ground: the record's schema could not be resolved, so it was left alone.
@@ -105,6 +121,12 @@ class ArchivalRetentionGuard {
 				'basis' => 'GDPR art. 17(3)(b) and the Archiefwet.',
 				'action' => 'Name this record in your answer to the requester. '
 					. 'A records officer decides when it may be destroyed.',
+			],
+			self::GROUND_LEGAL_HOLD => [
+				'message' => 'This record is under a legal hold, so we did not erase it.',
+				'basis' => 'A hold placed by a records officer, usually for a case or an investigation.',
+				'action' => 'Name this record in your answer to the requester. '
+					. 'It can be erased once the hold is released.',
 			],
 			self::GROUND_UNRESOLVED => [
 				'message' => 'We could not read the retention rules for this record, so we left it alone.',
@@ -151,6 +173,11 @@ class ArchivalRetentionGuard {
 	/**
 	 * Decide whether an erasure request may destroy this record.
 	 *
+	 * Two things can hold it: an active legal hold on the record itself, and
+	 * the archival obligation its schema declares. Each is reported under its
+	 * own ground, because a hold a records officer can release is not the same
+	 * answer as a statutory retention period nobody can.
+	 *
 	 * @param ObjectEntity $object The record an erasure request has reached.
 	 *
 	 * @return array<string, mixed>|null The withheld report, or null when the erasure may proceed.
@@ -158,6 +185,24 @@ class ArchivalRetentionGuard {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	public function erasureRefusal(ObjectEntity $object): ?array {
+		// A LEGAL HOLD IS ASKED FIRST, and it is asked of the record rather
+		// than of the schema. The archival annotation below says what the law
+		// requires of every record on a schema; a hold says what a records
+		// officer requires of THIS record, and it applies on an ordinary
+		// schema that declares no annotation at all. Asking the schema
+		// question first would let every held record on an ordinary schema
+		// through, which is exactly the gap this guard closed for the AVG
+		// pass.
+		if ($object->hasActiveLegalHold() === true) {
+			return $this->report(
+				uuid: (string)($object->getUuid() ?? ''),
+				schemaLabel: (string)($object->getSchema() ?? 'unknown'),
+				registerIdentifier: $object->getRegister(),
+				ground: self::GROUND_LEGAL_HOLD,
+				context: self::CONTEXT_ERASURE
+			);
+		}
+
 		return $this->refusalFor(
 			uuid: (string)($object->getUuid() ?? ''),
 			schemaIdentifier: $object->getSchema(),

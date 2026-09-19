@@ -130,7 +130,8 @@
 		"IBANs": "International bank account number acronym with the plural s; invariant in Catalan.",
 		"Present": "Same spelling and meaning in Catalan.",
 		"Normal": "Same spelling and meaning in Catalan (normal).",
-		"Urgent": "Same spelling and meaning in Catalan (urgent)."
+		"Urgent": "Same spelling and meaning in Catalan (urgent).",
+		"Text": "\"Text\" is the same word in Catalan for the text field type; no non-identical synonym exists, so the honest label is identical."
 	},
 	"corrections": {
 		"Settings": "TERM-SETTINGS",

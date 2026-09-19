@@ -1,0 +1,45 @@
+# Tasks: objects-as-the-hinge-between-cases
+
+## 1. The reverse view
+
+- [x] 1.1 One bounded query per schema group answering which objects reference this one (D-1).
+- [x] 1.2 Title, status and last change per referencing record, paged per group.
+- [x] 1.3 The caller's access applied inside the query.
+
+## 2. The lens
+
+- [x] 2.1 A lens property declaring a reference property and a property to read through it (D-2).
+- [x] 2.2 Resolved at read, never stored, refused on write.
+- [x] 2.3 Withheld rather than empty when the referenced object is unreadable (D-3).
+
+## 3. The generic list surface
+
+- [x] 3.1 Declared list columns and search fields per schema (D-4).
+- [x] 3.2 The generic surface renders them for any schema; an undeclared schema keeps today's defaults.
+
+## 4. Geography and intake sources
+
+- [x] 4.1 Declared geographic inheritance from referenced objects and parties, each feature naming its relation (D-5).
+- [x] 4.2 A feature on the record outranks an inherited one.
+- [x] 4.3 An intake source as an object: several, switchable, permissioned, audited (D-6).
+
+## 5. Tests
+
+- [x] 5.1 `tests/e2e/ci/object-as-hinge.spec.ts`: an address with three referencing records, a lens that follows a change, a second intake source.
+- [x] 5.2 Unit tests: the reverse query's access filter, the lens write refusal, withheld versus empty, the geographic precedence.
+- [x] 5.3 A regression test that a schema declaring none of this behaves as today.
+- [x] 5.4 `openspec validate objects-as-the-hinge-between-cases --strict`.
+
+## 6. Hand over
+
+- [x] 6.1 Hand the reverse view and the lens to the dossiq lane, which declares the object types a case type may reference, with the seven candidate ids.
+- [x] 6.2 Tell the buildiq lane that CT-6, the layout per case type, renders these and is not specified here.
+- [x] 6.3 Report the inherited defect in `specs/geo-metadata-kaart/spec.md`: a `## ADDED Requirements` header in a main spec, which hides eight requirements from validate, list and archive. It belongs to the debt sweep, not to this change.
+
+## What is not here
+
+- The page layout per case type (CT-6), which is buildiq's under D16.
+- Asset status, location, depreciation and value (C-case-core-43), recorded not built.
+- The inverse label on a relation, which `relation-types-with-inverses` carries. The
+  reverse view groups by schema and names the property nothing; once that change lands,
+  a group can carry the inverse label instead of the schema title.

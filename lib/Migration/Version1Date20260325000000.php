@@ -53,14 +53,14 @@ class Version1Date20260325000000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable($tableName) === false) {
 			$output->info("Table {$tableName} does not exist, skipping migration");
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable($tableName);
 
 		if ($table->hasColumn('tmlo') === true) {
 			$output->info("Column 'tmlo' already exists in {$tableName}, skipping");
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

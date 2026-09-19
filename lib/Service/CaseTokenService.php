@@ -20,8 +20,7 @@
  *     controller returns 404 — no enumeration oracle.
  *
  * Lazy-resolution policy mirrors {@see ShareLinkService}: ObjectService
- * is pulled from the server container on demand so the ctor stays light
- * and unit tests can inject a mock container.
+ * is pulled from the injected container on demand so the ctor stays light.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -46,6 +45,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
@@ -72,13 +73,16 @@ class CaseTokenService {
 	private const TOKEN_LENGTH = 43;
 
 	/**
-	 * Optional server container override (tests inject a mock so the
-	 * ObjectService resolve path is exercisable without the full
-	 * container).
+	 * How many public entries a resolved token carries at most.
 	 *
-	 * @var ContainerInterface|null
+	 * A public page is read on a phone and the newest entries are the ones
+	 * that answer "what is happening with my case". A case with a longer
+	 * history is not an error, it is a case that needs paging, and paging an
+	 * anonymous endpoint is a separate decision.
+	 *
+	 * @var int
 	 */
-	private ?ContainerInterface $container;
+	private const PUBLIC_TIMELINE_LIMIT = 50;
 
 	/**
 	 * Constructor.
@@ -88,7 +92,7 @@ class CaseTokenService {
 	 * @param IUserSession $userSession Current user (minter).
 	 * @param IURLGenerator $urlGenerator Public URL builder.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ContainerInterface|null $container Optional container (tests only).
+	 * @param ContainerInterface $container App container the ObjectService is resolved from on demand.
 	 *
 	 * @return void
 	 */
@@ -98,9 +102,8 @@ class CaseTokenService {
 		private IUserSession $userSession,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
-		?ContainerInterface $container = null,
+		private ContainerInterface $container,
 	) {
-		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -179,6 +182,13 @@ class CaseTokenService {
 	 * object missing, RBAC-denied) so the caller returns a uniform 404
 	 * and the endpoint is not an enumeration oracle.
 	 *
+	 * THE VIEW CARRIES THE OBJECT'S PUBLIC TIMELINE. A citizen following a
+	 * "track your case" link came to find out what has happened, and a status
+	 * with no history answers half the question. The entries are filtered on
+	 * `public` HERE, on the server, by the same service the signed-in timeline
+	 * reads: nothing that says `internal` crosses this boundary, and no caller
+	 * can ask this method for a different filter.
+	 *
 	 * @param string $token The opaque token.
 	 *
 	 * @return array<string,mixed>|null The public-safe object view, or
@@ -240,6 +250,7 @@ class CaseTokenService {
 				'token' => $row->getToken(),
 				'label' => $row->getLabel(),
 				'object' => $rendered,
+				'timeline' => $this->publicTimeline(entity: $entity),
 			];
 		} catch (Throwable $e) {
 			// RBAC-denied / not-found / any read failure → 404 (null).
@@ -251,6 +262,44 @@ class CaseTokenService {
 			return null;
 		}//end try
 	}//end resolve()
+
+	/**
+	 * The public entries on one object, as a stranger may read them.
+	 *
+	 * The read and the five-key projection are {@see PublicTimeline}'s, the
+	 * same class the access-link reader asks. Two anonymous surfaces that each
+	 * decided for themselves what leaves would come to disagree, and the
+	 * disagreement would be a handler's name on a citizen's screen.
+	 *
+	 * SOFT BY DESIGN. A timeline that cannot be read answers the empty list:
+	 * the status page shipped before the timeline did, and an instance that
+	 * cannot build the reader must still show the status rather than a uniform
+	 * 404 a citizen reads as a revoked link. `PublicTimeline` already softens a
+	 * failed read per source; this catch covers the container failing to build
+	 * it at all, and anything that is not an entity has no timeline to read.
+	 *
+	 * @param object $entity The object the timeline hangs on.
+	 *
+	 * @return array<int, array<string,mixed>> The public entries, newest first.
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	private function publicTimeline(object $entity): array {
+		if (($entity instanceof ObjectEntity) === false) {
+			return [];
+		}
+
+		try {
+			$reader = $this->container->get(PublicTimeline::class);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[CaseTokenService] the public timeline reader could not be built: ' . $e->getMessage()
+			);
+			return [];
+		}
+
+		return $reader->forObject(object: $entity, limit: self::PUBLIC_TIMELINE_LIMIT);
+	}//end publicTimeline()
 
 	/**
 	 * Revoke a token so it can no longer be resolved.
@@ -328,8 +377,7 @@ class CaseTokenService {
 	 */
 	private function resolveObjectService(): ?object {
 		try {
-			$container = $this->resolveContainer();
-			$service = $container->get('OCA\\OpenRegister\\Service\\ObjectService');
+			$service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
 			if (is_object($service) === true) {
 				return $service;
 			}
@@ -339,49 +387,4 @@ class CaseTokenService {
 			return null;
 		}
 	}//end resolveObjectService()
-
-	/**
-	 * Resolve the active container — the test override if injected,
-	 * otherwise NC's global server container.
-	 *
-	 * @return ContainerInterface
-	 */
-	private function resolveContainer(): ContainerInterface {
-		if ($this->container !== null) {
-			return $this->container;
-		}
-
-		return new class implements ContainerInterface {
-			/**
-			 * Resolve a service from NC's global server container.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return object
-			 *
-			 * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
-			 */
-			public function get(string $id): object {
-				return \OCP\Server::get($id);
-			}//end get()
-
-			/**
-			 * Whether NC's global server container can resolve the id.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return bool
-			 *
-			 * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
-			 */
-			public function has(string $id): bool {
-				try {
-					\OCP\Server::get($id);
-					return true;
-				} catch (Throwable $e) {
-					return false;
-				}
-			}//end has()
-		};
-	}//end resolveContainer()
 }//end class

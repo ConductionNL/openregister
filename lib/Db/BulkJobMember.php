@@ -1,0 +1,252 @@
+<?php
+
+/**
+ * BulkJobMember entity — one object inside a bulk job, and what happened to it.
+ *
+ * A member row is written once at preview and updated once at commit, so the
+ * same row carries both the rehearsal and the result. It is also what makes a
+ * retry safe: a member already marked applied is never acted on twice (D-5).
+ *
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use JsonSerializable;
+use OCP\AppFramework\Db\Entity;
+
+/**
+ * Class BulkJobMember
+ *
+ * @method int|null getJobId()
+ * @method void setJobId(?int $jobId)
+ * @method string|null getObjectUuid()
+ * @method void setObjectUuid(?string $objectUuid)
+ * @method string|null getOutcome()
+ * @method void setOutcome(?string $outcome)
+ * @method string|null getReason()
+ * @method void setReason(?string $reason)
+ * @method string|null getSchemaVersion()
+ * @method void setSchemaVersion(?string $schemaVersion)
+ * @method array|null getPriorValues()
+ * @method void setPriorValues(?array $priorValues)
+ * @method array|null getAppliedValues()
+ * @method void setAppliedValues(?array $appliedValues)
+ * @method bool getAddedAtCommit()
+ * @method void setAddedAtCommit(bool $addedAtCommit)
+ * @method DateTime|null getAppliedAt()
+ * @method void setAppliedAt(?DateTime $appliedAt)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ */
+class BulkJobMember extends Entity implements JsonSerializable {
+
+	/**
+	 * The action would apply, or did apply, to this member.
+	 *
+	 * @var string
+	 */
+	public const OUTCOME_APPLIED = 'applied';
+
+	/**
+	 * The action does not apply to this member, and says why (D-3).
+	 *
+	 * @var string
+	 */
+	public const OUTCOME_SKIPPED = 'skipped';
+
+	/**
+	 * The actor may not write this member, and the rule that refused it is
+	 * named. A refusal is never reported as a skip (D-3).
+	 *
+	 * @var string
+	 */
+	public const OUTCOME_REFUSED = 'refused';
+
+	/**
+	 * The write threw, and the message is kept.
+	 *
+	 * @var string
+	 */
+	public const OUTCOME_FAILED = 'failed';
+
+	/**
+	 * The job this member belongs to.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $jobId = null;
+
+	/**
+	 * The object's uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
+
+	/**
+	 * The outcome for this object: what the preview said would happen, then
+	 * what the commit did. Whether a write actually landed is `appliedAt`,
+	 * never this column.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $outcome = null;
+
+	/**
+	 * Why the outcome is what it is: the skip reason, the rule that refused,
+	 * or the failure message.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $reason = null;
+
+	/**
+	 * The schema version the object carried at preview, for the homogeneity
+	 * guard (D-6).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $schemaVersion = null;
+
+	/**
+	 * The properties the job changed on this member, with their values before
+	 * the change. Only those properties, never a snapshot of the object (D-2).
+	 *
+	 * Null when the action did not declare itself reversible, which is what
+	 * makes the reversal route's refusal honest rather than a silent no-op.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $priorValues = null;
+
+	/**
+	 * The values the job wrote on this member.
+	 *
+	 * The reversal compares these against the object's CURRENT values. A
+	 * property that no longer holds what the job wrote means somebody edited
+	 * the object afterwards, and a reversal never writes a prior value over a
+	 * later change (D-3). Reading the prior values alone cannot tell the two
+	 * apart.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $appliedValues = null;
+
+	/**
+	 * True when the member appeared only at commit, because a query-backed
+	 * selection grew between preview and commit (D-2).
+	 *
+	 * @var boolean
+	 */
+	protected bool $addedAtCommit = false;
+
+	/**
+	 * When a real write landed on this member.
+	 *
+	 * This is the idempotence key, and deliberately not the outcome column.
+	 * A member the preview says would apply still has to be walked by the
+	 * commit; only a write stamps this, so a retry skips exactly the members
+	 * that were written (D-5).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $appliedAt = null;
+
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
+
+	/**
+	 * Last-update timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
+
+	/**
+	 * Constructor — registers field types for hydration.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'jobId', type: 'integer');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'outcome', type: 'string');
+		$this->addType(fieldName: 'reason', type: 'string');
+		$this->addType(fieldName: 'schemaVersion', type: 'string');
+		$this->addType(fieldName: 'priorValues', type: 'json');
+		$this->addType(fieldName: 'appliedValues', type: 'json');
+		$this->addType(fieldName: 'addedAtCommit', type: 'boolean');
+		$this->addType(fieldName: 'appliedAt', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+
+	}//end __construct()
+
+	/**
+	 * Hydrate the entity from an array.
+	 *
+	 * @param array<string, mixed> $object The source data.
+	 *
+	 * @return static This entity, hydrated.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 */
+	public function hydrate(array $object): static {
+		foreach ($object as $key => $value) {
+			$method = 'set'.ucfirst($key);
+
+			try {
+				$this->$method($value);
+			} catch (\Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
+
+		return $this;
+	}//end hydrate()
+
+	/**
+	 * JSON serialisation.
+	 *
+	 * @return array<string, mixed> The serialised member.
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'jobId' => $this->jobId,
+			'objectUuid' => $this->objectUuid,
+			'outcome' => $this->outcome,
+			'reason' => $this->reason,
+			'schemaVersion' => $this->schemaVersion,
+			'priorValues' => $this->priorValues,
+			'appliedValues' => $this->appliedValues,
+			'addedAtCommit' => $this->addedAtCommit,
+			'appliedAt' => $this->appliedAt?->format(DateTime::ATOM),
+			'created' => $this->created?->format(DateTime::ATOM),
+			'updated' => $this->updated?->format(DateTime::ATOM),
+		];
+
+	}//end jsonSerialize()
+}//end class

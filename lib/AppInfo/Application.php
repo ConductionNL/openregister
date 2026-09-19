@@ -42,11 +42,16 @@ use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Controller\AnalyticsSeriesController;
 use OCA\OpenRegister\Controller\CaseTokenController;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationValueMapper;
 // Thirteen imports from OCA\OpenRegister\Service\Objects\ stood here — a
 // namespace that DOES NOT EXIST. Those classes live under Service\Object\
 // (singular); the plural was left behind by the rename. Every one was unused, so
@@ -95,13 +100,17 @@ use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
+use OCA\OpenRegister\Listener\AutoTransitionRecordListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
+use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\FlowNodePreflightListener;
+use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\GrantableRightsInvalidationListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
@@ -117,14 +126,24 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ObjectMetricsListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
+use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
+use OCA\OpenRegister\Listener\WatcherPruneListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\DependentValueListener;
+use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
+use OCA\OpenRegister\Listener\UniqueConstraintListener;
+use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
+use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
@@ -155,6 +174,12 @@ use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportH
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
@@ -164,6 +189,9 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
@@ -211,6 +239,7 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
@@ -232,6 +261,7 @@ use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PhotoLinkService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\RegisterSlugResolver;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
@@ -240,6 +270,7 @@ use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -282,6 +313,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\Security\IContentSecurityPolicyManager;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class Application
@@ -423,6 +455,61 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The named-transition context MUST be shared for the same reason:
+		// TransitionEngine declares the action on one instance and the
+		// lifecycle listeners read it on another. Unshared, every named call
+		// would silently fall back to matching by from/to value.
+		$context->registerService(
+			LifecycleActionContext::class,
+			function () {
+				return new LifecycleActionContext();
+			}
+		);
+
+		// The automatic-transition pass MUST be shared, and for a sharper reason
+		// than the two above: it IS the request's state. The listener records
+		// into it, ObjectService and TransitionEngine open and close boundaries
+		// on it, and the drain reads the lineage the boundary counted. Auto-
+		// wired fresh at each injection point, every one of those would hold its
+		// own counter: nothing would ever reach depth zero with a record in it,
+		// so no automatic transition would ever fire, silently and with no
+		// error anywhere.
+		$context->registerService(
+			AutoTransitionPass::class,
+			function ($c) {
+				return new AutoTransitionPass(
+					runner: $c->get(AutoTransitionRunner::class),
+					logger: $c->get(LoggerInterface::class)
+				);
+			}
+		);
+
+		// The register-slug resolver MUST be shared. It memoises one indexed
+		// read per candidate list for the life of the request, and a sweep asks
+		// the same question at every call site of the same tick. Nextcloud
+		// auto-wires a fresh instance at every injection point, so without this
+		// registration the memo would be empty every time and the probe would
+		// re-read the register table once per call site.
+		$context->registerService(
+			RegisterSlugResolver::class,
+			function ($c) {
+				return new RegisterSlugResolver(
+					registerMapper: $c->get(RegisterMapper::class),
+					logger: $c->get(LoggerInterface::class)
+				);
+			}
+		);
+
+		// The published contract (ADR-084) consuming apps type-hint. Bound to
+		// the same shared instance, so an app that injects the interface and one
+		// that injects the class share a memo rather than probing twice.
+		$context->registerService(
+			RegisterSlugResolverInterface::class,
+			function ($c) {
+				return $c->get(RegisterSlugResolver::class);
+			}
+		);
+
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);
 
@@ -485,6 +572,57 @@ class Application extends App implements IBootstrap {
 		// names the field and lists the filterable ones, instead of the opaque
 		// driver-level 500 an unresolvable column name used to produce.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
+
+		// Register the ApiVersionMiddleware (api-as-a-versioned-surface): names
+		// the contract version that answered on every API response, carries the
+		// RFC 8594 end date when that version is deprecated, and refuses a call
+		// naming a withdrawn version with 410 or an undeclared one with 400.
+		// It decorates and refuses; it never changes which controller runs, so a
+		// deprecated version keeps exactly the behaviour it had before.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
+
+		// Register the ApiCallerMiddleware (api-as-a-versioned-surface): binds a
+		// caller to its administered source addresses, bounds it to its
+		// administered ceiling, and records which route and version it called.
+		// Registered AFTER ApiVersionMiddleware so the version this call speaks
+		// is already resolvable when the record is written.
+		//
+		// An instance that has administered neither a ceiling nor a binding
+		// behaves exactly as it did before: the limiter fails open, the binding
+		// only refuses a caller an administrator actually bound, and the record
+		// swallows its own failures.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
+
+		// Every outbound call this app makes goes through the administered
+		// proxy (api-as-a-versioned-surface, design D-6). Most gemeenten have
+		// no direct egress, so a call that bypasses the proxy does not fail
+		// visibly: it works on a developer's laptop and times out in
+		// production.
+		//
+		// 🔑 BOUND UNDER `IClientService` RATHER THAN MIGRATING CALL SITES.
+		// This app creates clients from fourteen files across twenty call
+		// sites. Editing all twenty would leave the guarantee resting on
+		// nobody ever adding a twenty-first, which is exactly the failure D-6
+		// names. Overriding the binding means every existing call site is
+		// untouched and every future one is covered by construction.
+		//
+		// The override is scoped to this app's container: nothing resolved
+		// outside OpenRegister sees it.
+		$context->registerService(
+			\OCP\Http\Client\IClientService::class,
+			static function ($container): \OCP\Http\Client\IClientService {
+				// 🔴 The inner client comes from the SERVER container, not from
+				// `$container`. Asking the app container for `IClientService`
+				// here would resolve to this very closure and recurse until the
+				// stack runs out. `OCP\Server::get()` is the public accessor
+				// for the server's own binding, and it is what reaches past
+				// the override we are installing.
+				return new OutboundClientFactory(
+					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
+					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettings::class),
+				);
+			}
+		);
 
 		// Bind the dormant Path B PDF anonymisation fallback bridge to its
 		// null implementation. Tenants enabling Path B replace this binding
@@ -643,6 +781,7 @@ class Application extends App implements IBootstrap {
 		$this->registerCacheAndFileHandlers(context: $context);
 		$this->registerConfigurationServices(context: $context);
 		$this->registerSettingsServices(context: $context);
+		$this->registerConfigurationDeploymentServices(context: $context);
 		$this->registerVectorizationService(context: $context);
 		$this->registerObjectInteractionServices(context: $context);
 		$this->registerIntegrationRegistry(context: $context);
@@ -1093,9 +1232,92 @@ class Application extends App implements IBootstrap {
 		);
 
 		$context->registerSearchProvider(ObjectsProvider::class);
+		// The entries beside the objects. Two providers, because a Woo
+		// request asks for every mention of a subject and the answer is a
+		// list of entries, each naming the case it sits on.
+		$context->registerSearchProvider(\OCA\OpenRegister\Search\TimelineEntriesProvider::class);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 	}//end registerConfigurationServices()
+
+	/**
+	 * Register the configuration deployment lifecycle.
+	 *
+	 * Registered explicitly rather than autowired: every class here takes the
+	 * app name as a defaulted string, and a container that resolves a scalar
+	 * by guessing is a container that silently builds the wrong object.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function registerConfigurationDeploymentServices(IRegistrationContext $context): void {
+		$context->registerService(
+			ConfigurationValueStore::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationValueStore(
+					values: $container->get(ConfigurationValueMapper::class),
+					appConfig: $container->get('OCP\IAppConfig'),
+					appName: 'openregister'
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationDraftService::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationDraftService(
+					sets: $container->get(ConfigurationDraftSetMapper::class),
+					drafts: $container->get(ConfigurationDraftMapper::class),
+					store: $container->get(ConfigurationValueStore::class),
+					registry: $container->get(ConfigurationKeyRegistry::class),
+					session: $container->get('OCP\IUserSession'),
+					appConfig: $container->get('OCP\IAppConfig'),
+					appName: 'openregister'
+				);
+			}
+		);
+
+		$context->registerService(
+			DeploymentPreviewService::class,
+			function (ContainerInterface $container) {
+				return new DeploymentPreviewService(
+					drafts: $container->get(ConfigurationDraftService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					registry: $container->get(ConfigurationKeyRegistry::class)
+				);
+			}
+		);
+
+		$context->registerService(
+			DeploymentService::class,
+			function (ContainerInterface $container) {
+				return new DeploymentService(
+					drafts: $container->get(ConfigurationDraftService::class),
+					previews: $container->get(DeploymentPreviewService::class),
+					store: $container->get(ConfigurationValueStore::class),
+					deployments: $container->get(ConfigurationDeploymentMapper::class),
+					sets: $container->get(ConfigurationDraftSetMapper::class),
+					db: $container->get('OCP\IDBConnection'),
+					session: $container->get('OCP\IUserSession'),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		$context->registerService(
+			ConfigurationExplainer::class,
+			function (ContainerInterface $container) {
+				return new ConfigurationExplainer(
+					store: $container->get(ConfigurationValueStore::class),
+					deployments: $container->get(ConfigurationDeploymentMapper::class)
+				);
+			}
+		);
+
+	}//end registerConfigurationDeploymentServices()
 
 	/**
 	 * Register settings-related services including handlers.
@@ -1233,7 +1455,9 @@ class Application extends App implements IBootstrap {
 					commentsManager: $container->get('OCP\Comments\ICommentsManager'),
 					userSession: $container->get('OCP\IUserSession'),
 					userManager: $container->get('OCP\IUserManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class),
+					versions: $container->get(\OCA\OpenRegister\Service\NoteVersionService::class)
 				);
 			}
 		);
@@ -1372,7 +1596,8 @@ class Application extends App implements IBootstrap {
 					registry: $container->get(IntegrationRegistry::class),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class)
+					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class)
 				);
 			}
 		);
@@ -1934,7 +2159,7 @@ class Application extends App implements IBootstrap {
 		];
 		// Each greenfield provider now uses MarkerLookupTrait to query
 		// its upstream app's main table directly via IDBConnection. All
-		// share the same constructor signature (db, appManager, l10n).
+		// share the same constructor signature (db, appManager, l10n, logger).
 		foreach ($greenfieldProviders as $providerClass) {
 			$context->registerService(
 				$providerClass,
@@ -1943,6 +2168,7 @@ class Application extends App implements IBootstrap {
 						db: $container->get('OCP\IDBConnection'),
 						appManager: $container->get('OCP\App\IAppManager'),
 						l10n: $container->get('OCP\IL10N'),
+						logger: $container->get('Psr\Log\LoggerInterface'),
 					);
 				}
 			);
@@ -1962,6 +2188,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					formLinkMapper: $container->get(\OCA\OpenRegister\Db\FormLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2010,6 +2237,7 @@ class Application extends App implements IBootstrap {
 					userSession: $container->get('OCP\IUserSession'),
 					urlGenerator: $container->get('OCP\IURLGenerator'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
+					container: $container,
 				);
 			}
 		);
@@ -2159,6 +2387,7 @@ class Application extends App implements IBootstrap {
 				return new ActivityFilterService(
 					db: $container->get('OCP\IDBConnection'),
 					appManager: $container->get('OCP\App\IAppManager'),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2196,6 +2425,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2232,6 +2462,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2268,6 +2499,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2286,6 +2518,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					l10n: $container->get('OCP\IL10N'),
 					analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2363,6 +2596,7 @@ class Application extends App implements IBootstrap {
 					appManager: $container->get('OCP\App\IAppManager'),
 					userSession: $container->get('OCP\IUserSession'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
+					container: $container,
 				);
 			}
 		);
@@ -2383,6 +2617,7 @@ class Application extends App implements IBootstrap {
 					l10n: $container->get('OCP\IL10N'),
 					linkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
 					config: $container->get('OCP\IConfig'),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);
@@ -2474,6 +2709,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
 		$context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+		// Access derived from what an identity provider asserted, once per
+		// sign-in. Costs one app-config read on an instance that declares no
+		// rule, and never fails a sign-in: see the listener.
+		$context->registerEventListener(
+			\OCP\User\Events\UserLoggedInEvent::class,
+			\OCA\OpenRegister\Listener\IdentityClaimsLoginListener::class
+		);
+
 		// Flow node discovery. OpenRegister contributes its own built-ins
 		// through the same event every consuming app uses, so the contribution
 		// path is exercised by its owner and cannot rot unnoticed.
@@ -2496,12 +2739,49 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\FlowOversightRegistrationListener::class
 		);
 
+		// Principal discovery. WHO a step may ask: `user` and `group` are
+		// Nextcloud's own and are contributed here; a position on a body, a
+		// function, a case role are contributed by the app that owns the
+		// concept. None of that knowledge can move into the engine without it
+		// growing opinions about municipal organisation charts.
+		//
+		// ⚠️ NOT the resolver registry the comment above disclaims. That one
+		// arbitrated between per-app object stores for flow OWNERSHIP; this
+		// one answers "who does this reference mean", which is a different
+		// question with a different answer per instance.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent::class,
+			\OCA\OpenRegister\Listener\PrincipalResolverRegistrationListener::class
+		);
+
 		// Federated configuration sharing. Any app declares its shareable config
 		// types (flows, registers, case types, themes …) through this event, the
 		// same idiom as flow nodes; OpenRegister contributes its own built-ins.
 		$context->registerEventListener(
 			\OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent::class,
 			\OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
+		);
+
+		// The organisation tree guard. A party's parent is checked on the SAVE,
+		// not in whatever wrote the object: a check that lives in one caller is
+		// a check the next caller does not have, and a written cycle reaches
+		// every later reader as a parent chain with no end.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectCreatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectUpdatingEvent::class,
+			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
+		);
+
+		// Party roles across a merge. `mdm-merge` owns the merge; the party
+		// vocabulary — the roles both parties held, their addresses, and
+		// putting both back on a reversal — is contributed here rather than
+		// written as a second merge that could disagree with the first.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\ObjectsMergedEvent::class,
+			\OCA\OpenRegister\Listener\PartyMergeListener::class
 		);
 
 		// Advertise the `openregister` OCM resource type in /ocm-provider discovery.
@@ -2522,6 +2802,15 @@ class Application extends App implements IBootstrap {
 		// ObjectChangeListener for automatic object text extraction.
 		$context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
+
+		// Automatic lifecycle transitions: note the written object so the
+		// request-scoped pass can decide its `autoWhen` rules once the write is
+		// finished. The listener records and nothing else; applying here would
+		// be lost to the second write a file-bearing save makes. NOT wired to
+		// ObjectTransitionedEvent: a named transition's save already dispatched
+		// ObjectUpdatedEvent, so both would record it twice.
+		$context->registerEventListener(ObjectCreatedEvent::class, AutoTransitionRecordListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, AutoTransitionRecordListener::class);
 
 		// Object-lifecycle flow triggers: queue a run for every flow wired to a
 		// lifecycle event. Create / update / delete plus lock / unlock / revert /
@@ -2552,6 +2841,13 @@ class Application extends App implements IBootstrap {
 
 		// ToolRegistrationListener for agent function tools.
 		$context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
+
+		// BulkActionRegistrationListener for the built-in bulk actions. A leaf
+		// app registers its own action on the same event (ADR-022).
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\BulkActionRegistrationEvent::class,
+			\OCA\OpenRegister\Listener\BulkActionRegistrationListener::class
+		);
 
 		// Tables schema-lifecycle listener — retire the managed virtual schema of
 		// a deleted Tables table. Guarded by class_exists so boot never fatals on
@@ -2714,7 +3010,27 @@ class Application extends App implements IBootstrap {
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
+
+		// The generated identifier (`generated-identifier`). Registered beside the
+		// lifecycle initial state and for the same reason: the value has to be in
+		// the object's body BEFORE it is written, or the object's first version is
+		// the one without a number. The same listener freezes it on update, because
+		// a frozen identifier that is not frozen fails in the quietest way there
+		// is: the number in the letter stops matching the record, and nothing errors.
+		$context->registerEventListener(ObjectCreatingEvent::class, GeneratedIdentifierListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, GeneratedIdentifierListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
+
+		// Per-state field rules — see x-openregister-lifecycle.states.<state>.fields.
+		// Registered AFTER LifecycleInitialStateListener, which stamps the
+		// initial state onto a create: reading the state before that listener
+		// has run would resolve a create against no state at all and let a
+		// required field through. On an update it runs after
+		// LifecycleValidationListener for the same reason the approval gate
+		// does — a transition nobody declared is not worth asking field
+		// questions about.
+		$context->registerEventListener(ObjectCreatingEvent::class, StateFieldRuleListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, StateFieldRuleListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
@@ -2774,6 +3090,46 @@ class Application extends App implements IBootstrap {
 		// persistence (see x-openregister-survivorship). MDM capability.
 		$context->registerEventListener(ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class);
+
+		// Working-calendar write guard — runs WorkingCalendar::fromArray() at
+		// WRITE time, so the objects API, the admin page and a configuration
+		// import refuse the same calendar with the same message. Before this,
+		// the same validator only ran at ARM time: a malformed calendar was
+		// accepted on save and surfaced days later on an unrelated timer.
+		$context->registerEventListener(ObjectCreatingEvent::class, WorkingCalendarValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, WorkingCalendarValidationListener::class);
+
+		// ... and the other half: a calendar an armed or suspended timer names
+		// cannot be deleted, because the resolver refuses an unknown name
+		// rather than downgrading to weekdays.
+		$context->registerEventListener(ObjectDeletingEvent::class, WorkingCalendarDeleteGuardListener::class);
+
+		// Code-list lifecycle — a value outside its validity window, a broader
+		// value under a leaf-only property and two values of one exclusive
+		// group are all refused at WRITE time, on every door, so a retired
+		// resultaattype cannot be chosen again while every dossier that
+		// already holds it keeps reading correctly.
+		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
+
+		// The dependent value table (rules-engine-operability, REQ-REO-005).
+		// Subscribed to both write events, so the create and the update reach
+		// it identically and a write path added later cannot skip the table.
+		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
+
+		// ... and the delete half: a value the product defines, or one that
+		// objects still hold, is refused with its count. Closing the validity
+		// window is the operation that is always safe.
+		$context->registerEventListener(ObjectDeletingEvent::class, ConceptDeleteGuardListener::class);
+
+		// Named uniqueness constraints — a `refuse` constraint stops the write
+		// naming the combination and the conflicting object; a `report` one
+		// lets it through and records the breach on the object's validation
+		// envelope, where it can be read afterwards. Both are real: a gemeente
+		// refuses a second bezwaar and only reports a repeated e-mail.
+		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
 
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)
@@ -2877,6 +3233,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
 
+		// Facet freshness on every object write: bumps the counter for the written
+		// object's (register, schema) scope so the next facet read cannot serve a
+		// bucket list computed before the write (openregister#3560).
+		$context->registerEventListener(ObjectCreatedEvent::class, FacetCacheInvalidationListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, FacetCacheInvalidationListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, FacetCacheInvalidationListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, FacetCacheInvalidationListener::class);
+
 		// Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
 		$context->registerEventListener(ObjectCreatedEvent::class, TranslationProjectionListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, TranslationProjectionListener::class);
@@ -2893,6 +3257,14 @@ class Application extends App implements IBootstrap {
 		// - queue-mode drain triggers: schema save + app enable (a provider may
 		// have appeared); the fallback HandoffQueueDrainJob catches the rest.
 		$context->registerEventListener(ObjectTransitionedEvent::class, HandoffLifecycleListener::class);
+
+		// Nomination at closure: a record reaching a state its schema declares
+		// final gets its archiefnominatie and archiefactiedatum derived and
+		// written, with the rule that produced each.
+		$context->registerEventListener(
+			ObjectTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\ArchivalNominationListener::class
+		);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
@@ -2904,6 +3276,23 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+
+		// Watcher pruning (`object-watchers`): a deleted object must not leave
+		// its audience behind, or a re-created uuid inherits followers who
+		// never chose to follow it.
+		$context->registerEventListener(ObjectDeletedEvent::class, WatcherPruneListener::class);
+
+		// Read state (`object-read-state`). A substantive change puts the object
+		// back to unread for every reader but its author; a deletion takes the
+		// read states with it and archives the notices that pointed at it, which
+		// would otherwise sit unread for ever pointing at nothing.
+		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
+
+		// Favourites and view history (`favourites-and-recent`). Objects live in
+		// per-schema tables, so there is no single table for a foreign key to
+		// cascade from: a star and a view are cleared by a listener instead.
+		$context->registerEventListener(ObjectDeletedEvent::class, FavouritePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
@@ -3097,6 +3486,24 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class,
 			function (ContainerInterface $container) {
 				return new PrometheusRenderer();
+			}
+		);
+
+		// OpenRegister's own IMetricsProvider, under the alias
+		// ProviderMetricSource looks up for this app id. It carries the one
+		// metric the declarative kinds cannot express: overdue is
+		// COALESCE(due_at, expires_at) < now, and a tableCount filter
+		// compares one column to a literal. Registered here, in OR's own
+		// container, because the source resolves the alias from the CALLING
+		// app's container (#390) and OR is the calling app when it scrapes
+		// itself.
+		$context->registerService(
+			\OCA\OpenRegister\AppHost\IMetricsProvider::class . '::' . self::APP_ID,
+			function (ContainerInterface $container) {
+				return new TaskMetricsProvider(
+					mapper: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
+					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class)
+				);
 			}
 		);
 

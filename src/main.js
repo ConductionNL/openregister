@@ -11,15 +11,28 @@ import { createApp, h } from 'vue'
 // eslint-disable-next-line n/no-unpublished-import
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+import customComponents from './customComponents.js'
 import appIcons from './icons.js'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
 import pinia from './pinia.js'
 import registry from './registry.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import 'gridstack/dist/gridstack.min.css'
+
+// Register nextcloud-vue's own catalogue for the reader's language. The library
+// translates every label it draws under its own `nextcloud-vue` app id, and
+// nothing registers that catalogue unless the host app asks: every leaf app's
+// bootstrap calls this, and openregister's never did. So on this page a Dutch
+// reader got OpenRegister's strings in Dutch and every library string in
+// English, the object metadata's Archiving group included ("Archiving" instead
+// of "Archivering"). First, so no library label resolves before it lands.
+// Every other entry makes the same call; src/tests/entry-translations.spec.js
+// holds them to it.
+registerLibraryTranslations()
 
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.
@@ -81,6 +94,38 @@ const GENERIC_INTEGRATION_DESCRIPTORS = [
 	},
 ]
 
+// The connector app answers to `integriq` on development and `openconnector`
+// on beta/main. `requiredApp` is read back by nc-vue as
+// `isAppInstalled(requiredApp)`, which looks the string up in
+// `OC.appswebroots` — so the wrong spelling does not error, it reports the
+// connector as missing and every descriptor below renders its "not installed"
+// state on an instance where the connector is installed and working. Resolve
+// against what the page actually has, newest spelling first.
+const CONNECTOR_APP_IDS = ['integriq', 'openconnector']
+
+/**
+ * The connector app id this instance registered.
+ *
+ * @return {string} The installed id, or the canonical name when neither is
+ *   present (in which case "not installed" is the truthful answer anyway).
+ */
+function connectorAppId() {
+	try {
+		const webroots = (typeof OC !== 'undefined' && OC && OC.appswebroots) || null
+		if (webroots) {
+			const found = CONNECTOR_APP_IDS.find((id) => Object.hasOwn(webroots, id))
+			if (found) {
+				return found
+			}
+		}
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn('[main] could not resolve the connector app id', e)
+	}
+
+	return CONNECTOR_APP_IDS[0]
+}
+
 try {
 	const registry = window?.OCA?.OpenRegister?.integrations
 	const pending = registry?.register
@@ -92,7 +137,7 @@ try {
 				pending.forEach((descriptor) => {
 					registry.register({
 						...descriptor,
-						requiredApp: 'openconnector',
+						requiredApp: connectorAppId(),
 						group: 'external',
 						tab: CnIntegrationTab,
 						widget: CnIntegrationCard,
@@ -101,6 +146,7 @@ try {
 				})
 			})
 			.catch((e) =>
+				// eslint-disable-next-line no-console
 				console.error(
 					'[main] failed to register generic integration descriptors',
 					e,
@@ -108,6 +154,7 @@ try {
 			)
 	}
 } catch (e) {
+	// eslint-disable-next-line no-console
 	console.error('[main] integration registry guard failed', e)
 }
 
@@ -255,12 +302,17 @@ const router = createRouter({
 // changing the values the lib resolves at render time.
 const registryProp = { ...registry }
 const pageTypesProp = { ...defaultPageTypes }
+// The Connections page's Add integration handler (adopt-connection-registry).
+// Same shallow-copy reason as above. Its two formatters are nextcloud-vue
+// built-ins.
+const customComponentsProp = { ...customComponents }
 
 const app = createApp({
 	render: () =>
 		h(App, {
 			manifest: mergedManifest,
 			registry: registryProp,
+			customComponents: customComponentsProp,
 			pageTypes: pageTypesProp,
 		}),
 })

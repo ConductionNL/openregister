@@ -27,6 +27,8 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use JsonSerializable;
+use OCA\OpenRegister\Exception\CalendarDateKindException;
+use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\Entity;
@@ -83,6 +85,8 @@ use stdClass;
  * @method void setOrganisation(?string $organisation)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
+ * @method array|null getSharedWith()
+ * @method void setSharedWith(?array $sharedWith)
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
@@ -267,6 +271,23 @@ class Schema extends Entity implements JsonSerializable {
 	 * @var array|null JSON object describing authorizations
 	 */
 	protected ?array $authorization = [];
+
+	/**
+	 * The organisations that may READ this schema as shared master data.
+	 *
+	 * The `organisation` column is the HOLDER; this list is who else may read
+	 * it. A case type and a party are the two the corpus asks for at this
+	 * grain: every entity in the samenwerkingsverband reads one definition of
+	 * "vergunningaanvraag" rather than keeping a copy that drifts.
+	 *
+	 * NULL or an empty list means nothing is shared, which is what every row
+	 * written before this column existed says.
+	 *
+	 * @var array|null List of consumer organisation UUIDs
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	protected ?array $sharedWith = null;
 
 	/**
 	 * Deletion timestamp
@@ -489,6 +510,7 @@ class Schema extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'application', type: 'string');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'sharedWith', type: 'json');
 		$this->addType(fieldName: 'deleted', type: 'datetime');
 		$this->addType(fieldName: 'configuration', type: 'json');
 		$this->addType(fieldName: 'groups', type: 'json');
@@ -720,6 +742,142 @@ class Schema extends Entity implements JsonSerializable {
 	 * @var string
 	 */
 	public const WRITEONLY_PATHS_ANNOTATION = 'x-openregister-writeonly-paths';
+
+	/**
+	 * The annotation by which a schema opts its objects into archiving.
+	 *
+	 * Shape: `{"enabled": true}`. Read through
+	 * {@see self::isArchivingEnabled()}, which is the single definition of
+	 * "does this schema offer archiving" — no caller should re-read the key.
+	 *
+	 * @var string
+	 */
+	public const ARCHIVE_ANNOTATION = 'x-openregister-archive';
+
+	/**
+	 * The property-level keyword that makes a value immutable once set.
+	 *
+	 * A property carrying `"immutable": true` accepts its first value and
+	 * refuses every later change, whatever the object's state and whoever the
+	 * actor is. That is a rule about the property, not about the object: a
+	 * vastgesteld besluit keeps its date while the rest of the object is still
+	 * open for editing.
+	 *
+	 * @var string
+	 */
+	public const IMMUTABLE_PROPERTY_KEYWORD = 'immutable';
+
+	/**
+	 * The property-level keyword that makes a list a repeating group.
+	 *
+	 * A property carrying `"repeatingGroup": true` is a group of fields that
+	 * repeats: meerdere gemachtigden, meerdere percelen, meerdere zienswijzen.
+	 * The members are the `items.properties` of the list and the count is
+	 * bounded by `minItems` and `maxItems`, so the shape stays an ordinary
+	 * array of objects. What the keyword adds is the declaration that an
+	 * editor may author rows against, and the promise that a refusal names
+	 * the row it refused.
+	 *
+	 * @var string
+	 */
+	public const REPEATING_GROUP_PROPERTY_KEYWORD = 'repeatingGroup';
+
+	/**
+	 * The property-level keyword that says the order of the rows is meaningful.
+	 *
+	 * Declared on a repeating group. `true` means the stored order is the
+	 * authored order and a reader may rely on it. It carries no enforcement of
+	 * its own: it tells the editor whether to offer a handle to drag a row.
+	 *
+	 * @var string
+	 */
+	public const GROUP_ORDERED_PROPERTY_KEYWORD = 'groupOrdered';
+
+	/**
+	 * The property-level keyword naming the member that labels a row.
+	 *
+	 * Declared on a repeating group, holding the name of one member property.
+	 * A row collapsed in a form shows that member's value, so a list of six
+	 * gemachtigden reads as six names instead of six copies of the word row.
+	 *
+	 * @var string
+	 */
+	public const GROUP_LABEL_PROPERTY_KEYWORD = 'groupLabel';
+
+	/**
+	 * The reserved body key that records which properties were not supplied.
+	 *
+	 * Shape: `{"<property>": "<reason code>"}`, sitting beside `@self` at the
+	 * top of the object body. A property named here was left out on purpose,
+	 * with a reason from the administered list, which is a different fact from
+	 * an empty field. It is stripped before the object meets the validator and
+	 * stored with the object, so it reads back with it.
+	 *
+	 * @var string
+	 */
+	public const NOT_SUPPLIED_KEY = '@notSupplied';
+
+	/**
+	 * The annotation holding the reasons a value may be recorded as not supplied.
+	 *
+	 * Shape: `{"<code>": "<label>"}`. A schema that administers no reasons
+	 * offers no not-supplied state, which is deliberate: "not supplied" without
+	 * a reason is the same empty field it replaces. The list lives on the
+	 * schema rather than in instance settings because the honest reasons for a
+	 * bouwvergunning are not the honest reasons for a personeelsdossier
+	 * (ADR-031).
+	 *
+	 * @var string
+	 */
+	public const NOT_SUPPLIED_REASONS_ANNOTATION = 'x-openregister-not-supplied-reasons';
+
+	/**
+	 * The authorization key that assigns each role name its groups.
+	 *
+	 * A role is the schema's own vocabulary, and the map says which Nextcloud
+	 * groups hold it. It is not an action rule set: nothing is granted by
+	 * declaring a role. The notification dispatcher reads this map to turn
+	 * `{"kind": "role", "role": "behandelaar"}` into the people to tell, and a
+	 * lifecycle transition reads the same map, so the assignment changes in one
+	 * place rather than in every rule that names the role.
+	 *
+	 * @var string
+	 */
+	public const ROLES_KEY = 'roles';
+
+	/**
+	 * The lens annotation: properties that read a referenced record's field live.
+	 *
+	 * Keyed by the property name the lens renders as, each entry naming the
+	 * reference property to look through and the property to read there. A lens
+	 * holds the path, never the value, so two records can never disagree about
+	 * the same date.
+	 *
+	 * @var string
+	 */
+	public const LENS_ANNOTATION = 'x-openregister-lenses';
+
+	/**
+	 * The list-surface annotation: declared columns and search fields.
+	 *
+	 * A list page written per object type is a list page that drifts per object
+	 * type. The schema declares what to show and what to search; the generic
+	 * surface renders it.
+	 *
+	 * @var string
+	 */
+	public const LIST_ANNOTATION = 'x-openregister-list';
+
+	/**
+	 * The geographic-inheritance annotation: which references carry map features.
+	 *
+	 * A record may show the point its address holds. Every inherited feature
+	 * names the relation it arrived through, and a feature the record holds
+	 * itself outranks an inherited one.
+	 *
+	 * @var string
+	 */
+	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
 
 	/**
 	 * Whether the schema declares any nested write-only dot-paths.
@@ -1027,20 +1185,14 @@ class Schema extends Entity implements JsonSerializable {
 		$reservedFlags = ['inheritFromPublic'];
 
 		foreach ($authorization as $action => $rules) {
-			// Reserved flags are validated as booleans, not action rule arrays.
-			if (in_array($action, $reservedFlags, true) === true) {
-				if (is_bool($rules) === false) {
-					throw new InvalidArgumentException(
-						"Authorization flag '{$action}' in {$context} must be a boolean"
-					);
-				}
-
-				continue;
-			}
-
-			// The default object scope for this schema.
-			if ($action === ObjectScopeResolver::SCOPE_KEY) {
-				$this->validateScopeValue(scope: $rules, context: $context);
+			// Reserved keys are behaviour, not action rule sets, and each is
+			// validated against its own shape.
+			if ($this->validateReservedKey(
+				action: (string)$action,
+				value: $rules,
+				reservedFlags: $reservedFlags,
+				context: $context
+			) === true) {
 				continue;
 			}
 
@@ -1064,6 +1216,119 @@ class Schema extends Entity implements JsonSerializable {
 			}
 		}//end foreach
 	}//end validateAuthorizationRules()
+
+	/**
+	 * Validate one reserved authorization key, if this is one.
+	 *
+	 * Reserved keys are cascade flags, the schema's default object scope, and the
+	 * role-to-groups assignment. None of them is an action rule set: none grants
+	 * anything. Keeping them in one place is what lets the ACTION vocabulary stay
+	 * closed, which is the property that makes a typo an error rather than a rule
+	 * that silently protects nothing.
+	 *
+	 * @param string            $action        The authorization key.
+	 * @param mixed             $value         Its value.
+	 * @param array<int,string> $reservedFlags The boolean cascade flags.
+	 * @param string            $context       Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When a reserved key carries the wrong shape.
+	 *
+	 * @return bool TRUE when the key was reserved and has been validated.
+	 */
+	private function validateReservedKey(
+		string $action,
+		mixed $value,
+		array $reservedFlags,
+		string $context
+	): bool {
+		if (in_array($action, $reservedFlags, true) === true) {
+			if (is_bool($value) === false) {
+				throw new InvalidArgumentException(
+					"Authorization flag '{$action}' in {$context} must be a boolean"
+				);
+			}
+
+			return true;
+		}
+
+		if ($action === ObjectScopeResolver::SCOPE_KEY) {
+			$this->validateScopeValue(scope: $value, context: $context);
+			return true;
+		}
+
+		if ($action === self::ROLES_KEY) {
+			$this->validateRolesAssignment(roles: $value, context: $context);
+			return true;
+		}
+
+		return false;
+	}//end validateReservedKey()
+
+	/**
+	 * Validate a schema's role-to-groups assignment.
+	 *
+	 * The shape is a map of role name to a list of Nextcloud group ids. Every
+	 * other shape is refused at authoring time, because a malformed assignment
+	 * reads at dispatch as a role nobody holds: the rule addressing it resolves
+	 * to nobody and records `recipient-unresolved`, which is a notification that
+	 * silently stopped rather than an error anybody sees.
+	 *
+	 * An EMPTY map is accepted. It says the schema assigns no roles yet, which is
+	 * what a schema that never declared the key already says.
+	 *
+	 * @param mixed  $roles   The declared assignment.
+	 * @param string $context Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When the assignment is not a map of role name to group ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
+	 */
+	private function validateRolesAssignment(mixed $roles, string $context): void {
+		if (is_array($roles) === false) {
+			throw new InvalidArgumentException(
+				"Authorization '" . self::ROLES_KEY . "' in {$context} must be a map of role name to group ids"
+			);
+		}
+
+		foreach ($roles as $roleName => $groups) {
+			if (is_string($roleName) === false || trim($roleName) === '') {
+				throw new InvalidArgumentException(
+					"Authorization '" . self::ROLES_KEY . "' in {$context} names a role with no name"
+				);
+			}
+
+			$this->validateRoleGroups(roleName: $roleName, groups: $groups, context: $context);
+		}
+	}//end validateRolesAssignment()
+
+	/**
+	 * Validate the groups one role is assigned.
+	 *
+	 * @param string $roleName The role.
+	 * @param mixed  $groups   The group ids it is assigned.
+	 * @param string $context  Context for error messages.
+	 *
+	 * @throws InvalidArgumentException When the groups are not a non-empty list of group ids.
+	 *
+	 * @return void
+	 */
+	private function validateRoleGroups(string $roleName, mixed $groups, string $context): void {
+		if (is_array($groups) === false || $groups === []) {
+			throw new InvalidArgumentException(
+				"Role '{$roleName}' in {$context} must list at least one group id"
+			);
+		}
+
+		foreach ($groups as $group) {
+			if (is_string($group) === false || trim($group) === '') {
+				throw new InvalidArgumentException(
+					"Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
+				);
+			}
+		}
+	}//end validateRoleGroups()
 
 	/**
 	 * Validate a schema's default object scope.
@@ -1691,6 +1956,7 @@ class Schema extends Entity implements JsonSerializable {
 			'organisation' => $this->organisation,
 			'groups' => $this->groups,
 			'authorization' => $this->authorization,
+			'sharedWith' => ($this->sharedWith ?? []),
 			'deleted' => $deleted,
 			'configuration' => $this->configuration,
 			'allOf' => $this->allOf,
@@ -1771,8 +2037,12 @@ class Schema extends Entity implements JsonSerializable {
 				}
 			}
 
-			// Mark computed properties as readOnly in JSON Schema / OpenAPI output.
-			if (isset($property['computed']) === true && is_array($property['computed']) === true) {
+			// Mark computed properties as readOnly in JSON Schema / OpenAPI
+			// output. Both engines count: the Twig `computed` marker and the
+			// JSON-AST `calculation` key a property form forwards.
+			$isComputed = (isset($property['computed']) === true && is_array($property['computed']) === true);
+			$isCalculated = (isset($property['calculation']) === true && is_array($property['calculation']) === true);
+			if ($isComputed === true || $isCalculated === true) {
 				$prop->readOnly = true;
 			}
 
@@ -1909,6 +2179,257 @@ class Schema extends Entity implements JsonSerializable {
 
 		return $source;
 	}//end getObjectSource()
+
+	/**
+	 * Get the lens declarations from the schema configuration.
+	 *
+	 * A lens is a property that shows a referenced record's own field, live: it
+	 * holds the path, never the value. Each entry is keyed by the property name
+	 * it renders as and declares `through` (a reference property on this schema)
+	 * and `property` (the property to read through it, dot paths allowed). An
+	 * entry missing either key is dropped rather than half-applied.
+	 *
+	 * @return array<string, array{through: string, property: string, label?: string}>
+	 *                                                                                The declared lenses, keyed by property name.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getLenses(): array {
+		$configuration = $this->getConfiguration();
+
+		if ($configuration === null) {
+			return [];
+		}
+
+		$lenses = ($configuration[self::LENS_ANNOTATION] ?? null);
+
+		if (is_array($lenses) === false) {
+			return [];
+		}
+
+		$declared = [];
+		foreach ($lenses as $name => $spec) {
+			$entry = self::normaliseLens(spec: $spec);
+			if ((string)$name === '' || $entry === null) {
+				continue;
+			}
+
+			$declared[(string)$name] = $entry;
+		}
+
+		return $declared;
+	}//end getLenses()
+
+	/**
+	 * Normalise one declared lens, or drop it.
+	 *
+	 * A lens is only half a lens without both halves: a `through` naming the
+	 * reference property and a `property` naming what to read there. Half of one
+	 * would render as empty on every read, which is indistinguishable from a
+	 * field nobody filled in, so it is dropped here and reported by
+	 * HingeAnnotationValidator at save time.
+	 *
+	 * @param mixed $spec The declared lens.
+	 *
+	 * @return array|null The lens, or null when either half is missing.
+	 *
+	 * @psalm-return array{through: string, property: string, label?: string}|null
+	 */
+	private static function normaliseLens(mixed $spec): ?array {
+		if (is_array($spec) === false) {
+			return null;
+		}
+
+		$through = ($spec['through'] ?? null);
+		$property = ($spec['property'] ?? null);
+
+		if (is_string($through) === false || $through === '') {
+			return null;
+		}
+
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		$entry = [
+			'through' => $through,
+			'property' => $property,
+		];
+
+		if (isset($spec['label']) === true && is_string($spec['label']) === true) {
+			$entry['label'] = $spec['label'];
+		}
+
+		return $entry;
+	}//end normaliseLens()
+
+	/**
+	 * Get the list-surface declaration from the schema configuration.
+	 *
+	 * A schema may say which columns a list shows and which fields it searches
+	 * on, so the generic surface renders any object type without a list page of
+	 * its own. A schema declaring neither keeps whatever the surface defaults
+	 * to today.
+	 *
+	 * @return array The declared columns and search fields, each possibly empty.
+	 *
+	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getListPresentation(): array {
+		$configuration = $this->getConfiguration();
+		$empty = [
+			'columns' => [],
+			'searchFields' => [],
+		];
+
+		if ($configuration === null) {
+			return $empty;
+		}
+
+		$list = ($configuration[self::LIST_ANNOTATION] ?? null);
+
+		if (is_array($list) === false) {
+			return $empty;
+		}
+
+		$columns = [];
+		foreach (($list['columns'] ?? []) as $column) {
+			$entry = self::normaliseListColumn(column: $column);
+			if ($entry !== null) {
+				$columns[] = $entry;
+			}
+		}
+
+		$searchFields = [];
+		foreach (($list['searchFields'] ?? []) as $field) {
+			if (is_string($field) === true && $field !== '') {
+				$searchFields[] = $field;
+			}
+		}
+
+		return [
+			'columns' => $columns,
+			'searchFields' => array_values(array_unique($searchFields)),
+		];
+	}//end getListPresentation()
+
+	/**
+	 * Normalise one declared list column.
+	 *
+	 * A bare string is the property name; an array may add a label and a width.
+	 *
+	 * @param mixed $column The declared column.
+	 *
+	 * @return array{property: string, label?: string}|null The column, or null when it names no property.
+	 */
+	private static function normaliseListColumn(mixed $column): ?array {
+		if (is_string($column) === true) {
+			if ($column === '') {
+				return null;
+			}
+
+			return ['property' => $column];
+		}
+
+		if (is_array($column) === false) {
+			return null;
+		}
+
+		$property = ($column['property'] ?? null);
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		$entry = ['property' => $property];
+		if (isset($column['label']) === true && is_string($column['label']) === true) {
+			$entry['label'] = $column['label'];
+		}
+
+		return $entry;
+	}//end normaliseListColumn()
+
+	/**
+	 * Get the geographic-inheritance declaration from the schema configuration.
+	 *
+	 * A record may collect map features from the objects and parties it points
+	 * at. Each entry names the reference property to follow; the collector
+	 * stamps that name onto every feature it brings back, so a pin on a map can
+	 * always say where it came from.
+	 *
+	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public function getGeoInheritance(): array {
+		$configuration = $this->getConfiguration();
+
+		if ($configuration === null) {
+			return [];
+		}
+
+		$geo = ($configuration[self::GEO_INHERITANCE_ANNOTATION] ?? null);
+
+		if (is_array($geo) === false) {
+			return [];
+		}
+
+		$sources = ($geo['from'] ?? null);
+		if (is_array($sources) === false) {
+			return [];
+		}
+
+		$declared = [];
+		foreach ($sources as $source) {
+			$entry = self::normaliseGeoSource(source: $source);
+			if ($entry === null) {
+				continue;
+			}
+
+			$declared[] = $entry;
+		}//end foreach
+
+		return $declared;
+	}//end getGeoInheritance()
+
+	/**
+	 * Normalise one declared geographic-inheritance source, or drop it.
+	 *
+	 * A bare string is the reference property to follow; an array may add the
+	 * label a map legend shows beside the features that arrived through it.
+	 *
+	 * @param mixed $source The declared source.
+	 *
+	 * @return array|null The source, or null when it names no reference property.
+	 *
+	 * @psalm-return array{through: string, label?: string}|null
+	 */
+	private static function normaliseGeoSource(mixed $source): ?array {
+		if (is_string($source) === true) {
+			if ($source === '') {
+				return null;
+			}
+
+			return ['through' => $source];
+		}
+
+		if (is_array($source) === false) {
+			return null;
+		}
+
+		$through = ($source['through'] ?? null);
+		if (is_string($through) === false || $through === '') {
+			return null;
+		}
+
+		$entry = ['through' => $through];
+		if (isset($source['label']) === true && is_string($source['label']) === true) {
+			$entry['label'] = $source['label'];
+		}
+
+		return $entry;
+	}//end normaliseGeoSource()
 
 	/**
 	 * Check whether this schema's objects are opted into Context Chat indexing.
@@ -2081,6 +2602,19 @@ class Schema extends Entity implements JsonSerializable {
 					throw $e;
 				}
 
+				// A DECLARED DATE KIND IS EXEMPT FOR THE SAME REASON, INVERTED.
+				//
+				// Dropping `calendarProvider` as a whole is a safe degradation:
+				// the virtual calendar does not appear and somebody notices. A
+				// typo INSIDE the `dates` block is not: the schema saves, it
+				// looks annotated to whoever wrote it, and the feed publishes an
+				// agenda that is silently missing the term they just declared.
+				// Nobody reads an empty agenda and concludes the schema is
+				// wrong. So this one fails loudly, naming the property.
+				if ($e instanceof CalendarDateKindException) {
+					throw $e;
+				}
+
 				$this->droppedKeys[] = (string)$key;
 			}//end try
 		}//end foreach
@@ -2225,6 +2759,16 @@ class Schema extends Entity implements JsonSerializable {
 			return;
 		}
 
+		if ($key === 'linkRoles') {
+			$validatedConfig[$key] = $this->validateLinkRolesValue(value: $value);
+			return;
+		}
+
+		if ($key === 'partyKinds') {
+			$validatedConfig[$key] = $this->validatePartyKindsValue(value: $value);
+			return;
+		}
+
 		if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
 			$validatedConfig[$key] = $this->validateWriteOnlyPathsValue(value: $value);
 			return;
@@ -2302,13 +2846,27 @@ class Schema extends Entity implements JsonSerializable {
 	 * When calendarProvider.enabled is true, dtstart and titleTemplate are required.
 	 * Warns (but does not reject) if referenced property names don't exist in schema properties.
 	 *
+	 * The `dates` block is validated whether or not the provider is enabled: a
+	 * date kind that is stored unchecked is a kind the feed refuses to read
+	 * later, at a moment nobody is looking at the schema editor. Every refusal
+	 * names the property.
+	 *
 	 * @param array $config The calendarProvider config array
 	 *
-	 * @throws InvalidArgumentException If required fields are missing when enabled
+	 * @throws InvalidArgumentException If required fields are missing when enabled,
+	 *                                  or a declared date kind is unusable
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
+	 * is a named constructor reading a config block; there is no instance to inject.
 	 */
 	private function validateCalendarProviderConfig(array $config): void {
+		// Declared date kinds are refused on save, enabled or not.
+		ObjectDateDeclaration::allFromConfig(calendarConfig: $config);
+
 		// Only validate required fields when enabled.
 		if (empty($config['enabled']) === true) {
 			return;
@@ -2417,21 +2975,80 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-notifications',
 		'x-openregister-widgets',
 		'x-openregister-relations',
+		// The named relation vocabulary: a list of
+		// {key, label, inverseLabel, symmetric, inherits} that several `$ref`
+		// properties can point at by key, so an administrator edits "blocked
+		// by" in one place instead of on every property that means it. Read by
+		// RelationTypeResolver and refused by RelationAnnotationValidator.
+		//
+		// ⚠️ Absent from this list it is dropped by setConfiguration(), and the
+		// failure is the quiet one this list exists to prevent: every property
+		// naming a key would resolve to nothing, so a typed relation would
+		// render as the generic "referenced by" fallback forever while its
+		// author reads a 200 and believes it saved. The comments below record
+		// the same bug five times over.
+		'x-openregister-relation-types',
 		'x-openregister-processing-activity',
+		// Doelbinding: whether a read of this schema has to name an
+		// administered purpose. Absent from this list setConfiguration() would
+		// silently DROP it, and a schema whose author had just turned
+		// doelbinding on would keep answering every unbound read with a 200 —
+		// which is precisely the lawful-basis gap the annotation exists to
+		// close, wearing the appearance of a saved setting. The comments around
+		// this list record that same loss six times over.
+		'x-openregister-purpose-required',
 		// Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
 		// dialect). Was absent from this list, so setConfiguration() silently
 		// DROPPED it and per-schema read-logging could never be enabled —
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// The links out of a record, each a title plus a URL template whose
+		// placeholders fill from the object's own values
+		// (api-as-a-versioned-surface, ADR-031). Read by
+		// ExternalLinkResolver and refused at save by
+		// ExternalLinkAnnotationValidator.
+		//
+		// ⚠️ Absent from this list setConfiguration() drops it, and the drop is
+		// invisible in the worst way this feature has: a declaration that is
+		// gone and a declaration whose placeholder cannot be filled both render
+		// as no link at all. An author would read a 200, see nothing on the
+		// object, and conclude their template was wrong.
+		'x-openregister-external-links',
+		// Whether this schema's objects can be archived by hand:
+		// `{"enabled": true}`. Distinct from `x-openregister-archival` above,
+		// which is about legal retention. Absent from this list
+		// setConfiguration() would silently DROP it, a schema editor would
+		// report a saved opt-in, and the archive endpoint would answer 422 on
+		// a schema whose author had just enabled it — the same or#460/#462-class
+		// loss the comments around this list record five times over.
+		self::ARCHIVE_ANNOTATION,
+		// Which object property fills which MDTO element. Absent from this list
+		// setConfiguration() would DROP it, so a schema editor would report a
+		// saved mapping, the annotation would not be there, and the transfer
+		// refusal it exists to drive would never fire. The three comments above
+		// record that same loss three times.
+		'x-openregister-mdto-mapping',
 		'x-openregister-object-source',
 		'x-openregister-quality',
 		'x-openregister-dedup',
+		// Which properties a schema nominates as effectively unique, so a save
+		// whose value already exists elsewhere warns. Read by
+		// UniqueHintChecker. Absent from this list it would be dropped in
+		// silence and the alert would simply never fire — the same trap the
+		// comments above this list record three separate times.
+		'x-openregister-unique-hint',
 		'x-openregister-flows',
 		'x-openregister-survivorship',
 		'x-openregister-merge',
 		'x-openregister-handoff',
 		'x-openregister-mcp',
+		// The extending-form declaration: which property-vocabulary keys an
+		// app's own property form forwards. Absent from this list it would be
+		// silently DROPPED by setConfiguration(), and the narrowing the
+		// annotation exists to make visible would be invisible again, which is
+		// the exact failure the three comments below record.
+		'x-openregister-extends-form',
 		// The extensible action vocabulary: a map of action key →
 		// {name, description} that `validateAuthorizationRules()` reads to
 		// decide which non-CRUD actions an authorization block may name.
@@ -2444,6 +3061,14 @@ class Schema extends Entity implements JsonSerializable {
 		// key earlier. The two comments above record the same bug twice.
 		'x-openregister-action',
 		'x-openregister-approval-chains',
+		// What makes an object unread again, and which sub-resources badge a
+		// tab (`object-read-state`). Read by SubstantiveChangeEvaluator. Absent
+		// from this list the key would be silently dropped, every schema would
+		// fall back to "any non-computed property is news", and the annotation
+		// that exists to stop a nightly recalculation marking four hundred
+		// cases unread would never fire. The same or#460/#462-class trap the
+		// four comments above record.
+		'x-openregister-read-state',
 		// Per-schema opt-in for OCP\ContextChat content submission (default
 		// OFF — see ContentProvider / ContextChatSubmissionListener). Absent
 		// from the vocabulary means the key round-trips through
@@ -2474,7 +3099,255 @@ class Schema extends Entity implements JsonSerializable {
 		// or#460/#462-class trap as `x-openregister-processing` and
 		// `x-openregister-contextchat` above. See or#2164.
 		'x-openregister-agent-context',
+		// Registry-subscriptions: names the external registry (brp/kvk/...)
+		// that owns a subset of this schema's properties, the identity
+		// property, and the owned property list. Absent from this list,
+		// setConfiguration() would silently DROP it and a schema author
+		// could never opt an object into a subscription — same
+		// or#460/#462-class trap as every entry above.
+		'x-openregister-registry',
+		// A property that shows a referenced record's own field, live. Read by
+		// LensResolver at render time; the value is never stored. Absent from
+		// this list, setConfiguration() would drop the block and every lens
+		// would render empty, which reads exactly like "there is no besluit".
+		self::LENS_ANNOTATION,
+		// The columns a list surface shows and the fields it searches on, so an
+		// object type is as usable as a case list with no page of its own.
+		self::LIST_ANNOTATION,
+		// The reference properties a record collects map features from, each
+		// feature naming the relation it arrived through.
+		self::GEO_INHERITANCE_ANNOTATION,
+		// Declares that objects of this schema ARE parties: which kind of
+		// party, and which of its properties carry the name, the addresses,
+		// the indicators and the parent. Absent from this list,
+		// setConfiguration() would DROP it and the party model would report
+		// "this schema is not a party schema" for a schema that says it is —
+		// the same silent no-op class as every entry above.
+		'x-openregister-party',
+		// The reasons a value may be recorded as not supplied, keyed by code.
+		// Absent from this list, setConfiguration() would DROP it, every
+		// not-supplied write would be refused as "no reasons administered",
+		// and the schema author would be reading a 200 on the list they had
+		// just saved. Same silent no-op class as every entry above.
+		self::NOT_SUPPLIED_REASONS_ANNOTATION,
 	];
+
+	/**
+	 * Validate and normalise `linkRoles`: the roles a person can hold on an
+	 * object of this schema (people-on-objects).
+	 *
+	 * Each entry is `{key, label, description?}`; a bare string reads as
+	 * `{key: s, label: s}`. Keys are unique, non-empty and at most 64
+	 * characters, the width of the link table's role column.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string}> The normalised entries.
+	 *
+	 * @throws InvalidArgumentException When the value is not a list of valid entries.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	private function validateLinkRolesValue(mixed $value): array {
+		if (is_array($value) === false || array_is_list($value) === false) {
+			throw new InvalidArgumentException("Configuration 'linkRoles' must be a list of roles");
+		}
+
+		$entries = [];
+		$seen = [];
+		foreach ($value as $entry) {
+			$normalised = self::normaliseLinkRole(entry: $entry);
+			if ($normalised === null) {
+				throw new InvalidArgumentException("Each 'linkRoles' entry needs a non-empty key of at most 64 characters");
+			}
+
+			if (isset($seen[$normalised['key']]) === true) {
+				throw new InvalidArgumentException("'linkRoles' names the key '" . $normalised['key'] . "' twice");
+			}
+
+			$seen[$normalised['key']] = true;
+			$entries[] = $normalised;
+		}
+
+		return $entries;
+	}//end validateLinkRolesValue()
+
+	/**
+	 * One `linkRoles` entry as `{key, label, description?}`, or null when it has no usable key.
+	 *
+	 * @param mixed $entry A string or an array.
+	 *
+	 * @return array{key: string, label: string, description?: string}|null The entry.
+	 */
+	private static function normaliseLinkRole(mixed $entry): ?array {
+		if (is_string($entry) === true) {
+			$entry = ['key' => $entry, 'label' => $entry];
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$key = trim((string)($entry['key'] ?? ''));
+		if ($key === '' || strlen($key) > 64) {
+			return null;
+		}
+
+		$label = trim((string)($entry['label'] ?? ''));
+		if ($label === '') {
+			$label = $key;
+		}
+
+		$normalised = ['key' => $key, 'label' => $label];
+		$description = trim((string)($entry['description'] ?? ''));
+		if ($description !== '') {
+			$normalised['description'] = $description;
+		}
+
+		return $normalised;
+	}//end normaliseLinkRole()
+
+	/**
+	 * The roles a person can hold on an object of this schema, [] when the schema declares none.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	public function getLinkRoles(): array {
+		$configured = $this->configuration['linkRoles'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($configured as $entry) {
+			$normalised = self::normaliseLinkRole(entry: $entry);
+			if ($normalised !== null) {
+				$entries[] = $normalised;
+			}
+		}
+
+		return $entries;
+	}//end getLinkRoles()
+
+	/**
+	 * Validate and normalise `partyKinds`: the kinds of party an object of
+	 * this schema accepts, and per kind the roles it may hold.
+	 *
+	 * Each entry is `{key, label, description?, roles?}`; a bare string reads
+	 * as `{key: s, label: s}`. Keys are unique, non-empty and at most 64
+	 * characters, the width of the link table's `party_kind` column. `roles`
+	 * is an optional list of role keys: naming it binds those roles to that
+	 * kind, leaving it out lets the kind hold any role the schema declares.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The normalised entries.
+	 *
+	 * @throws InvalidArgumentException When the value is not a list of valid entries.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	private function validatePartyKindsValue(mixed $value): array {
+		if (is_array($value) === false || array_is_list($value) === false) {
+			throw new InvalidArgumentException("Configuration 'partyKinds' must be a list of party kinds");
+		}
+
+		$entries = [];
+		$seen = [];
+		foreach ($value as $entry) {
+			$normalised = self::normalisePartyKind(entry: $entry);
+			if ($normalised === null) {
+				throw new InvalidArgumentException("Each 'partyKinds' entry needs a non-empty key of at most 64 characters");
+			}
+
+			if (isset($seen[$normalised['key']]) === true) {
+				throw new InvalidArgumentException("'partyKinds' names the key '" . $normalised['key'] . "' twice");
+			}
+
+			$seen[$normalised['key']] = true;
+			$entries[] = $normalised;
+		}
+
+		return $entries;
+	}//end validatePartyKindsValue()
+
+	/**
+	 * One `partyKinds` entry as `{key, label, description?, roles?}`, or null when it has no usable key.
+	 *
+	 * @param mixed $entry A string or an array.
+	 *
+	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>}|null The entry.
+	 */
+	private static function normalisePartyKind(mixed $entry): ?array {
+		$normalised = self::normaliseLinkRole(entry: $entry);
+		if ($normalised === null) {
+			return null;
+		}
+
+		if (is_array($entry) === false || isset($entry['roles']) === false || is_array($entry['roles']) === false) {
+			return $normalised;
+		}
+
+		$roles = [];
+		foreach ($entry['roles'] as $role) {
+			$role = trim((string)$role);
+			if ($role !== '' && in_array($role, $roles, true) === false) {
+				$roles[] = $role;
+			}
+		}
+
+		if ($roles !== []) {
+			$normalised['roles'] = $roles;
+		}
+
+		return $normalised;
+	}//end normalisePartyKind()
+
+	/**
+	 * The kinds of party an object of this schema accepts, [] when it declares none.
+	 *
+	 * A schema that declares none keeps its reference properties and behaves
+	 * as it did before the party model: the picker offers everything and the
+	 * validator refuses nothing.
+	 *
+	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function getPartyKinds(): array {
+		$configured = $this->configuration['partyKinds'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($configured as $entry) {
+			$normalised = self::normalisePartyKind(entry: $entry);
+			if ($normalised !== null) {
+				$entries[] = $normalised;
+			}
+		}
+
+		return $entries;
+	}//end getPartyKinds()
+
+	/**
+	 * The `x-openregister-party` annotation, [] when the schema is not a party schema.
+	 *
+	 * @return array<string, mixed> The annotation as stored.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function getPartyAnnotation(): array {
+		$configured = $this->configuration['x-openregister-party'] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		return $configured;
+	}//end getPartyAnnotation()
 
 	/**
 	 * Validate the linkedTypes configuration value.
@@ -2604,11 +3477,14 @@ class Schema extends Entity implements JsonSerializable {
 	/**
 	 * Resolve the current set of registered integration ids.
 	 *
-	 * Schema is a Nextcloud Entity, not a service — DI doesn't
-	 * reach it. We pull the registry from the server container at
-	 * validation time. Failures (tests without a booted container,
-	 * missing service binding) fall through to an empty list so the
-	 * legacy allow-list path keeps working.
+	 * Schema is a Nextcloud Entity, not a service, so DI does not reach it,
+	 * and this is the one place in lib/ (outside AppInfo, AppHost and
+	 * Migration) that still reads the global server. It runs from
+	 * setConfiguration(), which every mapper calls while hydrating a row and
+	 * which some thirty call sites reach; threading the registry ids through
+	 * all of them is a change of its own. Until then the lookup stays behind
+	 * the isset() guard: without a booted container (unit tests, occ before
+	 * boot) it returns an empty list and the legacy allow-list keeps working.
 	 *
 	 * @return array<int,string> Registered integration ids, possibly empty.
 	 */
@@ -2618,6 +3494,7 @@ class Schema extends Entity implements JsonSerializable {
 		}
 
 		try {
+			// phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors,CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- entity, not DI-built; see the docblock above.
 			$registry = \OC::$server->get(
 				\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
 			);
@@ -2739,6 +3616,72 @@ class Schema extends Entity implements JsonSerializable {
 
 		return is_array($configuration['x-openregister-archival'] ?? null);
 	}//end hasArchivalAnnotation()
+
+	/**
+	 * Whether this schema offers archiving.
+	 *
+	 * ⚠️ NOT the same question as {@see self::hasArchivalAnnotation()}, and the
+	 * two annotations are not spellings of each other.
+	 * `x-openregister-archival` declares a legally retained schema whose rows a
+	 * user may not delete at all. `x-openregister-archive` declares that this
+	 * schema's objects have a finished state and may be taken out of the
+	 * working views by hand. A schema can carry either, both, or neither.
+	 *
+	 * The rule is declared once on the schema rather than decided by each app
+	 * that renders a button (ADR-031), so a schema with no finished state never
+	 * grows an action nobody uses.
+	 *
+	 * @return bool True when the schema declares `x-openregister-archive` with
+	 *              `enabled: true`.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isArchivingEnabled(): bool {
+		$configuration = ($this->getConfiguration() ?? []);
+		$annotation = ($configuration[self::ARCHIVE_ANNOTATION] ?? null);
+
+		if (is_array($annotation) === false) {
+			return false;
+		}
+
+		return ($annotation['enabled'] ?? false) === true;
+	}//end isArchivingEnabled()
+
+	/**
+	 * The reasons this schema accepts for a value that was not supplied.
+	 *
+	 * Returns a map of code to label, empty when the schema administers none.
+	 * The single definition of "which reasons may this schema use": no caller
+	 * re-reads the annotation, for the same reason nothing re-reads the
+	 * archiving one.
+	 *
+	 * @return array<string, string> Reason codes mapped to their labels.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	public function notSuppliedReasons(): array {
+		$configuration = ($this->getConfiguration() ?? []);
+		$annotation = ($configuration[self::NOT_SUPPLIED_REASONS_ANNOTATION] ?? null);
+
+		if (is_array($annotation) === false) {
+			return [];
+		}
+
+		$reasons = [];
+		foreach ($annotation as $code => $label) {
+			if (is_string($code) === false || $code === '') {
+				continue;
+			}
+
+			if (is_string($label) === false || $label === '') {
+				continue;
+			}
+
+			$reasons[$code] = $label;
+		}
+
+		return $reasons;
+	}//end notSuppliedReasons()
 
 	/**
 	 * String representation of the schema

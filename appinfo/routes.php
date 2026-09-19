@@ -100,6 +100,105 @@ return [
         ['name' => 'objectSharing#createLink',   'url' => '/api/objects/{register}/{schema}/{id}/links',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectSharing#inviteByEmail','url' => '/api/objects/{register}/{schema}/{id}/invitations',      'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 
+        // Who holds which right on one object, and how that set changed. The
+        // other direction of `/api/scopes`: that one answers a caller about
+        // themselves, these answer an auditor about everybody. Reading the
+        // object is not enough to read them — see the controller's guard.
+        // The history route precedes the index one so the longer path is
+        // matched first.
+        ['name' => 'objectPermissions#history', 'url' => '/api/objects/{register}/{schema}/{id}/permissions/history', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectPermissions#index',   'url' => '/api/objects/{register}/{schema}/{id}/permissions',         'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
+        // Per-object watchers. Following an object is per-user state that must not
+        // be written through the object itself — that would put a subscription in
+        // the object's audit trail and cut a version on every follow — so it gets
+        // its own entry point. Anyone who may READ the object may follow it; the
+        // list needs `update` and changing somebody else's subscription needs
+        // `manage`, both decided in WatcherService.
+        // Written over several lines, unlike their neighbours, because a
+        // one-line route entry here is 215 characters and the line-length rule
+        // is 150. The rest of this file predates the rule.
+        [
+            'name' => 'objectWatchers#watch',
+            'url' => '/api/objects/{register}/{schema}/{id}/watch',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#unwatch',
+            'url' => '/api/objects/{register}/{schema}/{id}/watch',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#index',
+            'url' => '/api/objects/{register}/{schema}/{id}/watchers',
+            'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#add',
+            'url' => '/api/objects/{register}/{schema}/{id}/watchers/{userId}',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectWatchers#remove',
+            'url' => '/api/objects/{register}/{schema}/{id}/watchers/{userId}',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
+        ],
+
+        // Per-object favourite (`favourites-and-recent`). A star is a fact about
+        // a person, not about the object, so it is written here and never
+        // through the object: writing it into the object would change that
+        // object's audit trail and cut a version for every reader.
+        // There is no GET here on purpose. Every object read already carries
+        // `@self.favourite`, so a detail page renders the star from data it has
+        // and a list renders a column of them from one query.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectFavourite#star',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectFavourite#unstar',
+            'url' => '/api/objects/{register}/{schema}/{id}/favourite',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
+        // Per-object read state. Reading an object is per-user state that must
+        // not be written through the object itself, which would put "alice
+        // looked at this" in the object's audit trail and cut a version on every
+        // open, so it gets its own entry point. Anyone who may READ the object
+        // may write their OWN read state, and nobody may write anybody else's:
+        // there is no `manage` escape here, because a read state is a fact about
+        // a person rather than about the object.
+        // Written over several lines, unlike their older neighbours, because a
+        // one-line route entry here is over the 150-character line-length rule.
+        [
+            'name' => 'objectReadState#show',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markRead',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'PUT',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+        [
+            'name' => 'objectReadState#markUnread',
+            'url' => '/api/objects/{register}/{schema}/{id}/read-state',
+            'verb' => 'DELETE',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+'],
+        ],
+
         // PUBLIC. A share token is a bearer capability: nobody is logged in, so
         // there is no principal for RBAC to resolve and core's validation of the
         // token IS the authorization. Read-only, addresses exactly one object,
@@ -144,6 +243,12 @@ return [
         // the controller.
         ['name' => 'registerDescriptor#index', 'url' => '/api/register-descriptors', 'verb' => 'GET'],
         ['name' => 'registerDescriptor#import', 'url' => '/api/register-descriptors/{appId}/{slug}/import', 'verb' => 'POST'],
+
+        // Working calendars — the year preview of an UNSAVED definition, so an
+        // administrator can see what a rule means before committing it. There
+        // is no CRUD here on purpose: calendars are objects in the flow-timers
+        // register and the objects API is their public API (design D-1).
+        ['name' => 'workingCalendar#preview', 'url' => '/api/flow-timers/calendars/preview', 'verb' => 'POST'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
@@ -158,6 +263,7 @@ return [
 
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
+        ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         // Magic Table Sync endpoints.
@@ -230,6 +336,12 @@ return [
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
 
         ['name' => 'Settings\ConfigurationSettings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
+        // The audit aggregation window. Its own url rather than a key on the
+        // general settings blob, because it changes what the audit trail says
+        // and an administrator should be able to find it by that name.
+        ['name' => 'Settings\AuditSettings#getAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'GET'],
+        ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PATCH'],
+        ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PUT'],
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
@@ -264,6 +376,15 @@ return [
         ['name' => 'Settings\SecuritySettings#clearIpRateLimits', 'url' => '/api/settings/security/unblock-ip', 'verb' => 'POST'],
         ['name' => 'Settings\SecuritySettings#clearUserRateLimits', 'url' => '/api/settings/security/unblock-user', 'verb' => 'POST'],
         ['name' => 'Settings\SecuritySettings#clearAllRateLimits', 'url' => '/api/settings/security/unblock', 'verb' => 'POST'],
+        // Instance hardening - the controls an administrator switches and sees.
+        // Administrator-only on purpose: the report names the security posture of
+        // one gemeente's installation, and a caller that may read it may read what
+        // is NOT switched on. The write paths answer 409 when a change would take a
+        // control below the floor this instance declared for itself.
+        ['name' => 'hardening#report', 'url' => '/api/hardening/report', 'verb' => 'GET'],
+        ['name' => 'hardening#floors', 'url' => '/api/hardening/floors', 'verb' => 'GET'],
+        ['name' => 'hardening#updateControls', 'url' => '/api/hardening/controls', 'verb' => 'PUT'],
+        ['name' => 'hardening#updateFloors', 'url' => '/api/hardening/floors', 'verb' => 'PUT'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
@@ -295,6 +416,18 @@ return [
         // schema, action) scopes for the authenticated user without probing
         // every endpoint individually.
         ['name' => 'scopes#index', 'url' => '/api/scopes', 'verb' => 'GET'],
+        // The grantable permission set, and what the staged deny would refuse.
+        // A role editor cannot offer a set nobody publishes, which is why every
+        // consumer in the fleet invented its own vocabulary. The preview reads
+        // the rules as written rather than a log of what has fired, so a deny
+        // nobody has hit yet is still in the report (D15).
+        ['name' => 'permissions#index',       'url' => '/api/permissions',              'verb' => 'GET'],
+        ['name' => 'permissionsAudit#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
+        ['name' => 'permissionsAudit#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
+        ['name' => 'permissionsAudit#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
+        // Administrator only: the route carries no NoAdminRequired, so the
+        // framework refuses everybody else before the method runs.
+        ['name' => 'derivedGrants#reapply', 'url' => '/api/permissions/derived-grants/reapply', 'verb' => 'POST'],
         // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
         ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
         ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -302,6 +435,18 @@ return [
         ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/processing-activities/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/processing-activities/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#accountability', 'url' => '/api/avg/accountability',               'verb' => 'GET'],
+        // Doelbinding: the administered purposes a read may be made under, and
+        // the count of entries per purpose. `report` is registered ABOVE
+        // `show` so the literal segment wins over the {id} placeholder.
+        ['name' => 'processingPurpose#index',   'url' => '/api/avg/purposes',        'verb' => 'GET'],
+        ['name' => 'processingPurpose#report',  'url' => '/api/avg/purposes/report', 'verb' => 'GET'],
+        ['name' => 'processingPurpose#show',    'url' => '/api/avg/purposes/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'processingPurpose#create',  'url' => '/api/avg/purposes',        'verb' => 'POST'],
+        ['name' => 'processingPurpose#update',  'url' => '/api/avg/purposes/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'processingPurpose#destroy', 'url' => '/api/avg/purposes/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // Whether the audit trail is actually reaching the organisation's log platform.
+        ['name' => 'auditSink#show',        'url' => '/api/audit/sink',             'verb' => 'GET'],
+        ['name' => 'auditSink#acknowledge', 'url' => '/api/audit/sink/acknowledge', 'verb' => 'POST'],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#access',         'url' => '/api/avg/access',         'verb' => 'GET'],
         ['name' => 'dsar#portability',    'url' => '/api/avg/portability',    'verb' => 'GET'],
@@ -316,6 +461,63 @@ return [
         ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
+        // Previewed erasure (data-subject-rights-across-the-instance): count
+        // first, approve, then erase through the recorded destruction. The
+        // one-call `dataSubjectRequest#erase` above stays for callers that had
+        // already decided; this is the surface for a request that has to be
+        // ANSWERED, protected records and all.
+        ['name' => 'erasurePreview#create', 'url' => '/api/gdpr/erasure-previews', 'verb' => 'POST'],
+        ['name' => 'erasurePreview#show', 'url' => '/api/gdpr/erasure-previews/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#approve', 'url' => '/api/gdpr/erasure-previews/{id}/approve',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'erasurePreview#run', 'url' => '/api/gdpr/erasure-previews/{id}/run',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Reach and revocation (data-subject-rights-across-the-instance task 4):
+        // everything one principal can reach, listed from the resolver, then
+        // taken away in one recorded act. Admin-gated by the framework.
+        ['name' => 'principalReach#show', 'url' => '/api/rbac/reach/{principal}',
+            'verb' => 'GET', 'requirements' => ['principal' => '[^/]+']],
+        ['name' => 'principalReach#revoke', 'url' => '/api/rbac/reach/{principal}/revoke',
+            'verb' => 'POST', 'requirements' => ['principal' => '[^/]+']],
+        // The data subject's own export (task 3): ask, read the state back,
+        // take the file. The middle route exists because the assembly is a
+        // background job and a caller needs to know when it is ready.
+        ['name' => 'subjectExport#create', 'url' => '/api/gdpr/subject-exports', 'verb' => 'POST'],
+        ['name' => 'subjectExport#show', 'url' => '/api/gdpr/subject-exports/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'subjectExport#download', 'url' => '/api/gdpr/subject-exports/{id}/download',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Configuration as a deployment (configuration-as-a-deployment). A
+        // configuration change is drafted into a named set, previewed, approved
+        // and deployed as one unit; a rollback is a new deployment restoring an
+        // earlier one. Administrator only, by the framework: no route here
+        // carries NoAdminRequired, so the middleware refuses everybody else
+        // before the method runs.
+        ['name' => 'configurationDeployment#index', 'url' => '/api/configuration/draft-sets',
+            'verb' => 'GET'],
+        ['name' => 'configurationDeployment#create', 'url' => '/api/configuration/draft-sets',
+            'verb' => 'POST'],
+        ['name' => 'configurationDeployment#show', 'url' => '/api/configuration/draft-sets/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#discard', 'url' => '/api/configuration/draft-sets/{id}',
+            'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#draftValue', 'url' => '/api/configuration/draft-sets/{id}/values',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#preview', 'url' => '/api/configuration/draft-sets/{id}/preview',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#approve', 'url' => '/api/configuration/draft-sets/{id}/approve',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#deploy', 'url' => '/api/configuration/draft-sets/{id}/deploy',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#deployments', 'url' => '/api/configuration/deployments',
+            'verb' => 'GET'],
+        ['name' => 'configurationDeployment#deployment', 'url' => '/api/configuration/deployments/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#rollback', 'url' => '/api/configuration/deployments/{id}/rollback',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
+            'verb' => 'GET'],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
@@ -398,6 +600,28 @@ return [
         ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
         // MDM read-only surface — duplicate-candidate listing.
         ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+        // Duplicate check at intake: score an UNSAVED body against what is stored.
+        //
+        // ORDER MATTERS. `objects#postPatch` is POST /api/objects/{register}/{schema}/{id}
+        // and would otherwise match this URL with `dedup-check` as the id, turning a
+        // read-only check into a patch of a non-existent object. It is registered far
+        // below (the objects block), so this entry must stay ABOVE it, here.
+        ['name' => 'duplicate#check', 'url' => '/api/objects/{register}/{schema}/dedup-check', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+        // Dismissal surface: a pair a person reviewed and ruled NOT the same.
+        // Under the literal /duplicates/ prefix, so unlike the check above these
+        // cannot collide with the object routes at all.
+        [
+            'name' => 'duplicate#dismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/dismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
+        [
+            'name' => 'duplicate#undismiss',
+            'url' => '/api/objects/duplicates/{register}/{schema}/undismiss',
+            'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+'],
+        ],
         // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
         ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
         ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
@@ -442,6 +666,21 @@ return [
         ['name' => 'contacts#update',    'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
         ['name' => 'contacts#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
         ['name' => 'contacts#objects',   'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
+
+        // Parties — a party holds a typed role on an object for a period, and
+        // may have no Nextcloud account at all. The literal `/parties/primary`
+        // route comes BEFORE `/parties/{partyUuid}` on purpose: the wildcard
+        // would otherwise match the literal string "primary" and the replace
+        // would 404 on a route that exists.
+        ['name' => 'party#index',          'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#create',         'url' => '/api/objects/{register}/{schema}/{id}/parties',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#replacePrimary', 'url' => '/api/objects/{register}/{schema}/{id}/parties/primary',      'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'party#destroy',        'url' => '/api/objects/{register}/{schema}/{id}/parties/{partyUuid}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'partyUuid' => '[^/]+']],
+        // App-global party reads. `search` and `resolve` are literals and come
+        // before the `{partyUuid}` wildcard for the same reason.
+        ['name' => 'party#search',         'url' => '/api/parties/search',                                        'verb' => 'GET'],
+        ['name' => 'party#resolve',        'url' => '/api/parties/resolve',                                       'verb' => 'GET'],
+        ['name' => 'party#show',           'url' => '/api/parties/{partyUuid}',                                   'verb' => 'GET',    'requirements' => ['partyUuid' => '[^/]+']],
 
         // Calendar events — object↔CalDAV event links via DAV principal.
         ['name' => 'calendarEvents#index',     'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -519,6 +758,10 @@ return [
         // Visual flow builder — trigger event catalog (read-only, all users).
         ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
         ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+        // Which kinds of principal this instance understands. The SERVER
+        // decides what is valid; an editor that offered only what it can
+        // search would silently refuse a type an app contributes.
+        ['name' => 'flowPrincipal#types', 'url' => '/api/flow/principal-types', 'verb' => 'GET'],
         // The links one run-log entry earns, asked of the node that wrote it.
         // POST because the entry is the input and a log entry carries payloads
         // — a GET would put a run's data in a URL, and in every access log that
@@ -547,6 +790,18 @@ return [
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
 
+        // Direct node invocation (or-flow-run-node): run ONE named node of a
+        // published flow against ONE subject, authorized against that
+        // subject via OpenRegister's object-RBAC — deliberately NOT the same
+        // `flow.run` right `flow#run` above checks (RN-1, design.md: `flow.run`
+        // is subject-blind and adds no safety here). A SEPARATE controller,
+        // not `FlowController`, because its authorization shape has nothing
+        // in common with the flow CRUD/catalogue endpoints below. `{id}` here
+        // is `[^/]+` like every other flow route, so `nodeId` — also
+        // `[^/]+` — can never be swallowed by it.
+        ['name' => 'flowNodeRun#form', 'url' => '/api/flows/{id}/nodes/{nodeId}/run', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'nodeId' => '[^/]+']],
+        ['name' => 'flowNodeRun#run',  'url' => '/api/flows/{id}/nodes/{nodeId}/run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'nodeId' => '[^/]+']],
+
         // Lifecycle. Declared BEFORE the bare `{id}` routes for the same reason
         // `{id}/run` is: `id` matches `[^/]+`, so a uuid can never swallow a
         // trailing literal segment, but keeping the specific paths first means
@@ -562,6 +817,9 @@ return [
         ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
         ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Asked BEFORE publishing: what would the next version be called, and
+        // what does this publish take away. A GET, and it changes nothing.
+        ['name' => 'flow#versionPreview', 'url' => '/api/flows/{id}/version-preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
@@ -614,9 +872,10 @@ return [
         // — read-only, object-independent company-lookup leaves. No NC app
         // gate; the OpenConnector `kvk` / `opencorporates` sources carry the
         // base URL + API key. Unconfigured/down → 503 with details.cause.
-        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md.
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-kvk-company-lookup
         ['name' => 'companyLookup#kvkCompany',           'url' => '/api/integrations/kvk/company',            'verb' => 'GET'],
         ['name' => 'companyLookup#kvkSearch',            'url' => '/api/integrations/kvk/search',             'verb' => 'GET'],
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-opencorporates-company-search
         ['name' => 'companyLookup#openCorporatesSearch', 'url' => '/api/integrations/opencorporates/search',  'verb' => 'GET'],
         // BRP HaalCentraal person lookup (external, OpenConnector-routed) —
         // read-only, object-independent person-lookup leaf. No NC app gate; the
@@ -624,7 +883,7 @@ return [
         // client_credentials secret + PKIoverheid mutual-TLS client certificate
         // (both applied natively by CallService). Unconfigured/down → 503 with
         // details.cause. The BSN travels in the request body only, never logged.
-        // @spec openspec/changes/integration-brp-haalcentraal/specs/integration-person-lookup/spec.md.
+        // @spec openspec/specs/integration-person-lookup/spec.md#requirement-brp-person-lookup-relays-wet-brp-audit-metadata
         ['name' => 'personLookup#brpPerson',             'url' => '/api/integrations/brp/person',             'verb' => 'GET'],
         // Outbound-messaging dispatch (external, OpenConnector-routed) —
         // side-effecting send leaf. No NC app gate; the OpenConnector
@@ -635,7 +894,7 @@ return [
         // selection, STOP opt-out, template-approval, 24h session, dedupe,
         // delivery-status); this leaf only POSTs the message. Unconfigured/down
         // → 503 with details.cause.
-        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md.
+        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md#requirement-outbound-messaging-send-endpoints
         ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
         ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
@@ -689,7 +948,7 @@ return [
         // route MUST precede the wildcard `/analytics/{reportId}` unlink
         // route, and the app-global `available` picker route MUST precede
         // the per-object wildcard routes.
-        // @spec openspec/changes/integration-analytics/tasks.md.
+        // @spec openspec/specs/generic-integrations/spec.md#requirement-object-scoped-integration-link-rest-contract
         ['name' => 'analyticsLinks#available',    'url' => '/api/integrations/analytics/available',                  'verb' => 'GET'],
         ['name' => 'analyticsLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'analyticsLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/analytics/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -700,8 +959,9 @@ return [
         // A leaf (procest SLA dashboard) registers a pre-computed series
         // (labels + datasets); the render layer fetches it as a chart
         // widget. RBAC-scoped inside AnalyticsSeriesService.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-register-a-page-level-analytics-series
         ['name' => 'analyticsSeries#register', 'url' => '/api/integrations/analytics/series',              'verb' => 'POST'],
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-fetch-a-page-level-analytics-series-rbac-scoped
         ['name' => 'analyticsSeries#fetch',    'url' => '/api/integrations/analytics/series/{seriesKey}',  'verb' => 'GET',  'requirements' => ['seriesKey' => '[^/]+']],
 
         // Maps page-level overview — multi-object "cases on map" render
@@ -709,24 +969,85 @@ return [
         // widget; points queries the RBAC-scoped marker set for a
         // register/schema. RBAC enforced inside MapsOverviewService via the
         // canonical OR read path (_rbac:true for non-admins, fail-closed).
-        // @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md.
+        // @spec openspec/specs/integration-maps-overview/spec.md#requirement-register-a-page-level-map-overview-widget
         ['name' => 'mapsOverview#register', 'url' => '/api/integrations/maps/overviews',                            'verb' => 'POST'],
+        // @spec openspec/specs/integration-maps-overview/spec.md#requirement-query-the-map-marker-point-set-rbac-scoped
         ['name' => 'mapsOverview#points',   'url' => '/api/integrations/maps/overviews/{register}/{schema}/points', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 
         // Public "track your case" token resolve — anonymous, RBAC-scoped
         // public-safe object view minted via the Shares integration
         // provider. Fails closed (404) on unknown/revoked/expired tokens.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md#requirement-resolve-a-public-case-token-rbac-respecting
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
+
+        // Object dates as a calendar feed. The public endpoint carries no
+        // session, so it is reachable without one, but the calendar it answers
+        // is generated as the principal the token names and holds exactly what
+        // that principal may list. An unknown, revoked or expired token gets
+        // the same 404 as any other.
+        // @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+        ['name' => 'calendarFeed#feed', 'url' => '/api/public/calendar-feeds/{token}.ics', 'verb' => 'GET', 'requirements' => ['token' => '[^/.]+']],
+        ['name' => 'calendarFeed#index', 'url' => '/api/calendar-feeds', 'verb' => 'GET'],
+        ['name' => 'calendarFeed#mint', 'url' => '/api/calendar-feeds', 'verb' => 'POST'],
+        ['name' => 'calendarFeed#revoke', 'url' => '/api/calendar-feeds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        [
+            'name' => 'calendarFeed#attendeeResponses',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'calendarFeed#recordAttendeeResponse',
+            'url' => '/api/objects/{id}/attendee-responses',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+
+        // Access links (access-by-link-not-by-account). A scoped, expiring link
+        // that opens one object, view or file for somebody with no account. The
+        // three `/api/public/links/` endpoints carry no session: the link row is
+        // the whole access decision, and it resolves a principal that is the
+        // link itself. An unknown, revoked, switched-off or expired anchor all
+        // answer the same 404. The four owner endpoints mint, list, switch off
+        // and revoke, and each is scoped to the principal that minted the link.
+        // Distinct from `objectShareLink#show` above, which resolves a CORE
+        // Files share token on the object's folder: that one is read-only,
+        // declares no capability set, requires no expiry and attributes nothing.
+        // @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+        ['name' => 'accessLink#open', 'url' => '/api/public/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
+        [
+            'name' => 'accessLink#comment',
+            'url' => '/api/public/links/{anchor}/comments',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
+        [
+            'name' => 'accessLink#upload',
+            'url' => '/api/public/links/{anchor}/files',
+            'verb' => 'POST',
+            'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+        ],
+        ['name' => 'accessLink#index', 'url' => '/api/access-links', 'verb' => 'GET'],
+        ['name' => 'accessLink#mint', 'url' => '/api/access-links', 'verb' => 'POST'],
+        ['name' => 'accessLink#update', 'url' => '/api/access-links/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'accessLink#revoke', 'url' => '/api/access-links/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
 
         // Vocabulary (skos-concept-registers) — public read-only SKOS concept
         // resolution over the bundled `vocabulary` register. Query-param based
         // (uri/scheme values are full URIs, unsafe as path segments). 404
         // standard error shape on unknown uri/scheme/notation (SKOS-004).
-        // @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+        // @spec openspec/specs/skos-concept-registers/spec.md#skos-004
         ['name' => 'vocabulary#resolveByUri', 'url' => '/api/vocabulary/concept', 'verb' => 'GET'],
         ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
         ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
+
+        // Code-list options for one schema property, as a flat list or as a
+        // tree, narrowed by the context in play and by each value's validity
+        // window. A retired value is absent here and still resolves through
+        // the three routes above, which is the whole point of retiring
+        // rather than deleting (REQ-CLH-001, REQ-CLH-002).
+        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+        ['name' => 'vocabulary#propertyOptions', 'url' => '/api/vocabulary/options', 'verb' => 'GET'],
 
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
@@ -736,7 +1057,7 @@ return [
         // app-global `types`/`actors` dropdown routes MUST precede the
         // per-object wildcard route so they aren't grabbed as register
         // slugs.
-        // @spec openspec/changes/integration-activity/tasks.md.
+        // @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
         ['name' => 'activityLinks#types',  'url' => '/api/integrations/activity/types',                  'verb' => 'GET'],
         ['name' => 'activityLinks#actors', 'url' => '/api/integrations/activity/actors',                 'verb' => 'GET'],
         ['name' => 'activityLinks#index',  'url' => '/api/objects/{register}/{schema}/{id}/activity',    'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -826,10 +1147,60 @@ return [
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#uses',      'url' => '/api/objects/{register}/{schema}/{id}/uses',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#used',      'url' => '/api/objects/{register}/{schema}/{id}/used',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // The reverse view: which records reference this object, grouped by schema,
+        // each with its title, its status and when it last changed (REQ-OHC-001).
+        [
+            'name' => 'objects#referencedBy',
+            'url' => '/api/objects/{register}/{schema}/{id}/referenced-by',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        // The record's own map features plus the ones it inherits from what it
+        // references, each naming the relation it arrived through (REQ-OHC-006).
+        [
+            'name' => 'objects#geoFeatures',
+            'url' => '/api/objects/{register}/{schema}/{id}/geo-features',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
         ['name' => 'objects#logs',      'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Relation rows and the relation graph (relation-types-with-inverses).
+        // The stored rows are the links no $ref property can hold: a split's
+        // provenance, what a child inherited, an address outside the product,
+        // and a reference somebody wrote in prose. `uses` and `used` above
+        // still answer for the $ref relations; these answer for the rest, and
+        // the graph unions both.
+        ['name' => 'objectRelations#index',       'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#addLink',     'url' => '/api/objects/{register}/{schema}/{id}/relation-rows',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#removeLink',  'url' => '/api/objects/{register}/{schema}/{id}/relation-rows/{relationId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'relationId' => '[^/]+']],
+        ['name' => 'objectRelations#removeReferences', 'url' => '/api/objects/{register}/{schema}/{id}/relation-references/{anchor}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'anchor' => '[^/]+']],
+        ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Archive and freeze (object-archive-state). DELETE undoes POST on the
+        // same url, which is what makes restore the obvious opposite of
+        // archive; a second `/unarchive` url would read as a third state.
+        // Neither verb needs `delete` on the object — archiving is not a step
+        // towards deletion (openregister ADR-010).
+        ['name' => 'objectState#archive', 'url' => '/api/objects/{register}/{schema}/{id}/archive', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#unarchive', 'url' => '/api/objects/{register}/{schema}/{id}/archive', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#freeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectState#unfreeze', 'url' => '/api/objects/{register}/{schema}/{id}/freeze', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // Correcting a mis-registered value. Its own url rather than a flag on
+        // PATCH, because a correction is its own act: it needs the
+        // `object.correct` right and a reason, and it lands in the trail as a
+        // correction. A flag on the ordinary update would be a flag somebody
+        // forgets, and then the answer to "which of these were corrections" is
+        // wrong in the quiet direction.
+        ['name' => 'corrections#correct', 'url' => '/api/objects/{register}/{schema}/{id}/correct', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Registry subscriptions (registry-subscriptions, finding B22).
+        ['name' => 'registrySubscription#subscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registrySubscription#unsubscribe', 'url' => '/api/objects/{register}/{schema}/{id}/registry-subscription', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // The connector's inbound update, one route per registry id.
+        ['name' => 'registryUpdates#update', 'url' => '/api/registry/{registry}/updates', 'verb' => 'POST'],
         // Bulk Operations.
         ['name' => 'bulk#save', 'url' => '/api/bulk/{register}/{schema}/save', 'verb' => 'POST'],
         ['name' => 'bulk#delete', 'url' => '/api/bulk/{register}/{schema}/delete', 'verb' => 'POST'],
@@ -837,6 +1208,27 @@ return [
         ['name' => 'bulk#deleteSchemaObjects', 'url' => '/api/bulk/{register}/{schema}/delete-objects', 'verb' => 'POST'],
         ['name' => 'bulk#deleteRegister', 'url' => '/api/bulk/{register}/delete-register', 'verb' => 'POST'],
         ['name' => 'bulk#runSchemaValidation', 'url' => '/api/bulk/schema/{schema}/validate', 'verb' => 'POST'],
+        // Bulk action jobs — a bulk act as one previewed, cancellable job.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'bulkJobs#actions', 'url' => '/api/bulk-actions', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#index', 'url' => '/api/bulk-jobs', 'verb' => 'GET'],
+        ['name' => 'bulkJobs#create', 'url' => '/api/bulk-jobs', 'verb' => 'POST'],
+        ['name' => 'bulkJobs#show', 'url' => '/api/bulk-jobs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#members', 'url' => '/api/bulk-jobs/{id}/members', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#download', 'url' => '/api/bulk-jobs/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#commit', 'url' => '/api/bulk-jobs/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#cancel', 'url' => '/api/bulk-jobs/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#retry', 'url' => '/api/bulk-jobs/{id}/retry', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'bulkJobs#reverse', 'url' => '/api/bulk-jobs/{id}/reverse', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        // Import preview and conflict policy — an import says what it would
+        // create, update, skip and refuse before it writes anything.
+        // The static routes come before the parameterised {id} ones.
+        ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
+        ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
+        ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#commit', 'url' => '/api/import-previews/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
@@ -862,6 +1254,23 @@ return [
         ['name' => 'auditQuery#query', 'url' => '/api/v2/audit', 'verb' => 'GET'],
         // Notification History — read-only audit trail of every dispatch.
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
+        // The bell's own verbs (`object-read-state`). A snooze postpones a
+        // notice, an archive takes it out without claiming it was read, and a
+        // thread is marked read as a whole. Each is scoped to the caller's own
+        // notices inside NotificationClearingService, never by the route.
+        [
+            'name' => 'notificationHistory#snooze',
+            'url' => '/api/notification-history/{id}/snooze',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        [
+            'name' => 'notificationHistory#archive',
+            'url' => '/api/notification-history/{id}/archive',
+            'verb' => 'PUT',
+            'requirements' => ['id' => '\\d+'],
+        ],
+        ['name' => 'notificationHistory#markThreadRead', 'url' => '/api/notification-history/thread/read', 'verb' => 'PUT'],
         // Notification Subscriptions — DEPRECATED per-user (register, schema) opt-in surface.
         // Superseded by override-only Notification Preferences below; kept during the deprecation window.
         ['name' => 'notificationSubscriptions#index',   'url' => '/api/notification-subscriptions', 'verb' => 'GET'],
@@ -870,6 +1279,28 @@ return [
         // Notification Preferences — override-only, per-(schema, notification) user preferences.
         ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
+        // Notification Templates — the shipped text per platform event, the
+        // events that have none, and an administrator's edit of either.
+        ['name' => 'notificationTemplates#index',  'url' => '/api/notification-templates', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#gaps',   'url' => '/api/notification-templates/gaps', 'verb' => 'GET'],
+        ['name' => 'notificationTemplates#update', 'url' => '/api/notification-templates/{event}', 'verb' => 'PUT'],
+        // Notification Broadcasts — one administered message to every user.
+        // The active read and the acknowledge act on the caller's own receipt
+        // and are open to any signed-in user; the rest is administrators only.
+        ['name' => 'notificationBroadcast#index',   'url' => '/api/notification-broadcasts', 'verb' => 'GET'],
+        ['name' => 'notificationBroadcast#create',  'url' => '/api/notification-broadcasts', 'verb' => 'POST'],
+        ['name' => 'notificationBroadcast#active',  'url' => '/api/notification-broadcasts/active', 'verb' => 'GET'],
+        [
+            'name' => 'notificationBroadcast#acknowledge',
+            'url' => '/api/notification-broadcasts/{uuid}/acknowledge',
+            'verb' => 'POST',
+        ],
+        ['name' => 'notificationBroadcast#destroy', 'url' => '/api/notification-broadcasts/{uuid}', 'verb' => 'DELETE'],
+        // Notification Group Preferences — the team's layer between the schema
+        // default and each member's own value. Writing requires administering
+        // the named group; reading is open to its members.
+        ['name' => 'notificationGroupPreferences#index',  'url' => '/api/notification-group-preferences', 'verb' => 'GET'],
+        ['name' => 'notificationGroupPreferences#update', 'url' => '/api/notification-group-preferences', 'verb' => 'PUT'],
         // Notification Delivery Window — override-only, per-user quiet-hours preference.
         ['name' => 'notificationDeliveryWindow#index',  'url' => '/api/notification-delivery-window', 'verb' => 'GET'],
         ['name' => 'notificationDeliveryWindow#update', 'url' => '/api/notification-delivery-window', 'verb' => 'PUT'],
@@ -892,6 +1323,13 @@ return [
         ['name' => 'deleted#topDeleters', 'url' => '/api/deleted/top-deleters', 'verb' => 'GET'],
         ['name' => 'deleted#restore', 'url' => '/api/deleted/{id}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#restoreMultiple', 'url' => '/api/deleted/restore', 'verb' => 'POST'],
+        [
+            'name' => 'deleted#destructionPreview',
+            'url' => '/api/deleted/{id}/destruction-preview',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        ['name' => 'deleted#destructionRecord', 'url' => '/api/deleted/{id}/destruction', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroy', 'url' => '/api/deleted/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#destroyMultiple', 'url' => '/api/deleted', 'verb' => 'DELETE'],
         // Revert.
@@ -920,6 +1358,10 @@ return [
 		// Description and category had NO surface before this: only labels did,
 		// which is why the gap was easy to miss. `file-actions` specifies all three.
 		['name' => 'files#updateMetadata', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/metadata', 'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		// The whole dossier's file metadata in one save. It cannot be mistaken
+		// for the per-file url above it: that one requires `fileId` to be
+		// digits, and `metadata` is not.
+		['name' => 'files#saveMetadataForm', 'url' => '/api/objects/{register}/{schema}/{id}/files/metadata', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
@@ -937,7 +1379,81 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        [
+            'name' => 'notes#patch',
+            'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}',
+            'verb' => 'PATCH',
+            'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+'],
+        ],
+        [
+            'name' => 'notes#versions',
+            'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}/versions',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+'],
+        ],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+
+        // Timeline entries under objects: the entry as a record, with its
+        // kind, its fields, the pin, the follow-up and the raw inbound
+        // source. All #[NoAdminRequired] with a per-object RBAC guard in the
+        // method body (ADR-005/016/029); CSRF stays enabled on the writes.
+        [
+            'name' => 'timelineEntries#index',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#create',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#show',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#update',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}',
+            'verb' => 'PATCH',
+            'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+'],
+        ],
+        [
+            'name' => 'timelineEntries#source',
+            'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}/source',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+'],
+        ],
+
+        // The cross-object entry search: the Woo path. Static, because it
+        // spans every object the caller may read rather than one of them.
+        ['name' => 'timelineEntries#searchEntries', 'url' => '/api/timeline/search', 'verb' => 'GET'],
+
+        // The three administered declarations behind the timeline. Reading
+        // them is open to any authenticated caller, because a handler writing
+        // an entry needs the list; declaring and withdrawing are admin-only.
+        ['name' => 'timelineAdmin#kinds', 'url' => '/api/timeline/kinds', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declareKind', 'url' => '/api/timeline/kinds', 'verb' => 'POST'],
+        ['name' => 'timelineAdmin#withdrawKind', 'url' => '/api/timeline/kinds/{slug}', 'verb' => 'DELETE', 'requirements' => ['slug' => '[^/]+']],
+        ['name' => 'timelineAdmin#patterns', 'url' => '/api/timeline/reference-patterns', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declarePattern', 'url' => '/api/timeline/reference-patterns', 'verb' => 'POST'],
+        [
+            'name' => 'timelineAdmin#withdrawPattern',
+            'url' => '/api/timeline/reference-patterns/{slug}',
+            'verb' => 'DELETE',
+            'requirements' => ['slug' => '[^/]+'],
+        ],
+        ['name' => 'timelineAdmin#textBlocks', 'url' => '/api/timeline/text-blocks', 'verb' => 'GET'],
+        ['name' => 'timelineAdmin#declareTextBlock', 'url' => '/api/timeline/text-blocks', 'verb' => 'POST'],
+        [
+            'name' => 'timelineAdmin#withdrawTextBlock',
+            'url' => '/api/timeline/text-blocks/{slug}',
+            'verb' => 'DELETE',
+            'requirements' => ['slug' => '[^/]+'],
+        ],
 
         // Semantic-object handoff engine (ADR-051): availability + execute.
         // Both #[NoAdminRequired] with a per-object RBAC guard in the method
@@ -950,10 +1466,53 @@ return [
         // semantic-type URI to the installed provider schema. Static path,
         // registered before the `{id}` schema routes so it is not shadowed.
         ['name' => 'schemas#resolveByImplements', 'url' => '/api/schemas/resolve-by-implements', 'verb' => 'GET'],
+        // JSON-AST calculations (computed-values-by-json-ast): the operator
+        // catalogue an expression builder is generated from, and the dry run
+        // that evaluates a declaration before the schema is saved. Static
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the dry run's object lookup is
+        // RBAC- and tenancy-scoped, which is its per-object guard (ADR-005/016).
+        ['name' => 'calculations#operators', 'url' => '/api/schemas/calculation-operators', 'verb' => 'GET'],
+        ['name' => 'calculations#evaluate', 'url' => '/api/schemas/calculation-evaluate', 'verb' => 'POST'],
+        // The rules engine's operator surface (rules-engine-operability). The
+        // inventory is derived from the schema on every read, so it is a read
+        // of configuration and is admin-only; the vocabulary is a static table
+        // with nothing per-instance in it and is open to any signed-in caller,
+        // as the operator catalogue beside it already is. A derived rule id
+        // carries colons, which are legal unescaped in a path segment, so every
+        // `ruleId` requirement is `[^/]+`.
+        ['name' => 'rules#vocabulary', 'url' => '/api/rules/vocabulary', 'verb' => 'GET'],
+        ['name' => 'rules#runs', 'url' => '/api/rules/{ruleId}/runs', 'verb' => 'GET', 'requirements' => ['ruleId' => '[^/]+']],
+        ['name' => 'rules#index', 'url' => '/api/schemas/{schema}/rules', 'verb' => 'GET', 'requirements' => ['schema' => '[^/]+']],
+        ['name' => 'rules#setEnabled', 'url' => '/api/schemas/{schema}/rules/{ruleId}', 'verb' => 'PATCH', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        ['name' => 'rules#evaluate', 'url' => '/api/schemas/{schema}/rules/{ruleId}/evaluate', 'verb' => 'POST', 'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+']],
+        [
+            'name' => 'rules#replay',
+            'url' => '/api/schemas/{schema}/rules/{ruleId}/replay',
+            'verb' => 'POST',
+            'requirements' => ['schema' => '[^/]+', 'ruleId' => '[^/]+'],
+        ],
+
+        // The property vocabulary: what a property may be, published so an
+        // editor is generated from it instead of retyped per app. Literal
+        // paths, registered before the `{id}` schema routes so they are not
+        // shadowed. Both #[NoAdminRequired]; the vocabulary reaches no data at
+        // all, and the narrowing read lists schemas through the RBAC- and
+        // tenancy-scoped mapper (ADR-005/016).
+        ['name' => 'propertyVocabulary#index', 'url' => '/api/schemas/property-vocabulary', 'verb' => 'GET'],
+        ['name' => 'propertyVocabulary#extendingForms', 'url' => '/api/schemas/extending-forms', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#related', 'url' => '/api/schemas/{id}/related', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // The list surface a schema declares: columns and search fields, so a
+        // generic surface renders any object type without a page of its own.
+        [
+            'name' => 'schemas#listPresentation',
+            'url' => '/api/schemas/{id}/list-presentation',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -965,6 +1524,14 @@ return [
         ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+
+        // Property type conversion — the supported conversions are published,
+        // and a conversion over populated objects is previewed before it is
+        // taken. An unsupported one is refused with its reason and never
+        // attempted (REQ-CLH-005).
+        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+        ['name' => 'schemaMigration#conversions', 'url' => '/api/schemas/property-conversions', 'verb' => 'GET'],
+        ['name' => 'schemaMigration#previewConversion', 'url' => '/api/schemas/{id}/conversions/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // Schema import from external standards (schema-import-standards). Admin-gated by NC framework default.
         ['name' => 'schemaImport#types', 'url' => '/api/schema-import/{dialect}/types', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],
         ['name' => 'schemaImport#snapshot', 'url' => '/api/schema-import/{dialect}/snapshot', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],
@@ -985,6 +1552,42 @@ return [
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
+
+        // The API as a described, versioned surface (api-as-a-versioned-surface).
+        // `capabilities` and `versions` are PUBLIC on purpose: a client that has
+        // to authenticate to learn the upload limit will not learn the upload
+        // limit, and every integrator currently discovers it by hitting it. The
+        // public body carries versions and ceilings only; the operational
+        // switches appear only when a session is present (design D-5).
+        //
+        // `/api/versions/{version}/oas` names the DOCUMENT, not the contract the
+        // call itself speaks — a caller may legitimately read the description of
+        // a version it has not moved to yet.
+        ['name' => 'apiSurface#capabilities', 'url' => '/api/capabilities', 'verb' => 'GET'],
+        ['name' => 'apiSurface#versions', 'url' => '/api/versions', 'verb' => 'GET'],
+        [
+            'name'         => 'apiSurface#contract',
+            'url'          => '/api/versions/{version}/oas',
+            'verb'         => 'GET',
+            'requirements' => ['version' => '[0-9]{1,3}'],
+        ],
+
+        // Who called what, and the declaration an administrator edits to
+        // deprecate it. Both administrator-only, checked in the method body:
+        // the caller record names every principal that integrates with this
+        // gemeente, and #[NoAdminRequired] answers "is anyone logged in", which
+        // is not the question.
+        ['name' => 'apiCallers#index', 'url' => '/api/callers', 'verb' => 'GET'],
+        ['name' => 'apiCallers#readDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'GET'],
+        ['name' => 'apiCallers#writeDeclaration', 'url' => '/api/settings/api-versions', 'verb' => 'PUT'],
+
+        // The well-known discovery paths, security.txt first. Served under the
+        // app's own prefix: an app cannot claim /.well-known for the whole
+        // instance, and the contact for the platform is the administrator's to
+        // publish. The index names the one rewrite that points the server root
+        // here, so the instruction sits where somebody looking will be.
+        ['name' => 'wellKnown#index', 'url' => '/.well-known', 'verb' => 'GET'],
+        ['name' => 'wellKnown#securityTxt', 'url' => '/.well-known/security.txt', 'verb' => 'GET'],
         // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
         ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
         ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],
@@ -1048,6 +1651,7 @@ return [
         ['name' => 'organisation#suspend', 'url' => '/api/organisations/{uuid}/suspend', 'verb' => 'PUT'],
         ['name' => 'organisation#activate', 'url' => '/api/organisations/{uuid}/activate', 'verb' => 'PUT'],
         ['name' => 'organisation#deprovision', 'url' => '/api/organisations/{uuid}/deprovision', 'verb' => 'PUT'],
+        ['name' => 'organisation#retain', 'url' => '/api/organisations/{uuid}/retain', 'verb' => 'PUT'],
         ['name' => 'organisation#usage', 'url' => '/api/organisations/{uuid}/usage', 'verb' => 'GET'],
 
         // Admin - Tenant isolation verification and metrics.
@@ -1280,6 +1884,20 @@ return [
 		['name' => 'archival#listLegalHolds', 'url' => '/api/archival/legal-holds', 'verb' => 'GET'],
 		['name' => 'archival#listCertificates', 'url' => '/api/archival/certificates', 'verb' => 'GET'],
 
+		// The archiving process: a named reviewer per entry, their worklist, and
+		// the three answers they may give. `{entryId}` is the uuid of the RECORD
+		// the entry is about, which is how a destruction list names its entries.
+		['name' => 'archival#assignReviewer', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/reviewer', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
+		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+		// The classification plan arrives as a file, versioned, and a new
+		// version is diffed against the one in use before it is switched to.
+		['name' => 'selectielijst#import', 'url' => '/api/archival/selectielijst/import', 'verb' => 'POST'],
+		['name' => 'selectielijst#versions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
+		['name' => 'selectielijst#diff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
+
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
 		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PUT'],
@@ -1357,6 +1975,29 @@ return [
 		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+
+		// The notes and calendar leaves, anchored on the TASK. Both leaves
+		// were reachable only under /api/objects/{register}/{schema}/{id},
+		// and a task is not an object: it has no register and no schema, so
+		// a task page had nowhere to hang either one. The STORAGE never
+		// needed them — NoteService and CalendarLinkService are both
+		// addressed by a bare uuid — so these routes carry the same services
+		// behind a different GUARD: the task's own visibility, answering 404
+		// for the unreadable exactly as task#show above does, so the leaf
+		// cannot become the existence oracle the task surface refused to be.
+		// The calendar block mirrors calendarEvents#* verb for verb, `link`
+		// and `unlink` included and with no `update`, because no event
+		// update exists behind the object leaf either.
+		['name' => 'taskNotes#index', 'url' => '/api/flow-tasks/{uuid}/notes', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskNotes#create', 'url' => '/api/flow-tasks/{uuid}/notes', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskNotes#update', 'url' => '/api/flow-tasks/{uuid}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+', 'noteId' => '[^/]+']],
+		['name' => 'taskNotes#destroy', 'url' => '/api/flow-tasks/{uuid}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'noteId' => '[^/]+']],
+		// `link` is registered before `{eventId}` so the literal segment wins.
+		['name' => 'taskEvents#index', 'url' => '/api/flow-tasks/{uuid}/events', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#create', 'url' => '/api/flow-tasks/{uuid}/events', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#link', 'url' => '/api/flow-tasks/{uuid}/events/link', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'taskEvents#unlink', 'url' => '/api/flow-tasks/{uuid}/events/{eventUid}/link', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'eventUid' => '[^/]+']],
+		['name' => 'taskEvents#destroy', 'url' => '/api/flow-tasks/{uuid}/events/{eventId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'eventId' => '[^/]+']],
 
 		// The portal seam (flow-portal-task): a party OUTSIDE the instance,
 		// authenticated at portaliq's edge, acts here under a signed

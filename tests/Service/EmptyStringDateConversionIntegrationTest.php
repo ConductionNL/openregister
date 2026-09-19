@@ -62,7 +62,7 @@ class EmptyStringDateConversionIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, false, false);
+				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
 			} catch (\Throwable $e) {
 				// best effort
 			}

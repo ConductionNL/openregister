@@ -64,6 +64,66 @@ class CredentialStoreResolverTest extends TestCase {
 	}
 
 	/**
+	 * The app-id gate accepts BOTH spellings of the credential app.
+	 *
+	 * This is the defect the class docblock below already described for the
+	 * namespace half and that the id half still had: the gate asked
+	 * `isEnabledForUser('doriath')`, which on a migrated instance returns FALSE
+	 * rather than erroring. Every instance running `keepiq` therefore fell
+	 * through to the vault leaf, and the namespace probing underneath the gate
+	 * — which was already correct — never ran at all.
+	 *
+	 * Asserted in both directions, because a gate that handled only the id the
+	 * fixture happens to use looks perfectly correct against that fixture.
+	 *
+	 * @param string $appId The single credential-app id the instance carries.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider credentialAppIdProvider
+	 */
+	public function testEitherCredentialAppIdSatisfiesTheGate(string $appId): void {
+		$resolver = $this->makeResolver(
+			doriathEnabled: true,
+			registered: true,
+			secretServiceClass: self::FIXTURE_NS . 'FakeSecretService',
+			appId: $appId
+		);
+
+		$this->assertTrue($resolver->isDoriathEligible(), $appId . ' must satisfy the credential-app gate');
+		$this->assertSame($this->doriathStore, $resolver->resolve());
+	}
+
+	/**
+	 * Both spellings of the credential app id.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function credentialAppIdProvider(): array {
+		return [
+			'development (renamed)' => ['keepiq'],
+			'beta/main (retired)' => ['doriath'],
+		];
+	}
+
+	/**
+	 * An instance with NEITHER id falls back to the vault leaf.
+	 *
+	 * @return void
+	 */
+	public function testAnUnrelatedAppIdDoesNotSatisfyTheGate(): void {
+		$resolver = $this->makeResolver(
+			doriathEnabled: true,
+			registered: true,
+			secretServiceClass: self::FIXTURE_NS . 'FakeSecretService',
+			appId: 'some-other-app'
+		);
+
+		$this->assertFalse($resolver->isDoriathEligible());
+		$this->assertSame($this->vaultStore, $resolver->resolve());
+	}
+
+	/**
 	 * Error path: doriath app disabled → vault leaf, nothing else probed.
 	 */
 	public function testDisabledAppFallsBackToVault(): void {
@@ -236,6 +296,28 @@ class CredentialStoreResolverTest extends TestCase {
 	}
 
 	/**
+	 * An app manager reporting the credential app under ONE concrete id.
+	 *
+	 * Parameterised by id rather than pinned to `doriath`, because the whole
+	 * defect these tests now guard is directional: a resolver that only handled
+	 * the spelling the fixture happens to use looks correct against that
+	 * fixture and silently reports "no credential app" against the other.
+	 *
+	 * @param bool   $enabled Whether the app is present and enabled at all.
+	 * @param string $appId   The single id this fake instance registered.
+	 *
+	 * @return IAppManager The configured mock.
+	 */
+	private function credentialAppManager(bool $enabled, string $appId = 'keepiq'): IAppManager {
+		$mock = $this->createMock(IAppManager::class);
+		$match = static fn (string $id): bool => ($enabled === true && $id === $appId);
+		$mock->method('isInstalled')->willReturnCallback($match);
+		$mock->method('isEnabledForUser')->willReturnCallback($match);
+
+		return $mock;
+	}
+
+	/**
 	 * Build a resolver whose class probes point at the test fixtures.
 	 *
 	 * @param bool $doriathEnabled Whether IAppManager reports doriath enabled.
@@ -248,9 +330,9 @@ class CredentialStoreResolverTest extends TestCase {
 		bool $registered,
 		string $secretServiceClass,
 		?array $serviceClasses = null,
+		string $appId = 'keepiq',
 	): CredentialStoreResolver {
-		$appManager = $this->createMock(IAppManager::class);
-		$appManager->method('isEnabledForUser')->with('doriath')->willReturn($doriathEnabled);
+		$appManager = $this->credentialAppManager(enabled: $doriathEnabled, appId: $appId);
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(

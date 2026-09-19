@@ -267,15 +267,19 @@ class DoriathCredentialStoreTest extends TestCase {
 
 		$userSession->method('getUser')->willReturn($user);
 
+		// Keyed on the RELATIVE class name: the store no longer hardcodes a
+		// namespace, it hands FleetAppId `Service\SecretService` and lets the
+		// resolver prepend OCA\Keepiq or OCA\Doriath depending on which one
+		// the instance can actually load.
 		$serviceMap = [
-			'OCA\\Doriath\\Service\\SecretService' => $this->secretService,
-			'OCA\\Doriath\\Service\\EncryptService' => $this->encryptService,
-			'OCA\\Doriath\\Service\\DecryptService' => $this->decryptService,
+			'Service\\SecretService' => $this->secretService,
+			'Service\\EncryptService' => $this->encryptService,
+			'Service\\DecryptService' => $this->decryptService,
 		];
 
 		return new class($this->vaultStore, ($credentialsManager ?? $this->credentialsManager), $appConfig, $userSession, $this->createMock(LoggerInterface::class), $serviceMap) extends DoriathCredentialStore {
 			/**
-			 * @param array<string, object> $serviceMap FQCN → fixture instance.
+			 * @param array<string, object> $serviceMap Relative class → fixture instance.
 			 */
 			public function __construct(
 				NextcloudVaultCredentialStore $vaultStore,
@@ -288,8 +292,8 @@ class DoriathCredentialStoreTest extends TestCase {
 				parent::__construct($vaultStore, $credentialsManager, $appConfig, $userSession, $logger);
 			}
 
-			protected function resolveDoriathService(string $className): ?object {
-				return ($this->serviceMap[$className] ?? null);
+			protected function resolveDoriathService(string $relativeClass): ?object {
+				return ($this->serviceMap[$relativeClass] ?? null);
 			}
 		};
 	}

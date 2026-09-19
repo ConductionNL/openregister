@@ -331,7 +331,8 @@ class CalendarEventService {
 	 *
 	 * @return array|null The created event in JSON-friendly format
 	 *
-	 * @throws Exception If no user or calendar found
+	 * @throws Exception If no user or calendar found, or if the data carries no
+	 *                   usable dtstart
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
@@ -342,6 +343,21 @@ class CalendarEventService {
 		string $objectTitle,
 		array $data,
 	): ?array {
+		// A VEVENT without DTSTART is not merely incomplete, it is unreachable.
+		// Its firstoccurence is NULL so it matches no time-range query and no
+		// calendar view can show it, and Sabre's ITip plugin then rejects both
+		// DELETE and PUT on it with "An event MUST have a DTSTART property".
+		// Nothing removes such a row but a SQL delete.
+		//
+		// The guard lives here rather than in the controllers because this is
+		// the one place a VEVENT is serialised, and both callers reach it:
+		// CalendarEventsController and TaskEventsController each validated only
+		// the summary. Both turn a thrown Exception into a 400.
+		//
+		// VTODOs are a separate matter and are not written here: a task carries
+		// DUE and no DTSTART, and is correct that way.
+		$dtstart = $this->parseRequiredStart(data: $data);
+
 		$calendar = $this->findUserCalendar();
 		$calendarId = $calendar['id'];
 
@@ -358,10 +374,7 @@ class CalendarEventService {
 		$lines[] = 'DTSTAMP:' . $dtstamp;
 		$lines[] = 'SUMMARY:' . $summary;
 
-		if (empty($data['dtstart']) === false) {
-			$dtstart = new DateTime($data['dtstart']);
-			$lines[] = 'DTSTART:' . $dtstart->format('Ymd\THis\Z');
-		}
+		$lines[] = 'DTSTART:' . $dtstart->format('Ymd\THis\Z');
 
 		if (empty($data['dtend']) === false) {
 			$dtend = new DateTime($data['dtend']);
@@ -402,6 +415,42 @@ class CalendarEventService {
 
 		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
 	}//end createEvent()
+
+	/**
+	 * Read the start time an event must have, or refuse to build one.
+	 *
+	 * Callers used to be free to omit `dtstart`, and the builder simply left
+	 * the property out. The resulting VEVENT is invalid under RFC 5545 and, far
+	 * worse, is beyond repair: CalDAV answers 500 to both DELETE and PUT on it,
+	 * so no client can remove it or add the missing property afterwards.
+	 *
+	 * Refusing at write time is the only point where that is still fixable.
+	 *
+	 * @param array $data The event data handed to the builder.
+	 *
+	 * @return DateTime The parsed start time.
+	 *
+	 * @throws Exception When dtstart is absent or does not parse.
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function parseRequiredStart(array $data): DateTime {
+		if (empty($data['dtstart']) === true) {
+			throw new Exception(
+				'Event start time (dtstart) is required: a calendar event without '
+				. 'DTSTART cannot be displayed or deleted by any client.'
+			);
+		}
+
+		try {
+			return new DateTime((string)$data['dtstart']);
+		} catch (\Throwable $malformed) {
+			throw new Exception(
+				'Event start time (dtstart) could not be read as a date: '
+				. $malformed->getMessage()
+			);
+		}
+	}//end parseRequiredStart()
 
 	/**
 	 * Link an existing calendar event to an object by adding X-OPENREGISTER-* properties.
@@ -490,6 +539,39 @@ class CalendarEventService {
 		$calendarData = $vcalendar->serialize();
 		$this->calDavBackend->updateCalendarObject($calendarIdInt, $eventUri, $calendarData);
 	}//end unlinkEvent()
+
+	/**
+	 * Delete an event from the calendar outright.
+	 *
+	 * The counterpart to {@see unlinkEvent()}, and genuinely different from it:
+	 * unlink strips the OpenRegister properties and leaves the meeting on the
+	 * user's calendar, this removes the meeting.
+	 *
+	 * The distinction had been lost. `CalendarEventsController::destroy()`, the
+	 * endpoint behind the leaf's "Delete meeting" row action, called
+	 * `unlinkEvent()` and answered `{"success": true}`, so cancelling a hearing
+	 * left the hearing on everybody's calendar while the case confirmed the
+	 * deletion. The two row actions did the same thing.
+	 *
+	 * @param string $calendarId The calendar ID
+	 * @param string $eventUri The event URI
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the event is not found
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function deleteEvent(string $calendarId, string $eventUri): void {
+		$calendarIdInt = (int)$calendarId;
+		$existing = $this->calDavBackend->getCalendarObject($calendarIdInt, $eventUri);
+
+		if ($existing === null) {
+			throw new Exception('Calendar event not found');
+		}
+
+		$this->calDavBackend->deleteCalendarObject($calendarIdInt, $eventUri);
+	}//end deleteEvent()
 
 	/**
 	 * Unlink all events for an object (used during cleanup).

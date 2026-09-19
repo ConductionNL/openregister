@@ -28,6 +28,7 @@ use OCP\App\IAppManager;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -53,6 +54,7 @@ class FileVersioningHandler {
 	 * @param IAppManager $appManager App manager to check if files_versions is enabled.
 	 * @param IUserSession $userSession User session for current user context.
 	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param ContainerInterface $container App container the Files_Versions manager is resolved from.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
@@ -61,6 +63,7 @@ class FileVersioningHandler {
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 
@@ -117,7 +120,7 @@ class FileVersioningHandler {
 			// Attempt to load version backend if available.
 			// Nextcloud's IVersionManager is in OCA\Files_Versions namespace.
 			if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
-				$versionManager = \OCP\Server::get('OCA\Files_Versions\Versions\IVersionManager');
+				$versionManager = $this->container->get('OCA\Files_Versions\Versions\IVersionManager');
 				$user = $this->userSession->getUser();
 				if ($versionManager !== null && $user !== null) {
 					$fileVersions = $versionManager->getVersionsForFile($user, $file);
@@ -180,7 +183,7 @@ class FileVersioningHandler {
 
 		try {
 			if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
-				$versionManager = \OCP\Server::get('OCA\Files_Versions\Versions\IVersionManager');
+				$versionManager = $this->container->get('OCA\Files_Versions\Versions\IVersionManager');
 				$user = $this->userSession->getUser();
 				if ($versionManager !== null && $user !== null) {
 					$fileVersions = $versionManager->getVersionsForFile($user, $file);

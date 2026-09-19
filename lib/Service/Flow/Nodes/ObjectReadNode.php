@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -88,7 +89,7 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys {
+class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -589,4 +590,28 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys {
 		}
 
 	}//end resolveSchema()
+
+	/**
+	 * What kind of step this is. Calls the register to read.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
+
+	}//end getKind()
+
+	/**
+	 * Where an author should look for this step.
+	 *
+	 * @return string The palette category.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
+	 */
+	public function getCategory(): string {
+		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
+
+	}//end getCategory()
 }//end class

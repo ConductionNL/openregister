@@ -80,11 +80,11 @@ class Version1Date20251102130000 extends SimpleMigrationStep {
 			}
 
 			$output->info(message: 'ℹ️  Groups column already exists, skipping...');
-			return null;
+			return $schema;
 		}//end if
 
 		$output->info(message: '⚠️  Applications table not found!');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

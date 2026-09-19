@@ -10,6 +10,8 @@ retrofit: true
 **OpenSpec changes**:
 - `tighten-relation-detection-heuristic` (active) — relation detection records a string in `@self.relations` only when it is a UUID/prefixed-UUID/URL or a schema-declared reference property; removes the loose "8+ chars with hyphen/underscore" heuristic that polluted the map with dates, enum values, and business identifiers. Correctness fix to a derived field; no schema/lifecycle/aggregation/notification change.
 - `fk-graph-lifecycle-transitions` — adds declarative FK-scoped graph transition mode (in-progress)
+- `lifecycle-declarative-conditions` — adds an optional declarative JSONLogic `condition` (plus a `message`) on a lifecycle transition, refusing the save with `lifecycle-condition-unmet` when it does not hold; malformed conditions are rejected at schema-save time (in-progress)
+- `lifecycle-auto-transitions`: lets a transition declare `autoWhen` (a JSONLogic rule) and `executionMode` (`sync` by default, or `async`), so OpenRegister fires it through the named-transition engine after a write, bounded by a loop cap; malformed or graph-mode declarations are refused at schema-save time (in-progress)
 
 ## Purpose
 
@@ -940,6 +942,222 @@ static-mode semantics unchanged (no auto-seed behaviour change for static schema
 - **GIVEN** the same schema and a create payload whose `caseType` references a parent whose `initialStatus` is empty
 - **WHEN** the object is created
 - **THEN** the seed step MUST be a no-op and the `status` field MUST remain unset
+
+### Requirement: Lifecycle provider mode delegates available actions to an app service
+
+The engine MUST support a third lifecycle mode for schemas whose state machine
+is data rather than annotation: a per-object workflow template, a per-case-type
+status list, or a policy table an administrator edits. When
+`x-openregister-lifecycle` declares a non-empty `provider` string and no
+non-empty static `transitions` map, `TransitionEngine::availableActions()` SHALL
+resolve that value through `LifecycleActionProviderRegistry` and SHALL publish
+what the resolved `LifecycleActionProviderInterface` answers.
+`availableActions()` on the provider is a read: it MUST NOT mutate the object,
+because it is called on a GET the caller may repeat at will. The move it offers
+is taken through the same interface's `execute()`, specified below.
+
+Mode precedence SHALL be static, then provider, then graph. A schema declaring a
+non-empty `transitions` map SHALL keep it whatever else it declares, so an
+annotation that grows a second mode never silently loses the transitions it had.
+
+Each published entry SHALL carry `action`, `to`, `requires`, `description` and
+`inputs`, and MAY carry `label` and `blocked`. The `inputs` list SHALL be
+normalised through the same code that normalises a static transition's declared
+`inputs`, so what a client is told a transition accepts is exactly what the write
+path will accept.
+
+#### Scenario: Provider answer is published
+- **GIVEN** a schema whose `x-openregister-lifecycle` declares a `provider` tag and no static `transitions`
+- **WHEN** `availableActions()` is called for an object of that schema
+- **THEN** the response MUST contain the actions the registered provider answered, in the order it answered them
+
+#### Scenario: Static transitions take precedence over a provider
+- **GIVEN** a schema declaring both a non-empty `transitions` map and a `provider` tag
+- **WHEN** `availableActions()` is called for an object of that schema
+- **THEN** the actions MUST be derived from the static `transitions` map only
+- **AND** the provider MUST NOT be resolved
+
+#### Scenario: Provider inputs are normalised onto the published contract
+- **GIVEN** a provider that answers an action whose `inputs` list contains an entry naming no field
+- **WHEN** `availableActions()` is called
+- **THEN** that entry MUST be dropped and the remaining entries MUST be published as `{field, required}` pairs
+
+### Requirement: Lifecycle provider mode applies the move through the same app service
+
+A mode that can offer a move and not take it is worse than one that offers
+nothing, so the write path SHALL resolve `provider` exactly as the read path
+does. `TransitionEngine::transition()` SHALL select modes in the SAME order
+`availableActions()` uses — static `transitions`, then `provider`, then `graph`
+— and when a non-empty `provider` string is declared beside no non-empty static
+map, it SHALL resolve that tag through `LifecycleActionProviderRegistry` and
+call `LifecycleActionProviderInterface::execute($object, $userId, $action,
+$data)`.
+
+`execute()` is declared on the same interface as `availableActions()` and is
+MANDATORY, not an optional second interface: an app that may implement only the
+read half can publish a timeline whose every click is refused, which is the
+defect this requirement closes. A provider with nothing to offer says so by
+answering an empty list; a provider that refuses one move says so by throwing.
+
+THE PROVIDER PERFORMS THE WRITE. OpenRegister SHALL NOT mutate the lifecycle
+field and SHALL NOT call `ObjectService::saveObject()` on this path. An app
+whose state machine is data owns more than the field the status lands in —
+guard re-evaluation, an optimistic version lock, a required closing result, a
+status record, side-effect dispatch — and a branch that took a new value back
+and saved it would strand all of them and race the app's own write.
+
+OpenRegister SHALL NOT re-derive the posted action before handing it over, and
+SHALL pass `$data` through without allowlisting it. The provider re-validates
+with the same reader it answered the read with, so there is one authority; a
+check in the engine would be a second derivation that can disagree with the
+first, and the `inputs` a client was shown came from the provider rather than
+from the schema.
+
+After `execute()` returns, the engine SHALL re-read the object through
+`ObjectService::find()` and answer the endpoint with what is stored, not with
+the provider's echo of it. The provider's return value is a REPORT: exactly one
+key, `to`, is read off it, and when it is absent the target state SHALL be read
+off the re-read object's lifecycle field. Every other key is the app's own, so
+a provider may return its existing result shape verbatim. The engine SHALL then
+dispatch `ObjectTransitionedEvent` with the action, the pre-move value of the
+lifecycle field as `from`, and that target state as `to`.
+
+THE WRITE BOUNDARY IS DELIBERATELY NOT DECLARED on this path.
+`LifecycleWriteBoundary::declaringAction()` exists so the lifecycle listeners
+judge the named transition rather than the first one sharing its from/to pair.
+In provider mode the annotation carries no `transitions` map, so there is no
+name for them to look up; a declaration would tell them a name they cannot
+resolve, would claim OpenRegister is applying it through its own save pipeline
+while the app is writing across several objects, and would hold that claim open
+for the whole app call rather than around one save. The enforcement the
+declaration supports has not been lost, it has moved into the provider, which
+re-validates the move itself — which is the difference from graph mode, where
+the declaration is skipped AND nothing re-checks the move, and which is why
+graph mode is documented as unenforced and this is not.
+`LifecycleWriteBoundary::around()` still frames the write, because
+`transition()` wraps every mode in it, so a rule-driven move that follows from
+this one is still drained and still wins the entity that is answered.
+
+#### Scenario: A provider-mode schema takes the move it offered
+- **GIVEN** a schema whose `x-openregister-lifecycle` declares a `provider` tag and no static `transitions`
+- **AND** a registered provider that published an action for the object's current state
+- **WHEN** a client posts that action to the transition endpoint
+- **THEN** the provider's `execute()` MUST be called with the object payload, the caller's uid, the action and the posted data
+- **AND** OpenRegister MUST NOT save the object itself
+- **AND** the response MUST be the object as re-read after the provider's write
+
+#### Scenario: Static transitions take precedence over a provider on the write path
+- **GIVEN** a schema declaring both a non-empty `transitions` map and a `provider` tag
+- **WHEN** a declared static action is posted to the transition endpoint
+- **THEN** the static transition MUST be applied through `ObjectService::saveObject()`
+- **AND** the provider MUST NOT be resolved
+
+#### Scenario: The transitioned event names the state the object actually reached
+- **GIVEN** a provider whose report does not name a target state
+- **WHEN** its move is applied
+- **THEN** the dispatched `ObjectTransitionedEvent` MUST carry the lifecycle field of the re-read object as `to`
+
+### Requirement: A provider that cannot answer MUST fail closed rather than return an empty list
+
+An empty action list is a successful answer meaning the object offers no moves
+from its current state, so a provider failure MUST NOT be reported as one. When
+the declared `provider` resolves to no service, resolves to a service that does
+not implement `LifecycleActionProviderInterface`, or throws while answering, the
+engine SHALL raise `LifecycleProviderException` and
+`TransitionController::availableActions()` SHALL answer HTTP 502. The existing
+403 for a caller without `read` permission and 404 for a missing object SHALL be
+unchanged.
+
+Because a broken provider declaration fails at read time rather than at save
+time, `lifecycle-provider-invalid` and `lifecycle-provider-mode-conflict` SHALL
+refuse the schema save, unlike the advisory lifecycle findings that are stored as
+written.
+
+ON THE WRITE PATH, THREE FAILURES SHALL STAY DISTINGUISHABLE, because a handler
+acts differently on each: a refused move is retried differently, a broken
+provider is reported to someone, and a missing object is not retried at all.
+
+- A REFUSAL — a guard said no, the object already moved, a required input is
+  absent — SHALL be an ordinary `RuntimeException` from the provider, SHALL NOT
+  be wrapped or reclassified by the engine, and SHALL answer HTTP 422 carrying
+  the provider's own message. A refusal MUST leave the object untouched.
+- A BREAKAGE SHALL answer HTTP 502. The provider declares one by throwing
+  `LifecycleProviderException`; the engine raises one itself when the tag
+  resolves to nothing or to the wrong type, when the provider throws anything
+  that is not a `RuntimeException` (a `TypeError`, an `Error` — an unplanned
+  failure is never a considered refusal), and when the object cannot be re-read
+  after the write. A provider MUST NOT delete the object as part of a move,
+  because the endpoint has nothing truthful left to answer with.
+- A MISSING OBJECT SHALL answer HTTP 404, through
+  `LifecycleSubjectNotFoundException`, which extends `RuntimeException` so
+  REQ-007's "throw `RuntimeException` if not found" still holds and every
+  existing catch site is unchanged. This aligns the write path with the read
+  path, which already answered 404 for the same condition while the write path
+  reported it as a refusal.
+
+`TransitionController::transition()` SHALL catch these in that order —
+`LifecycleSubjectNotFoundException`, then `LifecycleProviderException`, then
+`RuntimeException` — because each extends the next and a reorder silently
+collapses one status into another.
+
+#### Scenario: A refused move answers 422 with the provider's sentence
+- **GIVEN** a registered provider whose `execute()` throws a `RuntimeException` explaining why the move is refused
+- **WHEN** a client posts that action to the transition endpoint
+- **THEN** the response status MUST be 422 and the body MUST carry the provider's message
+- **AND** no `ObjectTransitionedEvent` MUST be dispatched
+
+#### Scenario: A broken provider answers 502 on the write path
+- **GIVEN** a registered provider whose `execute()` throws a `TypeError`
+- **WHEN** a client posts an action to the transition endpoint
+- **THEN** the failure MUST be logged and raised as `LifecycleProviderException`
+- **AND** the response status MUST be 502, never 422
+
+#### Scenario: A missing object answers 404 on the write path
+- **GIVEN** an object id that resolves to nothing
+- **WHEN** a client posts an action to the transition endpoint
+- **THEN** the response status MUST be 404, distinct from the 422 a refused move answers
+
+#### Scenario: Unresolvable provider answers 502
+- **GIVEN** a schema declaring a `provider` tag that no app has registered
+- **WHEN** a client calls the available-actions endpoint for an object of that schema
+- **THEN** the response status MUST be 502
+- **AND** the response MUST NOT contain an empty `actions` list
+
+#### Scenario: Provider with no moves answers an empty list
+- **GIVEN** a registered provider that answers an empty list for the object's current state
+- **WHEN** a client calls the available-actions endpoint
+- **THEN** the response status MUST be 200 and `actions` MUST be an empty list
+
+### Requirement: Schema validation accepts the provider block and refuses two modes on one field
+
+`LifecycleAnnotationValidator` SHALL accept a `provider` key on
+`x-openregister-lifecycle` and SHALL shape-check it: `provider` MUST be a
+non-empty string, `field` MUST be a non-empty string declared in `properties`,
+and the `enum`/`type:string` constraint on that field SHALL be relaxed as it is
+for graph mode, because the app owns the state vocabulary. `initial` MAY be
+either the literal-string form or the object form `{ "from": ..., "field": ... }`.
+
+Declaring a non-empty `transitions` map or a non-empty `graph` block beside
+`provider` SHALL be refused with `lifecycle-provider-mode-conflict`. The engine
+does resolve the ambiguity by precedence, but the mode it drops would read as
+declared and never run, which is the failure the graph `condition` refusal
+already guards against. An empty `transitions` or `graph` value declares no
+second mode and SHALL NOT be refused.
+
+#### Scenario: Valid provider annotation passes validation
+- **GIVEN** a schema whose `x-openregister-lifecycle` declares a `provider` tag, a `field` present in `properties` with no enum, and an object-form `initial`
+- **WHEN** the schema is validated
+- **THEN** `LifecycleAnnotationValidator` MUST return no errors
+
+#### Scenario: Empty provider is rejected
+- **GIVEN** an annotation whose `provider` is an empty string
+- **WHEN** the schema is validated
+- **THEN** the validator MUST return `lifecycle-provider-invalid`
+
+#### Scenario: Two modes on one field are rejected
+- **GIVEN** an annotation declaring both `provider` and a non-empty `transitions` map
+- **WHEN** the schema is validated
+- **THEN** the validator MUST return `lifecycle-provider-mode-conflict`
 
 ### Requirement: A transition MAY declare `actions[]` that OpenRegister MUST execute on any transition form
 

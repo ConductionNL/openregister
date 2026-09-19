@@ -79,7 +79,11 @@ class XwikiProviderTest extends TestCase {
 		$this->assertSame('Articles', $this->provider->getLabel());
 		$this->assertSame('FileDocumentMultiple', $this->provider->getIcon());
 		$this->assertSame('external', $this->provider->getGroup());
-		$this->assertSame('openconnector', $this->provider->getRequiredApp());
+		// The CANONICAL name: this fixture's app manager reports nothing
+		// installed, so FleetAppId finds neither spelling and falls back.
+		// The installed-id direction is asserted in
+		// LeafProvidersMetadataTest::testOpenProjectProviderMetadata*.
+		$this->assertSame('integriq', $this->provider->getRequiredApp());
 		$this->assertSame('external', $this->provider->getStorageStrategy());
 		$this->assertSame('xwiki', $this->provider->getOpenConnectorSource());
 		$this->assertNull($this->provider->requiresPermission());
@@ -95,11 +99,15 @@ class XwikiProviderTest extends TestCase {
 	}//end testAuthRequirementsAreExternalViaOpenConnector()
 
 	public function testIsEnabledMirrorsOpenConnectorInstall(): void {
-		$this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
+		$this->appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => ($id === 'openconnector' && true === true)
+		);
 		$this->assertTrue($this->provider->isEnabled());
 
 		$appManager2 = $this->createMock(IAppManager::class);
-		$appManager2->method('isInstalled')->with('openconnector')->willReturn(false);
+		$appManager2->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => ($id === 'openconnector' && false === true)
+		);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$disabled = new XwikiProvider($this->router, $appManager2, $l10n);

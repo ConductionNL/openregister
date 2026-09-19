@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use GuzzleHttp\Client;
+use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Service\NotificationService;
@@ -79,7 +80,7 @@ class UninitialisedPropertyConstructionTest extends TestCase {
 	}//end readProperty()
 
 	/**
-	 * EndpointService stores all four collaborators.
+	 * EndpointService stores all five collaborators.
 	 *
 	 * @return void
 	 */
@@ -88,13 +89,15 @@ class UninitialisedPropertyConstructionTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$session = $this->createMock(IUserSession::class);
 		$groups = $this->createMock(IGroupManager::class);
+		$agents = $this->createMock(AgentMapper::class);
 
-		$service = new EndpointService($mapper, $logger, $session, $groups);
+		$service = new EndpointService($mapper, $logger, $session, $groups, $agents);
 
 		$this->assertSame($mapper, $this->readProperty($service, 'endpointLogMapper'));
 		$this->assertSame($logger, $this->readProperty($service, 'logger'));
 		$this->assertSame($session, $this->readProperty($service, 'userSession'));
 		$this->assertSame($groups, $this->readProperty($service, 'groupManager'));
+		$this->assertSame($agents, $this->readProperty($service, 'agentMapper'));
 	}//end testEndpointServiceStoresItsCollaborators()
 
 	/**

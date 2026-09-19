@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\IAppContainer;
@@ -59,6 +60,19 @@ class QueryHandler {
 	 * `_limit=1000000`) cannot force an unbounded result load (DoS/OOM).
 	 */
 	public const MAX_PAGE_SIZE = 1000;
+
+	/**
+	 * Page size a list/search request gets when it asks for none.
+	 *
+	 * Named rather than repeated so the number the capabilities answer
+	 * publishes and the number this method applies are the same constant. A
+	 * published limit that drifts from the enforced one is worse than no
+	 * published limit: an integrator sizes their paging against it once and
+	 * never checks again.
+	 *
+	 * @var integer
+	 */
+	public const DEFAULT_PAGE_SIZE = 20;
 
 	/**
 	 * Constructor for QueryHandler.
@@ -146,6 +160,8 @@ class QueryHandler {
 	 * @param array|null $ids Optional array of IDs to filter by.
 	 * @param string|null $uses Optional uses parameter.
 	 * @param array|null $views Optional view IDs to apply.
+	 * @param bool $_viewScopeRequired Whether the view filter is the caller's only bound,
+	 *                                 making any failure to apply it fatal instead of logged.
 	 *
 	 * @psalm-param array<string, mixed> $query
 	 * @psalm-param array<int, string>|null $ids
@@ -161,6 +177,9 @@ class QueryHandler {
 	 * @phpstan-return array<int, ObjectEntity>|int
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
+	 * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `_rbac` / `_multitenancy` convention
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
@@ -171,10 +190,18 @@ class QueryHandler {
 		?array $ids = null,
 		?string $uses = null,
 		?array $views = null,
+		bool $_viewScopeRequired = false,
 	): array|int {
 		// Apply view filters if provided.
 		if ($views !== null && empty($views) === false) {
-			$query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
+			$query = $this->searchQueryHandler->applyViewsToQuery(
+				query: $query,
+				viewIds: $views,
+				_viewScopeRequired: $_viewScopeRequired
+			);
+		} elseif ($_viewScopeRequired === true) {
+			// A caller bounded only by a view must never run without one.
+			throw new Exception('Refusing a view-scoped search without a view to scope it by.');
 		}
 
 		// Detect if complex rendering is needed (extend, fields, filter, unset).
@@ -346,7 +373,7 @@ class QueryHandler {
 
 		// Extract pagination parameters (limit=0 is valid for count/facets-only requests).
 		// Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
-		$limit = min(max(0, (int)($query['_limit'] ?? 20)), self::MAX_PAGE_SIZE);
+		$limit = min(max(0, (int)($query['_limit'] ?? self::DEFAULT_PAGE_SIZE)), self::MAX_PAGE_SIZE);
 		$offset = $query['_offset'] ?? null;
 		$page = $query['_page'] ?? null;
 

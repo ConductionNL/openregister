@@ -134,7 +134,10 @@ import {
 								{{ t('openregister', 'Deleted By') }}
 							</th>
 							<th scope="col">
-								{{ t('openregister', 'Purge Date') }}
+								{{ t('openregister', 'Destroyable from') }}
+							</th>
+							<th scope="col" class="tableColumnConstrained">
+								{{ t('openregister', 'Days left') }}
 							</th>
 							<th scope="col" class="tableColumnActions">
 								{{ t('openregister', 'Actions') }}
@@ -193,12 +196,15 @@ import {
 								}}
 							</td>
 							<td>
-								<span v-if="item['@self']?.deleted?.purgeDate">{{
-									formatPurgeDate(item['@self'].deleted.purgeDate)
+								<span v-if="destroyableFrom(item)">{{
+									formatPurgeDate(destroyableFrom(item))
 								}}</span>
 								<span v-else>{{
 									t('openregister', 'No purge date set')
 								}}</span>
+							</td>
+							<td class="tableColumnConstrained">
+								{{ daysLeftLabel(item) }}
 							</td>
 							<td class="tableColumnActions">
 								<NcActions>
@@ -839,6 +845,49 @@ export default {
 			const minutes = String(date.getMinutes()).padStart(2, '0')
 
 			return `${year}:${month}:${day} ${hours}:${minutes}`
+		},
+
+		/**
+		 * The date this object becomes destroyable, from the published window.
+		 *
+		 * Falls back to the raw purge date so a row deleted before the window
+		 * was published still shows the only date it has.
+		 *
+		 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+		 * @param {object} item - The trash row.
+		 * @return {string|null} The ISO date, or null when the row carries none.
+		 */
+		destroyableFrom(item) {
+			return (
+				item?.deletionWindow?.destroyableFrom
+				|| item?.['@self']?.deleted?.destroyableFrom
+				|| item?.['@self']?.deleted?.purgeDate
+				|| null
+			)
+		},
+
+		/**
+		 * How long the caseworker has, in words.
+		 *
+		 * A window that only exists as a date makes every reader do the
+		 * subtraction, and the answer they most need is the one they are
+		 * worst at computing under pressure.
+		 *
+		 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+		 * @param {object} item - The trash row.
+		 * @return {string} The label to render.
+		 */
+		daysLeftLabel(item) {
+			const days = item?.deletionWindow?.daysRemaining
+			if (days === undefined || days === null) {
+				return t('openregister', 'Unknown')
+			}
+
+			if (days === 0) {
+				return t('openregister', 'Destroyable now')
+			}
+
+			return n('openregister', '%n day left', '%n days left', days)
 		},
 
 		formatBytes,

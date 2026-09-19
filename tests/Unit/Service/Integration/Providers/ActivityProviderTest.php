@@ -40,6 +40,7 @@ use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Test double that injects pre-baked rows in place of the trait's
@@ -78,7 +79,7 @@ class ActivityProviderTest extends TestCase {
 		$apps->method('isInstalled')->willReturn($installed);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		return new TestableActivityProvider(db: $db, appManager: $apps, l10n: $l10n);
+		return new TestableActivityProvider(db: $db, appManager: $apps, l10n: $l10n, logger: $this->createMock(LoggerInterface::class));
 	}//end buildProvider()
 
 	public function testListEmptyWhenAppMissing(): void {
@@ -168,6 +169,58 @@ class ActivityProviderTest extends TestCase {
 		self::assertCount(1, $rows);
 		self::assertSame(500, $rows[0]['timestamp']);
 	}//end testListFiltersByAfterTimestamp()
+
+	/**
+	 * An NC Activity row records what a handler did, so it is always internal.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
+	 */
+	public function testEveryRowCarriesInternalVisibility(): void {
+		$provider = $this->buildProvider();
+		$provider->stubRows = [
+			['activity_id' => 1, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+		];
+
+		$rows = $provider->list(register: 'r', schema: 's', objectId: 'u');
+		self::assertSame('internal', $rows[0]['visibility']);
+	}//end testEveryRowCarriesInternalVisibility()
+
+	/**
+	 * A public-only read finds nothing in this source rather than everything.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublicOnlyReadReturnsNothing(): void {
+		$provider = $this->buildProvider();
+		$provider->stubRows = [
+			['activity_id' => 1, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+			['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'files', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
+		];
+
+		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['visibility' => 'public']));
+	}//end testPublicOnlyReadReturnsNothing()
+
+	/**
+	 * An internal read, and a misspelled one, leave the rows alone.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 *
+	 * @return void
+	 */
+	public function testInternalReadKeepsEveryRow(): void {
+		$provider = $this->buildProvider();
+		$provider->stubRows = [
+			['activity_id' => 1, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+			['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'files', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
+		];
+
+		self::assertCount(2, $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['visibility' => 'internal']));
+		self::assertCount(2, $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['visibility' => 'everyone']));
+	}//end testInternalReadKeepsEveryRow()
 
 	public function testListHandlesEmptyResult(): void {
 		$provider = $this->buildProvider();

@@ -34,6 +34,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -41,6 +42,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\IGroupManager;
 use OCP\Notification\IManager as INotificationManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,11 +61,27 @@ class DestructionExecutionJob extends QueuedJob {
 	private const DEFAULT_BATCH_SIZE = 50;
 
 	/**
+	 * Review answers that forbid destroying the entry carrying them.
+	 *
+	 * Read from DestructionReviewService's own constants rather than copied as
+	 * literals: the class that writes the value and the class that refuses to
+	 * act on it must not be able to drift apart. The third answer, `destroy`,
+	 * is the one this job exists to carry out.
+	 *
+	 * @var string[]
+	 */
+	private const WITHHELD_DECISIONS = [
+		\OCA\OpenRegister\Service\Archival\DestructionReviewService::ANSWER_RETAIN,
+		\OCA\OpenRegister\Service\Archival\DestructionReviewService::ANSWER_TRANSFER,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for parent class
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 */
-	public function __construct(ITimeFactory $time) {
+	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
 		parent::__construct(time: $time);
 	}//end __construct()
 
@@ -83,7 +101,7 @@ class DestructionExecutionJob extends QueuedJob {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	protected function run($argument): void {
-		$logger = \OC::$server->get(LoggerInterface::class);
+		$logger = $this->container->get(LoggerInterface::class);
 
 		$listUuid = $argument['destructionListUuid'] ?? null;
 		if ($listUuid === null) {
@@ -94,12 +112,12 @@ class DestructionExecutionJob extends QueuedJob {
 		$logger->info('[DestructionExecutionJob] Processing destruction list: ' . $listUuid);
 
 		try {
-			$retentionService = \OC::$server->get(RetentionService::class);
-			$settingsHandler = \OC::$server->get(ObjectRetentionHandler::class);
-			$objectMapper = \OC::$server->get(MagicMapper::class);
-			$auditMapper = \OC::$server->get(AuditTrailMapper::class);
-			$deleteObject = \OC::$server->get(DeleteObject::class);
-			$saveObject = \OC::$server->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
+			$retentionService = $this->container->get(RetentionService::class);
+			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
+			$objectMapper = $this->container->get(MagicMapper::class);
+			$auditMapper = $this->container->get(AuditTrailMapper::class);
+			$deleteObject = $this->container->get(DeleteObject::class);
+			$saveObject = $this->container->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
 			$settings = $settingsHandler->getArchivalSettingsOnly();
 			$batchSize = (int)($settings['destructionBatchSize'] ?? self::DEFAULT_BATCH_SIZE);
 
@@ -132,6 +150,7 @@ class DestructionExecutionJob extends QueuedJob {
 			$destroyedCount = 0;
 			$skippedHolds = 0;
 			$skippedErrors = 0;
+			$skippedDecisions = 0;
 			$batches = array_chunk($objects, $batchSize);
 
 			foreach ($batches as $batchIndex => $batch) {
@@ -143,6 +162,28 @@ class DestructionExecutionJob extends QueuedJob {
 					$uuid = $objRef['uuid'] ?? null;
 					if ($uuid === null) {
 						$skippedErrors++;
+						continue;
+					}
+
+					// 🔴 A RECORDED "KEEP THIS" IS NEVER DESTROYED, whatever the
+					// list says. DestructionService::approveList() already takes
+					// these entries off the list at approval; this is the second
+					// lock on the same door, because the door opens onto an
+					// irreversible statutory act. A list approved before that fix
+					// shipped, a list written by some other path, or a future
+					// caller that queues this job directly all arrive here with
+					// the reviewer's answer still on the entry — and reading it
+					// costs one array lookup.
+					$decision = $objRef['decision'] ?? null;
+					if (in_array($decision, self::WITHHELD_DECISIONS, true) === true) {
+						$skippedDecisions++;
+						$logger->warning(
+							sprintf(
+								'[DestructionExecutionJob] Refusing to destroy %s: review decision "%s"',
+								(string)$uuid,
+								(string)$decision
+							)
+						);
 						continue;
 					}
 
@@ -162,7 +203,7 @@ class DestructionExecutionJob extends QueuedJob {
 
 						// Update archiefstatus before deletion.
 						$retention = $object->getRetention() ?? [];
-						$retention['archiefstatus'] = 'vernietigd';
+						$retention['archiefstatus'] = RecordState::DESTROYED;
 						$object->setRetention($retention);
 
 						// Create audit trail entry.
@@ -204,6 +245,7 @@ class DestructionExecutionJob extends QueuedJob {
 			$listData['destroyedCount'] = $destroyedCount;
 			$listData['skippedHolds'] = $skippedHolds;
 			$listData['skippedErrors'] = $skippedErrors;
+			$listData['skippedDecisions'] = $skippedDecisions;
 
 			// Generate destruction certificate.
 			$certificate = $retentionService->generateDestructionCertificate(
@@ -242,9 +284,10 @@ class DestructionExecutionJob extends QueuedJob {
 
 			$logger->info(
 				sprintf(
-					'[DestructionExecutionJob] Done: %d destroyed, %d held, %d errors',
+					'[DestructionExecutionJob] Done: %d destroyed, %d held, %d withheld by decision, %d errors',
 					$destroyedCount,
 					$skippedHolds,
+					$skippedDecisions,
 					$skippedErrors
 				)
 			);
@@ -270,8 +313,8 @@ class DestructionExecutionJob extends QueuedJob {
 		LoggerInterface $logger,
 	): void {
 		try {
-			$notificationManager = \OC::$server->get(INotificationManager::class);
-			$groupManager = \OC::$server->get(IGroupManager::class);
+			$notificationManager = $this->container->get(INotificationManager::class);
+			$groupManager = $this->container->get(IGroupManager::class);
 
 			$group = $groupManager->get('archivaris');
 			if ($group === null) {

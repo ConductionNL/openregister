@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\Party\PartySearchService;
+use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -108,6 +110,7 @@ class ConfigurationSettingsHandler {
 	 * @param IUserManager $userManager User manager.
 	 * @param OrganisationMapper $organisationMapper Organisation mapper.
 	 * @param LoggerInterface $logger Logger.
+	 * @param IAppManager $appManager App manager, read for the app's own version info.
 	 * @param string $appName Application name.
 	 *
 	 * @return void
@@ -118,6 +121,7 @@ class ConfigurationSettingsHandler {
 		IUserManager $userManager,
 		OrganisationMapper $organisationMapper,
 		LoggerInterface $logger,
+		private readonly IAppManager $appManager,
 		string $appName = 'openregister',
 	) {
 		$this->appConfig = $appConfig;
@@ -403,6 +407,16 @@ class ConfigurationSettingsHandler {
 				'killSwitch' => $this->appConfig->getValueBool($this->appName, 'flow_kill_switch', false),
 			];
 
+			// The party query cap: the administered maximum a party search may
+			// return before it is refused. A refusal, never a truncation.
+			$data['party'] = [
+				'queryCap' => $this->appConfig->getValueInt(
+					$this->appName,
+					PartySearchService::CAP_KEY,
+					PartySearchService::DEFAULT_CAP
+				),
+			];
+
 			return $data;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve settings: ' . $e->getMessage());
@@ -561,6 +575,16 @@ class ConfigurationSettingsHandler {
 					'adminOverride' => $rbacData['adminOverride'] ?? true,
 				];
 				$this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+			}
+
+			// Handle the party query cap. A cap of zero or below is refused
+			// rather than stored: it would refuse every party query on the
+			// instance, which is never what a mistyped field is asking for.
+			if (($data['party'] ?? null) !== null && is_array($data['party']) === true) {
+				$cap = (int)($data['party']['queryCap'] ?? 0);
+				if ($cap > 0) {
+					$this->appConfig->setValueInt($this->appName, PartySearchService::CAP_KEY, $cap);
+				}
 			}
 
 			// Handle flow-engine settings.
@@ -1293,8 +1317,7 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getVersionInfoOnly(): array {
 		try {
-			$appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
-			$appInfo = $appManager->getAppInfo($this->appName);
+			$appInfo = $this->appManager->getAppInfo($this->appName);
 
 			return [
 				'version' => ($appInfo['version'] ?? null) ?? 'unknown',

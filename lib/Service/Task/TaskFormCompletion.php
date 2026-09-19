@@ -53,6 +53,7 @@ use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserSession;
 use RuntimeException;
@@ -85,6 +86,8 @@ class TaskFormCompletion {
 	 * @param TransitionEngine $engine The one allowlist, and the transition write.
 	 * @param ObjectService $objects The ordinary object write, for an inline field list.
 	 * @param IUserSession $userSession The acting identity the object write authorizes.
+	 * @param FlowRunContext|null $runContext Names the run this write belongs to,
+	 *                             so the run's own lock does not refuse it.
 	 */
 	public function __construct(
 		private readonly TaskService $tasks,
@@ -92,6 +95,9 @@ class TaskFormCompletion {
 		private readonly TransitionEngine $engine,
 		private readonly ObjectService $objects,
 		private readonly IUserSession $userSession,
+		// Appended LAST and nullable: a new argument inserted anywhere else
+		// shifts every positional caller.
+		private readonly ?FlowRunContext $runContext = null,
 	) {
 
 	}//end __construct()
@@ -255,7 +261,7 @@ class TaskFormCompletion {
 			return;
 		}
 
-		$this->save(objectUuid: $objectUuid, accepted: $accepted);
+		$this->save(objectUuid: $objectUuid, accepted: $accepted, runUuid: trim((string)$task->getRunUuid()));
 	}//end writeSubject()
 
 	/**
@@ -317,6 +323,8 @@ class TaskFormCompletion {
 	 *
 	 * @param string $objectUuid The subject object.
 	 * @param array<string, mixed> $accepted The values the allowlist accepted.
+	 * @param string $runUuid The run the task belongs to, so the run's own lock
+	 *                        does not refuse its own write. '' when unknown.
 	 *
 	 * @return void
 	 *
@@ -325,13 +333,31 @@ class TaskFormCompletion {
 	 *
 	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	private function save(string $objectUuid, array $accepted): void {
+	private function save(string $objectUuid, array $accepted, string $runUuid = ''): void {
 		$object = $this->objects->find(id: $objectUuid);
 		if ($object === null) {
 			throw new TaskSubjectWriteRefusedException(
 				message: sprintf('Subject object "%s" no longer exists, so the form values cannot be written.', $objectUuid)
 			);
 		}
+
+		// 🔴 THIS WRITE BELONGS TO THE RUN, EVEN THOUGH A PERSON MADE THE REQUEST.
+		// The object-lock guard reads the acting run from an ambient context
+		// precisely so a flow that locks its case at one step is not turned away
+		// by its own lock at the next. That context is set while the ENGINE
+		// walks the graph and not while a person answers over HTTP, so a run
+		// that locked its case and then asked a form on it could never be
+		// answered: the completion came back 500 with "Object is locked by flow
+		// run …, running as admin", naming the very run trying to write.
+		//
+		// Measured by the flow-subjects Newman collection, which locks a case
+		// and then asks a person with a form on it — the scene from the brief.
+		$actingRun = null;
+		if ($runUuid !== '') {
+			$actingRun = $runUuid;
+		}
+
+		$this->runContext?->push(runUuid: $actingRun, nodeId: 'task-form', sequence: 0);
 
 		try {
 			$this->objects->saveObject(
@@ -345,6 +371,10 @@ class TaskFormCompletion {
 			throw new TaskAccessDeniedException(message: $denied->getMessage());
 		} catch (HookStoppedException | ValidationException | CustomValidationException $refused) {
 			throw new TaskSubjectWriteRefusedException(message: $refused->getMessage(), previous: $refused);
+		} finally {
+			// In a `finally`, so a refused write does not leave the request
+			// pretending to be a run for everything that follows it.
+			$this->runContext?->pop();
 		}
 	}//end save()
 

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
+use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClientService;
@@ -95,6 +96,7 @@ class AnonymisationBackendService {
 	 * @param IClientService $clientService HTTP client factory for endpoint probes.
 	 * @param FileSettingsHandler $fileSettingsHandler Reads the stored entity-recognition settings.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ConnectionReporter $connectionReporter Reports an OpenAnonymiser connection test to integriq's connection registry.
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
@@ -103,6 +105,7 @@ class AnonymisationBackendService {
 		private readonly IClientService $clientService,
 		private readonly FileSettingsHandler $fileSettingsHandler,
 		private readonly LoggerInterface $logger,
+		private readonly ConnectionReporter $connectionReporter,
 	) {
 		try {
 			$this->cache = $cacheFactory->createDistributed('openregister_anon_probe');
@@ -152,16 +155,64 @@ class AnonymisationBackendService {
 	/**
 	 * Issue a fresh probe for a single method, bypassing and refreshing the cache.
 	 *
+	 * An OpenAnonymiser test also tells integriq's connection registry what it found.
+	 *
 	 * @param string $method One of BackendState::METHODS.
 	 *
 	 * @return ProbeResult The fresh probe result.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function testConnection(string $method): ProbeResult {
 		$result = $this->freshProbe(method: $method);
 		$this->writeCache(method: $method, result: $result);
 
+		if ($method === BackendState::METHOD_OPENANONYMISER) {
+			$this->reportOpenAnonymiser(result: $result);
+		}
+
 		return $result;
 	}//end testConnection()
+
+	/**
+	 * Tell integriq what an OpenAnonymiser connection test found.
+	 *
+	 * Only the explicit test reports. The cached probe behind getState() runs on
+	 * page loads, and a report there would write integriq's row on every one.
+	 *
+	 * @param ProbeResult $result The fresh probe result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	private function reportOpenAnonymiser(ProbeResult $result): void {
+		if ($result->reachable === true) {
+			$this->connectionReporter->report(
+				key: 'anonymiser',
+				status: 'configured',
+				message: 'The OpenAnonymiser ExApp is enabled and detected through AppAPI.'
+			);
+			return;
+		}
+
+		$unconfigured = [
+			ProbeResult::ERROR_APPAPI_MISSING => 'AppAPI is not installed. Install AppAPI, then the OpenAnonymiser ExApp.',
+			ProbeResult::ERROR_EXAPP_NOT_INSTALLED => 'The OpenAnonymiser ExApp is not installed. Install it through AppAPI.',
+			ProbeResult::ERROR_EXAPP_DISABLED => 'The OpenAnonymiser ExApp is installed and disabled. Enable it through AppAPI.',
+		];
+
+		if ($result->error !== null && isset($unconfigured[$result->error]) === true) {
+			$this->connectionReporter->report(key: 'anonymiser', status: 'unconfigured', message: $unconfigured[$result->error]);
+			return;
+		}
+
+		$this->connectionReporter->report(
+			key: 'anonymiser',
+			status: 'error',
+			message: 'The OpenAnonymiser connection test failed: ' . ($result->error ?? 'unknown error') . '.'
+		);
+	}//end reportOpenAnonymiser()
 
 	/**
 	 * Probe a method, consuming the cache when a fresh-enough entry exists.
@@ -296,6 +347,8 @@ class AnonymisationBackendService {
 	 * @param string $method HTTP method (default POST).
 	 *
 	 * @return array<string, mixed>|null Decoded JSON response, or null on failure.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function requestOpenAnonymiser(string $route, array $params, string $method = 'POST'): ?array {
 		$appId = $this->resolveActiveExAppId();
@@ -311,6 +364,7 @@ class AnonymisationBackendService {
 		}
 
 		try {
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Optional AppAPI PublicFunctions: guarded by class_exists and try/catch, absent unless the ExApp stack is installed.
 			$publicFunctions = Server::get($publicFunctionsClass);
 			$response = $publicFunctions->exAppRequest($appId, $route, null, $method, $params);
 

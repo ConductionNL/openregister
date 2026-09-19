@@ -800,20 +800,38 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 	// =========================================================================
 	// Fail-closed SQL match evaluation on null-resolved dynamic variables (#1953).
 	//
-	// When a `match` rule's dynamic variable ($organisation/$userId/$now)
-	// resolves to null, the SQL/list path MUST emit an impossible predicate
-	// (1 = 0) for that property rather than dropping it from the AND. This makes
-	// the LIST path agree with the PHP/find path (ConditionMatcher), which
-	// already fails closed on null dynamic values. These tests run as anonymous
-	// (the genuine null-$organisation case) so $organisation cannot resolve.
+	// THE RULE: when a `match` rule's dynamic variable ($organisation, $userId,
+	// $now) resolves to null, the SQL path MUST emit the impossible predicate
+	// (1 = 0) for that property rather than dropping it from the AND. Dropping it
+	// widens the rule, which is how an object leaked on LIST while the PHP/find
+	// path (ConditionMatcher) denied it.
+	//
+	// These three used to drive `searchObjectsInRegisterSchemaTable()` and assert
+	// on rows, and they could never pass under PHPUnit. That path emits through
+	// `applyRbacFilters()`, which returns early for `$user === null &&
+	// PHP_SAPI === 'cli'` (4496c7f5, 2026-06-10): inside any cli process an
+	// anonymous caller skips RBAC filtering entirely, so the branch under test was
+	// unreachable and the rows always came back. Measured over HTTP on 2026-09-12
+	// on this same schema shape, the web path does fail closed: anonymous GET
+	// returned total 0 where admin saw 1.
+	//
+	// So they now assert the rule on `buildRbacConditionsSql()`, the emitter for
+	// the UNION/multi-table path. It is production code, it carries no cli
+	// carve-out, and it is the same rule: an anonymous caller in a cli process
+	// reaches it exactly as an anonymous web caller does. What stays uncovered
+	// from a cli process is the single-table QueryBuilder emitter, because of that
+	// early return. Narrowing the cli trust is a product decision and not a test
+	// repair: `SystemOperationContext` exists for precisely that scoping, but
+	// cron.php does not define OC_CONSOLE, so a naive narrowing would blind every
+	// background job instead. Raised in the PR rather than changed here.
 	// =========================================================================
 
-	public function testListFailsClosedOnMultiConditionMatchWithNullOrganisation(): void {
-		// Multi-condition public match rule: a static `status` predicate AND a
-		// dynamic `_organisation` => '$organisation' predicate. As anonymous,
-		// $organisation resolves to null, so the rule must grant NO rows even
-		// though the static predicate matches the inserted object.
-		$register = $this->createTestRegister();
+	/**
+	 * A null-resolved dynamic predicate denies, and does not silently drop.
+	 *
+	 * @return void
+	 */
+	public function testSqlFailsClosedOnMultiConditionMatchWithNullOrganisation(): void {
 		$schema = $this->createTestSchema([
 			'read' => [
 				[
@@ -826,87 +844,65 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$this->mapper->ensureTableForRegisterSchema($register, $schema);
-		$this->trackTable($register, $schema);
+		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$sql = implode(' OR ', $result['conditions']);
 
-		// Object satisfies the static predicate (status=published) but the
-		// $organisation predicate cannot be satisfied for an anonymous caller.
-		$this->insertTestObject($register, $schema, ['name' => 'Leaky', 'status' => 'published', 'age' => 1]);
-
-		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false],
-			$register,
-			$schema
+		$this->assertFalse($result['bypass'], 'an anonymous caller MUST NOT bypass RBAC');
+		$this->assertStringContainsString(
+			'1 = 0',
+			$sql,
+			'the null-resolved $organisation predicate MUST become the impossible predicate'
 		);
-
-		// Pre-fix: the null $organisation predicate was DROPPED, leaving only
-		// status=published, so the object leaked on LIST. Post-fix the impossible
-		// predicate (1 = 0) is ANDed in, so LIST returns nothing — matching the
-		// PHP/find verdict.
-		$this->assertIsArray($results);
-		$this->assertEmpty(
-			$results,
-			'Multi-condition match with null-resolved $organisation MUST deny on LIST (no silent drop)'
+		$this->assertStringContainsString(
+			"status = 'published'",
+			$sql,
+			'the static half of the rule MUST still be emitted, ANDed with the denial'
 		);
-	}
+	}//end testSqlFailsClosedOnMultiConditionMatchWithNullOrganisation()
 
-	public function testListFailsClosedOnSingleConditionMatchWithNullOrganisation(): void {
-		// Single-condition match on a null-resolving dynamic variable: LIST must
-		// also deny (parity with find), confirming the impossible predicate is
-		// emitted rather than the whole match being dropped.
-		$register = $this->createTestRegister();
+	/**
+	 * A rule whose ONLY predicate resolves to null denies outright.
+	 *
+	 * @return void
+	 */
+	public function testSqlFailsClosedOnSingleConditionMatchWithNullOrganisation(): void {
 		$schema = $this->createTestSchema([
 			'read' => [
 				['group' => 'public', 'match' => ['_organisation' => '$organisation']],
 			],
 		]);
 
-		$this->mapper->ensureTableForRegisterSchema($register, $schema);
-		$this->trackTable($register, $schema);
+		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
 
-		$this->insertTestObject($register, $schema, ['name' => 'SingleLeaky', 'status' => 'x', 'age' => 1]);
-
-		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false],
-			$register,
-			$schema
+		$this->assertFalse($result['bypass']);
+		$this->assertStringContainsString(
+			'1 = 0',
+			implode(' OR ', $result['conditions']),
+			'a match rule that resolves to nothing MUST deny, not match everything'
 		);
+	}//end testSqlFailsClosedOnSingleConditionMatchWithNullOrganisation()
 
-		$this->assertIsArray($results);
-		$this->assertEmpty(
-			$results,
-			'Single-condition match with null-resolved $organisation MUST deny on LIST'
-		);
-	}
-
-	public function testResolvableMatchRuleStillReturnsRowsOnList(): void {
-		// Guard against over-denial: a match rule whose predicates DO resolve
-		// (a static-only public match) must still return its rows on LIST. The
-		// fail-closed change introduces no new denials for resolvable rules.
-		$register = $this->createTestRegister();
+	/**
+	 * Guard against over-denial: a resolvable rule keeps granting.
+	 *
+	 * @return void
+	 */
+	public function testSqlKeepsGrantingOnAFullyResolvableMatchRule(): void {
 		$schema = $this->createTestSchema([
 			'read' => [
 				['group' => 'public', 'match' => ['status' => 'published']],
 			],
 		]);
 
-		$this->mapper->ensureTableForRegisterSchema($register, $schema);
-		$this->trackTable($register, $schema);
+		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$sql = implode(' OR ', $result['conditions']);
 
-		$this->insertTestObject($register, $schema, ['name' => 'Visible', 'status' => 'published', 'age' => 1]);
-		$this->insertTestObject($register, $schema, ['name' => 'Hidden', 'status' => 'draft', 'age' => 1]);
-
-		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false],
-			$register,
-			$schema
+		$this->assertStringContainsString("status = 'published'", $sql);
+		$this->assertStringNotContainsString(
+			'1 = 0',
+			$sql,
+			'a rule whose predicates all resolve MUST NOT pick up a denial'
 		);
+	}//end testSqlKeepsGrantingOnAFullyResolvableMatchRule()
 
-		$this->assertIsArray($results);
-		$this->assertCount(
-			1,
-			$results,
-			'A fully-resolvable static match rule MUST still return its matching rows (no new denials)'
-		);
-	}
 }

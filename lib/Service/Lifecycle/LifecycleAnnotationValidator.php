@@ -28,6 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Service\Rules\ConditionDialect;
+
 /**
  * Pure validation logic for the `x-openregister-lifecycle` annotation.
  *
@@ -35,6 +38,27 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * map to HTTP 422 responses as schema-save failures.
  */
 final class LifecycleAnnotationValidator {
+
+	/**
+	 * Constructor.
+	 *
+	 * The state validator is defaulted rather than required so every existing
+	 * `new LifecycleAnnotationValidator()` keeps working; the parameter exists
+	 * so a test can substitute one.
+	 *
+	 * @param LifecycleStateValidator   $states Validates the `states` block.
+	 * @param LifecycleDeclarationForms $forms  Owns the shape rules for `initial` and `final`.
+	 * @param LifecycleGraphValidator   $graph  Owns the graph-mode rules.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly LifecycleStateValidator $states = new LifecycleStateValidator(),
+		private readonly LifecycleDeclarationForms $forms = new LifecycleDeclarationForms(),
+		private readonly LifecycleGraphValidator $graph = new LifecycleGraphValidator(),
+	) {
+	}//end __construct()
+
 	/**
 	 * Validate the annotation block on a schema definition.
 	 *
@@ -48,6 +72,8 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-lifecycle']) === false) {
@@ -63,6 +89,17 @@ final class LifecycleAnnotationValidator {
 			$annotation['field'] = $annotation['property'];
 		}
 
+		// Provider mode: checked BEFORE graph so an annotation that declares
+		// both is refused by the provider-mode conflict rule below, with a
+		// message naming the real mistake, instead of being shape-checked as
+		// a graph block that happens to carry a stray key.
+		if (isset($annotation['provider']) === true) {
+			return array_merge(
+				$this->validateProviderMode(annotation: $annotation, schema: $schema),
+				$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: null)
+			);
+		}
+
 		// Graph mode: when a non-empty `graph` block is declared, the lifecycle
 		// field is a `$ref` with no enum, so shape-check the graph block instead
 		// of the static `transitions`/enum contract. Static-only schemas fall
@@ -71,7 +108,10 @@ final class LifecycleAnnotationValidator {
 			&& is_array($annotation['graph']) === true
 			&& $annotation['graph'] !== []
 		) {
-			return $this->validateGraphMode(annotation: $annotation, schema: $schema);
+			return array_merge(
+				$this->graph->validate(annotation: $annotation, schema: $schema),
+				$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: null)
+			);
 		}
 
 		// Required top-level fields.
@@ -132,8 +172,13 @@ final class LifecycleAnnotationValidator {
 			];
 		}
 
-		// Final values (if declared) must be in the enum.
-		if (is_array($final) === true) {
+		// Final values (if declared) must be in the enum, UNLESS `final` takes
+		// the reference form `{ from, field }`, in which case the ends are rows
+		// in another schema and this schema has no enum that could list them.
+		$finalError = $this->forms->validateForm($final);
+		if ($finalError !== null) {
+			$errors[] = $finalError;
+		} elseif ($this->forms->isReferenceForm($final) === false && is_array($final) === true) {
 			foreach ($final as $finalState) {
 				if (isset($enumSet[(string)$finalState]) === false) {
 					$errors[] = [
@@ -242,131 +287,192 @@ final class LifecycleAnnotationValidator {
 					$errors[] = $authError;
 				}
 			}
+
+			// Optional `condition` — a declarative JSONLogic precondition on
+			// the object's own data. Shape-checked here so a broken expression
+			// cannot be stored; see validateTransitionCondition() for why a
+			// scalar is refused rather than accepted as a literal.
+			if (isset($spec['condition']) === true) {
+				$conditionError = $this->validateTransitionCondition(
+					condition: $spec['condition'],
+					action: (string)$action
+				);
+				if ($conditionError !== null) {
+					$errors[] = $conditionError;
+				}
+			}
+
+			// Optional `autoWhen` / `executionMode` — the declaration that makes
+			// this transition fire on its own. Refused rather than warned about,
+			// because a stored malformed rule fires on EVERY write from its
+			// `from` state; see the change's design.md.
+			$errors = array_merge(
+				$errors,
+				$this->validateAutomaticTransition(spec: $spec, action: (string)$action)
+			);
+
+			// Optional `message` — the refusal text a declined `condition`
+			// carries. A non-empty string, or a per-locale map.
+			if (isset($spec['message']) === true) {
+				$errors = array_merge(
+					$errors,
+					$this->validateTransitionMessage(
+						message: $spec['message'],
+						action: (string)$action
+					)
+				);
+			}
 		}//end foreach
+
+		// Per-state field rules and state conditions. Validated last so a
+		// malformed transition is reported as a transition problem rather than
+		// as a state one, and so the enum the states are checked against has
+		// already been established.
+		$errors = array_merge(
+			$errors,
+			$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: $enumSet)
+		);
+
+		$errors = array_merge(
+			$errors,
+			$this->states->validateInputsAgainstHiddenFields(annotation: $annotation, transitions: $transitions)
+		);
 
 		return $errors;
 	}//end validate()
 
+
 	/**
-	 * Validate a graph-mode `x-openregister-lifecycle` annotation.
+	 * Validate a provider-mode annotation.
 	 *
-	 * Shape-checks the `graph` block (`schema`, `parentField`, `parentFrom`,
-	 * `orderField`, `finalField` as non-empty strings; `allowedMoves` one of
-	 * `forward`|`adjacent`|`any`), keeps `field` required but relaxes the
-	 * `enum`/`type:string` constraint (a `$ref` field has no enum), and accepts
-	 * either the literal-string or object-form `initial`. Sibling schemas and
-	 * parent objects are NOT resolved — existence is a runtime concern.
+	 * Provider mode delegates the whole state machine to an app service, so
+	 * the schema cannot be asked what the states are: the enum requirement is
+	 * relaxed exactly as it is for graph mode, where the field is a `$ref`.
+	 * What IS checked is that the delegation can be performed at all, because
+	 * a provider that resolves to nothing fails at render time, on a GET, in
+	 * front of a user.
+	 *
+	 * Declaring `transitions` or `graph` beside `provider` is REFUSED rather
+	 * than resolved by precedence. The engine does have a precedence order,
+	 * but an author who wrote two modes on one field meant one of them, and
+	 * the one the engine drops would silently never run. That is the same
+	 * mistake the graph `condition` refusal already guards against: a rule
+	 * that reads as enforced and is not.
 	 *
 	 * @param array<string, mixed> $annotation The normalised annotation block.
 	 * @param array<string, mixed> $schema Full schema definition.
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each check maps to one distinct, irreducible graph-shape rule.
-	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validateGraphMode(array $annotation, array $schema): array {
+	private function validateProviderMode(array $annotation, array $schema): array {
 		$errors = [];
 
-		// `field` remains required and non-empty, but the enum/type:string
-		// constraint is relaxed for a `$ref` lifecycle field.
-		$field = ($annotation['field'] ?? null);
-		$fieldValid = (is_string($field) === true && $field !== '');
-		if ($fieldValid === false) {
+		// `provider` must name something resolvable: a non-empty string, a DI
+		// tag or an FQCN.
+		$provider = ($annotation['provider'] ?? null);
+		if (is_string($provider) === false || trim($provider) === '') {
 			$errors[] = [
-				'code' => 'lifecycle-missing-key',
-				'message' => 'x-openregister-lifecycle is missing required key "field".',
+				'code' => 'lifecycle-provider-invalid',
+				'message' => 'x-openregister-lifecycle.provider must be a non-empty string naming a '
+					. 'registered LifecycleActionProviderInterface service.',
 			];
 		}
 
-		if ($fieldValid === true) {
-			$properties = ($schema['properties'] ?? []);
-			if (is_array($properties) === true && isset($properties[$field]) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-field-missing',
-					'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
-				];
-			}
-		}
+		$errors = array_merge($errors, $this->validateProviderField(annotation: $annotation, schema: $schema));
 
 		// `initial` (optional): accept the literal-string form or the object
-		// form `{ from, field }` with both keys non-empty strings.
+		// form `{ from, field }`, as graph mode does.
 		if (isset($annotation['initial']) === true) {
-			$initialError = $this->validateInitialForm(initial: $annotation['initial']);
+			$initialError = $this->forms->validateInitialForm($annotation['initial']);
 			if ($initialError !== null) {
 				$errors[] = $initialError;
 			}
 		}
 
-		// Graph block: required non-empty string keys.
-		$graph = $annotation['graph'];
-		foreach (['schema', 'parentField', 'parentFrom', 'orderField', 'finalField'] as $key) {
-			$value = ($graph[$key] ?? null);
-			if (is_string($value) === false || $value === '') {
-				$errors[] = [
-					'code' => 'lifecycle-graph-missing-key',
-					'message' => sprintf('x-openregister-lifecycle.graph is missing required string key "%s".', $key),
-				];
-			}
+		// `final` (optional): shape-checked, never enum-checked. In provider
+		// mode the app owns the state vocabulary, so there is no enum to check
+		// against, and the reference form is the only one that can name an end
+		// when the states are rows.
+		$finalError = $this->forms->validateForm(($annotation['final'] ?? null));
+		if ($finalError !== null) {
+			$errors[] = $finalError;
 		}
 
-		// `allowedMoves`: required, one of forward|adjacent|any.
-		$allowed = ($graph['allowedMoves'] ?? null);
-		if (in_array($allowed, ['forward', 'adjacent', 'any'], true) === false) {
-			$shown = gettype($allowed);
-			if (is_scalar($allowed) === true) {
-				$shown = (string)$allowed;
+		return array_merge($errors, $this->validateProviderModeConflicts(annotation: $annotation));
+	}//end validateProviderMode()
+
+	/**
+	 * Check a provider-mode `field` against the schema's properties.
+	 *
+	 * `field` stays required and non-empty, but the `enum`/`type:string`
+	 * constraint is relaxed: in provider mode the app owns the state
+	 * vocabulary, so the schema has nothing to enumerate.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 * @param array<string, mixed> $schema Full schema definition.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateProviderField(array $annotation, array $schema): array {
+		$field = ($annotation['field'] ?? null);
+		if (is_string($field) === false || $field === '') {
+			return [
+				[
+					'code' => 'lifecycle-missing-key',
+					'message' => 'x-openregister-lifecycle is missing required key "field".',
+				],
+			];
+		}
+
+		$properties = ($schema['properties'] ?? []);
+		if (is_array($properties) === true && isset($properties[$field]) === false) {
+			return [
+				[
+					'code' => 'lifecycle-field-missing',
+					'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
+				],
+			];
+		}
+
+		return [];
+	}//end validateProviderField()
+
+	/**
+	 * Refuse a second lifecycle mode declared beside `provider`.
+	 *
+	 * An empty `transitions: {}` or `graph: {}` declares no second mode, so it
+	 * is not a conflict; anything else is. See {@see validateProviderMode()}
+	 * for why this refuses rather than leaning on the engine's precedence.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateProviderModeConflicts(array $annotation): array {
+		$errors = [];
+		foreach (['transitions', 'graph'] as $rival) {
+			if (isset($annotation[$rival]) === false || $annotation[$rival] === []) {
+				continue;
 			}
 
 			$errors[] = [
-				'code' => 'lifecycle-graph-allowedmoves-invalid',
+				'code' => 'lifecycle-provider-mode-conflict',
 				'message' => sprintf(
-					'x-openregister-lifecycle.graph.allowedMoves "%s" must be one of forward|adjacent|any.',
-					$shown
+					'x-openregister-lifecycle declares both `provider` and `%s`. A field has one '
+					. 'lifecycle mode: declare the transitions in the schema or in the provider, not both.',
+					$rival
 				),
 			];
 		}
 
 		return $errors;
-	}//end validateGraphMode()
-
-	/**
-	 * Shape-check the `initial` value in its two accepted forms.
-	 *
-	 * Valid: a non-empty string (literal form) or an object with non-empty
-	 * string `from` and `field` keys (object form). Returns a single structured
-	 * error on violation, or null when valid.
-	 *
-	 * @param mixed $initial The raw `initial` value off the annotation.
-	 *
-	 * @return array{code: string, message: string}|null Error, or null when valid.
-	 */
-	private function validateInitialForm(mixed $initial): ?array {
-		if (is_string($initial) === true) {
-			return null;
-		}
-
-		if (is_array($initial) === true) {
-			$from = ($initial['from'] ?? null);
-			$field = ($initial['field'] ?? null);
-			if (is_string($from) === false || $from === ''
-				|| is_string($field) === false || $field === ''
-			) {
-				return [
-					'code' => 'lifecycle-initial-malformed',
-					'message' => 'x-openregister-lifecycle.initial object form must declare non-empty "from" and "field" strings.',
-				];
-			}
-
-			return null;
-		}
-
-		return [
-			'code' => 'lifecycle-initial-malformed',
-			'message' => 'x-openregister-lifecycle.initial must be a string or an object with "from" and "field".',
-		];
-	}//end validateInitialForm()
+	}//end validateProviderModeConflicts()
 
 	/**
 	 * Shape-check a transition's optional `authorization` list.
@@ -413,4 +519,371 @@ final class LifecycleAnnotationValidator {
 
 		return null;
 	}//end validateTransitionAuthorization()
+
+	/**
+	 * Shape-check a transition's optional `condition`, in either dialect.
+	 *
+	 * 🔴 A SCALAR IS REFUSED, AND THAT IS THE POINT OF THIS METHOD.
+	 * An expression validator answers TRUE for any non-array, because in a
+	 * flow a scalar is a literal and a literal is always well-formed. Here the
+	 * expression decides whether a transition may proceed, and a truthy literal
+	 * authorises EVERY attempt — it fails OPEN, silently, in the one place that
+	 * exists to say no.
+	 *
+	 * The trap is not hypothetical. This annotation already carries a second
+	 * `condition` key one level deeper, on `transitions.<action>.actions[]`,
+	 * written in a different dialect: the `@self.<field> == '<value>'` string
+	 * that {@see LifecycleActionExecutor::evaluateCondition()} parses by regex.
+	 * An author who copies that form up one level writes something that looks
+	 * right, stores cleanly, and gates nothing.
+	 *
+	 * @param mixed $condition Raw value of the transition's `condition` key.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when well-formed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ConditionDialect's dialect lookup reads one
+	 * constant table and holds no state; calling it statically IS the reuse, and it is
+	 * the SAME lookup the save path makes, which is what keeps the two from drifting.
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function validateTransitionCondition(mixed $condition, string $action): ?array {
+		if (is_array($condition) === false) {
+			return [
+				'code' => 'lifecycle-condition-malformed',
+				'message' => sprintf(
+					'Transition "%s" `condition` must be a rule object, in the JSON AST such as '
+					. '{"not": {"eq": [{"prop": "object.motivering"}, null]}} or in the legacy '
+					. 'JSONLogic such as {"!!": {"var": "object.motivering"}}. '
+					. 'A string or other scalar is refused: '
+					. 'it would evaluate as a literal and allow every attempt. The '
+					. '"@self.field == \'value\'" form belongs on an `actions[]` entry, not here.',
+					$action
+				),
+			];
+		}
+
+		if ($condition === []) {
+			return [
+				'code' => 'lifecycle-condition-malformed',
+				'message' => sprintf('Transition "%s" `condition` must not be empty.', $action),
+			];
+		}
+
+		if (ConditionDialect::isValidCondition(node: $condition) === false) {
+			return [
+				'code' => 'lifecycle-condition-malformed',
+				'message' => sprintf(
+					'Transition "%s" `condition` is neither a valid JSON-AST expression such as '
+					. '{"gt": [{"prop": "object.bedrag"}, 500]} nor a valid JSONLogic one such as '
+					. '{">": [{"var": "object.bedrag"}, 500]}.',
+					$action
+				),
+			];
+		}
+
+		return null;
+	}//end validateTransitionCondition()
+
+	/**
+	 * Shape-check a transition's optional `autoWhen` and `executionMode`.
+	 *
+	 * All four codes this method can return REFUSE the schema save rather than
+	 * warn, which is a departure from the advisory treatment most lifecycle
+	 * errors get. The reason is the direction each failure takes:
+	 *
+	 * - a stored scalar `autoWhen` evaluates as a truthy literal, so the
+	 *   transition would fire on every write from its `from` state, writing an
+	 *   audit row and a round of notifications each time;
+	 * - an unknown `executionMode`, a required input beside `autoWhen` and an
+	 *   `autoWhen` on a graph block all describe a move that can NEVER happen,
+	 *   which is the silent no-op class the declarative-conditions link refused.
+	 *
+	 * Refusing breaks no existing import: no register can carry either key
+	 * before this change ships them.
+	 *
+	 * @param array<string, mixed> $spec The transition's spec.
+	 * @param string $action The transition name, for the error messages.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function validateAutomaticTransition(array $spec, string $action): array {
+		$errors = [];
+
+		if (array_key_exists('autoWhen', $spec) === true) {
+			$ruleError = $this->validateAutoWhenRule(autoWhen: $spec['autoWhen'], action: $action);
+			if ($ruleError !== null) {
+				$errors[] = $ruleError;
+			}
+
+			if ($this->declaresRequiredInput(inputs: ($spec['inputs'] ?? [])) === true) {
+				$errors[] = [
+					'code' => 'lifecycle-autowhen-requires-input',
+					'message' => sprintf(
+						'Transition "%s" declares `autoWhen` beside a required `inputs` entry. '
+						. 'An automatic move carries no payload, so this transition could only ever '
+						. 'be refused. Drop `required: true`, or drop `autoWhen`.',
+						$action
+					),
+				];
+			}
+		}
+
+		if (array_key_exists('executionMode', $spec) === true
+			&& in_array($spec['executionMode'], [Flow::MODE_SYNC, Flow::MODE_ASYNC], true) === false
+		) {
+			$shown = gettype($spec['executionMode']);
+			if (is_scalar($spec['executionMode']) === true) {
+				$shown = (string)$spec['executionMode'];
+			}
+
+			$errors[] = [
+				'code' => 'lifecycle-execution-mode-malformed',
+				'message' => sprintf(
+					'Transition "%s" `executionMode` "%s" must be exactly "%s" or "%s". '
+					. 'Case variants are refused rather than normalised, so the lifecycle and the '
+					. 'flow engine cannot drift into two spellings of the same two words.',
+					$action,
+					$shown,
+					Flow::MODE_SYNC,
+					Flow::MODE_ASYNC
+				),
+			];
+		}
+
+		return $errors;
+	}//end validateAutomaticTransition()
+
+	/**
+	 * Shape-check the rule object of a transition's `autoWhen`.
+	 *
+	 * 🔴 A SCALAR IS REFUSED, AND THAT IS THE POINT OF THIS METHOD, for the
+	 * same reason {@see validateTransitionCondition()} refuses one: a scalar
+	 * handed to an expression validator is a literal and always valid. Here a
+	 * truthy literal does not merely fail open once, it fires the transition
+	 * again on every write.
+	 *
+	 * `autoWhen` is evaluated by {@see \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator::holds()},
+	 * the same method a `condition` goes through, so it accepts the same two
+	 * dialects. Accepting fewer here would refuse at save a rule the engine
+	 * would have run.
+	 *
+	 * @param mixed $autoWhen Raw value of the transition's `autoWhen` key.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when well-formed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ConditionDialect's dialect lookup reads one
+	 * constant table and holds no state; calling it statically IS the reuse.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 */
+	private function validateAutoWhenRule(mixed $autoWhen, string $action): ?array {
+		$code = 'lifecycle-autowhen-malformed';
+
+		if (is_array($autoWhen) === false) {
+			return [
+				'code' => $code,
+				'message' => sprintf(
+					'Transition "%s" `autoWhen` must be a rule object, in the JSON AST such as '
+					. '{"not": {"eq": [{"prop": "object.motivering"}, null]}} or in the legacy '
+					. 'JSONLogic such as {"!!": {"var": "object.motivering"}}. '
+					. 'A string or other scalar is refused: '
+					. 'it would evaluate as a literal and fire the transition on every write from '
+					. 'its `from` state. The "@self.field == \'value\'" form belongs on an '
+					. '`actions[]` entry, not here.',
+					$action
+				),
+			];
+		}
+
+		if ($autoWhen === []) {
+			return [
+				'code' => $code,
+				'message' => sprintf('Transition "%s" `autoWhen` must not be empty.', $action),
+			];
+		}
+
+		if (ConditionDialect::isValidCondition(node: $autoWhen) === false) {
+			return [
+				'code' => $code,
+				'message' => sprintf(
+					'Transition "%s" `autoWhen` is neither a valid JSON-AST expression nor a valid '
+					. 'JSONLogic one. Write it as a rule object, for example '
+					. '{"not": {"eq": [{"prop": "object.motivering"}, null]}}.',
+					$action
+				),
+			];
+		}
+
+		return null;
+	}//end validateAutoWhenRule()
+
+	/**
+	 * Whether a transition's `inputs` declaration carries a required entry.
+	 *
+	 * Malformed entries are skipped rather than fatal, matching
+	 * {@see TransitionEngine::normaliseDeclaredInputs()}: a broken declaration
+	 * allowlists nothing, and reporting it is that method's `inputs` contract,
+	 * not this one's.
+	 *
+	 * @param mixed $inputs The transition's declared `inputs` list.
+	 *
+	 * @return bool True when at least one declared input is `required`.
+	 *
+	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 */
+	private function declaresRequiredInput(mixed $inputs): bool {
+		if (is_array($inputs) === false) {
+			return false;
+		}
+
+		foreach ($inputs as $input) {
+			if (is_array($input) === true && ($input['required'] ?? false) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end declaresRequiredInput()
+
+	/**
+	 * Shape-check a transition's optional refusal `message`.
+	 *
+	 * Accepts a non-empty string, or a per-locale map optionally carrying
+	 * `defaultLocale`. The map form mirrors the `x-openregister-notifications`
+	 * dialect key for key, so an author who has written one has written both.
+	 * Every malformed shape returns the single code `lifecycle-message-malformed`.
+	 *
+	 * @param mixed $message Raw value of the transition's `message` key.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function validateTransitionMessage(mixed $message, string $action): array {
+		$code = 'lifecycle-message-malformed';
+
+		if (is_string($message) === true) {
+			if ($message === '') {
+				return [
+					[
+						'code' => $code,
+						'message' => sprintf(
+							'Transition "%s" `message` must be a non-empty string when present.',
+							$action
+						),
+					],
+				];
+			}
+
+			return [];
+		}
+
+		if (is_array($message) === false) {
+			return [
+				[
+					'code' => $code,
+					'message' => sprintf(
+						'Transition "%s" `message` must be a string or a per-locale map.',
+						$action
+					),
+				],
+			];
+		}
+
+		return $this->validateMessageMap(message: $message, action: $action);
+	}//end validateTransitionMessage()
+
+	/**
+	 * Shape-check the per-locale map form of a transition `message`.
+	 *
+	 * At least one locale, every locale a non-empty string, and a
+	 * `defaultLocale` (when present) naming a declared locale.
+	 *
+	 * @param array<mixed> $message The per-locale map.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function validateMessageMap(array $message, string $action): array {
+		$code = 'lifecycle-message-malformed';
+		$errors = [];
+		$localeKeys = array_filter(
+			array_keys($message),
+			static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
+		);
+		if (count($localeKeys) === 0) {
+			$errors[] = [
+				'code' => $code,
+				'message' => sprintf(
+					'Transition "%s" `message` map must declare at least one locale (e.g. nl, en).',
+					$action
+				),
+			];
+		}
+
+		foreach ($localeKeys as $localeKey) {
+			if (is_string($message[$localeKey]) === false || $message[$localeKey] === '') {
+				$errors[] = [
+					'code' => $code,
+					'message' => sprintf(
+						'Transition "%s" `message` for locale "%s" must be a non-empty string.',
+						$action,
+						$localeKey
+					),
+				];
+			}
+		}
+
+		$defaultLocaleError = $this->validateDefaultLocale(message: $message, action: $action);
+		if ($defaultLocaleError !== null) {
+			$errors[] = $defaultLocaleError;
+		}
+
+		return $errors;
+	}//end validateMessageMap()
+
+	/**
+	 * Check that a message map's `defaultLocale`, when present, names a declared locale.
+	 *
+	 * @param array<mixed> $message The per-locale map.
+	 * @param string $action The transition name, for the error message.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when absent or valid.
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 */
+	private function validateDefaultLocale(array $message, string $action): ?array {
+		if (isset($message['defaultLocale']) === false) {
+			return null;
+		}
+
+		$defaultLocale = $message['defaultLocale'];
+		if (is_string($defaultLocale) === true && isset($message[$defaultLocale]) === true) {
+			return null;
+		}
+
+		$shown = gettype($defaultLocale);
+		if (is_string($defaultLocale) === true) {
+			$shown = $defaultLocale;
+		}
+
+		return [
+			'code' => 'lifecycle-message-malformed',
+			'message' => sprintf(
+				'Transition "%s" `message` defaultLocale "%s" is not declared in the message map.',
+				$action,
+				$shown
+			),
+		];
+	}//end validateDefaultLocale()
 }//end class

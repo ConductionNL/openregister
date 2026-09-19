@@ -190,6 +190,22 @@ final class WorkingCalendar {
 	}//end getOrganisation()
 
 	/**
+	 * The ISO weekdays that are working days.
+	 *
+	 * Exposed so the admin preview can echo back the weekdays it actually
+	 * validated: a panel that previews the holidays but shows the weekdays
+	 * straight from its own form cannot tell the reader that a malformed
+	 * weekday list was normalised away.
+	 *
+	 * @return array<int, int> ISO weekdays, 1 = Monday.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-working-calendars-are-administered-under-nextcloud-admin-settings
+	 */
+	public function getWorkingWeekdays(): array {
+		return $this->workingWeekdays;
+	}//end getWorkingWeekdays()
+
+	/**
 	 * Working hours in one working day.
 	 *
 	 * @return float The hours.

@@ -304,7 +304,6 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/JsonLd/JsonLdSerializer.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/LanguageService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Lifecycle/LifecycleAnnotationValidator.php"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Lifecycle/LifecycleAnnotationValidator.php" method="validateGraphMode"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Lifecycle/TransitionEngine.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/Lifecycle/TransitionEngine.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Lifecycle/TransitionEngine.php" method="transition"/>
@@ -480,4 +479,11 @@
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RegisterObjectEntity.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/WorkflowEngine/RunFlowOperation.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RunFlowOperation.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Vocabulary/CodedValueGuard.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Vocabulary/ConceptHierarchy.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Vocabulary/ConceptLifecycle.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Vocabulary/CodedPropertyDeclaration.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Vocabulary/ConceptLifecycle.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Rbac/ProvenanceResolver.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Schemas/UniqueConstraintEvaluator.php"/>
 </phpmd-baseline>

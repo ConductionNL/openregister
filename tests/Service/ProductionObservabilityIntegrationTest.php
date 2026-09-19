@@ -179,6 +179,40 @@ class ProductionObservabilityIntegrationTest extends TestCase {
 		}
 	}
 
+	public function testMetricsExposeTheInstanceWideTaskGauges(): void {
+		$body = $this->extractResponseBody($this->metricsController->index());
+
+		// Tasks are OpenRegister records, so both gauges are published here
+		// once for the whole instance rather than re-counted per leaf app.
+		// The total is declarative (tableCount over openregister_tasks);
+		// the overdue gauge comes from TaskMetricsProvider through the
+		// `provider` source, because the declarative filter DSL can express
+		// neither COALESCE(due_at, expires_at) nor the clock.
+		$this->assertStringContainsString(
+			'# TYPE openregister_tasks_total gauge',
+			$body,
+			'metrics output MUST type openregister_tasks_total as a gauge'
+		);
+		$this->assertStringContainsString(
+			'# TYPE openregister_tasks_overdue_total gauge',
+			$body,
+			'the provider-backed overdue gauge MUST reach the exposition'
+		);
+		$this->assertMatchesRegularExpression(
+			'/openregister_tasks_overdue_total \d+/',
+			$body,
+			'openregister_tasks_overdue_total MUST emit a non-negative integer value'
+		);
+
+		// The total is grouped by state, so every labelled line carries the
+		// state label key. A dev env may hold zero tasks, hence the guard.
+		if (preg_match_all('/openregister_tasks_total\{([^}]+)\}/', $body, $matches) > 0) {
+			foreach ($matches[1] as $labels) {
+				$this->assertStringContainsString('state=', $labels, 'the task total MUST be labelled with state');
+			}
+		}
+	}
+
 	public function testMetricsContentTypeIsPrometheus(): void {
 		$response = $this->metricsController->index();
 		$headers = $response->getHeaders();

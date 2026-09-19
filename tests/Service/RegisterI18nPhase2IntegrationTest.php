@@ -60,6 +60,19 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 	private ?ObjectEntity $testObject = null;
 	private ?string $createdTable = null;
 
+	/**
+	 * The session user as it was before this file touched it.
+	 *
+	 * The session is process-global and PHPUnit runs every test file in one
+	 * process, so a user left logged in here is still logged in for every file
+	 * that runs after this one. Ten Service files used to leave `admin` behind,
+	 * and assertions about what an ANONYMOUS caller may read then ran as an
+	 * administrator: some failed, and some passed only because of it.
+	 *
+	 * @var \OCP\IUser|null
+	 */
+	private ?\OCP\IUser $previousSessionUser = null;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->translationMapper = \OC::$server->get(TranslationMapper::class);
@@ -73,6 +86,9 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		$userManager = \OC::$server->get(IUserManager::class);
 		$userSession = \OC::$server->get(IUserSession::class);
 		$admin = $userManager->get('admin');
+		// Restored in tearDown(): see $previousSessionUser.
+		$this->previousSessionUser = $userSession->getUser();
+
 		if ($admin !== null) {
 			$userSession->setUser($admin);
 		}
@@ -116,6 +132,10 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 				// best effort
 			}
 		}
+		// Put the session back the way it was found, so the next test file
+		// starts from the session state it expects.
+		\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
+
 		parent::tearDown();
 	}
 
@@ -123,11 +143,19 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		// Drive the middleware directly via a stub IRequest.
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->with('Accept-Language')->willReturn('nl-NL, nl;q=0.9, en;q=0.8');
-		$request->method('getParam')->with('_translations')->willReturn(null);
+		// The middleware asks for several query parameters now (_lang before
+		// _translations), so the stub answers "not given" to all of them rather
+		// than pinning one name.
+		$request->method('getParam')->willReturn(null);
 
 		$svc = \OC::$server->get(LanguageService::class);
 		$svc->setFallbackUsed(false); // reset
-		$middleware = new LanguageMiddleware($request, $svc);
+		$middleware = new LanguageMiddleware(
+			request: $request,
+			languageService: $svc,
+			translationMapper: \OC::$server->get(\OCA\OpenRegister\Db\TranslationMapper::class),
+			logger: \OC::$server->get(\Psr\Log\LoggerInterface::class)
+		);
 		$middleware->beforeController(null, 'index');
 
 		// After-controller adds the Content-Language header.
@@ -146,7 +174,12 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 
 		$svc = \OC::$server->get(LanguageService::class);
 		$svc->setFallbackUsed(true); // simulate a render that fell back
-		$middleware = new LanguageMiddleware($request, $svc);
+		$middleware = new LanguageMiddleware(
+			request: $request,
+			languageService: $svc,
+			translationMapper: \OC::$server->get(\OCA\OpenRegister\Db\TranslationMapper::class),
+			logger: \OC::$server->get(\Psr\Log\LoggerInterface::class)
+		);
 
 		$response = new JSONResponse(['ok' => true]);
 		$modified = $middleware->afterController(null, 'index', $response);

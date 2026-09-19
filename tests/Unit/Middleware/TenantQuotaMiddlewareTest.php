@@ -88,6 +88,21 @@ class TenantQuotaMiddlewareTest extends TestCase {
 		$this->middleware->beforeController('TestController', 'index');
 	}
 
+	public function testBlocksRetainedOrganisation(): void {
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$org = new Organisation();
+		$org->setStatus('retained');
+		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
+
+		$this->expectException(TenantStatusException::class);
+		$this->expectExceptionCode(403);
+		$this->expectExceptionMessage('Organisation access has ended and its data is retained');
+
+		$this->middleware->beforeController('TestController', 'index');
+	}
+
 	public function testAllowsActiveOrganisation(): void {
 		$user = $this->createMock(IUser::class);
 		$this->userSession->method('getUser')->willReturn($user);

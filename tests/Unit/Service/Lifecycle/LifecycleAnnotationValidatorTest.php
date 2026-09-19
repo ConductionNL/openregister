@@ -307,4 +307,575 @@ class LifecycleAnnotationValidatorTest extends TestCase {
 		$codes = array_column($errors, 'code');
 		$this->assertContains('lifecycle-missing-key', $codes);
 	}
+
+	// --- Transition `condition` (lifecycle-declarative-conditions) -------
+
+	public function testValidRuleObjectConditionProducesNoErrors(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => [
+						'from' => ['draft'],
+						'to' => 'opened',
+						'condition' => ['!!' => ['var' => 'object.motivering']],
+					],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * 🔴 THE MOST IMPORTANT CASE HERE.
+	 *
+	 * `"@self.settlementMode == 'reimbursable'"` is the `actions[].condition`
+	 * dialect parsed by {@see \OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor::evaluateCondition()}.
+	 * `FlowExpression::isValid()` returns TRUE for it because a scalar is
+	 * always a valid JSONLogic literal — so without validateTransitionCondition()'s
+	 * explicit `is_array()` guard, this string would store cleanly on a
+	 * transition's `condition` key and then evaluate truthy at runtime,
+	 * AUTHORISING every transition it was written to block. This test must
+	 * see `lifecycle-condition-malformed`, not an empty error list.
+	 */
+	public function testScalarConditionIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'settle' => [
+						'from' => ['draft'],
+						'to' => 'opened',
+						'condition' => "@self.settlementMode == 'reimbursable'",
+					],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-condition-malformed', $codes);
+	}
+
+	public function testEmptyArrayConditionIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened', 'condition' => []],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-condition-malformed', $codes);
+	}
+
+	public function testConditionWithUnknownOperatorIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => [
+						'from' => ['draft'],
+						'to' => 'opened',
+						'condition' => ['notARealJsonLogicOperator' => ['var' => 'object.x']],
+					],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-condition-malformed', $codes);
+	}
+
+	// --- Transition `message` (lifecycle-declarative-conditions) ---------
+
+	public function testValidStringMessageProducesNoErrors(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened', 'message' => 'Not allowed yet.'],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	public function testValidLocaleMapMessageProducesNoErrors(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => [
+						'from' => ['draft'],
+						'to' => 'opened',
+						'message' => ['nl' => 'Nog niet toegestaan.', 'en' => 'Not allowed yet.'],
+					],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	public function testLocaleMapMessageWithDeclaredDefaultLocaleProducesNoErrors(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => [
+						'from' => ['draft'],
+						'to' => 'opened',
+						'message' => [
+							'nl' => 'Nog niet toegestaan.',
+							'en' => 'Not allowed yet.',
+							'defaultLocale' => 'nl',
+						],
+					],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	public function testNumericMessageIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened', 'message' => 42],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-message-malformed', $codes);
+	}
+
+	public function testEmptyStringMessageIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened', 'message' => ''],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-message-malformed', $codes);
+	}
+
+	public function testEmptyMapMessageIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened', 'message' => []],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-message-malformed', $codes);
+	}
+
+	public function testMapWithOnlyEmptyStringLocaleValuesIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened', 'message' => ['nl' => '', 'en' => '']],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-message-malformed', $codes);
+	}
+
+	public function testMessageDefaultLocaleNamingUndeclaredLocaleIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => [
+						'from' => ['draft'],
+						'to' => 'opened',
+						'message' => ['nl' => 'Nog niet toegestaan.', 'defaultLocale' => 'en'],
+					],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-message-malformed', $codes);
+	}
+
+	// --- Graph-mode `condition` refusal (fk-graph-lifecycle-transitions) -
+
+	public function testGraphConditionIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+					'condition' => ['!!' => ['var' => 'object.motivering']],
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-condition-graph-unsupported', $codes);
+	}
+
+	/**
+	 * A graph block that does not declare `condition` validates exactly as
+	 * before this change (no regression from adding the graph-condition
+	 * refusal).
+	 */
+	public function testGraphWithoutConditionValidatesAsBefore(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * The graph-condition refusal is scoped to `graph.condition` only. A
+	 * `transitions` block that happens to sit alongside a condition-free
+	 * `graph` block (graph mode short-circuits before `transitions` is ever
+	 * read) must not trip `lifecycle-condition-graph-unsupported`.
+	 */
+	public function testConditionedStaticTransitionBesideConditionFreeGraphRaisesNoGraphError(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'transitions' => [
+					'settle' => [
+						'from' => ['draft'],
+						'to' => 'opened',
+						'condition' => ['!!' => ['var' => 'object.motivering']],
+					],
+				],
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertNotContains('lifecycle-condition-graph-unsupported', $codes);
+	}
+
+	// --- Regression guard --------------------------------------------------
+
+	public function testTransitionWithoutConditionOrMessageProducesNoErrors(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened'],
+				],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'opened']]],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	// --- Provider mode -----------------------------------------------------
+
+	/**
+	 * The annotation dossiq's case schema will carry: a field the app owns,
+	 * a derived `initial`, and a provider tag. It validates clean, and in
+	 * particular the enum requirement is relaxed exactly as it is for graph
+	 * mode, because in provider mode the app owns the state vocabulary.
+	 */
+	public function testProviderModeValidatesWithoutAnEnum(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * A provider tag that names nothing is refused. It would resolve to
+	 * nothing at render time, on a GET, in front of a user.
+	 */
+	public function testEmptyProviderIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => '   ',
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-invalid', $codes);
+	}
+
+	/**
+	 * A non-string provider is refused for the same reason.
+	 */
+	public function testNonStringProviderIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => ['class' => 'CaseActionProvider'],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-invalid', $codes);
+	}
+
+	/**
+	 * The field still has to exist, even though its enum no longer does.
+	 */
+	public function testProviderFieldMustBeDeclaredInProperties(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['name' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-field-missing', $codes);
+	}
+
+	/**
+	 * Two modes on one field are refused rather than settled by precedence,
+	 * mirroring the graph-condition refusal: the mode the engine drops would
+	 * read as declared and never run.
+	 */
+	public function testProviderBesideTransitionsIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				'transitions' => [
+					'open' => ['from' => ['draft'], 'to' => 'opened'],
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-mode-conflict', $codes);
+	}
+
+	/**
+	 * Same rule for the other delegating mode.
+	 */
+	public function testProviderBesideGraphIsRejected(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-provider-mode-conflict', $codes);
+	}
+
+	/**
+	 * An EMPTY `transitions` map declares no second mode, so it is not a
+	 * conflict. Refusing it would break an author who left the key behind
+	 * while moving the state machine into the provider.
+	 */
+	public function testProviderBesideAnEmptyTransitionsMapIsAccepted(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				'transitions' => [],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * No regression: a graph annotation that carries no `provider` key is
+	 * still validated as a graph block.
+	 */
+	public function testGraphWithoutProviderIsStillGraphValidated(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'sideways',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-graph-allowedmoves-invalid', $codes);
+	}
+
+	/**
+	 * The reference form of `final` is accepted and NOT enum-checked.
+	 *
+	 * The dossiq case shape: `status` is a `$ref` to a `statusType` row, so the
+	 * ends are rows, and a list written in the schema could only name uuids
+	 * that do not exist yet.
+	 */
+	public function testFinalByReferenceIsAcceptedInProviderMode(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+				'final' => ['from' => 'statusType', 'field' => 'isFinal'],
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['status' => ['type' => 'string', '$ref' => 'statusType']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	public function testFinalByReferenceIsAcceptedBesideAStaticEnum(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'lifecycle',
+				'initial' => 'draft',
+				'final' => ['from' => 'statusType', 'field' => 'isFinal'],
+				'transitions' => ['x' => ['from' => ['draft'], 'to' => 'open']],
+			],
+			'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['draft', 'open']]],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertNotContains('lifecycle-final-not-in-enum', $codes);
+		$this->assertNotContains('lifecycle-final-malformed', $codes);
+	}
+
+	public function testFinalByReferenceIsAcceptedInGraphMode(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'final' => ['from' => 'statustype', 'field' => 'isFinal'],
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+				],
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	/**
+	 * Half a reference is refused naming the SHAPE, not the enum.
+	 *
+	 * An author who wrote `{ from: "statusType" }` has not written a list with
+	 * a bad entry, and `lifecycle-final-not-in-enum` would send them to the
+	 * enum instead of to the missing key.
+	 */
+	public function testHalfAFinalReferenceIsRefusedNamingTheShape(): void {
+		foreach (
+			[
+				['from' => 'statusType'],
+				['field' => 'isFinal'],
+				['from' => 'statusType', 'field' => ''],
+				['from' => '  ', 'field' => 'isFinal'],
+			] as $broken
+		) {
+			$errors = $this->v->validate([
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'final' => $broken,
+					'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+				],
+				'properties' => ['status' => ['type' => 'string']],
+			]);
+			$codes = array_column($errors, 'code');
+			$this->assertContains('lifecycle-final-malformed', $codes);
+			$this->assertNotContains('lifecycle-final-not-in-enum', $codes);
+		}
+
+		$this->assertStringContainsString(
+			'the schema the lifecycle field references',
+			$this->v->validate([
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'final' => ['from' => 'statusType'],
+					'provider' => 'p',
+				],
+				'properties' => ['status' => ['type' => 'string']],
+			])[0]['message']
+		);
+	}
+
+	public function testAScalarFinalIsRefused(): void {
+		$errors = $this->v->validate([
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'final' => 'afgehandeld',
+				'provider' => 'OCA\\Dossiq\\Lifecycle\\CaseActionProvider',
+			],
+			'properties' => ['status' => ['type' => 'string']],
+		]);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('lifecycle-final-malformed', $codes);
+	}
 }

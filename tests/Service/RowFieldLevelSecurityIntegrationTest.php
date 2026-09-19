@@ -37,6 +37,19 @@ class RowFieldLevelSecurityIntegrationTest extends TestCase {
 	private ?Schema $authedSchema = null;
 	private ?Schema $plainSchema = null;
 
+	/**
+	 * The session user as it was before this file touched it.
+	 *
+	 * The session is process-global and PHPUnit runs every test file in one
+	 * process, so a user left logged in here is still logged in for every file
+	 * that runs after this one. Ten Service files used to leave `admin` behind,
+	 * and assertions about what an ANONYMOUS caller may read then ran as an
+	 * administrator: some failed, and some passed only because of it.
+	 *
+	 * @var \OCP\IUser|null
+	 */
+	private ?\OCP\IUser $previousSessionUser = null;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->propertyRbacHandler = \OC::$server->get(PropertyRbacHandler::class);
@@ -46,6 +59,9 @@ class RowFieldLevelSecurityIntegrationTest extends TestCase {
 		$userManager = \OC::$server->get(IUserManager::class);
 		$userSession = \OC::$server->get(IUserSession::class);
 		$admin = $userManager->get('admin');
+		// Restored in tearDown(): see $previousSessionUser.
+		$this->previousSessionUser = $userSession->getUser();
+
 		if ($admin instanceof IUser) {
 			$userSession->setUser($admin);
 		}
@@ -68,6 +84,10 @@ class RowFieldLevelSecurityIntegrationTest extends TestCase {
 				// best effort
 			}
 		}
+		// Put the session back the way it was found, so the next test file
+		// starts from the session state it expects.
+		\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
+
 		parent::tearDown();
 	}
 

@@ -42,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\Server;
@@ -59,11 +60,25 @@ use Throwable;
  */
 class DoriathApplicationRegistrar {
 	/**
-	 * FQCN of Doriath's application service (registration seam).
+	 * The application service (registration seam), RELATIVE to the app namespace.
+	 *
+	 * Relative rather than fully qualified: the credential app is `OCA\Keepiq`
+	 * on development and `OCA\Doriath` on beta/main, so {@see FleetAppId}
+	 * prepends whichever namespace is actually loadable.
 	 *
 	 * @var string
 	 */
-	private const APPLICATION_SERVICE = 'OCA\\Doriath\\Service\\ApplicationService';
+	private const APPLICATION_SERVICE = 'Service\\ApplicationService';
+
+	/**
+	 * Canonical (new) id of the credential app, for {@see FleetAppId}.
+	 *
+	 * The resolver holds the candidate list `['keepiq', 'doriath']`, so this
+	 * names the app rather than a spelling of it and both deployments resolve.
+	 *
+	 * @var string
+	 */
+	private const CREDENTIAL_APP = 'keepiq';
 
 	/**
 	 * `IAppConfig` key prefix for a per-app Doriath application UUID.
@@ -161,7 +176,11 @@ class DoriathApplicationRegistrar {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function isDoriathAvailable(): bool {
-		if ($this->appManager->isEnabledForUser('doriath') === false) {
+		// The credential app answers to `keepiq` on development and `doriath`
+		// on beta/main. `isEnabledForUser('doriath')` on a keepiq instance
+		// returns FALSE rather than erroring, so this gate silently reported
+		// "no credential app" on every migrated instance.
+		if (FleetAppId::isEnabledForUser($this->appManager, self::CREDENTIAL_APP) === false) {
 			return false;
 		}
 
@@ -260,12 +279,18 @@ class DoriathApplicationRegistrar {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	protected function resolveApplicationService(): ?object {
-		if (class_exists(self::APPLICATION_SERVICE) === false) {
+		// Resolved through FleetAppId: the class is OCA\Keepiq\Service\* on
+		// development and OCA\Doriath\Service\* on beta/main, with no
+		// compatibility alias between them. `class_exists` on the wrong
+		// spelling is FALSE, which is indistinguishable from "app absent".
+		$className = FleetAppId::resolveClass(self::CREDENTIAL_APP, self::APPLICATION_SERVICE);
+		if ($className === null) {
 			return null;
 		}
 
 		try {
-			return Server::get(self::APPLICATION_SERVICE);
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Optional sibling app (keepiq): guarded by class_exists and try/catch, absent on most instances, so it cannot be a constructor dependency.
+			return Server::get($className);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[DoriathApplicationRegistrar] failed to resolve Doriath ApplicationService',

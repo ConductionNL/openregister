@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -446,12 +447,38 @@ class AnnotationNotificationDispatcher {
 				}
 			}
 
-			$recipients = $this->resolveRecipients(
+			// The scopes a preference may be pinned to for THIS dispatch,
+			// narrowest first. A user or group with a value for this schema
+			// beats one for the domain, which beats one for the register,
+			// which beats their own global value.
+			$dispatchScopes = $this->dispatchScopes(spec: $spec, object: $object, schemaSlug: $schemaSlug);
+
+			// The event identifier for THIS firing. Every transport this rule
+			// runs — the in-app notice, the e-mail, the webhook, the outbound
+			// call — records its own outcome under it, so the notification and
+			// the integration call that came from one event can be read
+			// together instead of being matched up by timestamp.
+			$eventId = $this->newEventId();
+
+			$resolved = $this->recipientResolver()->resolveWithDiagnostics(
 				recipientsSpec: ($spec['recipients'] ?? []),
 				data: $data,
 				object: $object,
-				context: $context
+				context: $context,
+				roleGroups: $this->roleGroupsFor(schema: $schema)
 			);
+			$recipients = $resolved['uids'];
+			// A group or role the server no longer has is a failed dispatch,
+			// not an empty one: recorded here naming what did not resolve.
+			if ($resolved['unresolved'] !== []) {
+				$this->recordUnresolvedRecipients(
+					ruleId: (string)$name,
+					unresolved: $resolved['unresolved'],
+					object: $object,
+					eventId: $eventId
+				);
+			}
+
 			// Subscription gate: when the rule opts into subscription
 			// filtering via `requiresSubscription: true`, intersect
 			// the resolved recipients with the set of users who have
@@ -465,10 +492,10 @@ class AnnotationNotificationDispatcher {
 				);
 			}
 
-			if (count($recipients) === 0) {
-				continue;
-			}
-
+			// The zero-recipient bail moved BELOW the party dispatch. A rule
+			// addressed only to the parties on the object resolves zero uids,
+			// because a party without an account has none, and bailing here
+			// would silence it entirely.
 			$subjectTemplate = $spec['subject'] ?? (string)$name;
 			// The notification BODY template (distinct from the title).
 			// Absent when the rule declares no `message`; the per-recipient
@@ -488,6 +515,22 @@ class AnnotationNotificationDispatcher {
 				fallbackName: (string)$name
 			);
 			$channels = (array)($spec['channels'] ?? ['nc-notification']);
+
+			// A rule may address the PARTIES on the object rather than
+			// accounts. The recipient resolver answers in verified uids, and
+			// most melders have none, so this kind is dispatched here instead:
+			// over the addresses the party record itself holds.
+			$this->dispatchToParties(
+				recipientsSpec: (array)($spec['recipients'] ?? []),
+				object: $object,
+				channels: $channels,
+				ruleId: (string)$name,
+				subject: $broadcastSubject
+			);
+
+			if (count($recipients) === 0) {
+				continue;
+			}
 
 			$rateLimit = null;
 			if (is_array($spec['rateLimit'] ?? null) === true) {
@@ -555,7 +598,8 @@ class AnnotationNotificationDispatcher {
 					notificationName: (string)$name,
 					broadcastSubject: $broadcastSubject,
 					recipients: $recipients,
-					context: $context
+					context: $context,
+					eventId: $eventId
 				);
 			}
 
@@ -573,9 +617,23 @@ class AnnotationNotificationDispatcher {
 					notificationName: (string)$name,
 					broadcastSubject: $broadcastSubject,
 					recipients: $recipients,
-					context: $context
+					context: $context,
+					eventId: $eventId
 				);
 			}
+
+			// The rule's outbound transports, run once per firing under the same
+			// event id as the notices above. This is the path that replaces a
+			// leaf app publishing to its integration beside the notification:
+			// one rule, one firing, one record with an outcome per transport.
+			$this->runOutboundTransports(
+				spec: $spec,
+				object: $object,
+				ruleId: $ruleId,
+				recipients: $recipients,
+				context: $context,
+				eventId: $eventId
+			);
 
 			foreach ($recipients as $uid) {
 				// Per-recipient rate limit gates every channel for this uid.
@@ -589,7 +647,8 @@ class AnnotationNotificationDispatcher {
 						status: 'rate-limited',
 						object: $object,
 						subject: null,
-						locale: null
+						locale: null,
+						eventId: $eventId
 					);
 					continue;
 				}
@@ -632,7 +691,8 @@ class AnnotationNotificationDispatcher {
 						status: 'coalesced',
 						object: $object,
 						subject: $recipientSubject,
-						locale: $recipientLocale
+						locale: $recipientLocale,
+						eventId: $eventId
 					);
 					continue;
 				}
@@ -648,7 +708,8 @@ class AnnotationNotificationDispatcher {
 						schemaDefault: $spec,
 						userId: $uid,
 						schemaSlug: $schemaSlug,
-						notificationKey: (string)$name
+						notificationKey: (string)$name,
+						scopes: $dispatchScopes
 					);
 					if ($pref['enabled'] === false) {
 						$this->recordHistoryAcrossChannels(
@@ -659,7 +720,8 @@ class AnnotationNotificationDispatcher {
 							status: 'preference-off',
 							object: $object,
 							subject: $recipientSubject,
-							locale: $recipientLocale
+							locale: $recipientLocale,
+							eventId: $eventId
 						);
 						continue;
 					}
@@ -723,7 +785,8 @@ class AnnotationNotificationDispatcher {
 						status: 'dispatched',
 						object: $object,
 						subject: $recipientSubject,
-						locale: $recipientLocale
+						locale: $recipientLocale,
+						eventId: $eventId
 					);
 				}//end if
 
@@ -740,7 +803,8 @@ class AnnotationNotificationDispatcher {
 						status: 'dispatched',
 						object: $object,
 						subject: $recipientSubject,
-						locale: $recipientLocale
+						locale: $recipientLocale,
+						eventId: $eventId
 					);
 				}
 
@@ -758,13 +822,206 @@ class AnnotationNotificationDispatcher {
 						status: 'dispatched',
 						object: $object,
 						subject: $recipientSubject,
-						locale: $recipientLocale
+						locale: $recipientLocale,
+						eventId: $eventId
 					);
 				}
 			}//end foreach
 		}//end foreach
 
 	}//end dispatchWithSchema()
+
+	/**
+	 * The scopes this dispatch may match a pinned preference against.
+	 *
+	 * Narrowest first, because the first match wins: the schema the object
+	 * lives on, then the domain the rule (or the schema) declares, then the
+	 * register. A domain is a leaf app's own word for a slice of its work —
+	 * dossiq's "vergunningen" against its "meldingen" — and it is declared
+	 * rather than derived, so OpenRegister never has to guess what a leaf app
+	 * means by it.
+	 *
+	 * @param array<string, mixed> $spec The notification rule spec.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param string $schemaSlug The owning schema's slug.
+	 *
+	 * @return array<int, string> The candidate scopes, narrowest first.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	private function dispatchScopes(array $spec, ObjectEntity $object, string $schemaSlug): array {
+		$scopes = [];
+		if ($schemaSlug !== '') {
+			$scopes[] = 'schema:' . $schemaSlug;
+		}
+
+		$domain = ($spec['domain'] ?? null);
+		if (is_string($domain) === true && $domain !== '') {
+			$scopes[] = 'domain:' . $domain;
+		}
+
+		$register = $object->getRegister();
+		if (is_string($register) === true && $register !== '') {
+			$scopes[] = 'register:' . $register;
+		} elseif (is_int($register) === true) {
+			$scopes[] = 'register:' . (string)$register;
+		}
+
+		return $scopes;
+	}//end dispatchScopes()
+
+	/**
+	 * Run the rule's declared outbound transports, once per firing.
+	 *
+	 * Each transport is resolved from the server container by the handler the
+	 * rule names, run, and recorded under the firing's event id with its own
+	 * outcome. A transport that throws or reports a failure does not stop the
+	 * next one and does not stop the notices that already went out: the
+	 * independence is the requirement, and it is enforced here rather than
+	 * trusted to each implementation.
+	 *
+	 * @param array<string, mixed> $spec The notification rule spec.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param string $ruleId The rule's annotation key.
+	 * @param array<int, string> $recipients The resolved recipient uids.
+	 * @param array<string, mixed> $context Trigger-specific extras.
+	 * @param string $eventId The firing's event identifier.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The firing, passed whole to each transport.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 */
+	private function runOutboundTransports(
+		array $spec,
+		ObjectEntity $object,
+		string $ruleId,
+		array $recipients,
+		array $context,
+		string $eventId,
+	): void {
+		$transports = ($spec['transports'] ?? null);
+		if (is_array($transports) === false || $transports === []) {
+			return;
+		}
+
+		foreach ($transports as $transport) {
+			if (is_array($transport) === false || (string)($transport['kind'] ?? '') !== 'outbound') {
+				continue;
+			}
+
+			$handler = (string)($transport['handler'] ?? '');
+			if ($handler === '') {
+				continue;
+			}
+
+			$config = [];
+			if (is_array(($transport['config'] ?? null)) === true) {
+				$config = $transport['config'];
+			}
+
+			$failure = $this->runOneOutboundTransport(
+				handler: $handler,
+				object: $object,
+				ruleId: $ruleId,
+				recipients: $recipients,
+				context: $context,
+				config: $config,
+				eventId: $eventId
+			);
+
+			$status = 'dispatched';
+			if ($failure !== null) {
+				$status = 'failed';
+			}
+
+			$this->recordHistory(
+				ruleId: $ruleId,
+				channel: 'outbound',
+				recipient: $handler,
+				status: $status,
+				object: $object,
+				subject: null,
+				locale: null,
+				eventId: $eventId,
+				errorMessage: $failure
+			);
+		}//end foreach
+
+	}//end runOutboundTransports()
+
+	/**
+	 * Resolve and invoke one outbound transport, turning any fault into a string.
+	 *
+	 * @param string $handler DI tag or FQCN of the transport.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param string $ruleId The rule's annotation key.
+	 * @param array<int, string> $recipients The resolved recipient uids.
+	 * @param array<string, mixed> $context Trigger-specific extras.
+	 * @param array<string, mixed> $config The transport's declared config block.
+	 * @param string $eventId The firing's event identifier.
+	 *
+	 * @return string|null Why it did not land, or null when it did.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The firing, passed whole to the transport.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 */
+	private function runOneOutboundTransport(
+		string $handler,
+		ObjectEntity $object,
+		string $ruleId,
+		array $recipients,
+		array $context,
+		array $config,
+		string $eventId,
+	): ?string {
+		try {
+			$service = $this->serverContainer->get($handler);
+		} catch (\Throwable $e) {
+			return sprintf('transport "%s" could not be resolved: %s', $handler, $e->getMessage());
+		}
+
+		if (($service instanceof OutboundTransportInterface) === false) {
+			return sprintf('transport "%s" does not implement OutboundTransportInterface', $handler);
+		}
+
+		try {
+			return $service->send(
+				object: $object,
+				notificationName: $ruleId,
+				recipients: $recipients,
+				context: $context,
+				config: $config,
+				eventId: $eventId
+			);
+		} catch (\Throwable $e) {
+			return $e->getMessage();
+		}
+	}//end runOneOutboundTransport()
+
+	/**
+	 * Mint the identifier that ties one firing's transports together.
+	 *
+	 * Opaque and per-firing. It is not the idempotency key: that one is
+	 * authored by the schema and deduplicates ACROSS firings, while this one is
+	 * minted here and only groups the transports WITHIN one.
+	 *
+	 * @return string The event identifier.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 */
+	private function newEventId(): string {
+		try {
+			return bin2hex(random_bytes(16));
+		} catch (\Throwable $e) {
+			// An exhausted entropy source must not stop a notification. A
+			// weaker id still groups this firing's transports, which is all the
+			// column claims; it is not a security token.
+			return sprintf('%013x%06x', (int)(microtime(true) * 1000), mt_rand(0, 0xFFFFFF));
+		}
+	}//end newEventId()
 
 	/**
 	 * Resolve "now" for the delivery-window / digest-schedule gate. Uses
@@ -1107,6 +1364,7 @@ class AnnotationNotificationDispatcher {
 	 * @param string $broadcastSubject Pre-rendered broadcast subject.
 	 * @param array<int, string> $recipients Resolved recipient uids.
 	 * @param array<string, mixed> $context Trigger context (action, from, to).
+	 * @param string|null $eventId The firing's event identifier, shared with every other transport.
 	 *
 	 * @return void
 	 *
@@ -1127,6 +1385,7 @@ class AnnotationNotificationDispatcher {
 		string $broadcastSubject,
 		array $recipients,
 		array $context,
+		?string $eventId = null,
 	): void {
 		if ($this->rateLimitAllows(ruleId: $ruleId, recipient: $recipientKey, rateLimit: $rateLimit) === false) {
 			$this->recordHistory(
@@ -1136,7 +1395,8 @@ class AnnotationNotificationDispatcher {
 				status: 'rate-limited',
 				object: $object,
 				subject: $broadcastSubject,
-				locale: null
+				locale: null,
+				eventId: $eventId
 			);
 			return;
 		}
@@ -1149,13 +1409,15 @@ class AnnotationNotificationDispatcher {
 				status: 'coalesced',
 				object: $object,
 				subject: $broadcastSubject,
-				locale: null
+				locale: null,
+				eventId: $eventId
 			);
 			return;
 		}
 
+		$failure = null;
 		if ($channel === 'webhook') {
-			$this->emitWebhook(
+			$failure = $this->emitWebhook(
 				spec: $spec,
 				object: $object,
 				notificationName: $notificationName,
@@ -1167,14 +1429,24 @@ class AnnotationNotificationDispatcher {
 			$this->emitTalk(spec: $spec, message: $broadcastSubject);
 		}
 
+		// The outcome this transport actually had, under the firing's event id.
+		// Recording `dispatched` for a call that threw is what makes a dead
+		// integration invisible: the bell looks fine and nothing was sent.
+		$status = 'dispatched';
+		if ($failure !== null) {
+			$status = 'failed';
+		}
+
 		$this->recordHistory(
 			ruleId: $ruleId,
 			channel: $channel,
 			recipient: $recipientKey,
-			status: 'dispatched',
+			status: $status,
 			object: $object,
 			subject: $broadcastSubject,
-			locale: null
+			locale: null,
+			eventId: $eventId,
+			errorMessage: $failure
 		);
 
 	}//end dispatchBroadcastChannel()
@@ -1351,8 +1623,12 @@ class AnnotationNotificationDispatcher {
 	 * @param ObjectEntity $object The object the event happened on.
 	 * @param string|null $subject The interpolated subject (null when no subject was rendered).
 	 * @param string|null $locale Recipient locale (null for broadcast channels).
+	 * @param string|null $eventId The firing's event identifier, shared by every transport of one dispatch.
+	 * @param string|null $errorMessage Why this transport did not deliver, when it did not.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One history row's columns, passed as they are stored.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
@@ -1364,6 +1640,8 @@ class AnnotationNotificationDispatcher {
 		ObjectEntity $object,
 		?string $subject,
 		?string $locale,
+		?string $eventId = null,
+		?string $errorMessage = null,
 	): void {
 		if ($this->historyMapper === null) {
 			return;
@@ -1394,8 +1672,9 @@ class AnnotationNotificationDispatcher {
 				registerId: $historyRegisterId,
 				objectUuid: $historyObjectUuid,
 				subject: $subject,
-				errorMessage: null,
-				locale: $locale
+				errorMessage: $errorMessage,
+				locale: $locale,
+				eventId: $eventId
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -1428,8 +1707,11 @@ class AnnotationNotificationDispatcher {
 	 * @param ObjectEntity $object The triggering object.
 	 * @param string|null $subject Subject when one has been rendered.
 	 * @param string|null $locale Recipient locale.
+	 * @param string|null $eventId The firing's event identifier.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One history row's columns, passed as they are stored.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
@@ -1442,6 +1724,7 @@ class AnnotationNotificationDispatcher {
 		ObjectEntity $object,
 		?string $subject,
 		?string $locale,
+		?string $eventId = null,
 	): void {
 		foreach ($channels as $channel) {
 			if (in_array($channel, $broadcastChannels, true) === true) {
@@ -1455,7 +1738,8 @@ class AnnotationNotificationDispatcher {
 				status: $status,
 				object: $object,
 				subject: $subject,
-				locale: $locale
+				locale: $locale,
+				eventId: $eventId
 			);
 		}
 
@@ -1553,7 +1837,9 @@ class AnnotationNotificationDispatcher {
 	 * @param array<int, string> $recipients Resolved recipient uids.
 	 * @param array<string, mixed> $context Trigger context (action, from, to).
 	 *
-	 * @return void
+	 * @return string|null Why the call did not land, or null when it did (or was deliberately skipped).
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	private function emitWebhook(
 		array $spec,
@@ -1562,10 +1848,10 @@ class AnnotationNotificationDispatcher {
 		string $subject,
 		array $recipients,
 		array $context,
-	): void {
+	): ?string {
 		$hook = ($spec['webhook'] ?? null);
 		if (is_array($hook) === false) {
-			return;
+			return null;
 		}
 
 		// When the webhook is declared persistent, NotificationsAnnotationInstaller
@@ -1574,12 +1860,12 @@ class AnnotationNotificationDispatcher {
 		// events. Skipping here prevents a double-fire (inline POST + pipeline
 		// delivery) for the same notification.
 		if (($hook['persistent'] ?? false) === true) {
-			return;
+			return null;
 		}
 
 		$url = (string)($hook['url'] ?? '');
 		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
-			return;
+			return 'webhook url missing or malformed';
 		}
 
 		$method = strtoupper((string)($hook['method'] ?? 'POST'));
@@ -1613,10 +1899,15 @@ class AnnotationNotificationDispatcher {
 					'timeout' => 5,
 				]
 			);
+			return null;
 		} catch (\Throwable $e) {
+			// Returned rather than rethrown: the transports of one firing are
+			// independent, so a dead endpoint must leave the in-app notice
+			// delivered and record itself as the one thing that failed.
 			$this->logger->warning(
 				sprintf('[AnnotationNotificationDispatcher] webhook %s failed: %s', $url, $e->getMessage())
 			);
+			return $e->getMessage();
 		}
 	}//end emitWebhook()
 
@@ -1930,36 +2221,91 @@ class AnnotationNotificationDispatcher {
 	}//end fieldChangeConditionMatches()
 
 	/**
-	 * Resolve a `recipients` block to a flat list of UIDs.
+	 * Read a schema's `authorization.roles` assignment as a role-to-groups map.
 	 *
-	 * @param array<int, array<string, mixed>> $recipientsSpec The declared recipients block.
-	 * @param array<string, mixed> $data Object payload (used by `field` resolvers).
-	 * @param ObjectEntity|null $object Optional owning object (needed for ACL/expression kinds).
-	 * @param array<string, mixed> $context Per-event context.
+	 * The same map `PermissionHandler` expands for a lifecycle transition, read
+	 * here so a notification rule may address `{"kind": "role", "role": "..."}`
+	 * in the schema's own vocabulary rather than repeating the group ids the
+	 * assignment happens to hold today.
 	 *
-	 * @return array<int, string>
+	 * @param Schema $schema The schema whose authorization block carries the assignment.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) resolveRecipients() handles five recipient kinds
-	 * (users, groups, field, acl-read, acl-manage) plus expression evaluation, deduplication, and
-	 * exclusion; each kind requires its own resolution logic and must run in one pass to produce a
-	 * deduplicated uid list.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each recipient entry is dispatched by kind; within
-	 * each kind there are null-guards and type checks — all are required branches of the spec's
-	 * recipient model.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Combinations of recipient kinds, expression evaluation,
-	 * null-guards, and exclusion list produce many paths; each is required by the spec's
-	 * recipient-resolution contract.
+	 * @return array<string, array<int, string>> Role name to assigned Nextcloud group ids.
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
-	private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = []): array {
-		// The subsystem's ONE recipient resolver — the same class the flow
-		// messaging service expands its node recipients through.
-		return $this->recipientResolver()->resolve(
-			recipientsSpec: $recipientsSpec,
-			data: $data,
-			object: $object,
-			context: $context
-		);
-	}//end resolveRecipients()
+	private function roleGroupsFor(Schema $schema): array {
+		try {
+			$authorization = $schema->getAuthorization();
+		} catch (\Throwable $e) {
+			return [];
+		}
+
+		if (is_array($authorization) === false || is_array(($authorization['roles'] ?? null)) === false) {
+			return [];
+		}
+
+		$map = [];
+		foreach ($authorization['roles'] as $roleName => $groups) {
+			if (is_string($roleName) === false || $roleName === '') {
+				continue;
+			}
+
+			$map[$roleName] = array_values(array_filter((array)$groups, 'is_string'));
+		}
+
+		return $map;
+	}//end roleGroupsFor()
+
+	/**
+	 * Record a recipient entry that named something the server does not have.
+	 *
+	 * A rule addressing a deleted group resolves to nobody, and a dispatch to
+	 * nobody is indistinguishable from a dispatch that was never wanted. The
+	 * history row is what separates them: it carries the group (or role) in the
+	 * recipient column and `recipient-unresolved` as its status, so the fault is
+	 * readable rather than a silence (ADR-005).
+	 *
+	 * @param string $ruleId The rule that named it.
+	 * @param array<int, array{kind: string, id: string, reason: string}> $unresolved The resolver's report.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param string $eventId The dispatch's event identifier.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	private function recordUnresolvedRecipients(
+		string $ruleId,
+		array $unresolved,
+		ObjectEntity $object,
+		string $eventId,
+	): void {
+		foreach ($unresolved as $entry) {
+			$this->logger->warning(
+				sprintf(
+					'[AnnotationNotificationDispatcher] rule="%s" addressed %s "%s" which did not resolve (%s)',
+					$ruleId,
+					$entry['kind'],
+					$entry['id'],
+					$entry['reason']
+				)
+			);
+
+			$this->recordHistory(
+				ruleId: $ruleId,
+				channel: $entry['kind'],
+				recipient: $entry['id'],
+				status: 'recipient-unresolved',
+				object: $object,
+				subject: null,
+				locale: null,
+				eventId: $eventId,
+				errorMessage: $entry['reason']
+			);
+		}
+
+	}//end recordUnresolvedRecipients()
 
 	/**
 	 * Verify that a uid corresponds to an actual Nextcloud user.
@@ -2786,6 +3132,77 @@ class AnnotationNotificationDispatcher {
 			webPushActive: $webPushActive
 		);
 	}//end emitNotification()
+
+	/**
+	 * Send a rule addressed to the parties on an object, over their own addresses.
+	 *
+	 * A party without a Nextcloud account cannot be a resolved uid, so the
+	 * `parties` kind never reaches the per-recipient loop above. It is sent
+	 * here, through the one unit that knows how a party is reached: the
+	 * correspondence address it holds, and nothing at all when an indicator on
+	 * the party refuses the send.
+	 *
+	 * The service is resolved from the container rather than injected. It
+	 * reaches the object layer, which dispatches notifications, so a
+	 * constructor dependency would close that cycle.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param array<int, string> $channels The rule's channels.
+	 * @param string $ruleId The rule, for the history row.
+	 * @param string $subject The rule's subject, in the default locale.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function dispatchToParties(
+		array $recipientsSpec,
+		ObjectEntity $object,
+		array $channels,
+		string $ruleId,
+		string $subject,
+	): void {
+		if (in_array('email', $channels, true) === false) {
+			return;
+		}
+
+		$objectUuid = (string)($object->getUuid() ?? '');
+		if ($objectUuid === '') {
+			return;
+		}
+
+		foreach ($recipientsSpec as $recipient) {
+			if (is_array($recipient) === false || (string)($recipient['kind'] ?? '') !== 'parties') {
+				continue;
+			}
+
+			$role = trim((string)($recipient['role'] ?? ''));
+			$onlyRole = null;
+			if ($role !== '') {
+				$onlyRole = $role;
+			}
+
+			$sent = $this->serverContainer->get(PartyNotificationService::class)->notifyParties(
+				objectUuid: $objectUuid,
+				subject: $subject,
+				body: $subject,
+				role: $onlyRole
+			);
+
+			foreach ($sent as $outcome) {
+				$this->recordHistory(
+					ruleId: $ruleId,
+					channel: 'email',
+					recipient: 'party:' . $outcome['party'],
+					status: $outcome['outcome'],
+					object: $object,
+					subject: $subject,
+					locale: null
+				);
+			}
+		}//end foreach
+	}//end dispatchToParties()
 
 	/**
 	 * Send a transactional email to a Nextcloud user.

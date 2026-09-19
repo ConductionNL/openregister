@@ -14,6 +14,11 @@ import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp } from 'vue'
 import MailSidebar from './mail-sidebar/MailSidebar.vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
+
+// Register nextcloud-vue's own catalogue before anything renders, so the
+// library's labels follow the reader's language on this page too.
+registerLibraryTranslations()
 
 // Bootstrap the integration registry on the mail-sidebar bundle so any
 // sub-component that uses useIntegrationRegistry() sees the populated

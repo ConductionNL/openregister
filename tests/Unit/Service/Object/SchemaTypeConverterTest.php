@@ -251,4 +251,137 @@ class SchemaTypeConverterTest extends TestCase {
 		$rrule = 'FREQ=WEEKLY;BYDAY=MO;COUNT=10';
 		$this->assertSame($rrule, $this->converter->convertValue($rrule, 'recurrence'));
 	}//end testRecurrenceTypeReturnsRruleUnchanged()
+
+	/*
+		====================================================================
+	 * restoreStringTypedValues — the inverse of the decode above
+	 *
+	 * The decode has to have an encode or a read-merge-save cycle feeds an
+	 * array back into a property the schema calls a string, and validation
+	 * refuses a write that never mentioned it.
+	 * ==================================================================== */
+
+	public function testADecodedStringPropertyIsReEncodedWhenTheCallerDidNotTouchIt(): void {
+		$stored = json_encode([['status' => 'open'], ['status' => 'closed']]);
+		$decoded = $this->converter->convertValue($stored, 'string');
+		$this->assertIsArray($decoded, 'precondition: the read path decodes this');
+
+		$restored = $this->converter->restoreStringTypedValues(
+			['title' => 'probe', 'notes' => $decoded],
+			['title' => ['type' => 'string'], 'notes' => ['type' => 'string']],
+			['title']
+		);
+
+		$this->assertSame($stored, $restored['notes'], 'the untouched value goes back as it was stored');
+		$this->assertSame('probe', $restored['title']);
+	}//end testADecodedStringPropertyIsReEncodedWhenTheCallerDidNotTouchIt()
+
+	public function testAnArrayTheCallerSuppliedIsLeftAloneSoValidationStillRefusesIt(): void {
+		$restored = $this->converter->restoreStringTypedValues(
+			['notes' => [['status' => 'open']]],
+			['notes' => ['type' => 'string']],
+			['notes']
+		);
+
+		$this->assertIsArray(
+			$restored['notes'],
+			'a value the caller passed deliberately must keep its loud refusal, not be silently rewritten'
+		);
+	}//end testAnArrayTheCallerSuppliedIsLeftAloneSoValidationStillRefusesIt()
+
+	public function testAnArrayTypedPropertyIsNeverEncoded(): void {
+		$restored = $this->converter->restoreStringTypedValues(
+			['tags' => ['a', 'b']],
+			['tags' => ['type' => 'array']],
+			[]
+		);
+
+		$this->assertSame(['a', 'b'], $restored['tags']);
+	}//end testAnArrayTypedPropertyIsNeverEncoded()
+
+	public function testAUnionOfStringAndNullIsStillStringTyped(): void {
+		$restored = $this->converter->restoreStringTypedValues(
+			['notes' => ['a' => 1]],
+			['notes' => ['type' => ['string', 'null']]],
+			[]
+		);
+
+		$this->assertSame('{"a":1}', $restored['notes']);
+	}//end testAUnionOfStringAndNullIsStillStringTyped()
+
+	public function testAUnionThatAdmitsArrayIsLeftAlone(): void {
+		$restored = $this->converter->restoreStringTypedValues(
+			['notes' => ['a' => 1]],
+			['notes' => ['type' => ['string', 'array']]],
+			[]
+		);
+
+		$this->assertSame(['a' => 1], $restored['notes'], 'the array form is valid there, so there is nothing to restore');
+	}//end testAUnionThatAdmitsArrayIsLeftAlone()
+
+	public function testAScalarIsUntouchedWhateverItsDeclaredType(): void {
+		$restored = $this->converter->restoreStringTypedValues(
+			['notes' => 'plain text', 'count' => 3, 'flag' => true, 'empty' => null],
+			[
+				'notes' => ['type' => 'string'],
+				'count' => ['type' => 'integer'],
+				'flag' => ['type' => 'boolean'],
+				'empty' => ['type' => 'string'],
+			],
+			[]
+		);
+
+		$this->assertSame(
+			['notes' => 'plain text', 'count' => 3, 'flag' => true, 'empty' => null],
+			$restored
+		);
+	}//end testAScalarIsUntouchedWhateverItsDeclaredType()
+
+	public function testAPropertyTheSchemaDoesNotDeclareIsLeftAlone(): void {
+		$restored = $this->converter->restoreStringTypedValues(
+			['stray' => ['a' => 1]],
+			['notes' => ['type' => 'string']],
+			[]
+		);
+
+		$this->assertSame(['a' => 1], $restored['stray'], 'no declaration, no claim about the stored shape');
+	}//end testAPropertyTheSchemaDoesNotDeclareIsLeftAlone()
+
+	public function testNestingBelowTheTopLevelIsNotTouched(): void {
+		// The read applies convertValue() once per column, so only the top
+		// level was ever decoded. A `type: string` nested inside an object
+		// property was stored as written and must stay that way.
+		$restored = $this->converter->restoreStringTypedValues(
+			['contact' => ['name' => 'A', 'history' => ['x']]],
+			['contact' => ['type' => 'object']],
+			[]
+		);
+
+		$this->assertSame(['name' => 'A', 'history' => ['x']], $restored['contact']);
+	}//end testNestingBelowTheTopLevelIsNotTouched()
+
+	public function testTheEncodingMatchesWhatJavaScriptWroteIn(): void {
+		// Consuming apps store `JSON.stringify(...)`, which escapes neither
+		// slashes nor non-ASCII. Re-encoding with PHP's defaults would hand
+		// back a different string for the same value.
+		$restored = $this->converter->restoreStringTypedValues(
+			['notes' => ['url' => 'https://example.org/a/b', 'who' => 'Renée']],
+			['notes' => ['type' => 'string']],
+			[]
+		);
+
+		$this->assertSame('{"url":"https://example.org/a/b","who":"Renée"}', $restored['notes']);
+	}//end testTheEncodingMatchesWhatJavaScriptWroteIn()
+
+	public function testARoundTripThroughBothHalvesReturnsTheStoredString(): void {
+		$stored = '[{"status":"open","at":"2026-09-11"},{"status":"closed","at":"2026-09-12"}]';
+
+		$restored = $this->converter->restoreStringTypedValues(
+			['notes' => $this->converter->convertValue($stored, 'string')],
+			['notes' => ['type' => 'string']],
+			[]
+		);
+
+		$this->assertSame($stored, $restored['notes'], 'decode then encode is the identity for what a read handed back');
+	}//end testARoundTripThroughBothHalvesReturnsTheStoredString()
 }//end class

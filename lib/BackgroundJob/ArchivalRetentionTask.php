@@ -12,12 +12,23 @@
  *   1. Resolve the magic table name via `MagicTableHandler::getTableNameForRegisterSchema()`.
  *   2. Run a single native `SELECT _uuid, _created, …` against the table.
  *   3. For each row evaluate `RetentionEvaluator::evaluate()`.
- *   4. Rows whose `expiresAt < now()` are deleted via
+ *   4. Rows whose `expiresAt < now()` are loaded as objects and checked for an
+ *      ACTIVE LEGAL HOLD. A held row is left in place and counted; it is never
+ *      deleted, and a row whose object cannot be loaded is left in place too,
+ *      because a row that cannot answer is exactly the row that might be held.
+ *   5. The rest are deleted via
  *      `ObjectService::deleteObject(..., _retentionSweep: true)` so the
  *      immutability gate is bypassed but the standard audit-trail entry
  *      still fires.
- *   5. Emit one structured log entry per schema:
- *      `{schemaSlug, scanned, expired, deleted}`.
+ *   6. Emit one structured log entry per schema:
+ *      `{schemaSlug, scanned, expired, deleted, held, unresolved}`, and notify
+ *      the archivist group whenever a hold stopped a deletion.
+ *
+ * THE HOLD CHECK IS NOT OPTIONAL ON THIS PATH. `_retentionSweep: true` is the
+ * flag that waves a row past the archival immutability gate, so a hold that is
+ * not asked about here is not asked about anywhere on this path. The check
+ * mirrors `DestructionExecutionJob`, which re-checks the hold at execution
+ * time, counts skipped holds separately and notifies the archivist group.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -40,20 +51,26 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\Notification\IManager as INotificationManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -105,6 +122,24 @@ class ArchivalRetentionTask extends TimedJob {
 	private readonly ObjectService $objectService;
 
 	/**
+	 * Retention service, asked whether a row is under an active legal hold.
+	 *
+	 * @var RetentionService
+	 */
+	private readonly RetentionService $retentionService;
+
+	/**
+	 * App container the notification collaborators are resolved from.
+	 *
+	 * Resolved lazily rather than injected, so the hourly cron only builds the
+	 * group and notification managers on the runs that actually skipped a hold.
+	 * `DestructionExecutionJob` resolves all of its collaborators the same way.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
 	 * Logger for per-schema summaries.
 	 *
 	 * @var LoggerInterface
@@ -127,6 +162,8 @@ class ArchivalRetentionTask extends TimedJob {
 	 * @param SchemaMapper $schemaMapper Schema repository.
 	 * @param MagicMapper $magicMapper Magic-table resolver.
 	 * @param ObjectService $objectService Service used to perform the sweep deletes.
+	 * @param RetentionService $retentionService Answers whether a row is under an active legal hold.
+	 * @param ContainerInterface $container App container the notification collaborators come from.
 	 * @param LoggerInterface $logger Logger for per-schema summaries.
 	 */
 	public function __construct(
@@ -136,6 +173,8 @@ class ArchivalRetentionTask extends TimedJob {
 		SchemaMapper $schemaMapper,
 		MagicMapper $magicMapper,
 		ObjectService $objectService,
+		RetentionService $retentionService,
+		ContainerInterface $container,
 		LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -145,6 +184,8 @@ class ArchivalRetentionTask extends TimedJob {
 		$this->schemaMapper = $schemaMapper;
 		$this->magicMapper = $magicMapper;
 		$this->objectService = $objectService;
+		$this->retentionService = $retentionService;
+		$this->container = $container;
 		$this->logger = $logger;
 
 		$this->retentionEvaluator = new RetentionEvaluator(logger: $logger);
@@ -243,8 +284,13 @@ class ArchivalRetentionTask extends TimedJob {
 	 * Sweep a single `(register, schema)` pair.
 	 *
 	 * Pulls every row from the magic table, evaluates the retention rules
-	 * against each, and deletes rows past their expiry. Logs a per-schema
-	 * summary `{schemaSlug, scanned, expired, deleted}`.
+	 * against each, and deletes rows past their expiry UNLESS an active legal
+	 * hold keeps them. Logs a per-schema summary
+	 * `{schemaSlug, scanned, expired, deleted, held, unresolved}`.
+	 *
+	 * A ROW WITH NO `_created` IS NEVER SWEPT. Without a creation timestamp
+	 * there is no expiry to compute, so the row is counted as scanned and left
+	 * alone rather than treated as due.
 	 *
 	 * @param Register $register Register the schema belongs to.
 	 * @param Schema $schema Schema being swept.
@@ -293,6 +339,8 @@ class ArchivalRetentionTask extends TimedJob {
 		$scanned = 0;
 		$expired = 0;
 		$deleted = 0;
+		$held = 0;
+		$unresolved = 0;
 
 		try {
 			// Native SELECT — using the QueryBuilder so the table name goes
@@ -356,6 +404,37 @@ class ArchivalRetentionTask extends TimedJob {
 					continue;
 				}
 
+				// A HELD RECORD IS NEVER SWEPT. The delete below hands
+				// `_retentionSweep: true` to ObjectService, which is the flag
+				// that waves the row past the archival immutability gate, so
+				// this is the last place the hold can still be asked about.
+				$object = $this->loadSweepTarget(
+					register: $register,
+					schema: $schema,
+					uuid: $uuid,
+					schemaSlug: $schemaSlug
+				);
+
+				if ($object === null) {
+					// FAILS CLOSED: a row we cannot load is a row we cannot
+					// ask about its hold.
+					$unresolved++;
+					continue;
+				}
+
+				if ($this->retentionService->hasActiveLegalHold(object: $object) === true) {
+					$held++;
+					$this->logger->info(
+						sprintf(
+							'[ArchivalRetentionTask] legal hold kept row schema="%s" uuid="%s" past retention',
+							$schemaSlug,
+							$uuid
+						),
+						['app' => 'openregister', 'schemaSlug' => $schemaSlug, 'uuid' => $uuid]
+					);
+					continue;
+				}
+
 				try {
 					// Re-anchor ObjectService at the (register, schema) we
 					// are sweeping so the delete pipeline sees the right
@@ -398,13 +477,20 @@ class ArchivalRetentionTask extends TimedJob {
 			);
 		}//end try
 
+		// SKIPPING MUST BE VISIBLE. A sweep that quietly passes over held
+		// records, with no count and no signal, is how somebody later concludes
+		// the sweep is broken. `held` and `unresolved` are counted apart from
+		// `deleted` for the same reason DestructionExecutionJob counts
+		// `skippedHolds` apart from `destroyedCount`.
 		$this->logger->info(
 			sprintf(
-				'[ArchivalRetentionTask] schema="%s" scanned=%d expired=%d deleted=%d',
+				'[ArchivalRetentionTask] schema="%s" scanned=%d expired=%d deleted=%d held=%d unresolved=%d',
 				$schemaSlug,
 				$scanned,
 				$expired,
-				$deleted
+				$deleted,
+				$held,
+				$unresolved
 			),
 			[
 				'app' => 'openregister',
@@ -412,10 +498,103 @@ class ArchivalRetentionTask extends TimedJob {
 				'scanned' => $scanned,
 				'expired' => $expired,
 				'deleted' => $deleted,
+				'held' => $held,
+				'unresolved' => $unresolved,
 			]
 		);
 
+		if ($held > 0) {
+			$this->notifySkippedHolds(schemaSlug: $schemaSlug, skippedCount: $held);
+		}
+
 	}//end sweepSchema()
+
+	/**
+	 * Load the object behind an expired row, or null when it cannot be read.
+	 *
+	 * Bounded by `(register, schema)` so the lookup stays a single-table read
+	 * rather than a union across every magic table, and read unscoped because
+	 * cron has no session at all: an RBAC- or tenant-scoped read would answer
+	 * "not found" for a row that plainly exists.
+	 *
+	 * @param Register $register Register the row belongs to.
+	 * @param Schema $schema Schema the row belongs to.
+	 * @param string $uuid Row uuid.
+	 * @param string $schemaSlug Schema slug, for the log line.
+	 *
+	 * @return ObjectEntity|null The object, or null when it cannot be loaded.
+	 */
+	private function loadSweepTarget(
+		Register $register,
+		Schema $schema,
+		string $uuid,
+		string $schemaSlug,
+	): ?ObjectEntity {
+		try {
+			return $this->magicMapper->find(
+				$uuid,
+				$register,
+				$schema,
+				false,
+				false,
+				false
+			);
+		} catch (\Throwable $error) {
+			$this->logger->warning(
+				sprintf(
+					'[ArchivalRetentionTask] Kept row on "%s" uuid "%s": its legal-hold status could not be read: %s',
+					$schemaSlug,
+					$uuid,
+					$error->getMessage()
+				),
+				['app' => 'openregister']
+			);
+
+			return null;
+		}//end try
+	}//end loadSweepTarget()
+
+	/**
+	 * Tell the archivist group that a legal hold stopped a retention delete.
+	 *
+	 * Mirrors `DestructionExecutionJob::notifySkippedHolds()`: a skipped hold
+	 * that only ever reaches the cron log is a skip nobody acts on.
+	 *
+	 * @param string $schemaSlug Schema the sweep was running over.
+	 * @param int $skippedCount Number of rows kept because of a hold.
+	 *
+	 * @return void
+	 */
+	private function notifySkippedHolds(string $schemaSlug, int $skippedCount): void {
+		try {
+			$notificationManager = $this->container->get(INotificationManager::class);
+			$group = $this->container->get(IGroupManager::class)->get('archivaris');
+			if ($group === null) {
+				return;
+			}
+
+			foreach ($group->getUsers() as $user) {
+				$notification = $notificationManager->createNotification();
+				$notification->setApp('openregister')
+					->setUser($user->getUID())
+					->setDateTime(new DateTime())
+					->setObject('retention_sweep', $schemaSlug)
+					->setSubject(
+						'retention_holds_skipped',
+						[
+							'schemaSlug' => $schemaSlug,
+							'skippedCount' => $skippedCount,
+						]
+					);
+				$notificationManager->notify($notification);
+			}
+		} catch (\Throwable $error) {
+			$this->logger->warning(
+				'[ArchivalRetentionTask] Hold notify error: ' . $error->getMessage(),
+				['app' => 'openregister']
+			);
+		}//end try
+	}//end notifySkippedHolds()
 
 	/**
 	 * Drop the magic-table metadata columns (`_uuid`, `_created`, ...) from a

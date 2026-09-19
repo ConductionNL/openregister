@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -72,8 +73,11 @@ class FacetHandler {
 	/**
 	 * Cache TTL for facet responses (1 hour).
 	 *
-	 * Facet counts don't need real-time accuracy - slight staleness is acceptable.
-	 * Cache is invalidated when schemas change.
+	 * This TTL is the CEILING on staleness, not the invalidation. A cached entry
+	 * is unreachable as soon as an object write bumps the freshness token folded
+	 * into its key (see FacetCacheVersion). It used to be the only invalidation
+	 * besides a schema change and an admin cache flush, which is how a folder pane
+	 * came to offer a category nobody had (openregister#3560).
 	 *
 	 * @var int
 	 */
@@ -103,6 +107,7 @@ class FacetHandler {
 	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching.
 	 * @param IUserSession $userSession User session for tenant isolation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
+	 * @param FacetCacheVersion $facetCacheVersion Per-scope freshness counter folded into the response cache key.
 	 *
 	 * @return void
 	 *
@@ -119,6 +124,7 @@ class FacetHandler {
 		private readonly ICacheFactory $cacheFactory,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly FacetCacheVersion $facetCacheVersion,
 	) {
 		// Initialize facet response caching.
 		try {
@@ -969,10 +975,99 @@ class FacetHandler {
 			'org' => $orgId,
 			'version' => '2.0',
 			// Increment to invalidate when RBAC logic changes.
+			// **FRESHNESS**: an object write bumps the counter for its (register,
+			// schema) scope, which changes this token, which changes the key. So a
+			// facet computed before the write is unreachable after it, and the
+			// bucket list beside a live `results` array can no longer be an hour
+			// old (openregister#3560). Without this the only invalidation was the
+			// TTL, a schema change, or an admin cache flush.
+			'freshness' => $this->facetFreshnessToken(facetQuery: $facetQuery),
 		];
 
 		return 'facet_rbac_' . md5(json_encode($cacheData));
 	}//end generateFacetCacheKey()
+
+	/**
+	 * Freshness token for the scopes this facet query reads from.
+	 *
+	 * The scope is taken from the query itself, which already carries numeric
+	 * register and schema ids by the time faceting runs (the numeric-ID contract
+	 * on ObjectService::searchObjects; ObjectsController resolves the slugs in the
+	 * URL before building the query). Those are the same ids ObjectEntity stores,
+	 * so the counter a write bumps is the counter this read consults. Deriving the
+	 * scope from the query costs no database work, which matters because the whole
+	 * point of the cache is to avoid the aggregation underneath it.
+	 *
+	 * @param array $facetQuery Query for faceting (without pagination).
+	 *
+	 * @psalm-param   array<string, mixed> $facetQuery
+	 * @phpstan-param array<string, mixed> $facetQuery
+	 *
+	 * @return string Token that changes when any covered scope is written to.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
+	 */
+	private function facetFreshnessToken(array $facetQuery): string {
+		$registers = $this->scopeIdsFromQuery(
+			values: [
+				($facetQuery['@self']['registers'] ?? null),
+				($facetQuery['@self']['register'] ?? null),
+				($facetQuery['_registers'] ?? null),
+			]
+		);
+
+		$schemas = $this->scopeIdsFromQuery(
+			values: [
+				($facetQuery['@self']['schemas'] ?? null),
+				($facetQuery['@self']['schema'] ?? null),
+				($facetQuery['_schemas'] ?? null),
+			]
+		);
+
+		return $this->facetCacheVersion->tokenForScope(registers: $registers, schemas: $schemas);
+	}//end facetFreshnessToken()
+
+	/**
+	 * Flatten the register/schema positions of a query into a list of id strings.
+	 *
+	 * Each position may be absent, a scalar id, or a list of ids. Anything that is
+	 * not a scalar is dropped rather than guessed: an unrecognised shape widens the
+	 * scope to the global counter, which over-invalidates but never under-invalidates.
+	 *
+	 * @param array $values Candidate values from the query, most specific first.
+	 *
+	 * @psalm-param   array<int, mixed> $values
+	 * @phpstan-param array<int, mixed> $values
+	 *
+	 * @return array<int, string> Distinct id strings, possibly empty.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
+	 */
+	private function scopeIdsFromQuery(array $values): array {
+		$ids = [];
+
+		foreach ($values as $value) {
+			if ($value === null) {
+				continue;
+			}
+
+			$candidates = [$value];
+			if (is_array($value) === true) {
+				$candidates = $value;
+			}
+
+			foreach ($candidates as $candidate) {
+				if (is_int($candidate) === true || is_string($candidate) === true) {
+					$candidate = (string)$candidate;
+					if ($candidate !== '') {
+						$ids[] = $candidate;
+					}
+				}
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}//end scopeIdsFromQuery()
 
 	/**
 	 * Get cached facet response.
@@ -1198,12 +1293,22 @@ class FacetHandler {
 	 * @psalm-return array{'@self': array, object_fields: array, non_aggregated_fields: array}
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and
+	 *                                      holds no state; the search paths read it the same
+	 *                                      way, which is what keeps the declaration single.
 	 */
 	private function getFacetableFieldsFromSchemas(array $schemas): array {
 		$facetableFields = [
 			'@self' => $this->getDefaultMetadataFacets(),
 			'object_fields' => [],
 			'non_aggregated_fields' => [],
+			// Every property a list surface can search, with the match type it
+			// asked for and the control it wants rendered. Separate from
+			// object_fields because a property can be searchable without being
+			// facetable, and a surface that has to infer the control from the
+			// value is the drift this declaration removes.
+			'searchable_fields' => [],
 		];
 
 		foreach ($schemas as $schema) {
@@ -1226,6 +1331,15 @@ class FacetHandler {
 						continue;
 					}
 
+					$matchType = PropertySearchProfile::matchTypeFor(property: $property);
+					$inputControl = PropertySearchProfile::inputControlFor(property: $property);
+					$facetableFields['searchable_fields'][$propertyKey] = [
+						'matchType' => $matchType,
+						'inputControl' => $inputControl,
+						'declared' => PropertySearchProfile::declaresMatchType(property: $property),
+						'title' => $property['title'] ?? null,
+					];
+
 					$facetConfig = $this->normalizeFacetConfig(facetable: $property['facetable'] ?? false);
 					if ($facetConfig === null) {
 						continue;
@@ -1242,6 +1356,8 @@ class FacetHandler {
 							'facetType' => $facetType,
 							'facetConfig' => $facetConfig,
 							'title' => $property['title'] ?? null,
+							'matchType' => $matchType,
+							'inputControl' => $inputControl,
 						];
 					}
 
@@ -1251,6 +1367,8 @@ class FacetHandler {
 							'type' => $facetType,
 							'title' => $property['title'] ?? null,
 							'facetConfig' => $facetConfig,
+							'matchType' => $matchType,
+							'inputControl' => $inputControl,
 						];
 					}
 				}//end foreach

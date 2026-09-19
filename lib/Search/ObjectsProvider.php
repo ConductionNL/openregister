@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
@@ -63,6 +64,15 @@ use Psr\Log\LoggerInterface;
  * the object itself stayed correctly filtered. See
  * openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md.
  *
+ * QUERY SHAPE — every schema is its own table, and the pipeline answers a
+ * cross-schema search with ONE statement that unions all of them. The
+ * database locks each table, and each of its indexes, for the whole
+ * statement, so the number of schemas one statement spans is bounded here
+ * (SCHEMA_CHUNK_SIZE): the searchable allow-list is always passed, in
+ * chunks, and the chunk pages are merged in the pipeline's own order. A
+ * chunk that fails is an ERROR in the log and a gap in the page, never a
+ * silent "no results" for the whole section.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/specs/unified-search-provider/spec.md
@@ -75,6 +85,25 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @var int
 	 */
 	private const PAGE_LIMIT = 25;
+
+	/**
+	 * Upper bound on the number of schemas one pipeline call may span.
+	 *
+	 * A cross-schema search is one UNION ALL over one table per schema,
+	 * and Postgres holds a lock on every table AND every index the planner
+	 * opens for the whole statement. Measured 2026-09-07 on the fleet dev
+	 * instance: 1,272 searchable schemas with ~14 indexes each, against a
+	 * lock table of max_locks_per_transaction (64) × max_connections (200)
+	 * = 12,800 slots, so the statement died with SQLSTATE[53200] "out of
+	 * shared memory" and the top-bar search answered nothing. Fifty
+	 * schemas is roughly 750 locks per statement, which fits the smallest
+	 * default lock table (64 × 100 = 6,400) with room for other sessions.
+	 * Raising the database setting is not the fix: the next clone register
+	 * would exhaust it again.
+	 *
+	 * @var int
+	 */
+	private const SCHEMA_CHUNK_SIZE = 50;
 
 	/**
 	 * Request-scoped cache of schema IDs flagged `searchable = false`.
@@ -329,6 +358,9 @@ class ObjectsProvider implements IFilteringProvider {
 			$searchQuery['@self']['register'] = (int)$register;
 		}
 
+		// The schema chunks this search fans out over. A single null chunk
+		// means "the explicit schema filter already in the query".
+		$schemaChunks = [null];
 		if (empty($schema) === false) {
 			$schemaId = (int)$schema;
 			if (in_array($schemaId, $nonSearchableIds, true) === true) {
@@ -339,12 +371,18 @@ class ObjectsProvider implements IFilteringProvider {
 			}
 
 			$searchQuery['@self']['schema'] = $schemaId;
-		} elseif (empty($nonSearchableIds) === false) {
+		}
+
+		if (empty($schema) === true) {
 			// No explicit schema filter: constrain the query to the
 			// searchable-schema allow-list so opted-out schemas never
 			// contribute results, applied inside the query (not by
-			// post-filtering a page).
-			$searchableIds = $this->schemaMapper->findSearchableIds();
+			// post-filtering a page). The list is passed even when nothing
+			// opted out, because it is also what bounds the fan-out: left
+			// unconstrained, the pipeline unions every schema table in one
+			// statement, the query shape that exhausts the database lock
+			// table on a many-schema instance (see SCHEMA_CHUNK_SIZE).
+			$searchableIds = $this->getSearchableIds();
 			if (empty($searchableIds) === true) {
 				return SearchResult::complete(
 					name: $this->getSectionName(),
@@ -352,7 +390,7 @@ class ObjectsProvider implements IFilteringProvider {
 				);
 			}
 
-			$searchQuery['@self']['schema'] = $searchableIds;
+			$schemaChunks = array_chunk($searchableIds, self::SCHEMA_CHUNK_SIZE);
 		}//end if
 
 		// Add date filters if provided.
@@ -385,9 +423,6 @@ class ObjectsProvider implements IFilteringProvider {
 			$offset = max(0, (int)$cursor);
 		}
 
-		$searchQuery['_limit'] = $limit;
-		$searchQuery['_offset'] = $offset;
-
 		$this->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search requested',
 			context: [
@@ -395,6 +430,9 @@ class ObjectsProvider implements IFilteringProvider {
 				'line' => __LINE__,
 				'search_query' => $searchQuery,
 				'has_search' => empty($search) === false,
+				'limit' => $limit,
+				'offset' => $offset,
+				'schema_chunks' => count($schemaChunks),
 			]
 		);
 
@@ -418,30 +456,24 @@ class ObjectsProvider implements IFilteringProvider {
 		// title. A bare chunk would not be navigable.
 		$searchQuery['_content_search'] = true;
 
-		// Delegate to the OR search pipeline. RBAC, tenant isolation, the
-		// published predicate, and soft-delete exclusion are ALL enforced
-		// here — the provider applies no second access filter. Fail soft on
-		// a broken pipeline/register so the top-bar search never errors out.
-		try {
-			$searchResults = $this->objectService->searchObjectsPaginated(query: $searchQuery, _rbac: true, _multitenancy: true);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				'[ObjectsProvider] OpenRegister search failed, returning empty result: {error}',
-				['error' => $e->getMessage()]
-			);
-			return SearchResult::complete(
-				name: $this->getSectionName(),
-				entries: []
-			);
-		}
+		// Delegate to the OR search pipeline, one call per schema chunk.
+		// RBAC, tenant isolation, the published predicate, and soft-delete
+		// exclusion are ALL enforced there — the provider applies no second
+		// access filter. A chunk that fails is logged as an error and
+		// skipped, so the top-bar search never errors out and never blanks
+		// the section for one broken table.
+		$searchResults = $this->searchChunks(
+			query: $searchQuery,
+			schemaChunks: $schemaChunks,
+			limit: $limit,
+			offset: $offset
+		);
 
 		// Convert results to SearchResultEntry format.
 		$searchResultEntries = [];
-		if (empty($searchResults['results']) === false) {
-			foreach ($searchResults['results'] as $result) {
-				$searchResultEntries[] = $this->resultFormatter->format(result: $result, term: $search);
-			}//end foreach
-		}//end if
+		foreach ($searchResults['results'] as $result) {
+			$searchResultEntries[] = $this->resultFormatter->format(result: $result, term: $search);
+		}
 
 		$this->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search completed',
@@ -449,7 +481,7 @@ class ObjectsProvider implements IFilteringProvider {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'results_count' => count($searchResultEntries),
-				'total_results' => $searchResults['total'] ?? 0,
+				'total_results' => $searchResults['total'],
 			]
 		);
 
@@ -469,6 +501,161 @@ class ObjectsProvider implements IFilteringProvider {
 			entries: $searchResultEntries
 		);
 	}//end search()
+
+	/**
+	 * Run the pipeline search per schema chunk and merge the pages.
+	 *
+	 * One chunk pages inside the pipeline, exactly as before. Several
+	 * chunks each answer the head of their OWN ordering up to the end of
+	 * the requested page, because the page boundary only exists after the
+	 * merge; the merge re-sorts the combined head the way the pipeline
+	 * orders a cross-schema page (`_search_score DESC, _uuid ASC`, which
+	 * reaches the rendered row as `@self.relevance` and `@self.id`) and
+	 * slices the page out of it. The pipeline caps one call at its maximum
+	 * page size, so a merged page whose end lies beyond that cap is served
+	 * from a truncated head; at 25 entries per page that is page 41.
+	 *
+	 * A chunk that throws is logged at ERROR level with the schema ids it
+	 * spanned and skipped. The other chunks still answer.
+	 *
+	 * @param array<string, mixed>    $query        The pipeline query, without limit, offset or schema list.
+	 * @param array<int, int[]|null>  $schemaChunks Schema-id chunks; a null chunk means the query already names its schema.
+	 * @param int                     $limit        Page size.
+	 * @param int                     $offset       Page offset.
+	 *
+	 * @return array{results: array<int, mixed>, total: int} The page rows in pipeline order, and the summed total.
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function searchChunks(array $query, array $schemaChunks, int $limit, int $offset): array {
+		$chunkCount = count($schemaChunks);
+		$single = ($chunkCount === 1);
+		$rows = [];
+		$total = 0;
+
+		foreach ($schemaChunks as $index => $chunk) {
+			$chunkQuery = $query;
+			if ($chunk !== null) {
+				$chunkQuery['@self']['schema'] = $chunk;
+			}
+
+			$chunkQuery['_limit'] = $limit;
+			$chunkQuery['_offset'] = $offset;
+			if ($single === false) {
+				$chunkQuery['_limit'] = ($offset + $limit);
+				$chunkQuery['_offset'] = 0;
+			}
+
+			try {
+				$page = $this->objectService->searchObjectsPaginated(query: $chunkQuery, _rbac: true, _multitenancy: true);
+			} catch (\Throwable $e) {
+				$this->logger->error(
+					'[ObjectsProvider] OpenRegister search failed for schema chunk {chunk} of {chunks}; the other chunks still answer: {error}',
+					[
+						'chunk' => ($index + 1),
+						'chunks' => $chunkCount,
+						'schemas' => $chunk,
+						'error' => $e->getMessage(),
+						'exception' => $e,
+					]
+				);
+				continue;
+			}
+
+			foreach (($page['results'] ?? []) as $row) {
+				$rows[] = $row;
+			}
+
+			$total += (int)($page['total'] ?? 0);
+		}//end foreach
+
+		if ($single === true) {
+			return ['results' => $rows, 'total' => $total];
+		}
+
+		usort($rows, fn (mixed $a, mixed $b): int => $this->compareRows(a: $a, b: $b));
+
+		return [
+			'results' => array_slice($rows, $offset, $limit),
+			'total' => $total,
+		];
+	}//end searchChunks()
+
+	/**
+	 * Order two result rows the way the pipeline orders a cross-schema page.
+	 *
+	 * Relevance descending, then uuid ascending as the stable tiebreaker.
+	 *
+	 * @param mixed $a A rendered row (array) or an ObjectEntity.
+	 * @param mixed $b A rendered row (array) or an ObjectEntity.
+	 *
+	 * @return int Negative when $a sorts first, positive when $b does.
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function compareRows(mixed $a, mixed $b): int {
+		[$scoreA, $uuidA] = $this->orderKey(row: $a);
+		[$scoreB, $uuidB] = $this->orderKey(row: $b);
+		if ($scoreA !== $scoreB) {
+			return $scoreB <=> $scoreA;
+		}
+
+		return strcmp($uuidA, $uuidB);
+	}//end compareRows()
+
+	/**
+	 * The (relevance, uuid) pair a row is ordered on.
+	 *
+	 * @param mixed $row A rendered row (array) or an ObjectEntity.
+	 *
+	 * @return array{0: float, 1: string} Relevance (0 when absent) and uuid ('' when absent).
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function orderKey(mixed $row): array {
+		if ($row instanceof ObjectEntity) {
+			return [(float)($row->getRelevance() ?? 0), (string)($row->getUuid() ?? '')];
+		}
+
+		if (is_array($row) === false) {
+			return [0.0, ''];
+		}
+
+		$self = $row['@self'] ?? [];
+		if (is_array($self) === false) {
+			$self = [];
+		}
+
+		$score = $self['relevance'] ?? $row['relevance'] ?? 0;
+		$uuid = $self['id'] ?? $row['id'] ?? $self['uuid'] ?? '';
+
+		return [(float)$score, (string)$uuid];
+	}//end orderKey()
+
+	/**
+	 * Resolve the searchable-schema allow-list.
+	 *
+	 * Fails soft to an empty list, which the caller answers with an empty
+	 * result, and says so at ERROR level: a lookup that cannot run is a
+	 * broken instance, not a search with no hits.
+	 *
+	 * @return int[] Schema IDs flagged `searchable = true`.
+	 *
+	 * @psalm-return list<int>
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function getSearchableIds(): array {
+		try {
+			return $this->schemaMapper->findSearchableIds();
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'[ObjectsProvider] Failed to resolve searchable schemas, returning no results: {error}',
+				['error' => $e->getMessage(), 'exception' => $e]
+			);
+			return [];
+		}
+	}//end getSearchableIds()
 
 	/**
 	 * The localized provider section name shown in unified search.

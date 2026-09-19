@@ -4,6 +4,11 @@ import { createPinia } from 'pinia'
 import { createApp, h } from 'vue'
 import Settings from './views/settings/Settings.vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
+
+// Register nextcloud-vue's own catalogue before anything renders, so the
+// library's labels follow the reader's language on this page too.
+registerLibraryTranslations()
 
 // Bootstrap the integration registry on the admin-settings bundle too —
 // any sub-component that calls useIntegrationRegistry() needs the registry

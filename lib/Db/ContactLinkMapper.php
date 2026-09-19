@@ -20,13 +20,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class ContactLinkMapper
  *
  * @template-extends QBMapper<ContactLink>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One named query per lookup the
+ *   link table answers, and the party model added four: every object a party
+ *   holds a role on, the party links of one object, the primary party, and the
+ *   rows a merge moved. Collapsing them into a generic finder would move the
+ *   query builder into every caller, where the next one gets the predicate
+ *   subtly wrong and nothing says so.
  */
 class ContactLinkMapper extends QBMapper {
 	/**
@@ -37,6 +46,33 @@ class ContactLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_contact_links', entityClass: ContactLink::class);
 	}//end __construct()
+
+	/**
+	 * One link by its row id.
+	 *
+	 * QBMapper has no `find()`, and ContactService::unlinkContact(),
+	 * updateRole() and the controller's legacy id path all call one: every
+	 * unlink of a contact answered 500 with "Call to undefined method
+	 * ContactLinkMapper::find()". The service's own tests did not catch it
+	 * because the mapper double declared the method with `addMethods(['find'])`
+	 * — a double that adds a method the real class lacks can only pass.
+	 *
+	 * @param int $id The row id.
+	 *
+	 * @return ContactLink The link.
+	 *
+	 * @throws DoesNotExistException When no link has that id.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
+	 */
+	public function find(int $id): ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+		return $this->findEntity(query: $qb);
+	}//end find()
 
 	/**
 	 * Find contact links by object UUID.
@@ -135,4 +171,154 @@ class ContactLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndContact()
+
+	/**
+	 * The link of one person on one object in one role, or null.
+	 *
+	 * The upsert key since people-on-objects: a person may hold several
+	 * roles on an object, one row each.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $contactUid The contact uid, `user:<uid>` for a user.
+	 * @param string|null $role The role, null for a link without one.
+	 *
+	 * @return ContactLink|null The link.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
+			->setMaxResults(1);
+		if ($role === null || $role === '') {
+			$qb->andWhere($qb->expr()->isNull('role'));
+		}
+
+		if ($role !== null && $role !== '') {
+			$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));
+		}
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByObjectContactAndRole()
+
+	/**
+	 * Every link that names a Nextcloud user, newest first.
+	 *
+	 * @param string $userId The user id.
+	 *
+	 * @return ContactLink[] The links.
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function findByUserId(string $userId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
+			->orderBy('linked_at', 'DESC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByUserId()
+
+	/**
+	 * Every link that names a party, newest first.
+	 *
+	 * This is the read behind "an indicator reaches every case of that
+	 * party": the objects are found from the party's side, so setting an
+	 * indicator writes the party and nothing else.
+	 *
+	 * @param string $partyUuid The party object's uuid.
+	 *
+	 * @return ContactLink[] The links.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	public function findByPartyUuid(string $partyUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('party_uuid', $qb->createNamedParameter($partyUuid)))
+			->orderBy('linked_at', 'DESC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByPartyUuid()
+
+	/**
+	 * Every party link on an object, oldest first.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return ContactLink[] The links naming a party.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function findPartiesForObject(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->isNotNull('party_uuid'))
+			->orderBy('linked_at', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findPartiesForObject()
+
+	/**
+	 * The link marking the party the object is filed against, or null.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return ContactLink|null The primary party's link.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 */
+	public function findPrimaryParty(string $objectUuid): ?ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('primary_party', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+			->setMaxResults(1);
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findPrimaryParty()
+
+	/**
+	 * Every link whose metadata records that a merge operation moved it.
+	 *
+	 * The memo lives on the row the merge changed, so reversing a merge is a
+	 * read of the rows themselves rather than surgery on the merge snapshot.
+	 * The LIKE narrows; the caller decodes the memo and decides, so a row
+	 * whose metadata merely contains the id as text is never acted on.
+	 *
+	 * @param string $operationId The merge operation's uuid.
+	 *
+	 * @return ContactLink[] The candidate links.
+	 *
+	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 */
+	public function findByOperationMemo(string $operationId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->like(
+					'metadata',
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($operationId) . '%')
+				)
+			);
+
+		return $this->findEntities(query: $qb);
+	}//end findByOperationMemo()
 }//end class

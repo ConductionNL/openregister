@@ -1,9 +1,11 @@
 <template>
 	<CnAppRoot
 		appId="openregister"
+		appDisplayName="Open Register"
 		:aiCompanion="true"
 		:manifest="manifest"
 		:registry="registry"
+		:customComponents="customComponents"
 		:pageTypes="pageTypes"
 		:requiresApps="[]"
 		:translate="translateForApp">
@@ -104,6 +106,17 @@ export default {
 		 * `customComponents` prop.
 		 */
 		registry: {
+			type: Object,
+			default: () => ({}),
+		},
+
+		/**
+		 * Function handlers a manifest action names (`src/customComponents.js`).
+		 * CnIndexPage resolves a header action's `handler` string against the map
+		 * CnAppRoot provides; without it the Connections page's Add integration
+		 * resolves to nothing and does nothing when clicked.
+		 */
+		customComponents: {
 			type: Object,
 			default: () => ({}),
 		},

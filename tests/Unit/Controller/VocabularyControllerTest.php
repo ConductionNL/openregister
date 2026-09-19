@@ -25,16 +25,25 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\VocabularyController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
+use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class VocabularyControllerTest extends TestCase {
 
 	private ObjectService&MockObject $objectService;
+
+	private SchemaMapper&MockObject $schemaMapper;
+
+	private CodedOptionsBuilder&MockObject $options;
 
 	private VocabularyController $controller;
 
@@ -66,10 +75,19 @@ class VocabularyControllerTest extends TestCase {
 			fn (string $key, $default = null) => ($this->params[$key] ?? $default)
 		);
 
+		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
+		$this->options = $this->createMock(originalClassName: CodedOptionsBuilder::class);
+
 		$this->controller = new VocabularyController(
 			appName: 'openregister',
 			request: $request,
-			objectService: $this->objectService
+			objectService: $this->objectService,
+			options: $this->options,
+			declarationResolver: new \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver(
+				schemaMapper: $this->schemaMapper,
+				declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+				request: $request
+			)
 		);
 	}//end setUp()
 
@@ -421,4 +439,148 @@ class VocabularyControllerTest extends TestCase {
 			'Nesting the scope must not displace the field filter the lookup exists for.'
 		);
 	}//end testTheUriLookupIsScopedAndKeepsItsFieldFilter()
+
+	/**
+	 * A read naming neither a schema property nor a scheme is a 400, not an
+	 * empty 200.
+	 *
+	 * A picker that asks wrongly must be told it asked wrongly. An empty list
+	 * is a legitimate answer to a well-formed question (a scheme whose values
+	 * have all been retired returns exactly that), so answering the malformed
+	 * question with the same empty list makes the two indistinguishable at the
+	 * one place a caller could notice the bug.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	public function testTheOptionsEndpointRefusesARequestThatNamesNeitherAPropertyNorAScheme(): void {
+		$this->params = [];
+
+		$response = $this->controller->propertyOptions();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testTheOptionsEndpointRefusesARequestThatNamesNeitherAPropertyNorAScheme()
+
+	/**
+	 * An unreadable schema is a 404 carrying the standard error shape.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	public function testTheOptionsEndpointAnswers404ForASchemaItCannotRead(): void {
+		$this->params = [
+			'schema' => '404',
+			'property' => 'categorie',
+		];
+
+		$this->schemaMapper->method('find')->willThrowException(
+			exception: new RuntimeException('no such schema')
+		);
+
+		$response = $this->controller->propertyOptions();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertArrayHasKey('message', (array)$response->getData());
+	}//end testTheOptionsEndpointAnswers404ForASchemaItCannotRead()
+
+	/**
+	 * The flat answer carries the property, the scheme, the language and the
+	 * options, and the language it reports is the one it read with.
+	 *
+	 * The language pair is the assertion that matters. A response naming `nl`
+	 * while the builder was asked for `en` would look right in every screenshot
+	 * and be wrong in every locale but the default.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	public function testTheOptionsEndpointReturnsTheListInTheLanguageItAskedFor(): void {
+		$this->params = [
+			'schema' => '7',
+			'property' => 'categorie',
+			'language' => 'en',
+		];
+
+		$this->schemaMapper->method('find')->willReturn(
+			value: $this->schemaWithCodedProperty(property: 'categorie')
+		);
+
+		$asked = [];
+		$this->options->method('options')->willReturnCallback(
+			function (CodedPropertyDeclaration $declaration, string $language = 'nl', ?string $context = null) use (&$asked): array {
+				$asked = [
+					'scheme' => $declaration->scheme,
+					'language' => $language,
+					'context' => $context,
+				];
+
+				return [['value' => 'urn:test:kap', 'label' => 'Felling permit']];
+			}
+		);
+
+		$response = $this->controller->propertyOptions();
+		$data = (array)$response->getData();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('categorie', ($data['property'] ?? null));
+		$this->assertSame('urn:test:vergunningen', ($data['scheme'] ?? null));
+		$this->assertSame('en', ($data['language'] ?? null));
+		$this->assertSame(1, ($data['total'] ?? null));
+		$this->assertSame('en', ($asked['language'] ?? null), 'The reported language must be the one the options were built in.');
+	}//end testTheOptionsEndpointReturnsTheListInTheLanguageItAskedFor()
+
+	/**
+	 * `tree=1` answers with a `tree` key and no flat `results` key, so a caller
+	 * cannot read one shape while the other was sent.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	public function testTheOptionsEndpointReturnsTheTreeWhenTheTreeIsAsked(): void {
+		$this->params = [
+			'schema' => '7',
+			'property' => 'categorie',
+			'tree' => '1',
+		];
+
+		$this->schemaMapper->method('find')->willReturn(
+			value: $this->schemaWithCodedProperty(property: 'categorie')
+		);
+		$this->options->method('tree')->willReturn(
+			value: [['value' => 'urn:test:vergunning', 'children' => []]]
+		);
+
+		$response = $this->controller->propertyOptions();
+		$data = (array)$response->getData();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertArrayHasKey('tree', $data);
+		$this->assertArrayNotHasKey('results', $data, 'The tree answer must not also carry the flat list.');
+	}//end testTheOptionsEndpointReturnsTheTreeWhenTheTreeIsAsked()
+
+	/**
+	 * A schema carrying one coded property, for the options tests.
+	 *
+	 * @param string $property The property name to declare the code list on.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function schemaWithCodedProperty(string $property): Schema {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				$property => [
+					'type' => 'string',
+					CodedPropertyDeclaration::ANNOTATION => ['scheme' => 'urn:test:vergunningen'],
+				],
+			]
+		);
+
+		return $schema;
+	}//end schemaWithCodedProperty()
+
 }//end class

@@ -155,17 +155,32 @@ class ViewMapper extends QBMapper {
 	 * Retrieves view by ID (supports both integer ID and UUID) with RBAC and
 	 * organisation filtering. Verifies user has read permission before querying.
 	 *
+	 * The `$_rbac` / `$_multitenancy` flags mirror the pair every other mapper in
+	 * this app carries (see SchemaMapper::find()): they mean "trusted internal
+	 * read", never "public read". They exist so a caller that has ALREADY
+	 * established its own authorization - a published access link, which IS the
+	 * authorization - can resolve the one view it is entitled to serve even
+	 * though there is no session to judge. Left at their defaults the ordinary
+	 * behaviour stands: the session's own permissions and organisation decide.
+	 *
 	 * @param int|string $id The ID (integer) or UUID (string) of the view to find
+	 * @param bool $_rbac Whether to apply the RBAC read check (default: true)
+	 * @param bool $_multitenancy Whether to apply the organisation filter (default: true)
 	 *
 	 * @return View The found view entity
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found or not accessible
 	 * @throws \Exception If user doesn't have read permission for views
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror the mapper-wide
+	 * `_rbac` / `_multitenancy` convention.
 	 */
-	public function find($id): View {
+	public function find($id, bool $_rbac = true, bool $_multitenancy = true): View {
 		// Step 1: Verify RBAC permission to read views.
 		// Throws exception if user doesn't have required permissions.
-		$this->verifyRbacPermission(action: 'read', entityType: 'view');
+		if ($_rbac === true) {
+			$this->verifyRbacPermission(action: 'read', entityType: 'view');
+		}
 
 		// Step 2: Get query builder instance.
 		$qb = $this->db->getQueryBuilder();
@@ -183,7 +198,7 @@ class ViewMapper extends QBMapper {
 
 		// Step 4: Apply organisation filter for multi-tenancy.
 		// All users including admins must have active organisation.
-		$this->applyOrganisationFilter(qb: $qb);
+		$this->applyOrganisationFilter(qb: $qb, multiTenancyEnabled: $_multitenancy);
 
 		$entity = $this->findEntity(query: $qb);
 

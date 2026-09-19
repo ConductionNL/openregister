@@ -30,8 +30,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Service\Rules\RuleDescriptor;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -62,6 +68,9 @@ use Psr\Log\LoggerInterface;
  * is treated as a closed set rather than a schema-author-defined list.
  *
  * @template-implements IEventListener<ObjectUpdatingEvent>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The listener is the save path's one
+ *   lifecycle gate; every dependency is one of its steps.
  */
 class LifecycleValidationListener implements IEventListener {
 	/**
@@ -72,8 +81,14 @@ class LifecycleValidationListener implements IEventListener {
 	 * @param IUserSession $userSession Current user session.
 	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
 	 * @param LoggerInterface $logger PSR logger for warnings.
+	 * @param LifecycleConditionEvaluator $conditionEvaluator Decides whether a transition `condition` lets it through.
+	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
+	 * @param ConditionTracer $conditionTracer Names the operand that decided a condition.
+	 * @param RuleRunRecorder $ruleRuns Records each condition's verdict for the rule inventory.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -81,6 +96,10 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly LoggerInterface $logger,
+		private readonly LifecycleConditionEvaluator $conditionEvaluator,
+		private readonly LifecycleTransitionResolver $transitionResolver,
+		private readonly ConditionTracer $conditionTracer,
+		private readonly RuleRunRecorder $ruleRuns,
 	) {
 	}//end __construct()
 
@@ -95,6 +114,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatingEvent) === false) {
@@ -155,7 +175,7 @@ class LifecycleValidationListener implements IEventListener {
 		// while OWNING transition validation itself (procest routes every status
 		// change through its workflow-template state engine). With no declared
 		// `transitions` there is nothing for OR to enforce, so validating here
-		// fail-closes EVERY status change (findTransitionByTarget([]) === null →
+		// fail-closes EVERY status change (no transition resolves →
 		// reject), silently breaking those apps' status advancement. Treat an
 		// empty/absent transition set as "app-managed" and skip enforcement; the
 		// initial state is still pinned by LifecycleInitialStateListener.
@@ -163,8 +183,9 @@ class LifecycleValidationListener implements IEventListener {
 			return;
 		}
 
-		$matched = $this->findTransitionByTarget(
+		$matched = $this->transitionResolver->resolve(
 			transitions: $transitions,
+			uuid: (string)$newObject->getUuid(),
 			oldValue: (string)$oldValue,
 			newValue: $newValue
 		);
@@ -224,6 +245,37 @@ class LifecycleValidationListener implements IEventListener {
 			}
 		}//end if
 
+		// Declarative JSONLogic precondition on the object's own data. Runs
+		// AFTER `authorization` so an unauthorized caller is turned away
+		// before any condition is evaluated, and BEFORE `requires` so a
+		// refused condition never resolves, let alone runs, a guard.
+		$refusal = $this->conditionEvaluator->refusal(
+			spec: $spec,
+			newData: $newData,
+			oldData: $oldData,
+			action: (string)$action,
+			from: (string)$oldValue,
+			to: $newValue,
+			schemaSlug: (string)$schema->getSlug(),
+			field: $field
+		);
+		$this->recordCondition(
+			object: $newObject,
+			schema: $schema,
+			spec: $spec,
+			newData: $newData,
+			oldData: $oldData,
+			action: (string)$action,
+			from: (string)$oldValue,
+			to: $newValue,
+			refusal: $refusal
+		);
+
+		if ($refusal !== null) {
+			$this->reject(event: $event, error: $refusal);
+			return;
+		}
+
 		$requires = ($spec['requires'] ?? null);
 		if (is_string($requires) === true && $requires !== '') {
 			$userId = ($this->userSession->getUser()?->getUID() ?? '');
@@ -244,43 +296,89 @@ class LifecycleValidationListener implements IEventListener {
 	}//end handle()
 
 	/**
-	 * Find the transition (action, spec) whose `to` matches the new value
-	 * AND whose `from` list contains the old value.
+	 * Record what a transition's condition decided, and on which operand.
 	 *
-	 * @param array<string, mixed> $transitions Transition map from the annotation.
-	 * @param string $oldValue Current lifecycle field value.
-	 * @param string $newValue Attempted lifecycle field value.
+	 * This is the run log's whole purpose: "waarom is de flow niet gelopen" is
+	 * answered here rather than out of a log file. A transition with no
+	 * condition is not a rule and records nothing, and a condition switched off
+	 * records nothing either, because it was not evaluated.
 	 *
-	 * @return array{0: string, 1: array<string, mixed>}|null
+	 * @param ObjectEntity $object The object being saved.
+	 * @param Schema $schema The schema the transition is declared on.
+	 * @param array<string, mixed> $spec The matched transition's spec.
+	 * @param array<string, mixed> $newData The object as it would be saved.
+	 * @param array<string, mixed> $oldData The object as currently stored.
+	 * @param string $action The matched transition's name.
+	 * @param string $from The lifecycle value being moved away from.
+	 * @param string $to The lifecycle value being moved to.
+	 * @param array<string, mixed>|null $refusal The refusal the evaluator produced, or null.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one half of the
+	 *   fact being recorded: which rule, on which object, against which document, with
+	 *   which verdict. Bundling them into a carrier object would hide exactly that.
+	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDescriptor::idFor is the published
+	 *   derivation of a rule id.
+	 *
+	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
-	private function findTransitionByTarget(array $transitions, string $oldValue, string $newValue): ?array {
-		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === false) {
-				continue;
-			}
+	private function recordCondition(
+		ObjectEntity $object,
+		Schema $schema,
+		array $spec,
+		array $newData,
+		array $oldData,
+		string $action,
+		string $from,
+		string $to,
+		?array $refusal,
+	): void {
+		$condition = ($spec['condition'] ?? null);
+		if ($condition === null || ($spec['enabled'] ?? true) === false) {
+			return;
+		}
 
-			if (($spec['to'] ?? null) !== $newValue) {
-				continue;
-			}
+		$slug = (string)($schema->getSlug() ?? '');
+		if ($slug === '') {
+			return;
+		}
 
-			// `from` may be a single state string or a list of states. Coerce
-			// a string to a one-element list so both authoring shapes work.
-			$from = ($spec['from'] ?? []);
-			if (is_string($from) === true) {
-				$from = [$from];
-			}
+		$verdict = RuleVocabulary::VERDICT_FIRED;
+		$message = null;
+		if ($refusal !== null) {
+			// The condition held against the write: the rule did what it
+			// declares, which is to refuse. `refused`, not `no_match`.
+			$verdict = RuleVocabulary::VERDICT_REFUSED;
+			$message = (string)($refusal['message'] ?? '');
+		}
 
-			if (is_array($from) === false) {
-				continue;
-			}
+		$trace = $this->conditionTracer->trace(
+			condition: $condition,
+			document: $this->conditionEvaluator->document(
+				newData: $newData,
+				oldData: $oldData,
+				action: $action,
+				from: $from,
+				to: $to
+			),
+			verdict: $verdict,
+			message: $message
+		);
 
-			if (in_array($oldValue, $from, true) === true) {
-				return [(string)$action, $spec];
-			}
-		}//end foreach
+		$this->ruleRuns->record(
+			ruleId: RuleDescriptor::idFor(
+				kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION,
+				schemaSlug: $slug,
+				key: $action
+			),
+			schemaSlug: $slug,
+			trace: $trace,
+			objectUuid: ($object->getUuid() ?? null),
+			registerSlug: ($object->getRegister() ?? null)
+		);
 
-		return null;
-	}//end findTransitionByTarget()
+	}//end recordCondition()
 
 	/**
 	 * Look up the schema referenced by an object instance.

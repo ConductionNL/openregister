@@ -40,6 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
@@ -59,6 +61,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -2299,6 +2302,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 *     _validation: array{name: '_validation', type: 'json',
 	 *     nullable: true},
 	 *     _deleted: array{name: '_deleted', type: 'json', nullable: true},
+	 *     _archived: array{name: '_archived', type: 'json', nullable: true},
+	 *     _frozen: array{name: '_frozen', type: 'json', nullable: true},
 	 *     _geo: array{name: '_geo', type: 'json', nullable: true},
 	 *     _retention: array{name: '_retention', type: 'json', nullable: true},
 	 *     _groups: array{name: '_groups', type: 'json', nullable: true}}
@@ -2471,6 +2476,27 @@ class MagicMapper extends AbstractObjectMapper {
 			],
 			self::METADATA_PREFIX . 'deleted' => [
 				'name' => self::METADATA_PREFIX . 'deleted',
+				'type' => 'json',
+				'nullable' => true,
+			],
+			// The archive marker. A column rather than a key inside `_retention`
+			// because the default list query has to exclude archived rows in
+			// SQL, and a JSON member cannot carry the `IS NULL` the exclusion
+			// is built on. No migration accompanies it: syncTableForRegisterSchema()
+			// retrofits a missing metadata column onto every existing magic
+			// table through addMissingColumns(), which is how `_retention` and
+			// `_tmlo` arrived.
+			self::METADATA_PREFIX . 'archived' => [
+				'name' => self::METADATA_PREFIX . 'archived',
+				'type' => 'json',
+				'nullable' => true,
+			],
+			// The freeze marker. Separate from `_archived` because the two
+			// states differ in exactly the way that matters to a query: a
+			// frozen object stays in the working list, an archived one leaves
+			// it. Collapsing them would force every caller to pick a wrong half.
+			self::METADATA_PREFIX . 'frozen' => [
+				'name' => self::METADATA_PREFIX . 'frozen',
 				'type' => 'json',
 				'nullable' => true,
 			],
@@ -3700,6 +3726,17 @@ class MagicMapper extends AbstractObjectMapper {
 			'validation',
 			'quality',
 			'deleted',
+			// Listed, and therefore carried forward on every ordinary update,
+			// for the same reason `locked` is: the value reaching this loop
+			// comes from the ENTITY, and `setSelfMetadata()` never accepts
+			// either key from a client `@self` payload, so there is no write
+			// path by which a caller can archive or freeze an object without
+			// going through the endpoint. Omitting them here would be worse
+			// than useless: `updateObjectEntity()` would stop naming the
+			// column, and the dedicated archive write would then be the only
+			// write that could ever clear it.
+			'archived',
+			'frozen',
 			'geo',
 			'retention',
 			'groups',
@@ -3728,13 +3765,22 @@ class MagicMapper extends AbstractObjectMapper {
 				}
 
 				if ($value instanceof \DateTimeInterface) {
-					$value = $value->format('Y-m-d H:i:s');
+					// Convert to the column's timezone BEFORE formatting: format()
+					// renders in whatever timezone the instance carries, so a
+					// non-UTC one was written as its own clock time and read back
+					// as UTC (WOO-567). Done inline rather than through
+					// DateTimeNormalizer so this path keeps working without a
+					// resolvable container.
+					$value = DateTimeImmutable::createFromInterface($value)
+						->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
+						->format(DateTimeNormalizer::DATABASE_FORMAT);
 				} elseif (is_string($value) === true) {
 					// Delegate string parsing to DateTimeNormalizer so that empty/whitespace
-					// input becomes null rather than silently becoming "now". The outer
+					// input becomes null rather than silently becoming "now", and a
+					// non-UTC offset is converted rather than dropped. The outer
 					// default-to-now logic for absent created/updated is preserved above.
 					$value = $this->container
-						->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+						->get(DateTimeNormalizer::class)
 						->formatForDatabase($value);
 				}
 			}
@@ -3748,6 +3794,8 @@ class MagicMapper extends AbstractObjectMapper {
 				'validation',
 				'quality',
 				'deleted',
+				'archived',
+				'frozen',
 				'geo',
 				'retention',
 				'groups',
@@ -3844,12 +3892,32 @@ class MagicMapper extends AbstractObjectMapper {
 					// Normalise date/date-time properties to Y-m-d H:i:s for MySQL DATETIME columns.
 					$propertyFormat = $propertyConfig['format'] ?? null;
 					if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
+						// `date` and `date-time` are NOT the same thing here.
+						// A date-time names an instant, so a non-UTC offset has
+						// to be applied before storing (WOO-567). A `date` names
+						// a calendar DAY and has no instant, so converting it
+						// through a timezone is a category error that can move
+						// it: `2026-10-20T00:00:00+02:00` becomes 2026-10-19 in
+						// UTC, and `2026-10-20T23:30:00-05:00` becomes
+						// 2026-10-21. A due date must survive being submitted
+						// from a client that sends an offset.
+						$isCalendarDate = ($propertyFormat === 'date');
 						if ($value instanceof \DateTimeInterface) {
-							$value = $value->format('Y-m-d H:i:s');
+							$moment = DateTimeImmutable::createFromInterface($value);
+							if ($isCalendarDate === false) {
+								$moment = $moment->setTimezone(
+									new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE)
+								);
+							}
+
+							$value = $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
 						} elseif (is_string($value) === true) {
-							$value = $this->container
-								->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
-								->formatForDatabase($value);
+							$normalizer = $this->container->get(DateTimeNormalizer::class);
+							if ($isCalendarDate === true) {
+								$value = $normalizer->formatDateForDatabase($value);
+							} else {
+								$value = $normalizer->formatForDatabase($value);
+							}
 						}
 					}
 
@@ -5418,7 +5486,8 @@ class MagicMapper extends AbstractObjectMapper {
 				qb: $qb,
 				schema: $schema,
 				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
+				_multitenancy: $_multitenancy,
+				registerId: $register->getId()
 			);
 		}
 
@@ -5658,9 +5727,9 @@ class MagicMapper extends AbstractObjectMapper {
 			]
 		);
 
-		// Get register and schema mappers.
-		$registerMapper = \OC::$server->get(RegisterMapper::class);
-		$schemaMapper = \OC::$server->get(SchemaMapper::class);
+		// The mappers are constructor-injected; alias them for the lookups below.
+		$registerMapper = $this->registerMapper;
+		$schemaMapper = $this->schemaMapper;
 
 		// `_id` is a bigint column, so a non-numeric identifier (a UUID, slug or URI)
 		// must never be bound against it — it would type-error on PostgreSQL. -1 is a
@@ -5774,7 +5843,8 @@ class MagicMapper extends AbstractObjectMapper {
 					qb: $accessQb,
 					schema: $schema,
 					_rbac: $_rbac,
-					_multitenancy: $_multitenancy
+					_multitenancy: $_multitenancy,
+					registerId: $register?->getId()
 				);
 
 				$accessResult = $accessQb->executeQuery();
@@ -5892,6 +5962,13 @@ class MagicMapper extends AbstractObjectMapper {
 	private function invalidateTableMemos(): void {
 		$this->tableExistsMemo = [];
 		$this->liveMagicTablesMemo = null;
+
+		// The statistics handler keeps a THIRD memo of the same fact, and it was
+		// not cleared here. A register whose magic table was created after the
+		// first statistics call of the request therefore counted zero objects
+		// while its table already held them, which is what the dashboard and
+		// `exploreSchemaProperties()` were reporting.
+		$this->statisticsHandler?->forgetMagicTableList();
 
 	}//end invalidateTableMemos()
 
@@ -6348,9 +6425,9 @@ class MagicMapper extends AbstractObjectMapper {
 			$uuidsByTable[$table][] = $uuid;
 		}
 
-		// Get register and schema mappers.
-		$registerMapper = \OC::$server->get(RegisterMapper::class);
-		$schemaMapper = \OC::$server->get(SchemaMapper::class);
+		// The mappers are constructor-injected; alias them for the lookups below.
+		$registerMapper = $this->registerMapper;
+		$schemaMapper = $this->schemaMapper;
 
 		// Cache for register/schema lookups.
 		static $registerCache = [];
@@ -6690,9 +6767,9 @@ class MagicMapper extends AbstractObjectMapper {
 			$uuidsByTable[$table][] = $foundUuid;
 		}
 
-		// Get register and schema mappers.
-		$registerMapper = \OC::$server->get(RegisterMapper::class);
-		$schemaMapper = \OC::$server->get(SchemaMapper::class);
+		// The mappers are constructor-injected; alias them for the lookups below.
+		$registerMapper = $this->registerMapper;
+		$schemaMapper = $this->schemaMapper;
 
 		// Cache for register/schema lookups.
 		static $registerCache = [];
@@ -9802,6 +9879,95 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end getFacetableFieldsFromSchemas()
 
 	/**
+	 * Whether the query names more registers or schemas than the single-table
+	 * path can answer for.
+	 *
+	 * Schemas decide it: the UNION path resolves one table per schema, so a
+	 * register set with no schema set has nothing to union and is left to the
+	 * caller's own fail-closed branch rather than guessed at.
+	 *
+	 * @param mixed $registerRaw The register bound exactly as the query carries it.
+	 * @param mixed $schemaRaw The schema bound exactly as the query carries it.
+	 *
+	 * @return bool True when the search must go through the multi-schema path.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function namesSeveral(mixed $registerRaw, mixed $schemaRaw): bool {
+		$schemaIds = $this->identifierList(value: $schemaRaw);
+		if (count($schemaIds) === 0) {
+			return false;
+		}
+
+		return (count($schemaIds) > 1 || count($this->identifierList(value: $registerRaw)) > 1);
+	}//end namesSeveral()
+
+	/**
+	 * The numeric ids a register or schema bound names.
+	 *
+	 * @param mixed $value A single id, a list of them, or null.
+	 *
+	 * @return array<int, int> The de-duplicated numeric ids, list-indexed.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function identifierList(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		$candidates = [$value];
+		if (is_array($value) === true) {
+			$candidates = $value;
+		}
+
+		$ids = [];
+		foreach ($candidates as $candidate) {
+			if (is_int($candidate) === true
+				|| (is_string($candidate) === true && ctype_digit($candidate) === true)
+			) {
+				$ids[(int)$candidate] = true;
+			}
+		}
+
+		return array_keys($ids);
+	}//end identifierList()
+
+	/**
+	 * The one identifier a bound names, or null when it names none or several.
+	 *
+	 * Returning the value as stored rather than as an int is deliberate: the
+	 * mappers resolve an id, a uuid or a slug, and only a caller that already
+	 * knows the bound is numeric may narrow it.
+	 *
+	 * @param mixed $value A single identifier, a list holding exactly one, or null.
+	 *
+	 * @return string|int|null The sole identifier, or null when there is not exactly one.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function soleIdentifier(mixed $value): string|int|null {
+		if (is_array($value) === false) {
+			if (is_string($value) === true || is_int($value) === true) {
+				return $value;
+			}
+
+			return null;
+		}
+
+		$values = array_values($value);
+		if (count($values) !== 1) {
+			return null;
+		}
+
+		if (is_string($values[0]) === true || is_int($values[0]) === true) {
+			return $values[0];
+		}
+
+		return null;
+	}//end soleIdentifier()
+
+	/**
 	 * Search objects.
 	 *
 	 * @param array $query Search query
@@ -9824,13 +9990,42 @@ class MagicMapper extends AbstractObjectMapper {
 		?array $ids = null,
 		?string $uses = null,
 	): array|int {
-		$registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
-		$schemaId = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+		// A view-scoped search reaches this entry point with `@self.register` and
+		// `@self.schema` as ARRAYS - ViewScopeApplier merges a view's registers
+		// and schemas into lists. `(int)` on a non-empty array is 1, silently and
+		// without a warning, so such a read targeted register 1 / schema 1 rather
+		// than the ones the view names. On an anonymous access link the view is
+		// the ONLY bound left on the query, which made that somebody else's data.
+		// searchObjectsPaginated() has branched on the array form since the
+		// unified-search work; this entry point never did.
+		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
+			$result = $this->searchObjectsPaginatedMultiSchema(
+				searchQuery: $query,
+				countQuery: $query,
+				registerIds: $this->identifierList(value: $registerRaw),
+				schemaIds: $this->identifierList(value: $schemaRaw),
+				activeOrgUuid: $_activeOrgUuid,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy,
+				ids: $ids,
+				uses: $uses
+			);
+
+			return ($result['results'] ?? []);
+		}
+
+		$registerId = $this->soleIdentifier(value: $registerRaw);
+		$schemaId = $this->soleIdentifier(value: $schemaRaw);
 
 		if ($registerId !== null && $schemaId !== null) {
 			try {
-				$register = $this->registerMapper->find((int)$registerId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
+				// Passed through as given, NOT cast: find() resolves an id, a uuid
+				// or a slug, and `(int)` turned every non-numeric identifier into 0.
+				$register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 
 				$query['_rbac'] = $_rbac;
 				$query['_multitenancy'] = $_multitenancy;
@@ -9881,13 +10076,34 @@ class MagicMapper extends AbstractObjectMapper {
 		?array $ids = null,
 		?string $uses = null,
 	): int {
-		$registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
-		$schemaId = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+		// Same array collapse as searchObjects(): a count that silently answered
+		// for register 1 is the same defect wearing a different return type.
+		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
+			$result = $this->searchObjectsPaginatedMultiSchema(
+				searchQuery: $query,
+				countQuery: $query,
+				registerIds: $this->identifierList(value: $registerRaw),
+				schemaIds: $this->identifierList(value: $schemaRaw),
+				activeOrgUuid: $_activeOrgUuid,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy,
+				ids: $ids,
+				uses: $uses
+			);
+
+			return (int)($result['total'] ?? 0);
+		}
+
+		$registerId = $this->soleIdentifier(value: $registerRaw);
+		$schemaId = $this->soleIdentifier(value: $schemaRaw);
 
 		if ($registerId !== null && $schemaId !== null) {
 			try {
-				$register = $this->registerMapper->find((int)$registerId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
+				$register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 
 				return $this->countObjectsInRegisterSchemaTable(
 					query: $query,
@@ -10707,30 +10923,4 @@ class MagicMapper extends AbstractObjectMapper {
 			'series' => [],
 		];
 	}//end getSizeDistributionChartData()
-
-	/**
-	 * Count objects across multiple schemas.
-	 *
-	 * @param array $schemaIds Array of schema IDs.
-	 *
-	 * @return int Total count of objects across the given schemas.
-	 */
-	public function countBySchemas(array $schemaIds): int {
-		return 0;
-	}//end countBySchemas()
-
-	/**
-	 * Find objects across multiple schemas.
-	 *
-	 * @param array $schemaIds Array of schema IDs.
-	 * @param int $limit Maximum number of objects to return.
-	 * @param int $offset Offset for pagination.
-	 *
-	 * @return ObjectEntity[] Array of object entities.
-	 *
-	 * @psalm-return list<ObjectEntity>
-	 */
-	public function findBySchemas(array $schemaIds, int $limit = 100, int $offset = 0): array {
-		return [];
-	}//end findBySchemas()
 }//end class

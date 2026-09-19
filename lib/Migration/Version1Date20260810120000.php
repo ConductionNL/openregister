@@ -79,13 +79,13 @@ class Version1Date20260810120000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable('openregister_flows') === false) {
 			$output->info('openregister_flows does not exist yet; nothing to alter.');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_flows');
 
 		if ($table->hasColumn('annotations') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

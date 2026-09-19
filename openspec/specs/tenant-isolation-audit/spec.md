@@ -60,6 +60,11 @@ The `TenantQuotaMiddleware` MUST check the Organisation status and block all API
 - **THEN** the middleware MUST return HTTP 403 Forbidden
 - **AND** the response MUST include `{"error": "Organisation is being deprovisioned", "status": "deprovisioning"}`
 
+#### Scenario: Retained organisation API access is blocked
+- **WHEN** an API request is scoped to an Organisation with `status: "retained"`
+- **THEN** the middleware MUST return HTTP 403 Forbidden
+- **AND** the response MUST include `{"error": "Organisation access has ended and its data is retained", "status": "retained"}`
+
 #### Scenario: Provisioning organisation only allows admin API access
 - **WHEN** a non-admin API request is scoped to an Organisation with `status: "provisioning"`
 - **THEN** the middleware MUST return HTTP 403 Forbidden

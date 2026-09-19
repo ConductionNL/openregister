@@ -102,7 +102,13 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->appConfig = $this->createMock(IAppConfig::class);
 
 		$user = $this->createMock(IUser::class);
+		// `isEnabled()` is stubbed EXPLICITLY. The runAs guards read `isEnabled() === false`,
+		// and NC 35 declares `isEnabled(): bool` where NC 32-34 leave it untyped — so an
+		// unstubbed mock answers null there and false here, and the run is refused as if
+		// alice had been offboarded. These tests are about an ENABLED identity; the disabled
+		// path has its own cases.
 		$user->method('getUID')->willReturn('admin');
+		$user->method('isEnabled')->willReturn(true);
 		$this->userManager->method('get')->willReturn($user);
 		$this->userManager->method('search')->willReturn([$user]);
 

@@ -45,6 +45,13 @@ class AggregationRunnerIntegrationTest extends TestCase {
 	private ?string $activeOrgUuid = null;
 
 	/**
+	 * The admin's active_organisation user value as this file found it.
+	 *
+	 * @var string
+	 */
+	private string $previousActiveOrganisation = '';
+
+	/**
 	 * @var int[]
 	 */
 	private array $createdSchemaIds = [];
@@ -58,6 +65,19 @@ class AggregationRunnerIntegrationTest extends TestCase {
 	 * @var string[]
 	 */
 	private array $createdTables = [];
+
+	/**
+	 * The session user as it was before this file touched it.
+	 *
+	 * The session is process-global and PHPUnit runs every test file in one
+	 * process, so a user left logged in here is still logged in for every file
+	 * that runs after this one. Ten Service files used to leave `admin` behind,
+	 * and assertions about what an ANONYMOUS caller may read then ran as an
+	 * administrator: some failed, and some passed only because of it.
+	 *
+	 * @var \OCP\IUser|null
+	 */
+	private ?\OCP\IUser $previousSessionUser = null;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -76,9 +96,21 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$userSession = \OC::$server->get(\OCP\IUserSession::class);
 		$userManager = \OC::$server->get(\OCP\IUserManager::class);
 		$admin = $userManager->get('admin');
+		// Restored in tearDown(): see $previousSessionUser.
+		$this->previousSessionUser = $userSession->getUser();
+
 		if ($admin !== null) {
 			$userSession->setUser($admin);
 		}
+
+		// 🔴 THE ACTIVE ORGANISATION IS A PERSISTENT USER SETTING, NOT SESSION
+		// STATE. setActiveOrganisation() writes it with setUserValue(), so a test
+		// that sets it changes the admin account for every later test, every
+		// later file and every later RUN. Two ServicesIntegrationTest tests read
+		// zero objects for rows they had just created because this file had
+		// pinned a tenant they were not stamped with. Capture it and put it back.
+		$config = \OC::$server->get(\OCP\IConfig::class);
+		$this->previousActiveOrganisation = $config->getUserValue('admin', 'openregister', 'active_organisation', '');
 
 		$orgService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
 		$activeOrg = $orgService->getActiveOrganisation();
@@ -94,6 +126,15 @@ class AggregationRunnerIntegrationTest extends TestCase {
 	}//end setUp()
 
 	protected function tearDown(): void {
+		// Restore the admin's active organisation exactly as it was found: an
+		// empty value means "no setting", which is deleted rather than stored.
+		$config = \OC::$server->get(\OCP\IConfig::class);
+		if ($this->previousActiveOrganisation === '') {
+			$config->deleteUserValue('admin', 'openregister', 'active_organisation');
+		} else {
+			$config->setUserValue('admin', 'openregister', 'active_organisation', $this->previousActiveOrganisation);
+		}
+
 		$db = \OC::$server->get(\OCP\IDBConnection::class);
 
 		foreach ($this->createdTables as $tableName) {
@@ -125,6 +166,10 @@ class AggregationRunnerIntegrationTest extends TestCase {
 				// already cleaned
 			}
 		}
+
+		// Put the session back the way it was found, so the next test file
+		// starts from the session state it expects.
+		\OC::$server->get(\OCP\IUserSession::class)->setUser($this->previousSessionUser);
 
 		parent::tearDown();
 	}//end tearDown()
@@ -448,6 +493,15 @@ class AggregationRunnerIntegrationTest extends TestCase {
 			]
 		);
 		$this->createdSchemaIds[] = $schema->getId();
+
+		// The register has to CARRY the schema. Naming a register is a boundary
+		// now: RegisterScopedSchemaResolver refuses to resolve a slug against a
+		// register that lists no schemas rather than guessing at a same-slug
+		// schema somewhere else, and its error says so ("carries no schemas at
+		// all"). This fixture predates that rule and seeded the two rows without
+		// ever linking them.
+		$register->setSchemas([$schema->getId()]);
+		$register = $this->registerMapper->update($register);
 
 		$this->mapper->ensureTableForRegisterSchema($register, $schema);
 		$this->createdTables[] = 'oc_' . $this->mapper->getTableNameForRegisterSchema($register, $schema);

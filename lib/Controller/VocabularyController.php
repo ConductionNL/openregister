@@ -4,8 +4,8 @@
  * VocabularyController — public read-only resolution endpoints for the SKOS
  * vocabulary register (skos-concept-registers, SKOS-004).
  *
- * Three endpoints, all `#[PublicPage]` because vocabularies are public
- * reference data (design.md D5) — writes to the `vocabulary` register stay
+ * Four endpoints, all `#[PublicPage]` because vocabularies are public
+ * reference data (design.md D5). Writes to the `vocabulary` register stay
  * admin-gated via its schema `authorization` block, only reads are opened
  * here:
  *   - GET /api/vocabulary/concept          resolve a concept by exact uri
@@ -13,6 +13,10 @@
  *   - GET /api/vocabulary/concepts         list a scheme's concepts, paginated,
  *                                          with a language-agnostic label search
  *                                          across prefLabel/altLabel (design.md D5)
+ *   - GET /api/vocabulary/options          the options one coded property offers,
+ *                                          flat or as a tree, with every value
+ *                                          outside its validity window absent
+ *                                          (code-list-lifecycle-and-hierarchy)
  *
  * Unknown uris/notations/schemes always resolve to a uniform 404 with the
  * standard `{"message": ...}` error shape — never an empty 200 (SKOS-004).
@@ -38,6 +42,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
+use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -93,7 +99,9 @@ class VocabularyController extends Controller {
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param ObjectService $objectService OR object read path (findAll — real API only).
+	 * @param ObjectService $objectService OR object read path (findAll, real API only).
+	 * @param CodedOptionsBuilder $options Builds a coded property's option list or option tree.
+	 * @param VocabularyDeclarationResolver $declarationResolver Resolves the coded declaration a read is about.
 	 *
 	 * @return void
 	 */
@@ -101,9 +109,127 @@ class VocabularyController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
+		private readonly CodedOptionsBuilder $options,
+		private readonly VocabularyDeclarationResolver $declarationResolver,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
+
+	/**
+	 * GET /api/vocabulary/options?schema=...&property=...&context=...&tree=1
+	 *
+	 * The options a coded property offers, as a flat list or as a tree.
+	 *
+	 * A value outside its validity window is absent from this answer and
+	 * still resolves through the three routes above, which is what lets a
+	 * dossier from 2019 read correctly beside a picker that no longer offers
+	 * the value it holds (REQ-CLH-001).
+	 *
+	 * `context` narrows the option subset for a property bound to another
+	 * property's value or to a declared context key, so one `categorie` field
+	 * serves many case types (REQ-CLH-002). `tree=1` returns the hierarchy
+	 * rather than the flat list.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The options, or a 404 when the schema or property is unknown.
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
+	public function propertyOptions(): JSONResponse {
+		$schemaRef = trim((string)$this->request->getParam('schema', ''));
+		$property = trim((string)$this->request->getParam('property', ''));
+		$schemeUri = trim((string)$this->request->getParam('scheme', ''));
+
+		if (($schemaRef === '' || $property === '') && $schemeUri === '') {
+			return new JSONResponse(
+				['message' => 'Either "schema" and "property", or "scheme", must be given.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$declaration = $this->declarationResolver->resolveDeclaration(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri);
+		if ($declaration === null) {
+			return $this->notFound();
+		}
+
+		if ($property === '') {
+			$property = 'scheme';
+		}
+
+		$language = $this->negotiatedLanguage();
+		$asTree = filter_var($this->request->getParam('tree', false), FILTER_VALIDATE_BOOLEAN);
+
+		if ($asTree === true) {
+			$tree = $this->options->tree(declaration: $declaration, language: $language);
+
+			return new JSONResponse(
+				[
+					'property' => $property,
+					'scheme' => $declaration->scheme,
+					'language' => $language,
+					'tree' => $tree,
+				]
+			);
+		}
+
+		$context = trim((string)$this->request->getParam('context', ''));
+		if ($context === '') {
+			$context = null;
+		}
+
+		$options = $this->options->options(
+			declaration: $declaration,
+			language: $language,
+			context: $context
+		);
+
+		return new JSONResponse(
+			[
+				'property' => $property,
+				'scheme' => $declaration->scheme,
+				'language' => $language,
+				'context' => $context,
+				'results' => $options,
+				'total' => count($options),
+			]
+		);
+	}//end propertyOptions()
+
+	/**
+	 * The language the caller asked for, defaulting to Dutch.
+	 *
+	 * Dutch is the default rather than English because `prefLabel.nl` is the
+	 * one label the concept schema requires, so it is the only tag guaranteed
+	 * to resolve to something a person can read.
+	 *
+	 * @return string The BCP-47 tag.
+	 */
+	private function negotiatedLanguage(): string {
+		$explicit = trim((string)$this->request->getParam('language', ''));
+		if ($explicit !== '') {
+			return $explicit;
+		}
+
+		$header = trim((string)$this->request->getHeader('Accept-Language'));
+		if ($header === '') {
+			return 'nl';
+		}
+
+		$first = trim((string)(explode(',', $header)[0] ?? ''));
+		$first = trim((string)(explode(';', $first)[0] ?? ''));
+
+		if ($first === '') {
+			return 'nl';
+		}
+
+		return $first;
+	}//end negotiatedLanguage()
 
 	/**
 	 * GET /api/vocabulary/concept?uri=...

@@ -537,10 +537,258 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				</div>
 			</div>
 
+			<!-- Computed value (computed-values-by-json-ast). The JSON AST is the
+			     engine an administrator authors: it diffs cleanly in a schema
+			     history and cannot reach a function nobody reviewed. Twig
+			     `computed` stays for schemas authored in code. -->
+			<NcCheckboxRadioSwitch
+				v-model="calculationEnabled"
+				:disabled="loading"
+				data-testid="property-calculation-toggle">
+				{{ t('openregister', 'Computed value') }}
+			</NcCheckboxRadioSwitch>
+
+			<div
+				v-if="calculationEnabled"
+				class="calculationContainer"
+				data-testid="property-calculation">
+				<div class="helper-text">
+					{{
+						t(
+							'openregister',
+							'The value is derived from the other properties of this object and is written on save. It cannot be edited by hand.',
+						)
+					}}
+				</div>
+
+				<NcSelect
+					:disabled="loading"
+					:modelValue="calculationTypeOption"
+					:options="calculationTypeOptions"
+					label="label"
+					trackBy="value"
+					:inputLabel="t('openregister', 'Result type')"
+					:clearable="false"
+					data-testid="property-calculation-type"
+					@update:modelValue="(opt) => (calculationType = opt.value)" />
+
+				<NcSelect
+					:disabled="loading || operatorsLoading"
+					:modelValue="null"
+					:options="operatorOptions"
+					label="label"
+					trackBy="value"
+					:inputLabel="t('openregister', 'Insert an operator')"
+					data-testid="property-calculation-operators"
+					@update:modelValue="insertOperator" />
+
+				<NcTextArea
+					v-model="calculationExpression"
+					:disabled="loading"
+					:error="!verifyJsonValidity(calculationExpression)"
+					:label="t('openregister', 'Expression (JSON)')"
+					:helperText="
+						!verifyJsonValidity(calculationExpression)
+							? t('openregister', 'This is not valid JSON yet.')
+							: ''
+					"
+					data-testid="property-calculation-expression" />
+
+				<NcTextArea
+					v-model="calculationSample"
+					:disabled="loading"
+					:error="!verifyJsonValidity(calculationSample)"
+					:label="t('openregister', 'Sample object (JSON)')"
+					data-testid="property-calculation-sample" />
+
+				<NcButton
+					:disabled="loading || calculationTrying"
+					variant="secondary"
+					data-testid="property-calculation-try"
+					@click="tryCalculation">
+					{{ t('openregister', 'Try it') }}
+				</NcButton>
+
+				<div
+					v-if="calculationTrialValue !== null"
+					class="calculationTrialResult"
+					data-testid="property-calculation-result">
+					{{ calculationTrialValue }}
+				</div>
+				<NcNoteCard
+					v-if="calculationTrialError"
+					type="error"
+					data-testid="property-calculation-error">
+					{{ calculationTrialError }}
+				</NcNoteCard>
+				<div
+					v-if="calculationDependencies.length"
+					class="helper-text"
+					data-testid="property-calculation-dependencies">
+					{{
+						t('openregister', 'Reads: {properties}', {
+							properties: calculationDependencies.join(', '),
+						})
+					}}
+				</div>
+			</div>
+
 			<NcTextField
 				v-model="properties.example"
 				:disabled="loading"
 				:label="t('openregister', 'Example')" />
+
+			<!-- Code list, hierarchy and lifecycle (code-list-lifecycle-and-hierarchy) -->
+			<h5 class="weightNormal">
+				{{ t('openregister', 'Code list') }}
+			</h5>
+
+			<NcTextField
+				v-model="codedConfig.scheme"
+				:disabled="loading"
+				:label="t('openregister', 'Concept scheme URI')"
+				placeholder="https://identifier.overheid.nl/tooi/…" />
+			<div class="helper-text">
+				{{
+					t(
+						'openregister',
+						'Take the values of this property from a concept scheme instead of a fixed list. Values are then shared, can be retired without breaking older records, and can carry fields of their own.',
+					)
+				}}
+			</div>
+
+			<template v-if="codedConfig.scheme">
+				<NcSelect
+					:disabled="loading"
+					:modelValue="codedStoreOption"
+					:options="codedStoreOptions"
+					:inputLabel="t('openregister', 'Store the value as')"
+					label="label"
+					trackBy="value"
+					@update:modelValue="
+						codedConfig.store = $event?.value || 'uri'
+					" />
+
+				<NcTextField
+					v-model="codedConfig.branch"
+					:disabled="loading"
+					:label="t('openregister', 'Branch (concept URI)')"
+					:placeholder="
+						t('openregister', 'Offer only the values under this one')
+					" />
+
+				<NcInputField
+					v-model="codedConfig.maxDepth"
+					:disabled="loading"
+					type="number"
+					:label="t('openregister', 'Maximum depth')" />
+
+				<NcCheckboxRadioSwitch
+					v-model="codedConfig.leafOnly"
+					:disabled="loading">
+					{{ t('openregister', 'Accept only the most specific value') }}
+				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					v-model="codedConfig.allowDeprecated"
+					:disabled="loading">
+					{{ t('openregister', 'Still accept withdrawn values') }}
+				</NcCheckboxRadioSwitch>
+
+				<NcTextField
+					v-model="codedConfig.contextProperty"
+					:disabled="loading"
+					:label="t('openregister', 'Narrow the list by property')"
+					:placeholder="t('openregister', 'case type')" />
+				<div class="helper-text">
+					{{
+						t(
+							'openregister',
+							'One field can serve many case types: the values offered are narrowed by what this other property holds.',
+						)
+					}}
+				</div>
+
+				<NcTextField
+					v-model="codedConfig.scoreProperty"
+					:disabled="loading"
+					:label="t('openregister', 'Add up the weights into property')"
+					:placeholder="t('openregister', 'score')" />
+
+				<div class="codeListTree">
+					<NcButton
+						:disabled="loading || treeLoading"
+						@click="loadConceptTree()">
+						<template #icon>
+							<NcLoadingIcon v-if="treeLoading" :size="20" />
+						</template>
+						{{ t('openregister', 'Show the hierarchy') }}
+					</NcButton>
+
+					<NcNoteCard v-if="treeError" type="error">
+						<p>{{ treeError }}</p>
+					</NcNoteCard>
+
+					<ul v-if="flatConceptTree.length" class="codeListTreeList">
+						<li
+							v-for="node in flatConceptTree"
+							:key="node.value"
+							:style="{ paddingInlineStart: node.depth * 16 + 'px' }"
+							:class="{ codeListRetired: !node.offerable }">
+							{{ node.label }}
+							<span v-if="!node.offerable" class="codeListBadge">
+								{{ t('openregister', 'retired') }}
+							</span>
+						</li>
+					</ul>
+					<div v-else-if="treeLoaded && !treeError" class="helper-text">
+						{{
+							t(
+								'openregister',
+								'This scheme holds no values yet, or none that this branch reaches.',
+							)
+						}}
+					</div>
+				</div>
+			</template>
+
+			<!-- Meaning and help text (REQ-CLH-003) -->
+			<h5 class="weightNormal">
+				{{ t('openregister', 'Meaning and help') }}
+			</h5>
+
+			<NcSelect
+				:disabled="loading"
+				:modelValue="semanticRoleOption"
+				:options="semanticRoleOptions"
+				:inputLabel="t('openregister', 'This property means')"
+				label="label"
+				trackBy="value"
+				@update:modelValue="semanticRole = $event?.value || ''" />
+			<div class="helper-text">
+				{{
+					t(
+						'openregister',
+						'Naming which property is the title, the status, the assignee or the term lets one list view render this schema without knowing it. A schema may name each of them once.',
+					)
+				}}
+			</div>
+
+			<NcTextArea
+				v-model="helpTextNl"
+				:disabled="loading"
+				:label="t('openregister', 'Help text (Dutch)')"
+				:placeholder="
+					t(
+						'openregister',
+						'What someone filling this field needs to know',
+					)
+				" />
+
+			<NcTextArea
+				v-model="helpTextEn"
+				:disabled="loading"
+				:label="t('openregister', 'Help text (English)')" />
 
 			<!-- type integer and number only -->
 			<div
@@ -775,6 +1023,8 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -810,6 +1060,42 @@ export default {
 	data() {
 		return {
 			propertyTitle: '',
+			// Code list, hierarchy and lifecycle. Held apart from `properties`
+			// because the annotation is only written when a scheme is named:
+			// an empty x-openregister-concepts block on every property would
+			// read as "bound to nothing" rather than as "not a code list".
+			codedConfig: {
+				scheme: '',
+				store: 'uri',
+				branch: '',
+				maxDepth: '',
+				leafOnly: false,
+				allowDeprecated: false,
+				contextProperty: '',
+				scoreProperty: '',
+			},
+
+			codedStoreOptions: [
+				{ value: 'uri', label: 'The concept URI' },
+				{ value: 'notation', label: 'The notation' },
+			],
+
+			semanticRole: '',
+
+			semanticRoleOptions: [
+				{ value: '', label: 'Nothing in particular' },
+				{ value: 'title', label: 'The title' },
+				{ value: 'status', label: 'The status' },
+				{ value: 'assignee', label: 'The assignee' },
+				{ value: 'term', label: 'The term' },
+			],
+
+			helpTextNl: '',
+			helpTextEn: '',
+			conceptTree: [],
+			treeLoading: false,
+			treeLoaded: false,
+			treeError: '',
 			facetableEnabled: true,
 			facetConfig: {
 				aggregated: true,
@@ -823,6 +1109,17 @@ export default {
 			facetFormat: '',
 			facetUseDefaultRanges: true,
 			facetCustomRanges: [],
+			// Computed value, authored in the JSON AST (computed-values-by-json-ast).
+			calculationEnabled: false,
+			calculationType: 'string',
+			calculationExpression: '',
+			calculationSample: '{}',
+			calculationTrying: false,
+			calculationTrialValue: null,
+			calculationTrialError: '',
+			calculationDependencies: [],
+			operatorCatalogue: [],
+			operatorsLoading: false,
 			properties: {
 				description: '',
 				title: '',
@@ -980,6 +1277,104 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The selected storage form of a coded value.
+		 *
+		 * @spec exclude UI display helper — resolves the selected storage-form option.
+		 */
+		codedStoreOption() {
+			return (
+				this.codedStoreOptions.find(
+					(opt) => opt.value === this.codedConfig.store,
+				) || this.codedStoreOptions[0]
+			)
+		},
+
+		/**
+		 * The result types a calculation may declare.
+		 *
+		 * @return {Array<object>} The select options.
+		 * @spec exclude UI display helper — static list of calculation result types.
+		 */
+		calculationTypeOptions() {
+			return [
+				{ value: 'string', label: t('openregister', 'Text') },
+				{ value: 'integer', label: t('openregister', 'Whole number') },
+				{ value: 'number', label: t('openregister', 'Number') },
+				{ value: 'boolean', label: t('openregister', 'Yes or no') },
+				{ value: 'date', label: t('openregister', 'Date') },
+			]
+		},
+
+		/**
+		 * The currently selected result type, as a select option.
+		 *
+		 * @return {object|null} The matching option.
+		 * @spec exclude UI display helper — maps the stored value onto its select option.
+		 */
+		calculationTypeOption() {
+			return (
+				this.calculationTypeOptions.find(
+					(option) => option.value === this.calculationType,
+				) || null
+			)
+		},
+
+		/**
+		 * The selected semantic role.
+		 *
+		 * @spec exclude UI display helper — resolves the selected semantic-role option.
+		 */
+		semanticRoleOption() {
+			return (
+				this.semanticRoleOptions.find(
+					(opt) => opt.value === this.semanticRole,
+				) || this.semanticRoleOptions[0]
+			)
+		},
+
+		/**
+		 * The concept tree flattened to indented rows for rendering.
+		 *
+		 * A retired value is kept in the list and marked, not dropped. Someone
+		 * choosing a branch needs to see that a value exists and is retired;
+		 * hiding it makes the tree look like it never held that term.
+		 *
+		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 */
+		flatConceptTree() {
+			const rows = []
+			const walk = (nodes, depth) => {
+				;(nodes || []).forEach((node) => {
+					rows.push({
+						value: node.value,
+						label: node.label,
+						offerable: node.offerable !== false,
+						depth,
+					})
+					walk(node.children, depth + 1)
+				})
+			}
+			walk(this.conceptTree, 0)
+			return rows
+		},
+
+		/**
+		 * The operator picker, generated from the published catalogue.
+		 *
+		 * Never a hand-written list: the catalogue is read from the engine, so
+		 * an operator the evaluator gains appears here without an edit.
+		 *
+		 * @return {Array<object>} The select options.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		operatorOptions() {
+			return this.operatorCatalogue.map((operator) => ({
+				value: operator.op,
+				label: `${operator.op} (${operator.category}): ${operator.description}`,
+			}))
+		},
+
 		/**
 		 * @spec exclude UI state helper — reports whether the property is a date/date-time type.
 		 */
@@ -1200,9 +1595,116 @@ export default {
 	mounted() {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
+		this.loadOperatorCatalogue()
 	},
 
 	methods: {
+		/**
+		 * Read the published operator catalogue and build the picker from it.
+		 *
+		 * @return {Promise<void>} Resolves once the catalogue is loaded or the read failed.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		async loadOperatorCatalogue() {
+			this.operatorsLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/schemas/calculation-operators',
+					),
+				)
+				this.operatorCatalogue = response.data?.operators || []
+			} catch {
+				// A picker nobody can fill is a worse answer than an empty one:
+				// the expression box still takes a hand-written AST.
+				this.operatorCatalogue = []
+			} finally {
+				this.operatorsLoading = false
+			}
+		},
+
+		/**
+		 * Append an operator skeleton to the expression being written.
+		 *
+		 * @param {object|null} option The chosen operator option.
+		 * @return {void}
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		insertOperator(option) {
+			if (!option || !option.value) return
+			const skeleton = JSON.stringify({ [option.value]: [] })
+			this.calculationExpression = this.calculationExpression
+				? `${this.calculationExpression}\n${skeleton}`
+				: skeleton
+		},
+
+		/**
+		 * Evaluate the expression against the sample payload, without saving.
+		 *
+		 * @return {Promise<void>} Resolves once the trial answered.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		async tryCalculation() {
+			this.calculationTrying = true
+			this.calculationTrialValue = null
+			this.calculationTrialError = ''
+
+			let expression
+			let sample
+			try {
+				expression = JSON.parse(this.calculationExpression || 'null')
+				sample = JSON.parse(this.calculationSample || '{}')
+			} catch {
+				this.calculationTrialError = t(
+					'openregister',
+					'The expression or the sample is not valid JSON.',
+				)
+				this.calculationTrying = false
+				return
+			}
+
+			try {
+				const response = await axios.post(
+					generateUrl(
+						'/apps/openregister/api/schemas/calculation-evaluate',
+					),
+					{
+						calculation: { type: this.calculationType, expression },
+						object: sample,
+					},
+				)
+				this.calculationTrialValue = String(response.data?.value ?? '')
+				this.calculationDependencies = response.data?.dependencies || []
+			} catch (error) {
+				const body = error?.response?.data
+				this.calculationTrialError =
+					body?.error?.message
+					|| body?.error
+					|| t('openregister', 'The expression could not be evaluated.')
+				this.calculationDependencies = body?.dependencies || []
+			} finally {
+				this.calculationTrying = false
+			}
+		},
+
+		/**
+		 * The declaration to store on the property, or null when there is none.
+		 *
+		 * @return {object|null} The `calculation` key's value.
+		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 */
+		buildCalculationValue() {
+			if (!this.calculationEnabled || !this.calculationExpression) return null
+			try {
+				return {
+					type: this.calculationType,
+					expression: JSON.parse(this.calculationExpression),
+				}
+			} catch {
+				return null
+			}
+		},
+
 		/**
 		 * @spec exclude Form-field binding — appends a blank oneOf entry.
 		 */
@@ -1250,6 +1752,18 @@ export default {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty =
 					schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+
+				// Hydrate the computed-value form from the stored declaration.
+				const calculation = schemaProperty.calculation
+				if (calculation && typeof calculation === 'object') {
+					this.calculationEnabled = true
+					this.calculationType = calculation.type || 'string'
+					this.calculationExpression = JSON.stringify(
+						calculation.expression ?? null,
+						null,
+						2,
+					)
+				}
 
 				// Initialize facetable state from property value.
 				const facetableValue = schemaProperty.facetable
@@ -1302,6 +1816,7 @@ export default {
 				}
 
 				this.propertyTitle = schemaStore.schemaPropertyKey
+				this.hydrateCodeListState(schemaProperty)
 				this.properties = {
 					...this.properties, // Preserve default structure
 					...schemaProperty, // Override with existing values
@@ -1376,6 +1891,159 @@ export default {
 			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
 			clearTimeout(this.closeModalTimeout)
+		},
+
+		/**
+		 * Read the code-list, role and help-text annotations off a stored property.
+		 *
+		 * @param {object} schemaProperty The stored property definition.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 */
+		hydrateCodeListState(schemaProperty) {
+			const coded = schemaProperty['x-openregister-concepts'] || {}
+			this.codedConfig = {
+				scheme: coded.scheme || '',
+				store: coded.store === 'notation' ? 'notation' : 'uri',
+				branch: coded.branch || '',
+				maxDepth:
+					coded.maxDepth !== null && coded.maxDepth !== undefined
+						? String(coded.maxDepth)
+						: '',
+
+				leafOnly: coded.leafOnly === true,
+				allowDeprecated: coded.allowDeprecated === true,
+				contextProperty: coded.contextProperty || '',
+				scoreProperty: (coded.score && coded.score.property) || '',
+			}
+
+			this.semanticRole = schemaProperty['x-openregister-role'] || ''
+
+			const help = schemaProperty['x-openregister-help']
+			if (typeof help === 'string') {
+				this.helpTextNl = help
+				this.helpTextEn = ''
+			} else {
+				this.helpTextNl = (help && help.nl) || ''
+				this.helpTextEn = (help && help.en) || ''
+			}
+
+			this.conceptTree = []
+			this.treeLoaded = false
+			this.treeError = ''
+		},
+
+		/**
+		 * The annotations this property writes back into the schema.
+		 *
+		 * An annotation is written only when it carries something. Writing an
+		 * empty block on every property would make every field look like a
+		 * code list bound to nothing, which is exactly the state the backend
+		 * reads as a typo.
+		 *
+		 * @return {object} The annotations to merge into the property.
+		 *
+		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 */
+		codeListAnnotations() {
+			const annotations = {}
+
+			const scheme = (this.codedConfig.scheme || '').trim()
+			if (scheme) {
+				const coded = { scheme, store: this.codedConfig.store }
+				if (this.codedConfig.branch) {
+					coded.branch = this.codedConfig.branch.trim()
+				}
+				if (
+					this.codedConfig.maxDepth !== ''
+					&& this.codedConfig.maxDepth !== null
+					&& this.codedConfig.maxDepth !== undefined
+				) {
+					const depth = parseInt(this.codedConfig.maxDepth, 10)
+					if (!Number.isNaN(depth)) coded.maxDepth = depth
+				}
+				if (this.codedConfig.leafOnly) coded.leafOnly = true
+				if (this.codedConfig.allowDeprecated) coded.allowDeprecated = true
+				if (this.codedConfig.contextProperty) {
+					coded.contextProperty = this.codedConfig.contextProperty.trim()
+				}
+				if (this.codedConfig.scoreProperty) {
+					coded.score = { property: this.codedConfig.scoreProperty.trim() }
+				}
+				annotations['x-openregister-concepts'] = coded
+			} else {
+				annotations['x-openregister-concepts'] = undefined
+			}
+
+			annotations['x-openregister-role'] = this.semanticRole || undefined
+
+			const help = {}
+			if ((this.helpTextNl || '').trim()) help.nl = this.helpTextNl.trim()
+			if ((this.helpTextEn || '').trim()) help.en = this.helpTextEn.trim()
+			annotations['x-openregister-help'] = Object.keys(help).length
+				? help
+				: undefined
+
+			return annotations
+		},
+
+		/**
+		 * Fetch the scheme's hierarchy so the branch can be chosen from it.
+		 *
+		 * The read goes through the options endpoint with the declaration as
+		 * written in this form, not as stored, so the tree shown is the tree
+		 * the property would actually offer once saved.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 */
+		async loadConceptTree() {
+			const scheme = (this.codedConfig.scheme || '').trim()
+			if (!scheme) return
+
+			this.treeLoading = true
+			this.treeError = ''
+
+			const params = new URLSearchParams({ scheme, tree: '1' })
+			if (this.codedConfig.branch)
+				params.set('branch', this.codedConfig.branch.trim())
+			if (this.codedConfig.store) params.set('store', this.codedConfig.store)
+			if (
+				this.codedConfig.maxDepth !== ''
+				&& this.codedConfig.maxDepth !== null
+				&& this.codedConfig.maxDepth !== undefined
+			) {
+				params.set('maxDepth', String(this.codedConfig.maxDepth))
+			}
+			if (this.codedConfig.leafOnly) params.set('leafOnly', 'true')
+			if (this.codedConfig.allowDeprecated)
+				params.set('allowDeprecated', 'true')
+
+			try {
+				const response = await fetch(
+					`/index.php/apps/openregister/api/vocabulary/options?${params.toString()}`,
+					{ headers: { Accept: 'application/json' } },
+				)
+				if (!response.ok) {
+					this.conceptTree = []
+					this.treeError = t(
+						'openregister',
+						'That concept scheme could not be read. Check the URI.',
+					)
+					return
+				}
+				const body = await response.json()
+				this.conceptTree = body.tree || []
+			} catch (err) {
+				this.conceptTree = []
+				this.treeError = String(err)
+			} finally {
+				this.treeLoading = false
+				this.treeLoaded = true
+			}
 		},
 
 		/**
@@ -1457,7 +2125,9 @@ export default {
 					[this.propertyTitle]: {
 						// create the new property with title as key
 						...this.properties,
+						...this.codeListAnnotations(),
 						facetable: facetableValue,
+						calculation: this.buildCalculationValue(),
 						// due to bad (no) support for number fields inside nextcloud/vue, parse the text to a number
 						order: parseFloat(this.properties.order) || null,
 						minLength: parseFloat(this.properties.minLength) || null,
@@ -1676,6 +2346,20 @@ export default {
 	margin-block-end: 15px;
 }
 
+.calculationContainer {
+	margin-block-end: 15px;
+	padding-left: 8px;
+	border-left: 2px solid var(--color-border);
+}
+
+.calculationTrialResult {
+	margin-block: 8px;
+	padding: 8px;
+	border-radius: var(--border-radius);
+	background-color: var(--color-background-dark);
+	font-family: monospace;
+}
+
 .objectConfigurationTitle,
 .facetConfigTitle {
 	margin-block-end: 5px;
@@ -1711,5 +2395,36 @@ export default {
 	gap: 4px;
 	align-items: end;
 	margin-bottom: 4px;
+}
+
+.codeListTree {
+	margin-block-start: 0.75rem;
+}
+
+.codeListTreeList {
+	margin-block-start: 0.5rem;
+	max-height: 240px;
+	overflow-y: auto;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 0.5rem;
+}
+
+.codeListTreeList li {
+	padding-block: 2px;
+}
+
+.codeListRetired {
+	color: var(--color-text-maxcontrast);
+	text-decoration: line-through;
+}
+
+.codeListBadge {
+	margin-inline-start: 0.5rem;
+	padding: 0 6px;
+	border-radius: var(--border-radius);
+	background-color: var(--color-background-dark);
+	text-decoration: none;
+	font-size: 0.8em;
 }
 </style>

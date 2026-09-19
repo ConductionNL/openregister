@@ -423,6 +423,88 @@ class FlowControllerTest extends TestCase {
 	}//end testStateStillServesAFlowTheCallerCanSee()
 
 	/**
+	 * The version preflight answers what publishing would be called.
+	 *
+	 * A GET that changes nothing: the author is asking before they commit to
+	 * an answer, so it neither requires a `bump` nor refuses one.
+	 *
+	 * @return void
+	 */
+	public function testTheVersionPreviewAnswersWhatPublishingWouldDo(): void {
+		$flow = new \OCA\OpenRegister\Db\Flow();
+		$flow->setUuid('flow-1');
+		$this->flows->method('find')->willReturn($flow);
+		$this->request->method('getParam')->willReturn('');
+
+		$versionService = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class);
+		$versionService->expects($this->once())
+			->method('previewPublish')
+			->willReturn(
+				[
+					'verdict'      => 'major',
+					'next'         => '2.0.0',
+					'removed'      => 'This removes steps middle.',
+					'removedNodes' => ['middle'],
+					'removedEdges' => ['start->middle'],
+					'removedKeys'  => [],
+					'first'        => false,
+					'current'      => '1.4.0',
+				]
+			);
+
+		$controller = new FlowController(
+			'openregister',
+			$this->request,
+			$this->createMock(EventCatalogService::class),
+			$this->nodes,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+			$this->preflight,
+			$this->flows,
+			$this->access($this->userSession, $this->groupManager, $this->actionAuth),
+			$versionService
+		);
+
+		$response = $controller->versionPreview(id: 'flow-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('major', $data['verdict']);
+		$this->assertSame('2.0.0', $data['next']);
+		// NAMED, not merely counted. "This publish is major" without saying
+		// what went is the version an author learns to ignore.
+		$this->assertSame(['middle'], $data['removedNodes']);
+
+	}//end testTheVersionPreviewAnswersWhatPublishingWouldDo()
+
+	/**
+	 * A preflight for a flow the caller cannot see is a 404, like every other
+	 * read of it.
+	 *
+	 * @return void
+	 */
+	public function testTheVersionPreviewRefusesAFlowTheCallerCannotSee(): void {
+		$this->flows->method('find')->willThrowException(
+			new \OCP\AppFramework\Db\DoesNotExistException('no such flow')
+		);
+		$this->request->method('getParam')->willReturn('');
+
+		$controller = new FlowController(
+			'openregister',
+			$this->request,
+			$this->createMock(EventCatalogService::class),
+			$this->nodes,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+			$this->preflight,
+			$this->flows,
+			$this->access($this->userSession, $this->groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
+		);
+
+		$this->assertSame(404, $controller->versionPreview(id: 'someone-elses-flow')->getStatus());
+
+	}//end testTheVersionPreviewRefusesAFlowTheCallerCannotSee()
+
+	/**
 	 * Without `?list=`, the payload is unchanged — no `results`, no `total`.
 	 *
 	 * @return void

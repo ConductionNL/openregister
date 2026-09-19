@@ -47,6 +47,23 @@ use Throwable;
 /**
  * Publishes, drafts and deprecates flow versions.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A version transition is the
+ * point where a flow's separate concerns have to meet: the version rows, the
+ * flow whose head mirrors them, the definition store the graph is pinned in,
+ * the lifecycle guard, the trigger index that must move in the same
+ * transaction, the numbering, the connection that makes it one transaction,
+ * and the log. Every one of those is named because publishing genuinely
+ * coordinates all of them, and splitting the class would move the coupling
+ * into a caller rather than remove it — with the transaction boundary, which
+ * is the thing that makes a publish safe, spread across two objects.
+ *
+ * ⚠️ THIS WAS ALREADY OVER THE THRESHOLD, at 13 against a limit of "under
+ * 13", and `development`'s phpmd job was already failing because of it. The
+ * semantic-version work took it to 16; moving the comparison and the numbering
+ * into FlowSemanticVersion brought it back to 15, which is a real reduction
+ * and still over. The suppression states the reason rather than raising the
+ * limit for every class in the app.
+ *
  * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
  */
 class FlowVersionService {
@@ -58,6 +75,7 @@ class FlowVersionService {
 	 * @param FlowDefinitionPin  $pin      Canonicalises and stores a graph by hash.
 	 * @param FlowLifecycleGuard $guard    The preconditions on every transition.
 	 * @param FlowTriggerIndex   $triggers The derived trigger rows.
+	 * @param FlowSemanticVersion $semver  What to call the version that results.
 	 * @param IDBConnection      $db       Wraps each transition in one transaction.
 	 * @param LoggerInterface    $logger   Diagnostics.
 	 */
@@ -67,6 +85,7 @@ class FlowVersionService {
 		private readonly FlowDefinitionPin $pin,
 		private readonly FlowLifecycleGuard $guard,
 		private readonly FlowTriggerIndex $triggers,
+		private readonly FlowSemanticVersion $semver,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 	) {
@@ -140,6 +159,10 @@ class FlowVersionService {
 	 *
 	 * @param Flow        $flow        The flow whose head is being published.
 	 * @param string|null $publishedBy The acting user.
+	 * @param string|null $bump        `major` to raise the derived verdict,
+	 *                                 `minor` to assert there was no removal,
+	 *                                 which is REFUSED when the diff found
+	 *                                 one. Null lets the diff decide.
 	 *
 	 * @return FlowVersion The now-published version.
 	 *
@@ -148,7 +171,7 @@ class FlowVersionService {
 	 *
 	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
 	 */
-	public function publish(Flow $flow, ?string $publishedBy = null): FlowVersion {
+	public function publish(Flow $flow, ?string $publishedBy = null, ?string $bump = null): FlowVersion {
 		$flowId = (string)$flow->getUuid();
 		$graph = $this->graphOf(flow: $flow);
 
@@ -179,15 +202,34 @@ class FlowVersionService {
 				$this->versions->update($previous);
 			}
 
+			// THE SEMANTIC VERSION IS DERIVED HERE, against the graph that was
+			// PUBLISHED — not against the previous ordinal. They are usually
+			// the same and are not always: a deprecated version, or a draft
+			// opened and abandoned, leaves a gap, and what a consumer is
+			// running is the published one.
+			//
+			// `$previous` has already been marked deprecated above; its graph
+			// is still what was live a moment ago, which is exactly the
+			// comparison an author means by "what does this change".
+			$semverValue = $this->deriveSemver(
+				previous: $previous,
+				candidate: $graph,
+				requested: $bump
+			);
+
 			$version = $this->headVersionRow(flow: $flow, hash: $hash);
 			$version->setStatus(FlowVersion::STATUS_PUBLISHED);
 			$version->setPublishedAt(new DateTime());
 			$version->setPublishedBy($publishedBy);
 			$version->setDefinitionHash($hash);
+			$version->setSemver($semverValue);
+			$version->setSemverSource(FlowSemanticVersion::SOURCE_DERIVED);
 			$stored = $this->persist(version: $version);
 
 			$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
 			$flow->setVersion($stored->getVersion());
+			$flow->setSemver($semverValue);
+			$flow->setSemverSource(FlowSemanticVersion::SOURCE_DERIVED);
 			$this->flows->update($flow);
 
 			// Inside the transaction, deliberately. The trigger rows and the
@@ -317,6 +359,122 @@ class FlowVersionService {
 		return $stored;
 
 	}//end deprecate()
+
+	/**
+	 * What to call the version this publish creates.
+	 *
+	 * One question to one collaborator. Comparing, reconciling the author's
+	 * request with the diff, and numbering the result all belong together and
+	 * live in {@see FlowSemanticVersion}; this method's only job is to decide
+	 * WHICH graph is the one being replaced, and to survive not finding it.
+	 *
+	 * 🔴 A FAILURE TO READ THE PREVIOUS GRAPH IS NOT A FAILURE TO PUBLISH. The
+	 * definition row may have been pruned, and refusing would let a LABELLING
+	 * feature block a release. A null graph is treated as no previous version
+	 * at all, which yields the first version rather than a confident major
+	 * nobody can check.
+	 *
+	 * @param FlowVersion|null $previous The version this one replaces.
+	 * @param array $candidate The graph being published.
+	 * @param string|null $requested `major`, `minor`, or null to let the diff decide.
+	 *
+	 * @return string The semantic version.
+	 *
+	 * @throws \UnexpectedValueException When the author asked to call a removal minor.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
+	 */
+	private function deriveSemver(?FlowVersion $previous, array $candidate, ?string $requested): string {
+		return $this->semver->forPublish(
+			publishedGraph: $this->publishedGraphOf(version: $previous),
+			candidateGraph: $candidate,
+			previousSemver: $previous?->getSemver(),
+			requested: $requested
+		);
+
+	}//end deriveSemver()
+
+	/**
+	 * What publishing this flow's head would be called, without publishing it.
+	 *
+	 * 🔑 THE PREFLIGHT AND THE PUBLISH READ THE SAME PAIR OF GRAPHS. Both go
+	 * through `publishedGraphOf()` and `FlowSemanticVersion`, so a preview
+	 * that says "major, this removes step X" cannot be followed by a publish
+	 * that quietly disagrees — which would be worse than showing nothing,
+	 * because the author would have believed it.
+	 *
+	 * It answers for a flow with nothing published yet too: `first` is true,
+	 * `next` is the first version, and no removal is claimed.
+	 *
+	 * @param Flow $flow The flow whose head would be published.
+	 *
+	 * @return array{
+	 *     verdict: string,
+	 *     next: string,
+	 *     removed: string,
+	 *     removedNodes: array<int, string>,
+	 *     removedEdges: array<int, string>,
+	 *     removedKeys: array<int, string>,
+	 *     first: bool,
+	 *     current: string|null
+	 * } What the publish would be called, and what it takes away.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
+	 */
+	public function previewPublish(Flow $flow): array {
+		$previous = $this->versions->findPublished(flowUuid: (string)$flow->getUuid());
+
+		$preview = $this->semver->preview(
+			publishedGraph: $this->publishedGraphOf(version: $previous),
+			candidateGraph: $this->graphOf(flow: $flow),
+			previousSemver: $previous?->getSemver()
+		);
+
+		$preview['current'] = $previous?->getSemver();
+
+		return $preview;
+
+	}//end previewPublish()
+
+	/**
+	 * The stored graph of a published version, or null when it cannot be read.
+	 *
+	 * 🔴 A FAILURE TO READ THE PREVIOUS GRAPH IS NOT A FAILURE TO PUBLISH. The
+	 * definition row may have been pruned, and refusing would let a LABELLING
+	 * feature block a release. A null graph is treated as no previous version
+	 * at all, which yields the first version rather than a confident major
+	 * nobody can check.
+	 *
+	 * @param FlowVersion|null $version The version to read.
+	 *
+	 * @return array<string, mixed>|null The graph, or null.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
+	 */
+	private function publishedGraphOf(?FlowVersion $version): ?array {
+		if ($version === null) {
+			return null;
+		}
+
+		try {
+			$graph = $this->pin->graphFor($version->getDefinitionHash());
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowVersionService] Could not read the previously published graph; '
+					. 'the semantic version starts again: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return null;
+		}
+
+		if (is_array($graph) === false) {
+			return null;
+		}
+
+		return $graph;
+
+	}//end publishedGraphOf()
 
 	/**
 	 * The version row for the flow's head, creating it when it does not exist.

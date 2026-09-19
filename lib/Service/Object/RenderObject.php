@@ -40,9 +40,16 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Deletion\RetentionClockService;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Hinge\LensResolver;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -50,6 +57,8 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\IRequest;
 use OCP\SystemTag\ISystemTagManager;
@@ -189,6 +198,16 @@ class RenderObject {
 	 * @param IRequest|null $request Current request, used to read `?recurrenceOccurrences=N`.
 	 * @param ObjectSourceRegistry|null $objectSourceRegistry Resolves object-source providers for `$ref` extends into virtual schemas.
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler (x-openregister-encrypted).
+	 * @param ContainerInterface|null $container Lazily resolves RegistrySubscriptionService
+	 *        (registry-subscriptions) — NOT constructor-injected directly: that dependency
+	 *        chains ObjectService -> RenderObject -> RegistrySubscriptionService -> ObjectService,
+	 *        a cycle Nextcloud's container refuses to construct eagerly. Same lazy-resolution
+	 *        pattern PermissionHandler already uses for the same reason.
+	 * @param LensResolver|null $lensResolver Resolves a schema's declared lenses at read time
+	 *        (objects-as-the-hinge-between-cases). Nullable-with-a-default because this class is
+	 *        constructed by hand in several tests, where a new required argument is a fatal; a
+	 *        null resolver leaves the data exactly as it was, which is what a schema declaring
+	 *        no lens gets anyway.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 *
@@ -218,6 +237,8 @@ class RenderObject {
 		private readonly ?IRequest $request = null,
 		private readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
+		private readonly ?ContainerInterface $container = null,
+		private readonly ?LensResolver $lensResolver = null,
 	) {
 	}//end __construct()
 
@@ -1678,6 +1699,16 @@ class RenderObject {
 		// Get the object data as an array for manipulation.
 		$objectData = $entity->getObject();
 
+		// The object BEFORE any caller-supplied projection. The lifecycle
+		// state's field rules are resolved against this, so `?fields=onderwerp`
+		// cannot change which rules apply by hiding the lifecycle field from
+		// the resolver: a form that projected would then be told a state
+		// demands nothing, and be refused on save anyway.
+		$unprojectedData = [];
+		if (is_array($objectData) === true) {
+			$unprojectedData = $objectData;
+		}
+
 		// Apply field filtering if specified.
 		if (empty($fields) === false) {
 			$fields[] = '@self';
@@ -1989,6 +2020,16 @@ class RenderObject {
 			}//end if
 		}//end if
 
+		// Publish the lifecycle state's field rules beside the object, so a form
+		// renders what this state hides, freezes and demands without a second
+		// call. It runs after the strip block because the two must agree: what
+		// was just removed is what `hidden` names. A form that ignores this is
+		// still refused on save by StateFieldRuleListener — the hint is a
+		// courtesy, never the enforcement.
+		if ($schema !== null) {
+			$this->attachFieldRules(entity: $entity, schema: $schema, stored: $unprojectedData);
+		}
+
 		// Decrypt properties flagged `x-openregister-encrypted: true` (field-level-
 		// object-encryption). This MUST run after the writeOnly/property-authorization
 		// strip block above, and nowhere earlier: a property that block just removed is
@@ -2057,6 +2098,19 @@ class RenderObject {
 			);
 		}
 
+		// A lens is not behind `_extend`. A field that shows the besluit's date
+		// only when the caller thought to ask for it is a field two readers
+		// disagree about, which is the whole defect the lens exists to close.
+		// A schema declaring no lens returns the data untouched, so this costs
+		// an array lookup on every other schema in the fleet.
+		if ($this->lensResolver !== null) {
+			$objectData = $this->lensResolver->apply(
+				schema: $renderSchema,
+				data: $objectData,
+				_rbac: $_rbac
+			);
+		}
+
 		$entity->setObject($objectData);
 
 		// Compute the RFC 8141 URN once per render. UrnService resolves
@@ -2096,6 +2150,48 @@ class RenderObject {
 			);
 		}
 
+		// Registry subscription state (`registry-subscriptions`, finding
+		// B22). Only looked up when the schema actually declares
+		// `x-openregister-registry` — a cheap in-memory check on the
+		// already-loaded schema — so the common case (no annotation) costs
+		// no extra query per rendered row.
+		try {
+			if ($this->container !== null && $renderSchema !== null && $entity->getUuid() !== null) {
+				$registrySubscriptions = $this->container->get(RegistrySubscriptionService::class);
+				if ($registrySubscriptions->annotationFor(schema: $renderSchema) !== null) {
+					$registryState = $registrySubscriptions->stateFor((string)$entity->getUuid());
+					if ($registryState !== null) {
+						$entity->setRegistryState($registryState);
+					}
+				}
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] registry subscription state lookup failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}
+
+		// The reader's own follow marker, and the size of the audience
+		// (`object-watchers`). Both come from WatcherService, whose per-request
+		// memo means a page of objects costs ONE query for the marker and ONE
+		// for the counts, not one per rendered row.
+		$this->applyWatcherMarkers(entity: $entity);
+
+		// The reader's own unread marker and the tab badge counts
+		// (`object-read-state`). Same lazy posture as the watcher markers above,
+		// and the same per-request memo, so a page of objects costs ONE query
+		// for the marker rather than one per rendered row.
+		$this->applyReadStateMarkers(entity: $entity);
+
+		// The reader's own star (`favourites-and-recent`). Same lazy posture and
+		// same per-request memo as the two markers above, so a page of objects
+		// costs ONE query for the star rather than one per rendered row.
+		$this->applyFavouriteMarker(entity: $entity);
+
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
 		// effective retention for this row from the annotation's default +
@@ -2104,8 +2200,376 @@ class RenderObject {
 		// never collide. See add-archival-annotation-support design R3 + D7.
 		$this->applyArchivalRetentionBlock(entity: $entity, schema: $renderSchema);
 
+		// Merge everything the object now knows about its own archiving into the
+		// ONE abstract answer consumers read: `@self._retention`. Runs after the
+		// annotation block above on purpose, because it reads that block's
+		// output. See ArchivalDecisionResolver for why this merge exists at all.
+		$this->applyArchivalDecision(entity: $entity);
+
+		// Both retention clocks, each naming the rule that produced it. Runs
+		// last because it reads the retention block the two calls above fill.
+		$this->applyRetentionClocks(entity: $entity);
+
+		// The links out of this record, built from its own values. Runs after
+		// everything that can change those values (translation resolution,
+		// decryption, virtual calculations) so a template may name a computed
+		// or translated property and get the value the reader is actually
+		// looking at, not the one on disk.
+		$this->applyExternalLinks(entity: $entity, schema: $renderSchema);
+
 		return $entity;
 	}//end renderEntity()
+
+	/**
+	 * Attach `@self.fieldRules` to a rendered object.
+	 *
+	 * The rules are resolved against the object as stored rather than against
+	 * what survived the strip above: a `hidden` field is gone from the payload
+	 * by this point, and resolving from the payload would make a rule whose
+	 * condition reads a hidden value silently stop applying.
+	 *
+	 * An object whose schema declares no state rules gets no key at all, so a
+	 * register that does not use them pays nothing and its responses do not
+	 * change shape.
+	 *
+	 * The rules ride the transient `@self` mechanism rather than being written
+	 * into the payload's own `@self` key, because `ObjectEntity::getObjectArray()`
+	 * rebuilds that envelope from the entity and keeps only a whitelist from
+	 * the payload: a key set on the array here would be dropped on serialisation,
+	 * silently, which is the same shape of no-op this change exists to refuse.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param Schema $schema The entity's schema.
+	 * @param array<string, mixed> $stored The object before any projection or strip.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	private function attachFieldRules(ObjectEntity $entity, Schema $schema, array $stored): void {
+		try {
+			$rules = $this->propertyRbacHandler->stateFieldRulesFor(schema: $schema, object: $stored);
+		} catch (\Throwable $e) {
+			// The hint is a courtesy on a read. Losing it must never cost the
+			// object, and the save path refuses the same write either way.
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] field rules could not be resolved for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+			return;
+		}
+
+		if ($rules->isEmpty() === true) {
+			return;
+		}
+
+		$entity->setFieldRules($rules->jsonSerialize());
+	}//end attachFieldRules()
+
+	/**
+	 * Attach `@self._clocks`: the AVG date and the Archiefwet date, each with
+	 * its rule.
+	 *
+	 * Resolved through the container rather than the constructor for the same
+	 * reason the watcher markers are: this class already takes twenty-two
+	 * collaborators and a records-management read has no business widening
+	 * that list further.
+	 *
+	 * Skipped entirely for an object that carries neither a processing
+	 * activity nor an archiefactiedatum, so listing a register of ordinary
+	 * objects costs nothing. Failures are logged and swallowed: a retention
+	 * edge case must never take out object rendering.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	private function applyRetentionClocks(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$hasActivity = (($entity->getProcessingActivityId() ?? '') !== '');
+		$hasActionDate = (($entity->getRetention() ?? [])['archiefactiedatum'] ?? null) !== null;
+		if ($hasActivity === false && $hasActionDate === false) {
+			return;
+		}
+
+		try {
+			$clocks = $this->container->get(RetentionClockService::class);
+			$entity->setRetentionClocks($clocks->clocksFor(object: $entity));
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] retention clocks skipped for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}
+	}//end applyRetentionClocks()
+
+	/**
+	 * Attach `@self.watching` and, for an editor, `@self.watcherCount`.
+	 *
+	 * Resolved through the container rather than the constructor so the render
+	 * layer does not acquire a hard dependency on the subscription primitive:
+	 * the same lazy posture the registry-subscription lookup above uses, and for
+	 * the same reason, since WatcherService resolves permissions and would
+	 * otherwise close a construction cycle.
+	 *
+	 * Failures are logged and swallowed: whether somebody follows an object is
+	 * never worth failing the read of that object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	private function applyWatcherMarkers(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			$watchers = $this->container->get(WatcherService::class);
+
+			// Anonymous reads get no marker at all: there is no "you" to answer
+			// for, and a hard false would read as "you do not follow this",
+			// which is a different claim.
+			if ($watchers->callerUid() === null) {
+				return;
+			}
+
+			$entity->setWatching($watchers->isWatchedByCaller(objectUuid: $uuid));
+
+			// The count is a fact about the object's audience, so it is only
+			// told to a reader who may edit the object.
+			if ($watchers->maySeeWatchers(object: $entity) === true) {
+				$entity->setWatcherCount($watchers->watcherCount(objectUuid: $uuid));
+			}
+		} catch (\Throwable $e) {
+			// A subscription lookup must never take out object rendering.
+			$this->logger->debug(
+				sprintf('[RenderObject] watcher markers skipped for %s: %s', $uuid, $e->getMessage())
+			);
+		}//end try
+	}//end applyWatcherMarkers()
+
+	/**
+	 * Attach `@self.unread` and the per-sub-resource badge counts.
+	 *
+	 * Resolved through the container rather than the constructor, for the same
+	 * reason as `applyWatcherMarkers()` above: the render layer does not acquire
+	 * a hard dependency on the read-state primitive, which resolves a session
+	 * and would otherwise close a construction cycle.
+	 *
+	 * ONLY the marker is attached here, never the sub-resource badge counts.
+	 * Counting a sub-resource means looking at the object's files and its dated
+	 * arrays, so doing it on this path would pay that cost for every row of
+	 * every list, which is exactly what the memoised marker exists to avoid. A
+	 * list carries the marker; the single-object read in ObjectsController::show()
+	 * adds the badges, because that is the only caller that can be sure it is
+	 * rendering one object.
+	 *
+	 * Failures are logged and swallowed: whether you have seen an object is
+	 * never worth failing the read of that object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function applyReadStateMarkers(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			$readState = $this->container->get(ReadStateService::class);
+
+			// Anonymous reads get no marker at all: there is no "you" to answer
+			// for, and a hard false would read as "you have seen this", which is
+			// a different claim.
+			if ($readState->callerUid() === null) {
+				return;
+			}
+
+			$entity->setUnread($readState->isUnreadForCaller(objectUuid: $uuid));
+		} catch (\Throwable $e) {
+			// A read-state lookup must never take out object rendering.
+			$this->logger->debug(
+				sprintf('[RenderObject] read state markers skipped for %s: %s', $uuid, $e->getMessage())
+			);
+		}//end try
+	}//end applyReadStateMarkers()
+
+	/**
+	 * Attach `@self.favourite` for the reader.
+	 *
+	 * Resolved through the container rather than the constructor, for the same
+	 * reason as `applyReadStateMarkers()` above: the render layer does not
+	 * acquire a hard dependency on a primitive that resolves a session and
+	 * would otherwise close a construction cycle.
+	 *
+	 * Anonymous reads get no marker at all. A hard false would read as "you
+	 * have not starred this", which is a claim about a person who is not there.
+	 *
+	 * Failures are logged and swallowed: whether you have starred an object is
+	 * never worth failing the read of that object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	private function applyFavouriteMarker(ObjectEntity $entity): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			$favourites = $this->container->get(FavouriteService::class);
+
+			if ($favourites->callerUid() === null) {
+				return;
+			}
+
+			$entity->setFavourite($favourites->isStarredByCaller(objectUuid: $uuid));
+		} catch (\Throwable $e) {
+			// A favourite lookup must never take out object rendering.
+			$this->logger->debug(
+				sprintf('[RenderObject] favourite marker skipped for %s: %s', $uuid, $e->getMessage())
+			);
+		}//end try
+
+	}//end applyFavouriteMarker()
+
+	/**
+	 * Attach the resolved `@self._retention` decision.
+	 *
+	 * The slot has been declared on the entity since add-archival-annotation-support
+	 * and, until this method existed, was filled by nothing outside a unit test —
+	 * so every client asking an object for its archival constraints got silence
+	 * while the facts sat unmerged in three sub-blocks of `retention`.
+	 *
+	 * Failures are logged and swallowed for the same reason the annotation block
+	 * above swallows them: a records-management edge case must never take out
+	 * object rendering.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function applyArchivalDecision(ObjectEntity $entity): void {
+		try {
+			$resolver = new ArchivalDecisionResolver();
+			$decision = $resolver->resolve(entity: $entity);
+			if ($decision === null) {
+				return;
+			}
+
+			$entity->setArchivalRetention($decision);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] archival decision resolve failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}//end try
+	}//end applyArchivalDecision()
+
+	/**
+	 * Attach the links out of this record, under `@self.externalLinks`.
+	 *
+	 * A link whose placeholders cannot all be filled is not offered, and a
+	 * schema declaring no links attaches nothing at all rather than an empty
+	 * list: a consumer that has to distinguish "no links declared" from "links
+	 * declared, none applicable" can, and one that does not is not handed a key
+	 * it must remember to ignore.
+	 *
+	 * Failure here is swallowed to a debug line for the same reason every other
+	 * tail-of-render block swallows: a link is an ornament on a record, and a
+	 * record the caseworker cannot read at all is a far worse outcome than a
+	 * record missing its shortcut to the BAG viewer.
+	 *
+	 * @param ObjectEntity $entity The rendered object.
+	 * @param Schema|null $schema Its schema, when one is resolvable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 */
+	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
+		if ($schema === null) {
+			return;
+		}
+
+		$configuration = ($schema->getConfiguration() ?? []);
+		$declarations = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
+		if (is_array($declarations) === false || $declarations === []) {
+			return;
+		}
+
+		try {
+			$objectData = $entity->getObject();
+			if (is_array($objectData) === false) {
+				$objectData = [];
+			}
+
+			$links = (new ExternalLinkResolver())->resolve(
+				declarations: $declarations,
+				object: $objectData
+			);
+
+			if ($links === []) {
+				return;
+			}
+
+			$objectData['@self'] = ($objectData['@self'] ?? []);
+			if (is_array($objectData['@self']) === false) {
+				$objectData['@self'] = [];
+			}
+
+			$objectData['@self']['externalLinks'] = $links;
+			$entity->setObject($objectData);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf(
+					'[RenderObject] external link resolution failed for %s: %s',
+					(string)$entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+		}//end try
+	}//end applyExternalLinks()
 
 	/**
 	 * Compute + attach the annotation-driven `_retention.annotation` block.

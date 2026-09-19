@@ -82,4 +82,78 @@ class ContactLinkTest extends TestCase {
 
 		$this->assertNull($json['metadata']);
 	}
+
+	/**
+	 * People on objects: a user link says so, and carries validity and note.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function testJsonSerializeEmitsThePeopleOnObjectsFields(): void {
+		$link = new ContactLink();
+		$link->setUserId('jan');
+		$link->setContactUid(ContactLink::USER_UID_PREFIX . 'jan');
+		$link->setValidFrom(new \DateTime('2026-01-01'));
+		$link->setValidUntil(new \DateTime('2026-12-31'));
+		$link->setNote('Handles the permit');
+
+		$json = $link->jsonSerialize();
+
+		$this->assertTrue($link->isUserLink());
+		$this->assertSame('user', $json['kind']);
+		$this->assertSame('jan', $json['userId']);
+		$this->assertSame('user:jan', $json['contactUid']);
+		$this->assertSame('2026-01-01', $json['validFrom']);
+		$this->assertSame('2026-12-31', $json['validUntil']);
+		$this->assertSame('Handles the permit', $json['note']);
+	}//end testJsonSerializeEmitsThePeopleOnObjectsFields()
+
+	/**
+	 * A contact link is kind `contact`, with the new fields null and open validity active.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function testAContactLinkIsKindContactAndActiveWhenOpen(): void {
+		$link = new ContactLink();
+		$link->setContactUid('jan-uid');
+
+		$json = $link->jsonSerialize();
+
+		$this->assertFalse($link->isUserLink());
+		$this->assertSame('contact', $json['kind']);
+		$this->assertNull($json['userId']);
+		$this->assertNull($json['validFrom']);
+		$this->assertNull($json['validUntil']);
+		$this->assertNull($json['note']);
+		$this->assertTrue($json['active']);
+	}//end testAContactLinkIsKindContactAndActiveWhenOpen()
+
+	/**
+	 * Validity: outside the window is inactive, on the bounds is active, a bound unset is open.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
+	 */
+	public function testIsActiveOnFollowsTheValidityWindow(): void {
+		$link = new ContactLink();
+		$link->setValidFrom(new \DateTime('2026-03-01'));
+		$link->setValidUntil(new \DateTime('2026-03-31'));
+
+		$this->assertFalse($link->isActiveOn(new \DateTime('2026-02-28')));
+		$this->assertTrue($link->isActiveOn(new \DateTime('2026-03-01')));
+		$this->assertTrue($link->isActiveOn(new \DateTime('2026-03-31')));
+		$this->assertFalse($link->isActiveOn(new \DateTime('2026-04-01')));
+
+		$link->setValidUntil(null);
+		$this->assertTrue($link->isActiveOn(new \DateTime('2030-01-01')));
+		$this->assertFalse($link->isActiveOn(new \DateTime('2026-02-28')));
+
+		$ended = new ContactLink();
+		$ended->setValidUntil(new \DateTime('yesterday'));
+		$this->assertFalse($ended->jsonSerialize()['active']);
+	}//end testIsActiveOnFollowsTheValidityWindow()
 }

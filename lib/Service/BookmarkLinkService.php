@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -97,12 +98,14 @@ class BookmarkLinkService {
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ContainerInterface $container App container the Bookmarks mappers are resolved from.
 	 */
 	public function __construct(
 		private readonly BookmarkLinkMapper $bookmarkLinkMapper,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 
@@ -558,7 +561,7 @@ class BookmarkLinkService {
 		}
 
 		try {
-			return \OCP\Server::get('\OCA\Bookmarks\Db\BookmarkMapper');
+			return $this->container->get('\OCA\Bookmarks\Db\BookmarkMapper');
 		} catch (Throwable $e) {
 			$this->logger->debug('resolveBookmarkMapper failed: ' . $e->getMessage());
 			return null;
@@ -576,7 +579,7 @@ class BookmarkLinkService {
 		}
 
 		try {
-			return \OCP\Server::get('\OCA\Bookmarks\Db\TagMapper');
+			return $this->container->get('\OCA\Bookmarks\Db\TagMapper');
 		} catch (Throwable $e) {
 			$this->logger->debug('resolveTagMapper failed: ' . $e->getMessage());
 			return null;

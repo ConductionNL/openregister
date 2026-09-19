@@ -22,6 +22,11 @@ import { CnIntegrationWidgetGrid } from '@conduction/nextcloud-vue'
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp, h } from 'vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
+
+// Register nextcloud-vue's own catalogue before anything renders, so the
+// library's labels follow the reader's language on this page too.
+registerLibraryTranslations()
 
 // Install + populate the integration registry on this entry bundle's
 // JS scope. Each NC entry bundle runs in isolation, so bootstrap must

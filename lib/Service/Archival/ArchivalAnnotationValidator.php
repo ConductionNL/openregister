@@ -50,11 +50,25 @@ use Exception;
 final class ArchivalAnnotationValidator {
 
 	/**
+	 * Allowed keys directly under `x-openregister-archival`.
+	 *
+	 * `retention` is the disposal decision. The other three are the archival
+	 * facts MDTO asks for that nothing in openregister used to write, so an
+	 * export could only ever omit them; see the archival-conformance A3
+	 * finding.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ALLOWED_ANNOTATION_KEYS = ['retention', 'aggregationLevel', 'useRestriction', 'temporalCoverage'];
+
+	/**
 	 * Allowed top-level keys under `retention`.
 	 *
 	 * @var array<int, string>
 	 */
 	private const ALLOWED_RETENTION_KEYS = ['default', 'rules'];
+
+
 
 	/**
 	 * Allowed keys under each rule.
@@ -62,6 +76,51 @@ final class ArchivalAnnotationValidator {
 	 * @var array<int, string>
 	 */
 	private const ALLOWED_RULE_KEYS = ['condition', 'retention', 'reason'];
+
+	/**
+	 * Severity marking a finding that SHALL NOT refuse the schema.
+	 *
+	 * A finding without a `severity` key is an error, so every existing check
+	 * keeps refusing exactly what it refused before this constant existed.
+	 *
+	 * @var string
+	 */
+	public const SEVERITY_WARNING = 'warning';
+
+	/**
+	 * Split validator findings into the ones that refuse a schema and the ones
+	 * that only deserve a log line.
+	 *
+	 * Callers save the schema when `errors` is empty, whatever `warnings`
+	 * holds. Kept here rather than at each call site so "which findings are
+	 * fatal" is answered in the file that decides it.
+	 *
+	 * @param array<int, array{code: string, message: string, severity?: string}> $findings Findings from validate().
+	 *
+	 * @return array{
+	 *     errors: array<int, array{code: string, message: string, severity?: string}>,
+	 *     warnings: array<int, array{code: string, message: string, severity?: string}>
+	 * }
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public static function partition(array $findings): array {
+		$errors = [];
+		$warnings = [];
+		foreach ($findings as $finding) {
+			if (($finding['severity'] ?? '') === self::SEVERITY_WARNING) {
+				$warnings[] = $finding;
+				continue;
+			}
+
+			$errors[] = $finding;
+		}
+
+		return [
+			'errors' => $errors,
+			'warnings' => $warnings,
+		];
+	}//end partition()
 
 	/**
 	 * Validate the `x-openregister-archival` annotation block on a schema definition.
@@ -73,7 +132,9 @@ final class ArchivalAnnotationValidator {
 	 *                                     save time (fields are resolved by the
 	 *                                     runtime evaluator against actual rows).
 	 *
-	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 * @return array<int, array{code: string, message: string, severity?: string}> List of findings
+	 *         (empty = valid). A finding carrying `severity: warning` does NOT refuse the schema;
+	 *         see {@see partition()} and {@see SEVERITY_WARNING}.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -152,8 +213,75 @@ final class ArchivalAnnotationValidator {
 			}
 		}
 
-		return $errors;
+		$errors = array_merge($errors, $this->unknownTopLevelKeys(annotation: $annotation));
+
+		$facts = new ArchivalFactsValidator();
+
+		return array_merge(
+			$errors,
+			$facts->validateAggregationLevel(annotation: $annotation),
+			$facts->validateUseRestriction(annotation: $annotation),
+			$facts->validateTemporalCoverage(annotation: $annotation)
+		);
 	}//end validate()
+
+
+
+
+
+	/**
+	 * Report keys at the top level of the annotation that are not on the
+	 * allow-list, as WARNINGS rather than errors.
+	 *
+	 * That severity is the whole point of this method. An unknown key here is
+	 * an EXTRA key beside a `retention` block that is itself valid: it declares
+	 * nothing, so ignoring it loses nothing. Refusing it refuses the SCHEMA, and
+	 * at import time `ImportHandler` then drops that schema and every object
+	 * that needed it, which is a total loss of the register for a stray key.
+	 *
+	 * Measured on 2026-09-12: shipping this check as an error took filinq (9 of
+	 * 22 schemas, on `category` / `action` / `responsibleParty`) and pipelinq
+	 * (the `ticket` supertype, on a `_note`) red within the hour, on payloads
+	 * those apps had carried for weeks, because every app clones
+	 * openregister@development at CI run time. The first symptom was an HTTP 412
+	 * out of each app's own demo-data seeding, four layers away from this check.
+	 *
+	 * It matches the rule the enclosing level already follows: R07 DROPS an
+	 * unknown `x-openregister-*` key and warns
+	 * ({@see \OCA\OpenRegister\Db\SchemaMapper::logDroppedAnnotationKeys}). A key
+	 * one level further in should not be stricter than the key containing it.
+	 *
+	 * Every check that validates a fact the schema actually DECLARED stays an
+	 * error: a malformed ISO-8601 retention, an unknown key INSIDE a block, a
+	 * term outside MDTO's begrippenlijst, a literal date where a property name
+	 * belongs.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
+	 *
+	 * @return array<int, array{code: string, message: string, severity: string}>
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function unknownTopLevelKeys(array $annotation): array {
+		$warnings = [];
+		foreach (array_keys($annotation) as $key) {
+			if (in_array((string)$key, self::ALLOWED_ANNOTATION_KEYS, true) === true) {
+				continue;
+			}
+
+			$warnings[] = [
+				'code' => 'archival-unknown-key',
+				'severity' => self::SEVERITY_WARNING,
+				'message' => sprintf(
+					'x-openregister-archival contains unknown key "%s". Allowed: %s.',
+					(string)$key,
+					implode(', ', self::ALLOWED_ANNOTATION_KEYS)
+				),
+			];
+		}
+
+		return $warnings;
+	}//end unknownTopLevelKeys()
 
 	/**
 	 * Validate a single rule entry.

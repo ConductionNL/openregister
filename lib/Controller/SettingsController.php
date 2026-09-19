@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -338,6 +339,54 @@ class SettingsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end getSearchBackend()
+
+	/**
+	 * Read the state of the indexes behind object search.
+	 *
+	 * Admin-only by default: no `@NoAdminRequired` here, so Nextcloud's
+	 * middleware refuses an ordinary account before the method runs. The index
+	 * inventory of a magic table names the schema's own columns, which is more
+	 * than a reader of that register is entitled to.
+	 *
+	 * There is no operations console in this app. This is the endpoint one
+	 * reads: the index inventory per table, whether this platform can rebuild
+	 * without taking the index away, and the report of the last rebuild that
+	 * actually ran. `occ openregister:tables:search-index status` prints the
+	 * same report.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The index inventory and the last rebuild report.
+	 *
+	 * @psalm-return JSONResponse<200|500, array, array<never, never>>
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	public function getSearchIndexStatus(): JSONResponse {
+		try {
+			$maintenance = $this->container->get(SearchIndexMaintenance::class);
+
+			$tables = [];
+			$indexCount = 0;
+			foreach ($maintenance->tablesInScope() as $tableName) {
+				$indexes = array_keys($maintenance->indexesFor(tableName: $tableName));
+				$tables[$tableName] = $indexes;
+				$indexCount += count($indexes);
+			}
+
+			return new JSONResponse(
+				data: [
+					'concurrentRebuildSupported' => $maintenance->supportsConcurrentRebuild(),
+					'tables' => $tables,
+					'tableCount' => count($tables),
+					'indexCount' => $indexCount,
+					'lastRun' => $maintenance->lastRun(),
+				]
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end getSearchIndexStatus()
 
 	/**
 	 * Update search backend configuration.
@@ -733,7 +782,7 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with type filtering debug information
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|404|500,
 	 *     array{error?: string, trace?: string,
 	 *     all_organizations?: array{count: int<0, max>,
 	 *     organizations: array<array{id: int, name: null|string,
@@ -765,8 +814,23 @@ class SettingsController extends Controller {
 			// Get services.
 			$objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
 
-			// Set register and schema context.
-			$objectService->setRegister('voorzieningen');
+			// Set register and schema context. The register slug is RESOLVED,
+			// not written: stackiq's repair step renames it from
+			// `voorzieningen` to `stackiq` per instance, and reading with the
+			// name this instance does not carry returns an empty set that this
+			// endpoint would have rendered as "no organisations". That is the
+			// wrong answer for a diagnostic whose whole job is to say whether
+			// filtering works.
+			$slugResolver = $this->container->get(\OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class);
+			$register = $slugResolver->slugOrNull(canonical: 'stackiq');
+			if ($register === null) {
+				return new JSONResponse(
+					data: ['error' => 'No stackiq register on this instance under any of its known slugs.'],
+					statusCode: 404
+				);
+			}
+
+			$objectService->setRegister($register);
 			$objectService->setSchema('organisation');
 
 			$results = [];

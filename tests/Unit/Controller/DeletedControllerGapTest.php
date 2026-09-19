@@ -5,6 +5,14 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DeletedController;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
+use OCA\OpenRegister\Service\Deletion\DestroyRightService;
+use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
+use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
+use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -41,15 +49,30 @@ class DeletedControllerGapTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
+		$deletion = new DeletionServiceBundle(
+			$this->createMock(originalClassName: DeletionWindowService::class),
+			$this->createMock(originalClassName: DestroyRightService::class),
+			$this->createMock(originalClassName: DestructionScopeService::class),
+			$this->createMock(originalClassName: DestructionRecorder::class),
+			$this->createMock(originalClassName: RetentionClockService::class),
+		);
+
+		$authorizer = new DeletedObjectAuthorizer(
+			$this->schemaMapper,
+			$this->userSession,
+			$this->groupManager,
+			$this->permissionHandler,
+		);
+
 		$this->controller = new DeletedController(
 			'openregister',
 			$this->request,
 			$this->objectMapper,
 			$this->registerMapper,
-			$this->schemaMapper,
 			$this->userSession,
-			$this->groupManager,
-			$this->permissionHandler
+			$this->createMock(originalClassName: AuditTrailMapper::class),
+			$deletion,
+			$authorizer
 		);
 
 		// index()/statistics() now scan magic tables directly (BUG-1 fix).
@@ -373,6 +396,8 @@ class DeletedControllerGapTest extends TestCase {
 	 * Test restore with object having empty deleted array (covers === [] branch).
 	 */
 	public function testRestoreObjectWithEmptyDeletedArray(): void {
+		// Restore is a write and now requires an authenticated caller.
+		$this->stubAdminUser();
 		$object = new ObjectEntity();
 		// getDeleted returns [] for null (Entity __call behavior)
 		$this->objectMapper->method('find')->willReturn($object);

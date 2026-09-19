@@ -13,6 +13,11 @@ import { createApp, reactive } from 'vue'
 import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
 import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
+
+// Register nextcloud-vue's own catalogue before anything renders, so the
+// library's labels follow the reader's language on this page too.
+registerLibraryTranslations()
 
 // Bootstrap the integration registry on the files-sidebar bundle so any
 // tab component that uses useIntegrationRegistry() sees the same populated

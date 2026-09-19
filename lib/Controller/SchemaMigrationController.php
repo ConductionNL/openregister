@@ -30,13 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
+use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -50,39 +51,133 @@ use Psr\Log\LoggerInterface;
  * Controller for schema versioning, revalidation and migration.
  */
 class SchemaMigrationController extends Controller {
+
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param SchemaMapper $schemaMapper Schema lookup.
-	 * @param RegisterMapper $registerMapper Register lookup (resolve population register).
 	 * @param SchemaChangelogMapper $changelogMapper Changelog read.
 	 * @param SchemaRunMapper $runMapper Run read.
 	 * @param SchemaRunEntryMapper $runEntryMapper Run entry read.
 	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
 	 * @param SchemaMigrationService $migrationService Migration engine.
+	 * @param SchemaObjectReader $objectReader Locates a schema's register and reads its stored values.
 	 * @param IJobList $jobList Job list (enqueue runs).
 	 * @param IUserSession $userSession Current user.
 	 * @param LoggerInterface $logger Logger.
+	 * @param PropertyConversionService|null $conversions Publishes and previews a property type change.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaChangelogMapper $changelogMapper,
 		private readonly SchemaRunMapper $runMapper,
 		private readonly SchemaRunEntryMapper $runEntryMapper,
 		private readonly SchemaRevalidationService $revalidationService,
 		private readonly SchemaMigrationService $migrationService,
+		private readonly SchemaObjectReader $objectReader,
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ?PropertyConversionService $conversions = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
+
+	/**
+	 * The property-type conversions the system supports.
+	 *
+	 * Published as a list rather than implied by trial and error: an
+	 * administrator planning a schema change needs to know what is possible
+	 * before designing around it, and a conversion that is not on this list is
+	 * refused rather than attempted (REQ-CLH-005).
+	 *
+	 * @return JSONResponse The supported conversions.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	public function conversions(): JSONResponse {
+		if ($this->conversions === null) {
+			return new JSONResponse(['results' => [], 'total' => 0]);
+		}
+
+		$supported = $this->conversions->supported();
+
+		return new JSONResponse(['results' => $supported, 'total' => count($supported)]);
+	}//end conversions()
+
+	/**
+	 * Preview what converting one property's type would cost.
+	 *
+	 * Answers over the values the schema's objects actually hold: how many
+	 * convert, how many do not, and a sample of the ones that do not. An
+	 * unsupported conversion is refused here with its reason and nothing is
+	 * attempted, which is the difference between a decision and a data-loss
+	 * incident discovered months later.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return JSONResponse The preview, or a refusal with its reason.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 */
+	public function previewConversion(int $id): JSONResponse {
+		if ($this->conversions === null || $this->objectReader->canReadValues() === false) {
+			return new JSONResponse(['error' => 'Property conversion is not configured'], 501);
+		}
+
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Schema not found'], 404);
+		}
+
+		$property = trim((string)$this->request->getParam('property', ''));
+		$target = trim((string)$this->request->getParam('to', ''));
+		if ($property === '' || $target === '') {
+			return new JSONResponse(['error' => 'Both "property" and "to" are required'], 422);
+		}
+
+		$properties = ($schema->getProperties() ?? []);
+		$definition = ($properties[$property] ?? null);
+		if (is_array($definition) === false) {
+			return new JSONResponse(
+				['error' => sprintf('The schema has no property "%s"', $property)],
+				404
+			);
+		}
+
+		$current = trim((string)($definition['type'] ?? 'string'));
+
+		if ($this->conversions->isSupported(from: $current, to: $target) === false) {
+			return new JSONResponse(
+				[
+					'error' => $this->conversions->refusalReason(from: $current, to: $target),
+					'property' => $property,
+					'from' => $current,
+					'to' => $target,
+					'supported' => false,
+				],
+				422
+			);
+		}
+
+		$values = $this->objectReader->storedValues(schemaId: $id, property: $property);
+		$preview = $this->conversions->preview(values: $values, from: $current, to: $target);
+		$preview['property'] = $property;
+		$preview['from'] = $current;
+		$preview['to'] = $target;
+
+		return new JSONResponse($preview);
+	}//end previewConversion()
 
 	/**
 	 * Get a schema's classified changelog, newest-first.
@@ -122,7 +217,7 @@ class SchemaMigrationController extends Controller {
 			return new JSONResponse(['error' => 'Schema not found'], 404);
 		}
 
-		$registerId = $this->resolveRegisterId(schemaId: $id);
+		$registerId = $this->objectReader->resolveRegisterId(schemaId: $id);
 		if ($registerId === null) {
 			return new JSONResponse(['error' => 'No register contains this schema'], 422);
 		}
@@ -238,7 +333,7 @@ class SchemaMigrationController extends Controller {
 			return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => $problems], 422);
 		}
 
-		$registerId = $this->resolveRegisterId(schemaId: $id);
+		$registerId = $this->objectReader->resolveRegisterId(schemaId: $id);
 		if ($registerId === null) {
 			return new JSONResponse(['error' => 'No register contains this schema'], 422);
 		}
@@ -273,7 +368,7 @@ class SchemaMigrationController extends Controller {
 			return new JSONResponse(['error' => 'A "plan" array is required'], 422);
 		}
 
-		$registerId = $this->resolveRegisterId(schemaId: $id);
+		$registerId = $this->objectReader->resolveRegisterId(schemaId: $id);
 		if ($registerId === null) {
 			return new JSONResponse(['error' => 'No register contains this schema'], 422);
 		}
@@ -335,30 +430,6 @@ class SchemaMigrationController extends Controller {
 
 		return new JSONResponse($result->jsonSerialize());
 	}//end rollback()
-
-	/**
-	 * Resolve a register id that contains the given schema.
-	 *
-	 * @param int $schemaId The schema id.
-	 *
-	 * @return int|null A register id, or null when none contains the schema.
-	 */
-	private function resolveRegisterId(int $schemaId): ?int {
-		$explicit = $this->request->getParam('registerId');
-		if ($explicit !== null && is_numeric($explicit) === true) {
-			return (int)$explicit;
-		}
-
-		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-		foreach ($registers as $register) {
-			$schemas = array_map('strval', ($register->getSchemas() ?? []));
-			if (in_array((string)$schemaId, $schemas, true) === true) {
-				return (int)$register->getId();
-			}
-		}
-
-		return null;
-	}//end resolveRegisterId()
 
 	/**
 	 * Read an optional integer query parameter.

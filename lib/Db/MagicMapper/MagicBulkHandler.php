@@ -45,6 +45,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\ObjectVersionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
@@ -81,6 +82,17 @@ class MagicBulkHandler {
 	private array $tableColumnsCache = [];
 
 	/**
+	 * Decides the version an inserted row starts on.
+	 *
+	 * Constructed rather than injected: it is stateless arithmetic over one
+	 * string, and version policy belongs in one class rather than being
+	 * re-stated wherever a row is written.
+	 *
+	 * @var ObjectVersionHandler
+	 */
+	private ObjectVersionHandler $versionHandler;
+
+	/**
 	 * Constructor for MagicBulkHandler
 	 *
 	 * @param IDBConnection $db Database connection for operations
@@ -98,6 +110,7 @@ class MagicBulkHandler {
 	) {
 		// Try to get max_allowed_packet from database configuration.
 		$this->initializeMaxPacketSize();
+		$this->versionHandler = new ObjectVersionHandler();
 	}//end __construct()
 
 	/**
@@ -172,12 +185,13 @@ class MagicBulkHandler {
 			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
 			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object, selfData: $selfData);
 
-			$preparedObject['_name'] = $selfData['name'] ?? $object['name'] ?? null;
-			$preparedObject['_description'] = $selfData['description'] ?? $object['description'] ?? null;
-			$preparedObject['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
-			$preparedObject['_image'] = $selfData['image'] ?? $object['image'] ?? null;
-			$preparedObject['_slug'] = $selfData['slug'] ?? $object['slug'] ?? null;
-			$preparedObject['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
+			$preparedObject = $this->withDisplayColumns(
+				prepared: $preparedObject,
+				selfData: $selfData,
+				object: $object
+			);
+
+			$preparedObject['_version'] = $this->versionHandler->initialVersionFor(candidate: ($selfData['version'] ?? $object['version'] ?? null));
 
 			// Calculate object size for storage analytics.
 			// This is the size of the serialized object data for storage analytics.
@@ -225,6 +239,33 @@ class MagicBulkHandler {
 
 		return $prepared;
 	}//end prepareObjectsForDynamicTable()
+
+	/**
+	 * Map the six display-metadata columns onto a prepared row.
+	 *
+	 * Each reads `@self` first and the raw payload second, which is the same
+	 * fallback the surrounding method applies to every other metadata column.
+	 * Extracted as a group because they share that rule exactly, and because
+	 * `prepareObjectsForDynamicTable()` sits on the method-length threshold.
+	 *
+	 * @param array<string, mixed> $prepared The row being built.
+	 * @param array<string, mixed> $selfData The object's `@self` metadata.
+	 * @param array<string, mixed> $object The raw object payload.
+	 *
+	 * @return array<string, mixed> The row with the display columns set.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function withDisplayColumns(array $prepared, array $selfData, array $object): array {
+		$prepared['_name'] = $selfData['name'] ?? $object['name'] ?? null;
+		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
+		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
+		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
+		$prepared['_slug'] = $selfData['slug'] ?? $object['slug'] ?? null;
+		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
+
+		return $prepared;
+	}//end withDisplayColumns()
 
 	/**
 	 * Copy an object's expiry into the prepared row's `_expires` column, when it has one.
@@ -740,8 +781,15 @@ class MagicBulkHandler {
 		$updateClauses = [];
 
 		foreach ($columns as $column) {
-			if ($column === '_uuid' || $column === '_created') {
+			if ($column === '_uuid' || $column === '_created' || $column === '_version') {
 				// Never update UUID or created timestamp.
+				//
+				// `_version` joins them: the INSERT half stamps a starting
+				// version on a genuinely new row, and an existing row must keep
+				// the version it already reached. Letting the incoming value win
+				// here would walk every re-imported object back to `0.0.1` on
+				// every sync pass, which is worse than the NULL this change
+				// exists to end.
 				continue;
 			}
 

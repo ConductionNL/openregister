@@ -238,7 +238,9 @@ class TaskMapperQueriesTest extends TestCase {
 		$page = $mapper->findInbox(criteria: $criteria, limit: 25, offset: 50);
 
 		$this->assertCount(1, $page);
-		$this->assertTrue($this->saw('expr.eq', 'assignee'));
+		// An IN, not an eq: a typed assignee is stored as `type:id`, so the
+		// caller's identity expands to the few strings that mean them.
+		$this->assertTrue($this->saw('expr.in', 'assignee'));
 		$this->assertTrue($this->saw('expr.eq', 'requester'), 'visibility disjunction present for a non-admin');
 		$this->assertTrue($this->saw('setMaxResults', 25));
 		$this->assertTrue($this->saw('setFirstResult', 50));
@@ -270,7 +272,7 @@ class TaskMapperQueriesTest extends TestCase {
 
 		$this->calls = [];
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL));
-		$this->assertFalse($this->saw('expr.eq', 'assignee'));
+		$this->assertFalse($this->saw('expr.in', 'assignee'));
 	}//end testFindInboxScopesForAnAdmin()
 
 	/**
@@ -309,6 +311,59 @@ class TaskMapperQueriesTest extends TestCase {
 	}//end testFindInboxFiltersAndSortsInTheDatastore()
 
 	/**
+	 * A due WINDOW becomes two comparisons over the SAME effective deadline
+	 * the overdue filter uses.
+	 *
+	 * `overdueAt` cannot express a window: it is open-ended in the past by
+	 * design, and "due this week" needs both ends. The COALESCE is shared on
+	 * purpose, so a deadline-less task falls out of a window exactly as it
+	 * falls out of overdue, with no separate null check to keep in step.
+	 *
+	 * @return void
+	 */
+	public function testFindInboxFiltersOnADueWindow(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith());
+
+		$mapper->findInbox(criteria: new TaskInboxCriteria(
+			uid: 'root',
+			isAdmin: true,
+			scope: TaskInboxCriteria::SCOPE_ALL,
+			dueAfter: new DateTime('2026-09-01T00:00:00+00:00'),
+			dueBefore: new DateTime('2026-09-08T00:00:00+00:00'),
+		));
+
+		$ge = array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) >='));
+		$lt = array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) <'));
+		$this->assertNotEmpty($ge, 'dueAfter must become a >= over the effective deadline');
+		$this->assertNotEmpty($lt, 'dueBefore must become a < over the effective deadline');
+	}//end testFindInboxFiltersOnADueWindow()
+
+	/**
+	 * Each end of the window is independent: one without the other filters
+	 * on one side only, rather than being ignored.
+	 *
+	 * @return void
+	 */
+	public function testEachEndOfTheDueWindowStandsAlone(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith());
+
+		$mapper->findInbox(criteria: new TaskInboxCriteria(
+			uid: 'root',
+			isAdmin: true,
+			dueAfter: new DateTime('2026-09-01T00:00:00+00:00'),
+		));
+		$this->assertNotEmpty(array_filter($this->functions, static fn (string $f): bool => str_contains($f, '>=')));
+
+		$this->calls = [];
+		$this->functions = [];
+		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true));
+		$this->assertEmpty(
+			array_filter($this->functions, static fn (string $f): bool => str_contains($f, 'COALESCE')),
+			'no window and no overdue means no deadline predicate at all'
+		);
+	}//end testEachEndOfTheDueWindowStandsAlone()
+
+	/**
 	 * countInbox reads the total off the same predicates; no row is zero.
 	 *
 	 * @return void
@@ -316,9 +371,33 @@ class TaskMapperQueriesTest extends TestCase {
 	public function testCountInboxReadsTheTotal(): void {
 		$counted = new TaskMapper(db: $this->connectionWith(rows: [['total' => '120']]));
 		$this->assertSame(120, $counted->countInbox(criteria: new TaskInboxCriteria(uid: 'alice')));
-		$this->assertTrue($this->saw('expr.eq', 'assignee'));
+		// An IN, not an eq: a typed assignee is stored as `type:id`, so the
+		// caller's identity expands to the few strings that mean them.
+		$this->assertTrue($this->saw('expr.in', 'assignee'));
 
 		$empty = new TaskMapper(db: $this->connectionWith(rows: []));
 		$this->assertSame(0, $empty->countInbox(criteria: new TaskInboxCriteria(uid: 'alice')));
 	}//end testCountInboxReadsTheTotal()
+
+	/**
+	 * countOverdueOpen is the inbox's overdue comparison without the inbox:
+	 * the SAME COALESCE over the effective deadline, plus the openness guard,
+	 * and no visibility predicate because a metrics scrape has no user.
+	 *
+	 * @return void
+	 */
+	public function testCountOverdueOpenGuardsOnTerminalityAndTheSharedCoalesce(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith(rows: [['total' => '9']]));
+
+		$this->assertSame(9, $mapper->countOverdueOpen(now: new DateTime('2026-09-11T09:00:00+00:00')));
+		$this->assertTrue(
+			(bool)array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) <')),
+			'the gauge MUST use the one effective-deadline comparison, not a second definition of overdue'
+		);
+		$this->assertTrue($this->saw('expr.eq', 'is_terminal'), 'a terminal task is never open, however long its deadline has passed');
+		$this->assertFalse($this->saw('expr.in', 'assignee'), 'an instance-wide gauge MUST NOT be scoped to a caller');
+
+		$empty = new TaskMapper(db: $this->connectionWith(rows: []));
+		$this->assertSame(0, $empty->countOverdueOpen(now: new DateTime('2026-09-11T09:00:00+00:00')));
+	}//end testCountOverdueOpenGuardsOnTerminalityAndTheSharedCoalesce()
 }//end class

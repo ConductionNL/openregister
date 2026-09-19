@@ -77,7 +77,7 @@ Open any object whose schema declares `linkedTypes: ['contacts']`. The **Contact
 |---|---|---|
 | **Storage** | `link-table` (`openregister_contact_links`) | vCard `X-OPENREGISTER-OBJECT` + `X-OPENREGISTER-ROLE` |
 | **Mapping** | role, display name (cached), email (cached), linked-by, linked-at | vCard `UID`, `FN`, `EMAIL`, `TEL` |
-| **Roles** | enum declared on schema (default: free-form string) | `X-OPENREGISTER-ROLE` |
+| **Roles** | `configuration.linkRoles` on the schema (default: free-form string) | `X-OPENREGISTER-ROLE` |
 | **Refresh** | Per render (CardDAV is real-time for the picker) | — |
 | **Permissions** | Inherits from object RBAC | User owns their addressbook |
 
@@ -115,18 +115,30 @@ Surfaces every linked contact, grouped by role, in a compact card. The picker / 
 
 A schema property typed as `{ "type": "string", "referenceType": "contacts" }` renders the linked contact's display name + role chip in `CnFormDialog` and `CnDetailGrid`. Use this for the "applicant" or "owner" field of an object.
 
-### Role enum on the schema
+### Roles on the schema
 
-Declare the role enum on the schema for typed validation:
+Declare the roles a person can hold on an object of the schema under `configuration.linkRoles`:
 
 ```json
 {
   "linkedTypes": ["contacts"],
-  "x-contactRoles": ["applicant", "handler", "advisor", "observer"]
+  "linkRoles": [
+    { "key": "initiator", "label": "Initiator", "description": "Who asked for it" },
+    { "key": "handler", "label": "Handler" },
+    "advisor"
+  ]
 }
 ```
 
-The Contacts tab and reference-property chip drop the role picker to the schema-declared enum when present.
+A bare string is read as a key and label of the same value. Keys are unique and at most 64 characters. When a schema declares `linkRoles`, a link or update with another role is refused with 400 naming the allowed keys. A schema without it accepts free-text roles. The list endpoint returns the vocabulary as `roles`, so a picker reads one call. (Earlier versions of this page named `x-contactRoles`; no code ever read it.)
+
+### Users beside contacts
+
+A person on an object can be a Nextcloud user as well as a contact. Post `{"userId": "jan", "role": "handler"}` to the same endpoint; the link stores `user:jan` as its `contactUid`, so update, delete and reverse lookup use that value. Display name, email and avatar come from the account, and no Contacts app is needed for a user link.
+
+Every link, user or contact, carries `validFrom`, `validUntil` (dates) and `note`, and the JSON says `kind` (`user` or `contact`) and `active` (today inside the window, an unset bound open). A person may hold several roles on one object: linking the same person in the same role updates the row, in another role adds one. `PUT .../contacts/{contactUid}` changes `role`, `validFrom`, `validUntil` and `note` (`currentRole` names which link when the person holds several); `DELETE .../contacts/{contactUid}?role=advisor` removes one role, without `role` every link of that person.
+
+The service dispatches `PersonLinkedEvent`, `PersonLinkUpdatedEvent` and `PersonUnlinkedEvent` (each carrying the `ContactLink`) after a write, so an app can project the link onto its own records.
 
 ## Troubleshooting
 

@@ -234,6 +234,116 @@ class ValidateObject {
 	}//end validateReadOnlyConstraints()
 
 	/**
+	 * Walk the schema's property definitions and find every property declared
+	 * `immutable: true` at the top level.
+	 *
+	 * Deliberately the same shallow walk {@see self::collectReadOnlyPropertyNames()}
+	 * does, for the same reason: nested immutability inside an object or array
+	 * sub-schema is a separate contract and enforcing half of it would be worse
+	 * than enforcing none.
+	 *
+	 * @param array $properties Raw schema properties (associative array; key = property name).
+	 *
+	 * @return array<int, string> Names of properties declared immutable.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	private function collectImmutablePropertyNames(array $properties): array {
+		$immutable = [];
+		foreach ($properties as $name => $definition) {
+			if (is_array($definition) === false) {
+				continue;
+			}
+
+			if (($definition[Schema::IMMUTABLE_PROPERTY_KEYWORD] ?? false) === true) {
+				$immutable[] = (string)$name;
+			}
+		}
+
+		return $immutable;
+	}//end collectImmutablePropertyNames()
+
+	/**
+	 * Enforce `immutable: true` on the UPDATE write path.
+	 *
+	 * ⚠️ NOT a synonym for `readOnly`, and the difference is the whole point.
+	 * `readOnly` refuses any value that differs from what is stored, including
+	 * the FIRST one, so a property that was never filled in can never be filled
+	 * in. `immutable` means "once set": while the stored value is absent or
+	 * null the property is freely writable, and from the first real value
+	 * onwards every change is refused.
+	 *
+	 * That is what a vastgesteld besluit and a final document actually ask for.
+	 * The rule holds whatever the object's state and whoever the actor is, so
+	 * it fires on an open object as readily as on a frozen one — which is why
+	 * it lives on the property rather than on the state.
+	 *
+	 * Returns the list of violations, empty when the update is compliant.
+	 * Callers MUST refuse the write when this returns a non-empty list.
+	 *
+	 * @param array $incomingObject The candidate object data.
+	 * @param array $existingObject The previously-stored object data. Pass `[]`
+	 *                              to opt out (CREATE / no existing record).
+	 * @param Schema $schema The schema whose declarations drive enforcement.
+	 *
+	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function validateImmutableConstraints(
+		array $incomingObject,
+		array $existingObject,
+		Schema $schema,
+	): array {
+		if ($existingObject === []) {
+			return [];
+		}
+
+		$properties = $schema->getProperties();
+		if (is_array($properties) === false || $properties === []) {
+			return [];
+		}
+
+		$immutableNames = $this->collectImmutablePropertyNames(properties: $properties);
+		if ($immutableNames === []) {
+			return [];
+		}
+
+		$violations = [];
+		foreach ($immutableNames as $name) {
+			// Omitted from the payload is not a mutation.
+			if (array_key_exists($name, $incomingObject) === false) {
+				continue;
+			}
+
+			$stored = $existingObject[$name] ?? null;
+
+			// Not set yet. The whole difference from `readOnly`: the first
+			// value is accepted, and only then does the property close.
+			if ($stored === null || $stored === '') {
+				continue;
+			}
+
+			$attempted = $incomingObject[$name];
+			if ($attempted === $stored) {
+				continue;
+			}
+
+			$violations[] = [
+				'property' => $name,
+				'attempted' => $attempted,
+				'stored' => $stored,
+				'message' => sprintf(
+					"Property '%s' is immutable once set and cannot be changed.",
+					$name
+				),
+			];
+		}//end foreach
+
+		return $violations;
+	}//end validateImmutableConstraints()
+
+	/**
 	 * Constructor for ValidateObject
 	 *
 	 * @param IAppConfig $config Configuration service.
@@ -242,6 +352,7 @@ class ValidateObject {
 	 * @param IURLGenerator $urlGenerator URL generator.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param IUserManager $userManager Backend consulted by the `user` string format.
+	 * @param NotSuppliedHandler|null $notSuppliedHandler Reads and applies the recorded-incompleteness record.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -252,8 +363,29 @@ class ValidateObject {
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
 		private IUserManager $userManager,
+		// Nullable with a null default so the unit tests that build this class
+		// positionally keep working. The handler has no dependencies of its
+		// own, so the fallback below constructs the real thing rather than
+		// degrading to a no-op: there is no configuration that can make
+		// recorded incompleteness silently stop being enforced.
+		private ?NotSuppliedHandler $notSuppliedHandler = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The not-supplied handler, constructed on first use.
+	 *
+	 * @return NotSuppliedHandler The handler.
+	 *
+	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 */
+	private function notSupplied(): NotSuppliedHandler {
+		if ($this->notSuppliedHandler === null) {
+			$this->notSuppliedHandler = new NotSuppliedHandler();
+		}
+
+		return $this->notSuppliedHandler;
+	}//end notSupplied()
 
 	/**
 	 * Pre-processes a schema object to resolve all schema references.
@@ -1104,6 +1236,7 @@ class ValidateObject {
 			'indexes',
 			'options',
 			'computed',
+			'calculation',
 		];
 
 		foreach ($metadataProperties as $property) {
@@ -1171,6 +1304,7 @@ class ValidateObject {
 			'indexes',
 			'options',
 			'computed',
+			'calculation',
 		];
 
 		foreach ($metadataProperties as $property) {
@@ -1522,6 +1656,7 @@ class ValidateObject {
 	 * @param Schema|int|null $schema The schema or schema ID to validate against.
 	 * @param object $schemaObject A custom schema object for validation.
 	 * @param int $_depth The depth level for validation (unused).
+	 * @param array<string, string> $notSupplied Properties recorded as not supplied, mapped to their reason codes.
 	 *
 	 * @return ValidationResult The result of the validation.
 	 *
@@ -1537,6 +1672,7 @@ class ValidateObject {
 		Schema|int|string|null $schema = null,
 		object $schemaObject = new stdClass(),
 		int $_depth = 0,
+		array $notSupplied = [],
 	): ValidationResult {
 
 		// Resolve a schema id to its entity once so downstream steps (unique-field
@@ -1551,6 +1687,19 @@ class ValidateObject {
 		$useDefaultSchema = ($schemaObject == new stdClass());
 		if ($useDefaultSchema === true && $schema instanceof Schema) {
 			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
+		}
+
+		// A property recorded as not supplied is excused from being answered.
+		// The excusing is per object, so the prepared-schema cache is bypassed
+		// for this call: a cached schema object with one object's excusals
+		// baked in would excuse them for every other object validated against
+		// that schema in the same request.
+		if ($notSupplied !== [] && $schema instanceof Schema) {
+			$schemaObject = $this->notSupplied()->excuse(
+				schemaObject: $schemaObject,
+				declared: $notSupplied
+			);
+			$useDefaultSchema = false;
 		}
 
 		if ($schema instanceof Schema) {
@@ -1695,7 +1844,15 @@ class ValidateObject {
 		$computedProperties = [];
 		if (($schemaObject->properties ?? null) !== null) {
 			foreach ($schemaObject->properties as $propName => $propSchema) {
-				if (is_object($propSchema) === true && ($propSchema->computed ?? null) !== null) {
+				// Both derivation engines make a property system-generated: the
+				// Twig `computed` marker and the JSON-AST `calculation` key. A
+				// value the client sent for either is dropped before
+				// validation, and neither can be required from user input.
+				if (is_object($propSchema) === false) {
+					continue;
+				}
+
+				if (($propSchema->computed ?? null) !== null || ($propSchema->calculation ?? null) !== null) {
 					$computedProperties[] = $propName;
 				}
 			}

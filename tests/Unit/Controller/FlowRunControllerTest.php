@@ -16,6 +16,7 @@ use OCA\OpenRegister\Controller\FlowRunController;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
@@ -80,6 +81,13 @@ class FlowRunControllerTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 
 	/**
+	 * Flow action-rights matrix mock (or#3643's guard on `test()`).
+	 *
+	 * @var FlowAccess&MockObject
+	 */
+	private FlowAccess&MockObject $access;
+
+	/**
 	 * Controller under test.
 	 *
 	 * @var FlowRunController
@@ -103,6 +111,14 @@ class FlowRunControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->userSession->method('getUser')->willReturn($user);
 
+		// Default: an authorized editor, so every EXISTING test below keeps
+		// exercising what it was written to exercise rather than tripping the
+		// or#3643 guard added to test(). The refusal itself is covered by
+		// dedicated tests further down, which override these two methods.
+		$this->access = $this->createMock(FlowAccess::class);
+		$this->access->method('currentUser')->willReturn($user);
+		$this->access->method('may')->willReturn(true);
+
 		// Named arguments deliberately. This call has now silently mis-bound
 		// twice as the constructor grew: first an ArgumentCountError when
 		// IUserSession arrived, then $flows landing in the $groupManager slot
@@ -117,7 +133,8 @@ class FlowRunControllerTest extends TestCase {
 			resolvers: $this->resolvers,
 			userSession: $this->userSession,
 			organisationService: $this->organisations,
-			flows: $this->flows
+			flows: $this->flows,
+			access: $this->access
 		);
 	}//end setUp()
 
@@ -1016,5 +1033,146 @@ class FlowRunControllerTest extends TestCase {
 			'the refusal must still name the node, which is the one fact the author needs'
 		);
 	}//end testADeadEndTestRunIs409NamingTheDefect()
+
+	/**
+	 * 🔴 or#3643 — THE UNGUARDED FLOW-RUN ENDPOINT.
+	 *
+	 * `test()` used to reach the engine with no check on the CALLER at all —
+	 * only {@see FlowService::find()}'s organisation scoping, which passes for
+	 * every signed-in member of the flow's organisation, editor or not. This is
+	 * the test that must fail against the vulnerable code and pass against the
+	 * fix: a caller who holds no `flow.update` right is refused, and — this is
+	 * the part a status-code-only assertion would miss — the engine is NEVER
+	 * reached, so the run has no side effect at all.
+	 *
+	 * Mutation check: comment out the `refuseUnlessMayEditFlow()` call (or make
+	 * `refuseUnlessMayEditFlow()` always return null) in
+	 * `FlowRunController::test()` and this test reddens — `queue()` gets called
+	 * and the status is 200, not 403.
+	 *
+	 * @return void
+	 */
+	public function testTestRefusesACallerWithoutTheEditRight(): void {
+		$this->aTestRunOf('flow-1');
+		$this->access = $this->createMock(FlowAccess::class);
+		$this->access->method('currentUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$this->access->method('may')->with($this->anything(), 'flow.update')->willReturn(false);
+
+		$controller = new FlowRunController(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $this->userSession,
+			organisationService: $this->organisations,
+			flows: $this->flows,
+			access: $this->access
+		);
+
+		$this->runner->expects($this->never())->method('queue');
+
+		$response = $controller->test();
+
+		$this->assertSame(
+			Http::STATUS_FORBIDDEN,
+			$response->getStatus(),
+			'a caller without the flow.update right must be refused, not run the flow'
+		);
+	}//end testTestRefusesACallerWithoutTheEditRight()
+
+	/**
+	 * An anonymous caller (no session `FlowAccess::currentUser()` can resolve)
+	 * gets 401, not 403 — "sign in" and "you may not do this" are different
+	 * answers and {@see FlowAccess} exists precisely so callers do not collapse
+	 * them.
+	 *
+	 * @return void
+	 */
+	public function testTestRefusesAnAnonymousCallerWithUnauthorized(): void {
+		$this->aTestRunOf('flow-1');
+		$this->access = $this->createMock(FlowAccess::class);
+		$this->access->method('currentUser')->willReturn(null);
+
+		$controller = new FlowRunController(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $this->userSession,
+			organisationService: $this->organisations,
+			flows: $this->flows,
+			access: $this->access
+		);
+
+		$this->runner->expects($this->never())->method('queue');
+
+		$response = $controller->test();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testTestRefusesAnAnonymousCallerWithUnauthorized()
+
+	/**
+	 * FAIL CLOSED: no `FlowAccess` collaborator at all (the DI failure mode —
+	 * same posture as `$flows === null` elsewhere in this controller) must
+	 * refuse, not silently allow. An absent collaborator is "no way to decide",
+	 * and this controller's rule for that is always refusal.
+	 *
+	 * @return void
+	 */
+	public function testTestFailsClosedWithoutTheAccessCollaborator(): void {
+		$this->aTestRunOf('flow-1');
+		$controller = new FlowRunController(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $this->userSession,
+			organisationService: $this->organisations,
+			flows: $this->flows
+		);
+
+		$this->runner->expects($this->never())->method('queue');
+
+		$response = $controller->test();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testTestFailsClosedWithoutTheAccessCollaborator()
+
+	/**
+	 * The edit-right check runs before the flow is even resolved: an
+	 * unprivileged caller gets refused for a flow that does not exist, exactly
+	 * as for one that does — no oracle for "does this flow id exist" leaks
+	 * through which 4xx comes back first.
+	 *
+	 * @return void
+	 */
+	public function testTestChecksTheEditRightBeforeResolvingTheFlow(): void {
+		$this->params(['flowId' => 'ghost']);
+		$this->access = $this->createMock(FlowAccess::class);
+		$this->access->method('currentUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$this->access->method('may')->willReturn(false);
+
+		$controller = new FlowRunController(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $this->userSession,
+			organisationService: $this->organisations,
+			flows: $this->flows,
+			access: $this->access
+		);
+
+		$this->flows->expects($this->never())->method('find');
+		$this->resolvers->expects($this->never())->method('resolveFlow');
+
+		$response = $controller->test();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testTestChecksTheEditRightBeforeResolvingTheFlow()
 
 }//end class

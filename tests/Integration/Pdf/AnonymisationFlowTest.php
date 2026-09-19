@@ -97,7 +97,10 @@ class AnonymisationFlowTest extends TestCase {
 			$this->markTestSkipped('smalot/pdfparser is not installed; skip integration test (composer install pending).');
 		}
 
-		if (class_exists(\Ddn\Sapp\PDFDoc::class) === false && class_exists('Ddn\\Sapp\\PDFDoc') === false) {
+		// The package's namespace is lower-case `ddn\sapp`, and Composer's PSR-4
+		// lookup is case-sensitive: probing `Ddn\Sapp\PDFDoc` never autoloads,
+		// so this guard skipped the whole file on every install that HAD sapp.
+		if (class_exists(\ddn\sapp\PDFDoc::class) === false) {
 			$this->markTestSkipped('ddn/sapp is not installed; skip integration test (composer install pending).');
 		}
 

@@ -19,7 +19,6 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -89,47 +88,6 @@ class ValidationHandler {
 	public function handleValidationException(ValidationException|CustomValidationException $exception): mixed {
 		return $this->validateHandler->handleValidationException($exception);
 	}//end handleValidationException()
-
-	/**
-	 * Validates that required fields are present in bulk objects.
-	 *
-	 * @param array $objects Array of objects to validate.
-	 *
-	 * @psalm-param   array<int, array<string, mixed>> $objects
-	 * @phpstan-param array<int, array<string, mixed>> $objects
-	 *
-	 * @return void
-	 *
-	 * @psalm-return   void
-	 * @phpstan-return void
-	 *
-	 * @throws InvalidArgumentException If required fields are missing.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function validateRequiredFields(array $objects): void {
-		$requiredFields = ['register', 'schema'];
-
-		foreach ($objects as $index => $object) {
-			// Check if object has @self section.
-			if (isset($object['@self']) === false || is_array($object['@self']) === false) {
-				throw new InvalidArgumentException(
-					"Object at index {$index} is missing required '@self' section"
-				);
-			}
-
-			$self = $object['@self'];
-
-			// Check each required field.
-			foreach ($requiredFields as $field) {
-				if (isset($self[$field]) === false || empty($self[$field]) === true) {
-					throw new InvalidArgumentException(
-						"Object at index {$index} is missing required field '{$field}' in @self section"
-					);
-				}
-			}
-		}
-	}//end validateRequiredFields()
 
 	/**
 	 * Validates all objects for a given schema.

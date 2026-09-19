@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCP\IGroupManager;
 use Throwable;
 
@@ -102,9 +104,16 @@ class TaskAuthorizationService {
 	 *                                         DENIES — the fail-closed
 	 *                                         direction, same as
 	 *                                         {@see \OCA\OpenRegister\Service\Flow\FlowRunAssignee}.
+	  * @param PrincipalResolverRegistry|null $principals Resolves a TYPED candidate
+	 *                             reference to whoever it means right now, so this
+	 *                             guard and the run guard cannot disagree. Absent,
+	 *                             a typed candidate is not affirmed.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly ?IGroupManager $groupManager = null,
+		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
 
 	}//end __construct()
@@ -466,10 +475,76 @@ class TaskAuthorizationService {
 			}
 		}
 
+		// 🔑 THE SAME PATH THE RUN GUARD TAKES. A candidate entry that names
+		// its own type — a position, a function, a case role — is resolved by
+		// whichever app owns that concept, exactly as `FlowRunAssignee` does
+		// it. Two guards over one question is how they come to disagree, and a
+		// disagreement here means a task somebody can complete and cannot see,
+		// or the reverse.
+		//
+		// It runs AFTER the three legacy branches so nothing they already
+		// admit can be narrowed by it.
+		if ($this->matchesTypedCandidate(task: $task, uid: $uid) === true) {
+			return;
+		}
+
 		throw new TaskAccessDeniedException(
 			message: sprintf("Verb '%s' denied: the caller is not in the task's candidate pool.", $verb)
 		);
 	}//end assertPoolMember()
+
+	/**
+	 * Whether a TYPED candidate reference resolves to this caller.
+	 *
+	 * Only entries that carry an explicit type are considered. A bare string
+	 * has already been read by the legacy branches above, under the wider
+	 * meaning every stored task was written against.
+	 *
+	 * @param Task   $task The task acted on.
+	 * @param string $uid  The acting identity.
+	 *
+	 * @return boolean True when a typed candidate resolves to the caller.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `PrincipalReference::from()` and
+	 * `listFrom()` are NAMED CONSTRUCTORS on a value object, which is the
+	 * canonical PHP idiom for one and is indistinguishable to this rule from a
+	 * static call into a service. Injecting a reader for a value object would
+	 * be worse design chosen by a linter: the type has no dependencies, no
+	 * state and nothing to stub.
+	 */
+	private function matchesTypedCandidate(Task $task, string $uid): bool {
+		if ($this->principals === null) {
+			// Fail closed, like every other branch here: without a resolver a
+			// typed candidate cannot be affirmed, so it is not affirmed.
+			return false;
+		}
+
+		$typed = [];
+		$fields = [
+			($task->getCandidateUsers() ?? []),
+			($task->getCandidateGroups() ?? []),
+			[$task->getCandidateRole()],
+		];
+
+		foreach ($fields as $field) {
+			foreach (PrincipalReference::listFrom(value: array_values(array_filter($field))) as $reference) {
+				// A bare entry read as the default type is the legacy reading,
+				// already applied above; taking it again here would widen the
+				// pool rather than extend it.
+				if ($reference->type !== PrincipalReference::DEFAULT_TYPE) {
+					$typed[] = $reference;
+				}
+			}
+		}
+
+		if ($typed === []) {
+			return false;
+		}
+
+		return in_array($uid, $this->principals->resolveAll(references: $typed), true);
+	}//end matchesTypedCandidate()
 
 	/**
 	 * Membership through the group backend, denying when it is absent.

@@ -29,6 +29,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -36,6 +37,8 @@ use ReflectionClass;
  * Test class for ChunkVectorizationJob
  */
 class ChunkVectorizationJobTest extends TestCase {
+	use RegistersContainerServices;
+
 	private ITimeFactory&MockObject $timeFactory;
 	private LoggerInterface&MockObject $logger;
 	private IAppConfig&MockObject $appConfig;
@@ -55,26 +58,26 @@ class ChunkVectorizationJobTest extends TestCase {
 	}
 
 	/**
-	 * Create the job instance and register mocks in \OC::$server.
+	 * Create the job instance and register mocks on the injected container.
 	 */
 	private function makeJob(): ChunkVectorizationJob {
-		\OC::$server->registerService(LoggerInterface::class, function () {
+		$this->registerService(LoggerInterface::class, function () {
 			return $this->logger;
 		});
-		\OC::$server->registerService(IAppConfig::class, function () {
+		$this->registerService(IAppConfig::class, function () {
 			return $this->appConfig;
 		});
-		\OC::$server->registerService(ChunkMapper::class, function () {
+		$this->registerService(ChunkMapper::class, function () {
 			return $this->chunkMapper;
 		});
-		\OC::$server->registerService(VectorEmbeddings::class, function () {
+		$this->registerService(VectorEmbeddings::class, function () {
 			return $this->embeddings;
 		});
-		\OC::$server->registerService(VectorStorageHandler::class, function () {
+		$this->registerService(VectorStorageHandler::class, function () {
 			return $this->storageHandler;
 		});
 
-		return new ChunkVectorizationJob($this->timeFactory);
+		return new ChunkVectorizationJob($this->timeFactory, $this->containerMock());
 	}
 
 	/**

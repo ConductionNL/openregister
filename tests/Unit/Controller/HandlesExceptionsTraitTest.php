@@ -21,6 +21,7 @@ use OCA\OpenRegister\AppHost\Exception\ConfigurationMissingException;
 use OCA\OpenRegister\AppHost\Exception\FoundationUnavailableException;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Exception\AppendOnlyException;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -77,6 +78,13 @@ class HandlesExceptionsTraitTest extends TestCase {
 			'bad argument → 400' => [new \InvalidArgumentException('bad input'), Http::STATUS_BAD_REQUEST],
 			'conflict → 409' => [new MultipleObjectsReturnedException('two'), Http::STATUS_CONFLICT],
 			'append-only → 405' => [new AppendOnlyException('my-schema'), Http::STATUS_METHOD_NOT_ALLOWED],
+			// 403, like every controller that catches it explicitly and like the
+			// archival spec. This fallback used to say 405, so a refusal that
+			// reached it contradicted every other refusal for the same record.
+			'archival refusal → 403' => [
+				new ArchivalImmutableException(schemaIdentifier: 'call_log', operation: 'delete'),
+				Http::STATUS_FORBIDDEN,
+			],
 			'foundation → 503' => [new FoundationUnavailableException(appId: 'myapp'), Http::STATUS_SERVICE_UNAVAILABLE],
 			'config missing → 503' => [new ConfigurationMissingException(appId: 'myapp', configKey: 'register'), Http::STATUS_SERVICE_UNAVAILABLE],
 		];

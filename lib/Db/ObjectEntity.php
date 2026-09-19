@@ -27,8 +27,9 @@ use DateInterval;
 use DateTime;
 use Exception;
 use JsonSerializable;
-use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OC\Files\Node\File;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -69,6 +70,8 @@ use OCP\IUserSession;
  * @method void setRegister(?string $register)
  * @method string|null getSchema()
  * @method void setSchema(?string $schema)
+ * @method string|null getSchemaVersion()
+ * @method void setSchemaVersion(?string $schemaVersion)
  * @method array|null getObject()
  * @method void setObject(?array $object)
  * @method array|null getFiles()
@@ -93,6 +96,10 @@ use OCP\IUserSession;
  * @method void setQuality(?array $quality)
  * @method array|null getDeleted()
  * @method void setDeleted(?array $deleted)
+ * @method array|null getArchived()
+ * @method void setArchived(?array $archived)
+ * @method array|null getFrozen()
+ * @method void setFrozen(?array $frozen)
  * @method array|null getGeo()
  * @method void setGeo(?array $geo)
  * @method array|null getRetention()
@@ -140,6 +147,18 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are the
+ * column surface plus the transient render fields, not an API design choice.
+ * The class already sat at the threshold, so any accessor trips it; splitting
+ * ObjectEntity is owned by the debt sweep, not by a feature that adds one field.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) The state verbs live here for
+ * the same reason `delete()` and `isSoftDeleted()` do: a marker on the record
+ * is written and read through the record. `archive`/`unarchive`,
+ * `freeze`/`unfreeze` and the two predicates that go with them are six methods
+ * that took the class from seven to thirteen. Moving them to a helper would
+ * put the write next to neither the field it writes nor the guard that reads
+ * it, which is how `getDeleted() === null` became a guard that does not guard.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -296,6 +315,37 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var array|null Array describing deletion details
 	 */
 	protected ?array $deleted = [];
+
+	/**
+	 * Archive details if the object has been archived.
+	 *
+	 * The archive is not the trash. A soft-deleted object is a mistake on its
+	 * way out; an archived object is a finished result that stays whole and
+	 * stays findable on purpose. They get separate markers so a report can
+	 * never put an archived case in somebody's recycle bin.
+	 *
+	 * ⚠️ Defaults to `[]` for the same reason {@see self::$deleted} does: the
+	 * row hydrator skips NULL columns rather than calling the setter, so
+	 * `getArchived() === null` is false for every object. Ask
+	 * {@see self::isArchived()}.
+	 *
+	 * @var array|null Array describing the archive: `by`, `at` and `reason`
+	 */
+	protected ?array $archived = [];
+
+	/**
+	 * Freeze details if the object has been frozen.
+	 *
+	 * Frozen and archived are two states, not one flag with a switch. A frozen
+	 * object stays in the working lists and in search and refuses writes to
+	 * its data; an archived object refuses writes and leaves the lists. A zaak
+	 * in bezwaar has to be findable and unchangeable at the same time.
+	 *
+	 * ⚠️ Defaults to `[]`; ask {@see self::isFrozen()}, never `=== null`.
+	 *
+	 * @var array|null Array describing the freeze: `by`, `at`, `reason` and `state`
+	 */
+	protected ?array $frozen = [];
 
 	/**
 	 * Geographical details for the object.
@@ -544,15 +594,131 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * Transient property populated by the render layer
 	 * (`add-archival-annotation-support`) so the @self envelope can carry the
-	 * resolved retention decision — shape:
-	 *   `['effectiveRetention' => 'P30D', 'matchedRule' => 0|null, 'expiresAt' => '...']`.
-	 * Not persisted to the DB; derived from the schema's archival annotation
-	 * rules at render time. Exposed in @self as `_retention`, and omitted
-	 * entirely when not set.
+	 * resolved retention decision. The shape is ArchivalDecisionResolver's:
+	 * MDTO keys such as `retentionPeriod` and `disposalDate`, with the schema
+	 * annotation's evaluation under `annotation`, and no key holding null.
+	 * Not persisted to the DB; derived at render time. Exposed in @self as
+	 * `_retention`, and omitted entirely when not set.
 	 *
 	 * @var array<string, mixed>|null
 	 */
 	protected ?array $archivalRetention = null;
+
+	/**
+	 * The AVG clock and the Archiefwet clock, each with the rule that produced
+	 * it.
+	 *
+	 * Transient property populated by the render layer
+	 * (`delete-window-and-recorded-destruction`). Two dates rather than one,
+	 * deliberately: the AVG says delete when the lawful purpose ends and the
+	 * Archiefwet says keep for N years, and a product that merges them into a
+	 * single date is wrong in one direction for every object. Exposed in @self
+	 * as `_clocks`, omitted entirely when not set.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $retentionClocks = null;
+
+	/**
+	 * Registry subscription state for this object (`registry-subscriptions`,
+	 * finding B22).
+	 *
+	 * Transient property populated by the render layer from
+	 * `RegistrySubscriptionService::stateFor()`/`statesFor()` — shape:
+	 *   `['registry' => 'brp', 'state' => 'active', 'lastUpdate' => '...',
+	 *      'lastUpdateSource' => '...', 'refusalReason' => null|string]`.
+	 * Not persisted on this entity (the state lives in
+	 * `openregister_registry_subs`, keyed by object uuid). Exposed in @self
+	 * as `registry`, and omitted entirely for an object whose schema does
+	 * not declare `x-openregister-registry` or that never requested one.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $registryState = null;
+
+	/**
+	 * The lifecycle state's field rules for this object and reader
+	 * (`field-rules-by-state`).
+	 *
+	 * Transient property populated by the render layer from
+	 * `PropertyRbacHandler::stateFieldRulesFor()` — shape:
+	 *   `['state' => 'closed', 'hidden' => [...], 'readOnly' => [...],
+	 *      'required' => [...]]`.
+	 * Not persisted on this entity: the rules are declared on the SCHEMA and
+	 * re-resolved per read, because they depend on who is asking and on the
+	 * object's own values. Exposed in @self as `fieldRules`, and omitted
+	 * entirely for a schema that declares no `x-openregister-lifecycle.states`
+	 * block.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $fieldRules = null;
+
+	/**
+	 * Whether the current user follows this object (`object-watchers`).
+	 *
+	 * Transient property populated by the render layer from
+	 * `WatcherService::isWatchedByCaller()`. Not persisted on this entity: a
+	 * watcher is per-user, per-object state living in `openregister_watchers`,
+	 * which is exactly what keeps following an object out of the object's own
+	 * audit trail and versions. Exposed in @self as `watching`, and omitted for
+	 * an anonymous read.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $watching = null;
+
+	/**
+	 * How many users follow this object (`object-watchers`).
+	 *
+	 * Transient, and set only for a caller with `update` on the object —
+	 * watching is a fact about the object's audience, so an editor may see the
+	 * size of it and an ordinary reader may not. Exposed in @self as
+	 * `watcherCount`, and omitted entirely otherwise.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $watcherCount = null;
+
+	/**
+	 * Whether this object is unread for the current user (`object-read-state`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `ReadStateService::isUnreadForCaller()`. Not persisted: a read state is
+	 * per-user, per-object state living in
+	 * `openregister_object_read_state`, which is what keeps reading an object
+	 * out of its own audit trail and versions. Exposed in @self as `unread`, and
+	 * omitted for an anonymous read, where there is no "you" to answer for.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $unread = null;
+
+	/**
+	 * How many entries of each sub-resource are unread (`object-read-state`).
+	 *
+	 * Transient, and one map rather than a field per tab, so a page renders
+	 * every tab badge from one read instead of a call per tab. Exposed in @self
+	 * as `unreadCounts`.
+	 *
+	 * @var array<string, int>|null
+	 */
+	protected ?array $unreadCounts = null;
+
+	/**
+	 * Whether the current user has starred this object (`favourites-and-recent`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `FavouriteService::isStarredByCaller()`. Not persisted: a star is
+	 * per-user, per-object state living in `openregister_favourites`, which is
+	 * what keeps starring an object out of its own audit trail and versions.
+	 * Exposed in @self as `favourite`, and omitted for an anonymous read, where
+	 * there is no "you" to answer for and a hard false would read as "you have
+	 * not starred this", which is a different claim.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $favourite = null;
 
 	/**
 	 * AVG / GDPR Art 30 processing-activity override.
@@ -702,6 +868,174 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setArchivalRetention()
 
 	/**
+	 * Read the two retention clocks.
+	 *
+	 * @return array<string, mixed>|null The clocks, or null when not resolved.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function getRetentionClocks(): ?array {
+		return $this->retentionClocks;
+	}//end getRetentionClocks()
+
+	/**
+	 * Write the two retention clocks.
+	 *
+	 * Surfaced in the @self envelope as `_clocks` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $clocks The AVG and Archiefwet clocks with their rules.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function setRetentionClocks(?array $clocks): void {
+		$this->retentionClocks = $clocks;
+	}//end setRetentionClocks()
+
+	/**
+	 * Get the registry subscription state, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function getRegistryState(): ?array {
+		return $this->registryState;
+	}//end getRegistryState()
+
+	/**
+	 * Write the registry subscription state.
+	 *
+	 * Surfaced in the @self envelope as `registry` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $state The subscription state mirror.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	public function setRegistryState(?array $state): void {
+		$this->registryState = $state;
+	}//end setRegistryState()
+
+	/**
+	 * Get the lifecycle state's field rules, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 */
+	public function getFieldRules(): ?array {
+		return $this->fieldRules;
+	}//end getFieldRules()
+
+	/**
+	 * Write the lifecycle state's field rules.
+	 *
+	 * Surfaced in the @self envelope as `fieldRules` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $rules The resolved hidden, read-only and required lists.
+	 *
+	 * @return void
+	 */
+	public function setFieldRules(?array $rules): void {
+		$this->fieldRules = $rules;
+	}//end setFieldRules()
+
+	/**
+	 * Write the current user's follow marker.
+	 *
+	 * Write-only on purpose: `mergeTransientRenderFields()` reads the property
+	 * directly, so a public getter would have no caller. This entity is already
+	 * at PHPMD's public-member ceiling, and a getter nothing calls is what it is
+	 * there to stop.
+	 *
+	 * Surfaced in the @self envelope as `watching` by getObjectArray().
+	 *
+	 * @param boolean|null $watching Whether the current user follows this object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	public function setWatching(?bool $watching): void {
+		$this->watching = $watching;
+	}//end setWatching()
+
+	/**
+	 * Write the follower count.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above.
+	 *
+	 * Surfaced in the @self envelope as `watcherCount` by getObjectArray().
+	 *
+	 * @param integer|null $count The number of followers, or null to omit it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 */
+	public function setWatcherCount(?int $count): void {
+		$this->watcherCount = $count;
+	}//end setWatcherCount()
+
+	/**
+	 * Write the current user's unread marker.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `unread` by getObjectArray().
+	 *
+	 * @param boolean|null $unread Whether the object is unread for the current user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	public function setUnread(?bool $unread): void {
+		$this->unread = $unread;
+	}//end setUnread()
+
+	/**
+	 * Write the per-sub-resource unread counts.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above.
+	 *
+	 * Surfaced in the @self envelope as `unreadCounts` by getObjectArray().
+	 *
+	 * @param array<string, int>|null $counts Sub-resource name to unread count, or null to omit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	public function setUnreadCounts(?array $counts): void {
+		$this->unreadCounts = $counts;
+	}//end setUnreadCounts()
+
+	/**
+	 * Write the current user's favourite marker.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `favourite` by getObjectArray().
+	 *
+	 * @param boolean|null $favourite Whether the current user has starred the object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	public function setFavourite(?bool $favourite): void {
+		$this->favourite = $favourite;
+	}//end setFavourite()
+
+	/**
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
@@ -723,6 +1057,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->addType(fieldName: 'validation', type: 'json');
 		$this->addType(fieldName: 'quality', type: 'json');
 		$this->addType(fieldName: 'deleted', type: 'json');
+		$this->addType(fieldName: 'archived', type: 'json');
+		$this->addType(fieldName: 'frozen', type: 'json');
 		$this->addType(fieldName: 'geo', type: 'json');
 		$this->addType(fieldName: 'retention', type: 'json');
 		$this->addType(fieldName: 'tmlo', type: 'json');
@@ -767,6 +1103,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'validation',
 			'quality',
 			'deleted',
+			'archived',
+			'frozen',
 			'groups',
 			'geo',
 			'retention',
@@ -1041,6 +1379,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'updated' => $this->getFormattedDate(date: $this->updated),
 			'created' => $this->getFormattedDate(date: $this->created),
 			'deleted' => $this->getDeleted(),
+			'archived' => $this->getArchived(),
+			'frozen' => $this->getFrozen(),
 			'source' => $this->source,
 			'mail' => $this->getMail(),
 			'contacts' => $this->getContacts(),
@@ -1051,33 +1391,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'deck' => $this->getDeck(),
 		];
 
-		// Add relevance score if set (from fuzzy search).
-		// Only included when a search was performed with _fuzzy=true.
-		if ($this->relevance !== null) {
-			$objectArray['relevance'] = $this->relevance;
-		}
-
-		// Add the RFC 8141 URN identifier if computed by the renderer.
-		// The renderer populates $this->urn via UrnService::buildForObject;
-		// when absent (e.g. raw entity not run through RenderObject) the
-		// field is simply omitted from @self.
-		if ($this->urn !== null) {
-			$objectArray['urn'] = $this->urn;
-		}
-
-		// Add per-language translation completeness when computed by the
-		// renderer. Skipped (omitted from @self) when the schema has no
-		// translatable properties or the object hasn't been rendered yet.
-		if ($this->translationCompleteness !== null) {
-			$objectArray['translationCompleteness'] = $this->translationCompleteness;
-		}
-
-		// Add the effective archival retention decision when set by the render
-		// layer (add-archival-annotation-support). Exposed as `_retention` and
-		// omitted entirely when the object carries no retention metadata.
-		if ($this->archivalRetention !== null) {
-			$objectArray['_retention'] = $this->archivalRetention;
-		}
+		$objectArray = $this->mergeTransientRenderFields(objectArray: $objectArray);
 
 		// Check for '@self' in the provided object array (this is the case if the object metadata is extended).
 		if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
@@ -1107,6 +1421,83 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return $objectArray;
 	}//end getObjectArray()
+
+	/**
+	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
+	 * search relevance, the RFC 8141 URN, per-language translation
+	 * completeness, the effective archival retention decision, the
+	 * registry subscription state (`registry-subscriptions`, finding B22), the
+	 * reader's own follow marker plus the follower count (`object-watchers`),
+	 * and the reader's unread marker plus the tab badge counts
+	 * (`object-read-state`).
+	 * Each is optional and omitted entirely when unset — none of these are
+	 * persisted on this entity; they are populated by RenderObject at read
+	 * time.
+	 *
+	 * Extracted out of {@see getObjectArray()} to keep that method under
+	 * this repo's PHPMD line-count threshold.
+	 *
+	 * @param array<string, mixed> $objectArray The array built so far.
+	 *
+	 * @return array<string, mixed> The array with any set transient fields merged in.
+	 */
+	private function mergeTransientRenderFields(array $objectArray): array {
+		// Every transient render field, keyed by the name it takes in @self.
+		// Each is set by the render layer and left null otherwise, and a null
+		// one is omitted rather than written as null, because "not rendered"
+		// and "rendered as nothing" are different claims to a client.
+		//
+		// - relevance: only when a search ran with _fuzzy=true.
+		// - urn: RenderObject populates it via UrnService::buildForObject, so a
+		//   raw entity that never went through the renderer has none.
+		// - translationCompleteness: absent when the schema has no translatable
+		//   properties, or the object has not been rendered.
+		// - _retention: the effective archival retention decision.
+		// - _clocks: both retention clocks, each naming its rule, never flattened
+		//   into one date.
+		// - registry: the registry subscription state, absent for an object
+		//   that never requested one.
+		// - fieldRules: what the object's lifecycle state hides, freezes and
+		//   demands for this reader, absent when the schema declares none.
+		// - watching, watcherCount: the reader's own follow state and the size
+		//   of the audience (`object-watchers`).
+		// - unread: whether the reader has seen this object since it last
+		//   changed (`object-read-state`). Absent for an anonymous read, where
+		//   there is no "you" to answer for.
+		// - favourite: whether the reader has starred this object
+		//   (`favourites-and-recent`). Absent for an anonymous read, for the
+		//   same reason unread is.
+		//
+		// This is a map rather than a chain of ifs because the chain grew one
+		// branch per feature and ran past the complexity budget.
+		$transient = [
+			'relevance'               => $this->relevance,
+			'urn'                     => $this->urn,
+			'translationCompleteness' => $this->translationCompleteness,
+			'_retention'              => $this->archivalRetention,
+			'_clocks'                 => $this->retentionClocks,
+			'registry'                => $this->registryState,
+			'fieldRules'              => $this->fieldRules,
+			'watching'                => $this->watching,
+			'watcherCount'            => $this->watcherCount,
+			'unread'                  => $this->unread,
+			'favourite'               => $this->favourite,
+		];
+
+		foreach ($transient as $key => $value) {
+			if ($value !== null) {
+				$objectArray[$key] = $value;
+			}
+		}
+
+		// The tab badges, as one map. Omitted when there is nothing to badge,
+		// because an empty map and "no badges here" are the same claim.
+		if ($this->unreadCounts !== null && $this->unreadCounts !== []) {
+			$objectArray['unreadCounts'] = $this->unreadCounts;
+		}
+
+		return $objectArray;
+	}//end mergeTransientRenderFields()
 
 	/**
 	 * Format DateTime object to ISO 8601 string or return null
@@ -1486,6 +1877,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @throws Exception If no user is logged in
 	 *
 	 * @return static Returns the entity
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
 		$currentUser = $userSession->getUser();
@@ -1495,22 +1888,62 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		$userId = $currentUser->getUID();
 		$now = new DateTime();
+
+		// The retention handed in is the window. It used to be ignored: every
+		// object got a hard-coded 31 days whatever the schema or the instance
+		// said, so a schema declaring a year of recovery quietly had a month.
+		// A non-positive retention is not a window, so the default applies.
+		$days = $retentionPeriod;
+		if ($days === null || $days < 1) {
+			$days = DeletionWindowService::DEFAULT_RETENTION_DAYS;
+		}
+
 		$purgeDate = clone $now;
-		// $purgeDate->add(new DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
-		$purgeDate->add(new DateInterval('P31D'));
+		$purgeDate->add(new DateInterval('P' . (string)$days . 'D'));
 
 		$this->setDeleted(
 			[
 				'deleted' => $now->format('c'),
+				'deletedAt' => $now->format('c'),
 				'deletedBy' => $userId,
 				'deletedReason' => $deletedReason,
-				'retentionPeriod' => $retentionPeriod,
+				'retentionPeriod' => $days,
 				'purgeDate' => $purgeDate->format('c'),
+				'destroyableFrom' => $purgeDate->format('c'),
 			]
 		);
 
 		return $this;
 	}//end delete()
+
+	/**
+	 * Whether an active legal hold keeps this record from being destroyed.
+	 *
+	 * THE SINGLE DEFINITION OF "HELD". A legal hold is a property of the
+	 * record, not of its schema, so the answer lives on the record. Three
+	 * copies of this two-line predicate used to sit in
+	 * {@see \OCA\OpenRegister\Service\RetentionService::hasActiveLegalHold},
+	 * {@see \OCA\OpenRegister\Service\Archival\LegalHoldService::hasActiveHold}
+	 * and its `hasActiveHoldFromRetention()` sibling. The first two delegate
+	 * here now; the third still reads a raw retention array rather than a
+	 * record, so it cannot, and it drives no delete path.
+	 *
+	 * A RELEASED HOLD IS NOT A HOLD. `releaseLegalHold()` leaves the
+	 * `legalHold` key in place with `active: false` and the reason in
+	 * `history`, so "the key exists" is not the question and never was.
+	 *
+	 * @return bool True when the record carries an active legal hold.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function hasActiveLegalHold(): bool {
+		// Read through the accessor rather than the property, as every caller
+		// this method replaced did. The two are the same on a live entity, and
+		// the accessor is what existing tests stub.
+		$retention = ($this->getRetention() ?? []);
+
+		return ((($retention['legalHold'] ?? [])['active'] ?? false) === true);
+	}//end hasActiveLegalHold()
 
 	/**
 	 * Whether this object is in the trash.
@@ -1528,6 +1961,153 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function isSoftDeleted(): bool {
 		return $this->deleted !== null && $this->deleted !== [];
 	}//end isSoftDeleted()
+
+	/**
+	 * Whether this object has been archived.
+	 *
+	 * The one honest answer to "is this archived?", for the same reason
+	 * {@see self::isSoftDeleted()} exists: the property defaults to `[]` and
+	 * the row hydrator never overwrites that default for a row whose
+	 * `_archived` column is NULL, so `getArchived() === null` is false for
+	 * every object that has ever existed. Every guard that means "already
+	 * archived" MUST call this.
+	 *
+	 * @return bool True when the object carries archive metadata.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isArchived(): bool {
+		return $this->archived !== null && $this->archived !== [];
+	}//end isArchived()
+
+	/**
+	 * Whether this object has been frozen.
+	 *
+	 * Same trap as {@see self::isArchived()}: never compare `getFrozen()` with
+	 * null.
+	 *
+	 * @return bool True when the object carries freeze metadata.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isFrozen(): bool {
+		return $this->frozen !== null && $this->frozen !== [];
+	}//end isFrozen()
+
+	/**
+	 * Archive the object.
+	 *
+	 * Writes the marker beside the object's data, never into it: the data is
+	 * what the audit trail and the versions are about, so archiving leaves it
+	 * and its version history exactly as they were.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param string|null $reason Why the object was archived.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function archive(IUserSession $userSession, ?string $reason = null): static {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$now = new DateTime();
+
+		$this->setArchived(
+			[
+				'by' => $currentUser->getUID(),
+				'at' => $now->format('c'),
+				'reason' => $reason,
+			]
+		);
+
+		return $this;
+	}//end archive()
+
+	/**
+	 * Restore the object from the archive.
+	 *
+	 * Clears the marker outright rather than flipping an `active` key, so
+	 * "is this archived?" stays a single question with a single answer. The
+	 * archive and the restore both live on the audit trail, which is where the
+	 * history belongs.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unarchive(): static {
+		$this->setArchived(null);
+
+		return $this;
+	}//end unarchive()
+
+	/**
+	 * Freeze the object.
+	 *
+	 * A frozen object stays in every working view and in search, and refuses
+	 * every write to its data. `$state` names the lifecycle state that froze
+	 * it when a state declared the freeze, and is null when a person did.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param string|null $reason Why the object was frozen.
+	 * @param string|null $state The lifecycle state that declared the freeze.
+	 * @param string|null $actor Explicit actor, for a freeze declared by a
+	 *                           lifecycle transition running without a session.
+	 *
+	 * @throws Exception If no user is logged in and no actor was named.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freeze(
+		IUserSession $userSession,
+		?string $reason = null,
+		?string $state = null,
+		?string $actor = null,
+	): static {
+		$userId = $actor;
+		if ($userId === null) {
+			$currentUser = $userSession->getUser();
+			if ($currentUser === null) {
+				throw new Exception('No user logged in');
+			}
+
+			$userId = $currentUser->getUID();
+		}
+
+		$now = new DateTime();
+
+		$this->setFrozen(
+			[
+				'by' => $userId,
+				'at' => $now->format('c'),
+				'reason' => $reason,
+				'state' => $state,
+			]
+		);
+
+		return $this;
+	}//end freeze()
+
+	/**
+	 * Unfreeze the object.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unfreeze(): static {
+		$this->setFrozen(null);
+
+		return $this;
+	}//end unfreeze()
 
 	/**
 	 * Get the last log entry for this object (runtime only)

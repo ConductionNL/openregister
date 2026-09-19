@@ -44,12 +44,14 @@ class TestableEndpointService extends EndpointService {
 		LoggerInterface $logger,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
+		AgentMapper $agentMapper,
 	) {
 		parent::__construct(
 			endpointLogMapper: $endpointLogMapper,
 			logger: $logger,
 			userSession: $userSession,
-			groupManager: $groupManager
+			groupManager: $groupManager,
+			agentMapper: $agentMapper
 		);
 	}
 
@@ -103,6 +105,11 @@ class EndpointServiceTest extends TestCase {
 	 */
 	private IGroupManager $groupManager;
 
+	/**
+	 * @var AgentMapper&MockObject
+	 */
+	private AgentMapper $agentMapper;
+
 	private TestableEndpointService $service;
 
 	protected function setUp(): void {
@@ -110,12 +117,21 @@ class EndpointServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->agentMapper = $this->createMock(AgentMapper::class);
 
-		$this->service = new TestableEndpointService(
+		$this->service = $this->buildService($this->agentMapper);
+	}
+
+	/**
+	 * Build the service around the given agent mapper, sharing every other mock.
+	 */
+	private function buildService(AgentMapper $agentMapper): TestableEndpointService {
+		return new TestableEndpointService(
 			$this->endpointLogMapper,
 			$this->logger,
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$agentMapper
 		);
 	}
 
@@ -196,28 +212,18 @@ class EndpointServiceTest extends TestCase {
 	}
 
 	/**
-	 * Register mock services on \OC::$server for agent tests.
+	 * Rebuild the service around the given agent mapper.
+	 *
+	 * The agent path used to resolve its mapper from the global server; it is
+	 * constructor-injected now, so a test that needs its own mapper builds a
+	 * service around it.
 	 *
 	 * @param AgentMapper&MockObject $agentMapper
-	 * @param ToolRegistry&MockObject $toolRegistry
-	 * @param SettingsService&MockObject $settingsService
 	 *
 	 * @return void
 	 */
-	private function setUpOcServer(
-		MockObject $agentMapper,
-		MockObject $toolRegistry,
-		MockObject $settingsService,
-	): void {
-		\OC::$server->registerService(AgentMapper::class, function () use ($agentMapper) {
-			return $agentMapper;
-		});
-		\OC::$server->registerService(ToolRegistry::class, function () use ($toolRegistry) {
-			return $toolRegistry;
-		});
-		\OC::$server->registerService(SettingsService::class, function () use ($settingsService) {
-			return $settingsService;
-		});
+	private function useAgentMapper(MockObject $agentMapper): void {
+		$this->service = $this->buildService($agentMapper);
 	}
 
 	// ====================================================================
@@ -340,19 +346,12 @@ class EndpointServiceTest extends TestCase {
 	}
 
 	public function testExecuteEndpointAgentTypeFailsGracefullyWhenAgentNotFound(): void {
-		// Agent endpoint resolves services via \OC::$server->get() and then
-		// tries to find the agent — returns an error when the agent UUID doesn't exist.
-		// Seed AgentMapper / ToolRegistry / SettingsService into the
-		// service container so the resolution path doesn't NPE on a
-		// null AgentMapper (other tests may or may not have set it).
+		// The agent endpoint looks the agent up through the injected mapper and
+		// returns an error when the agent UUID does not exist.
 		$agentMapper = $this->createMock(AgentMapper::class);
 		$agentMapper->method('findByUuid')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Agent not found'));
-		$this->setUpOcServer(
-			$agentMapper,
-			$this->createMock(ToolRegistry::class),
-			$this->createMock(SettingsService::class)
-		);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'hello'], 'headers' => []];
@@ -364,7 +363,7 @@ class EndpointServiceTest extends TestCase {
 	}
 
 	// ====================================================================
-	// executeAgentEndpoint — with mocked OC::$server
+	// executeAgentEndpoint — with an injected agent mapper
 	// ====================================================================
 
 	public function testExecuteAgentEndpointAgentNotFound(): void {
@@ -376,7 +375,7 @@ class EndpointServiceTest extends TestCase {
 		$agentMapper->method('findByUuid')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Agent not found'));
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'missing-uuid');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'hello'], 'headers' => []];
@@ -397,7 +396,7 @@ class EndpointServiceTest extends TestCase {
 
 		$agentMapper->method('findByUuid')->willReturn($agent);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		// No message in request data.
@@ -418,7 +417,7 @@ class EndpointServiceTest extends TestCase {
 
 		$agentMapper->method('findByUuid')->willReturn($agent);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		// Empty string message.
@@ -444,7 +443,7 @@ class EndpointServiceTest extends TestCase {
 		$agentMapper->method('findByUuid')->willReturn($agent);
 		$settingsService->method('getSettings')->willReturn(['llm' => []]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		// Message at top-level of request (not in data).
@@ -473,7 +472,7 @@ class EndpointServiceTest extends TestCase {
 		$agentMapper->method('findByUuid')->willReturn($agent);
 		$settingsService->method('getSettings')->willReturn(['llm' => []]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
@@ -494,7 +493,7 @@ class EndpointServiceTest extends TestCase {
 		$agentMapper->method('findByUuid')->willReturn($agent);
 		$settingsService->method('getSettings')->willReturn(['llm' => []]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
@@ -515,7 +514,7 @@ class EndpointServiceTest extends TestCase {
 		$agentMapper->method('findByUuid')->willReturn($agent);
 		$settingsService->method('getSettings')->willReturn(['llm' => []]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
@@ -539,7 +538,7 @@ class EndpointServiceTest extends TestCase {
 		// Tool not found - returns null.
 		$toolRegistry->method('getTool')->willReturn(null);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
@@ -568,7 +567,7 @@ class EndpointServiceTest extends TestCase {
 			],
 		]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
@@ -591,7 +590,7 @@ class EndpointServiceTest extends TestCase {
 			'llm' => ['ollamaConfig' => ['url' => 'http://test:11434']],
 		]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
@@ -613,7 +612,7 @@ class EndpointServiceTest extends TestCase {
 			'llm' => ['ollamaConfig' => ['url' => 'http://test:11434']],
 		]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
@@ -635,7 +634,7 @@ class EndpointServiceTest extends TestCase {
 		// must not cause a crash while resolving it).
 		$settingsService->method('getSettings')->willReturn(['llm' => []]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
@@ -656,7 +655,7 @@ class EndpointServiceTest extends TestCase {
 		// No 'llm' key at all.
 		$settingsService->method('getSettings')->willReturn([]);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
@@ -860,7 +859,7 @@ class EndpointServiceTest extends TestCase {
 		// findByUuid throws DoesNotExistException when agent not found.
 		$agentMapper->method('findByUuid')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Agent not found'));
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'missing-uuid');
 		$this->setUpAdminUser();
@@ -880,7 +879,7 @@ class EndpointServiceTest extends TestCase {
 		$settingsService = $this->createMock(SettingsService::class);
 
 		$agentMapper->method('findByUuid')->willReturn($agent);
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$this->setUpAdminUser();
@@ -904,7 +903,7 @@ class EndpointServiceTest extends TestCase {
 
 		$agentMapper->method('findByUuid')->willReturn($agent);
 		$settingsService->method('getSettings')->willReturn(['llm' => []]);
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$this->setUpAdminUser();
@@ -1324,7 +1323,7 @@ class EndpointServiceTest extends TestCase {
 
 		$agentMapper->method('findByUuid')->willReturn($agent);
 		$settingsService->method('getSettings')->willReturn(['llm' => []]);
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$this->setUpAdminUser();
@@ -1347,7 +1346,7 @@ class EndpointServiceTest extends TestCase {
 		// findByUuid throws DoesNotExistException, caught by executeAgentEndpoint's catch block.
 		$agentMapper->method('findByUuid')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'missing-uuid');
 		$this->setUpAdminUser();
@@ -1379,7 +1378,7 @@ class EndpointServiceTest extends TestCase {
 		]);
 		$toolRegistry->method('getTool')->willReturn($tool);
 
-		$this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
+		$this->useAgentMapper($agentMapper);
 
 		$endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
 		$this->setUpAdminUser();

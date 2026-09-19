@@ -142,6 +142,126 @@ class SchemaTypeConverter {
 	}//end convertString()
 
 	/**
+	 * Re-encode the string-typed properties that the read path decoded.
+	 *
+	 * This is the inverse of `convertString()`'s decode branch, and it lives
+	 * beside it deliberately: a decode with its encode written somewhere else
+	 * drifts, and that drift is the defect this closes. `convertString()`
+	 * decodes any `type: string` value that looks like a JSON array or object,
+	 * so a read hands back an ARRAY where the schema declares a string. Every
+	 * read-merge-save cycle then feeds that array straight back into validation,
+	 * which refuses it — so a PATCH that never mentioned the property fails
+	 * because of it, and the "a key absent from the payload leaves the stored
+	 * value untouched" promise breaks.
+	 *
+	 * WHICH KEYS. Only the ones the caller did NOT supply. `$suppliedKeys` are
+	 * skipped on purpose: this method restores the shape of values nobody
+	 * touched, which is the promise being repaired. A caller that deliberately
+	 * passes an array for a `type: string` property still gets the same loud
+	 * validation refusal it gets today. Silently rewriting a value the caller
+	 * chose would replace a visible refusal with an invisible transform, which
+	 * is the worse of the two failures.
+	 *
+	 * WHICH TYPES. Every declared type that `convertValue()` routes to
+	 * `convertString()` — so `string`, the extended field types, and anything
+	 * unknown, but never `array`, `object`, `number`, `integer` or `boolean`. A
+	 * union that admits `array` or `object` is left alone: the array form is
+	 * valid there, so there is nothing to restore.
+	 *
+	 * WHICH DEPTH. Top level only, because that is the only depth the read
+	 * decodes: the magic-table read applies `convertValue()` once per column,
+	 * i.e. once per declared property. A `type: string` nested inside an
+	 * `object` property was never decoded and must not be encoded here.
+	 *
+	 * A non-array value is left untouched — there is nothing to re-encode — and
+	 * so is a value `json_encode()` refuses. Both fall through to validation,
+	 * which is the failure direction this method must preserve: loud, not
+	 * silent.
+	 *
+	 * @param array $data         The object data about to be saved.
+	 * @param array $properties   The schema's property definitions, keyed by property name.
+	 * @param array $suppliedKeys Keys the caller actually sent; these are left exactly as merged.
+	 *
+	 * @return array The data with untouched string-typed JSON values restored to their stored form.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function restoreStringTypedValues(array $data, array $properties, array $suppliedKeys=[]): array {
+		foreach ($data as $key => $value) {
+			if (is_array($value) === false) {
+				continue;
+			}
+
+			if (in_array($key, $suppliedKeys, true) === true) {
+				continue;
+			}
+
+			if (array_key_exists($key, $properties) === false || is_array($properties[$key]) === false) {
+				continue;
+			}
+
+			if ($this->isStringTyped(declaredType: ($properties[$key]['type'] ?? 'string')) === false) {
+				continue;
+			}
+
+			// Flags chosen to match what wrote these values in the first place:
+			// JavaScript's JSON.stringify escapes neither slashes nor non-ASCII,
+			// and consuming apps store `JSON.stringify(...)` into these columns.
+			$encoded = json_encode($value, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+			if ($encoded === false) {
+				continue;
+			}
+
+			$data[$key] = $encoded;
+		}//end foreach
+
+		return $data;
+	}//end restoreStringTypedValues()
+
+	/**
+	 * Whether a declared schema type is one `convertValue()` routes to `convertString()`.
+	 *
+	 * Mirrors the dispatch table in `convertValue()` rather than listing the
+	 * string-ish types: the decode happens in the `default` arm, so the set is
+	 * "everything that is not one of the five typed arms". `null` members of a
+	 * union are ignored, since `type: ['string', 'null']` is still a string
+	 * property; a union of nothing but `null` is not.
+	 *
+	 * @param mixed $declaredType The schema's declared type: a string, or a union as an array.
+	 *
+	 * @return bool True when a value of this type would have been JSON-decoded on read.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function isStringTyped(mixed $declaredType): bool {
+		$types = $declaredType;
+		if (is_array($types) === false) {
+			$types = [$types];
+		}
+
+		$named = [];
+		foreach ($types as $type) {
+			if (is_string($type) === false || strtolower($type) === 'null') {
+				continue;
+			}
+
+			$named[] = strtolower($type);
+		}
+
+		if ($named === []) {
+			return false;
+		}
+
+		foreach ($named as $type) {
+			if (in_array($type, ['array', 'object', 'number', 'integer', 'boolean'], true) === true) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end isStringTyped()
+
+	/**
 	 * Convert a value to the `boolean` schema type.
 	 *
 	 * Native bools pass through. Strings `'true'`, `'1'`, `'yes'` are truthy

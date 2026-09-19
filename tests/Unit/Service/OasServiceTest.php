@@ -196,13 +196,36 @@ class OasServiceTest extends TestCase {
 		$this->registerMapper->method('findAll')->willReturn([$register]);
 		$this->schemaMapper->method('findMultiple')->willReturn([]);
 		$this->urlGenerator->method('getAbsoluteURL')
-			->with('/apps/openregister/api')
-			->willReturn('https://example.com/apps/openregister/api');
+			->willReturnCallback(static fn (string $path): string => 'https://example.com' . $path);
 
 		$oas = $this->service->createOas();
 
 		$this->assertSame('https://example.com/apps/openregister/api', $oas['servers'][0]['url']);
 		$this->assertSame('OpenRegister API Server', $oas['servers'][0]['description']);
+	}
+
+	/**
+	 * The OAuth flow URLs MUST be absolute, anchored to this instance.
+	 *
+	 * They ship relative in BaseOas.json, and the OAS 3.1 meta-schema types
+	 * them `format: uri`, so every generated document failed its own
+	 * meta-schema check on them.
+	 *
+	 * @return void
+	 */
+	public function testCreateOasAnchorsTheOAuthFlowUrlsToTheInstance(): void {
+		$register = $this->createRegister(1, 'TestReg', []);
+
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findMultiple')->willReturn([]);
+		$this->urlGenerator->method('getAbsoluteURL')
+			->willReturnCallback(static fn (string $path): string => 'https://example.com' . $path);
+
+		$flow = $this->service->createOas()['components']['securitySchemes']['oauth2']['flows']['authorizationCode'];
+
+		$this->assertSame('https://example.com/apps/oauth2/authorize', $flow['authorizationUrl']);
+		$this->assertSame('https://example.com/apps/oauth2/api/v1/token', $flow['tokenUrl']);
+		$this->assertSame('https://example.com/apps/oauth2/api/v1/token', $flow['refreshUrl']);
 	}
 
 	public function testCreateOasMultipleRegistersDeduplicateSchemas(): void {

@@ -931,6 +931,39 @@ class FlowController extends Controller {
 	}//end version()
 
 	/**
+	 * What publishing this flow would be called, without publishing it.
+	 *
+	 * A GET, and it changes nothing. The author is asking a question before
+	 * they commit to an answer, so it neither refuses nor requires a `bump`:
+	 * the refusal belongs at the publish, where something has been asserted.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The preview, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
+	 */
+	#[NoAdminRequired]
+	public function versionPreview(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse($this->flowVersionService->previewPublish(flow: $flow));
+	}//end versionPreview()
+
+	/**
 	 * Publish the flow's draft head.
 	 *
 	 * @param string $id The flow uuid.
@@ -962,10 +995,20 @@ class FlowController extends Controller {
 				// From FlowAccess, which already holds the session — a second
 				// IUserSession here would push this constructor past the
 				// parameter limit for one string.
-				publishedBy: $this->access->currentUser()?->getUID()
+				publishedBy: $this->access->currentUser()?->getUID(),
+				// The author may RAISE the derived verdict and never lower it.
+				// A refusal to call a removal minor is an
+				// UnexpectedValueException rather than a lifecycle refusal:
+				// the flow's state is fine, the request is not.
+				bump: $this->request->getParam('bump')
 			);
 		} catch (FlowLifecycleRefused $e) {
 			return $this->refusal(refusal: $e);
+		} catch (\UnexpectedValueException $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'kind' => 'version-bump-refused'],
+				Http::STATUS_CONFLICT
+			);
 		}
 
 		return new JSONResponse($version->jsonSerialize());

@@ -31,14 +31,16 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\Appraisal;
+use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
-use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\Notification\IManager as INotificationManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -65,18 +67,18 @@ class DestructionCheckJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for parent class
-	 * @param IDBConnection $db Database connection
+	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly IDBConnection $db,
+		private readonly ContainerInterface $container,
 	) {
 		parent::__construct(time: $time);
 
 		try {
-			$handler = \OC::$server->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ObjectRetentionHandler::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$interval = (int)($settings['destructionCheckInterval'] ?? self::DEFAULT_INTERVAL);
 		} catch (Exception $e) {
@@ -101,12 +103,12 @@ class DestructionCheckJob extends TimedJob {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	protected function run($argument): void {
-		$logger = \OC::$server->get(LoggerInterface::class);
+		$logger = $this->container->get(LoggerInterface::class);
 		$logger->info('[DestructionCheckJob] Starting destruction check');
 
 		try {
-			$retentionService = \OC::$server->get(RetentionService::class);
-			$settingsHandler = \OC::$server->get(ObjectRetentionHandler::class);
+			$retentionService = $this->container->get(RetentionService::class);
+			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
 			$settings = $settingsHandler->getArchivalSettingsOnly();
 
 			if (empty($settings['destructionListRegister']) === true
@@ -141,7 +143,7 @@ class DestructionCheckJob extends TimedJob {
 				return;
 			}
 
-			$saveObject = \OC::$server->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
+			$saveObject = $this->container->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
 			$savedList = $saveObject->saveObject(
 				$settings['destructionListRegister'],
 				$settings['destructionListSchema'],
@@ -187,9 +189,9 @@ class DestructionCheckJob extends TimedJob {
 		$today = (new DateTime())->format('Y-m-d');
 
 		try {
-			$objectMapper = \OC::$server->get(MagicMapper::class);
+			$retentionService = $this->container->get(RetentionService::class);
 
-			$appConfig = \OC::$server->get(\OCP\IAppConfig::class);
+			$appConfig = $this->container->get(\OCP\IAppConfig::class);
 			$notifiedJson = $appConfig->getValueString('openregister', self::NOTIFIED_KEY, '[]');
 			$notified = json_decode($notifiedJson, true) ?? [];
 			// Track which already-notified UUIDs are still inside the pre-destruction window
@@ -199,80 +201,81 @@ class DestructionCheckJob extends TimedJob {
 			$newNotified = [];
 			$newCount = 0;
 
-			// Page the retention scan instead of fetchAll()-ing every retention row into
-			// memory at once (OPS-7). batchSize bounds peak memory on large registers.
-			$batchSize = 500;
-			$offset = 0;
+			// 🔴 THE SCAN READS THE MAGIC TABLES AS WELL AS THE LEGACY BLOB
+			// TABLE. This loop used to select straight from
+			// `openregister_objects`, which `BlobMigrationJob` drains into the
+			// per-schema magic tables every five minutes, so on any migrated
+			// install it read zero rows and no pre-destruction warning was ever
+			// sent. {@see RetentionService::scanObjectsWithRetention()} visits
+			// both stores, pages them, and caps one run.
+			$scan = $retentionService->scanObjectsWithRetention(
+				accept: static function (ObjectEntity $object) use ($today, $threshold): bool {
+					$retention = ($object->getRetention() ?? []);
+					$actionDate = ($retention['archiefactiedatum'] ?? null);
 
-			do {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('id')->from('openregister_objects')
-					->where($qb->expr()->isNotNull('retention'))
-					->setFirstResult($offset)
-					->setMaxResults($batchSize);
-
-				$result = $qb->executeQuery();
-				$rows = $result->fetchAll();
-				$result->closeCursor();
-
-				foreach ($rows as $row) {
-					try {
-						$object = $objectMapper->find(intval($row['id']), null, null, false, false, false);
-					} catch (Exception $e) {
-						continue;
+					// Every spelling that means live. Matching only the English
+					// one would make every pre-existing record invisible to the
+					// pre-destruction warning, so the first a records officer
+					// would hear of a destruction is after it happened.
+					$status = ($retention['archiefstatus'] ?? null);
+					if ($actionDate === null || in_array($status, RecordState::ACTIVE_ALIASES, true) === false) {
+						return false;
 					}
 
-					$retention = $object->getRetention() ?? [];
-					$status = $retention['archiefstatus'] ?? null;
-					$actionDate = $retention['archiefactiedatum'] ?? null;
-					$nominatie = $retention['archiefnominatie'] ?? null;
+					return ($actionDate > $today && $actionDate <= $threshold);
+				}
+			);
 
-					if ($actionDate === null || $status !== 'nog_te_archiveren') {
-						continue;
-					}
+			foreach ($scan['objects'] as $object) {
+				$retention = ($object->getRetention() ?? []);
+				$uuid = $object->getUuid();
 
-					if ($actionDate <= $today || $actionDate > $threshold) {
-						continue;
-					}
+				// Object is still inside the notification window — keep it in the
+				// notified set even if we already alerted on it earlier.
+				if (in_array($uuid, $notified, true) === true) {
+					$stillRelevant[$uuid] = true;
+					continue;
+				}
 
-					$uuid = $object->getUuid();
+				if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
+					continue;
+				}
 
-					// Object is still inside the notification window — keep it in the
-					// notified set even if we already alerted on it earlier.
-					if (in_array($uuid, $notified, true) === true) {
-						$stillRelevant[$uuid] = true;
-						continue;
-					}
+				$subject = 'Object approaching destruction date';
+				if (in_array(($retention['archiefnominatie'] ?? null), Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === true) {
+					$subject = 'Object requires e-Depot transfer';
+				}
 
-					if (($retention['legalHold']['active'] ?? false) === true) {
-						continue;
-					}
+				$this->sendObjectNotification(
+					uuid: $uuid,
+					subject: $subject,
+					// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title`
+					// PROPERTY, so Entity's magic accessor threw
+					// "title is not a valid attribute" on the first object it
+					// reached. Inside this try that aborted the entire
+					// notification pass; in `createDestructionList()` the same
+					// call took down the whole job. `name` is the property that
+					// exists, and `getObjectArray()` already falls back to the
+					// uuid the same way.
+					title: $object->getName() ?? $uuid,
+					actionDate: (string)($retention['archiefactiedatum'] ?? ''),
+					classification: $retention['classification'] ?? null,
+					logger: $logger
+				);
 
-					$subject = 'Object approaching destruction date';
-					if ($nominatie === 'bewaren') {
-						$subject = 'Object requires e-Depot transfer';
-					}
-
-					$this->sendObjectNotification(
-						uuid: $uuid,
-						subject: $subject,
-						title: $object->getTitle() ?? $uuid,
-						actionDate: $actionDate,
-						classification: $retention['classification'] ?? null,
-						logger: $logger
-					);
-
-					$newNotified[$uuid] = true;
-					$newCount++;
-				}//end foreach
-
-				$rowCount = count($rows);
-				$offset += $batchSize;
-			} while ($rowCount === $batchSize);
+				$newNotified[$uuid] = true;
+				$newCount++;
+			}//end foreach
 
 			// Rebuild the persisted set from only the still-in-window UUIDs plus the freshly
 			// notified ones, dropping any whose destruction date has passed or moved away.
+			// A TRUNCATED RUN PRUNES NOTHING: it did not see every in-window object, so
+			// treating what it missed as "no longer in the window" would re-notify those
+			// records on a later run.
 			$rebuilt = array_keys($stillRelevant + $newNotified);
+			if ($scan['truncated'] === true) {
+				$rebuilt = array_values(array_unique(array_merge($notified, array_keys($newNotified))));
+			}
 
 			if ($newCount > 0 || count($rebuilt) !== count($notified)) {
 				$appConfig->setValueString('openregister', self::NOTIFIED_KEY, json_encode($rebuilt));
@@ -307,8 +310,8 @@ class DestructionCheckJob extends TimedJob {
 		LoggerInterface $logger,
 	): void {
 		try {
-			$notificationManager = \OC::$server->get(INotificationManager::class);
-			$groupManager = \OC::$server->get(IGroupManager::class);
+			$notificationManager = $this->container->get(INotificationManager::class);
+			$groupManager = $this->container->get(IGroupManager::class);
 
 			$group = $groupManager->get('archivaris');
 			if ($group === null) {
@@ -354,8 +357,8 @@ class DestructionCheckJob extends TimedJob {
 		LoggerInterface $logger,
 	): void {
 		try {
-			$notificationManager = \OC::$server->get(INotificationManager::class);
-			$groupManager = \OC::$server->get(IGroupManager::class);
+			$notificationManager = $this->container->get(INotificationManager::class);
+			$groupManager = $this->container->get(IGroupManager::class);
 
 			$group = $groupManager->get('archivaris');
 			if ($group === null) {

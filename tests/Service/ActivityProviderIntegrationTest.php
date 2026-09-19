@@ -45,6 +45,13 @@ class ActivityProviderIntegrationTest extends TestCase {
 	/** @var int[] */
 	private array $insertedActivityIds = [];
 
+	/**
+	 * The session user as it was before this test file touched it.
+	 *
+	 * @var IUser|null
+	 */
+	private ?IUser $previousUser = null;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->activityService = \OC::$server->get(ActivityService::class);
@@ -53,6 +60,16 @@ class ActivityProviderIntegrationTest extends TestCase {
 
 		// Activities require an active user — the publish path uses
 		// userSession->getUser() as the activity author.
+		//
+		// 🔴 WHOEVER IS LOGGED IN HERE STAYS LOGGED IN FOR THE REST OF THE RUN
+		// unless tearDown() puts it back. The session is process-global, this
+		// file is the first one PHPUnit loads in the Service suite, and it used
+		// to leave `admin` in place: 10 later assertions about what an
+		// ANONYMOUS caller may read then ran as an administrator and failed,
+		// while 12 ImportService tests passed only because an admin was
+		// carrying them. Remember what was there and restore it.
+		$this->previousUser = $this->userSession->getUser();
+
 		$userManager = \OC::$server->get(IUserManager::class);
 		$admin = $userManager->get('admin');
 		if ($admin instanceof IUser) {
@@ -73,6 +90,10 @@ class ActivityProviderIntegrationTest extends TestCase {
 				// best effort
 			}
 		}
+
+		// Put the session back the way it was found, whatever happened above.
+		$this->userSession->setUser($this->previousUser);
+
 		parent::tearDown();
 	}
 

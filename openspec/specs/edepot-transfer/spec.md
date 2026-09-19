@@ -12,24 +12,26 @@ Define how OpenRegister exports objects to a Dutch e-Depot for permanent archiva
 ## Requirements
 
 ### Requirement: The system MUST generate MDTO-compliant XML metadata per object
-Each object selected for e-Depot transfer MUST have its metadata exported as valid XML conforming to the MDTO (Metagegevens Duurzaam Toegankelijke Overheidsinformatie) schema version 1.0 or later. The XML MUST include all mandatory MDTO elements and use the correct namespace.
+Each object selected for e-Depot transfer MUST have its metadata exported as XML that validates against MDTO-XML 1.0.1, the Nationaal Archief's schema, vendored at `lib/Resources/mdto/MDTO-XML1.0.1.xsd`. How that is held true is the requirement "Generated MDTO documents MUST validate against the vendored MDTO-XML 1.0.1 XSD" below.
 
 #### Scenario: Generate MDTO XML for a single object
 - **WHEN** object `zaak-123` with complete archival metadata is selected for MDTO export
-- **THEN** the system MUST produce an XML document with root element `mdto:informatieobject` in namespace `https://www.nationaalarchief.nl/mdto`
-- **AND** the XML MUST include mandatory elements: `identificatie` (object UUID + register source), `naam` (object title or schema+UUID), `waardering` (mapped from `archiefnominatie`), `bewaartermijn` (ISO 8601 duration from retention field), `informatiecategorie` (mapped from selectielijst `classificatie`)
-- **AND** the XML MUST include `archiefvormer` (the organisation identifier from app settings)
-- **AND** the XML MUST validate against the MDTO XSD schema
+- **THEN** the system MUST produce an XML document with root element `mdto:MDTO` in namespace `https://www.nationaalarchief.nl/mdto`, holding exactly one `mdto:informatieobject`
+- **AND** the informatieobject MUST include `identificatie` (object UUID, with the organisation identifier as `identificatieBron`), `naam` (object title, else its UUID), `waardering` (from `archiefnominatie`, as a term of the closed Waarderingen list), `archiefvormer` (the organisation from app settings) and `beperkingGebruik`
+- **AND** it MUST include `bewaartermijn` as a `termijnGegevens` when the record has a retention period, which MDTO makes optional
+- **AND** the document MUST validate against the vendored MDTO XSD
 
 #### Scenario: MDTO XML includes file references
 - **WHEN** object `zaak-123` has 2 associated files (original.docx and rendition.pdf)
-- **THEN** the MDTO XML MUST include `bestand` elements for each file with `naam`, `omvang` (file size in bytes), `bestandsformaat` (PRONOM identifier or MIME type), and `checksum` (SHA-256)
+- **THEN** the informatieobject document MUST reference each file with a `heeftRepresentatie`, and MUST NOT embed them
+- **AND** each file MUST get its own MDTO document with root `mdto:MDTO` holding one `mdto:bestand`, carrying `identificatie`, `naam`, `omvang` (bytes), `bestandsformaat` (the IANA media type), `checksum` (SHA-256 with `checksumDatum`) and `isRepresentatieVan` pointing back at the informatieobject
+- **AND** each file document MUST validate against the vendored MDTO XSD
 
 #### Scenario: MDTO XML handles missing optional fields gracefully
-- **WHEN** an object lacks optional MDTO fields (e.g., no `toelichting`, no `classificatie`)
-- **THEN** the XML MUST omit those elements rather than including empty elements
-- **AND** the XML MUST still validate against the MDTO XSD schema
-- **AND** required fields that are missing MUST cause the export to fail with a descriptive error logged to the transfer list
+- **WHEN** an object lacks optional MDTO values (e.g., no `toelichting`, no `classification`)
+- **THEN** the XML MUST omit those elements (`omschrijving`, `informatiecategorie`) rather than including empty elements or placeholders
+- **AND** the XML MUST still validate against the MDTO XSD
+- **AND** required inputs that are missing or malformed MUST cause the export to fail with a descriptive error
 
 ### Requirement: The system MUST assemble SIP packages for e-Depot transfer
 Objects approved for transfer MUST be packaged into a SIP (Submission Information Package) conforming to the OAIS reference model (ISO 14721). Each SIP MUST be a self-contained ZIP archive containing all metadata and content files needed for archival ingest.
@@ -40,7 +42,7 @@ Objects approved for transfer MUST be packaged into a SIP (Submission Informatio
   - A `mets.xml` file describing the structural map of the package (file groups, div structure per object)
   - A `premis.xml` file with preservation events (creation, packaging) and SHA-256 fixity for every content file
   - A `sip-manifest.json` listing all files in the package with their relative paths, SHA-256 checksums, and sizes
-  - One directory per object under `objects/{uuid}/` containing `mdto.xml`, `metadata.json` (object data snapshot), and a `content/` directory with associated files
+  - One directory per object under `objects/{uuid}/` containing `mdto.xml`, `metadata.json` (object data snapshot), and a `content/` directory with associated files, each accompanied by its own MDTO document named `<bestandsnaam>.bestand.MDTO.xml`, as the MDTO SIP specification prescribes
 - **AND** the total package MUST be integrity-verifiable by recomputing checksums from the manifest
 
 #### Scenario: SIP package includes PDF/A renditions when available
@@ -189,3 +191,218 @@ Every transfer lifecycle event MUST produce an immutable audit trail entry for l
 #### Scenario: Audit trail for transfer failure
 - **WHEN** a transfer fails (partially or completely)
 - **THEN** an audit trail entry MUST be created with action `archival.transfer_failed` containing the transfer list UUID, error details, number of failed objects, and transport protocol used
+
+### Requirement: The MDTO generator MUST report the limits of its own validation
+
+`MdtoXmlGenerator` MUST NOT present its pre-generation check as an MDTO
+validity check. The check MUST be named and documented for what it is (the
+inputs the generator needs, refused in any form the XSD would reject), and
+the generator MUST separately report which MDTO-required elements carry the
+standard's "not recorded" term rather than a value the object supplied.
+Validity against the schema is established by the XSD test, not by this
+check.
+
+The required-element list is taken from two authoritative sources published by
+the Nationaal Archief: the MDTO metagegevensschema
+(`github.com/NationaalArchief/MDTO-Metagegevensschema`, `markdown/attributenKlassen.md`)
+and the XML syntax `MDTO-XML1.0.1.xsd`
+(`nationaalarchief.nl/sites/default/mdto/MDTO-XML1.0.1.xsd`). Against those:
+
+- `identificatie` is `minOccurs="1"` on `objectType`, and both
+  `identificatieKenmerk` and `identificatieBron` are `minOccurs="1"` on
+  `identificatieGegevens`. The schema states for `identificatie`:
+  "Verplicht | Ja".
+- `naam` is `minOccurs="1"` on `objectType`. The schema states:
+  "Verplicht | Ja".
+- `waardering` is `minOccurs="1"` on `informatieobjectType`. The schema
+  states: "Verplicht | Ja".
+- `archiefvormer` is `minOccurs="1" maxOccurs="unbounded"`. The schema states:
+  "Verplicht | Ja".
+- `beperkingGebruik` is `minOccurs="1" maxOccurs="unbounded"`. The schema
+  states: "Verplicht | Ja". The XSD carries a dated comment recording the
+  change: "20230109 ONDERWERP: aanpassing schema. WAT: maxOccurs bij attribuut
+  archiefvormer aangepast naar 'unbounded', minOccurs bij attribuut
+  beperkingGebruik aangepast naar '1'."
+- On `bestandType`: `omvang`, `bestandsformaat`, `checksum` and
+  `isRepresentatieVan` are all `minOccurs="1"`, and `checksumGegevens`
+  requires `checksumAlgoritme`, `checksumWaarde` and `checksumDatum`.
+- `bewaartermijn` is `minOccurs="0"` and the schema states "Verplicht | Ja,
+  indien bekend", so an export without one is valid and the element is simply
+  omitted. openregister's refusal to TRANSFER a record whose retention period
+  is unknown is a LOCAL policy, stated below as its own precondition, and MUST
+  NOT be attributed to MDTO or enforced while merely serialising: the
+  `tmlo-export` endpoint serialises records that have no retention period yet.
+
+#### Scenario: A generator input is missing
+- **WHEN** an object has no `retention.archiefnominatie`, or a file entry has no `checksum`
+- **THEN** generation MUST fail with an error naming the missing input
+- **AND** the error MUST state that the check covers generator inputs only and is not an MDTO validity check
+
+#### Scenario: A generator input is malformed
+- **WHEN** `archiefnominatie` is outside the closed Waarderingen list, `bewaartermijn` is not an `xsd:duration` (for example `P2W`), or a file's checksum is not a SHA-256 or its `checksumDate` is not an `xsd:dateTime`
+- **THEN** generation MUST fail naming the input, rather than write a document the XSD rejects or a label the list does not contain
+
+#### Scenario: A required MDTO element cannot be sourced
+- **WHEN** an object declares no use restriction and carries no active legal hold
+- **THEN** generation MUST still succeed, with `beperkingGebruik` carrying the BeperkingGebruikTypeLijst term `Nader te bepalen`
+- **AND** the generator MUST report `beperkingGebruik` as carrying that default, so it is never read as a recorded fact
+
+### Requirement: The system MUST emit MDTO aggregatieniveau beperkingGebruik and dekkingInTijd from their declared sources
+
+`aggregatieniveau` and `dekkingInTijd` MUST be emitted when the object
+carries a value for them, and MUST be omitted entirely when it does not. A
+placeholder or a derived guess MUST NOT be written.
+
+`beperkingGebruik` is the exception, because the XSD requires it
+(`minOccurs="1"`). When no source supplies one it MUST carry the
+BeperkingGebruikTypeLijst term `Nader te bepalen`, defined by the standard as
+"Er is mogelijk een beperking, maar de aard daarvan is niet vastgelegd als
+type beperking en niet vastgelegd in de metagegevens". That term states the
+absence of a recorded restriction; it is not a guess at one.
+
+Sources, in order: the abstract English key on the `retention` block
+(`aggregationLevel`, `useRestriction`, `temporalCoverage`), then the Dutch key
+on the `tmlo` block (`aggregatieniveau`, `beperkingGebruik`, `dekkingInTijd`).
+For `beperkingGebruik` only, an ACTIVE `retention.legalHold` is a further
+source and is reported with the `BeperkingGebruikTypeLijst` term "Overig",
+which the standard defines as "Niet nader gespecificeerde beperking. Deze
+waarde wordt gebruikt als er geen ander geschikt type gedefinieerd is en er in
+de documentatie wel een beperking is omschreven."
+
+`aggregatieniveau` values MUST come from the `Aggregatieniveaus`
+begrippenlijst, whose terms are Archief, Serie, Dossier and Archiefstuk.
+
+`dekkingInTijd` MUST be emitted only when the declared entry supplies both a
+type and a start date, because `dekkingInTijdType` and
+`dekkingInTijdBegindatum` are both `minOccurs="1"`. Both dates MUST be an
+`xsd:gYear`, `xsd:gYearMonth` or `xsd:date`, the union the XSD declares. The record's own `created`
+timestamp MUST NOT be used: MDTO defines dekkingInTijd as "Datum waar de
+inhoud van het informatieobject betrekking op heeft".
+
+#### Scenario: Declared aggregation level is exported
+- **WHEN** an object carries `retention.aggregationLevel` = `Dossier`
+- **THEN** the XML MUST contain `mdto:aggregatieniveau` with `begripLabel` `Dossier` and `begripBegrippenlijst/verwijzingNaam` `Aggregatieniveaus`
+
+#### Scenario: An unsourced element is omitted
+- **WHEN** an object carries no aggregation level in either the retention or the tmlo block
+- **THEN** the XML MUST NOT contain an `mdto:aggregatieniveau` element at all, empty or otherwise
+
+#### Scenario: An active legal hold is exported as a use restriction
+- **WHEN** an object carries `retention.legalHold` with `active` true and a reason
+- **THEN** the XML MUST contain `mdto:beperkingGebruik` with `beperkingGebruikType/begripLabel` `Overig` and the reason in `beperkingGebruikNadereBeschrijving`
+
+#### Scenario: No known restriction is stated as not recorded
+- **WHEN** an object declares no restriction and any legal hold has been released
+- **THEN** the XML MUST contain `mdto:beperkingGebruik` with `beperkingGebruikType/begripLabel` `Nader te bepalen`, and MUST NOT carry `Overig`
+
+### Requirement: The system MUST derive MDTO event entries from the audit trail
+
+MDTO `event` entries MUST be derived from `openregister_audit_trails` rather
+than from a separate store. The audit trail records action, actor, timestamp
+and a hash chain, which is the event history MDTO asks for.
+
+The trail is not itself an archival event log, so the derivation MUST be
+bounded on three axes:
+
+- An ALLOW-LIST of audit actions, so an action nobody has mapped cannot start
+  appearing in an export: `create`, `update`, `archival.transferred`,
+  `archival.destroyed` and `archival.legal_hold_placed`.
+- Labels drawn only from MDTO's `EventTypeLijst`, mapping to `Creatie`,
+  `Wijziging`, `Overbrenging`, `Vernietigen` and `Bevriezing` respectively.
+- A hard cap on the number of events emitted for one object, applied in the
+  database query, with the record's creation event kept when the cap truncates.
+
+`read`, `list`, `search` and `delete` MUST NOT become events. `delete` in
+particular is written for a reversible trash operation as well as a purge,
+while MDTO defines `Vernietigen` as "het blijvend ontoegankelijk maken van die
+informatie".
+
+`eventResultaat` MUST NOT be populated from the audit hash chain: the hash
+attests to the integrity of the audit row, not to an outcome of the event.
+
+#### Scenario: Create and update rows become events
+- **WHEN** an object's audit trail holds one `create` row and two `update` rows
+- **THEN** the XML MUST contain three `mdto:event` elements with `eventType/begripLabel` `Creatie`, `Wijziging` and `Wijziging`, oldest first
+
+#### Scenario: Reads are not events
+- **WHEN** an object's audit trail holds `read` and `list` rows
+- **THEN** those rows MUST NOT produce `mdto:event` elements
+
+#### Scenario: The event list is bounded
+- **WHEN** an object's audit trail holds more qualifying rows than the cap
+- **THEN** the XML MUST contain at most the capped number of `mdto:event` elements
+- **AND** the record's `Creatie` event MUST be among them
+
+### Requirement: Generated MDTO documents MUST validate against the vendored MDTO-XML 1.0.1 XSD
+
+Every document `MdtoXmlGenerator` produces, the informatieobject document and
+each file's bestand document, MUST validate against
+`lib/Resources/mdto/MDTO-XML1.0.1.xsd`. That file MUST be a verbatim copy of
+the Nationaal Archief's schema, with its source, version, checksum and licence
+recorded beside it in `version.json`. The licence is CC BY-SA: "Het Nationaal
+Archief hanteert de licentie CC BY SA voor al diens kennisproducten en dus ook
+voor MDTO" (Forum Standaardisatie, Intakeadvies MDTO, FS-20241002.3C).
+
+`MdtoXmlGeneratorXsdTest` MUST hold this true by validating documents for
+representative objects, with and without files and with and without the
+optional elements, and MUST name libxml's own error lines when a document
+fails.
+
+Validation MUST work under Nextcloud's XXE protection, which sets libxml's
+external-entity loader to return null. `DOMDocument::schemaValidate($path)`
+cannot read the schema from disk under that loader, so validation MUST read
+the schema's contents and use `schemaValidateSource()`. That suffices because
+the vendored XSD imports and includes nothing; the loader MUST NOT be
+loosened to make validation work. The test MUST install that null loader for
+its own duration, because CI runs it inside a booted Nextcloud and a local run
+does not, and a test that only passes without the loader passes for the wrong
+reason. It MUST include a
+negative control (a document the schema rejects, where the rejection must be
+the schema naming the missing element and not a failure to load the schema)
+and a positive control (the Nationaal Archief's own example documents), so
+neither a schema that failed to load nor a validator that accepts anything
+can make it pass. The vendored
+schema's checksum MUST be pinned, so the file the export is held to cannot
+change unnoticed.
+
+Where MDTO makes a value a term from a begrippenlijst, the XSD sees only a
+string. Those rules are enforced by the generator instead: `waardering` MUST
+be a term of the CLOSED Waarderingen list (`B` Blijvend te bewaren, `V`
+Tijdelijk te bewaren, `N` Nader te bepalen), onto which the four
+`archiefnominatie` values the codebase writes map, and any other value MUST be
+refused.
+
+`checksumDatum`, defined by MDTO as "Datum waarop de checksum is gemaakt",
+MUST be the moment the checksum was computed. Because a stored checksum
+carries no date, the transfer service MUST hash every file at packaging and
+date that moment, and MUST refuse a file whose stored SHA-256 does not match
+its bytes rather than replace the stale value silently.
+
+#### Scenario: Representative documents validate
+- **WHEN** documents are generated for a minimal object, an object with files, and an object carrying every optional element
+- **THEN** every informatieobject document and every bestand document MUST validate against the vendored XSD
+
+#### Scenario: A deviation from the schema is caught and named
+- **WHEN** the generator emits a document the schema rejects
+- **THEN** `MdtoXmlGeneratorXsdTest` MUST fail, and its message MUST quote libxml's error naming the offending element
+
+#### Scenario: A record with no retention period is not transferred
+- **WHEN** a record whose retention period is unknown is packaged for an e-Depot
+- **THEN** the packaging path MUST refuse it, through a precondition separate from serialising
+- **AND** exporting that same record as MDTO MUST still succeed, without a `bewaartermijn` element
+
+#### Scenario: Every MDTO document the package ships is listed in mets.xml
+- **WHEN** a SIP is built for an object with one file
+- **THEN** `mets.xml` MUST list the object's `mdto.xml` and the file's `<bestandsnaam>.bestand.MDTO.xml` in a METADATA file group, with size and checksum
+- **AND** the object's div MUST point at them
+
+#### Scenario: A stored checksum no longer matches the file
+- **WHEN** a file reference carries a SHA-256 that differs from the SHA-256 of the file's bytes
+- **THEN** the file MUST be refused as a fixity failure, and the object excluded from that transfer with a logged reason
+
+**RESOLVED: there is one MDTO exporter.** `TmloService::generateMdtoXml()`,
+behind `GET /api/tmlo/{register}/{schema}/{id}/export`, used to be a second
+implementation and did not validate. It now delegates to `MdtoXmlGenerator`,
+so both exports are the same format and the same test holds them. See
+`tmlo-export`, whose requirement no longer asks for TMLO field names in MDTO
+output.

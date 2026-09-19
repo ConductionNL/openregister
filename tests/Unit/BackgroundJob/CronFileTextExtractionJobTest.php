@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -30,6 +31,8 @@ use ReflectionClass;
  * Test class for CronFileTextExtractionJob
  */
 class CronFileTextExtractionJobTest extends TestCase {
+	use RegistersContainerServices;
+
 	private SettingsService&MockObject $settingsService;
 	private TextExtractionService&MockObject $textExtractor;
 	private FileMapper&MockObject $fileMapper;
@@ -45,21 +48,21 @@ class CronFileTextExtractionJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Register all mocks in the Nextcloud DI container.
-		\OC::$server->registerService(SettingsService::class, function () {
+		$this->registerService(SettingsService::class, function () {
 			return $this->settingsService;
 		});
-		\OC::$server->registerService(TextExtractionService::class, function () {
+		$this->registerService(TextExtractionService::class, function () {
 			return $this->textExtractor;
 		});
-		\OC::$server->registerService(FileMapper::class, function () {
+		$this->registerService(FileMapper::class, function () {
 			return $this->fileMapper;
 		});
-		\OC::$server->registerService(LoggerInterface::class, function () {
+		$this->registerService(LoggerInterface::class, function () {
 			return $this->logger;
 		});
 
 		$timeFactory = $this->createMock(ITimeFactory::class);
-		$this->job = new CronFileTextExtractionJob($timeFactory);
+		$this->job = new CronFileTextExtractionJob($timeFactory, $this->containerMock());
 	}
 
 	/**

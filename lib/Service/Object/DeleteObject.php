@@ -33,15 +33,18 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -136,9 +139,11 @@ class DeleteObject {
 	 * @param LoggerInterface $logger Logger for error handling
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
 	 * @param IDBConnection $db Database connection for transactions
+	 * @param OrganisationMapper $organisationMapper Resolves the deleting user's active organisation for the audit trail
 	 * @param FileService|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapper|null $registerMapper Register mapper for register lookups
+	 * @param DeletionWindowService|null $windowService Resolves and states the recovery window
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 *
@@ -153,9 +158,11 @@ class DeleteObject {
 		LoggerInterface $logger,
 		ReferentialIntegrityService $integrityService,
 		IDBConnection $db,
+		private readonly OrganisationMapper $organisationMapper,
 		private readonly ?FileService $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper = null,
+		private readonly ?DeletionWindowService $windowService = null,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->settingsService = $settingsService;
@@ -309,14 +316,11 @@ class DeleteObject {
 		// Get the active organization from session at time of deletion for audit trail.
 		$activeOrganisation = null;
 		if ($user !== null) {
-			// Access OrganisationMapper via DI container to get active organization.
 			try {
-				$organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
-				$activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+				$activeOrganisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
 			} catch (\Throwable $e) {
 				// If we can't get the active organisation, log and continue with null.
-				// Catches Error too so a null DB in tests (or a missing binding) doesn't
-				// abort the whole delete path.
+				// Catches Error too so a null DB in tests doesn't abort the whole delete path.
 				$this->logger->warning(
 					message: '[DeleteObject] Failed to get active organisation during delete',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
@@ -327,12 +331,27 @@ class DeleteObject {
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.org');
 
+		$deletedAt = new DateTime();
 		$deletionData = [
 			'deletedBy' => $userId,
-			'deletedAt' => (new DateTime())->format(DateTime::ATOM),
+			'deletedAt' => $deletedAt->format(DateTime::ATOM),
 			'objectId' => $objectEntity->getUuid(),
 			'organisation' => $activeOrganisation,
 		];
+
+		// THE WINDOW IS STATED, NOT ONLY COMPUTED. This path wrote no purge
+		// date at all, so the only object that ever carried one came through
+		// ObjectEntity::delete(). Nobody could read how long they had because
+		// nothing had written it down.
+		if ($this->windowService !== null) {
+			$deletionData = array_merge(
+				$deletionData,
+				$this->windowService->openWindow(
+					schema: $schemaEntity,
+					deletedAt: DateTimeImmutable::createFromMutable($deletedAt)
+				)
+			);
+		}
 
 		// PERF: snapshot the pre-delete state once and hand it to the mapper as
 		// the update's old entity — this skips the mapper's internal pre-update
@@ -1016,8 +1035,7 @@ class DeleteObject {
 		if ($user !== null) {
 			$userId = $user->getUID();
 			try {
-				$mapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
-				$org = $mapper->getActiveOrganisationWithFallback($user->getUID());
+				$org = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
 			} catch (\Exception $e) {
 				$org = null;
 			}

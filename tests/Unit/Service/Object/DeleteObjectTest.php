@@ -22,6 +22,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -79,6 +80,9 @@ class DeleteObjectTest extends TestCase {
 	/** @var ReferentialIntegrityService&MockObject */
 	private ReferentialIntegrityService $integrityService;
 
+	/** @var OrganisationMapper&MockObject */
+	private OrganisationMapper $organisationMapper;
+
 	// =========================================================================
 	// Set-up
 	// =========================================================================
@@ -93,6 +97,7 @@ class DeleteObjectTest extends TestCase {
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->integrityService = $this->createMock(ReferentialIntegrityService::class);
+		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 
 		$this->handler = new DeleteObject(
 			$this->objectMapper,
@@ -102,7 +107,8 @@ class DeleteObjectTest extends TestCase {
 			$this->settingsService,
 			$this->logger,
 			$this->integrityService,
-			$this->createMock(\OCP\IDBConnection::class)
+			$this->createMock(\OCP\IDBConnection::class),
+			$this->organisationMapper
 		);
 	}
 
@@ -349,8 +355,11 @@ class DeleteObjectTest extends TestCase {
 
 		$this->withUser('alice');
 		$this->withAuditTrailsEnabled(false);
-		// Prevent OC::$server call from failing — no active org is fine.
-		$this->logger->method('warning');
+		$this->organisationMapper->expects($this->once())
+			->method('getActiveOrganisationWithFallback')
+			->with('alice')
+			->willReturn('org-uuid-1');
+		$this->logger->expects($this->never())->method('warning');
 
 		$this->handler->delete($object);
 
@@ -359,6 +368,7 @@ class DeleteObjectTest extends TestCase {
 		$this->assertIsArray($deleted);
 		$this->assertSame('alice', $deleted['deletedBy']);
 		$this->assertSame('uuid-4', $deleted['objectId']);
+		$this->assertSame('org-uuid-1', $deleted['organisation']);
 		$this->assertArrayHasKey('deletedAt', $deleted);
 	}
 
