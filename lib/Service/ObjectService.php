@@ -4437,7 +4437,7 @@ class ObjectService implements ObjectServiceInterface
      *                               lock for this synthetic key without scanning tables
      * @param string|null $runUuid   Flow run releasing the lock, for a run-scoped lock
      *
-     * @return true True if unlocked successfully
+     * @return bool True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
      *

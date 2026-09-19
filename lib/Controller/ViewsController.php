@@ -166,8 +166,14 @@ class ViewsController extends Controller {
 	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
 	 */
 	private function refuseForbiddenViewFields(string $id, string $userId, array $data): ?JSONResponse {
+		// 🔴 BOTH ARGUMENTS. `ViewService::find()` takes `(id, owner)` and both
+		// are required, so the one-argument call this method shipped with
+		// raised an `ArgumentCountError` that the catch below turned into a
+		// plausible `404 View not found` for EVERY update, the owner's own
+		// included. Nothing would have looked broken; views would simply have
+		// stopped saving.
 		try {
-			$view = $this->viewService->find($id);
+			$view = $this->viewService->find($id, $userId);
 		} catch (\Throwable $e) {
 			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
 		}
@@ -553,6 +559,20 @@ class ViewsController extends Controller {
 
 			$data = $this->request->getParams();
 
+			// 🔴 THE FIELD GUARD RUNS HERE, and it did not before. It was
+			// written, unit-tested and never called, which reads to the next
+			// person who greps as a check and is identical to having none.
+			// Until it was wired, `ViewService::update()`'s own access test
+			// admitted the OWNER or ANY caller on a view whose `isPublic` is
+			// true, so any authenticated account could rename someone else's
+			// shared view, rewrite its query, or un-publish it. The owner and
+			// an administrator are unaffected: `mayAdminister()` answers true
+			// for both and the guard returns null.
+			$refusal = $this->refuseForbiddenViewFields(id: $id, userId: $userId, data: $data);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+
 			// Validate required fields.
 			if (isset($data['name']) === false || empty($data['name']) === true) {
 				return new JSONResponse(
@@ -694,6 +714,14 @@ class ViewsController extends Controller {
 			$view = $this->viewService->find(id: $id, owner: $userId);
 
 			$data = $this->request->getParams();
+
+			// The same guard as `update()`. Leaving it off here would have
+			// left the hole open behind a different verb, and this method
+			// additionally carries `@NoCSRFRequired`.
+			$refusal = $this->refuseForbiddenViewFields(id: $id, userId: $userId, data: $data);
+			if ($refusal !== null) {
+				return $refusal;
+			}
 
 			// Use existing values for fields not provided.
 			$name = $data['name'] ?? $view->getName() ?? '';

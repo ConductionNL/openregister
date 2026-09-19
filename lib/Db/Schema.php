@@ -1335,7 +1335,18 @@ class Schema extends Entity implements JsonSerializable {
 		// its own validator at save time — SchemaMapper::validateDepartmentMatrix()
 		// for the matrix, AuthorizationDenyValidator for `deny` — and those
 		// refuse a malformed block with a message about the block.
-		if (in_array($action, PermissionCatalogue::CONTROL_KEYS, true) === true) {
+		// `scope` and `roles` are answered above with their own validators, so
+		// they come out of the list here rather than being tested twice. Psalm
+		// reads the constant and calls the second test a paradox otherwise,
+		// and it is right: the branch could never be taken for those two.
+		$remaining = array_values(
+			array_diff(
+				PermissionCatalogue::CONTROL_KEYS,
+				[ObjectScopeResolver::SCOPE_KEY, self::ROLES_KEY]
+			)
+		);
+
+		if (in_array($action, $remaining, true) === true) {
 			return true;
 		}
 

@@ -39,7 +39,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Bpmn;
 
 use DOMDocument;
-use LibXMLError;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 
 /**
@@ -128,13 +127,11 @@ class BpmnSchemaValidator {
 			return null;
 		}
 
-		$first = null;
-		foreach ($errors as $error) {
-			if (($error instanceof LibXMLError) === true) {
-				$first = $error;
-				break;
-			}
-		}
+		// `libxml_get_errors()` is typed `LibXMLError[]`, so the guard this
+		// loop used to carry could only ever be true and both analysers said
+		// so. An EMPTY list is the real case to answer: a validation that
+		// failed while libxml recorded nothing.
+		$first = ($errors[0] ?? null);
 
 		if ($first === null) {
 			return [

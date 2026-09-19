@@ -64,6 +64,11 @@ class ViewsControllerTest extends TestCase {
 		$view->setIsPublic(false);
 		$view->setIsDefault(false);
 		$view->setQuery(['registers' => []]);
+		// The caller owns it. Without an owner the field guard on update()
+		// and patch() reads the caller as a stranger and refuses everything,
+		// which is correct behaviour and was hiding behind a guard that had
+		// no call site.
+		$view->setOwner('testuser');
 		return $view;
 	}
 
@@ -160,6 +165,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateSuccess(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
@@ -175,6 +182,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateNotFound(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
@@ -485,6 +494,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateMissingName(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'query' => ['registers' => [1]],
 		]);
@@ -497,6 +508,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateMissingQuery(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated View',
 		]);
@@ -509,6 +522,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateWithConfiguration(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated Config View',
 			'description' => 'Updated desc',
@@ -555,6 +570,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateException(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Fail Update',
 			'query' => ['registers' => [1]],
@@ -574,6 +591,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateWithEmptyName(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => '',
 			'query' => ['registers' => [1]],
@@ -876,6 +895,8 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateWithInvalidPresentationReturns400(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Kanban View',
 			'query' => ['registers' => [1], 'schemas' => [2]],
@@ -1080,5 +1101,94 @@ class ViewsControllerTest extends TestCase {
 			$contents
 		);
 		$this->assertDoesNotMatchRegularExpression("/'views#(moveCard|dragCard|move|drag)'/i", $contents);
+	}
+
+	/**
+	 * A view someone else published is not a view anyone may rewrite.
+	 *
+	 * `ViewService::update()` resolves through `find($id, $owner)`, which
+	 * admits the owner OR any caller when `isPublic` is true. So before the
+	 * field guard was wired, any authenticated account could rename another
+	 * user's shared view, rewrite its query or un-publish it, and the write
+	 * succeeded with a 200.
+	 *
+	 * @return void
+	 */
+	public function testAStrangerMayNotRewriteSomeoneElsesPublicView(): void {
+		$this->mockAuthenticatedUser('intruder');
+
+		$published = $this->createViewEntity();
+		$published->setOwner('someone-else');
+		$published->setIsPublic(true);
+		$this->viewService->method('find')->willReturn($published);
+		$this->viewService->method('update')->willReturn($published);
+
+		$this->request->method('getParams')->willReturn(
+			[
+				'name' => 'Renamed by a stranger',
+				'isPublic' => false,
+				'query' => ['registers' => [1]],
+			]
+		);
+
+		$result = $this->controller->update('1');
+
+		$this->assertEquals(403, $result->getStatus());
+		$this->assertSame(
+			['name', 'isPublic', 'query'],
+			$result->getData()['fields'],
+			'the refusal must name the fields, so the member is told which one was refused'
+		);
+	}
+
+	/**
+	 * The same view, the same stranger, the other verb.
+	 *
+	 * `patch()` carries `@NoCSRFRequired` as well, so guarding only `update()`
+	 * would have left the hole open behind a verb that is easier to reach.
+	 *
+	 * @return void
+	 */
+	public function testAStrangerMayNotPatchSomeoneElsesPublicView(): void {
+		$this->mockAuthenticatedUser('intruder');
+
+		$published = $this->createViewEntity();
+		$published->setOwner('someone-else');
+		$published->setIsPublic(true);
+		$this->viewService->method('find')->willReturn($published);
+		$this->viewService->method('update')->willReturn($published);
+
+		$this->request->method('getParams')->willReturn(['name' => 'Renamed by a stranger']);
+
+		$result = $this->controller->patch('1');
+
+		$this->assertEquals(403, $result->getStatus());
+		$this->assertSame(['name'], $result->getData()['fields']);
+	}
+
+	/**
+	 * The control: the owner still writes their own view.
+	 *
+	 * Without it the two tests above would pass on a guard that refused
+	 * everybody, which is the failure mode a field guard invites.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerStillWritesTheirOwnPublicView(): void {
+		$this->mockAuthenticatedUser();
+
+		$own = $this->createViewEntity();
+		$own->setIsPublic(true);
+		$this->viewService->method('find')->willReturn($own);
+		$this->viewService->method('update')->willReturn($own);
+
+		$this->request->method('getParams')->willReturn(
+			[
+				'name' => 'Renamed by its owner',
+				'query' => ['registers' => [1]],
+			]
+		);
+
+		$this->assertEquals(200, $this->controller->update('1')->getStatus());
 	}
 }
