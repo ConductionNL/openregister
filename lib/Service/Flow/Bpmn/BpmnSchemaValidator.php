@@ -293,15 +293,17 @@ class BpmnSchemaValidator {
 			};
 		}
 
-		$blocked = $this->entityLoadingIsBlocked();
+		$blocking = null;
+		if ($this->entityLoadingIsBlocked() === true) {
+			$blocking = static fn (): mixed => null;
+		}
 
-		return static function () use ($blocked): void {
-			if ($blocked === true) {
-				libxml_set_external_entity_loader(static fn (): mixed => null);
-				return;
-			}
-
-			libxml_set_external_entity_loader(null);
+		return static function () use ($blocking): void {
+			// The result is captured and dropped because psalm reads a
+			// discarded `libxml_set_external_entity_loader(<literal>)` as a
+			// call nobody uses; it is made for its side effect.
+			$replaced = libxml_set_external_entity_loader($blocking);
+			unset($replaced);
 		};
 	}//end entityLoaderRestore()
 
