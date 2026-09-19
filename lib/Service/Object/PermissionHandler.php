@@ -2973,6 +2973,30 @@ class PermissionHandler {
 				continue;
 			}
 
+			// 🔴 A CONTROL KEY THAT HAPPENS TO BE AN ARRAY IS NOT A RULE LIST,
+			// and reading it as one does not fail — it REINDEXES. The reindex
+			// is what made the whole department matrix inert: `matrix` is the
+			// map `{field, userSource, rows}`, `stripMcpFromRuleList()` walks
+			// its VALUES and appends them to a fresh list, and what reached
+			// `compileDepartmentMatrix()` was `['department', {...}, [...]]`
+			// with every key gone. `$matrix['field']` was then absent,
+			// `compile()` returned nothing, `merge()` left the block alone, and
+			// the schema ended up granting `read` to nobody at all. Measured on
+			// a live instance 2026-09-19: an identical rule written by hand as
+			// a conditional scope narrowed the list correctly, and the same
+			// rule expressed as a matrix admitted no one.
+			//
+			// `roles` has exactly the same shape and was losing its role names
+			// the same way.
+			//
+			// The comment above about carrying control keys through untouched
+			// was already the intent; it only covered the ones that are not
+			// arrays.
+			if (in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true) {
+				$stripped[$key] = $rules;
+				continue;
+			}
+
 			$stripped[$key] = self::stripMcpFromRuleList(rules: $rules);
 		}//end foreach
 

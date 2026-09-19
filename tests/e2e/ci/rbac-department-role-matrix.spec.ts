@@ -101,9 +101,18 @@ test.describe('a department by role matrix', () => {
 		return joined.status() !== 404
 	}
 
-	/** Create one object of the fixture schema, in one department. */
+	/**
+	 * Create one object of the fixture schema, in one department.
+	 *
+	 * 🔴 SEEDED BY THE ADMINISTRATOR, NOT BY `owner`. An object's owner reads
+	 * it by ownership, before any rule is consulted, so a fixture `owner`
+	 * created could never be withheld from them and the narrowing this suite
+	 * exists to prove was untestable: with the matrix fully working, `owner`
+	 * still saw both departments. The probing principal must hold nothing but
+	 * the grant under test.
+	 */
 	async function seed(key: string, department: string): Promise<string> {
-		const res = await owner.post(
+		const res = await admin.post(
 			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}`,
 			{ data: { key, department } },
 		)
@@ -169,8 +178,8 @@ test.describe('a department by role matrix', () => {
 					},
 				},
 				authorization: {
-					// The owner still needs to be able to seed the fixture, and
-					// `create` is not what the matrix narrows.
+					// The fixture still has to be seedable, and `create` is not
+					// what the matrix narrows.
 					create: ['authenticated'],
 					update: [`group:${ROLE_GROUP}`],
 					matrix: {

@@ -2412,6 +2412,14 @@ class SchemaMapper extends QBMapper {
 			[
 				'properties' => ($schema->getProperties() ?? []),
 				'slug' => (string)($schema->getSlug() ?? ''),
+				// The id and the uuid, because the import path rewrites every
+				// `$ref` to the resolved schema id before the schema reaches
+				// this validator. Without them a self-reference that was
+				// written as the slug arrives here as "169" and the whole
+				// schema is refused. See identitiesOf().
+				'id' => (string)($schema->getId() ?? ''),
+				'uuid' => (string)($schema->getUuid() ?? ''),
+				'title' => (string)($schema->getTitle() ?? ''),
 				HierarchyGrantExpander::ANNOTATION => $annotation,
 			]
 		);

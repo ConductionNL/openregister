@@ -120,6 +120,14 @@ test.describe('a grant on a parent reaches its children', () => {
 		// `parentObject` references THIS schema, which is what the annotation
 		// validator requires and what makes the edge a hierarchy rather than a
 		// path into somebody else's data.
+		//
+		// The reference is the target's SLUG, not its title. That is what
+		// `$ref` carries everywhere in this app (`concept`, `conceptScheme` in
+		// the shipped registers) and what HierarchyAnnotationValidator compares
+		// against. Writing the title here read as a reference to a different
+		// schema, and the only reason it ever got past the save is that the
+		// annotation was being dropped before the validator saw it.
+		const schemaSlug = `e2e-hierarchy-schema-${RUN}`
 		const sch = await admin.post('/index.php/apps/openregister/api/schemas', {
 			data: {
 				title: `e2e hierarchy schema ${RUN}`,
@@ -129,7 +137,7 @@ test.describe('a grant on a parent reaches its children', () => {
 					parentObject: {
 						type: 'string',
 						title: 'Parent',
-						$ref: `e2e hierarchy schema ${RUN}`,
+						$ref: schemaSlug,
 					},
 				},
 				// A non-empty block fails closed for every action it does not

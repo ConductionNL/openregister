@@ -30,7 +30,9 @@ use JsonSerializable;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
@@ -1309,6 +1311,31 @@ class Schema extends Entity implements JsonSerializable {
 
 		if ($action === self::ROLES_KEY) {
 			$this->validateRolesAssignment(roles: $value, context: $context);
+			return true;
+		}
+
+		// 🔴 EVERY OTHER CONTROL KEY, taken from the ONE list that already
+		// names them. `PermissionCatalogue::CONTROL_KEYS` exists precisely to
+		// say which keys of an authorization block are settings rather than
+		// verbs, and it carries two comments recording what happens when a
+		// control key is read as a verb. This method had its own private copy
+		// of that knowledge — three keys of it — so `matrix`, `deny`, `public`
+		// and the token-grant marker fell through to the CRUD-verb check and
+		// the SAVE was refused with "Invalid authorization action 'matrix'".
+		// Measured on a live instance 2026-09-19: the whole of
+		// rbac-department-role-matrix was unreachable over HTTP for that
+		// reason, while every unit test of the compiler passed because none of
+		// them crosses this validator.
+		//
+		// Reading the list instead of repeating it is the fix, not adding four
+		// names: a fifth control key added to the catalogue tomorrow would
+		// otherwise break the save again in exactly this way.
+		//
+		// Accepting the key here is not accepting its SHAPE. Each control has
+		// its own validator at save time — SchemaMapper::validateDepartmentMatrix()
+		// for the matrix, AuthorizationDenyValidator for `deny` — and those
+		// refuse a malformed block with a message about the block.
+		if (in_array($action, PermissionCatalogue::CONTROL_KEYS, true) === true) {
 			return true;
 		}
 
@@ -3196,6 +3223,19 @@ class Schema extends Entity implements JsonSerializable {
 		// missing CONTROL rather than a missing feature, which is the worst
 		// member of the silent no-op class this list exists to prevent.
 		'x-openregister-validations',
+		// The edge a GRANT travels down: which property points at the parent,
+		// and which actions descend. Read by HierarchyGrantExpander and
+		// refused at save by SchemaMapper::validateHierarchyAnnotation().
+		//
+		// ⚠️ It was absent from this list, and that is the seventh time the
+		// trap the comments above describe actually fired. setConfiguration()
+		// DROPPED the block, so `getConfiguration()` answered null, the
+		// save-time validator returned early on a key that could never be
+		// there, and the expander found nothing to descend: a grant on a root
+		// stopped at the root while its author read a 201. Measured on a live
+		// instance 2026-09-19 — POST with the annotation returned 201 and the
+		// configuration column was empty.
+		HierarchyGrantExpander::ANNOTATION,
 	];
 
 	/**

@@ -85,6 +85,14 @@ class HierarchyDescender {
 	private array $columns = [];
 
 	/**
+	 * Every table on the instance with its columns, for the lifetime of one
+	 * request, or null before it has been read.
+	 *
+	 * @var array<string, string[]>|null
+	 */
+	private ?array $tables = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database.
@@ -132,23 +140,40 @@ class HierarchyDescender {
 			$parentColumn = $this->columnFor(property: $declaration['parent']);
 
 			foreach ($registers as $register) {
-				if ($this->registerHolds(register: $register, schemaId: $schemaId) === false) {
-					continue;
-				}
-
+				// 🔴 THE TABLE IS THE AUTHORITY, NOT THE REGISTER'S `schemas`
+				// LIST. That list is only filled by the paths that attach a
+				// schema to a register explicitly; a register created over the
+				// API and written to directly keeps an EMPTY list while its
+				// magic table fills with objects. Gating on the list therefore
+				// answered "no register holds this schema" for every schema on
+				// such a register, `hierarchicalTables()` returned nothing, and
+				// inheritance was inert with no error and no warning — measured
+				// on a live instance 2026-09-19, where register 34 held four
+				// objects of schema 987 and its `schemas` column was empty.
+				//
+				// The existence of `openregister_table_<register>_<schema>`
+				// carrying the parent column says the same thing the list was
+				// being asked to say, and says it from the storage rather than
+				// from bookkeeping beside it.
 				$table = MagicMapper::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
 				if ($this->tableHasColumn(table: $table, column: $parentColumn) === false) {
-					$this->logger->warning(
-						message: '[HierarchyDescender] A schema declares a parent property its table does not carry; nothing is inherited for it',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaId' => $schemaId,
-							'property' => $declaration['parent'],
-							'column' => $parentColumn,
-							'table' => $table,
-						]
-					);
+					// Only worth saying when the register DOES claim the
+					// schema: a table that is simply not there is the ordinary
+					// case for every other register on the instance.
+					if ($this->registerHolds(register: $register, schemaId: $schemaId) === true) {
+						$this->logger->warning(
+							message: '[HierarchyDescender] A schema declares a parent property its table does not carry; nothing is inherited for it',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'schemaId' => $schemaId,
+								'property' => $declaration['parent'],
+								'column' => $parentColumn,
+								'table' => $table,
+							]
+						);
+					}
+
 					continue;
 				}
 
@@ -397,42 +422,67 @@ class HierarchyDescender {
 	 */
 	private function tableHasColumn(string $table, string $column): bool {
 		if (array_key_exists($table, $this->columns) === false) {
-			try {
+			$this->columns[$table] = [];
+			foreach ($this->everyTable() as $name => $columns) {
 				// 🔴 NOT `IDBConnection::getPrefix()`. OCP exposes no such
 				// method: calling it is a runtime Error, and because the catch
-				// below takes every Throwable, this whole lookup answered "the
-				// table carries no columns" on every call. A hierarchy grant
-				// then silently stopped descending, with a warning in the log
-				// and nothing on screen. The prefix is discovered from the
-				// schema instead, by matching the table's own name.
-				$schemaManager = $this->db->createSchema();
-				$this->columns[$table] = [];
-				foreach ($schemaManager->getTables() as $candidate) {
-					$name = (string)$candidate->getName();
-					if ($name !== $table && str_ends_with($name, '_' . $table) === false) {
-						continue;
-					}
-
-					$this->columns[$table] = array_map(
-						static fn (object $c): string => strtolower((string)$c->getName()),
-						$candidate->getColumns()
-					);
-					break;
+				// in everyTable() takes every Throwable, this whole lookup
+				// answered "the table carries no columns" on every call. A
+				// hierarchy grant then silently stopped descending, with a
+				// warning in the log and nothing on screen. The prefix is
+				// discovered from the schema instead, by matching the table's
+				// own name.
+				if ($name !== $table && str_ends_with($name, '_' . $table) === false) {
+					continue;
 				}
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[HierarchyDescender] Could not read a table\'s columns; treating it as carrying none',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'table' => $table,
-						'exception' => $e->getMessage(),
-					]
-				);
-				$this->columns[$table] = [];
+
+				$this->columns[$table] = $columns;
+				break;
 			}
 		}
 
 		return in_array(strtolower($column), $this->columns[$table], true);
 	}//end tableHasColumn()
+
+	/**
+	 * Every table on the instance, with its column names, read ONCE.
+	 *
+	 * `IDBConnection::createSchema()` introspects the whole database, which on
+	 * an instance carrying a magic table per register-and-schema pair is
+	 * hundreds of tables. Calling it per candidate table, as this class did
+	 * while the register list was pre-filtering the candidates down to one or
+	 * two, is affordable only for as long as that pre-filter holds — and the
+	 * pre-filter was the bug. One call per request is what makes asking the
+	 * database directly cheap enough to be the authority.
+	 *
+	 * @return array<string, string[]> Table name => lower-cased column names.
+	 */
+	private function everyTable(): array {
+		if ($this->tables !== null) {
+			return $this->tables;
+		}
+
+		$this->tables = [];
+
+		try {
+			foreach ($this->db->createSchema()->getTables() as $candidate) {
+				$this->tables[(string)$candidate->getName()] = array_map(
+					static fn (object $c): string => strtolower((string)$c->getName()),
+					$candidate->getColumns()
+				);
+			}
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[HierarchyDescender] Could not read the instance\'s tables; nothing is inherited this request',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => $e->getMessage(),
+				]
+			);
+			$this->tables = [];
+		}
+
+		return $this->tables;
+	}//end everyTable()
 }//end class

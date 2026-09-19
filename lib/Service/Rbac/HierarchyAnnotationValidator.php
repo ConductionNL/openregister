@@ -120,7 +120,7 @@ class HierarchyAnnotationValidator {
 			$this->checkParentProperty(
 				parent: $parent,
 				properties: $declaredProperties,
-				slug: trim((string)($schema['slug'] ?? ''))
+				identities: self::identitiesOf(schema: $schema)
 			)
 		);
 
@@ -167,11 +167,11 @@ class HierarchyAnnotationValidator {
 	 *
 	 * @param string $parent The declared property name.
 	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param string $slug This schema's slug.
+	 * @param array<int, string> $identities Every spelling that names THIS schema.
 	 *
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 */
-	private function checkParentProperty(string $parent, array $properties, string $slug): array {
+	private function checkParentProperty(string $parent, array $properties, array $identities): array {
 		$property = ($properties[$parent] ?? null);
 		if (is_array($property) === false) {
 			return [
@@ -197,7 +197,7 @@ class HierarchyAnnotationValidator {
 			];
 		}
 
-		if ($slug !== '' && $this->targetsSelf(target: $target, slug: $slug) === false) {
+		if ($identities !== [] && $this->targetsSelf(target: $target, identities: $identities) === false) {
 			return [
 				$this->error(
 					code: 'hierarchy.foreign-reference',
@@ -211,20 +211,59 @@ class HierarchyAnnotationValidator {
 	}//end checkParentProperty()
 
 	/**
+	 * Every spelling by which a `$ref` can name this schema.
+	 *
+	 * 🔴 THE SLUG IS NOT THE ONLY ONE, and assuming it was cost dossiq its
+	 * whole case register. `Configuration\ImportHandler` REWRITES every `$ref`
+	 * from the slug the file carries to the schema's numeric id once the
+	 * target is known, so dossiq ships `"$ref": "case"` on the `case` schema
+	 * and this validator was handed `"$ref": "169"`. Comparing that to `case`
+	 * refused the import of a declaration that is perfectly correct as
+	 * written, and the refusal is total: the whole schema fails to import.
+	 * Measured on a live instance 2026-09-19.
+	 *
+	 * The id and the uuid are therefore as much this schema's name as the slug
+	 * is. The title is here for the same reason both parent spellings are
+	 * accepted: an author who writes the human name has still named this
+	 * schema and nothing else.
+	 *
+	 * @param array<string, mixed> $schema The schema shape being validated.
+	 *
+	 * @return array<int, string> The identities, without empties.
+	 */
+	private static function identitiesOf(array $schema): array {
+		$identities = [];
+		foreach (['slug', 'id', 'uuid', 'title'] as $key) {
+			$value = ($schema[$key] ?? null);
+			if (is_string($value) === false && is_int($value) === false) {
+				continue;
+			}
+
+			$value = trim((string)$value);
+			if ($value !== '' && in_array($value, $identities, true) === false) {
+				$identities[] = $value;
+			}
+		}
+
+		return $identities;
+	}//end identitiesOf()
+
+	/**
 	 * Whether a reference target names this schema.
 	 *
-	 * A `$ref` is written as a bare slug in this app's own registers and as a
-	 * path in an imported one, so the tail is compared rather than the whole
-	 * string. Comparing the whole string would refuse a perfectly good
-	 * declaration on any schema that arrived through an import.
+	 * A `$ref` is written as a bare slug in this app's own registers, as the
+	 * numeric id after an import has resolved it, and as a path in an imported
+	 * one, so the tail is compared as well as the whole string. Comparing only
+	 * the whole string would refuse a perfectly good declaration on any schema
+	 * that arrived through an import.
 	 *
 	 * @param string $target The declared reference target.
-	 * @param string $slug This schema's slug.
+	 * @param array<int, string> $identities Every spelling that names this schema.
 	 *
 	 * @return bool True when the reference points at this schema.
 	 */
-	private function targetsSelf(string $target, string $slug): bool {
-		if ($target === $slug) {
+	private function targetsSelf(string $target, array $identities): bool {
+		if (in_array($target, $identities, true) === true) {
 			return true;
 		}
 
@@ -236,7 +275,7 @@ class HierarchyAnnotationValidator {
 
 		$tail = substr($target, $offset);
 
-		return ($tail === $slug);
+		return in_array($tail, $identities, true);
 	}//end targetsSelf()
 
 	/**
