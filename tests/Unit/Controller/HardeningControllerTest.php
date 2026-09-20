@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\HardeningController;
+use OCA\OpenRegister\Controller\HardeningStatementController;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
@@ -131,6 +132,44 @@ class HardeningControllerTest extends TestCase {
 			$this->reportService,
 			$this->settings,
 			new HardeningPolicy($appConfig),
+			$this->elevation,
+		);
+	}
+
+	/**
+	 * The statement surface, which moved to its own controller.
+	 *
+	 * Builds the ordinary controller first, purely so the shared
+	 * `$this->statements` and `$this->elevation` doubles are set up exactly as
+	 * every other test here expects them, then hands those to the statement
+	 * controller.
+	 *
+	 * @param array<string, mixed> $params   The request parameters.
+	 * @param string               $uid      The signed-in account, or '' for nobody.
+	 * @param boolean              $elevated Whether the fresh sign-in is in force.
+	 *
+	 * @return HardeningStatementController The controller.
+	 */
+	private function statementController(array $params = [], string $uid = 'admin', bool $elevated = true): HardeningStatementController {
+		$this->controller(body: $params, elevated: $elevated, uid: $uid);
+
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($params[$key] ?? $default)
+		);
+
+		$userSession = $this->createMock(IUserSession::class);
+		if ($uid !== '') {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($uid);
+			$userSession->method('getUser')->willReturn($user);
+		} else {
+			$userSession->method('getUser')->willReturn(null);
+		}
+
+		return new HardeningStatementController(
+			'openregister',
+			$request,
 			$this->statements,
 			$this->elevation,
 			$userSession,
@@ -296,7 +335,7 @@ class HardeningControllerTest extends TestCase {
 	// ---- REQ-IHC-001: the statement, and whose acceptance it is. -----------
 
 	public function testTheStatementAnswersAboutTheSessionsOwnAccount(): void {
-		$controller = $this->controller(uid: 'medewerker');
+		$controller = $this->statementController(uid: 'medewerker');
 		$this->statements->expects($this->once())
 			->method('needsAcceptance')
 			->with('medewerker')
@@ -316,7 +355,7 @@ class HardeningControllerTest extends TestCase {
 	 * A request naming somebody else changes nothing: the id is the session's.
 	 */
 	public function testAnAcceptanceIsRecordedAgainstTheSessionAndNotAgainstAUserIdInTheBody(): void {
-		$controller = $this->controller(['version' => '3', 'userId' => 'directeur'], uid: 'medewerker');
+		$controller = $this->statementController(['version' => '3', 'userId' => 'directeur'], uid: 'medewerker');
 		$this->statements->expects($this->once())
 			->method('accept')
 			->with('medewerker', '3')
@@ -329,14 +368,14 @@ class HardeningControllerTest extends TestCase {
 	}
 
 	public function testAnAnonymousCallerAcceptsNothing(): void {
-		$controller = $this->controller(['version' => '3'], uid: '');
+		$controller = $this->statementController(['version' => '3'], uid: '');
 		$this->statements->expects($this->never())->method('accept');
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->acceptStatement()->getStatus());
 	}
 
 	public function testPublishingAStatementIsAnAdministrationWriteAndNeedsTheFreshSignIn(): void {
-		$controller = $this->controller(['version' => '4', 'body' => 'text'], elevated: false);
+		$controller = $this->statementController(['version' => '4', 'body' => 'text'], elevated: false);
 		$this->statements->expects($this->never())->method('publish');
 
 		$response = $controller->publishStatement();
@@ -345,7 +384,7 @@ class HardeningControllerTest extends TestCase {
 	}
 
 	public function testWithdrawingAStatementNeedsTheFreshSignInToo(): void {
-		$controller = $this->controller([], elevated: false);
+		$controller = $this->statementController([], elevated: false);
 		$this->statements->expects($this->never())->method('withdraw');
 
 		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->withdrawStatement()->getStatus());
@@ -359,18 +398,31 @@ class HardeningControllerTest extends TestCase {
 	 * `#[NoAdminRequired]` added to one of them later fails here.
 	 */
 	public function testOnlyTheStatementReadAndTheAcceptanceAreOpenToAnOrdinaryAccount(): void {
-		$open = ['statement', 'acceptStatement'];
-		$closed = ['report', 'floors', 'updateControls', 'updateFloors', 'elevate', 'publishStatement', 'withdrawStatement'];
+		// The statement surface moved to its own controller; the posture did
+		// not move with it, and that is exactly what this asserts. `$open` and
+		// `$closed` are keyed by class so a method landing in the wrong one
+		// fails here rather than silently opening an administration write.
+		$open = [
+			HardeningStatementController::class => ['statement', 'acceptStatement'],
+		];
+		$closed = [
+			HardeningController::class => ['report', 'floors', 'updateControls', 'updateFloors', 'elevate'],
+			HardeningStatementController::class => ['publishStatement', 'withdrawStatement'],
+		];
 
-		foreach (array_merge($open, $closed) as $method) {
-			$attributes = (new \ReflectionMethod(HardeningController::class, $method))
-				->getAttributes(\OCP\AppFramework\Http\Attribute\NoAdminRequired::class);
+		foreach ([true => $open, false => $closed] as $expected => $byClass) {
+			foreach ($byClass as $class => $methods) {
+				foreach ($methods as $method) {
+					$attributes = (new \ReflectionMethod($class, $method))
+						->getAttributes(\OCP\AppFramework\Http\Attribute\NoAdminRequired::class);
 
-			$this->assertSame(
-				in_array($method, $open, true),
-				($attributes !== []),
-				sprintf('%s has the wrong auth posture', $method)
-			);
+					$this->assertSame(
+						(bool)$expected,
+						($attributes !== []),
+						sprintf('%s::%s has the wrong auth posture', $class, $method)
+					);
+				}
+			}
 		}
 	}
 }

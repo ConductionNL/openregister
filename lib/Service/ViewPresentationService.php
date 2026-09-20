@@ -218,7 +218,6 @@ class ViewPresentationService {
 	 * @param View $view The calendar view
 	 * @param string $rangeStart Inclusive range start (ISO 8601 date/datetime)
 	 * @param string $rangeEnd Inclusive range end (ISO 8601 date/datetime)
-	 * @param array<string, mixed> $requestParams Additional request params (reserved for future use)
 	 *
 	 * @return array{viewType: string, dateField: string, endDateField: string|null,
 	 *     rangeStart: string, rangeEnd: string, objects: array<int, mixed>, total: int}
@@ -227,10 +226,7 @@ class ViewPresentationService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
 	 */
-	public function getCalendarObjects(View $view, string $rangeStart, string $rangeEnd, array $requestParams = []): array {
-		// @spec exclude requestParams reserved for future filter passthrough; unused today.
-		unset($requestParams);
-
+	public function getCalendarObjects(View $view, string $rangeStart, string $rangeEnd): array {
 		$presentation = $view->getPresentation();
 		$viewType = $presentation['viewType'] ?? 'table';
 		if ($viewType !== 'calendar') {

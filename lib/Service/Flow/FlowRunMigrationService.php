@@ -75,29 +75,17 @@ class FlowRunMigrationService {
 	public const LOG_ENTRY = 'migrated';
 
 	/**
-	 * The statuses a run can be migrated in.
-	 *
-	 * 🔴 A FINISHED RUN IS NOT MIGRATED, IT IS REWRITTEN. Moving a completed or
-	 * failed run onto another version changes the record of what already
-	 * happened, which is the one thing a run log exists to prevent. Only a run
-	 * that still has somewhere to go can be moved.
-	 *
-	 * @var array<int, string>
-	 */
-	public const MIGRATABLE_STATUSES = ['queued', 'running', 'suspended', 'parked', 'waiting'];
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper     $runs     The run store.
-	 * @param FlowVersionService $versions The versions of a flow and their graphs.
-	 * @param FlowTimerMapper   $timers   Open timers of a run.
-	 * @param FlowTimerService  $timerService Supersession.
-	 * @param LoggerInterface   $logger   The logger.
+	 * @param FlowRunMapper               $runs         The run store.
+	 * @param FlowRunMigrationValidator   $validator    Whether a run fits the target version.
+	 * @param FlowTimerMapper             $timers       Open timers of a run.
+	 * @param FlowTimerService            $timerService Supersession.
+	 * @param LoggerInterface             $logger       The logger.
 	 */
 	public function __construct(
 		private readonly FlowRunMapper $runs,
-		private readonly FlowVersionService $versions,
+		private readonly FlowRunMigrationValidator $validator,
 		private readonly FlowTimerMapper $timers,
 		private readonly FlowTimerService $timerService,
 		private readonly LoggerInterface $logger,
@@ -106,6 +94,10 @@ class FlowRunMigrationService {
 
 	/**
 	 * Whether this run's marking fits the target, and where it would land.
+	 *
+	 * Delegated to {@see FlowRunMigrationValidator}, and kept here because the
+	 * migrate endpoint's own validate action and the two bulk paths below all
+	 * ask the question through this service.
 	 *
 	 * @param FlowRun               $run           The run.
 	 * @param int                   $targetVersion The version asked for.
@@ -116,109 +108,17 @@ class FlowRunMigrationService {
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	public function validate(FlowRun $run, int $targetVersion, array $mapping = []): array {
-		if (in_array((string)$run->getStatus(), self::MIGRATABLE_STATUSES, true) === false) {
-			return [
-				'ok' => false,
-				'marking' => [],
-				'unmapped' => [],
-				'reason' => 'This run is ' . (string)$run->getStatus()
-					. ', so there is nothing left to move. Migrating a finished run would rewrite what already happened.',
-			];
-		}
-
-		$nodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: $targetVersion);
-		if ($nodes === null) {
-			return [
-				'ok' => false,
-				'marking' => [],
-				'unmapped' => [],
-				'reason' => 'Version ' . $targetVersion . ' of this flow could not be read, so nothing was migrated.',
-			];
-		}
-
-		$sourceNodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: (int)$run->getFlowVersion());
-
-		['marking' => $marking, 'unmapped' => $unmapped] = $this->remapMarking(
-			run: $run,
-			nodes: $nodes,
-			sourceNodes: $sourceNodes,
-			mapping: $mapping
-		);
-
-		if ($unmapped !== []) {
-			$unmappedPronoun = 'them';
-			if (count($unmapped) === 1) {
-				$unmappedPronoun = 'it';
-			}
-
-			return [
-				'ok' => false,
-				'marking' => [],
-				'unmapped' => $unmapped,
-				'reason' => 'Version ' . $targetVersion . ' has nowhere for this run to land: '
-					. implode(', ', $unmapped) . '. Map ' . $unmappedPronoun
-					. ' to a node of the same kind, or leave the run where it is.',
-			];
-		}
-
-		return ['ok' => true, 'marking' => $marking, 'unmapped' => [], 'reason' => ''];
+		return $this->validator->validate(run: $run, targetVersion: $targetVersion, mapping: $mapping);
 	}//end validate()
 
 	/**
-	 * Where each token would land on the target version, and what would not.
-	 *
-	 * @param FlowRun               $run         The run.
-	 * @param array<string, mixed>  $nodes       The target version's nodes, by id.
-	 * @param array<string, mixed>|null $sourceNodes The run's own version's nodes, by id.
-	 * @param array<string, string> $mapping     Old node id to new node id.
-	 *
-	 * @return array{marking: array<string, int>, unmapped: array<int, string>} The remapped marking.
-	 *
-	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
-	 */
-	private function remapMarking(FlowRun $run, array $nodes, ?array $sourceNodes, array $mapping): array {
-		$marking = [];
-		$unmapped = [];
-
-		foreach ($this->markingOf(run: $run) as $place => $tokens) {
-			[$nodeId, $suffix] = $this->splitPlace(place: (string)$place);
-			$targetId = ($mapping[$nodeId] ?? $nodeId);
-
-			if (array_key_exists($targetId, $nodes) === false) {
-				$unmapped[] = (string)$place;
-				continue;
-			}
-
-			// THE KIND HAS TO MATCH TOO. A mapping that points a user task at a
-			// gateway would land a token somewhere the engine cannot resume
-			// from, and the run would park forever with nothing saying why.
-			// An UNKNOWN kind on either side is not a mismatch: a graph that
-			// does not declare one has nothing to disagree about.
-			$from = $this->kindOf(node: (($sourceNodes ?? [])[$nodeId] ?? []));
-			$to = $this->kindOf(node: $nodes[$targetId]);
-			if ($from !== '' && $to !== '' && $from !== $to) {
-				$unmapped[] = (string)$place;
-				continue;
-			}
-
-			$marking[$targetId . $suffix] = (int)$tokens;
-		}
-
-		return [
-			'marking' => $marking,
-			'unmapped' => $unmapped,
-		];
-	}//end remapMarking()
-
-	/**
-	 * Move one run to another version, or say what moving it would do.
+	 * Move one run to another version.
 	 *
 	 * @param string                $runUuid       The run.
 	 * @param int                   $targetVersion The version to move onto.
 	 * @param string                $reason        Why, recorded on the run.
 	 * @param string                $actor         Who asked.
 	 * @param array<string, string> $mapping       Old node id to new node id.
-	 * @param bool                  $dryRun        True to answer without writing.
 	 *
 	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
 	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
@@ -231,7 +131,77 @@ class FlowRunMigrationService {
 		string $reason,
 		string $actor,
 		array $mapping = [],
-		bool $dryRun = false,
+	): array {
+		return $this->perform(
+			runUuid: $runUuid,
+			targetVersion: $targetVersion,
+			reason: $reason,
+			actor: $actor,
+			mapping: $mapping,
+			dryRun: false
+		);
+	}//end migrate()
+
+	/**
+	 * Say what moving one run to another version would do, writing nothing.
+	 *
+	 * 🔑 THE SAME VALIDATOR SERVES BOTH ANSWERS (D-3). This runs the code the
+	 * apply runs, so what a UI shows before an administrator commits cannot
+	 * disagree with what happens when they do. It is a separate entry point
+	 * rather than `migrate(..., dryRun: true)` because a preview and a write
+	 * are two acts, and the flag that told them apart was the argument most
+	 * easily lost between the endpoint and here.
+	 *
+	 * @param string                $runUuid       The run.
+	 * @param int                   $targetVersion The version to move onto.
+	 * @param string                $reason        Why, for the answer's own record.
+	 * @param string                $actor         Who asked.
+	 * @param array<string, string> $mapping       Old node id to new node id.
+	 *
+	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
+	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	public function preview(
+		string $runUuid,
+		int $targetVersion,
+		string $reason,
+		string $actor,
+		array $mapping = [],
+	): array {
+		return $this->perform(
+			runUuid: $runUuid,
+			targetVersion: $targetVersion,
+			reason: $reason,
+			actor: $actor,
+			mapping: $mapping,
+			dryRun: true
+		);
+	}//end preview()
+
+	/**
+	 * The shared body of {@see self::migrate()} and {@see self::preview()}.
+	 *
+	 * @param string                $runUuid       The run.
+	 * @param int                   $targetVersion The version to move onto.
+	 * @param string                $reason        Why, recorded on the run.
+	 * @param string                $actor         Who asked.
+	 * @param array<string, string> $mapping       Old node id to new node id.
+	 * @param boolean               $dryRun        True to answer without writing.
+	 *
+	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
+	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function perform(
+		string $runUuid,
+		int $targetVersion,
+		string $reason,
+		string $actor,
+		array $mapping,
+		bool $dryRun,
 	): array {
 		$reason = trim($reason);
 		if ($reason === '' && $dryRun === false) {
@@ -309,7 +279,7 @@ class FlowRunMigrationService {
 			'unmapped' => [],
 			'reason' => $reason,
 		];
-	}//end migrate()
+	}//end perform()
 
 	/**
 	 * Move every run pinned to one version onto another, reporting per run.
@@ -509,120 +479,13 @@ class FlowRunMigrationService {
 				continue;
 			}
 
-			if (in_array((string)$run->getStatus(), self::MIGRATABLE_STATUSES, true) === true) {
+			if (in_array((string)$run->getStatus(), FlowRunMigrationValidator::MIGRATABLE_STATUSES, true) === true) {
 				$found[] = $run;
 			}
 		}
 
 		return $found;
 	}//end runsOnVersion()
-
-	/**
-	 * The nodes of one version, keyed by id, or null when unreadable.
-	 *
-	 * @param string $flowId  The flow.
-	 * @param int    $version The version.
-	 *
-	 * @return array<string, array<string, mixed>>|null The nodes.
-	 */
-	private function nodesOf(string $flowId, int $version): ?array {
-		$found = $this->versions->versionOf(flowUuid: $flowId, number: $version);
-		if ($found === null) {
-			return null;
-		}
-
-		$graph = $this->versions->graphOfVersion(version: $found);
-		if (is_array($graph) === false) {
-			return null;
-		}
-
-		$nodes = ($graph['nodes'] ?? []);
-		if (is_array($nodes) === false) {
-			return null;
-		}
-
-		$keyed = [];
-		foreach ($nodes as $key => $node) {
-			if (is_array($node) === false) {
-				continue;
-			}
-
-			$fallbackId = '';
-			if (is_string($key) === true) {
-				$fallbackId = $key;
-			}
-
-			$id = trim((string)($node['id'] ?? $fallbackId));
-			if ($id !== '') {
-				$keyed[$id] = $node;
-			}
-		}
-
-		return $keyed;
-	}//end nodesOf()
-
-	/**
-	 * The run's marking as `place => tokens`.
-	 *
-	 * The same normalisation {@see FlowRunMarkingStore} does, because a
-	 * hand-authored run can hold a list of place names instead of a map and a
-	 * migration that read only one shape would silently move nothing.
-	 *
-	 * @param FlowRun $run The run.
-	 *
-	 * @return array<string, int> The marking.
-	 */
-	private function markingOf(FlowRun $run): array {
-		$places = ($run->getMarking() ?? []);
-		if (is_array($places) === false) {
-			return [];
-		}
-
-		$normalised = [];
-		foreach ($places as $key => $value) {
-			if (is_int($key) === true) {
-				$normalised[(string)$value] = 1;
-				continue;
-			}
-
-			$normalised[(string)$key] = max(1, (int)$value);
-		}
-
-		return $normalised;
-	}//end markingOf()
-
-	/**
-	 * Split a place into its node id and its join suffix.
-	 *
-	 * A declared join holds one place per incoming edge, named
-	 * `<nodeId>#<edgeId>`. The suffix travels with the token: a join that is
-	 * still a join in the target is still waiting on the same edges, and
-	 * dropping the suffix would collapse a half-arrived join into one place and
-	 * fire it early.
-	 *
-	 * @param string $place The place.
-	 *
-	 * @return array{0: string, 1: string} The node id and the suffix.
-	 */
-	private function splitPlace(string $place): array {
-		$joinAt = strpos($place, FlowGraph::PLACE_JOIN);
-		if ($joinAt === false) {
-			return [$place, ''];
-		}
-
-		return [substr($place, 0, $joinAt), substr($place, $joinAt)];
-	}//end splitPlace()
-
-	/**
-	 * The kind of a node, or '' when it declares none.
-	 *
-	 * @param array<string, mixed> $node The node.
-	 *
-	 * @return string The kind.
-	 */
-	private function kindOf(array $node): string {
-		return trim((string)($node['type'] ?? ($node['kind'] ?? '')));
-	}//end kindOf()
 
 	/**
 	 * The run log with a `migrated` entry appended.

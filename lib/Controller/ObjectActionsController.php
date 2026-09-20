@@ -37,11 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\MacroActionBinding;
+use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -66,7 +63,7 @@ class ObjectActionsController extends Controller {
 	 * @param string            $appName     The app name.
 	 * @param IRequest          $request     The request.
 	 * @param ObjectService     $objects     Loads the subject.
-	 * @param SchemaMapper      $schemas     Loads the schema carrying the binding.
+	 * @param MacroActionResolver $macros      Resolves the schema and the binding this action declares.
 	 * @param PermissionHandler $permissions Decides whether the caller may do this.
 	 * @param FlowService       $flows       Queues and, by default, runs the flow.
 	 * @param IUserSession      $userSession The acting user.
@@ -76,7 +73,7 @@ class ObjectActionsController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
+		private readonly MacroActionResolver $macros,
 		private readonly PermissionHandler $permissions,
 		private readonly FlowService $flows,
 		private readonly IUserSession $userSession,
@@ -109,7 +106,7 @@ class ObjectActionsController extends Controller {
 			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
 		}
 
-		$subjectSchema = $this->loadSchema(schema: (string)$object->getSchema());
+		$subjectSchema = $this->macros->loadSchema(schema: (string)$object->getSchema());
 		if ($subjectSchema === null) {
 			return new JSONResponse(['error' => 'No such schema'], Http::STATUS_NOT_FOUND);
 		}
@@ -132,7 +129,7 @@ class ObjectActionsController extends Controller {
 			);
 		}
 
-		$binding = $this->bindingFor(schema: $subjectSchema, action: $action);
+		$binding = $this->macros->bindingFor(schema: $subjectSchema, action: $action);
 		if ($binding === null) {
 			// Not a macro. Distinct from "you may not": the action exists or
 			// does not, and either way no flow is bound to it here.
@@ -170,63 +167,9 @@ class ObjectActionsController extends Controller {
 				'run' => (string)$run->getUuid(),
 				'outcome' => (string)$run->getStatus(),
 				'action' => $action,
-				'next' => $this->nextFor(flowUuid: $binding->flow),
+				'next' => $this->macros->nextFor(flowUuid: $binding->flow),
 			]
 		);
 	}//end invoke()
 
-	/**
-	 * The macro binding a schema declares for this action.
-	 *
-	 * Read from the DECLARATIONS, never from what the request asked for: a
-	 * caller naming an action the schema does not bind gets a refusal, not a
-	 * flow of their choosing.
-	 *
-	 * @param Schema $schema The subject's schema.
-	 * @param string $action The action.
-	 *
-	 * @return MacroActionBinding|null The binding.
-	 */
-	private function bindingFor(Schema $schema, string $action): ?MacroActionBinding {
-		foreach (MacroActionBinding::parse(configuration: ($schema->getConfiguration() ?? [])) as $binding) {
-			if ($binding->action === $action) {
-				return $binding;
-			}
-		}
-
-		return null;
-	}//end bindingFor()
-
-	/**
-	 * The `next` hint the flow declares.
-	 *
-	 * @param string $flowUuid The flow.
-	 *
-	 * @return string One of FlowNextHint::HINTS.
-	 */
-	private function nextFor(string $flowUuid): string {
-		try {
-			return FlowNextHint::declared(nodes: ($this->flows->find(uuid: $flowUuid)->getNodes() ?? []));
-		} catch (\Throwable) {
-			// A hint nobody can read is `stay`, which is what happened before
-			// hints existed and is the only answer that cannot move somebody
-			// somewhere they did not ask to go.
-			return FlowNextHint::STAY;
-		}
-	}//end nextFor()
-
-	/**
-	 * Load a schema by id or slug.
-	 *
-	 * @param string $schema The schema identifier.
-	 *
-	 * @return Schema|null The schema.
-	 */
-	private function loadSchema(string $schema): ?Schema {
-		try {
-			return $this->schemas->find($schema, _multitenancy: false, _rbac: false);
-		} catch (\Throwable) {
-			return null;
-		}
-	}//end loadSchema()
 }//end class

@@ -249,11 +249,30 @@ class FlowRunAuthorizationTest extends TestCase {
 		$paths = [
 			'FlowService::run() — which FlowController::run() and ObjectActionsController call'
 				=> '/Service/Flow/FlowService.php',
-			'FlowRunController::test() and retry(), through refuseUnlessRunnable()'
-				=> '/Controller/FlowRunController.php',
+			'FlowRunController::retry()/resume(), FlowRunMigrationController and '
+			. 'FlowTestRunController, all through FlowRunnableGuard::refusalUnlessRunnable()'
+				=> '/Service/Flow/FlowRunnableGuard.php',
 			'FlowMcpToolProvider::runFlow(), through its own assertRunnable()'
 				=> '/Mcp/BuiltIn/FlowMcpToolProvider.php',
 		];
+
+		// The three endpoints that used to hold the check inline now reach it
+		// through the guard, so each of them is asserted to CALL the guard. A
+		// controller that stops calling it is the same regression as one that
+		// stops calling `assertRunnable` directly.
+		$callers = [
+			'FlowRunController::retry()/resume()' => '/Controller/FlowRunController.php',
+			'FlowRunMigrationController' => '/Controller/FlowRunMigrationController.php',
+			'FlowTestRunController::test()' => '/Controller/FlowTestRunController.php',
+		];
+
+		foreach ($callers as $what => $file) {
+			$this->assertStringContainsString(
+				'refusalUnlessRunnable',
+				(string)file_get_contents($lib . $file),
+				sprintf('%s no longer asks who may run this flow.', $what)
+			);
+		}
 
 		foreach ($paths as $what => $file) {
 			$source = (string)file_get_contents($lib . $file);

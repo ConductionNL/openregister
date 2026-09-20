@@ -187,6 +187,7 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
@@ -474,6 +475,22 @@ class Application extends App implements IBootstrap {
 			FlowRunAuthorization::class,
 			static function ($c) {
 				return new FlowRunAuthorization(
+					access: $c->get(\OCA\OpenRegister\Service\Flow\FlowAccess::class),
+				);
+			}
+		);
+
+		// 🔴 THE RUN AND EDIT GUARD IS REGISTERED EXPLICITLY, for the reason
+		// directly above. Both of its collaborators are nullable and both
+		// absences fail CLOSED, so a container that quietly declined to build
+		// one of them would refuse every run and every test run with no error
+		// anywhere saying why. A named registration turns that into a loud
+		// container error instead.
+		$context->registerService(
+			FlowRunnableGuard::class,
+			static function ($c) {
+				return new FlowRunnableGuard(
+					flows: $c->get(\OCA\OpenRegister\Service\Flow\FlowService::class),
 					access: $c->get(\OCA\OpenRegister\Service\Flow\FlowAccess::class),
 				);
 			}

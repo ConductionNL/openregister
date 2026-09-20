@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -139,7 +140,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 	private function service(?FlowTimerService $timerService = null): FlowRunMigrationService {
 		return new FlowRunMigrationService(
 			$this->runs,
-			$this->versions,
+			new FlowRunMigrationValidator(versions: $this->versions),
 			$this->timers,
 			($timerService ?? $this->createMock(FlowTimerService::class)),
 			new NullLogger()
@@ -305,13 +306,12 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		// The assertion that matters: not that it returned, that it never wrote.
 		$this->runs->expects(self::never())->method('update');
 
-		$outcome = $this->service()->migrate(
+		$outcome = $this->service()->preview(
 			runUuid: self::RUN,
 			targetVersion: 3,
 			reason: '',
 			actor: 'anna',
 			mapping: ['review' => 'assess'],
-			dryRun: true,
 		);
 
 		self::assertTrue($outcome['dryRun']);

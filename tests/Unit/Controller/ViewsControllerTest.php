@@ -6,12 +6,14 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ViewsController;
 use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\ViewPresentationService;
 use OCA\OpenRegister\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
-use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -22,9 +24,21 @@ class ViewsControllerTest extends TestCase {
 	private IRequest&MockObject $request;
 	private ViewService&MockObject $viewService;
 	private ViewPresentationService&MockObject $viewPresentationService;
-	private IUserSession&MockObject $userSession;
 	private LoggerInterface&MockObject $logger;
+	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
+
+	/**
+	 * The REAL reach resolver, over mocked Nextcloud collaborators.
+	 *
+	 * Not a double. The field guard `update()` and `patch()` lean on lives
+	 * inside it now, and a double would answer "nothing refused" to every
+	 * call, which is what a stranger rewriting somebody else's public view
+	 * looks like from the outside.
+	 *
+	 * @var ViewerReachResolver
+	 */
+	private ViewerReachResolver $viewers;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -32,18 +46,22 @@ class ViewsControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->viewService = $this->createMock(ViewService::class);
 		$this->viewPresentationService = $this->createMock(ViewPresentationService::class);
-		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->viewers = new ViewerReachResolver(
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			logger: $this->logger
+		);
 
 		$this->controller = new ViewsController(
 			'openregister',
 			$this->request,
 			$this->viewService,
 			$this->viewPresentationService,
-			$this->userSession,
 			$this->logger,
-			$this->groupManager
+			$this->viewers
 		);
 	}
 
@@ -94,6 +112,41 @@ class ViewsControllerTest extends TestCase {
 		$this->assertCount(1, $data['results']);
 		$this->assertEquals(1, $data['total']);
 	}
+
+	/**
+	 * The list is answered for the caller the controller actually read.
+	 *
+	 * `findAllFor()` used to take `(userId, userGroups, bool $isAdmin = false)`
+	 * and the controller passed an untyped `['groups' => ..., 'isAdmin' => ...]`
+	 * array into it. Either half could be dropped and the call still compiled;
+	 * it just answered the narrow list. The reach now arrives as one
+	 * {@see ViewerReach} with no defaults, so this pins that what
+	 * {@see ViewerReachResolver::reachOf()} answered is what the list was
+	 * asked for.
+	 *
+	 * @return void
+	 */
+	public function testTheListIsAskedForWithTheCallersFullReach(): void {
+		$this->mockAuthenticatedUser();
+		$this->groupManager->method('isAdmin')->with('testuser')->willReturn(true);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['staff', 'archive']);
+		$this->request->method('getParams')->willReturn([]);
+
+		$seen = null;
+		$this->viewService->expects($this->once())
+			->method('findAllFor')
+			->willReturnCallback(function (ViewerReach $reach) use (&$seen): array {
+				$seen = $reach;
+				return [];
+			});
+
+		$this->controller->index();
+
+		$this->assertInstanceOf(ViewerReach::class, $seen);
+		$this->assertSame('testuser', $seen->userId);
+		$this->assertSame(['staff', 'archive'], $seen->groups);
+		$this->assertTrue($seen->isAdmin, 'an administrator must not be narrowed to their own views');
+	}//end testTheListIsAskedForWithTheCallersFullReach()
 
 	public function testShowNotAuthenticated(): void {
 		$this->userSession->method('getUser')->willReturn(null);

@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowRunController;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
@@ -78,7 +79,8 @@ class FlowRunSignalByKeyTest extends TestCase {
 			resolvers: $this->createMock(FlowLocator::class),
 			userSession: $userSession,
 			organisationService: $this->createMock(OrganisationService::class),
-			flows: $this->flows
+			guard: new FlowRunnableGuard(flows: $this->flows, access: null),
+			flowOwnership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowCaller::class)
 		);
 	}//end setUp()
 

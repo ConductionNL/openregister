@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
@@ -58,11 +59,16 @@ class ObjectActionsControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
+		// The REAL resolver over the same two doubles the controller used to
+		// take directly. It reads the schema's own declarations, and a double
+		// of it would answer whatever a test asked for — including a binding
+		// the schema never declared, which is the refusal these tests exist
+		// to pin.
 		$this->controller = new ObjectActionsController(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->objects,
-			$this->schemas,
+			new MacroActionResolver(schemas: $this->schemas, flows: $this->flows),
 			$this->permissions,
 			$this->flows,
 			$session,

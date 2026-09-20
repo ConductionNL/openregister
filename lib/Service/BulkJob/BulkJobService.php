@@ -220,7 +220,7 @@ class BulkJobService {
 	): BulkJob {
 		$action = $this->registry->get(id: $actionId);
 		$action->validateParameters(parameters: $parameters);
-		$this->assertScope(registerId: $registerId, schemaId: $schemaId);
+		$this->guards()->assertScope(registerId: $registerId, schemaId: $schemaId);
 
 		$selectionType = $this->selectionTypeOf(selection: $selection);
 		$ceiling = $this->getCeiling();
@@ -233,11 +233,11 @@ class BulkJobService {
 			ceiling: $ceiling
 		);
 
-		$this->assertCeiling(count: count($uuids), ceiling: $ceiling);
+		$this->guards()->assertCeiling(count: count($uuids), ceiling: $ceiling);
 
 		$objects = $this->resolver->hydrate(uuids: $uuids, registerId: $registerId, schemaId: $schemaId);
 		$this->executor->assertGuards(action: $action, objects: $objects);
-		$this->assertUndoCeiling(action: $action, objects: $objects, parameters: $parameters);
+		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $parameters);
 
 		$window = null;
 		$until = null;
@@ -300,7 +300,7 @@ class BulkJobService {
 		}
 
 		$action = $this->registry->get(id: (string)$job->getAction());
-		$this->assertJustification(action: $action, job: $job);
+		$this->guards()->assertJustification(action: $action, job: $job);
 
 		if ($job->getSelectionType() === BulkJob::SELECTION_QUERY) {
 			$this->reconcileQuerySelection(job: $job, action: $action);
@@ -513,137 +513,6 @@ class BulkJobService {
 	}//end members()
 
 	/**
-	 * Refuse a job that does not say which register and schema it acts on.
-	 *
-	 * The object search resolves its table from the register and the schema,
-	 * and answers an EMPTY LIST rather than an error when it has neither. A
-	 * job without a scope would therefore hydrate nothing, report every
-	 * member as not visible, and look like a working job over an unlucky
-	 * selection. Refusing it here is the difference between an error and a
-	 * confident wrong answer.
-	 *
-	 * @param int|null $registerId The register.
-	 * @param int|null $schemaId The schema.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When either is missing.
-	 */
-	private function assertScope(?int $registerId, ?int $schemaId): void {
-		if ($registerId !== null && $schemaId !== null) {
-			return;
-		}
-
-		throw new InvalidArgumentException(
-			'A bulk job needs both a register and a schema. The object search resolves its table from the two, '
-				.'and without them it answers an empty selection rather than an error.'
-		);
-	}//end assertScope()
-
-	/**
-	 * Refuse a selection larger than the instance ceiling.
-	 *
-	 * @param int $count The selection size.
-	 * @param int $ceiling The ceiling.
-	 *
-	 * @return void
-	 *
-	 * @throws BulkJobRefusedException When the selection is too large.
-	 */
-	private function assertCeiling(int $count, int $ceiling): void {
-		if ($count <= $ceiling) {
-			return;
-		}
-
-		throw new BulkJobRefusedException(
-			message: 'This instance allows at most '.$ceiling.' objects in one bulk job, and this selection holds '
-				.$count.'. Narrow the selection, or ask an administrator to raise the ceiling.',
-			reason: 'ceiling',
-			details: ['ceiling' => $ceiling, 'count' => $count]
-		);
-	}//end assertCeiling()
-
-	/**
-	 * Refuse a job whose recorded prior values would outgrow the undo ceiling.
-	 *
-	 * Measured at CREATION, over the rehearsed selection, because that is the
-	 * only moment at which refusing costs nobody anything. Half way through a
-	 * commit the choice is between an unbounded buffer and a job that silently
-	 * stops recording what it would take to go back, and the second is the
-	 * failure this change exists to prevent.
-	 *
-	 * @param BulkActionInterface           $action     The action.
-	 * @param array<string, ObjectEntity>   $objects    The hydrated selection.
-	 * @param array<string, mixed>          $parameters The job's parameters.
-	 *
-	 * @return void
-	 *
-	 * @throws BulkJobRefusedException When the job would store too much.
-	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
-	 */
-	private function assertUndoCeiling(BulkActionInterface $action, array $objects, array $parameters): void {
-		if (($action instanceof ReversibleBulkActionInterface) === false) {
-			return;
-		}
-
-		$ceiling = $this->getUndoCeiling();
-		$bytes = 0;
-
-		foreach ($objects as $object) {
-			$plan = $action->reversalPlanFor(object: $object, parameters: $parameters);
-			$encoded = json_encode($plan);
-
-			if ($encoded === false) {
-				continue;
-			}
-
-			$bytes += strlen($encoded);
-
-			if ($bytes <= $ceiling) {
-				continue;
-			}
-
-			throw new BulkJobRefusedException(
-				message: 'This instance stores at most '.$ceiling.' bytes of undo data per bulk job, and this one '
-					.'would store more. Narrow the selection, write fewer properties, or ask an administrator to '
-					.'raise the ceiling.',
-				reason: 'undo-ceiling',
-				details: ['ceiling' => $ceiling, 'objects' => count($objects)]
-			);
-		}//end foreach
-	}//end assertUndoCeiling()
-
-	/**
-	 * Refuse a commit with no reason where the action requires one.
-	 *
-	 * @param BulkActionInterface $action The action.
-	 * @param BulkJob $job The job.
-	 *
-	 * @return void
-	 *
-	 * @throws BulkJobRefusedException When the reason is missing.
-	 */
-	private function assertJustification(BulkActionInterface $action, BulkJob $job): void {
-		if ($action->requiresJustification() === false) {
-			return;
-		}
-
-		$justification = (string)($job->getJustification() ?? '');
-
-		if (trim($justification) !== '') {
-			return;
-		}
-
-		throw new BulkJobRefusedException(
-			message: 'The action '.$action->getId().' cannot be committed without a written reason. '
-				.'Nothing was modified.',
-			reason: 'justification-required',
-			details: ['action' => $action->getId()]
-		);
-	}//end assertJustification()
-
-	/**
 	 * Re-resolve a query selection and report what changed since creation.
 	 *
 	 * @param BulkJob $job The job being committed.
@@ -743,4 +612,15 @@ class BulkJobService {
 
 		return ['ids' => $uuids];
 	}//end normaliseSelection()
+	/**
+	 * The refusals a job has to get past, built with this instance's ceiling.
+	 *
+	 * @return BulkJobGuards The guards.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 */
+	private function guards(): BulkJobGuards {
+		return new BulkJobGuards(undoCeiling: $this->getUndoCeiling());
+	}//end guards()
+
 }//end class

@@ -99,16 +99,21 @@ class ForcedChannelPolicy {
 	/**
 	 * The effective decision for one recipient and one kind.
 	 *
-	 * @param array<string,mixed> $resolved      What `NotificationPreferenceService::resolveEffective()` returned.
-	 * @param array<string,mixed> $declaration   The notification's own declaration from the schema.
-	 * @param bool                $recipientIsInternal Whether this recipient belongs to the organisation.
+	 * The audience is REQUIRED and is an enum rather than a boolean with a
+	 * default. The default used to be "inside the organisation", so a caller
+	 * that forgot the argument got the permissive half of the pair and the
+	 * `internalOnly` refusal below never fired. See {@see RecipientAudience}.
+	 *
+	 * @param array<string,mixed> $resolved    What `NotificationPreferenceService::resolveEffective()` returned.
+	 * @param array<string,mixed> $declaration The notification's own declaration from the schema.
+	 * @param RecipientAudience   $audience    Which side of the organisation this recipient is on.
 	 *
 	 * @return array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string}
 	 *         What will be sent, on what, who decided it, and why nothing is sent when nothing is.
 	 *
 	 * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
 	 */
-	public function decide(array $resolved, array $declaration, bool $recipientIsInternal = true): array {
+	public function decide(array $resolved, array $declaration, RecipientAudience $audience): array {
 		$channels = $this->channelsOf(value: ($resolved['channels'] ?? []));
 		$enabled = (($resolved['enabled'] ?? true) === true);
 		$layer = (string)($resolved['source'] ?? 'schema-default');
@@ -128,7 +133,7 @@ class ForcedChannelPolicy {
 		}
 
 		$internalOnly = (($declaration[self::INTERNAL_ONLY] ?? false) === true);
-		if ($internalOnly === true && $recipientIsInternal === false) {
+		if ($internalOnly === true && $audience->isInternal() === false) {
 			// The refusal is always the internal-only layer's; $internalOnly is
 			// true on this branch by definition.
 			$refusedLayer = self::LAYER;

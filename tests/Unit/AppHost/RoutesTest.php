@@ -198,7 +198,7 @@ class RoutesTest extends TestCase {
 	 */
 	public function testThePublicPageRouteIsAbsentUnlessTheAppAsksForIt(): void {
 		$this->assertNotContains('dashboard#publicPage', $this->names(Routes::standard()));
-		$this->assertContains('dashboard#publicPage', $this->names(Routes::standard([], publicPages: true)));
+		$this->assertContains('dashboard#publicPage', $this->names(Routes::standardWithPublicPages()));
 	}//end testThePublicPageRouteIsAbsentUnlessTheAppAsksForIt()
 
 	/**
@@ -211,9 +211,8 @@ class RoutesTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePublicPageRouteSitsAfterExtraAndBeforeTheCatchAll(): void {
-		$names = $this->names(Routes::standard(
-			[['name' => 'status#show', 'url' => '/public/status/{token}', 'verb' => 'GET']],
-			publicPages: true
+		$names = $this->names(Routes::standardWithPublicPages(
+			[['name' => 'status#show', 'url' => '/public/status/{token}', 'verb' => 'GET']]
 		));
 
 		$extra = array_search('status#show', $names, true);
@@ -230,7 +229,7 @@ class RoutesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheCatchAllKeepsItsOwnAddressAndStaysLast(): void {
-		$routes = Routes::standard([], publicPages: true)['routes'];
+		$routes = Routes::standardWithPublicPages()['routes'];
 		$last = $routes[array_key_last($routes)];
 
 		$this->assertSame('dashboard#catchAll', $last['name']);

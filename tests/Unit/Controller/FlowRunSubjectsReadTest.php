@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowRunController;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
@@ -93,6 +94,7 @@ final class FlowRunSubjectsReadTest extends TestCase {
 			resolvers: $this->createMock(FlowLocator::class),
 			userSession: $session,
 			organisationService: $this->createMock(OrganisationService::class),
+			guard: new FlowRunnableGuard(),
 			groupManager: $groups,
 			auditTrails: $audits
 		);

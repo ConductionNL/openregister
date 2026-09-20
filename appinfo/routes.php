@@ -401,10 +401,10 @@ return [
         // The statement (REQ-IHC-001). The two reads and the acceptance are the
         // only hardening routes an ordinary account may call, and each answers
         // about the SESSION's account: no user id is read from the request.
-        ['name' => 'hardening#statement', 'url' => '/api/hardening/statement', 'verb' => 'GET'],
-        ['name' => 'hardening#acceptStatement', 'url' => '/api/hardening/statement/acceptance', 'verb' => 'POST'],
-        ['name' => 'hardening#publishStatement', 'url' => '/api/hardening/statement', 'verb' => 'PUT'],
-        ['name' => 'hardening#withdrawStatement', 'url' => '/api/hardening/statement', 'verb' => 'DELETE'],
+        ['name' => 'hardeningStatement#statement', 'url' => '/api/hardening/statement', 'verb' => 'GET'],
+        ['name' => 'hardeningStatement#acceptStatement', 'url' => '/api/hardening/statement/acceptance', 'verb' => 'POST'],
+        ['name' => 'hardeningStatement#publishStatement', 'url' => '/api/hardening/statement', 'verb' => 'PUT'],
+        ['name' => 'hardeningStatement#withdrawStatement', 'url' => '/api/hardening/statement', 'verb' => 'DELETE'],
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
@@ -1320,14 +1320,14 @@ return [
         ['name' => 'operationsConsole#schedule', 'url' => '/api/operations/schedule', 'verb' => 'PUT', 'postfix' => 'administer'],
         ['name' => 'operationsConsole#alerts', 'url' => '/api/operations/alerts', 'verb' => 'GET'],
         ['name' => 'operationsConsole#administerAlerts', 'url' => '/api/operations/alerts', 'verb' => 'PUT'],
-        ['name' => 'operationsConsole#consistency', 'url' => '/api/operations/consistency', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#repairPlan', 'url' => '/api/operations/repair-plan', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#repair', 'url' => '/api/operations/repair', 'verb' => 'POST'],
-        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'POST', 'postfix' => 'enter'],
-        ['name' => 'operationsConsole#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
-        ['name' => 'operationsConsole#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
-        ['name' => 'operationsConsole#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        ['name' => 'operationsConsistency#consistency', 'url' => '/api/operations/consistency', 'verb' => 'GET'],
+        ['name' => 'operationsConsistency#repairPlan', 'url' => '/api/operations/repair-plan', 'verb' => 'GET'],
+        ['name' => 'operationsConsistency#repair', 'url' => '/api/operations/repair', 'verb' => 'POST'],
+        ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'GET'],
+        ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'POST', 'postfix' => 'enter'],
+        ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
+        ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
+        ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
@@ -2067,11 +2067,11 @@ return [
 			// actor and a marking that fits the target. `dryRun: true` on the
 			// same endpoint answers the verdict without writing, so a preview
 			// and the write cannot disagree about what would happen.
-		['name' => 'flowRun#migrate', 'url' => '/api/flow-runs/{uuid}/migrate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRunMigration#migrate', 'url' => '/api/flow-runs/{uuid}/migrate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 			// The same act for every run pinned to one version, reporting per
 			// run rather than as a count: the ones that could not move are
 			// exactly the ones somebody has to go and look at.
-		['name' => 'flowRun#migrateRuns', 'url' => '/api/flows/{flow}/migrate-runs', 'verb' => 'POST', 'requirements' => ['flow' => '[^/]+']],
+		['name' => 'flowRunMigration#migrateRuns', 'url' => '/api/flows/{flow}/migrate-runs', 'verb' => 'POST', 'requirements' => ['flow' => '[^/]+']],
 		// Correlation-addressed signal delivery (flow-approval-consolidation):
 		// same authority as resume, addressed by business key instead of run
 		// uuid, fail-closed on zero and on more than one match. Registered on
@@ -2079,7 +2079,7 @@ return [
 		// uuid-addressed routes.
 		['name' => 'flowRun#signalByKey', 'url' => '/api/flow-run-signals/{key}', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
-		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		['name' => 'flowTestRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
 		// The fleet-generic task (flow-task-entity): the inbox and the
 		// lifecycle verbs. Named for the `flow-tasks` CAPABILITY, not for a
 		// flow requirement — a standalone task with run_uuid null is served

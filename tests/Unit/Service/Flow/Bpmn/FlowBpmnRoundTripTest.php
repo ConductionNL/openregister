@@ -271,7 +271,7 @@ class FlowBpmnRoundTripTest extends TestCase {
 		$this->assertNotSame([], $ids, 'while the rest of the file still imported');
 
 		try {
-			$this->importer()->import(xml: $xml, strict: true);
+			$this->importer()->importStrictly(xml: $xml);
 			$this->fail('strict must not create a flow when something was refused');
 		} catch (BpmnImportRefused $refused) {
 			$this->assertNotNull($refused->getReport(), 'a strict refusal still owes the author the list');
