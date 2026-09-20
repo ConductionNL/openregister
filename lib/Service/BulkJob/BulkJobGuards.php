@@ -132,8 +132,6 @@ class BulkJobGuards {
 	 * @throws BulkJobRefusedException When the job would store too much.
 	 *
 	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
-	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertUndoCeiling(BulkActionInterface $action, array $objects, array $parameters): void {
 		if (($action instanceof ReversibleBulkActionInterface) === false) {
