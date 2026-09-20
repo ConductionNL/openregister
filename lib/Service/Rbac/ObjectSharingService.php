@@ -162,6 +162,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException When the scope is not in the vocabulary.
 	 *
 	 * @return array<string, mixed> The stored authorization block after the write.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function setScope(Register $register, Schema $schema, ObjectEntity $object, string $scope): array {
 		$this->requireOwnerOrAdmin(object: $object);

@@ -82,6 +82,8 @@ class FlowRunnableGuard {
 	 * @param string $flowId The flow being run.
 	 *
 	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
 	 */
 	public function refusalUnlessRunnable(string $flowId): ?JSONResponse {
 		if ($this->flows === null) {

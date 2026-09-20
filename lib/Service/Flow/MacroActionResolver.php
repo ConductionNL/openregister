@@ -65,6 +65,8 @@ class MacroActionResolver {
 	 * @param string $action The action.
 	 *
 	 * @return MacroActionBinding|null The binding.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
 	public function bindingFor(Schema $schema, string $action): ?MacroActionBinding {
 		foreach (MacroActionBinding::parse(configuration: ($schema->getConfiguration() ?? [])) as $binding) {
@@ -82,6 +84,8 @@ class MacroActionResolver {
 	 * @param string $flowUuid The flow.
 	 *
 	 * @return string One of FlowNextHint::HINTS.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
 	public function nextFor(string $flowUuid): string {
 		try {
@@ -100,6 +104,8 @@ class MacroActionResolver {
 	 * @param string $schema The schema identifier.
 	 *
 	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
 	public function loadSchema(string $schema): ?Schema {
 		try {

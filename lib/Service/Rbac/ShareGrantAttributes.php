@@ -117,6 +117,8 @@ class ShareGrantAttributes {
 	 * @param IShare $share The share.
 	 *
 	 * @return string[] The verbs, empty when it carries none.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function verbsOf(IShare $share): array {
 		try {
@@ -154,6 +156,8 @@ class ShareGrantAttributes {
 	 * @param IShare $share The share to inspect.
 	 *
 	 * @return string|null The granted object's UUID, or null.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function objectUuidOf(IShare $share): ?string {
 		try {

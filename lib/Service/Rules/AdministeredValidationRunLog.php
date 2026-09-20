@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/administered-validations/specs/rule-engine/spec.md
+ * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  * so a caller cannot record a refusal as a warning by passing the wrong
  * constant.
  *
- * @spec openspec/changes/administered-validations/specs/rule-engine/spec.md
+ * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
  */
 class AdministeredValidationRunLog {
 
@@ -66,7 +66,7 @@ class AdministeredValidationRunLog {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/administered-validations/specs/rule-engine/spec.md
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function recordWarning(ObjectEntity $object, Schema $schema, array $entry): void {
 		$this->record(object: $object, schema: $schema, entry: $entry, verdict: RuleVocabulary::VERDICT_FIRED);
@@ -81,7 +81,7 @@ class AdministeredValidationRunLog {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/administered-validations/specs/rule-engine/spec.md
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function recordRefusal(ObjectEntity $object, Schema $schema, array $entry): void {
 		$this->record(object: $object, schema: $schema, entry: $entry, verdict: RuleVocabulary::VERDICT_REFUSED);

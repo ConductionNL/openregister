@@ -51,6 +51,8 @@ class BulkJobGuards {
 	 * Constructor.
 	 *
 	 * @param integer $undoCeiling How much undo data one job may store, in bytes.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function __construct(
 		private readonly int $undoCeiling,
@@ -73,6 +75,8 @@ class BulkJobGuards {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When either is missing.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertScope(?int $registerId, ?int $schemaId): void {
 		if ($registerId !== null && $schemaId !== null) {
@@ -94,6 +98,8 @@ class BulkJobGuards {
 	 * @return void
 	 *
 	 * @throws BulkJobRefusedException When the selection is too large.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertCeiling(int $count, int $ceiling): void {
 		if ($count <= $ceiling) {
@@ -126,6 +132,8 @@ class BulkJobGuards {
 	 * @throws BulkJobRefusedException When the job would store too much.
 	 *
 	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertUndoCeiling(BulkActionInterface $action, array $objects, array $parameters): void {
 		if (($action instanceof ReversibleBulkActionInterface) === false) {
@@ -168,6 +176,8 @@ class BulkJobGuards {
 	 * @return void
 	 *
 	 * @throws BulkJobRefusedException When the reason is missing.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertJustification(BulkActionInterface $action, BulkJob $job): void {
 		if ($action->requiresJustification() === false) {

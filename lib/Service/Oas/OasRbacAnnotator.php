@@ -286,6 +286,8 @@ class OasRbacAnnotator {
 	 * @param array<string, mixed> $described The properties this document carries.
 	 *
 	 * @return array<int, string> The required names.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	public function describableRequired(object $schema, array $described): array {
 		if (method_exists($schema, 'getRequired') === false) {
@@ -311,6 +313,8 @@ class OasRbacAnnotator {
 	 * The shared answer to "may this person see this field".
 	 *
 	 * @return AggregateVisibility The answer.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	public function shapeVisibility(): AggregateVisibility {
 		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);

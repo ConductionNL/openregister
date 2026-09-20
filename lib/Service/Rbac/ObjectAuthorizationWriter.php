@@ -71,6 +71,8 @@ class ObjectAuthorizationWriter {
 	 * @param array<string, mixed> $block The block to store.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function writeAuthorizationBlock(
 		Register $register,

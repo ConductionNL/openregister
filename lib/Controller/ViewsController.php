@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\View;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\ViewPresentationService;
 use OCA\OpenRegister\Service\ViewService;
@@ -104,6 +105,31 @@ class ViewsController extends Controller {
 	}//end __construct()
 
 	/**
+	 * The view behind an id, resolved as the caller's own.
+	 *
+	 * `ViewService::find()` takes the owner and refuses anything else with a
+	 * `DoesNotExistException`, which every endpoint here answers as a 404.
+	 * That is the per-object predicate for a view: a caller who does not own
+	 * it gets the same answer as one asking for a view that does not exist,
+	 * so no endpoint can be used to discover which view ids exist.
+	 *
+	 * Named rather than inlined at five call sites, so the predicate is one
+	 * thing a reader can find and one thing a change has to go through.
+	 *
+	 * @param string $id     The view id.
+	 * @param string $userId The caller.
+	 *
+	 * @return View The view.
+	 *
+	 * @throws DoesNotExistException When the view is not this caller's.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	private function requireOwnedView(string $id, string $userId): View {
+		return $this->viewService->find(id: $id, owner: $userId);
+	}//end requireOwnedView()
+
+	/**
 	 * Refuse an update that changes fields this caller does not own.
 	 *
 	 * Answers a response to RETURN, or null when the update may proceed. The
@@ -129,7 +155,7 @@ class ViewsController extends Controller {
 		// included. Nothing would have looked broken; views would simply have
 		// stopped saving.
 		try {
-			$view = $this->viewService->find($id, $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 		} catch (\Throwable $e) {
 			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
 		}
@@ -292,7 +318,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 
 			return new JSONResponse(
 				data: [
@@ -626,7 +652,7 @@ class ViewsController extends Controller {
 			}
 
 			// Get existing view.
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 
 			$data = $this->request->getParams();
 
@@ -822,7 +848,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 			$board = $this->viewPresentationService->getKanbanBoard(
 				view: $view,
 				requestParams: $this->request->getParams()
@@ -902,12 +928,16 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
+			// The whole request is deliberately NOT handed on. The service
+			// took a `$requestParams` array it `unset()` on its first line,
+			// reserved for a filter passthrough nobody wrote, and an argument
+			// that is thrown away is an argument a reader has to check before
+			// they can rule it out.
 			$result = $this->viewPresentationService->getCalendarObjects(
 				view: $view,
 				rangeStart: $rangeStart,
-				rangeEnd: $rangeEnd,
-				requestParams: $params
+				rangeEnd: $rangeEnd
 			);
 
 			return new JSONResponse(data: $result);

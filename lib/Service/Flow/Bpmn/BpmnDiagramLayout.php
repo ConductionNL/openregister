@@ -43,6 +43,8 @@ class BpmnDiagramLayout {
 	 * @param DOMXPath $xpath The xpath.
 	 *
 	 * @return array<string, array{x: int, y: int}> The positions.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function positions(DOMXPath $xpath): array {
 		$positions = [];
@@ -87,6 +89,8 @@ class BpmnDiagramLayout {
 	 * @param array<string, array{x: int, y: int}>  $positions The file's positions.
 	 *
 	 * @return array<int, array<string, mixed>> The nodes.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function laidOut(array $nodes, array $positions): array {
 		foreach ($nodes as $index => $node) {
