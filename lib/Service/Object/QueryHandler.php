@@ -447,7 +447,8 @@ class QueryHandler
                 limit: $limit,
                 offset: $offset,
                 _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+                _multitenancy: $_multitenancy,
+                activeOrgUuid: $activeOrgUuid
             );
             $results            = $augmented['results'];
             $total = $augmented['total'];
