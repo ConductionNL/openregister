@@ -76,7 +76,9 @@
 		"Shards": "Apache SOLR's own object name, as with the already-recorded ConfigSet; SOLR does not localise it and Maltese admin usage names the same object.",
 		"{count} email": "A count placeholder plus 'email', which is already a recorded cognate in this bundle; no other word is left to translate.",
 		"{count} emails": "The same loan in the plural, which Maltese writes 'emails'; Emails is already a recorded cognate here.",
-		"{count} widget(s)": "'widget' is kept as an English loan and its Maltese plural is 'widgets', so the source's own '(s)' parenthetical is the right form — the shape this bundle already uses in 'Qed juri {count} dashboard(s)'."
+		"{count} widget(s)": "'widget' is kept as an English loan and its Maltese plural is 'widgets', so the source's own '(s)' parenthetical is the right form — the shape this bundle already uses in 'Qed juri {count} dashboard(s)'.",
+		"Progress": "Maltese has taken 'progress' from English as an ordinary noun (il-progress) and the bundle's house style keeps such IT loans unchanged, so the label is byte-identical.",
+		"Token": "The bundle's recorded lexicon keeps 'token' as an English loan (lexiconNote lists it with hash, payload and timeout), so the standalone label is byte-identical."
 	},
 	"corrections": {
 		"Audit trail #{id}": "Was `Audit Trail #{id}` — untranslated English, merely re-cased, and the only audit-trail value in the bundle left that way against 24 that use awditjar. Now `Traċċa tal-Awditjar #{id}`, matching Traċċi tal-Awditjar, Dettalji tat-Traċċa tal-Awditjar and the rest.",

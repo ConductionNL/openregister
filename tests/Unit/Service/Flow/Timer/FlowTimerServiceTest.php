@@ -176,14 +176,22 @@ class FlowTimerServiceTest extends TestCase {
 	private function assertInvariants(FlowTimer $timer): void {
 		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		if ($timer->getState() === FlowTimer::STATE_ARMED) {
-			$expected = $this->calculator->add(
-				from: $timer->getRunningSince(),
-				value: (float)$timer->getBudgetValue() - (float)$timer->getConsumedValue(),
-				unit: (string)$timer->getBudgetUnit(),
+			// The invariant now includes the roll, because the roll is part of
+			// where the deadline IS: fire_at = roll(add(...)). Left out, this
+			// would fail every rolling timer and, worse, would keep passing if
+			// the roll silently stopped being applied.
+			$expected = $this->calculator->roll(
+				moment: $this->calculator->add(
+					from: $timer->getRunningSince(),
+					value: (float)$timer->getBudgetValue() - (float)$timer->getConsumedValue(),
+					unit: (string)$timer->getBudgetUnit(),
+					calendar: $calendar
+				),
+				roll: (string)($timer->getRollToWorkingDay() ?? 'none'),
 				calendar: $calendar
-			);
+			)['at'];
 			self::assertNotNull($timer->getFireAt());
-			self::assertEqualsWithDelta($expected->getTimestamp(), $timer->getFireAt()->getTimestamp(), 1, 'fire_at = add(running_since, budget - consumed)');
+			self::assertEqualsWithDelta($expected->getTimestamp(), $timer->getFireAt()->getTimestamp(), 1, 'fire_at = roll(add(running_since, budget - consumed))');
 		}
 
 		if ($timer->getState() === FlowTimer::STATE_SUSPENDED) {
@@ -227,6 +235,58 @@ class FlowTimerServiceTest extends TestCase {
 
 		return $min;
 	}//end earliest()
+
+	/**
+	 * A term that ends on a Sunday, with the roll asked for, ends on Monday —
+	 * and the timer, its description and its ledger all say why.
+	 *
+	 * 33 calendar days from Tuesday 1 September 2026 is Sunday 4 October. The
+	 * budget is long enough for the seeded ladder's 14-day preBreach rung to
+	 * fit inside it, which is what a real statutory term looks like.
+	 *
+	 * @return void
+	 */
+	public function testArmRollsTheDeadlineOffASundayAndSaysWhy(): void {
+		$timer = $this->service->arm(
+			config: $this->config(['sla' => ['value' => 33, 'unit' => 'calendarDays', 'rollToWorkingDay' => 'next']]),
+			actor: 'alice',
+			now: $this->at('2026-09-01 09:00')
+		);
+
+		self::assertSame('2026-10-05 09:00 Monday', $timer->getFireAt()->setTimezone($this->tz)->format('Y-m-d H:i l'));
+		self::assertSame('2026-10-04', $timer->getUnrolledAt()->setTimezone($this->tz)->format('Y-m-d'));
+		self::assertSame('weekend', $timer->getRolledBy());
+		$this->assertInvariants($timer);
+
+		$described = $this->service->describe(timer: $timer, now: $this->at('2026-09-02 09:00'));
+		self::assertStringStartsWith('2026-10-04', (string)$described['unrolledAt']);
+		self::assertSame('weekend', $described['rolledBy']);
+
+		// The ledger carries it too: an auditor a year later reads the event,
+		// not the row, and the row only ever holds the CURRENT deadline.
+		$armed = $this->service->history(uuid: (string)$timer->getUuid())[0];
+		self::assertSame('weekend', $armed->getRolledBy());
+		self::assertSame('2026-10-04', $armed->getUnrolledAt()->setTimezone($this->tz)->format('Y-m-d'));
+	}//end testArmRollsTheDeadlineOffASundayAndSaysWhy()
+
+	/**
+	 * The control, and the one that keeps the default off: the same term with
+	 * no roll asked for still ends on the Sunday.
+	 *
+	 * @return void
+	 */
+	public function testArmWithoutARollKeepsTheSunday(): void {
+		$timer = $this->service->arm(
+			config: $this->config(['sla' => ['value' => 33, 'unit' => 'calendarDays']]),
+			actor: 'alice',
+			now: $this->at('2026-09-01 09:00')
+		);
+
+		self::assertSame('2026-10-04 09:00 Sunday', $timer->getFireAt()->setTimezone($this->tz)->format('Y-m-d H:i l'));
+		self::assertNull($timer->getUnrolledAt());
+		self::assertNull($timer->getRolledBy());
+		self::assertSame('none', $timer->getRollToWorkingDay());
+	}//end testArmWithoutARollKeepsTheSunday()
 
 	public function testArmStoresTheAnchorAndProjectsOntoTheTask(): void {
 		$this->task();

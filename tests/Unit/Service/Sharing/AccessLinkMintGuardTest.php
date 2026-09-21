@@ -42,6 +42,10 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\View;
 
 /**
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
@@ -49,13 +53,40 @@ use RuntimeException;
 class AccessLinkMintGuardTest extends TestCase {
 
 	private ObjectService&MockObject $objects;
+
+	private ViewMapper|\PHPUnit\Framework\MockObject\MockObject $views;
+
+	private RegisterMapper&MockObject $registers;
+
+	private SchemaMapper&MockObject $schemas;
 	private AccessLinkMintGuard $guard;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->objects = $this->createMock(ObjectService::class);
-		$this->guard = new AccessLinkMintGuard(objects: $this->objects, subjects: new AccessLinkSubject());
+		$this->views = $this->createMock(ViewMapper::class);
+		$this->registers = $this->createMock(RegisterMapper::class);
+		$this->schemas = $this->createMock(SchemaMapper::class);
+		$this->guard = new AccessLinkMintGuard(
+			objects: $this->objects,
+			subjects: new AccessLinkSubject(),
+			views: $this->views,
+			registers: $this->registers,
+			schemas: $this->schemas,
+		);
+	}
+
+	/**
+	 * A real View: getQuery() is an Entity magic accessor PHPUnit cannot stub.
+	 *
+	 * @param array<string, mixed> $query The view's stored query.
+	 */
+	private function view(array $query = []): View {
+		$view = new View();
+		$view->setQuery($query);
+
+		return $view;
 	}
 
 	private function object(): ObjectEntity {
@@ -116,18 +147,61 @@ class AccessLinkMintGuardTest extends TestCase {
 		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'no-slash'));
 	}
 
-	public function testAViewTheCallerCanListCanBePublished(): void {
-		$this->objects->expects($this->once())
-			->method('searchObjects')
-			->with($this->anything(), true, true, null, null, ['view-uuid'])
-			->willReturn([]);
+	public function testAViewTheCallerCanResolveCanBePublished(): void {
+		// Resolved under the caller's OWN rules: no _rbac/_multitenancy
+		// overrides, so a view in another organisation throws below.
+		// All three arguments, not just the first: ->with('view-uuid') alone would
+		// still be satisfied by a regression to find($viewId, false, false), which
+		// is the exact thing this guard must never do.
+		$this->views->expects($this->once())->method('find')->with('view-uuid', true, true)
+			->willReturn($this->view(['registers' => [7], 'schemas' => [4]]));
+		$this->objects->expects($this->never())->method('searchObjects');
 
 		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
 	}
 
-	public function testAViewTheCallerCannotListCannotBePublished(): void {
-		$this->objects->method('searchObjects')->willThrowException(new RuntimeException('denied'));
+	public function testAViewTheCallerCannotResolveCannotBePublished(): void {
+		// The regression this guard exists for: a search that merely MENTIONS an
+		// unresolvable view still answers an array, because applyViewsToQuery()
+		// skips it. Resolving the view itself is what makes a refusal a refusal.
+		$this->views->method('find')->willThrowException(new RuntimeException('denied'));
 
 		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
+	}
+
+	public function testAViewNamingARegisterTheCallerCannotReadCannotBePublished(): void {
+		// Owning the view row is not owning what it points at. `POST /api/views`
+		// is #[NoAdminRequired] and copies configuration.registers into the stored
+		// query verbatim, so a view of your own may name another organisation's
+		// register. The link that view mints reads with RBAC and multitenancy off.
+		$this->views->method('find')->willReturn($this->view(['registers' => [7]]));
+		$this->registers->method('find')->willThrowException(new RuntimeException('denied'));
+
+		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
+	}
+
+	public function testAViewNamingASchemaTheCallerCannotReadCannotBePublished(): void {
+		$this->views->method('find')->willReturn($this->view(['schemas' => [4]]));
+		$this->schemas->method('find')->willThrowException(new RuntimeException('denied'));
+
+		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
+	}
+
+	public function testEveryRegisterAndSchemaTheViewNamesIsChecked(): void {
+		// Not just the first: one unreadable id anywhere in the list is a refusal.
+		$this->views->method('find')->willReturn($this->view(['registers' => [7, 8, 9]]));
+		$this->registers->expects($this->exactly(3))->method('find');
+
+		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
+	}
+
+	public function testAViewWithNoRegisterOrSchemaFilterIsStillCheckedAgainstNothing(): void {
+		// An empty query names nothing to leak. The view-scope rule downstream
+		// refuses such a view separately, on the grounds that it bounds nothing.
+		$this->views->method('find')->willReturn($this->view([]));
+		$this->registers->expects($this->never())->method('find');
+		$this->schemas->expects($this->never())->method('find');
+
+		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
 	}
 }

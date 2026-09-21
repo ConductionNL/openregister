@@ -36,6 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Exception\SystemContextUnavailableException;
+
 final class SystemOperationContext {
 
 	/**
@@ -77,6 +79,91 @@ final class SystemOperationContext {
 			self::$depth--;
 		}
 	}//end run()
+
+	/**
+	 * Declare that the write about to run is the system's, and fail if it cannot be.
+	 *
+	 * 🔴 THIS EXISTS BECAUSE THE ALTERNATIVE DEGRADES SILENTLY. A consuming app
+	 * cannot hard-depend on this class — OpenRegister may be absent or older —
+	 * so every consumer invented the same guard:
+	 *
+	 *     if (class_exists(SystemOperationContext::class)) {
+	 *         return SystemOperationContext::run($operation);
+	 *     }
+	 *     return $operation();
+	 *
+	 * The fallback is the bug. It does not decline to elevate; it runs the
+	 * identical write as whoever happens to be signed in, and returns the same
+	 * value the elevated call would have. Nothing throws, nothing logs, and the
+	 * write either succeeds with the wrong principal recorded against it or
+	 * fails a permission check somewhere far away for a reason nobody connects
+	 * back to a missing class.
+	 *
+	 * 🔴 AND IT MAKES THE CODEBASE UNSWEEPABLE. A reviewer asking "which writes
+	 * run as the system" cannot answer it statically: a call site that says
+	 * `SystemOperationContext::run(...)` may or may not have elevated, and a
+	 * scan for the elevation idiom counts the degraded path as elevated. That
+	 * ambiguity is what stopped integriq's permission sweep: the safe subset
+	 * could not be identified, so nothing could be restricted.
+	 *
+	 * `assertSystem()` says the same thing and refuses to be ambiguous. Either
+	 * the operation runs elevated, or it throws with a message naming what was
+	 * being attempted. A consumer that cannot tolerate the throw should not be
+	 * claiming to write as the system.
+	 *
+	 * @param string   $what      What is being written, for the refusal.
+	 * @param callable $operation The trusted operation.
+	 *
+	 * @return mixed Whatever the callable returns.
+	 *
+	 * @throws SystemContextUnavailableException When elevation is not available.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public static function assertSystem(string $what, callable $operation) {
+		// 🔴 THE ELEVATION IS VERIFIED, NOT ASSUMED. An earlier draft of this
+		// method checked `class_exists(self::class)` and threw when it was
+		// false — which cannot happen, because a class that does not exist
+		// cannot run its own static method. That guard was dead on the day it
+		// was written, and a dead guard is worse than none: it reads as a check
+		// and a later edit deletes it with every test still green.
+		//
+		// What CAN go wrong is the elevation failing to take effect: a refactor
+		// that stops `run()` incrementing, a nested scope decrementing early,
+		// or somebody replacing the depth counter with something the permission
+		// layer no longer consults. So this asserts the scope is live AT THE
+		// MOMENT THE OPERATION RUNS, which is the only moment it matters.
+		$elevated = false;
+
+		$result = self::run(
+			operation: static function () use ($operation, &$elevated) {
+				// Checked on BOTH sides of the operation. Before, because an
+				// elevation that never applied is the ordinary failure. After,
+				// because one that stopped applying part-way is the dangerous
+				// one: the write has already happened, and checking only up
+				// front would call it elevated.
+				$entered = self::isActive();
+				$value = $operation();
+				$elevated = ($entered === true && self::isActive() === true);
+
+				return $value;
+			}
+		);
+
+		if ($elevated === false) {
+			throw new SystemContextUnavailableException(
+				message: sprintf(
+					'"%s" was declared as a system write, but the system-operation scope was not in effect '
+					.'while it ran. The write has already happened as the acting principal rather than as '
+					.'the system, so whatever it recorded names the wrong actor. This is a defect in the '
+					.'elevation itself, not in the caller.',
+					$what
+				)
+			);
+		}
+
+		return $result;
+	}//end assertSystem()
 
 	/**
 	 * Whether a system-operation scope is currently active.

@@ -60,11 +60,77 @@
          handler cannot disagree again: a service would let one of them be
          constructed with a different implementation, which is the drift the
          class was written to end. -->
+    <!-- StaticAccess: a fourth exception, on the terms above.
+
+         `\OCA\OpenRegister\Support\PermissionBit` maps an action onto the core
+         share permission bit it needs. The table used to be a public static on
+         `ObjectGrantResolver`, which IS a service: it takes an IManager, caches
+         resolved grants per user, and answers questions about live shares.
+         Reaching into a stateful service by class name to read a constant table
+         is the static access worth objecting to, so that call was refactored
+         rather than excepted, and the table moved to a class that holds no
+         state and has no collaborators.
+
+    ===================================================================
+         StaticAccess: named constructors on immutable value objects.
+
+         Every class below has a PRIVATE (or purely structural) constructor and
+         is reached only through its own named constructor: `parse`, `fromArray`,
+         `fromProperty`, `fromStored`, `fromDeclarations`, `empty`, `none`,
+         `unchanged`, `expanded`. That call IS the constructor. PHPMD cannot
+         distinguish it from a static call into a collaborator, but `new Foo(...)`
+         would produce byte-identical semantics and the rule does not flag `new`.
+
+         There is nothing here to inject and nothing to stub: the object has no
+         identity of its own, holds only readonly data, and its named
+         constructor exists so that a malformed input is refused in ONE place
+         instead of at every call site. Routing that through an injected factory
+         would add a second construction path, which is the drift each of these
+         classes was written to end.
+
+         Verified per class before it was listed: the constructor is private or
+         the class carries only readonly state, and the statically reached
+         method parses or validates its arguments and returns a value object.
+         Each entry was also removed and phpmd re-run, to confirm the finding
+         comes back and the entry is therefore doing something.
+
+           - Service\View\ViewAlert                    (private ctor, ::parse)
+           - Service\Flow\MacroActionBinding           (private ctor, ::parse, ::refusals)
+           - Service\Flow\Timer\ServiceHours           (private ctor, ::fromArray, ::none)
+           - Service\Flow\Timer\WorkingCalendar        (private ctor, ::fromArray, ::easterSunday)
+           - Service\Search\HistoryPredicate           (private ctor, ::parse)
+           - Service\Search\DictionaryExpansion        (private ctor, ::unchanged, ::expanded)
+           - Service\Search\SearchDictionary           (private ctor, ::empty, ::fromDeclarations)
+           - Service\Schemas\ReferenceFilterDeclaration (private ctor, ::fromProperty)
+           - Service\Rbac\TokenGrant                   (readonly VO, ::fromStored)
+
+    ===================================================================
+         StaticAccess: pure declaration readers, on the FleetAppId terms.
+
+         These hold no state, declare no constructor worth calling, and take
+         everything they need as arguments. They answer one question about one
+         input, and several call paths must reach the SAME answer: a service
+         would let one of them be constructed with a different implementation.
+
+           - Service\Flow\FlowNextHint            (all static: reads the `next` hint a node declares)
+           - Service\Schemas\ScopedPropertyDeclaration (all static: reads and compiles the `scope` annotation)
+           - Service\Rules\RuleDescriptor         (::idFor formats a rule id from three strings,
+                                                   and runs BEFORE any descriptor instance exists)
+
+    ===================================================================
+         StaticAccess: PHP core date classes.
+
+         `\DateTimeImmutable::createFromInterface` and
+         `\DateTimeZone::listIdentifiers` are language-level. There is no
+         instance to inject and no seam to stub short of wrapping the SPL, which
+         buys nothing here: the first converts a DateTimeInterface the caller
+         already holds, the second reads the IANA zone list to refuse an invalid
+         timezone in a working-calendar definition. -->
     <rule ref="rulesets/cleancode.xml/StaticAccess">
         <properties>
             <property
                 name="exceptions"
-                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams"/>
+                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams,\OCA\OpenRegister\Support\PermissionBit,\OCA\OpenRegister\Service\View\ViewAlert,\OCA\OpenRegister\Service\Flow\MacroActionBinding,\OCA\OpenRegister\Service\Flow\FlowNextHint,\OCA\OpenRegister\Service\Flow\Timer\ServiceHours,\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar,\OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration,\OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration,\OCA\OpenRegister\Service\Search\HistoryPredicate,\OCA\OpenRegister\Service\Search\DictionaryExpansion,\OCA\OpenRegister\Service\Search\SearchDictionary,\OCA\OpenRegister\Service\Rules\RuleDescriptor,\OCA\OpenRegister\Service\Rbac\TokenGrant,\DateTimeImmutable,\DateTimeZone"/>
         </properties>
     </rule>
 </ruleset>

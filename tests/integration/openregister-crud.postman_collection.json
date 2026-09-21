@@ -3213,7 +3213,11 @@
               "",
               "if (pm.response.code === 200) {",
               "    var jsonData = pm.response.json();",
-              "    pm.test('Object is now locked', function () {",
+              "    pm.test('Object is now locked, read back off the object', function () {",
+              "        // `locked` used to be the literal `true` the controller wrote,",
+              "        // so this step could not fail and did not for as long as every",
+              "        // durationless lock expired at the instant it was taken. It is",
+              "        // now the answer isLocked() gives on the stored object.",
               "        pm.expect(jsonData).to.have.property('locked');",
               "        pm.expect(jsonData.locked).to.be.true;",
               "    });",
@@ -3247,24 +3251,35 @@
       }
     },
     {
-      "name": "17a. Try to Update Locked Object (Should FAIL)",
+      "name": "17a. Update as the Lock Owner (a Save Hands the Lock Back)",
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
-              "// Lock enforcement: the same user who locked the object CAN still update it.",
-              "// Only OTHER users are blocked. Since tests run as admin (who also locked),",
-              "// we expect the update to succeed (200) for the lock owner.",
-              "pm.test('Lock owner can update their own locked object', function () {",
-              "    pm.expect([200, 423, 403, 409]).to.include(pm.response.code);",
+              "// A save is a check-in. The holder may write while their own lock is",
+              "// live, and the write hands that lock back, so the next editor is not",
+              "// kept out by a lock nobody is using any more. Only the WRITER'S OWN",
+              "// lock goes: a lock held by anybody else, a flow run included, survives",
+              "// the write.",
+              "//",
+              "// Specified in openspec/changes/run-scoped-object-locking, requirement",
+              "// 'A lock refuses a write and names its holder', scenario 'A successful",
+              "// write releases only the writer's own lock'. Steps 17b1 and 17b2 below",
+              "// cover the release that a write did not already perform.",
+              "pm.test('The lock holder may write', function () {",
+              "    pm.response.to.have.status(200);",
               "});",
               "",
-              "if (pm.response.code === 200) {",
-              "    console.log('\u2713 Lock owner updated their own locked object (expected)');",
-              "} else {",
-              "    console.log('\u2713 Locked object update blocked with status:', pm.response.code);",
-              "}"
+              "pm.test('The write hands the lock back, and the body says so', function () {",
+              "    var self = (pm.response.json() || {})['@self'] || {};",
+              "    // The metadata lives under @self; a top-level `locked` key is absent",
+              "    // whatever happens, so reading one would pass without ever looking",
+              "    // at the lock.",
+              "    pm.expect(self.locked === null || self.locked === undefined).to.be.true;",
+              "});",
+              "",
+              "console.log('\u2713 The lock holder wrote, and the save released their lock');"
             ],
             "type": "text/javascript"
           }
@@ -3278,10 +3293,6 @@
             "value": "application/json"
           }
         ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Attempt to Update Locked Object\",\n  \"age\": 99\n}"
-        },
         "url": {
           "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}",
           "host": [
@@ -3297,28 +3308,136 @@
             "{{schema_slug}}",
             "{{object1_uuid}}"
           ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Update as the Lock Owner\",\n  \"age\": 99\n}"
         }
       }
     },
     {
-      "name": "17b. Unlock Object (Lifecycle)",
+      "name": "17b. Release a Lock the Save Already Handed Back (404)",
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
+              "// 404 here is a FACT ABOUT THE OBJECT, not a missing route: step 17a's",
+              "// save already handed the lock back, so there is nothing left to",
+              "// release. A client that releases when its editor closes has to be able",
+              "// to tell 'I handed mine back' from 'it was already gone', and a 200 for",
+              "// both is how a UI reports success on a lock it never held.",
+              "//",
+              "// Nothing is refused and nothing throws: `locked: false` is true either",
+              "// way, so a client that reads only that keeps working.",
+              "pm.test('Releasing a lock that is not there answers 404', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "pm.test('The answer names the fact rather than an error', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.eql('not-locked');",
+              "    pm.expect(jsonData.released).to.be.false;",
+              "    pm.expect(jsonData.locked).to.be.false;",
+              "});",
+              "",
+              "console.log('\u2713 Nothing to release, and the answer says which');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}/unlock",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}",
+            "unlock"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17b1. Lock the Object Again",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Re-take the lock so the RELEASE path is still covered. Without this",
+              "// the collection would only ever exercise the no-op answer, and a lock",
+              "// that had stopped releasing at all would read exactly the same.",
               "pm.test('Status code is 200', function () {",
               "    pm.response.to.have.status(200);",
               "});",
               "",
               "if (pm.response.code === 200) {",
               "    var jsonData = pm.response.json();",
-              "    pm.test('Object is now unlocked', function () {",
+              "    pm.test('Object is locked again', function () {",
               "        pm.expect(jsonData).to.have.property('locked');",
-              "        pm.expect(jsonData.locked).to.be.false;",
+              "        pm.expect(jsonData.locked).to.be.true;",
               "    });",
-              "    console.log('\u2713 Object unlocked');",
+              "    console.log('\u2713 Object locked again');",
               "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}/lock",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}",
+            "lock"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17b2. Release a Lock No Save Wrote Over (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// The other half of the release contract: a lock that is actually there",
+              "// is released, answers 200, and reports that a release happened.",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('The lock was released, and the answer says so', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.released).to.be.true;",
+              "    pm.expect(jsonData.locked).to.be.false;",
+              "});",
+              "",
+              "console.log('\u2713 Object unlocked');"
             ],
             "type": "text/javascript"
           }

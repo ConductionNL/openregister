@@ -21,7 +21,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -73,7 +73,7 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 		}
 
 		return new SearchQueryHandler(
-			$this->createMock(originalClassName: ViewMapper::class),
+			$this->createMock(originalClassName: ViewScopeApplier::class),
 			$schemaMapper,
 			$this->createMock(originalClassName: SettingsService::class),
 			$this->createMock(originalClassName: LoggerInterface::class),

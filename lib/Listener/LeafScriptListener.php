@@ -69,6 +69,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Integration\LeafBundle;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCA\OpenRegister\Service\ScriptManifestLoader;
@@ -287,11 +288,10 @@ class LeafScriptListener implements IEventListener {
 	 * @return boolean Whether `js/<app>-leaves.js` exists.
 	 */
 	private function hasLeafBundle(string $appId): bool {
-		$path = $this->appPath(appId: $appId);
-		if ($path === null) {
-			return false;
-		}
-		return file_exists($path . '/js/' . $appId . '-' . self::LEAF_ENTRY . '.js');
+		// Delegated so the loader and the registry give ONE answer. They
+		// disagreeing is the failure this whole change is about: the registry
+		// accepting a leaf the loader never puts on a page.
+		return (new LeafBundle(appManager: $this->appManager))->existsFor(appId: $appId);
 	}//end hasLeafBundle()
 
 	/**

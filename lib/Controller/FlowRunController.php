@@ -31,15 +31,12 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
-use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
-use OCA\OpenRegister\Service\Flow\FlowAccess;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
+use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -50,7 +47,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
-use stdClass;
 use Throwable;
 
 /**
@@ -92,15 +88,20 @@ class FlowRunController extends Controller {
 	 * @param FlowLocator $resolvers Resolves a flow id to its document.
 	 * @param IUserSession $userSession Attributes a retried run to the caller.
 	 * @param OrganisationService $organisationService Scopes the active-runs list to the caller's tenant.
+	 * @param FlowRunnableGuard $guard Whether the caller may run the flow a run belongs to.
+	 *                                 REQUIRED, unlike the collaborators below: a run
+	 *                                 endpoint with no guard is the IDOR this controller
+	 *                                 was written to close, so there is no "absent" case
+	 *                                 for it to scope to.
 	 * @param IGroupManager|null $groupManager Distinguishes an administrator, who gets
 	 *                                         the unscoped run history. Nullable so
 	 *                                         adding it is not a fatal at existing
 	 *                                         construction sites; absent means "not an
 	 *                                         admin", which SCOPES rather than widens.
-	 * @param FlowService|null $flows Reads which flows the caller owns, from the
-	 *                                native flow store. Nullable for the same
-	 *                                reason as $groupManager: absent yields no
-	 *                                owned ids, which scopes rather than widens.
+	 * @param FlowCaller|null $flowOwnership Reads which flows the caller owns, from the
+	 *                                       native flow store. Nullable for the same
+	 *                                       reason as $groupManager: absent yields no
+	 *                                       owned ids, which scopes rather than widens.
 	 * @param AuditFlowAttribution|null $auditTrails Reads the attribution stamped on
 	 *                                           audit rows, for the objects a run
 	 *                                           touched. Nullable and LAST so
@@ -116,11 +117,6 @@ class FlowRunController extends Controller {
 	 *                                                 demand from this
 	 *                                                 controller's own
 	 *                                                 collaborators.
-	 * @param FlowAccess|null $access The flow action-rights matrix `test()` checks
-	 *                                before running anything (or#3643). Nullable and
-	 *                                appended last for the same reason as the other
-	 *                                four: absent must SCOPE (fail closed to a
-	 *                                refusal), never widen to "allowed".
 	 */
 	public function __construct(
 		string $appName,
@@ -130,14 +126,14 @@ class FlowRunController extends Controller {
 		private readonly FlowLocator $resolvers,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationService $organisationService,
+		private readonly FlowRunnableGuard $guard,
 		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?FlowService $flows = null,
+		private readonly ?FlowCaller $flowOwnership = null,
 		// Appended LAST and nullable on purpose: a new constructor argument
 		// inserted anywhere else shifts every positional caller, and the
 		// resulting TypeError names the argument AFTER the one that moved.
 		private readonly ?AuditFlowAttribution $auditTrails = null,
 		private readonly ?FlowRunSignalService $signalService = null,
-		private readonly ?FlowAccess $access = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -651,7 +647,7 @@ class FlowRunController extends Controller {
 			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
 		}
 
-		$refusal = $this->refuseUnlessRunnable(flowId: (string)$run->getFlowId());
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -702,7 +698,7 @@ class FlowRunController extends Controller {
 			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
 		}
 
-		$refusal = $this->refuseUnlessRunnable(flowId: (string)$run->getFlowId());
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -778,7 +774,7 @@ class FlowRunController extends Controller {
 
 		$run = $matches[0];
 
-		$refusal = $this->refuseUnlessRunnable(flowId: (string)$run->getFlowId());
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -796,46 +792,6 @@ class FlowRunController extends Controller {
 
 		return new JSONResponse($signalled->jsonSerialize());
 	}//end signalByKey()
-
-	/**
-	 * Refuse unless the caller may RUN this flow.
-	 *
-	 * WHY THE CONTROLLER AND NOT THE RESOLVER. `FlowLocator::resolveSubject()`
-	 * loads with `_rbac: false`, and correctly so — the engine runs a flow as its
-	 * owner, and background jobs and retries have no session to evaluate. But
-	 * these endpoints inherited that bypass, and `retry()` in particular took a
-	 * run UUID and retried it with no ownership check at all: any authenticated
-	 * user could re-run anybody's flow. That is an IDOR (OWASP A01), and the fix
-	 * belongs where the request enters, not in the engine.
-	 *
-	 * WHAT IT CHECKS. The flow is resolved through `FlowService`, which applies
-	 * the organisation scoping and the per-flow guard. A caller who may not see
-	 * the flow gets the SAME 404 as one asking for a flow that does not exist,
-	 * so the endpoint cannot be used to discover which flow ids exist.
-	 *
-	 * Running is an EXTENSION verb — core's bitmask has no `run` — so per ADR-010
-	 * Rule 4 it is enforced here, at the endpoint that performs the action,
-	 * rather than by widening the RBAC vocabulary.
-	 *
-	 * @param string $flowId The flow being run.
-	 *
-	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
-	 */
-	private function refuseUnlessRunnable(string $flowId): ?JSONResponse {
-		if ($this->flows === null) {
-			// Fail CLOSED. Without the collaborator there is no way to decide,
-			// and an unguarded run is what this method exists to prevent.
-			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
-		}
-
-		try {
-			$this->flows->find(uuid: $flowId);
-		} catch (Throwable $e) {
-			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
-		}
-
-		return null;
-	}//end refuseUnlessRunnable()
 
 	/**
 	 * Translate the seam's typed refusal into this endpoint's HTTP contract.
@@ -959,196 +915,11 @@ class FlowRunController extends Controller {
 		// register named by `flow_register`/`flow_schema` config — a store that
 		// no longer exists. The visibility RULE is unchanged (D7): a caller sees
 		// the runs they triggered plus the runs of flows they own.
-		if ($this->flows === null) {
+		if ($this->flowOwnership === null) {
 			return [];
 		}
 
-		return $this->flows->idsOwnedByCaller();
+		return $this->flowOwnership->idsOwnedByCaller();
 	}//end flowIdsOwnedByCaller()
 
-	/**
-	 * Refuse the test run unless the caller may EDIT the flow being tested.
-	 *
-	 * `test()` is not a trigger a caller reaches because a flow happens to be
-	 * running — it is the authoring loop. `startAt` restarts execution from any
-	 * chosen node, skipping whatever an earlier node would otherwise have
-	 * enforced, and `pins` substitutes stored output for a real step's result.
-	 * Both are debug affordances for whoever is building the flow, and prior to
-	 * this check the ONLY gate on reaching them was
-	 * {@see refuseUnlessRunnable()} — organisation membership, which answers
-	 * "is this flow yours to see at all", not "may you run it". On a
-	 * single-organisation instance (the common case; see
-	 * {@see \OCA\OpenRegister\Service\OrganisationService}) that check passes
-	 * for every signed-in account, so any authenticated user could execute any
-	 * flow, including ones they neither own nor may edit (or#3643).
-	 *
-	 * `flow.update` — not `flow.run` — is the right bar. `flow.run` (used by
-	 * `FlowController::run()`, the editor's plain "Run Now") is seeded
-	 * `@authenticated` by design, for the same reason RN-1 kept it out of the
-	 * run-node endpoint: it says nothing about a caller's relationship to a
-	 * SPECIFIC flow's authoring surface, only that they may trigger flows at
-	 * all. `flow.update` is the right already required for every other editing
-	 * verb on this flow (publish/draft/deprecate/adopt) — testing a flow's tail
-	 * with pinned output is exactly as much "editing" as changing its JSON, and
-	 * an admin who has restricted `flow.update` to an authors group is
-	 * restricting exactly this.
-	 *
-	 * Fails CLOSED without the collaborator or the session, same posture as
-	 * {@see refuseUnlessRunnable()}: no way to decide is a refusal, not an
-	 * allow.
-	 *
-	 * @return JSONResponse|null A 401/403 refusal, or null when the caller may proceed.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
-	 */
-	private function refuseUnlessMayEditFlow(): ?JSONResponse {
-		if ($this->access === null) {
-			return new JSONResponse(['error' => 'Flow authorization is unavailable.'], Http::STATUS_FORBIDDEN);
-		}
-
-		$user = $this->access->currentUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		if ($this->access->may(user: $user, action: 'flow.update') === true) {
-			return null;
-		}
-
-		return new JSONResponse(
-			['error' => 'You do not have the "flow.update" right.'],
-			Http::STATUS_FORBIDDEN
-		);
-	}//end refuseUnlessMayEditFlow()
-
-	/**
-	 * Run a flow now and return its result — the interactive test run.
-	 *
-	 * Unlike a trigger, which queues a run for the worker, this runs the flow
-	 * synchronously and hands back the whole trace, so an author gets the log and
-	 * the items straight away. It carries the two authoring aids: `startAt` runs
-	 * from a chosen node (run-from-here), and `pins` supplies stored output for
-	 * named steps so the expensive ones are skipped. Together they are the
-	 * "iterate on the tail of a flow" loop.
-	 *
-	 * The run is persisted like any other (trigger `test`), so it also shows up
-	 * in the history — a test run is not a throwaway.
-	 *
-	 * CSRF IS enforced here (no `#[NoCSRFRequired]`), deliberately unlike its
-	 * siblings on this controller. `resume()` and `signalByKey()` drop it because
-	 * they are addressed by leaf apps and agents over Basic auth or app
-	 * passwords, which carry no CSRF token — `TaskController`'s docblock states
-	 * that reasoning. Nothing calls `test()` that way: it is a person's browser
-	 * pressing "Test" in the flow editor, which has a token to send. There is no
-	 * stated reason to accept a cross-site POST here, so this endpoint keeps the
-	 * ordinary protection (or#3643).
-	 *
-	 * VERIFIED, not assumed, before removing the attribute (hydra gate-48's own
-	 * question — "is any mutating caller unprotected right now"): neither this
-	 * repo's `src/` nor `nextcloud-vue`'s `useFlowStore.js` (every OpenRegister
-	 * flow API call this fleet's shared editor makes — `run()`, `create()`,
-	 * `update()`, all of it — goes through `@nextcloud/axios`, which attaches
-	 * the token itself) calls `/api/flow-runs/test` at all. The only OTHER
-	 * caller found anywhere in the org is this app's own e2e suite
-	 * (`tests/e2e/api-direct/flow-engine.spec.ts`), which authenticates over
-	 * Basic auth ("no browser session is needed", its own docblock says) — the
-	 * exact case NC's CSRF check does not apply to, for the same reason
-	 * `resume()`/`signalByKey()` never needed the attribute either. Removing it
-	 * here breaks nothing that calls this endpoint today; a future browser
-	 * caller inherits protection automatically the moment it exists, the same
-	 * way every other flow call already does.
-	 *
-	 * @return JSONResponse The finished run, or a 4xx when the flow is unknown
-	 *                       or the caller may not edit it.
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::normalise is a pure
-	 * value-normaliser with no state to inject; wrapping it in a collaborator
-	 * would add a constructor dependency to say the same thing.
-	 */
-	#[NoAdminRequired]
-	public function test(): JSONResponse {
-		$editRefusal = $this->refuseUnlessMayEditFlow();
-		if ($editRefusal !== null) {
-			return $editRefusal;
-		}
-
-		$flowId = trim((string)$this->request->getParam('flowId', ''));
-		if ($flowId === '') {
-			return new JSONResponse(['error' => 'A test run needs a flowId.'], Http::STATUS_BAD_REQUEST);
-		}
-
-		$refusal = $this->refuseUnlessRunnable(flowId: $flowId);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		$flow = $this->resolvers->resolveFlow(flowId: $flowId);
-		if ($flow === null) {
-			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
-		}
-
-		$startAt = trim((string)$this->request->getParam('startAt', ''));
-		if ($startAt === '') {
-			$startAt = null;
-		}
-
-		$pins = (array)$this->request->getParam('pins', []);
-
-		$seed = null;
-		$seedParam = $this->request->getParam('seedItems');
-		if ($seedParam !== null) {
-			$seed = FlowItems::normalise(value: $seedParam);
-		}
-
-		// Attribute the test run to the caller. Without this the run is
-		// ownerless, so `context['triggeredBy']` is null and every
-		// attribution-requiring node refuses — ObjectWriteNode returns "this
-		// flow run has no owner". An interactive test run has a session by
-		// definition, so there is no reason for it to be the one dispatch path
-		// that discards its actor. Same defect class as or#2158 in
-		// FlowMcpToolProvider::runFlow().
-		// 🔴 A REFUSAL MUST NOT LEAVE HERE AS A 500. A dead end, or a flow with
-		// no published version, is the engine DECLINING to run something — an
-		// answer the author can act on. Unwrapped, both reached the editor as
-		// an HTML error page, which reads as "the server is broken" and sends
-		// the author to the wrong place entirely.
-		try {
-			$run = $this->runner->queue(
-				flowId: $flowId,
-				subject: [],
-				trigger: 'test',
-				context: ['pins' => $pins],
-				user: $this->userSession->getUser()?->getUID()
-			);
-
-			$run = $this->runner->execute(
-				run: $run,
-				flow: $flow,
-				subject: new stdClass(),
-				seedItems: $seed,
-				startAt: $startAt
-			);
-		} catch (FlowLifecycleRefused $e) {
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'reason' => $e->getReason(),
-					'lifecycleStatus' => $e->getState(),
-					'flowId' => $e->getFlowId(),
-				],
-				Http::STATUS_CONFLICT
-			);
-		} catch (FlowDeadEnd $e) {
-			return new JSONResponse(
-				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],
-				Http::STATUS_CONFLICT
-			);
-		}//end try
-
-		return new JSONResponse($run->jsonSerialize());
-	}//end test()
 }//end class

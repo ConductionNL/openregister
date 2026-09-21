@@ -35,6 +35,8 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -45,7 +47,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 /**
  * ObjectRelationsController.
@@ -64,7 +65,8 @@ class ObjectRelationsController extends Controller {
 	 * @param ObjectRelationService $relations The relation row service.
 	 * @param RelationGraphService $graphs The bounded graph walk.
 	 * @param ObjectService $objectService Reads and writes objects, with RBAC.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
+	 * @param ObjectReadAccess $access Resolves an object under the caller's own RBAC.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
@@ -74,7 +76,8 @@ class ObjectRelationsController extends Controller {
 		private readonly ObjectRelationService $relations,
 		private readonly RelationGraphService $graphs,
 		private readonly ObjectService $objectService,
-		private readonly IUserSession $userSession,
+		private readonly ExportGate $exportGate,
+		private readonly ObjectReadAccess $access,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -93,9 +96,9 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
 		}
 
 		$rows = $this->relations->relationsFor(
@@ -129,9 +132,9 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function addLink(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
 		}
 
 		$target = $this->stringParam(name: 'target');
@@ -201,9 +204,9 @@ class ObjectRelationsController extends Controller {
 			);
 		}
 
-		$far = $this->readable(register: $register, schema: $schema, id: $target);
+		$far = $this->access->readable(register: $register, schema: $schema, id: $target);
 		if ($far === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
 		}
 
 		$rows = $this->relations->recordProseReference(
@@ -256,9 +259,9 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function removeReferences(string $register, string $schema, string $id, string $anchor): JSONResponse {
-		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
 		}
 
 		return new JSONResponse(
@@ -285,9 +288,9 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function removeLink(string $register, string $schema, string $id, string $relationId): JSONResponse {
-		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
 		}
 
 		$objectUuid = (string)$object->getUuid();
@@ -330,9 +333,9 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function derive(string $register, string $schema, string $id): JSONResponse {
-		$source = $this->readable(register: $register, schema: $schema, id: $id);
+		$source = $this->access->readable(register: $register, schema: $schema, id: $id);
 		if ($source === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
 		}
 
 		$data = $this->request->getParam('object');
@@ -466,9 +469,9 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function graph(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
 		}
 
 		return new JSONResponse(
@@ -494,9 +497,24 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function exportGraph(string $register, string $schema, string $id): DataDownloadResponse|JSONResponse {
-		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
-			return $this->notReadable();
+			return $this->access->notReadable();
+		}
+
+		// REQ-EXP-001: a relation graph as a CSV is the object's data leaving
+		// the instance, so it is an export and is checked against the export
+		// verb, not against the read the caller already passed above. A
+		// principal holding read without export meets the same refusal here as
+		// on every other export path.
+		$refusal = $this->exportGate->refusalFor(
+			schema: $this->access->schemaOf(object: $object),
+			profile: 'relation-graph',
+			registerId: $this->access->registerIdOf(object: $object)
+		);
+
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$uuid = (string)$object->getUuid();
@@ -521,55 +539,6 @@ class ObjectRelationsController extends Controller {
 			contentType: 'text/csv'
 		);
 	}//end exportGraph()
-
-	/**
-	 * The object behind a path, when the caller may read it.
-	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object's uuid.
-	 *
-	 * @return ObjectEntity|null The object, or null when it is not readable.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function readable(string $register, string $schema, string $id): ?ObjectEntity {
-		if ($this->userSession->getUser() === null) {
-			return null;
-		}
-
-		try {
-			// REGISTER FIRST: setSchema() resolves its slug inside whatever
-			// register is currently set, and ObjectService is reused across
-			// calls in one process.
-			$this->objectService->setRegister(register: $register);
-			$this->objectService->setSchema(schema: $schema);
-
-			return $this->objectService->find(
-				id: $id,
-				register: $register,
-				schema: $schema,
-				_rbac: true,
-				_multitenancy: true
-			);
-		} catch (\Exception $e) {
-			return null;
-		}
-	}//end readable()
-
-	/**
-	 * The one answer a caller who may not read the object gets.
-	 *
-	 * 404 rather than 403, so the route does not confirm that an object with
-	 * that uuid exists to somebody who may not see it.
-	 *
-	 * @return JSONResponse The refusal.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function notReadable(): JSONResponse {
-		return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-	}//end notReadable()
 
 	/**
 	 * The depth this request asks for.

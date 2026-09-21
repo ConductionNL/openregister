@@ -32,8 +32,9 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
@@ -58,6 +59,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex search query building and optimization logic
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Query building reads views, schemas, watchers and references
  */
 class SearchQueryHandler {
 
@@ -131,7 +133,7 @@ class SearchQueryHandler {
 	/**
 	 * SearchQueryHandler constructor.
 	 *
-	 * @param ViewMapper $viewMapper Mapper for view operations.
+	 * @param ViewScopeApplier $viewScope Merges a view's stored query into a search.
 	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
 	 * @param SettingsService $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
@@ -140,11 +142,14 @@ class SearchQueryHandler {
 	 * @param WatcherMapper|null $watcherMapper Subscriptions, for the `_watching=true` lens.
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
 	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
+	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid to its id.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly ViewMapper $viewMapper,
+		private readonly ViewScopeApplier $viewScope,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly SettingsService $settingsService,
 		private readonly LoggerInterface $logger,
@@ -156,6 +161,11 @@ class SearchQueryHandler {
 		// unit tests that build this handler positionally keep working; the
 		// container resolves the real instance by type in production.
 		private readonly ?CodedFilterExpander $codedFilters = null,
+		// The register/schema reference resolver. Nullable and last for the same
+		// reason as the expander above. Absent, buildSearchQuery() still refuses
+		// a reference it cannot read rather than int-casting it into an empty
+		// page; present, it resolves a slug or uuid the way the write path does.
+		private readonly ?SearchReferenceResolver $referenceResolver = null,
 	) {
 	}//end __construct()
 
@@ -423,6 +433,116 @@ class SearchQueryHandler {
 	}//end schemaDeclaresFilterProperty()
 
 	/**
+	 * Resolve a register or schema reference for the query being built.
+	 *
+	 * Delegates to {@see SearchReferenceResolver} when the container wired one.
+	 * Without it — a handler built positionally in a unit test — the reference
+	 * is still never int-cast into an empty page: what can be read as an id is
+	 * read as one, what says nothing becomes `null` (which reaches the global
+	 * fallbacks), and everything else is refused by name. That is the whole
+	 * point of openregister#3990: a reference nobody can resolve must not look
+	 * like a register with no objects in it.
+	 *
+	 * @param int|string|array|null $reference The register/schema id, uuid, slug, or a list.
+	 * @param string $kind Either `register` or `schema`.
+	 *
+	 * @return int|array|null The numeric id(s), or null when the reference says nothing.
+	 *
+	 * @psalm-return int|array<int, int>|null
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
+	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function resolveReference(int|string|array|null $reference, string $kind): int|array|null {
+		if ($reference === null) {
+			return null;
+		}
+
+		if ($this->referenceResolver !== null) {
+			if ($kind === 'register') {
+				return $this->referenceResolver->register(reference: $reference);
+			}
+
+			return $this->referenceResolver->schema(reference: $reference);
+		}
+
+		if (is_array($reference) === true) {
+			return $this->readReferenceList(references: $reference, kind: $kind);
+		}
+
+		return $this->readReference(reference: $reference, kind: $kind);
+	}//end resolveReference()
+
+	/**
+	 * Read a list of references without a resolver.
+	 *
+	 * @param array<int|string, mixed> $references The references.
+	 * @param string $kind Either `register` or `schema`.
+	 *
+	 * @return array<int, int> The ids the list names.
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
+	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function readReferenceList(array $references, string $kind): array {
+		$ids = [];
+		foreach ($references as $item) {
+			if (is_int($item) === false && is_string($item) === false) {
+				continue;
+			}
+
+			$id = $this->readReference(reference: $item, kind: $kind);
+			if ($id !== null) {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}//end readReferenceList()
+
+	/**
+	 * Read one reference without a resolver.
+	 *
+	 * Only what can be read as an id is read as one. Nothing is int-cast into
+	 * an empty page, and nothing is resolved either, because there is no mapper
+	 * here to ask.
+	 *
+	 * @param int|string $reference The id, uuid or slug.
+	 * @param string $kind Either `register` or `schema`.
+	 *
+	 * @return int|null The id, or null when the reference says nothing.
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
+	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function readReference(int|string $reference, string $kind): ?int {
+		if (is_int($reference) === true && $reference > 0) {
+			return $reference;
+		}
+
+		$trimmed = trim((string)$reference);
+		if ($trimmed === '') {
+			return null;
+		}
+
+		if (ctype_digit($trimmed) === true && (int)$trimmed > 0) {
+			return (int)$trimmed;
+		}
+
+		if ($kind === 'register') {
+			throw new RegisterNotFoundException(registerSlugOrId: $trimmed);
+		}
+
+		throw new SchemaNotFoundException(schemaSlugOrId: $trimmed);
+	}//end readReference()
+
+	/**
 	 * Build search query from request parameters
 	 *
 	 * Converts HTTP request parameters into a structured query array for searchObjectsPaginated.
@@ -559,30 +679,22 @@ class SearchQueryHandler {
 
 		// Add register and schema to @self if provided.
 		// Support both single values and arrays for multi-register/schema filtering.
-		if ($register !== null) {
-			/*
-			 * @var int|string|array $registerValue
-			 */
-
-			$registerValue = $register;
-			$query['@self']['register'] = (int)$registerValue;
-			if (is_array($registerValue) === true) {
-				// Convert array values to integers.
-				$query['@self']['register'] = array_map('intval', $registerValue);
-			}
+		//
+		// These two used to be int-cast. `(int)'my-register'` is `0`, `0` is not
+		// `null`, so the search ran scoped to a register that cannot exist,
+		// found nothing, and reported nothing found — while the write path,
+		// handed the same slug, resolved it or threw. Three apps read that empty
+		// page as a fact about their data (openregister#3990). The reference is
+		// now resolved the way the write path resolves it, and refused the way
+		// the write path refuses it.
+		$registerId = $this->resolveReference(reference: $register, kind: 'register');
+		if ($registerId !== null) {
+			$query['@self']['register'] = $registerId;
 		}
 
-		if ($schema !== null) {
-			/*
-			 * @var int|string|array $schemaValue
-			 */
-
-			$schemaValue = $schema;
-			$query['@self']['schema'] = (int)$schemaValue;
-			if (is_array($schemaValue) === true) {
-				// Convert array values to integers.
-				$query['@self']['schema'] = array_map('intval', $schemaValue);
-			}
+		$schemaId = $this->resolveReference(reference: $schema, kind: 'schema');
+		if ($schemaId !== null) {
+			$query['@self']['schema'] = $schemaId;
 		}
 
 		// Query structure built successfully.
@@ -657,135 +769,31 @@ class SearchQueryHandler {
 	}//end buildSearchQuery()
 
 	/**
-	 * Apply view filters to a query
+	 * Apply view filters to a query.
 	 *
-	 * Converts view definitions into query parameters by merging view->query into the base query.
-	 * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
+	 * The merge itself lives in {@see ViewScopeApplier}, which owns the
+	 * ViewMapper and the fail-closed contract around `$_viewScopeRequired`.
+	 * This handler keeps the entry point its callers already use.
 	 *
 	 * @param array<string, mixed> $query Base query parameters.
 	 * @param array<int|string> $viewIds View IDs to apply (can be int or string IDs).
+	 * @param bool $_viewScopeRequired Whether the view filter is load-bearing for this
+	 *                                 caller, making any failure to apply it fatal.
 	 *
 	 * @return array<string, mixed> Query with view filters applied
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
+	 * @throws Exception When `$_viewScopeRequired` is true and a view cannot be applied.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fail-closed contract, not a mode switch
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function applyViewsToQuery(array $query, array $viewIds): array {
-		if (empty($viewIds) === true) {
-			return $query;
-		}
-
-		$this->logger->debug(
-			message: '[SearchQueryHandler] Applying views to query',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'viewIds' => $viewIds,
-				'originalQuery' => array_keys($query),
-			]
+	public function applyViewsToQuery(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
+		return $this->viewScope->apply(
+			query: $query,
+			viewIds: $viewIds,
+			_viewScopeRequired: $_viewScopeRequired
 		);
-
-		foreach ($viewIds as $viewId) {
-			try {
-				$view = $this->viewMapper->find($viewId);
-				$viewQuery = $view->getQuery();
-
-				// Apply registers filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['registers']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$registerValue = $query['@self']['register'] ?? null;
-					$registerArray = [];
-					if (is_array($registerValue) === true) {
-						$registerArray = $registerValue;
-					} elseif ($registerValue !== null && $registerValue !== false) {
-						$registerArray = [$registerValue];
-					}
-
-					$query['@self']['register'] = array_unique(
-						array_merge(
-							$registerArray,
-							$viewQuery['registers']
-						)
-					);
-				}//end if
-
-				// Apply schemas filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['schemas']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$schemaValue = $query['@self']['schema'] ?? null;
-					$schemaArray = [];
-					if (is_array($schemaValue) === true) {
-						$schemaArray = $schemaValue;
-					} elseif ($schemaValue !== null && $schemaValue !== false) {
-						$schemaArray = [$schemaValue];
-					}
-
-					$query['@self']['schema'] = array_unique(
-						array_merge(
-							$schemaArray,
-							$viewQuery['schemas']
-						)
-					);
-				}//end if
-
-				// Apply search terms.
-				if (empty($viewQuery['searchTerms']) === false) {
-					$searchTerms = $viewQuery['searchTerms'];
-					if (is_array($viewQuery['searchTerms']) === true) {
-						$searchTerms = implode(' ', $viewQuery['searchTerms']);
-					}
-
-					// Merge with existing search if present.
-					//
-					// This previously assigned $query['_search'] FIRST and then
-					// appended $searchTerms to it, so the isset() guard could only
-					// ever see the value just written. Two things went wrong: the
-					// caller's own `_search` was discarded (the merge this comment
-					// describes never happened), and the view's terms were appended
-					// to themselves, producing "foo foo". Mirrors the `schemas`
-					// merge above: read what is there, then combine.
-					$existingSearch = ($query['_search'] ?? '');
-					$searchPrefix = '';
-					if (is_string($existingSearch) === true && $existingSearch !== '') {
-						$searchPrefix = $existingSearch . ' ';
-					}
-
-					$query['_search'] = $searchPrefix . $searchTerms;
-				}//end if
-
-				$this->logger->debug(
-					message: '[SearchQueryHandler] Applied view to query',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'registers' => $viewQuery['registers'] ?? [],
-						'schemas' => $viewQuery['schemas'] ?? [],
-						'hasSearchTerms' => empty($viewQuery['searchTerms']) === false,
-					]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[SearchQueryHandler] Failed to apply view',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return $query;
 	}//end applyViewsToQuery()
 
 	/**
