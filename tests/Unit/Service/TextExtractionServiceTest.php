@@ -3721,4 +3721,64 @@ class TextExtractionServiceTest extends TestCase
 
         $this->assertTrue(true); // no exception
     }
+
+    // ────────────────────────────────────────────────────────
+    // extractPendingFiles — a row without a usable fileid is skipped (WOO-576)
+    // ────────────────────────────────────────────────────────
+
+    /**
+     * The cron job carried this guard until its own loop moved into this
+     * method; nothing here replaced it. `fc.fileid` is a NOT NULL primary key
+     * so it should never fire in production, but a row that cannot name a file
+     * must not be handed to extractFile() as id 0.
+     */
+    public function testExtractPendingFilesSkipsRowsWithoutAUsableFileId(): void
+    {
+        $this->fileMapper->method('findUntrackedFiles')->willReturn([
+            ['fileid' => 0, 'name' => 'no-id.pdf'],
+            ['name' => 'missing-key.pdf'],
+            ['fileid' => 7, 'name' => 'real.pdf'],
+        ]);
+
+        $result = $this->service->extractPendingFiles(limit: 10);
+
+        // Only the third row is attempted; the other two are skipped outright,
+        // so they count as neither processed nor failed.
+        $this->assertSame(1, ($result['processed'] + $result['failed']));
+    }
+
+    /**
+     * Every window full of permanently failing files advances the offset and
+     * the walk stops at MAX_PENDING_WINDOWS with budget to spare. The counters
+     * alone cannot distinguish that from "the queue is drained", so the stats
+     * carry a flag for it.
+     */
+    public function testExtractPendingFilesReportsATruncatedWalk(): void
+    {
+        $window = [];
+        for ($i = 1; $i <= 2; $i++) {
+            $window[] = ['fileid' => $i, 'name' => "f{$i}.pdf"];
+        }
+
+        $this->fileMapper->method('findUntrackedFiles')->willReturn($window);
+
+        $result = $this->service->extractPendingFiles(limit: 2);
+
+        $this->assertArrayHasKey('truncated', $result);
+        $this->assertTrue($result['truncated'], 'the walk stopped on the window cap, not on an empty queue');
+    }
+
+    /**
+     * The flag is not always true: a queue that runs dry reports a complete walk.
+     */
+    public function testExtractPendingFilesReportsACompleteWalkWhenTheQueueDrains(): void
+    {
+        $this->fileMapper->method('findUntrackedFiles')->willReturn([
+            ['fileid' => 1, 'name' => 'only.pdf'],
+        ]);
+
+        $result = $this->service->extractPendingFiles(limit: 50);
+
+        $this->assertFalse($result['truncated'], 'a short window is the end of the queue, not a cap');
+    }
 }

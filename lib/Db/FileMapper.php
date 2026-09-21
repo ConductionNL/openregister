@@ -764,17 +764,25 @@ class FileMapper extends QBMapper
      * - Trashed files
      * - External/temporary storages
      *
-     * @param int $limit Maximum number of untracked files to return
+     * @param int $limit  Maximum number of untracked files to return
+     * @param int $offset Number of rows to skip. Files that fail extraction keep
+     *                    matching this query — nothing records the failure — and
+     *                    the fileid ordering keeps them at the head of every
+     *                    window. The offset lets a caller step over them instead
+     *                    of re-reading the same unreadable files forever
+     *                    (WOO-576).
      *
      * @return array List of untracked files with basic metadata
      *
      * @phpstan-param  int $limit
+     * @phpstan-param  int $offset
      * @phpstan-return list<array{
      *     fileid: int, path: string, name: string, mimetype: string,
-     *     size: int, mtime: int, checksum: string|null
+     *     size: int, mtime: int, checksum: string|null, storage_id: string|null,
+     *     owner: string|null
      * }>
      */
-    public function findUntrackedFiles(int $limit=100): array
+    public function findUntrackedFiles(int $limit=100, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -797,7 +805,10 @@ class FileMapper extends QBMapper
             'mt.mimetype',
             'fc.size',
             'fc.mtime',
-            'fc.checksum'
+            'fc.checksum',
+            // The storage id carries the owner ("home::<uid>"), which the extraction
+            // needs to set up that user's filesystem before looking the file up.
+            'st.id AS storage_id'
         )
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
@@ -832,6 +843,7 @@ class FileMapper extends QBMapper
             ->andWhere($qb->expr()->gt('fc.size', $zeroSize))
             // Exclude empty files.
             ->setMaxResults($limit)
+            ->setFirstResult($offset)
             ->orderBy('fc.fileid', 'ASC');
 
         $result = $qb->executeQuery();
@@ -839,6 +851,15 @@ class FileMapper extends QBMapper
 
         $row = $result->fetch();
         while ($row !== false) {
+            // Derive the owner from the storage id, matching getFile()/getFiles().
+            $row['owner'] = null;
+            if (empty($row['storage_id']) === false) {
+                $row['owner'] = $row['storage_id'];
+                if (str_starts_with($row['storage_id'], 'home::') === true) {
+                    $row['owner'] = substr($row['storage_id'], 6);
+                }
+            }
+
             $files[] = $row;
             $row     = $result->fetch();
         }

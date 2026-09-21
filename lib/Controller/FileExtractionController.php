@@ -405,6 +405,9 @@ class FileExtractionController extends Controller
     public function extractAll(int $limit=100): JSONResponse
     {
         try {
+            // Same floor/ceiling as the bulk endpoint: a zero or negative limit
+            // would answer "nothing to do" for a queue that is not empty.
+            $limit = max(1, min($limit, 500));
             $stats = $this->textExtractor->extractPendingFiles($limit);
 
             return new JSONResponse(
@@ -423,7 +426,7 @@ class FileExtractionController extends Controller
                 ],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end extractAll()
 
     /**

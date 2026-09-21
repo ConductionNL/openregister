@@ -186,7 +186,11 @@ class FileSettingsHandler
                 'extractionMode'            => $fileData['extractionMode'] ?? 'background',
                 // Background, immediate, manual.
                 'maxFileSize'               => $fileData['maxFileSize'] ?? 100,
-                'batchSize'                 => $fileData['batchSize'] ?? 10,
+                // Bounded on write: a zero or negative batch size makes the cron job
+                // extract nothing and report "no pending files" for a queue that is
+                // not empty, and an unbounded one lets a single tick attempt
+                // MAX_PENDING_WINDOWS x batchSize files.
+                'batchSize'                 => max(1, min((int) ($fileData['batchSize'] ?? 10), 500)),
                 'dolphinApiEndpoint'        => $fileData['dolphinApiEndpoint'] ?? '',
                 'dolphinApiKey'             => $fileData['dolphinApiKey'] ?? '',
                 // Presidio entity recognition settings.
