@@ -82,6 +82,14 @@ class PermissionCatalogue {
 	 * edits the rules themselves, and the one a deny may not take from the last
 	 * principal holding it.
 	 *
+	 * `assign` is here because handing work to somebody is neither reading nor
+	 * writing (ledger row 13.40), and ADR-010 anticipates exactly this case: a
+	 * concept core Nextcloud has no bit for, which enters the GOVERNED
+	 * vocabulary rather than becoming a parallel model. It is grantable on its
+	 * own and holding `update` does not imply it, which is the whole point:
+	 * reassignment was gated on a coordinator check that resolved to isAdmin,
+	 * so handing work over was an administrator's right rather than an axis.
+	 *
 	 * `destroy` is here because `delete-window-and-recorded-destruction` made it
 	 * a second, narrower right than `delete`: deleting puts an object in the
 	 * trash, where it can come back, and destroying ends it. `PermissionHandler`
@@ -89,6 +97,13 @@ class PermissionCatalogue {
 	 * `DestroyRightService` resolves it on every destruction, so a catalogue
 	 * without it refused a block naming a verb this instance already enforces
 	 * (task 8.5, decision D10).
+	 *
+	 * `export` is here because reading a record and taking a dataset off the
+	 * instance are different acts, and the AVG treats them differently. It is
+	 * the verb `ExportRightService` resolves on every export path. While no
+	 * administrator has written it into a schema's block, it falls back to that
+	 * schema's `read` grant, so an upgraded instance keeps exporting; the
+	 * catalogue publishes it so the narrowing can be made at all.
 	 *
 	 * @var array<string, string>
 	 */
@@ -99,7 +114,9 @@ class PermissionCatalogue {
 		'delete' => 'Remove an object.',
 		'destroy' => 'End a deleted object for good, before its recovery window closes.',
 		'list' => 'See the objects of a schema as a list, with totals and facets.',
+		'export' => 'Take the objects of a schema off this instance as a file.',
 		'manage' => 'Change the access rules themselves, including roles and grants.',
+		'assign' => 'Hand the work on an object to somebody else.',
 	];
 
 	/**
@@ -117,6 +134,23 @@ class PermissionCatalogue {
 		'inheritFromPublic',
 		ObjectScopeResolver::SCOPE_KEY,
 		DenyResolver::DENY_KEY,
+		// 🔴 THE MATRIX IS A DECLARATION, NOT A VERB, and leaving it out of this
+		// list made the whole of `rbac-department-role-matrix` unreachable: a
+		// block carrying `matrix` had that key read as a verb, `isGrantable()`
+		// answered no, and `assertGrantable()` refused the schema save with
+		// "unknown verb: matrix". Every unit test of that compiler passed,
+		// because none of them goes through this check, and its e2e could not
+		// be run in the phase that built it. Caught here rather than in
+		// production, which is the only reason this comment is short.
+		DepartmentMatrixCompiler::KEY,
+		// The effective token grant a request carries, written into the block
+		// by `TokenGrantNarrower`. Listed here for exactly the reason above:
+		// a key in a block that is not a control key is read as a VERB, and
+		// every schema whose block had been narrowed would then be refused at
+		// save with "unknown verb: x-openregister-token-grant". The defect the
+		// comment above records cost a whole change; this is the same shape,
+		// and the list is the cure.
+		TokenGrantNarrower::MARKER,
 	];
 
 	/**

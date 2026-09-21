@@ -30,6 +30,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -154,6 +155,26 @@ class ViewService {
 		// Retrieve all views accessible to the user (owned or public).
 		return $this->viewMapper->findAll(owner: $owner);
 	}//end findAll()
+
+	/**
+	 * Every view this caller may see, each carrying the access they hold.
+	 *
+	 * The union `view-group-share` adds to `findAll()`: the caller's own views,
+	 * the views shared with a group they are in, and the public ones, each with
+	 * `@self.access`. `findAll()` is left alone rather than widened, because it
+	 * is called from paths that mean "the views this OWNER has" and silently
+	 * turning that into "and everything shared with them" would change what
+	 * those paths count.
+	 *
+	 * @param ViewerReach $reach The caller, their groups and whether they administer the instance.
+	 *
+	 * @return array The views.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	public function findAllFor(ViewerReach $reach): array {
+		return $this->viewMapper->findAllFor(reach: $reach);
+	}//end findAllFor()
 
 	/**
 	 * Create a new view

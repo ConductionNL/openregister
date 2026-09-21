@@ -243,11 +243,23 @@ class AccessLinkReader {
 		}
 
 		try {
+			// `_viewScopeRequired: true` is not decoration. RBAC and multitenancy
+			// are off here because there is no session to judge, which leaves the
+			// view as the ONLY bound on this query. The shared search path used to
+			// log an unresolvable view and carry on with the query unchanged - and
+			// the view IS unresolvable here, because ViewMapper::find() ran an RBAC
+			// read check against an anonymous caller. The result was a link serving
+			// up to MAX_VIEW_OBJECTS arbitrary objects from any organisation. With
+			// the flag the view is resolved exempt (the link is the authorization,
+			// exactly as for the schema read in filteredProperties()) and every way
+			// of failing to apply it throws, which the catch below turns into "this
+			// link no longer resolves".
 			$results = $this->objects->searchObjects(
 				query: ['_limit' => self::MAX_VIEW_OBJECTS],
 				_rbac: false,
 				_multitenancy: false,
-				views: [$viewId]
+				views: [$viewId],
+				_viewScopeRequired: true
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(
@@ -271,6 +283,25 @@ class AccessLinkReader {
 
 		return ['results' => $rows, 'total' => count($rows)];
 	}//end readView()
+
+	/**
+	 * One object, reduced to what an anonymous caller may read.
+	 *
+	 * Public because a link is not the only surface that answers without a
+	 * session: an object share token does too, and it was serving the object
+	 * whole, `@self.authorization` included (openregister#3818). Two surfaces
+	 * with the same audience get the same projection, from here, rather than a
+	 * second allow-list that drifts.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed> The published projection.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
+	 */
+	public function publish(ObjectEntity $object): array {
+		return $this->project(object: $object);
+	}//end publish()
 
 	/**
 	 * One object, reduced to what a link may publish.

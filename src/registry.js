@@ -103,6 +103,9 @@ export default {
 		() => import('./views/quality/MasterEntitiesIndex.vue'),
 	),
 	QueueHealthIndex: page(() => import('./views/quality/QueueHealthIndex.vue')),
+	OperationsConsoleIndex: page(
+		() => import('./views/operations/OperationsConsoleIndex.vue'),
+	),
 	MergeOperationsIndex: page(
 		() => import('./views/quality/MergeOperationsIndex.vue'),
 	),

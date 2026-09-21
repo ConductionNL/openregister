@@ -3054,6 +3054,15 @@ class ObjectService implements ObjectServiceInterface
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      *
+     * A reference that names no register or schema is REFUSED here rather than
+     * answered with an empty page, which is what the int-cast used to do
+     * (openregister#3990). The published contract in lib/Contract/ is mirrored
+     * in hydra-gates and is left untouched on purpose: changing it means
+     * changing both copies in one change (ADR-084).
+     *
+     * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When the register reference names no register.
+     * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When the schema reference names no schema.
+     *
      * @spec exclude One-line delegation to SearchQueryHandler::buildSearchQuery(); query-building owned by zoeken-filteren.
      */
     public function buildSearchQuery(
@@ -3119,6 +3128,12 @@ class ObjectService implements ObjectServiceInterface
      * @param array|null  $ids           Optional array of IDs to filter by
      * @param string|null $uses          Optional filter by object usage
      * @param array|null  $views         Optional view IDs to apply
+     * @param bool $_viewScopeRequired   Whether the view filter is this caller's ONLY bound.
+     *                                   A caller that switches `$_rbac` and `$_multitenancy`
+     *                                   off because it carries its own authorization (a
+     *                                   published access link naming one view) MUST set this:
+     *                                   it makes an unresolvable or non-narrowing view throw
+     *                                   instead of silently yielding an unbounded search.
      *
      * @psalm-param array<string, mixed> $query
      *
@@ -3127,8 +3142,11 @@ class ObjectService implements ObjectServiceInterface
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `_rbac` / `_multitenancy` convention
      *
      * @spec exclude One-line delegation to QueryHandler::searchObjects(); search behavior owned by zoeken-filteren.
      */
@@ -3138,7 +3156,8 @@ class ObjectService implements ObjectServiceInterface
         bool $_multitenancy=true,
         ?array $ids=null,
         ?string $uses=null,
-        ?array $views=null
+        ?array $views=null,
+        bool $_viewScopeRequired=false
     ): array|int {
         // ARCHITECTURAL DELEGATION: Delegate to QueryHandler for all search operations.
         return $this->queryHandler->searchObjects(
@@ -3147,7 +3166,8 @@ class ObjectService implements ObjectServiceInterface
             _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses,
-            views: $views
+            views: $views,
+            _viewScopeRequired: $_viewScopeRequired
         );
     }//end searchObjects()
 
@@ -4426,7 +4446,7 @@ class ObjectService implements ObjectServiceInterface
      *                               lock for this synthetic key without scanning tables
      * @param string|null $runUuid   Flow run releasing the lock, for a run-scoped lock
      *
-     * @return true True if unlocked successfully
+     * @return bool True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
      *
