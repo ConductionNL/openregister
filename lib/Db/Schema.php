@@ -933,6 +933,20 @@ class Schema extends Entity implements JsonSerializable {
 	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
 
 	/**
+	 * The property keys whose falsy value is a real one.
+	 *
+	 * An empty value is dropped by getSchemaObject(), because an empty `title`
+	 * says nothing; these carry a value instead, so `false`, `0` and a zero
+	 * floor survive. Not the full set of value-carrying keywords: the rest
+	 * reach here only from a generated schema and none is generated falsy,
+	 * where `minimum: 0` is (TablesColumnMapper::numberProperty()). Add a key
+	 * when something generates a falsy one.
+	 *
+	 * @var array<int, string>
+	 */
+	public const VALUE_CARRYING_PROPERTY_KEYS = ['default', 'const', 'minimum', 'maximum'];
+
+	/**
 	 * Whether the schema declares any nested write-only dot-paths.
 	 *
 	 * Companion to hasWriteOnlyProperties(): that one answers "does a declared
@@ -2120,9 +2134,9 @@ class Schema extends Entity implements JsonSerializable {
 
 			$prop = new stdClass();
 			foreach ($property as $key => $value) {
-				// `default` and `const` carry a VALUE, where false, 0 and "" are real
-				// ones; every other key is metadata that an empty value says nothing with.
-				$carriesValue = ($key === 'default' || $key === 'const');
+				// A value-carrying key keeps its falsy value; '' is not one of them,
+				// being what the property form ships for a default nobody filled in.
+				$carriesValue = (in_array($key, self::VALUE_CARRYING_PROPERTY_KEYS, true) === true && $value !== '');
 
 				// Skip 'required' property on this level.
 				if ($key !== 'required' && ($carriesValue === true || empty($value) === false)) {
