@@ -14,6 +14,7 @@
  * typically just an interface declaration or a minimal class body — so that
  * PHP can evaluate the OCP interface files without fatal errors.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  */
 
