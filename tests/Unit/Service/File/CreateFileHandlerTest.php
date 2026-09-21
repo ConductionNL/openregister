@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 /*
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * CreateFileHandler Unit Tests
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\File
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  */
 
