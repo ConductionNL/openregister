@@ -1,0 +1,53 @@
+name: WOO-572 OR Hotfix CI
+
+# Branch-local CI for the OpenRegister 1.x hotfix line (1.1.5-woo-N, WOO-572).
+# The repo's regular Code Quality workflow on this v1.1.5-era branch calls the
+# shared quality workflow @main, which has moved on since; this workflow runs
+# the checks that are meaningful for the hotfix and can run without a
+# Nextcloud instance: PHP lint, phpcs on the touched files, and the unit tests
+# that ship with the hotfix (WOO-576 filesystem context + windowed backfill,
+# WOO-577 chunk-arm counting and paging), bootstrapped from the nextcloud/ocp
+# dev dependency (tests/bootstrap-hotfix-ci.php).
+on:
+  push:
+    branches: [hotfix/woo-572-or-stable-line]
+  pull_request:
+    branches: [hotfix/woo-572-or-stable-line]
+
+permissions:
+  contents: read
+
+jobs:
+  hotfix-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip, gd, pdo_pgsql
+      - run: composer install --no-interaction --no-progress
+      - name: PHP lint
+        run: find lib appinfo -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /dev/null
+      - name: phpcs on the hotfix files
+        run: |
+          vendor/bin/phpcs --standard=phpcs.xml \
+            lib/Service/TextExtractionService.php \
+            lib/Db/FileMapper.php \
+            lib/BackgroundJob/CronFileTextExtractionJob.php \
+            lib/Controller/FileExtractionController.php \
+            lib/Controller/FileTextController.php \
+            lib/Service/Settings/FileSettingsHandler.php \
+            lib/Service/Object/ContentSearchHandler.php \
+            lib/Service/Object/QueryHandler.php
+      - name: Unit tests shipped with the hotfix
+        run: |
+          vendor/bin/phpunit --no-coverage --do-not-cache-result \
+            --bootstrap tests/bootstrap-hotfix-ci.php \
+            tests/Unit/Service/TextExtractionFilesystemContextTest.php \
+            tests/Unit/Service/TextExtractionServiceTest.php \
+            tests/Unit/BackgroundJob/CronFileTextExtractionJobTest.php \
+            tests/Unit/Service/Settings/FileSettingsHandlerTest.php \
+            tests/Unit/Controller/FileExtractionControllerTest.php \
+            tests/Unit/Controller/FileTextControllerTest.php \
+            tests/Unit/Service/Object/ContentSearchHandlerTest.php
