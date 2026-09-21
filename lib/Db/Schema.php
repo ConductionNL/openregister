@@ -933,6 +933,33 @@ class Schema extends Entity implements JsonSerializable {
 	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
 
 	/**
+	 * The property keys whose falsy value is a real one.
+	 *
+	 * An empty value is dropped by getSchemaObject(), because an empty `title`
+	 * says nothing; these carry a value instead, so `false`, `0` and a zero
+	 * bound survive. The four numeric ones are the draft-2020-12 keywords, all
+	 * declared `number` in PropertyValidatorHandler's table -- not the form's
+	 * `exclusiveMin`/`exclusiveMax`, which are booleans meaning "read the bound
+	 * as exclusive" and whose `false` really is unset.
+	 *
+	 * Not the full set of value-carrying keywords. `multipleOf: 0` would be an
+	 * invalid schema, and the length and item bounds have no falsy writer:
+	 * the property form normalises them through `parseFloat(...) || null`, and
+	 * nothing generates one at 0 the way TablesColumnMapper::numberProperty()
+	 * generates `minimum: 0`. Add a key when something starts writing one.
+	 *
+	 * @var array<int, string>
+	 */
+	public const VALUE_CARRYING_PROPERTY_KEYS = [
+		'default',
+		'const',
+		'minimum',
+		'maximum',
+		'exclusiveMinimum',
+		'exclusiveMaximum',
+	];
+
+	/**
 	 * Whether the schema declares any nested write-only dot-paths.
 	 *
 	 * Companion to hasWriteOnlyProperties(): that one answers "does a declared
@@ -2120,8 +2147,12 @@ class Schema extends Entity implements JsonSerializable {
 
 			$prop = new stdClass();
 			foreach ($property as $key => $value) {
+				// A value-carrying key keeps its falsy value; '' is not one of them,
+				// being what the property form ships for a default nobody filled in.
+				$carriesValue = (in_array($key, self::VALUE_CARRYING_PROPERTY_KEYS, true) === true && $value !== '');
+
 				// Skip 'required' property on this level.
-				if ($key !== 'required' && (empty($value) === false)) {
+				if ($key !== 'required' && ($carriesValue === true || empty($value) === false)) {
 					$prop->{$key} = $value;
 				}
 			}
