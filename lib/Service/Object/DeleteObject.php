@@ -368,6 +368,7 @@ class DeleteObject
      * @param string|null         $originalObjectId The ID of original object for cascading.
      * @param bool                $_rbac            Whether to apply RBAC checks (default: true).
      * @param bool                $_multitenancy    Whether to apply multitenancy filtering (default: true).
+     * @param bool                $permanent        When true the record is removed from the database instead of soft-deleted (WOO-557).
      *
      * @return bool Whether the deletion was successful.
      *
