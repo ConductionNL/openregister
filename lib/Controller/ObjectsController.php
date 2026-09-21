@@ -1084,6 +1084,10 @@ class ObjectsController extends Controller {
 		// buildSearchQuery() with no `_rbac` assignment.
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 
+		// Same bypass, same gap for translatable properties: renderEntity is
+		// where a `{"nl":...}` map projects to the negotiated language.
+		$renderHandler->resolveTranslationsForRows(rows: $results);
+
 		// Serialize results.
 		$serializedResults = [];
 		foreach ($results as $entity) {
@@ -1581,6 +1585,10 @@ class ObjectsController extends Controller {
 					// included (#389/#460).
 					$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 					$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+
+					// Same bypass, same gap for translatable properties: renderEntity is
+					// where a `{"nl":...}` map projects to the negotiated language.
+					$renderHandler->resolveTranslationsForRows(rows: $results);
 
 					$serializedResults = [];
 					foreach ($results as $entity) {
@@ -2610,6 +2618,10 @@ class ObjectsController extends Controller {
 						// `authorization.read` strip; writeOnly strips unconditionally (#460).
 						$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 						$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+
+						// Same bypass, same gap for translatable properties: renderEntity is
+						// where a `{"nl":...}` map projects to the negotiated language.
+						$renderHandler->resolveTranslationsForRows(rows: $results);
 
 						// Convert ObjectEntity array to JSON-serializable format.
 						$serializedResults = [];
