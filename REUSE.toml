@@ -193,9 +193,37 @@ SPDX-License-Identifier = "Apache-2.0 AND EUPL-1.2"
 # `src/files-sidebar.js` inlines two icon glyphs rather than importing them, and
 # says so itself: "// MDI icon SVG paths (inline to avoid icon library
 # dependency)", with `// database-outline` and `// text-box-search-outline` above
-# them. A repo-wide sweep — every tracked `d="…"` in a source file tested against
-# `node_modules/@mdi/js/mdi.js` — returns exactly four files: the three SVGs above
-# and this one. The `database-outline` path here is byte-identical to MDI's; the
+# them.
+#
+# THE SWEEP THAT FOUND THIS FILE, AND THE ONE THAT SHOULD HAVE. Review finding
+# on #3857 (rjzondervan, round 3): the sweep written here first looked for
+# `d="…"` attributes only. That is the SVG spelling. In PHP and JS the same
+# artwork is an ordinary quoted string, so the search missed the largest
+# concentration of upstream glyphs in the repository — the 17 in
+# lib/Service/MdiIconRenderer.php, blocked below. The sentence that reported
+# "exactly four files" was therefore false at the commit that wrote it, in the
+# file whose whole purpose is to be the honest inventory. The workflow comment
+# at .github/workflows/code-quality.yml argues that hand-maintained counts go
+# stale inside the pull request that writes them; it was right about itself and
+# it was right about this file too.
+#
+# Corrected method — every quoted string in every tracked file (not just `d="…"`,
+# not just `img/`) that looks like an SVG path, tested for byte-identity against
+# node_modules/@mdi/js/mdi.js 7.4.47. Rather than a count that can rot, the full
+# result, and the command to re-derive it:
+#
+#   img/app-dark.svg                   mdiDatabaseSync
+#   img/lock.svg                       mdiLock
+#   img/unlock.svg                     mdiLockOpenOutline
+#   lib/Service/MdiIconRenderer.php    17 glyphs, see its own block below
+#   src/files-sidebar.js               mdiDatabaseOutline
+#
+# Re-derive with: extract `export var mdi\w+ = "…"` from @mdi/js/mdi.js into a
+# set, then grep every tracked file for quoted strings matching ^[Mm][0-9A-Za-z
+# ,.-]{39,}$ and test membership. Anything it reports that has no block here is
+# a gap, not a judgement call.
+#
+# The `database-outline` path here is byte-identical to MDI's; the
 # `text-box-search-outline` one is not present in the installed package (a
 # different MDI release, or hand-adjusted), but the file declares it as MDI and
 # an assertion of sole Conduction authorship over it would not be supportable.
@@ -206,6 +234,32 @@ SPDX-License-Identifier = "Apache-2.0 AND EUPL-1.2"
 # embed no artwork, so they stay under the blanket.
 [[annotations]]
 path = "src/files-sidebar.js"
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/",
+    "2026 Conduction B.V. <info@conduction.nl>",
+]
+SPDX-License-Identifier = "Apache-2.0 AND EUPL-1.2"
+
+# `lib/Service/MdiIconRenderer.php` renders an MDI reference into a self-hosted
+# `data:` SVG URI, because a bare icon name does not render in Nextcloud unified
+# search results and the CSP blocks icon CDNs. To do that it embeds the artwork:
+# all 17 entries of its PATHS constant are byte-identical to @mdi/js 7.4.47 —
+# mdiDog, mdiCat, mdiBird, mdiFish, mdiTurtle, mdiPaw, mdiAccount,
+# mdiAccountGroup, mdiTag, mdiShape, mdiCartOutline, mdiStethoscope,
+# mdiClipboardPulse, mdiMedicalBag, mdiCalendar, mdiDatabase and
+# mdiFileDocumentOutline. The file states its source twice in its own docblock
+# ("a curated subset of @mdi/js", "the SVG `path` `d` data from Material Design
+# Icons v7"), so this was never a hidden dependency — only an unrecorded one.
+#
+# That is 17× the upstream expression in src/files-sidebar.js above, and it sat
+# under a sole-Conduction EUPL-1.2 header until #3857 round 3. The file's own
+# header has been corrected in the same commit as this block, so the source is
+# honest when read on its own; this block is the machine-readable half and says
+# the same thing deliberately. Replacing the glyphs with our own drawings would
+# collapse it back to the blanket.
+[[annotations]]
+path = "lib/Service/MdiIconRenderer.php"
 precedence = "override"
 SPDX-FileCopyrightText = [
     "Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/",

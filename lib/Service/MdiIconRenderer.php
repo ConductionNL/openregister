@@ -13,15 +13,24 @@
  * sample apps plus common entity icons). Unknown names return null so the caller
  * can fall back to its existing icon.
  *
+ * LICENSING. All 17 path literals in PATHS below are byte-identical to
+ * @mdi/js 7.4.47, so this file redistributes Pictogrammers artwork alongside
+ * Conduction's renderer code and cannot assert sole Conduction authorship.
+ * Both rights holders are named below and the licence is the conjunction of
+ * both; REUSE.toml carries the same statement as a machine-readable block.
+ * Replacing the glyphs with our own drawings would collapse this back to
+ * EUPL-1.2 alone.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2026 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @copyright 2026 Conduction B.V.; glyph path data Austin Andrews and the Pictogrammers contributors
+ * @license   Apache-2.0 AND EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * SPDX-FileCopyrightText: Austin Andrews and the Pictogrammers contributors, https://pictogrammers.com/library/mdi/
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-License-Identifier: Apache-2.0 AND EUPL-1.2
  *
  * @link https://www.OpenRegister.app
  */
