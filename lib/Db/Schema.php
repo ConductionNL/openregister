@@ -2120,8 +2120,12 @@ class Schema extends Entity implements JsonSerializable {
 
 			$prop = new stdClass();
 			foreach ($property as $key => $value) {
+				// `default` and `const` carry a VALUE, where false, 0 and "" are real
+				// ones; every other key is metadata that an empty value says nothing with.
+				$carriesValue = ($key === 'default' || $key === 'const');
+
 				// Skip 'required' property on this level.
-				if ($key !== 'required' && (empty($value) === false)) {
+				if ($key !== 'required' && ($carriesValue === true || empty($value) === false)) {
 					$prop->{$key} = $value;
 				}
 			}
