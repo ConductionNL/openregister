@@ -937,14 +937,27 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * An empty value is dropped by getSchemaObject(), because an empty `title`
 	 * says nothing; these carry a value instead, so `false`, `0` and a zero
-	 * floor survive. Not the full set of value-carrying keywords: the rest
-	 * reach here only from a generated schema and none is generated falsy,
-	 * where `minimum: 0` is (TablesColumnMapper::numberProperty()). Add a key
-	 * when something generates a falsy one.
+	 * bound survive. The four numeric ones are the draft-2020-12 keywords, all
+	 * declared `number` in PropertyValidatorHandler's table -- not the form's
+	 * `exclusiveMin`/`exclusiveMax`, which are booleans meaning "read the bound
+	 * as exclusive" and whose `false` really is unset.
+	 *
+	 * Not the full set of value-carrying keywords. `multipleOf: 0` would be an
+	 * invalid schema, and the length and item bounds have no falsy writer:
+	 * the property form normalises them through `parseFloat(...) || null`, and
+	 * nothing generates one at 0 the way TablesColumnMapper::numberProperty()
+	 * generates `minimum: 0`. Add a key when something starts writing one.
 	 *
 	 * @var array<int, string>
 	 */
-	public const VALUE_CARRYING_PROPERTY_KEYS = ['default', 'const', 'minimum', 'maximum'];
+	public const VALUE_CARRYING_PROPERTY_KEYS = [
+		'default',
+		'const',
+		'minimum',
+		'maximum',
+		'exclusiveMinimum',
+		'exclusiveMaximum',
+	];
 
 	/**
 	 * Whether the schema declares any nested write-only dot-paths.

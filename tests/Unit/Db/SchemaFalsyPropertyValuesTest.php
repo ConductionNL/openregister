@@ -109,6 +109,47 @@ class SchemaFalsyPropertyValuesTest extends TestCase {
 	}//end testZeroMinimumSurvives()
 
 	/**
+	 * A zero exclusive bound is the same constraint one step stricter. These are
+	 * the draft-2020-12 numeric keywords, reachable through schema import; the
+	 * form's boolean `exclusiveMin`/`exclusiveMax` are different keys.
+	 *
+	 * @return void
+	 */
+	public function testZeroExclusiveBoundsSurvive(): void {
+		$prop = $this->emit(
+			[
+				'title' => 'flag',
+				'type' => 'integer',
+				'exclusiveMinimum' => 0,
+				'exclusiveMaximum' => 0,
+			]
+		);
+
+		$this->assertSame(0, $prop->properties->flag->exclusiveMinimum);
+		$this->assertSame(0, $prop->properties->flag->exclusiveMaximum);
+	}//end testZeroExclusiveBoundsSurvive()
+
+	/**
+	 * The form's boolean `exclusiveMin` is NOT exempt: its false means "read the
+	 * bound as inclusive", which is the absence of a setting, not a value.
+	 *
+	 * @return void
+	 */
+	public function testFalseExclusiveMinIsStillStripped(): void {
+		$prop = $this->emit(
+			[
+				'title' => 'flag',
+				'type' => 'integer',
+				'minimum' => 0,
+				'exclusiveMin' => false,
+			]
+		);
+
+		$this->assertObjectNotHasProperty('exclusiveMin', $prop->properties->flag);
+		$this->assertSame(0, $prop->properties->flag->minimum);
+	}//end testFalseExclusiveMinIsStillStripped()
+
+	/**
 	 * An empty-string default stays stripped: the property form ships
 	 * `default: ''` for a field nobody filled in, so emitting it would write
 	 * `''` in place of NULL for nearly every property on the instance.
