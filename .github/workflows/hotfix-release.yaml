@@ -1,0 +1,217 @@
+name: WOO-572 OR Hotfix Release
+
+# WOO-572 — custom hotfix release for the WOO stable line: OpenRegister 1.1.5 +
+# the WOO-576 text-extraction filesystem-context fix and the WOO-577 chunk-arm
+# counting/paging fix, deployed manually on acato and openwoo (kubectl route).
+#
+# Runs on pushes to the hotfix branch only, NOT on main. Produces a GitHub
+# PRERELEASE (`prerelease: true`) so Nextcloud never offers it as "latest".
+#
+# Naming: <base_tag>-<project>-<version> (Barry Brands, WOO-552):
+#   v1.1.5 + WOO hotfix 1  ->  version 1.1.5-woo-1, tag v1.1.5-woo-1.
+# Every push to this branch rebuilds and OVERWRITES the same tag/release
+# (allowUpdates + overwrite). Bump `<version>` in appinfo/info.xml by hand to
+# 1.1.5-woo-2 only for a runtime change after 1.1.5-woo-1 has been deployed;
+# tests-only pushes keep the version.
+#
+# TAG COLLISION, RESOLVED — the first run of this workflow OVERWRITES an
+# existing tag and release named v1.1.5-woo-1. That one was created 2026-09-06
+# by github-actions[bot], titled "Permanent-Delete Hotfix Release 1.1.5-woo-1",
+# targeted main, and pointed at commit 24672623fe (a merge of beta, info.xml
+# 2.0.15-unstable): 2.x code under a 1.1.5 name, a misfire of another ticket
+# that nobody should ever deploy as "1.1.5". Overwriting it is the decision
+# (Wilco, 2026-09-21) — keeping the name and correcting what it points at.
+#
+# Consequence for whoever deploys: an old asset under this tag looks identical
+# from the outside. The deploy runbook therefore greps the tarball for
+# `resolveFileNode` and `metadataArmOverlap` before installing anything
+# (WOO-572-kubectl-deploy-openregister.txt, step 4b).
+#
+# Basis: ConductionNL/opencatalogi @ hotfix/woo-572-fts-stable-line
+#        .github/workflows/hotfix-release.yaml (WOO-572 OC hotfix), rsync
+#        excludes aligned with ConductionNL/.github release.yml.
+on:
+  push:
+    branches:
+      - hotfix/woo-572-or-stable-line
+
+permissions:
+  contents: write
+
+jobs:
+  release-management:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The build's version IS the version in appinfo/info.xml on this
+      # branch (1.1.5-woo-N). No run number is appended.
+      - name: Set app env
+        run: |
+          echo "APP_NAME=openregister" >> $GITHUB_ENV
+          new_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
+          echo "NEW_VERSION=${new_version}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=v${new_version}" >> $GITHUB_ENV
+          echo "Building ${new_version} (tag v${new_version}) from ${GITHUB_SHA}"
+
+      # NEXTCLOUD_SIGNING_KEY / NEXTCLOUD_SIGNING_CERT are repository secrets
+      # on ConductionNL/openregister (same ones the shared release.yml uses).
+      - name: Prepare Signing Certificate and Key
+        run: |
+          echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
+          echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+          grep -q "CERTIFICATE" signing-cert.crt || { echo "signing cert secret empty"; exit 1; }
+          grep -q "PRIVATE KEY" signing-key.key || { echo "signing key secret empty"; exit 1; }
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Set up PHP and install extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip, gd
+
+      - run: npm ci
+      - run: npm run build
+      - run: composer install --no-dev --optimize-autoloader --classmap-authoritative
+
+      - name: Copy the package files into the package
+        run: |
+          mkdir -p package/${{ env.APP_NAME }}
+          rsync -a \
+            --exclude='/package' \
+            --exclude='/.git' \
+            --exclude='/.github' \
+            --exclude='/.forgejo' \
+            --exclude='/.claude' \
+            --exclude='/.vscode' \
+            --exclude='/.nextcloud' \
+            --exclude='/docker' \
+            --exclude='/docker-compose*.yml' \
+            --exclude='/docs' \
+            --exclude='/issues' \
+            --exclude='/n8n-mcp' \
+            --exclude='/n8n-templates' \
+            --exclude='/exapps' \
+            --exclude='/node_modules' \
+            --exclude='/src' \
+            --exclude='/phpcs-custom-sniffs' \
+            --exclude='/phpmetrics-deps' \
+            --exclude='/resources' \
+            --exclude='/schemas' \
+            --exclude='/scripts' \
+            --exclude='/tests' \
+            --exclude='/openspec' \
+            --exclude='/package.json' \
+            --exclude='/package-lock.json' \
+            --exclude='/composer.json' \
+            --exclude='/composer.lock' \
+            --exclude='/composer.phar' \
+            --exclude='/composer-setup.php' \
+            --exclude='/phpstan.phar' \
+            --exclude='/phpcs.xml' \
+            --exclude='/phpmd.xml' \
+            --exclude='/phpmd.baseline.xml' \
+            --exclude='/psalm.xml' \
+            --exclude='/psalm-baseline.xml' \
+            --exclude='/phpstan.neon' \
+            --exclude='/phpstan-baseline.neon' \
+            --exclude='/phpunit.xml' \
+            --exclude='/phpunit-unit.xml' \
+            --exclude='/.phpunit.cache' \
+            --exclude='.phpunit.result.cache' \
+            --exclude='/grumphp.yml' \
+            --exclude='/jest.config.js' \
+            --exclude='/eslint.config.js' \
+            --exclude='/webpack.config.js' \
+            --exclude='/tsconfig.json' \
+            --exclude='/.babelrc' \
+            --exclude='/.prettierrc' \
+            --exclude='/stylelint.config.js' \
+            --exclude='/.spectral.yml' \
+            --exclude='/.gitignore' \
+            --exclude='/.gitattributes' \
+            --exclude='/.git-blame-ignore-revs' \
+            --exclude='/.nvmrc' \
+            --exclude='/.phpqa.yml' \
+            --exclude='/.grype.yaml' \
+            --exclude='/.license-overrides.json' \
+            --exclude='/.coverage-baseline' \
+            --exclude='/changelog-ci-config.json' \
+            --exclude='/bom-npm-test.cdx.json' \
+            --exclude='/signing-key.key' \
+            --exclude='/signing-cert.crt' \
+            --exclude='/openapi.json' \
+            --exclude='/test-mcp.sh' \
+            --exclude='/*.md' \
+            ./ package/${{ env.APP_NAME }}/
+
+      - name: Verify package
+        run: |
+          test -d package/${{ env.APP_NAME }}/vendor || { echo "vendor missing"; exit 1; }
+          test -d package/${{ env.APP_NAME }}/js || { echo "js build missing"; exit 1; }
+          grep -q "<id>${{ env.APP_NAME }}</id>" package/${{ env.APP_NAME }}/appinfo/info.xml
+          grep "<version>" package/${{ env.APP_NAME }}/appinfo/info.xml
+          grep -q "function resolveFileNode" package/${{ env.APP_NAME }}/lib/Service/TextExtractionService.php
+          grep -q "function metadataArmOverlap" package/${{ env.APP_NAME }}/lib/Service/Object/ContentSearchHandler.php
+
+      - name: Create Tarball
+        run: |
+          cd package && tar -czf ../nextcloud-release.tar.gz ${{ env.APP_NAME }}
+
+      - name: Sign the TAR.GZ file with OpenSSL
+        run: |
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
+      # `commit: github.sha` pins the tag to the built commit; without it
+      # GitHub creates the tag on the DEFAULT branch (main) — WOO-552 lesson.
+      # Move the tag to the built commit first so tag, release and asset agree
+      # (ncipollo only creates a tag that does not exist yet; WOO-552 r28).
+      - name: Point the release tag at the built commit
+        run: |
+          git tag -f "${{ env.RELEASE_TAG }}" "${{ github.sha }}"
+          git push -f origin "refs/tags/${{ env.RELEASE_TAG }}"
+      - name: Create / update the WOO-572 OR hotfix prerelease
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.RELEASE_TAG }}
+          commit: ${{ github.sha }}
+          name: WOO-572 OR Hotfix Release ${{ env.NEW_VERSION }} (WOO stable line)
+          body: |
+            Custom hotfix prerelease for the WOO stable line — OpenRegister 1.1.5 + text extraction in background/cron mode on Nextcloud ≤ 33 (WOO-576) + chunk-arm total/paging fix for `_content` search (WOO-577).
+            Built from `${{ github.sha }}` on `${{ github.ref_name }}`. Install manually (kubectl route); not offered by the Nextcloud app store.
+            Jira: https://conduction.atlassian.net/browse/WOO-572
+          draft: false
+          prerelease: true
+          allowUpdates: true
+          removeArtifacts: true
+
+      - name: Attach tarball to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: nextcloud-release.tar.gz
+          asset_name: ${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}.tar.gz
+          tag: ${{ env.RELEASE_TAG }}
+          overwrite: true
+
+      - name: Attach signature to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: nextcloud-release.signature
+          asset_name: ${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}.signature
+          tag: ${{ env.RELEASE_TAG }}
+          overwrite: true
+
+      - name: Verify version and contents
+        run: |
+          echo "App version: ${{ env.NEW_VERSION }}"
+          tar -tzf nextcloud-release.tar.gz | head -20
+          tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml | grep -E "<id>|<version>"
