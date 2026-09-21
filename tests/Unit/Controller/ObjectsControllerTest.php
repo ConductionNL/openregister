@@ -5412,11 +5412,58 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}
 
+	/**
+	 * Let the export verb through for a test that is about something else.
+	 *
+	 * `export()` resolves `ExportRightService` from the container and REFUSES
+	 * when it gets anything else, so a test that does not program the container
+	 * is asserting a 503 rather than an export. That refusal is asserted on
+	 * purpose in `testExportRefusedWhenTheRightServiceIsUnavailable()` below;
+	 * every other export test wants the granted path.
+	 *
+	 * @param bool $allowed False to have the right service refuse the caller.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One helper for the two
+	 *     verdicts keeps the container wiring in one place.
+	 */
+	private function grantExport(bool $allowed = true): void {
+		$rightService = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRightService::class);
+		$refusal = null;
+		if ($allowed === false) {
+			$refusal = new \OCA\OpenRegister\Service\Export\ExportRefusedException(
+				'export-right-missing',
+				'no export for you',
+				403
+			);
+		}
+
+		$rightService->method('refusalFor')->willReturn($refusal);
+
+		$recorder = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class);
+
+		$this->container->method('get')->willReturnCallback(
+			static function (string $id) use ($rightService, $recorder) {
+				if ($id === \OCA\OpenRegister\Service\Export\ExportRightService::class) {
+					return $rightService;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class) {
+					return $recorder;
+				}
+
+				return 'current-user';
+			}
+		);
+	}//end grantExport()
+
 	// =========================================================================
 	// export() — CSV export path
 	// =========================================================================
 
 	public function testExportReturnsCsvDownloadResponse(): void {
+		$this->grantExport();
 		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();
@@ -5463,6 +5510,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testExportReturnsExcelDownloadResponseByDefault(): void {
+		$this->grantExport();
 		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();
@@ -5510,6 +5558,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testExportUsesDefaultSlugsWhenNull(): void {
+		$this->grantExport();
 		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();
@@ -5555,6 +5604,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testExportCsvViaTypeParam(): void {
+		$this->grantExport();
 		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();
@@ -5603,6 +5653,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testExportReturnsPdfDownloadResponse(): void {
+		$this->grantExport();
 		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();
@@ -5645,7 +5696,86 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertStringContainsString('.pdf', $result->getHeaders()['Content-Disposition'] ?? '');
 	}
 
+	/**
+	 * The verb refuses on the plain export endpoint, not only in the service.
+	 *
+	 * This is the endpoint an integration calls, and it was ungated: a
+	 * principal holding read could take the whole schema as a file. The
+	 * refusal names the verb rather than the record.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 */
+	public function testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb(): void {
+		$this->grantExport(allowed: false);
+		$this->primeExportEntities();
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(expected: \OCP\AppFramework\Http\JSONResponse::class, actual: $result);
+		$this->assertSame(expected: 403, actual: $result->getStatus());
+		$this->assertSame(expected: 'export', actual: $result->getData()['verb']);
+		$this->assertSame(expected: 'export-right-missing', actual: $result->getData()['rule']);
+	}//end testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb()
+
+	/**
+	 * A right service that cannot be resolved refuses rather than exporting.
+	 *
+	 * The container is left unprogrammed here on purpose. An export that ran
+	 * with no verb check and nothing to say one was missing is exactly the
+	 * hole this change closes, so "the check could not run" has to be loud.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 */
+	public function testExportRefusedWhenTheRightServiceIsUnavailable(): void {
+		$this->primeExportEntities();
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(expected: \OCP\AppFramework\Http\JSONResponse::class, actual: $result);
+		$this->assertSame(expected: 503, actual: $result->getStatus());
+		$this->assertSame(expected: 'right-service-unavailable', actual: $result->getData()['rule']);
+	}//end testExportRefusedWhenTheRightServiceIsUnavailable()
+
+	/**
+	 * The register and schema an export test needs before the verb is reached.
+	 *
+	 * @return void
+	 */
+	private function primeExportEntities(): void {
+		$registerEntity = $this->getMockBuilder(className: \OCA\OpenRegister\Db\Register::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$registerEntity->method('getSlug')->willReturn('my-register');
+
+		$schemaEntity = $this->getMockBuilder(className: \OCA\OpenRegister\Db\Schema::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$schemaEntity->method('getSlug')->willReturn('my-schema');
+
+		$this->request->method('getParams')->willReturn(['format' => 'csv']);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) {
+				if ($key === 'format') {
+					return 'csv';
+				}
+
+				return $default;
+			}
+		);
+
+		$this->userSession->method('getUser')->willReturn($this->createMock(originalClassName: \OCP\IUser::class));
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+	}//end primeExportEntities()
+
 	public function testExportPdfTooLargeReturns400(): void {
+		$this->grantExport();
 		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();

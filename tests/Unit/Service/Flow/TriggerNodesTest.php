@@ -302,17 +302,37 @@ class TriggerNodesTest extends TestCase {
 	}//end testTheScheduleTriggerNamesItsVocabulary()
 
 	/**
-	 * A manual trigger accepts no configuration at all.
+	 * A manual trigger accepts exactly one key: where the person goes after the
+	 * run. It was none until macros needed the hint.
 	 *
 	 * @return void
 	 */
-	public function testTheManualTriggerHasNoVocabulary(): void {
-		$this->assertSame([], $this->manual->configKeys());
+	public function testTheManualTriggerNamesItsVocabulary(): void {
+		$this->assertSame(['next'], $this->manual->configKeys());
 
+		// Nothing is REQUIRED: no `next` means `stay`, which is what running a
+		// flow from a record did before the key existed.
 		$this->manual->validateConfig([]);
 		$this->addToAssertionCount(1);
 
-	}//end testTheManualTriggerHasNoVocabulary()
+	}//end testTheManualTriggerNamesItsVocabulary()
+
+	/**
+	 * A `next` outside the vocabulary is refused, not defaulted.
+	 *
+	 * Read as `stay`, a typed `nextItem` would author, save and behave like a
+	 * setting nobody made, and the author would have no way to see it.
+	 *
+	 * @return void
+	 */
+	public function testTheManualTriggerRefusesANextItDoesNotKnow(): void {
+		$this->manual->validateConfig(['next' => 'list']);
+		$this->addToAssertionCount(1);
+
+		$this->expectException(\UnexpectedValueException::class);
+		$this->manual->validateConfig(['next' => 'nextItem']);
+
+	}//end testTheManualTriggerRefusesANextItDoesNotKnow()
 
 	/**
 	 * Every trigger passes its items through untouched.

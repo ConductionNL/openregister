@@ -795,6 +795,10 @@ class TaskMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('priority', $qb->createNamedParameter($criteria->priority)));
 		}
 
+		if ($criteria->kind !== null) {
+			$qb->andWhere($qb->expr()->eq('kind', $qb->createNamedParameter($criteria->kind)));
+		}
+
 		if ($criteria->objectUuid !== null) {
 			$qb->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($criteria->objectUuid)));
 		}

@@ -33,8 +33,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use DateTimeImmutable;
+use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -46,33 +49,38 @@ use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
-use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\ViewHistoryService;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
+use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Support\FilterParams;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\App\IAppManager;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -164,6 +172,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService Optional recovery-window service (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
+	 * @param ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory Optional state-history projector (null-safe)
 	 *
 	 * @return void
 	 *
@@ -196,6 +205,7 @@ class ObjectsController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService = null,
 		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
 		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
+		private readonly ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->exportService = $exportService;
@@ -210,13 +220,36 @@ class ObjectsController extends Controller {
 	 * separate from the read above: the read excludes deleted rows by design,
 	 * and widening it would leak soft-deleted content into every list.
 	 *
-	 * @param string $id The identifier the caller asked for.
+	 * SCOPED EXACTLY AS THE READ IT STANDS IN FOR. This used to look up a bare
+	 * uuid with `_rbac: false` and `_multitenancy: false` and no register
+	 * constraint at all, which made it strictly more permissive than the read
+	 * it is a fallback message for. `show()` reaches it precisely when the
+	 * scoped find() answered null - the case show()'s own docblock says must be
+	 * a bare 404, "so an unauthorized caller cannot distinguish 'exists but
+	 * forbidden' from 'does not exist'". A caller in one organisation could name
+	 * any uuid from any other and be told, in a 404-shaped body, that the object
+	 * exists, that it is in the trash, and exactly when it stops being
+	 * restorable. The register and schema in the URL were not even used to
+	 * constrain it, so any uuid from any tenant worked the same way.
+	 *
+	 * The caller's own flags are passed in rather than assumed, so an admin -
+	 * who reads exempt on the primary path - still gets the helpful answer.
+	 *
+	 * @param string   $id              The identifier the caller asked for.
+	 * @param bool     $rbac            The caller's own RBAC posture, as used by the read.
+	 * @param bool     $multitenancy    The caller's own tenancy posture, as used by the read.
+	 * @param int|null $registerIdScope The register named in the URL, so the lookup cannot wander.
 	 *
 	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
 	 *
 	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
 	 */
-	private function deletedRefusal(string $id): ?array {
+	private function deletedRefusal(
+		string $id,
+		bool $rbac,
+		bool $multitenancy,
+		?int $registerIdScope = null,
+	): ?array {
 		if ($this->windowService === null) {
 			return null;
 		}
@@ -226,8 +259,9 @@ class ObjectsController extends Controller {
 			$context = $magicMapper->findAcrossAllSources(
 				identifier: $id,
 				includeDeleted: true,
-				_rbac: false,
-				_multitenancy: false
+				_rbac: $rbac,
+				_multitenancy: $multitenancy,
+				registerIdScope: $registerIdScope
 			);
 		} catch (\Throwable $e) {
 			return null;
@@ -969,6 +1003,33 @@ class ObjectsController extends Controller {
 			);
 		}
 
+		// DOELBINDING, BEFORE ANY ROW IS FETCHED.
+		//
+		// index() reaches this method by returning early, twenty lines BEFORE
+		// its own purpose check, whenever the request names more than one schema
+		// or register. So `?schemas={bound},anythingElse` returned in full the
+		// rows that `GET /objects/{register}/{bound}` refuses with 403 - one
+		// extra, even unrelated, schema id defeated an AVG purpose-binding
+		// control.
+		//
+		// The guard belongs here rather than at that call site: this method IS
+		// the fan-out, and a check on the caller would have to be repeated,
+		// correctly, by every future caller. objects() is the second one today.
+		//
+		// Refused when ANY pair is refused. A purpose-bound schema must not be
+		// launderable by listing it alongside one that is not.
+		foreach ($pairs as $pair) {
+			$refusal = $this->refuseUnboundPurpose(
+				resolved: [
+					'registerEntity' => $pair['register'],
+					'schemaEntity' => $pair['schema'],
+				]
+			);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+		}
+
 		// Build search query WITHOUT register/schema to avoid filtering.
 		// Cross-table search handles multiple register+schema pairs internally.
 		$query = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
@@ -976,11 +1037,16 @@ class ObjectsController extends Controller {
 		// SEC-CTRL-1: This path does NOT read rbac/multi from the request, so the
 		// request-controlled bypass does not apply here. Derive the posture from
 		// admin status for completeness and forward it on the query.
-		// TODO(SEC-CTRL-1): MagicMapper::searchAcrossMultipleTables() and its
-		// union/sequential builders currently apply NO RBAC or multitenancy filter
-		// (they ignore these query flags). Enforcing per-pair RBAC/tenant scoping
-		// lives in lib/Db/MagicMapper.php (out of this controller's scope) and must
-		// be wired there before cross-table search is exposed to non-admins.
+		//
+		// SEC-CTRL-1 IS CLOSED, and the note is kept because the flags below only
+		// mean something now that the builders honour them. Both cross-table
+		// builders read these flags: the sequential one always did (it goes
+		// through searchObjectsInRegisterSchemaTable), and the UNION one carried
+		// the RBAC half and NOT the organisation half — so a non-admin's
+		// cross-table search returned rows from other organisations. That half is
+		// wired in MagicSearchHandler::buildWhereConditionsSql(), which now takes
+		// the same multitenancy decision as the QueryBuilder path and renders it
+		// for the string-built arms.
 		$isAdmin = $this->isCurrentUserAdmin();
 		$query['_rbac'] = ($isAdmin === false);
 		$query['_multitenancy'] = ($isAdmin === false);
@@ -1017,6 +1083,10 @@ class ObjectsController extends Controller {
 		// keeps its `??` because there `$query` comes straight from
 		// buildSearchQuery() with no `_rbac` assignment.
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
+
+		// Same bypass, same gap for translatable properties: renderEntity is
+		// where a `{"nl":...}` map projects to the negotiated language.
+		$renderHandler->resolveTranslationsForRows(rows: $results);
 
 		// Serialize results.
 		$serializedResults = [];
@@ -1245,6 +1315,48 @@ class ObjectsController extends Controller {
 	}//end refuseMalformedSearchTerm()
 
 	/**
+	 * Refuse a history filter over a property that has no history.
+	 *
+	 * The answerable properties are the ones SCHEMAS DECLARE as their lifecycle
+	 * field, never the property names that happen to sit in the projection: a
+	 * row written by mistake must not make a property filterable, and an empty
+	 * projection must still know that `status` is a property with history.
+	 *
+	 * @param array $params The raw request parameters.
+	 *
+	 * @phpstan-param array<string, mixed> $params
+	 *
+	 * @psalm-param array<string, mixed> $params
+	 *
+	 * @return JSONResponse|null A 400 naming the property, or null.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function refuseUnprojectedHistoryPredicate(array $params): ?JSONResponse {
+		if ($this->stateHistory === null) {
+			return null;
+		}
+
+		$predicate = \OCA\OpenRegister\Service\Search\HistoryPredicate::parse(query: $params);
+		if ($predicate->narrows() === false) {
+			return null;
+		}
+
+		$refusal = $predicate->refusalFor(projectedProperties: $this->stateHistory->projectedProperties());
+		if ($refusal === null) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => $refusal,
+				'properties' => $predicate->properties(),
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end refuseUnprojectedHistoryPredicate()
+
+	/**
 	 * Retrieves a list of all objects for a specific register and schema
 	 *
 	 * This method returns a paginated list of objects that match the specified register and schema.
@@ -1302,6 +1414,15 @@ class ObjectsController extends Controller {
 		// raised in the mapper could be swallowed into an empty facet list and
 		// the caller would see the "found nothing" this change exists to remove.
 		$refusal = $this->refuseMalformedSearchTerm(params: $params);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		// A history filter over a property nothing records is refused here, by
+		// name. Answered instead, it would be an empty page, and an empty page
+		// says "no case was ever in bezwaar" to a question the instance cannot
+		// answer at all. The two look identical on screen and only one is true.
+		$refusal = $this->refuseUnprojectedHistoryPredicate(params: $params);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -1464,6 +1585,10 @@ class ObjectsController extends Controller {
 					// included (#389/#460).
 					$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 					$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+
+					// Same bypass, same gap for translatable properties: renderEntity is
+					// where a `{"nl":...}` map projects to the negotiated language.
+					$renderHandler->resolveTranslationsForRows(rows: $results);
 
 					$serializedResults = [];
 					foreach ($results as $entity) {
@@ -2437,6 +2562,22 @@ class ObjectsController extends Controller {
 				$resolvedRegisterId = $resolved['register'];
 				$resolvedSchemaId = $resolved['schema'];
 
+				// DOELBINDING. This endpoint is @PublicPage and reads the same
+				// data as index(), which has guarded its single-schema branch
+				// since PurposeGuard landed - this one guarded nothing, on any
+				// branch. A schema that refuses show() for want of a declared
+				// purpose answered here in full, without authentication.
+				//
+				// Placed on the resolution rather than per branch: both branches
+				// below (magic-mapper and the searchObjectsPaginated fallback)
+				// descend from this point, and the multi-schema branch above is
+				// guarded inside crossTableSearch() itself. A per-branch check
+				// would reproduce the gap the next time a branch is added.
+				$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+				if ($refusal !== null) {
+					return $refusal;
+				}
+
 				// Check if magic mapping is enabled for this register+schema.
 				$registerEntity = $resolved['registerEntity'] ?? null;
 				$schemaEntity = $resolved['schemaEntity'] ?? null;
@@ -2477,6 +2618,10 @@ class ObjectsController extends Controller {
 						// `authorization.read` strip; writeOnly strips unconditionally (#460).
 						$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 						$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+
+						// Same bypass, same gap for translatable properties: renderEntity is
+						// where a `{"nl":...}` map projects to the negotiated language.
+						$renderHandler->resolveTranslationsForRows(rows: $results);
 
 						// Convert ObjectEntity array to JSON-serializable format.
 						$serializedResults = [];
@@ -2579,6 +2724,165 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $result);
 	}//end objects()
+
+	/**
+	 * The options a filtered reference property may offer for this record.
+	 *
+	 * 🔑 IT CALLS THE SAME RESOLVER THE SAVE PATH CALLS. A picker that offers
+	 * one set while the save path accepts another is two evaluators of one rule:
+	 * the user picks what the form offered and the server refuses it, or the
+	 * form offers something the server then accepts and should not have.
+	 *
+	 * 🔴 NO OPTIONS IS NOT EVERY OPTION. When an operand the filter depends on
+	 * has no value yet, this answers an EMPTY list and names the property it is
+	 * waiting for, with HTTP 200. Returning the unfiltered set would show every
+	 * contact in the register to somebody who had not yet chosen an
+	 * organisation, and each of those is a value they were never meant to
+	 * browse. A 200 with `needs` is the honest shape: the request was fine, the
+	 * answer is "not yet, choose that first".
+	 *
+	 * The record's values come from the stored object, with `_draft` merged over
+	 * them, because the case a picker exists for is a form being filled in and
+	 * those values are not saved yet.
+	 *
+	 * @param string        $id            The record being edited.
+	 * @param string        $register      The register.
+	 * @param string        $schema        The schema.
+	 * @param ObjectService $objectService The object service.
+	 *
+	 * @return JSONResponse The options, or what is still needed.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @contract tests/e2e/ci/reference-options.spec.ts
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 600, period: 60)]
+	public function referenceOptions(
+		string $id,
+		string $register,
+		string $schema,
+		ObjectService $objectService,
+	): JSONResponse {
+		$property = (string)($this->request->getParam('property') ?? '');
+		if (trim($property) === '') {
+			return new JSONResponse(
+				data: ['message' => 'Name the property whose options you want, with ?property=<name>.'],
+				statusCode: 400
+			);
+		}
+
+		try {
+			$resolved = $this->resolveRegisterSchemaIds(
+				register: $register,
+				schema: $schema,
+				objectService: $objectService
+			);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		$schemaEntity = ($resolved['schemaEntity'] ?? null);
+		if (($schemaEntity instanceof Schema) === false) {
+			return new JSONResponse(data: ['message' => 'Schema not found.'], statusCode: 404);
+		}
+
+		// The record as it stands. A read the caller may not make answers the
+		// same 404 it would anywhere else, so this endpoint cannot be used to
+		// confirm an object exists.
+		$record = [];
+		try {
+			$stored = $this->objectService->find(
+				id: $id,
+				files: false,
+				register: $register,
+				schema: $schema,
+				_render: false
+			);
+			if ($stored !== null) {
+				$record = $stored->getObject();
+			}
+		} catch (\Throwable $e) {
+			$this->logger?->debug(
+				message: '[ObjectsController] No stored record for a reference-options read; using the draft alone',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
+			);
+		}
+
+		if (is_array($record) === false) {
+			$record = [];
+		}
+
+		$draft = $this->request->getParam('_draft');
+		if (is_array($draft) === true) {
+			$record = array_merge($record, $draft);
+		}
+
+		$reader = new ReferenceOptionsReader();
+
+		try {
+			$plan = $reader->plan(schema: $schemaEntity, property: $property, record: $record);
+		} catch (ReferenceFilterException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 422);
+		}
+
+		if ($reader->isAnswerable(plan: $plan) === false) {
+			return new JSONResponse(
+				data: [
+					'results' => [],
+					'total' => 0,
+					'needs' => $plan['needs'],
+					'filter' => $plan['filter'],
+					'message' => sprintf(
+						'Choose %s first; there are no options until then.',
+						implode(' and ', $plan['needs'])
+					),
+				]
+			);
+		}
+
+		$target = ($plan['target'] ?? []);
+		if (is_string(($target['schema'] ?? null)) === false) {
+			return new JSONResponse(
+				data: ['message' => sprintf('\'%s\' does not name a schema to read options from.', $property)],
+				statusCode: 422
+			);
+		}
+
+		$limit = $reader->limitFor(requested: $this->request->getParam('_limit'));
+		$offset = (int)($this->request->getParam('_offset') ?? 0);
+		$query = $reader->queryFor(plan: $plan, limit: $limit, offset: $offset);
+
+		try {
+			// Point the service at the REFERENCED register and schema. Without
+			// this the search would run against the record's own schema and
+			// answer a confidently wrong list.
+			$objectService->setRegister(($target['register'] ?? $register));
+			$objectService->setSchema($target['schema']);
+
+			// `_rbac` stays on. The options a picker offers are objects, and a
+			// picker is not a way to see objects you may not see.
+			$options = $objectService->searchObjectsPaginated(query: $query);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				message: '[ObjectsController] A reference-options read failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
+			);
+
+			return new JSONResponse(
+				data: ['message' => 'The options for this field could not be read.'],
+				statusCode: 500
+			);
+		}
+
+		$options['filtered'] = $plan['filtered'];
+		$options['filter'] = $plan['filter'];
+		$options['needs'] = [];
+
+		return new JSONResponse(data: $options);
+	}//end referenceOptions()
 
 	/**
 	 * Shows a specific object from a register and schema
@@ -2685,7 +2989,17 @@ class ObjectsController extends Controller {
 				// a soft-deleted object is the answer that makes a caseworker
 				// think their work is gone, when it is in the trash with a
 				// stated window still open.
-				$deletedRefusal = $this->deletedRefusal(id: $id);
+				$registerScope = null;
+				if (is_numeric($resolved['register']) === true) {
+					$registerScope = (int)$resolved['register'];
+				}
+
+				$deletedRefusal = $this->deletedRefusal(
+					id: $id,
+					rbac: $rbac,
+					multitenancy: $multi,
+					registerIdScope: $registerScope
+				);
 				if ($deletedRefusal !== null) {
 					return new JSONResponse(data: $deletedRefusal, statusCode: Http::STATUS_NOT_FOUND);
 				}
@@ -3134,6 +3448,113 @@ class ObjectsController extends Controller {
 	}//end create()
 
 	/**
+	 * Release the lock this writer holds, after their own write has landed.
+	 *
+	 * A save is a check-in: the writer hands their lock back, so the next
+	 * editor is not kept out by a lock nobody is using any more. Only the
+	 * writer's OWN lock goes. A run-held lock must survive somebody else's
+	 * write: without that test an administrator's write would silently strip
+	 * a run's lock as a side effect of a guard it had just passed.
+	 *
+	 * NO `runUuid` IS ASKED FOR HERE, DELIBERATELY, and it is the one guard in
+	 * this file that omits it. This decides a RELEASE, not a refusal: asking
+	 * it as the run would make a run's own write drop the run's own lock the
+	 * moment it saved, and the lock is meant to outlive every write the run
+	 * makes. Asked as a person, a run-held lock reads as somebody else's and
+	 * is left alone, which is what this test is for.
+	 *
+	 * 🔴 THE ENTITY WE ARE ABOUT TO SERIALISE IS CLEARED WHEN THE RELEASE
+	 * HAPPENS, AND THAT IS THE POINT OF THIS METHOD RATHER THAN A DETAIL OF
+	 * IT. `unlockObject()` re-reads the row, releases it there and hands back
+	 * a boolean; the entity in this request keeps the lock payload it was
+	 * loaded with. So the response to a successful write reported a lock that
+	 * the very same request had just released, and a client that trusts the
+	 * body it was handed, such as `@conduction/nextcloud-vue`'s
+	 * `useObjectLock`, goes on believing it holds a lock until its release
+	 * answers 404. Nothing persists this clear: the row is already unlocked
+	 * and the entity is discarded after it is serialised.
+	 *
+	 * The re-read is why the cheap `isLocked()` test comes first at all:
+	 * `unlock()` resolves the identifier back to its register and schema, and
+	 * unscoped that is a scan across every magic table on the instance. It
+	 * then returns immediately when the object holds no lock (the
+	 * openregister#195 idempotence branch), which is the normal case for this
+	 * defensive post-save release. We already hold the saved entity, so the
+	 * question is free here and the scan is pure waste, measured at about
+	 * 780 ms of a 1.3 s update.
+	 *
+	 * @param ObjectEntity $objectEntity The entity the write just saved, and
+	 *                                   the one whose serialisation answers
+	 *                                   the caller.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
+	 */
+	private function releaseOwnLockAfterWrite(ObjectEntity $objectEntity): void {
+		if ($objectEntity->isLocked() === false) {
+			return;
+		}
+
+		if ($objectEntity->isLockedBySomeoneElse(userId: $this->writerId()) === true) {
+			return;
+		}
+
+		try {
+			$this->objectService->unlockObject($objectEntity->getUuid());
+		} catch (\Exception $e) {
+			// The write succeeded, so a failed release is not the caller's
+			// problem and must not turn a 200 into an error. The entity keeps
+			// its lock payload, which is then the truth: the lock is still on
+			// the row.
+			//
+			// NOTE: must be the global \Exception. The unqualified `Exception`
+			// resolves to OCP\DB\Exception here (see the `use` block) and
+			// would NOT catch the \Exception thrown by LockHandler::unlock(),
+			// which then surfaced as a spurious 403. See openregister#195.
+			$this->logger->debug(
+				message: '[ObjectsController] Failed to release the writer own lock after a write',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $objectEntity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
+			return;
+		}
+
+		$objectEntity->setLocked(null);
+	}//end releaseOwnLockAfterWrite()
+
+	/**
+	 * Who is writing, for the release decision.
+	 *
+	 * The container's `userId` is the canonical answer and is what every
+	 * other guard in this file asks. It is read through a fallback because
+	 * this decision had never actually run: every lock taken without a
+	 * duration expired at the instant it was written, so `isLocked()` above
+	 * was always false and nothing below it was ever reached. A resolution
+	 * that quietly answers null here would not refuse anybody, it would
+	 * silently stop releasing locks, which is the failure this whole path
+	 * exists to prevent.
+	 *
+	 * @return string|null The writer's user id, or null when there is no user.
+	 */
+	private function writerId(): ?string {
+		try {
+			$fromContainer = $this->container->get('userId');
+			if (is_string($fromContainer) === true && $fromContainer !== '') {
+				return $fromContainer;
+			}
+		} catch (\Throwable $e) {
+			// Not registered in this context; the session below is the answer.
+		}
+
+		return $this->userSession->getUser()?->getUID();
+	}//end writerId()
+
+	/**
 	 * Updates an existing object
 	 *
 	 * Takes the request data, persist: validates it against the schema, silent: and updates an existing object
@@ -3251,6 +3672,23 @@ class ObjectsController extends Controller {
 			if ($lockRefusal !== null) {
 				return $lockRefusal;
 			}
+
+			// 🔴 A FULL REPLACE ASSERTS EXACTLY AS A PARTIAL UPDATE DOES
+			// (REQ-CSO-003). This used to be PATCH-only, which made the
+			// guarantee a property of the VERB rather than of the write: a
+			// client that sent `_expectedUpdated` on a PUT got no assertion at
+			// all, silently, and overwrote whatever had landed meanwhile. The
+			// two doors now call one method, so they cannot answer differently.
+			$this->noteClientSuppliedCause();
+
+			$conflict = $this->versionConflictResponse(
+				existingObject: $existingObject,
+				sent: $object,
+				schemaEntity: $resolved['schemaEntity']
+			);
+			if ($conflict !== null) {
+				return $conflict;
+			}
 		} catch (DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		} catch (NotAuthorizedException $exception) {
@@ -3292,41 +3730,9 @@ class ObjectsController extends Controller {
 				uploadedFiles: $uploadedFilesValue
 			);
 
-			// Unlock the object after saving — but only if it is actually locked.
-			//
-			// unlock() must resolve the identifier back to its register/schema
-			// before it can do anything, and unscoped that is a scan across every
-			// magic table on the instance. It then returns immediately when the
-			// object holds no lock (LockHandler::unlock, the openregister#195
-			// idempotence branch), which is the normal case for this defensive
-			// post-save unlock. We already hold the saved entity, so the "is it
-			// locked" question is free here and the scan is pure waste — measured
-			// at ~780 ms of a ~1.3 s update.
-			try {
-				// Release ONLY a lock this writer actually holds. A run-held
-				// lock must survive somebody else's write: without this test
-				// an administrator's write would silently strip a run's lock
-				// as a side effect of a guard it had just passed.
-				//
-				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
-				// this file that omits it. This decides a RELEASE, not a
-				// refusal: asking it as the run would make a run's own write
-				// drop the run's own lock the moment it saved — the lock is
-				// meant to outlive every write the run makes. Asked as a
-				// person, a run-held lock reads as somebody else's and is
-				// left alone, which is what this test is for.
-				if ($objectEntity->isLocked() === true
-					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
-				) {
-					$this->objectService->unlockObject($objectEntity->getUuid());
-				}
-			} catch (\Exception $e) {
-				// Ignore unlock errors since the update was successful.
-				// NOTE: must be the global \Exception — the unqualified `Exception`
-				// resolves to OCP\DB\Exception here (see `use` block) and would NOT
-				// catch the \Exception thrown by LockHandler::unlock(), which then
-				// surfaced as a spurious 403. See openregister#195.
-			}
+			// A save is a check-in: the writer's own lock goes back, and the
+			// entity we are about to serialise stops claiming it.
+			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
 
 			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.unlocked');
 
@@ -3508,19 +3914,15 @@ class ObjectsController extends Controller {
 			// and the write is rejected with 409 instead of overwriting the newer
 			// version. Opt-in: callers that omit `_expectedUpdated` behave as before.
 			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
-			$expectedUpdated = $this->request->getParam('_expectedUpdated');
-			if ($expectedUpdated !== null) {
-				$currentUpdated = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
-				if ((string)$currentUpdated !== (string)$expectedUpdated) {
-					return new JSONResponse(
-						data: [
-							'error' => 'Conflict: the object was modified since it was read. Re-read and retry.',
-							'expectedUpdated' => (string)$expectedUpdated,
-							'currentUpdated' => (string)$currentUpdated,
-						],
-						statusCode: 409
-					);
-				}
+			$this->noteClientSuppliedCause();
+
+			$conflict = $this->versionConflictResponse(
+				existingObject: $existingObject,
+				sent: $patchData,
+				schemaEntity: $resolved['schemaEntity']
+			);
+			if ($conflict !== null) {
+				return $conflict;
 			}
 
 			// Get the existing object data and merge with patch data.
@@ -3555,45 +3957,9 @@ class ObjectsController extends Controller {
 				]
 			);
 
-			// Unlock the object after saving — but only if it is actually locked.
-			//
-			// unlock() must resolve the identifier back to its register/schema
-			// before it can do anything, and unscoped that is a scan across every
-			// magic table on the instance. It then returns immediately when the
-			// object holds no lock (LockHandler::unlock, the openregister#195
-			// idempotence branch), which is the normal case for this defensive
-			// post-save unlock. We already hold the saved entity, so the "is it
-			// locked" question is free here and the scan is pure waste — measured
-			// at ~780 ms of a ~1.3 s update.
-			try {
-				// Release ONLY a lock this writer actually holds. A run-held
-				// lock must survive somebody else's write: without this test
-				// an administrator's write would silently strip a run's lock
-				// as a side effect of a guard it had just passed.
-				//
-				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
-				// this file that omits it. This decides a RELEASE, not a
-				// refusal: asking it as the run would make a run's own write
-				// drop the run's own lock the moment it saved — the lock is
-				// meant to outlive every write the run makes. Asked as a
-				// person, a run-held lock reads as somebody else's and is
-				// left alone, which is what this test is for.
-				if ($objectEntity->isLocked() === true
-					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
-				) {
-					$this->objectService->unlockObject($objectEntity->getUuid());
-				}
-			} catch (\Exception $e) {
-				// Ignore unlock errors since the update was successful (e.g., magic table objects).
-				$this->logger->debug(
-					message: '[ObjectsController] Failed to unlock after patch',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'exception' => $e->getMessage(),
-					]
-				);
-			}
+			// A save is a check-in: the writer's own lock goes back, and the
+			// entity we are about to serialise stops claiming it.
+			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
 
 			$this->logger->debug(
 				message: '[ObjectsController] PATCH: Starting to prepare response',
@@ -3768,37 +4134,9 @@ class ObjectsController extends Controller {
 				uploadedFiles: $uploadedFilesValue
 			);
 
-			// Unlock the object after saving — but only if it is actually locked.
-			//
-			// unlock() must resolve the identifier back to its register/schema
-			// before it can do anything, and unscoped that is a scan across every
-			// magic table on the instance. It then returns immediately when the
-			// object holds no lock (LockHandler::unlock, the openregister#195
-			// idempotence branch), which is the normal case for this defensive
-			// post-save unlock. We already hold the saved entity, so the "is it
-			// locked" question is free here and the scan is pure waste — measured
-			// at ~780 ms of a ~1.3 s update.
-			try {
-				// Release ONLY a lock this writer actually holds. A run-held
-				// lock must survive somebody else's write: without this test
-				// an administrator's write would silently strip a run's lock
-				// as a side effect of a guard it had just passed.
-				//
-				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
-				// this file that omits it. This decides a RELEASE, not a
-				// refusal: asking it as the run would make a run's own write
-				// drop the run's own lock the moment it saved — the lock is
-				// meant to outlive every write the run makes. Asked as a
-				// person, a run-held lock reads as somebody else's and is
-				// left alone, which is what this test is for.
-				if ($objectEntity->isLocked() === true
-					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
-				) {
-					$this->objectService->unlockObject($objectEntity->getUuid());
-				}
-			} catch (\Exception $e) {
-				// Ignore unlock errors since the update was successful.
-			}
+			// A save is a check-in: the writer's own lock goes back, and the
+			// entity we are about to serialise stops claiming it.
+			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
 
 			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
 		} catch (AppendOnlyException $exception) {
@@ -4450,8 +4788,15 @@ class ObjectsController extends Controller {
 				duration: $duration
 			);
 
-			// Return response with locked status for test compatibility.
-			return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
+			// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
+			// ASSERTING IT COULD NOT FAIL. `LockHandler` now reports whether
+			// the lock it took is actually held, read back off the entity, and
+			// that is what goes on the wire. The advisory (pre-creation) path
+			// has no entity to read, so it keeps the old answer.
+			$held = ($lockResult['held'] ?? true);
+			unset($lockResult['held']);
+
+			return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Throwable $e) {
@@ -4491,7 +4836,7 @@ class ObjectsController extends Controller {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$this->objectService->unlockObject($id);
+			$released = $this->objectService->unlockObject($id);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Exception $e) {
@@ -4503,15 +4848,585 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => $message], statusCode: 500);
 		}
 
+		// 🔴 404 MEANS THIS OBJECT WAS NOT LOCKED, AND IT IS A FACT RATHER THAN
+		// A MISSING ROUTE. A client that releases a lock when its editor closes
+		// has to be able to tell "I handed mine back" from "somebody had
+		// already taken it away", and a 200 for both is how a UI reports
+		// success on a lock it never held. `@conduction/nextcloud-vue`'s
+		// `useObjectLock.release()` already reads 404 as "already released;
+		// idempotent" — before this, that branch was being fed a 404 from the
+		// ROUTER, on a verb this app did not declare, so it was right by
+		// accident and would have gone on being right if the lock had never
+		// worked at all (nextcloud-vue#1202).
+		//
+		// It is not an error: nothing was refused and nothing threw. The status
+		// carries the fact, the body names it, and `locked: false` is true
+		// either way, so a client that only reads that keeps working.
+		if ($released === false) {
+			return new JSONResponse(
+				data: [
+					'message' => 'This object was not locked, so no lock was released.',
+					'error' => 'not-locked',
+					'locked' => false,
+					'released' => false,
+					'uuid' => $id,
+				],
+				statusCode: 404
+			);
+		}
+
 		// Return response with locked status for test compatibility.
 		return new JSONResponse(
 			data: [
 				'message' => 'Object unlocked successfully',
 				'locked' => false,
+				'released' => true,
 				'uuid' => $id,
 			]
 		);
 	}//end unlock()
+
+	/**
+	 * Whether a row exists in other registers, and nothing about the row.
+	 *
+	 * 🔴 IT IS NOT A SEARCH WITH FIELDS REMOVED. The answer is assembled from
+	 * named values, so a schema that grows a property grows nothing here. The
+	 * question purpose limitation actually allows is "is this person already
+	 * known elsewhere", and answering it by handing over rows and trusting the
+	 * caller to discard them puts the decision in code the register's owner
+	 * never sees.
+	 *
+	 * Authorisation is the read it replaces: every probe goes through the same
+	 * RBAC the search does, so this can never answer about a register the
+	 * caller could not have searched. A refused probe says REFUSED rather than
+	 * "nothing exists" — reporting a refusal as an absence would itself be an
+	 * answer the caller was not entitled to.
+	 *
+	 * @return JSONResponse The per-probe answers, or a 4xx.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt the probe names no object id; the guard is in
+	 *       CrossRegisterExistenceService::probe(), which sends every probe
+	 *       through the search with `_rbac: true` and answers REFUSED rather
+	 *       than "nothing exists" when the caller could not have searched that
+	 *       register.
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 */
+	#[NoAdminRequired]
+	public function exists(): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			// Before anything is asked. An anonymous caller learning that a
+			// register holds nothing about a person has still learned something.
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$service = $this->container->get(\OCA\OpenRegister\Service\CrossRegisterExistenceService::class);
+		$probes = $this->request->getParam('probes', []);
+		$asked = [];
+		if (is_array($probes) === true) {
+			$asked = $probes;
+		}
+
+		$answer = $service->probe(probes: $asked);
+
+		if (isset($answer['error']) === true) {
+			return new JSONResponse(data: $answer, statusCode: 422);
+		}
+
+		return new JSONResponse(data: $answer);
+	}//end exists()
+
+	/**
+	 * Refuse a write made from a stale read, and say what the other value is.
+	 *
+	 * 🔴 OPT-IN, EXACTLY AS BEFORE (REQ-CSO-003). A caller that sends neither
+	 * `_expectedUpdated` nor `If-Match` behaves as it does today: no assertion,
+	 * last write wins. Nothing that works now starts failing; a write that
+	 * asks for the guarantee gets it.
+	 *
+	 * 🔴 THE BODY CARRIES THE ANSWER, NOT JUST THE VERDICT. Two timestamps tell
+	 * a machine to retry and tell a person nothing. {@see ConflictReport} adds
+	 * what was sent, what was read and what is stored, per conflicting
+	 * property, so a client can render the choice without a second request and
+	 * without racing the reload.
+	 *
+	 * @param ObjectEntity $existingObject The object as stored.
+	 * @param array<string, mixed> $sent   What the caller is writing.
+	 * @param mixed $schemaEntity          The schema, for the field filter.
+	 *
+	 * @return JSONResponse|null The 409, or null when the caller may write.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function versionConflictResponse(
+		ObjectEntity $existingObject,
+		array $sent,
+		mixed $schemaEntity = null,
+	): ?JSONResponse {
+		// Read from the RAW request: the payload filters strip `_`-prefixed
+		// keys, so by the time a handler sees the body this is gone.
+		$expected = $this->request->getParam('_expectedUpdated');
+		if ($expected === null || trim((string)$expected) === '') {
+			// 🔴 `If-Match` IS ACCEPTED ONLY WHEN IT IS SHAPED LIKE THE THING IT
+			// IS COMPARED AGAINST. `getHeader()` answers a string for any
+			// header name, and a caller sending an ordinary etag, or a test
+			// stubbing the method blanket-wise, would otherwise have every
+			// write refused 409 against a value that was never a version.
+			// Measured: taking the header unconditionally reddened 28 existing
+			// controller tests, all of which stub `getHeader` once for
+			// `Content-Type`. Comparing like with like is the fix, not
+			// loosening the assertion.
+			$expected = $this->asExpectedVersion(value: $this->request->getHeader('If-Match'));
+		}
+
+		if ($expected === null || trim((string)$expected) === '') {
+			return null;
+		}
+
+		$current = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
+		if ((string)$current === (string)$expected) {
+			return null;
+		}
+
+		$body = [
+			'error' => \OCA\OpenRegister\Service\Object\ConflictReport::ERROR,
+			'code' => \OCA\OpenRegister\Service\Object\ConflictReport::CODE,
+			'message' => 'This object changed since you read it. Re-read it and try again.',
+			'conflicts' => [],
+			'changedBy' => null,
+			'changedAt' => null,
+		];
+
+		if ($schemaEntity instanceof Schema === true) {
+			try {
+				$body = $this->container->get(\OCA\OpenRegister\Service\Object\ConflictReport::class)->build(
+					stored: $existingObject,
+					schema: $schemaEntity,
+					sent: $sent,
+					intervening: $this->interveningChanges(object: $existingObject, since: (string)$expected)
+				);
+			} catch (\Throwable $e) {
+				// A report that could not be built must not turn a 409 into a
+				// 500: the refusal is still correct and still the right status,
+				// it simply says less. Reporting less is a degraded answer;
+				// letting the write through would be a lost update.
+				$this->logger->warning(
+					message: '[ObjectsController] a conflict body could not be built: ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+		}
+
+		// The two timestamps stay on the body beside the new block: every
+		// existing client branches on them, and removing them to make room for
+		// a better answer would break the clients this is meant to help.
+		$body['expectedUpdated'] = (string)$expected;
+		$body['currentUpdated'] = (string)$current;
+
+		$this->recordRefusedWrite(object: $existingObject, expected: (string)$expected, current: (string)$current, body: $body);
+
+		return new JSONResponse(data: $body, statusCode: 409);
+	}//end versionConflictResponse()
+
+	/**
+	 * An `If-Match` value, when it is an instant rather than any old header.
+	 *
+	 * The object's concurrency token IS its `updated` timestamp, so an
+	 * `If-Match` that does not parse as one cannot be a version of it and is
+	 * ignored rather than refused: a caller sending a content etag is not
+	 * making a concurrency assertion, and answering 409 would break them for
+	 * asking a different question.
+	 *
+	 * @param string|null $value The header value.
+	 *
+	 * @return string|null The instant, or null.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function asExpectedVersion(?string $value): ?string {
+		$value = trim(trim((string)$value), '"');
+		if ($value === '') {
+			return null;
+		}
+
+		try {
+			$parsed = new DateTimeImmutable($value);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		// A bare word like `application/json` can still parse on some builds,
+		// so the round trip has to look like the input rather than merely
+		// succeeding: an instant this app wrote always carries a date.
+		if (preg_match('/\\d{4}-\\d{2}-\\d{2}/', $value) === 1) {
+			return $parsed->format(\DateTimeInterface::ATOM);
+		}
+
+		return null;
+	}//end asExpectedVersion()
+
+	/**
+	 * The changes made to this object since the caller read it, newest first.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $since  The caller's `updated`, ISO-8601.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The entries.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private function interveningChanges(ObjectEntity $object, string $since): array {
+		try {
+			$read = new DateTime($since);
+		} catch (\Throwable $e) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($this->auditTrailMapper->findAll(filters: ['object_uuid' => $object->getUuid()], limit: 25) as $entry) {
+			if ($entry instanceof \OCA\OpenRegister\Db\AuditTrail === false) {
+				continue;
+			}
+
+			$created = $entry->getCreated();
+			if ($created !== null && $created->getTimestamp() > $read->getTimestamp()) {
+				$entries[] = $entry;
+			}
+		}
+
+		return $entries;
+	}//end interveningChanges()
+
+	/**
+	 * Leave a trail that a write was refused, and why.
+	 *
+	 * 🔑 A REFUSAL IS A FACT ABOUT THE OBJECT. Without it, the only record of a
+	 * lost-update collision is in the client that was refused, so nobody
+	 * investigating "two people keep overwriting each other on this case" can
+	 * see that the guard is working, or how often.
+	 *
+	 * Never throws: a trail that cannot be written must not turn a correct
+	 * refusal into a 500.
+	 *
+	 * @param ObjectEntity         $object   The object.
+	 * @param string               $expected The version the caller held.
+	 * @param string               $current  The version stored.
+	 * @param array<string, mixed> $body     The conflict body.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function recordRefusedWrite(ObjectEntity $object, string $expected, string $current, array $body): void {
+		try {
+			$this->auditTrailMapper->createAuditTrailEntry(
+				object: $object,
+				action: 'refused',
+				context: [
+					'reason' => 'version-conflict',
+					'expectedUpdated' => $expected,
+					'currentUpdated' => $current,
+					// The NAMES only. The values are in the response the caller
+					// got, filtered for them; the trail is read by OTHER people
+					// and must not become a way to read a restricted property
+					// out of somebody else's refusal.
+					'properties' => array_keys(($body['conflicts'] ?? [])),
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ObjectsController] a refused write could not be recorded: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end recordRefusedWrite()
+
+	/**
+	 * Move an object to another register and schema, keeping who it is.
+	 *
+	 * 🔴 NOT A COPY. Every side table — the audit trail, the versions, the
+	 * files, the notes, the watchers, the favourites, the presence, the timers
+	 * — is keyed on the uuid, and the uuid does not change. A copy would mint a
+	 * second identity and orphan all of them silently, which is what "close it
+	 * and refile it" does today and what this replaces.
+	 *
+	 * Authorised on BOTH SIDES: the object is read under the caller's own
+	 * permissions, and the target is resolved the same way, so a caller who
+	 * could not read the object cannot move it and a caller who could not write
+	 * the target cannot put anything there.
+	 *
+	 * @param string $register The source register.
+	 * @param string $schema   The source schema.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse The outcome, or a 4xx naming what stood in the way.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	#[NoAdminRequired]
+	public function move(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->userSession->getUser();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		if ($object === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$targetRegister = trim((string)$this->request->getParam('targetRegister', ''));
+		$targetSchema = trim((string)$this->request->getParam('targetSchema', ''));
+		if ($targetRegister === '' || $targetSchema === '') {
+			return new JSONResponse(
+				data: ['error' => 'Name the register and the schema this object is moving to.'],
+				statusCode: 422
+			);
+		}
+
+		try {
+			$from = [
+				'register' => $this->registerMapper->find($register),
+				'schema' => $this->schemaMapper->find($schema),
+			];
+			$to = [
+				'register' => $this->registerMapper->find($targetRegister),
+				'schema' => $this->schemaMapper->find($targetSchema),
+			];
+		} catch (\Throwable $e) {
+			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
+		}
+
+		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObject::class)->move(
+			object: $object,
+			sourceRegister: $from['register'],
+			sourceSchema: $from['schema'],
+			targetRegister: $to['register'],
+			targetSchema: $to['schema'],
+			actor: $caller->getUID(),
+		);
+
+		if ($outcome['moved'] === false) {
+			// 422, not 400: the request is well formed and the object does not
+			// fit where it was asked to go, which is the caller's to act on.
+			return new JSONResponse(data: $outcome, statusCode: 422);
+		}
+
+		return new JSONResponse(data: $outcome);
+	}//end move()
+
+	/**
+	 * Note, and discard, a cause a request tried to name for itself.
+	 *
+	 * 🔴 A CLIENT THAT CAN CLAIM ITS WRITE WAS A MIGRATION CAN HIDE A WRITE. An
+	 * administrator filtering out the noise of a bulk load would filter out
+	 * exactly the entry somebody wanted buried. So a `cause` in a request is
+	 * never stored, and the ATTEMPT is recorded, because a caller trying to
+	 * label its own writes is itself worth knowing about.
+	 *
+	 * Called from the write doors. It changes nothing about the request: the
+	 * key is already stripped from the payload by the `_`-prefix filter or
+	 * ignored by validation, so this only notices.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function noteClientSuppliedCause(): void {
+		foreach (['cause', '_cause', 'causeRun', '_causeRun'] as $key) {
+			if ($this->request->getParam($key) !== null) {
+				\OCA\OpenRegister\Service\WriteCause::noteClientAttempt();
+				$this->logger->warning(
+					message: '[ObjectsController] a request supplied its own audit cause; it was ignored',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'key' => $key]
+				);
+
+				return;
+			}
+		}
+	}//end noteClientSuppliedCause()
+
+	/**
+	 * Say that the caller still has this object open.
+	 *
+	 * 🔴 A HEARTBEAT, NOT A CONNECTION (D-1). notify_push tells the server
+	 * nothing about who is looking at what, so the client says so every 30
+	 * seconds and the server stops believing it after 90. Missing two beats
+	 * reads as gone, which survives a lost socket where connection tracking
+	 * does not.
+	 *
+	 * Reads the object first, so presence is under the object's own RBAC: a
+	 * caller who cannot read it cannot appear on it, and cannot learn from the
+	 * answer that it exists.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema   The schema slug or identifier.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse Who else is present.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	#[NoAdminRequired]
+	public function presenceBeat(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->presenceCaller();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		if ($object === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$beat = $service->heartbeat(userId: $caller, objectUuid: $id);
+		$present = $service->present(objectUuid: $id, exceptUser: $caller);
+
+		// ONLY on an arrival. A renewal that changed nothing is silent, which
+		// is the whole of D-2 and the reason `heartbeat()` reports which it was
+		// rather than leaving the caller to work it out.
+		if ($beat['arrived'] === true) {
+			$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+				->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+		}
+
+		return new JSONResponse(
+			data: ['present' => $present, 'beatSeconds' => \OCA\OpenRegister\Service\PresenceService::BEAT_SECONDS]
+		);
+	}//end presenceBeat()
+
+	/**
+	 * Say that the caller has closed this object.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema   The schema slug or identifier.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse Who is left.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	#[NoAdminRequired]
+	public function presenceDepart(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->presenceCaller();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$left = $service->depart(userId: $caller, objectUuid: $id);
+
+		// A departure by somebody who was not there pushes nothing: there is no
+		// change to tell anybody about, and a page unmounting twice is ordinary.
+		if ($left === true) {
+			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+			if ($object !== null) {
+				$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+			}
+		}
+
+		return new JSONResponse(data: ['present' => $service->present(objectUuid: $id, exceptUser: $caller)]);
+	}//end presenceDepart()
+
+	/**
+	 * Who has this object open.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema   The schema slug or identifier.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse The present readers.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function presenceList(string $register, string $schema, string $id): JSONResponse {
+		$caller = $this->presenceCaller();
+		if ($caller === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		if ($this->presenceObject(register: $register, schema: $schema, id: $id) === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		return new JSONResponse(
+			data: [
+				'present' => $this->container->get(\OCA\OpenRegister\Service\PresenceService::class)
+					->present(objectUuid: $id, exceptUser: $caller),
+			]
+		);
+	}//end presenceList()
+
+	/**
+	 * The signed-in caller's uid, or null.
+	 *
+	 * @return string|null The uid.
+	 */
+	private function presenceCaller(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
+
+		return $user->getUID();
+	}//end presenceCaller()
+
+	/**
+	 * Read the object under the caller's own RBAC, or null.
+	 *
+	 * 🔴 THIS IS THE AUTHORISATION, AND IT IS A REAL READ. Presence is served to
+	 * whoever may read the object (D-3), so the check is performing that read
+	 * rather than asking a second question that could answer differently. A
+	 * caller who cannot read the object gets 404 and learns nothing, including
+	 * whether it exists.
+	 *
+	 * @param string $register The register.
+	 * @param string $schema   The schema.
+	 * @param string $id       The object.
+	 *
+	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 */
+	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
+		try {
+			$this->objectService->setRegister(register: $register);
+			$this->objectService->setSchema(schema: $schema);
+			$found = $this->objectService->find($id);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if ($found instanceof ObjectEntity) {
+			return $found;
+		}
+
+		return null;
+	}//end presenceObject()
 
 	/**
 	 * Export objects to specified format
@@ -4567,6 +5482,16 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Register or schema not found'], statusCode: 404);
 		}
 
+		// THE EXPORT VERB, before a single row is read. Hiding the menu item is
+		// not a control: this endpoint is what an integration calls, so this is
+		// where the right has to hold (design D-1). The refusal names the verb
+		// rather than the register, because "forbidden" leaves an operator
+		// guessing which of the two grants they are missing.
+		$refusal = $this->exportRefusalFor(schema: $schemaEntity, register: $registerEntity);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		// Generate filename base.
 		$filenameBase = sprintf(
 			'%s_%s_%s',
@@ -4584,6 +5509,13 @@ class ObjectsController extends Controller {
 				currentUser: $this->userSession->getUser()
 			);
 
+			$this->recordExportCompleted(
+				register: $registerEntity,
+				schema: $schemaEntity,
+				format: 'csv',
+				rowCount: $this->countCsvExportRows(csv: $content)
+			);
+
 			return new DataDownloadResponse(
 				data: $content,
 				filename: "{$filenameBase}.csv",
@@ -4596,6 +5528,13 @@ class ObjectsController extends Controller {
 				register: $registerEntity,
 				schema: $schemaEntity,
 				filters: $filters
+			);
+
+			$this->recordExportCompleted(
+				register: $registerEntity,
+				schema: $schemaEntity,
+				format: 'json',
+				rowCount: $this->countJsonExportRows(json: $content)
 			);
 
 			return new DataDownloadResponse(
@@ -4625,6 +5564,17 @@ class ObjectsController extends Controller {
 				);
 			}
 
+			$this->recordExportCompleted(
+				register: $registerEntity,
+				schema: $schemaEntity,
+				format: 'pdf',
+				rowCount: $this->exportService->countExportRows(
+					register: $registerEntity,
+					schema: $schemaEntity,
+					filters: $filters
+				)
+			);
+
 			return new DataDownloadResponse(
 				data: $content,
 				filename: "{$filenameBase}.pdf",
@@ -4646,12 +5596,210 @@ class ObjectsController extends Controller {
 		$writer->save('php://output');
 		$content = ob_get_clean();
 
+		$this->recordExportCompleted(
+			register: $registerEntity,
+			schema: $schemaEntity,
+			format: 'excel',
+			rowCount: $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet)
+		);
+
 		return new DataDownloadResponse(
 			data: $content,
 			filename: "{$filenameBase}.xlsx",
 			contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 		);
 	}//end export()
+
+	/**
+	 * The refusal for this caller's export, or null when they may take it.
+	 *
+	 * Resolved from the container rather than injected, because a nullable
+	 * constructor dependency would make the control skippable: a caller that
+	 * constructs this controller without the service would get an export with
+	 * no verb check and no sign that one was missing. A service that cannot be
+	 * resolved refuses, for the same reason an unreadable rule refuses.
+	 *
+	 * @param Schema   $schema   The schema being exported.
+	 * @param Register $register The register being exported.
+	 *
+	 * @return JSONResponse|null The refusal to return, or null when the export may run.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 */
+	private function exportRefusalFor(Schema $schema, Register $register): ?JSONResponse {
+		$rightService = null;
+		try {
+			$rightService = $this->container->get(ExportRightService::class);
+		} catch (\Throwable $e) {
+			$this->logger?->error(
+				message: '[ObjectsController] Export right service unresolvable, refusing the export',
+				context: ['error' => $e->getMessage()]
+			);
+		}
+
+		// A container that answers with something other than the service is the
+		// same situation as one that throws, and it must end the same way. The
+		// alternative is an export that runs with no verb check and nothing to
+		// say one was missing, which is the hole this whole change closes.
+		if (($rightService instanceof ExportRightService) === false) {
+			return new JSONResponse(
+				data: [
+					'error' => 'EXPORT_REFUSED',
+					'verb' => ExportRightService::ACTION,
+					'rule' => 'right-service-unavailable',
+					'message' => 'The export right cannot be evaluated right now, so nothing was exported.',
+				],
+				statusCode: 503
+			);
+		}
+
+		$refusal = $rightService->refusalFor(schema: $schema);
+		if ($refusal === null) {
+			return null;
+		}
+
+		$this->recordExportRefusal(refusal: $refusal, register: $register, schema: $schema);
+
+		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+	}//end exportRefusalFor()
+
+	/**
+	 * Record a refused export on the audit trail.
+	 *
+	 * @param \OCA\OpenRegister\Service\Export\ExportRefusedException $refusal The refusal.
+	 * @param Register $register The register that was asked for.
+	 * @param Schema   $schema   The schema that was asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function recordExportRefusal(
+		\OCA\OpenRegister\Service\Export\ExportRefusedException $refusal,
+		Register $register,
+		Schema $schema,
+	): void {
+		$recorder = $this->exportAuditRecorder();
+		if ($recorder === null) {
+			return;
+		}
+
+		$recorder->recordRefused(
+			profile: 'ad-hoc',
+			rule: $refusal->getRule(),
+			reason: $refusal->getMessage(),
+			register: $register->getId(),
+			schema: $schema->getId()
+		);
+	}//end recordExportRefusal()
+
+	/**
+	 * Record a completed export on the audit trail.
+	 *
+	 * @param Register $register The register exported.
+	 * @param Schema   $schema   The schema exported.
+	 * @param string   $format   The format written.
+	 * @param int      $rowCount How many rows left the instance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function recordExportCompleted(Register $register, Schema $schema, string $format, int $rowCount): void {
+		$recorder = $this->exportAuditRecorder();
+		if ($recorder === null) {
+			return;
+		}
+
+		$recorder->recordCompleted(
+			profile: 'ad-hoc',
+			rowCount: $rowCount,
+			format: $format,
+			valueMode: null,
+			register: $register->getId(),
+			schema: $schema->getId()
+		);
+	}//end recordExportCompleted()
+
+	/**
+	 * The audit recorder, or null when it cannot be resolved.
+	 *
+	 * Unlike the right service this one may be absent without refusing the
+	 * export: see ExportAuditRecorder's own note on why a ledger hiccup must
+	 * not fail a monthly aanlevering.
+	 *
+	 * @return ExportAuditRecorder|null The recorder.
+	 */
+	private function exportAuditRecorder(): ?ExportAuditRecorder {
+		try {
+			return $this->container->get(ExportAuditRecorder::class);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				message: '[ObjectsController] Export audit recorder unresolvable, the export is not on the trail',
+				context: ['error' => $e->getMessage()]
+			);
+
+			return null;
+		}
+	}//end exportAuditRecorder()
+
+	/**
+	 * Count the data rows in exported CSV bytes.
+	 *
+	 * Counted off the artefact that was actually produced rather than off a
+	 * second query, so the number on the trail is the number in the file.
+	 *
+	 * @param string $csv The CSV content.
+	 *
+	 * @return int The row count, header excluded.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function countCsvExportRows(string $csv): int {
+		$lines = array_filter(explode("\n", $csv), static fn ($line) => trim($line) !== '');
+
+		return max(0, (count($lines) - 1));
+	}//end countCsvExportRows()
+
+	/**
+	 * Count the objects in exported JSON bytes.
+	 *
+	 * @param string $json The JSON content.
+	 *
+	 * @return int The row count, or 0 when the payload is not a list.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function countJsonExportRows(string $json): int {
+		$decoded = json_decode($json, true);
+		if (is_array($decoded) === false) {
+			return 0;
+		}
+
+		if (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
+			return count($decoded['results']);
+		}
+
+		return count($decoded);
+	}//end countJsonExportRows()
+
+	/**
+	 * Sum the data rows across every sheet of an exported spreadsheet.
+	 *
+	 * @param \PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet The spreadsheet.
+	 *
+	 * @return int The row count, each sheet header excluded.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	private function countSpreadsheetExportRows(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet): int {
+		$rows = 0;
+		foreach ($spreadsheet->getAllSheets() as $sheet) {
+			$rows += max(0, ($sheet->getHighestRow() - 1));
+		}
+
+		return $rows;
+	}//end countSpreadsheetExportRows()
 
 	/**
 	 * Merge two objects

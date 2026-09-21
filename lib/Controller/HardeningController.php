@@ -38,12 +38,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
+use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningReportService;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -71,6 +75,7 @@ class HardeningController extends Controller {
 	 * @param HardeningReportService $reportService Builds the report.
 	 * @param HardeningSettingsService $settingsService Applies a change, or refuses it.
 	 * @param HardeningPolicy $policy Reads the floors in force.
+	 * @param ElevationService $elevation Guards the administration writes with a fresh sign-in.
 	 *
 	 * @return void
 	 */
@@ -80,6 +85,7 @@ class HardeningController extends Controller {
 		private readonly HardeningReportService $reportService,
 		private readonly HardeningSettingsService $settingsService,
 		private readonly HardeningPolicy $policy,
+		private readonly ElevationService $elevation,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -150,7 +156,7 @@ class HardeningController extends Controller {
 	 *
 	 * @return JSONResponse The controls now in force, or the refusal.
 	 *
-	 * @psalm-return JSONResponse<200|400|409, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|400|403|409, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 *
@@ -161,6 +167,9 @@ class HardeningController extends Controller {
 		$body = $this->request->getParams();
 
 		try {
+			// A stolen session is not a confirmed password, and this write
+			// weakens the instance. REQ-IHC-002.
+			$this->elevation->requireElevated();
 			$controls = [];
 			$requested = ($body['controls'] ?? []);
 			if (is_array($requested) === true) {
@@ -183,6 +192,8 @@ class HardeningController extends Controller {
 			}
 
 			return new JSONResponse(data: $answer);
+		} catch (ElevationRequiredException $stale) {
+			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (HardeningFloorException $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
@@ -196,7 +207,7 @@ class HardeningController extends Controller {
 	 *
 	 * @return JSONResponse The floors now in force, or the refusal.
 	 *
-	 * @psalm-return JSONResponse<200|400|409, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|400|403|409, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 *
@@ -215,6 +226,10 @@ class HardeningController extends Controller {
 		}
 
 		try {
+			// Declaring a floor is an administration write too: a floor moved
+			// down is what lets the next control be weakened. REQ-IHC-002.
+			$this->elevation->requireElevated();
+
 			$applied = [];
 			foreach ($requested as $control => $floor) {
 				$applied[$control] = $this->settingsService->setFloor(
@@ -224,6 +239,8 @@ class HardeningController extends Controller {
 			}
 
 			return new JSONResponse(data: ['floors' => $applied]);
+		} catch (ElevationRequiredException $stale) {
+			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (HardeningFloorException $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
@@ -231,4 +248,44 @@ class HardeningController extends Controller {
 		}//end try
 
 	}//end updateFloors()
+	/**
+	 * Start an elevated administration period by confirming the password.
+	 *
+	 * Administrator-only, like everything else here, and throttled: a correct
+	 * guess on this one surface buys the right to weaken every control on the
+	 * report. The account is the session's; the request never names one.
+	 *
+	 * @return JSONResponse The period now running, or the refusal.
+	 *
+	 * @psalm-return JSONResponse<200|401, array<string, mixed>, array<never, never>>
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
+	 *
+	 * @contract tests/Unit/Controller/HardeningControllerTest.php
+	 */
+	#[NoCSRFRequired]
+	#[BruteForceProtection(action: ThrottledSurfaces::ELEVATION)]
+	public function elevate(): JSONResponse {
+		$password = (string)($this->request->getParam('password') ?? '');
+
+		if ($this->elevation->elevate(password: $password) === false) {
+			$refused = new JSONResponse(
+				data: ['error' => 'That password was not confirmed.', 'elevationRequired' => true],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+			$refused->throttle(['action' => ThrottledSurfaces::ELEVATION]);
+
+			return $refused;
+		}
+
+		return new JSONResponse(
+			data: [
+				'elevated' => true,
+				'periodSeconds' => $this->elevation->periodSeconds(),
+				'remainingSeconds' => $this->elevation->remainingSeconds(),
+			]
+		);
+
+	}//end elevate()
+
 }//end class

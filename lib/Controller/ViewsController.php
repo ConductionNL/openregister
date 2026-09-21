@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\View;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\ViewPresentationService;
 use OCA\OpenRegister\Service\ViewService;
@@ -27,7 +28,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -65,18 +66,18 @@ class ViewsController extends Controller {
 	private ViewPresentationService $viewPresentationService;
 
 	/**
-	 * The user session for getting current user
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
 	 * The logger interface
 	 *
 	 * @var LoggerInterface
 	 */
 	private LoggerInterface $logger;
+
+	/**
+	 * Who is asking, and how far they reach over views.
+	 *
+	 * @var ViewerReachResolver
+	 */
+	private ViewerReachResolver $viewers;
 
 	/**
 	 * Constructor for ViewsController
@@ -85,23 +86,118 @@ class ViewsController extends Controller {
 	 * @param IRequest $request The request object
 	 * @param ViewService $viewService The view service
 	 * @param ViewPresentationService $viewPresentationService The view presentation (kanban/calendar) service
-	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger The logger
+	 * @param ViewerReachResolver $viewers Who is asking, and how far they reach
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		ViewService $viewService,
 		ViewPresentationService $viewPresentationService,
-		IUserSession $userSession,
 		LoggerInterface $logger,
+		ViewerReachResolver $viewers,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->viewService = $viewService;
 		$this->viewPresentationService = $viewPresentationService;
-		$this->userSession = $userSession;
 		$this->logger = $logger;
+		$this->viewers = $viewers;
 	}//end __construct()
+
+	/**
+	 * The view behind an id, resolved as the caller's own.
+	 *
+	 * `ViewService::find()` takes the owner and refuses anything else with a
+	 * `DoesNotExistException`, which every endpoint here answers as a 404.
+	 * That is the per-object predicate for a view: a caller who does not own
+	 * it gets the same answer as one asking for a view that does not exist,
+	 * so no endpoint can be used to discover which view ids exist.
+	 *
+	 * Named rather than inlined at five call sites, so the predicate is one
+	 * thing a reader can find and one thing a change has to go through.
+	 *
+	 * @param string $id     The view id.
+	 * @param string $userId The caller.
+	 *
+	 * @return View The view.
+	 *
+	 * @throws DoesNotExistException When the view is not this caller's.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	private function requireOwnedView(string $id, string $userId): View {
+		return $this->viewService->find(id: $id, owner: $userId);
+	}//end requireOwnedView()
+
+	/**
+	 * Refuse an update that changes fields this caller does not own.
+	 *
+	 * Answers a response to RETURN, or null when the update may proceed. The
+	 * refusal NAMES the fields, because the message a member needs is which
+	 * field was refused rather than that something was.
+	 *
+	 * A view that cannot be read denies rather than falling through: an update
+	 * to a view nobody can resolve is not one this endpoint should guess about.
+	 *
+	 * @param string $id The view id.
+	 * @param string $userId The caller.
+	 * @param array<string, mixed> $data The request body.
+	 *
+	 * @return JSONResponse|null The refusal, or null when allowed.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	private function refuseForbiddenViewFields(string $id, string $userId, array $data): ?JSONResponse {
+		// 🔴 BOTH ARGUMENTS. `ViewService::find()` takes `(id, owner)` and both
+		// are required, so the one-argument call this method shipped with
+		// raised an `ArgumentCountError` that the catch below turned into a
+		// plausible `404 View not found` for EVERY update, the owner's own
+		// included. Nothing would have looked broken; views would simply have
+		// stopped saving.
+		try {
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
+		} catch (\Throwable $e) {
+			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
+		}
+
+		// The request carries pagination and routing keys as well as fields.
+		// Only the ones that name a view property are judged, so a `_limit` on
+		// the body cannot refuse an update a member is entitled to make.
+		$fields = array_intersect_key(
+			$data,
+			array_flip(
+				[
+					'name',
+					'description',
+					'owner',
+					'isPublic',
+					'isDefault',
+					'query',
+					'presentation',
+					'alert',
+					'sharedWith',
+				]
+			)
+		);
+
+		$refused = $this->viewers->refusedFields(
+			view: $view->jsonSerialize(),
+			reach: $this->viewers->reachOf(userId: $userId),
+			update: $fields
+		);
+
+		if ($refused === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'You may not change these fields on this view: ' . implode(', ', $refused),
+				'fields' => $refused,
+			],
+			statusCode: 403
+		);
+	}//end refuseForbiddenViewFields()
 
 	/**
 	 * Get all views for the current user
@@ -121,11 +217,7 @@ class ViewsController extends Controller {
 	 */
 	public function index(): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -155,7 +247,10 @@ class ViewsController extends Controller {
 			}
 
 			// Note: search parameter not currently used in this endpoint.
-			$views = $this->viewService->findAll($userId);
+			// Ledger row 9.4: the caller's own views, the ones shared with a
+			// group they are in, and the public ones, each carrying the access
+			// they hold on it.
+			$views = $this->viewService->findAllFor(reach: $this->viewers->reachOf(userId: $userId));
 
 			// Apply client-side pagination if parameters are provided.
 			$total = count($views);
@@ -212,11 +307,7 @@ class ViewsController extends Controller {
 	 */
 	public function show(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -227,7 +318,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 
 			return new JSONResponse(
 				data: [
@@ -276,11 +367,7 @@ class ViewsController extends Controller {
 	 */
 	public function create(): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -404,11 +491,7 @@ class ViewsController extends Controller {
 	 */
 	public function update(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -420,6 +503,20 @@ class ViewsController extends Controller {
 			}
 
 			$data = $this->request->getParams();
+
+			// 🔴 THE FIELD GUARD RUNS HERE, and it did not before. It was
+			// written, unit-tested and never called, which reads to the next
+			// person who greps as a check and is identical to having none.
+			// Until it was wired, `ViewService::update()`'s own access test
+			// admitted the OWNER or ANY caller on a view whose `isPublic` is
+			// true, so any authenticated account could rename someone else's
+			// shared view, rewrite its query, or un-publish it. The owner and
+			// an administrator are unaffected: `mayAdminister()` answers true
+			// for both and the guard returns null.
+			$refusal = $this->refuseForbiddenViewFields(id: $id, userId: $userId, data: $data);
+			if ($refusal !== null) {
+				return $refusal;
+			}
 
 			// Validate required fields.
 			if (isset($data['name']) === false || empty($data['name']) === true) {
@@ -543,11 +640,7 @@ class ViewsController extends Controller {
 	 */
 	public function patch(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -559,9 +652,17 @@ class ViewsController extends Controller {
 			}
 
 			// Get existing view.
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 
 			$data = $this->request->getParams();
+
+			// The same guard as `update()`. Leaving it off here would have
+			// left the hole open behind a different verb, and this method
+			// additionally carries `@NoCSRFRequired`.
+			$refusal = $this->refuseForbiddenViewFields(id: $id, userId: $userId, data: $data);
+			if ($refusal !== null) {
+				return $refusal;
+			}
 
 			// Use existing values for fields not provided.
 			$name = $data['name'] ?? $view->getName() ?? '';
@@ -669,11 +770,7 @@ class ViewsController extends Controller {
 	 */
 	public function destroy(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -684,18 +781,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
-			}
-
-			$this->viewService->delete(id: $id, owner: $user->getUID());
+			$this->viewService->delete(id: $id, owner: $userId);
 
 			return new JSONResponse(
 				data: [
@@ -751,11 +837,7 @@ class ViewsController extends Controller {
 	 */
 	public function kanban(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -766,7 +848,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 			$board = $this->viewPresentationService->getKanbanBoard(
 				view: $view,
 				requestParams: $this->request->getParams()
@@ -822,11 +904,7 @@ class ViewsController extends Controller {
 	 */
 	public function calendar(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -850,12 +928,16 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
+			// The whole request is deliberately NOT handed on. The service
+			// took a `$requestParams` array it `unset()` on its first line,
+			// reserved for a filter passthrough nobody wrote, and an argument
+			// that is thrown away is an argument a reader has to check before
+			// they can rule it out.
 			$result = $this->viewPresentationService->getCalendarObjects(
 				view: $view,
 				rangeStart: $rangeStart,
-				rangeEnd: $rangeEnd,
-				requestParams: $params
+				rangeEnd: $rangeEnd
 			);
 
 			return new JSONResponse(data: $result);

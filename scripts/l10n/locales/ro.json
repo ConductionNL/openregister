@@ -73,7 +73,9 @@
 		"Urgent": "Same spelling and meaning in Romanian (urgent).",
 		"Text": "\"Text\" is the same word in Romanian for the text field type; no non-identical synonym exists, so the honest label is identical.",
 		"Operator": "The engine's comparison/logic operator. Romanian uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists.",
-		"Verdict": "The rule-evaluation outcome. Romanian's own word for a verdict is the identically-spelled \"verdict\", so the value coincides with the English key; no distinct synonym exists."
+		"Verdict": "The rule-evaluation outcome. Romanian's own word for a verdict is the identically-spelled \"verdict\", so the value coincides with the English key; no distinct synonym exists.",
+		"Respondent": "Romanian uses the same Latin-derived word for a survey respondent, spelled exactly \"Respondent\"; the translation is the correct Romanian term, not an untranslated string.",
+		"Token": "Romanian borrows this term: docs/l10n-ui-translation.md lists Token among the ro borrowings alongside Webhook, Endpoint and Driver, and the bundle already ships \"Configurare token API\" and \"Token-uri API\"."
 	},
 	"corrections": {
 		"Add Application": "Informal imperative 'Adaugă aplicație' replaced with the formal 'Adăugați aplicația'. The measured register for ro in this bundle is FORMAL and detectors/ro.js flags the 2nd-person-singular imperative; every other imperative here already uses the -ați/-eți form, so this was inconsistent with its own bundle.",

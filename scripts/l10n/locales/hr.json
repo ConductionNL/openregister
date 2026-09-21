@@ -53,7 +53,8 @@
 		"Bucket": "Object-storage term, used unchanged in this locale's technical language.",
 		"Golden record": "Master-data-management term with no established local equivalent; used unchanged in data-governance language.",
 		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language.",
-		"Operator": "The engine's comparison/logic operator. Croatian uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists."
+		"Operator": "The engine's comparison/logic operator. Croatian uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists.",
+		"Token": "Hrvatski tehnički jezik zadržava 'token' za potpisani niz znakova; katalog hr koristi ga neprevedenog u svih 45 postojećih pojavnosti (API tokeni, Stvori novi token) i nema domaćeg parnjaka u uporabi."
 	},
 	"corrections": {
 		"Categories of data subjects (one per line)": "batch 1 wrote the paraphrase \"osoba čiji se podaci obrađuju\"; \"ispitanik\" is the term used by the official Croatian text of the GDPR",
