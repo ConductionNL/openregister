@@ -1,6 +1,7 @@
 name: WOO-572 OR Hotfix CI
 
-# Branch-local CI for the OpenRegister 1.x hotfix line (1.1.5-woo-N, WOO-572).
+# Branch-local CI for the OpenRegister 1.x hotfix line (1.1.5-woo-N, WOO-572;
+# from woo-2 on this branch also carries Barry Brands' permanent-delete flag).
 # The repo's regular Code Quality workflow on this v1.1.5-era branch calls the
 # shared quality workflow @main, which has moved on since; this workflow runs
 # the checks that are meaningful for the hotfix and can run without a
@@ -44,7 +45,9 @@ jobs:
             lib/Controller/FileTextController.php \
             lib/Service/Settings/FileSettingsHandler.php \
             lib/Service/Object/ContentSearchHandler.php \
-            lib/Service/Object/QueryHandler.php
+            lib/Service/Object/QueryHandler.php \
+            lib/Service/Object/DeleteObject.php \
+            lib/Service/ObjectService.php
       - name: Unit tests shipped with the hotfix
         run: |
           vendor/bin/phpunit --no-coverage --do-not-cache-result \

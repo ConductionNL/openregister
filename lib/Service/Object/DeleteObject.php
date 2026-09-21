@@ -385,7 +385,8 @@ class DeleteObject
         string $uuid,
         ?string $originalObjectId=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $permanent=false
     ): bool {
         // Reset cascade count for root deletions.
         if ($originalObjectId === null) {
@@ -402,6 +403,11 @@ class DeleteObject
         $object  = $context['object'];
 
         // Root deletions: check referential integrity and handle cascade.
+        // NOTE: $permanent does not reach the integrity-cascade transaction
+        // path (handleIntegrityDeletion/executeIntegrityTransaction) — that
+        // path has its own RESTRICT/CASCADE semantics for related objects,
+        // a separate concern from "hard-delete this one object" that would
+        // need its own design rather than inheriting this flag implicitly.
         if ($originalObjectId === null) {
             $integrityResult = $this->handleIntegrityDeletion(
                 object: $object,
@@ -414,7 +420,7 @@ class DeleteObject
         }
 
         try {
-            return $this->delete(object: $object);
+            return $this->delete(object: $object, permanent: $permanent);
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[DeleteObject] Delete failed',

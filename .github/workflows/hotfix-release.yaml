@@ -1,31 +1,32 @@
 name: WOO-572 OR Hotfix Release
 
-# WOO-572 — custom hotfix release for the WOO stable line: OpenRegister 1.1.5 +
-# the WOO-576 text-extraction filesystem-context fix and the WOO-577 chunk-arm
-# counting/paging fix, deployed manually on acato and openwoo (kubectl route).
+# WOO-572 — custom hotfix release for the WOO stable line: OpenRegister 1.1.5
+# + Barry Brands' permanent-delete flag (1.1.5-woo-1, WOO-557) + the WOO-576
+# text-extraction filesystem-context fix + the WOO-577 chunk-arm counting/paging
+# fix. Deployed manually on acato and openwoo (kubectl route).
 #
 # Runs on pushes to the hotfix branch only, NOT on main. Produces a GitHub
 # PRERELEASE (`prerelease: true`) so Nextcloud never offers it as "latest".
 #
 # Naming: <base_tag>-<project>-<version> (Barry Brands, WOO-552):
-#   v1.1.5 + WOO hotfix 1  ->  version 1.1.5-woo-1, tag v1.1.5-woo-1.
+#   v1.1.5 + WOO hotfix 2  ->  version 1.1.5-woo-2, tag v1.1.5-woo-2.
 # Every push to this branch rebuilds and OVERWRITES the same tag/release
 # (allowUpdates + overwrite). Bump `<version>` in appinfo/info.xml by hand to
-# 1.1.5-woo-2 only for a runtime change after 1.1.5-woo-1 has been deployed;
+# 1.1.5-woo-3 only for a runtime change after 1.1.5-woo-2 has been deployed;
 # tests-only pushes keep the version.
 #
-# TAG COLLISION, RESOLVED — the first run of this workflow OVERWRITES an
-# existing tag and release named v1.1.5-woo-1. That one was created 2026-09-06
-# by github-actions[bot], titled "Permanent-Delete Hotfix Release 1.1.5-woo-1",
-# targeted main, and pointed at commit 24672623fe (a merge of beta, info.xml
-# 2.0.15-unstable): 2.x code under a 1.1.5 name, a misfire of another ticket
-# that nobody should ever deploy as "1.1.5". Overwriting it is the decision
-# (Wilco, 2026-09-21) — keeping the name and correcting what it points at.
+# WHY woo-2 AND NOT woo-1. `1.1.5-woo-1` is Barry Brands' release from branch
+# `fix/deleteobject-permanent-param` (2026-09-09): the `permanent` flag on
+# `ObjectService::deleteObject()` that OpenConnector's SynchronizationService
+# calls with `permanent: true` (WOO-557). On 2026-09-21 this branch briefly cut
+# a release under that SAME name and overwrote his; that was a mistake, undone
+# by re-running his original release run. His branch is merged into this one,
+# so woo-2 is a strict superset of woo-1: whatever runs woo-1 today loses
+# nothing by moving to woo-2, and the WOO line keeps ONE OpenRegister build.
 #
-# Consequence for whoever deploys: an old asset under this tag looks identical
-# from the outside. The deploy runbook therefore greps the tarball for
-# `resolveFileNode` and `metadataArmOverlap` before installing anything
-# (WOO-572-kubectl-deploy-openregister.txt, step 4b).
+# Consequence for whoever deploys: verify the tarball's content, not just its
+# name (WOO-572-kubectl-deploy-openregister.txt, step 4b greps for
+# `resolveFileNode`, `metadataArmOverlap` AND `permanent: $permanent`).
 #
 # Basis: ConductionNL/opencatalogi @ hotfix/woo-572-fts-stable-line
 #        .github/workflows/hotfix-release.yaml (WOO-572 OC hotfix), rsync
@@ -160,6 +161,7 @@ jobs:
           grep "<version>" package/${{ env.APP_NAME }}/appinfo/info.xml
           grep -q "function resolveFileNode" package/${{ env.APP_NAME }}/lib/Service/TextExtractionService.php
           grep -q "function metadataArmOverlap" package/${{ env.APP_NAME }}/lib/Service/Object/ContentSearchHandler.php
+          grep -q "permanent: \$permanent" package/${{ env.APP_NAME }}/lib/Service/ObjectService.php
 
       - name: Create Tarball
         run: |
@@ -184,7 +186,7 @@ jobs:
           commit: ${{ github.sha }}
           name: WOO-572 OR Hotfix Release ${{ env.NEW_VERSION }} (WOO stable line)
           body: |
-            Custom hotfix prerelease for the WOO stable line — OpenRegister 1.1.5 + text extraction in background/cron mode on Nextcloud ≤ 33 (WOO-576) + chunk-arm total/paging fix for `_content` search (WOO-577).
+            Custom hotfix prerelease for the WOO stable line — OpenRegister 1.1.5 + the permanent-delete flag from 1.1.5-woo-1 (WOO-557, Barry Brands) + text extraction in background/cron mode on Nextcloud ≤ 33 (WOO-576) + chunk-arm total/paging fix for `_content` search (WOO-577). Strict superset of v1.1.5-woo-1.
             Built from `${{ github.sha }}` on `${{ github.ref_name }}`. Install manually (kubectl route); not offered by the Nextcloud app store.
             Jira: https://conduction.atlassian.net/browse/WOO-572
           draft: false

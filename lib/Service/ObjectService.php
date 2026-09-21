@@ -1459,7 +1459,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
+    public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true, bool $permanent=false): bool
     {
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
@@ -1506,7 +1506,8 @@ class ObjectService
             uuid: $uuid,
             originalObjectId: null,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            permanent: $permanent
         );
     }//end deleteObject()
 
