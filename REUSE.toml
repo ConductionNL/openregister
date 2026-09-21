@@ -61,8 +61,21 @@ SPDX-License-Identifier = "EUPL-1.2"
 
 # ---------------------------------------------------------------------------
 # Third party. NOT ours — these say what the publisher says. Each block names
-# its source; lib/Resources/*/version.json records the exact upstream release,
-# retrieval date and, where the publisher was explicit, the licence statement.
+# its source.
+#
+# WHERE THE PROVENANCE IS WRITTEN DOWN. Upstream material in this repository
+# tends to arrive with a sidecar recording release, retrieval date and licence
+# statement. Those sidecars are the inventory's best evidence, so the search
+# for them is: every tracked file named `version.json` or `provenance.json`,
+# anywhere in the tree. As of #3857 round 3 that is four —
+# lib/Resources/{ggm,mdto,schemaorg}/version.json and
+# tests/fixtures/mdto/provenance.json — and all four are accounted for below.
+#
+# The earlier wording said "lib/Resources/*/version.json", which described the
+# search that had actually been run rather than the one that was needed, and
+# that is precisely why the provenance sidecar under tests/fixtures/ went
+# unopened for two review rounds while it sat in the tree spelling out the
+# licence of the four files next to it.
 # ---------------------------------------------------------------------------
 
 # Schema.org vocabulary, a curated subset of the official release 27.01
@@ -139,6 +152,32 @@ path = "tests/fixtures/pdf/testdoc.pdf"
 precedence = "override"
 SPDX-FileCopyrightText = "Carlos de Alfonso and the ddn/sapp contributors, https://github.com/dealfonso/sapp"
 SPDX-License-Identifier = "LGPL-3.0-or-later"
+
+# The Nationaal Archief's own MDTO-XML 1.0.1 example documents, redistributed
+# unmodified as the positive control in MdtoXmlGeneratorXsdTest — the harness
+# must accept what the publisher itself calls valid. Only the file names were
+# changed, to drop spaces; the bytes are upstream's, and all four sha256 sums
+# in tests/fixtures/mdto/provenance.json verify against the files at this
+# commit.
+#
+# Same publisher, same upstream commit and the same licence statement as
+# lib/Resources/mdto/MDTO-XML1.0.1.xsd above, so it gets the same
+# LicenseRef — Forum Standaardisatie FS-20241002.3C: "Het Nationaal Archief
+# hanteert de licentie CC BY SA voor al diens kennisproducten en dus ook voor
+# MDTO", with no version named. See LICENSES/LicenseRef-CC-BY-SA-
+# NationaalArchief.txt.
+#
+# Review finding on #3857 (rjzondervan, round 3), and the sharpest counter-
+# example to this file's own thesis. The argument for annotating before
+# blanketing is that a blanket buries the question worth asking; here the
+# ANSWER was already written down in the tree, in a sidecar next to the files,
+# and the blanket relicensed four share-alike works to EUPL-1.2 anyway. The
+# sibling provenance.json is Conduction's own and stays under the blanket.
+[[annotations]]
+path = "tests/fixtures/mdto/voorbeeld-*.xml"
+precedence = "override"
+SPDX-FileCopyrightText = "Nationaal Archief, https://www.nationaalarchief.nl/archiveren/mdto"
+SPDX-License-Identifier = "LicenseRef-CC-BY-SA-NationaalArchief"
 
 # Material Design Icons (Pictogrammers). Review finding on #3857: the blanket
 # above would have stamped the repo's own app artwork "Conduction B.V." while
