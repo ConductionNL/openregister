@@ -402,7 +402,15 @@ final class ImportPreviewServiceTest extends TestCase {
 		// The update carries the object the preview matched, so the write
 		// updates that one and not whatever a second lookup would have found.
 		$this->assertSame('object-111', $written[0]['@self']['id']);
-		$this->assertArrayNotHasKey('id', $written[1]['@self']);
+
+		// The create now carries a uuid of its OWN, minted at decision time so
+		// the row-by-row retry in writeBatch() cannot duplicate a row an earlier
+		// committed chunk already wrote. This used to assert the create carried
+		// NO id, which is what made that retry mint a fresh uuid every time.
+		// What the assertion was really guarding — that a create does not target
+		// the object the preview matched — is asserted directly instead.
+		$this->assertArrayHasKey('id', $written[1]['@self']);
+		$this->assertNotSame('object-111', $written[1]['@self']['id']);
 	}
 
 	public function testAChangedFileIsRefusedAndNothingIsWritten(): void {
@@ -472,6 +480,38 @@ final class ImportPreviewServiceTest extends TestCase {
 		$this->expectException(ImportPreviewRefusedException::class);
 		$this->service->commit($preview, $hash);
 	}
+
+	public function testACreateRowCarriesAStableUuidSoARetryCannotDuplicateIt(): void {
+		// writeBatch() hands the batch to saveObjects() and, on a throw, walks
+		// the batch row by row on the stated assumption that a throw means
+		// nothing was written. Underneath, MagicBulkHandler::bulkUpsert() commits
+		// each CHUNK in its own transaction and rolls back only the failing one,
+		// so when a later chunk fails the earlier ones are already durable.
+		//
+		// A CREATE payload carried no id, so saveObject() minted a fresh uuid and
+		// the retry re-created every committed row as a duplicate — reported as
+		// succeeded, because for those rows the retry genuinely worked. UPDATE
+		// rows were never affected: their targetUuid makes the retry idempotent.
+		// Stamping the uuid at decision time gives CREATE rows the same property,
+		// and it is stored on the payload, so a later commit() re-run of an
+		// unstamped row upserts rather than duplicating too.
+		$this->matchResolver->method('resolve')->willReturn([]);
+
+		$path = $this->csv("bsn,naam\n111,Jansen\n");
+
+		$this->service->preview($this->params($path, ConflictPolicy::CREATE_ONLY));
+
+		$row = $this->decisionFor(2);
+		$this->assertSame(ImportPreviewRow::DECISION_CREATE, $row->getDecision());
+
+		$payload = ($row->getPayload() ?? []);
+		$this->assertArrayHasKey('@self', $payload, 'a create payload must carry @self');
+		$this->assertArrayHasKey('id', $payload['@self'], 'a create payload must carry a stable uuid');
+		$this->assertMatchesRegularExpression(
+			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
+			(string)$payload['@self']['id']
+		);
+	}//end testACreateRowCarriesAStableUuidSoARetryCannotDuplicateIt()
 
 	public function testUpdateOnlySkipsRowsThatMatchNothing(): void {
 		$this->matchResolver->method('resolve')->willReturn([]);

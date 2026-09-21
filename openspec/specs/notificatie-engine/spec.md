@@ -1015,6 +1015,83 @@ Before delivering a non-broadcast channel (`nc-notification`, `email`, `activity
 - THEN the dispatcher MUST dispatch immediately through the unchanged preference-off / rate-limit / coalesce gates
 - AND no `QueuedNotification` row MUST be created
 
+### Requirement: An administrator MUST be able to force a channel and to mark a kind internal
+
+Preferences answer what a person wants. Two decisions are not preferences and MUST be stateable on the notification declaration: a kind that always goes out on a named channel because the law or the process requires it (`forcedChannels`, carrying the reason), and a kind that MUST never reach a recipient outside the organisation (`internalOnly`).
+
+A forced channel MUST be resolved as a layer ABOVE the user's own value in the existing preference resolution, and MUST NOT be implemented as a second dispatcher: the existing sender remains the only thing that sends, so there is one reading of the canonical dialect rather than two.
+
+Forcing MUST ADD to the channels the preference resolved rather than replacing them. A declaration carrying forced channels and no reason MUST be refused at schema save. A notification marked `internalOnly` MUST NOT be saved with a forced channel that can leave the organisation, and MUST NOT be saved when every channel it declares can leave the organisation.
+
+#### Scenario: A forced channel survives a user who switched the kind off
+- **GIVEN** a notification declaring `forcedChannels` with a reason
+- **AND** a user whose stored override disables that kind
+- **WHEN** the effective decision is resolved for that user
+- **THEN** the kind MUST be enabled on the forced channel
+- **AND** the decision MUST report the administrator as the deciding layer and carry the reason
+
+#### Scenario: Forcing does not take away a channel the user chose
+- **GIVEN** a user whose preference resolved to `email`
+- **AND** a notification forcing `nc-notification`
+- **WHEN** the effective decision is resolved
+- **THEN** both channels MUST be present
+
+#### Scenario: An internal kind aimed outside returns a named refusal
+- **GIVEN** a notification declaring `internalOnly`
+- **WHEN** the recipient is outside the organisation
+- **THEN** the decision MUST carry a named refusal
+- **AND** the outcome MUST NOT be distinguishable only by an empty channel list, because a kind nobody configured produces the same empty list
+
+#### Scenario: A force with no reason is refused at save
+- **WHEN** a schema declares `forcedChannels` without a reason
+- **THEN** the save MUST be refused naming the missing reason
+
+### Requirement: A scheduled message MUST be claimed once, cancellable, and bounded in its retries
+
+A message scheduled with a send-at MUST be claimed by a sweep through a compare-and-set on BOTH its state and its attempt count, so that two sweeps reading one due row cannot both send it.
+
+A cancelled message MUST NOT be sent, including when it is due and including when a worker has already claimed it. A claim that has outlived its window MUST be takeable by another worker. A message whose attempts are spent MUST be parked with its last error rather than dropped or retried indefinitely. A send-at in the past MUST still send, and a send-at that cannot be parsed MUST NOT be treated as now.
+
+#### Scenario: Two sweeps cannot both send one message
+- **GIVEN** a due message in state pending with two attempts recorded
+- **WHEN** two sweeps read it and both attempt to claim it
+- **THEN** the claim MUST compare the state and the attempt count
+- **AND** only one sweep MUST proceed to send
+
+#### Scenario: Cancellation wins over being due
+- **GIVEN** a message that is due and has been cancelled
+- **WHEN** a sweep runs
+- **THEN** the message MUST NOT be claimed or sent
+
+#### Scenario: A spent message is parked with its error
+- **GIVEN** a message that has used its last attempt and failed
+- **THEN** its state MUST become parked
+- **AND** its last error MUST be retained
+
+### Requirement: A reply MUST be threaded by its headers, and MUST NOT be threaded by a guess
+
+A reply MUST be threaded onto an object by matching `In-Reply-To` and then `References` against `Message-ID` values this instance recorded when it sent or linked a mail. `References` MUST be read from its last entry first, that being the nearest ancestor.
+
+Matching MUST be exact. The system MUST NOT thread a reply by a subject tag, a prefix match or any other inexact comparison, because a wrong match files one citizen's reply onto another citizen's object where that object's handler reads it.
+
+When the headers name more than one object the reply MUST NOT be threaded onto any of them and the candidates MUST be reported for a person to decide. When no reference resolves, the outcome MUST be a named unthreaded state rather than an empty result, and only a threaded outcome may be filed without a person.
+
+#### Scenario: A reply with an edited subject still threads
+- **GIVEN** a reply whose subject no longer carries the object's tag
+- **AND** whose `In-Reply-To` names a recorded `Message-ID`
+- **THEN** the reply MUST thread onto that object
+
+#### Scenario: A chain naming two objects threads onto neither
+- **GIVEN** a reply whose `References` resolve to two different objects
+- **THEN** the outcome MUST be ambiguous
+- **AND** both candidates MUST be named
+- **AND** the reply MUST NOT be filed on either
+
+#### Scenario: A reply matching nothing is named rather than dropped
+- **GIVEN** a reply whose headers match no recorded `Message-ID`
+- **THEN** the outcome MUST be a named unthreaded state
+- **AND** the reply MUST NOT be filed automatically
+
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.
 - **Partially implemented -- webhook notifications**: `WebhookService` (`lib/Service/WebhookService.php`) handles outbound webhook delivery with HMAC signing, event filtering, and payload mapping. `WebhookEventListener` (`lib/Listener/WebhookEventListener.php`) listens for 55+ object/register/schema/configuration lifecycle events and triggers webhooks. Webhook entities stored via `WebhookMapper` with `organisation` field for multi-tenant scoping. Delivery logged in `WebhookLog`/`WebhookLogMapper`.

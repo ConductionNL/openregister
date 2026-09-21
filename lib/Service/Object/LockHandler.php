@@ -402,6 +402,12 @@ class LockHandler {
 		return [
 			'uuid' => $objectAfter->getUuid(),
 			'locked' => $objectAfter->getLocked(),
+			// Whether the lock this call just took is actually HELD, read back
+			// off the entity rather than assumed from the fact that the write
+			// did not throw. The endpoint reported `locked: true` as a
+			// literal, so it said yes to a lock that had already expired and
+			// no test could ever have caught it.
+			'held' => $objectAfter->isLocked(),
 		];
 	}//end lockStoredObject()
 
@@ -418,11 +424,23 @@ class LockHandler {
 	 *                    administrator break-lock and the engine's own release
 	 *                    layers, both of which authorize at their call site.
 	 *
-	 * @return true True if unlocked successfully
+	 * @return bool True when a lock was RELEASED; false when there was nothing
+	 *              to release because the object carried no live lock.
+	 *
+	 * 🔴 THOSE TWO ANSWERS USED TO BE THE SAME ANSWER, AND A CLIENT COULD NOT
+	 * TELL THEM APART. Both returned `true`, so "I handed my lock back" and
+	 * "somebody else had already taken it away" read identically, and a UI that
+	 * releases on close reported success on a lock it never held. It is also
+	 * what the HTTP surface needs: `DELETE`/`unlock` answers 404 for the second
+	 * case, which is a fact about the object rather than a routing accident.
+	 *
+	 * Still IDEMPOTENT, and deliberately so: releasing a lock that is not there
+	 * is not an error and needs no unlock permission, because an empty or
+	 * expired `_locked` gives nothing to authorize. Only the REPORT changed.
 	 *
 	 * @throws \Exception If unlock operation fails
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-is-released-through-its-own-endpoint-and-a-release-says-whether-there-was-one
 	 */
 	public function unlock(
 		string $identifier,
@@ -472,7 +490,12 @@ class LockHandler {
 			// flows that defensively unlock after a successful write (e.g. the
 			// object update endpoint's post-save unlock). See openregister#195.
 			if ($objectBefore->isLocked() === false) {
-				return true;
+				// FALSE means "there was nothing to release", not "this
+				// failed". The caller is not refused and nothing throws; the
+				// answer simply distinguishes a release from a no-op, which is
+				// what lets the endpoint answer 404 for one and 200 for the
+				// other.
+				return false;
 			}
 
 			if ($break === false && $this->callerMayUnlock(object: $objectBefore, runUuid: $runUuid) === false) {

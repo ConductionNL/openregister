@@ -24,7 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FlowRunController;
+use OCA\OpenRegister\Controller\FlowTestRunController;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -96,15 +97,13 @@ class FlowRunTestSameOrgNonOwnerRegressionTest extends TestCase {
 
 		$mapper = $this->createMock(FlowRunMapper::class);
 
-		$controller = new FlowRunController(
+		$controller = new FlowTestRunController(
 			appName: 'openregister',
 			request: $request,
-			mapper: $mapper,
 			runner: $runner,
 			resolvers: $resolvers,
 			userSession: $userSession,
-			organisationService: $organisations,
-			flows: $flows
+			guard: new FlowRunnableGuard(flows: $flows, access: null)
 		);
 
 		$response = $controller->test();

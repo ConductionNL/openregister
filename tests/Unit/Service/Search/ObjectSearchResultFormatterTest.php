@@ -306,6 +306,39 @@ class ObjectSearchResultFormatterTest extends TestCase {
 		$this->assertStringContainsString('…', $subline);
 	}//end testExcerptIsMultibyteSafe()
 
+	/**
+	 * The excerpt comes from the object's own properties, not from anything
+	 * the pipeline attached to the row.
+	 *
+	 * Content search brings in objects whose ATTACHED FILE text matches. A
+	 * chunk carries the text of a whole file, which can hold values the reader
+	 * is redacted out of on the object. If an excerpt were ever drawn from
+	 * such an attached key, the object would stay correctly filtered while the
+	 * line under it leaked, and the redaction would look like it worked.
+	 *
+	 * @return void
+	 */
+	public function testExcerptIgnoresKeysAttachedToTheRowRatherThanDeclaredBySchema(): void {
+		$schema = new Schema();
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+
+		$entry = $this->formatter->format([
+			'title' => 'Obj',
+			'summary' => 'Kapvergunning eik Kerkstraat',
+			'_fileText' => 'uit de bijlage: vergunning geweigerd wegens BSN 000000000',
+			'@self' => ['id' => 'e4', 'register' => 1, 'schema' => 2],
+		], 'geweigerd');
+
+		$subline = $entry->jsonSerialize()['subline'];
+
+		$this->assertStringNotContainsString('BSN 000000000', $subline);
+		$this->assertStringNotContainsString('uit de bijlage', $subline);
+		$this->assertStringEndsWith('Kapvergunning eik Kerkstraat', $subline);
+	}//end testExcerptIgnoresKeysAttachedToTheRowRatherThanDeclaredBySchema()
+
 	// --- Deep link URL / title -------------------------------------------------
 
 	/**

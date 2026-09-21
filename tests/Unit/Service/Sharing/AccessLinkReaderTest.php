@@ -41,12 +41,11 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -61,7 +60,7 @@ class AccessLinkReaderTest extends TestCase {
 	private ObjectService&MockObject $objects;
 	private SchemaMapper&MockObject $schemas;
 	private PropertyRbacHandler&MockObject $properties;
-	private NoteService&MockObject $notes;
+	private PublicTimeline&MockObject $timeline;
 	private LoggerInterface&MockObject $logger;
 	private AccessLinkReader $reader;
 
@@ -71,7 +70,7 @@ class AccessLinkReaderTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->properties = $this->createMock(PropertyRbacHandler::class);
-		$this->notes = $this->createMock(NoteService::class);
+		$this->timeline = $this->createMock(PublicTimeline::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->schemas->method('find')->willReturn($this->createMock(Schema::class));
@@ -80,7 +79,7 @@ class AccessLinkReaderTest extends TestCase {
 			objects: $this->objects,
 			schemas: $this->schemas,
 			properties: $this->properties,
-			notes: $this->notes,
+			timeline: $this->timeline,
 			subjects: new AccessLinkSubject(),
 			logger: $this->logger
 		);
@@ -117,7 +116,7 @@ class AccessLinkReaderTest extends TestCase {
 
 	public function testTheReadIsFilteredThroughThePropertyRulesAndNotServedRaw(): void {
 		$this->objects->method('find')->willReturn($this->object());
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->timeline->method('forObject')->willReturn([]);
 		$this->properties->expects($this->once())
 			->method('filterReadableProperties')
 			->willReturn(['onderwerp' => 'Bezwaar']);
@@ -141,13 +140,13 @@ class AccessLinkReaderTest extends TestCase {
 			objects: $this->objects,
 			schemas: $schemas,
 			properties: $this->properties,
-			notes: $this->notes,
+			timeline: $this->timeline,
 			subjects: new AccessLinkSubject(),
 			logger: $this->logger
 		);
 
 		$this->objects->method('find')->willReturn($this->object());
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->timeline->method('forObject')->willReturn([]);
 		$this->properties->expects($this->never())->method('filterReadableProperties');
 
 		$body = $reader->read(link: $this->link());
@@ -162,16 +161,24 @@ class AccessLinkReaderTest extends TestCase {
 	public function testOnlyThePublicHalfOfTheTimelineIsServed(): void {
 		$this->objects->method('find')->willReturn($this->object());
 		$this->properties->method('filterReadableProperties')->willReturn([]);
-		$this->notes->expects($this->once())
-			->method('getNotesForObject')
-			->with('object-uuid', 50, 0, TimelineVisibilityService::PUBLIC_ENTRY)
-			->willReturn([['id' => 1, 'message' => 'Published note', 'visibility' => 'public']]);
+		// The public filter and the five-key projection are PublicTimeline's,
+		// and PublicTimelineTest pins both by name. What this test pins is that
+		// the link reader serves exactly that answer and adds nothing to it.
+		$published = [[
+			'id' => '1',
+			'kind' => '',
+			'message' => 'Published note',
+			'fields' => [],
+			'occurredAt' => '2026-05-04T09:12:00+02:00',
+		]];
+		$this->timeline->expects($this->once())
+			->method('forObject')
+			->willReturn($published);
 
 		$body = $this->reader->read(link: $this->link());
 
 		$this->assertIsArray($body);
-		$this->assertCount(1, $body['timeline']);
-		$this->assertSame('Published note', $body['timeline'][0]['message']);
+		$this->assertSame($published, $body['timeline']);
 	}
 
 	// ---- Task 4.2: the platform's bookkeeping is not published. ------------
@@ -179,7 +186,7 @@ class AccessLinkReaderTest extends TestCase {
 	public function testTheOwnerOrganisationFolderAndAuthorizationAreNotPublished(): void {
 		$this->objects->method('find')->willReturn($this->object());
 		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->timeline->method('forObject')->willReturn([]);
 
 		$body = $this->reader->read(link: $this->link());
 
@@ -223,7 +230,7 @@ class AccessLinkReaderTest extends TestCase {
 		$object->setFiles([['id' => '99', 'name' => 'advies.pdf']]);
 		$this->objects->method('find')->willReturn($object);
 		$this->properties->method('filterReadableProperties')->willReturn([]);
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->timeline->method('forObject')->willReturn([]);
 
 		$this->assertNull(
 			$this->reader->read(link: $this->link(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'object-uuid/12'))
@@ -235,7 +242,7 @@ class AccessLinkReaderTest extends TestCase {
 		$object->setFiles([['id' => '12', 'name' => 'advies.pdf']]);
 		$this->objects->method('find')->willReturn($object);
 		$this->properties->method('filterReadableProperties')->willReturn([]);
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->timeline->method('forObject')->willReturn([]);
 
 		$body = $this->reader->read(link: $this->link(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'object-uuid/12'));
 
@@ -286,8 +293,43 @@ class AccessLinkReaderTest extends TestCase {
 			->with('object-uuid', [], false, null, null, false, false, false, false)
 			->willReturn($this->object());
 		$this->properties->method('filterReadableProperties')->willReturn([]);
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->timeline->method('forObject')->willReturn([]);
 
 		$this->reader->read(link: $this->link());
+	}
+	// ---- Task 4.3: the timeline moved out, and its allow-list with it. -----
+
+	// A public entry's text is public and the account that wrote it is not.
+	// That projection now lives in Service/Timeline/PublicTimeline, which this
+	// reader delegates to, and it is asserted there by
+	// PublicTimelineTest::testANoteLeavesWithoutItsAuthor (it feeds an entry
+	// carrying `actorId` and asserts the key is gone). The version of this
+	// check that lived here projected notes only; that one reads records too,
+	// so it is strictly the better home.
+
+	// ---- Task 4.1/4.2: the projection the share token surface borrows. -----
+
+	/**
+	 * `publish()` is the same projection the link uses, for the share token.
+	 *
+	 * The share token surface answered with `jsonSerialize()`, which carried
+	 * `@self.authorization` and every property regardless of the rules
+	 * (openregister#3818). Two anonymous surfaces get one allow-list, so this
+	 * test asserts what the OTHER surface now receives.
+	 */
+	public function testPublishReducesAnObjectTheWayALinkDoes(): void {
+		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
+
+		$published = $this->reader->publish(object: $this->object());
+
+		$this->assertSame('Bezwaar', $published['onderwerp']);
+		$this->assertArrayNotHasKey('bsn', $published, 'a property the rules removed must not reappear');
+		foreach (['owner', 'organisation', 'folder', 'authorization', 'groups'] as $forbidden) {
+			$this->assertArrayNotHasKey(
+				$forbidden,
+				$published['@self'],
+				sprintf('an anonymous read must not publish @self.%s', $forbidden)
+			);
+		}
 	}
 }

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\TokenAttribution;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -171,6 +172,12 @@ class AuditTrailMapper extends QBMapper {
 		// canonical JSON.
 		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
+		// Which token, whose, and for which consumer. Applied here as well as
+		// in buildAuditTrail() for the same reason the two above are, and
+		// before the INSERT for the same reason again: the sealed half lives in
+		// `resultSummary`, which is inside the canonical JSON.
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
 		$inserted = $this->insert(entity: $auditTrail);
 
 		$this->shipToSink(entries: [$inserted]);
@@ -234,6 +241,126 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByImportJobId()
+
+	/**
+	 * The change history of one object, oldest first, for deriving a projection.
+	 *
+	 * Purged rows are excluded, not skipped afterwards: a tombstoned row's
+	 * `changed` is an empty object, so including it would read as "every field
+	 * became nothing at that moment" and write an interval that never happened.
+	 *
+	 * @param string $objectUuid The object.
+	 * @param int    $limit      Most rows to read.
+	 *
+	 * @return array<int, array{created: string, changed: array}> The changes.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	public function findChangesForObject(string $objectUuid, int $limit = 1000): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('created', 'changed')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid, IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->isNull('purged_at'))
+			->orderBy('created', 'ASC')
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$changes = [];
+		while (($row = $result->fetch()) !== false) {
+			$changed = json_decode((string)($row['changed'] ?? '{}'), true);
+			if (is_array($changed) === false) {
+				$changed = [];
+			}
+
+			$changes[] = [
+				'created' => (string)($row['created'] ?? ''),
+				'changed' => $changed,
+			];
+		}
+
+		$result->closeCursor();
+
+		return $changes;
+	}//end findChangesForObject()
+
+	/**
+	 * Object uuids carrying audit rows, in uuid order, after a cursor.
+	 *
+	 * The cursor is what makes a rebuild resumable: a run takes the next batch
+	 * and stops, and the next run starts where it left off rather than at the
+	 * beginning of a table with millions of rows in it.
+	 *
+	 * @param string $afterUuid The cursor; '' starts at the beginning.
+	 * @param int    $limit     Most uuids to return.
+	 *
+	 * @return string[] The uuids.
+	 *
+	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	public function findObjectUuidsAfter(string $afterUuid, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('object_uuid')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->isNotNull('object_uuid'))
+			->andWhere($qb->expr()->neq('object_uuid', $qb->createNamedParameter('', IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->isNull('purged_at'))
+			->orderBy('object_uuid', 'ASC')
+			->setMaxResults($limit);
+
+		if ($afterUuid !== '') {
+			$qb->andWhere($qb->expr()->gt('object_uuid', $qb->createNamedParameter($afterUuid, IQueryBuilder::PARAM_STR)));
+		}
+
+		$result = $qb->executeQuery();
+		$uuids = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuids[] = (string)$row['object_uuid'];
+		}
+
+		$result->closeCursor();
+
+		return $uuids;
+	}//end findObjectUuidsAfter()
+
+	/**
+	 * The newest purged moment per object, for pruning what derives from it.
+	 *
+	 * A projection is derived data. When the payload it was derived from is
+	 * destroyed, the derivation has to go too, or a filter answers about a
+	 * record nothing else can show.
+	 *
+	 * @param int $limit Most objects to report on.
+	 *
+	 * @return array<string, string> object uuid => newest purged row's `created`.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	public function findPurgedHorizons(int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_uuid')
+			->selectAlias($qb->func()->max('created'), 'horizon')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->isNotNull('purged_at'))
+			->andWhere($qb->expr()->isNotNull('object_uuid'))
+			->groupBy('object_uuid')
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$horizons = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuid = (string)($row['object_uuid'] ?? '');
+			if ($uuid !== '') {
+				$horizons[$uuid] = (string)($row['horizon'] ?? '');
+			}
+		}
+
+		$result->closeCursor();
+
+		return $horizons;
+	}//end findPurgedHorizons()
 
 	/**
 	 * Finds an audit trail by id
@@ -321,6 +448,13 @@ class AuditTrailMapper extends QBMapper {
 					'flow_run',
 					'flow_node',
 					'flow_step',
+					// The cause and its run. Absent from this allowlist a
+					// filter is not rejected, it is silently DROPPED by the
+					// `continue` below — so `?cause=import` would answer the
+					// WHOLE unfiltered trail with a 200 and read as a load
+					// that had touched everything on the instance.
+					'cause',
+					'cause_run',
 				]
 			) === false
 			) {
@@ -382,6 +516,13 @@ class AuditTrailMapper extends QBMapper {
 					'flow_run',
 					'flow_node',
 					'flow_step',
+					// The cause and its run. Absent from this allowlist a
+					// filter is not rejected, it is silently DROPPED by the
+					// `continue` below — so `?cause=import` would answer the
+					// WHOLE unfiltered trail with a 200 and read as a load
+					// that had touched everything on the instance.
+					'cause',
+					'cause_run',
 				]
 			) === false
 			) {
@@ -784,6 +925,16 @@ class AuditTrailMapper extends QBMapper {
 			$auditTrail->setImportJobId($importJobId);
 		}
 
+		// 🔴 WHY THIS WRITE HAPPENED, from the closed vocabulary, derived from
+		// the ambient acting context and NEVER from the request. Stamped here
+		// in the shared builder for the same reason the flow attribution is:
+		// `insertAuditTrails()` builds its rows through this method, and
+		// stamping only the inserts would leave every bulk write uncaused —
+		// which is precisely the write a filter on cause exists to find.
+		$frame = \OCA\OpenRegister\Service\WriteCause::current();
+		$auditTrail->setCause($frame['cause']);
+		$auditTrail->setCauseRun($frame['run']);
+
 		// Flow attribution — which run, node and step caused this write.
 		// Applied HERE, in the shared builder, and not in the two insert
 		// methods: `insertAuditTrails()` (the batched path) builds its rows
@@ -796,6 +947,12 @@ class AuditTrailMapper extends QBMapper {
 		// here, and stamping only the inserts would leave every bulk write
 		// silently unattributed to the purpose it ran under.
 		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		// Token attribution, applied in the shared builder for the same reason
+		// the two above are: `insertAuditTrails()` builds its rows here, so
+		// stamping only the inserts would leave every bulk write by a koppeling
+		// unable to say which koppeling made it.
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
@@ -2989,4 +3146,64 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createHardeningChangeEntry()
+	/**
+	 * Create one immutable, hash-chained audit record for an export.
+	 *
+	 * An export is the moment data leaves the instance, so it belongs on the
+	 * trail beside the writes. The entry names the actor, the profile, the row
+	 * count and the time, which is the set an incident is reconstructed from.
+	 *
+	 * A REFUSAL is recorded on the same terms and for the same reason: "who
+	 * tried to take this register off the instance" is a question a functionaris
+	 * gegevensbescherming asks, and a trail that only holds the successes cannot
+	 * answer it.
+	 *
+	 * The entry hangs on a register and a schema rather than on an object,
+	 * because an export has no single object. Same shape as
+	 * {@see createPartyQueryRefusalEntry()}.
+	 *
+	 * @param string $outcome Either `completed` or `refused`.
+	 * @param array<string, mixed> $summary Profile, format, value mode, row count and, on a refusal, the reason.
+	 * @param int|null $register Register id exported, when known.
+	 * @param int|null $schema Schema id exported, when known.
+	 * @param string|null $actorId The principal the export ran as, when it is not the session user.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	public function createExportEntry(
+		string $outcome,
+		array $summary,
+		?int $register = null,
+		?int $schema = null,
+		?string $actorId = null,
+	): AuditTrail {
+		$userId = $actorId;
+		$userName = $actorId;
+		if ($userId === null) {
+			$user = $this->userSession->getUser();
+			$userId = 'system';
+			$userName = 'System';
+			if ($user !== null) {
+				$userId = $user->getUID();
+				$userName = $user->getDisplayName();
+			}
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('export.' . $outcome);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary($summary);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createExportEntry()
+
 }//end class

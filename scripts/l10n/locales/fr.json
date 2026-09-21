@@ -84,6 +84,11 @@
 		"Urgent": "Same spelling and meaning in French (urgent).",
 		"Expression (JSON)": "\"Expression\" is spelled and used identically in French for a computed-value expression; \"Formule\" (formula) would shift the meaning, so the honest label is identical.",
 		"score": "French uses the loanword \"score\" for a points-based score; \"note\" means a grade and would confuse, so the honest value is identical.",
-		"Verdict": "The rule-evaluation outcome. French's own word for a verdict is the identically-spelled \"verdict\", so the value coincides with the English key; no distinct synonym exists."
+		"Verdict": "The rule-evaluation outcome. French's own word for a verdict is the identically-spelled \"verdict\", so the value coincides with the English key; no distinct synonym exists.",
+		"Introduction": "Same spelling and meaning in French (une introduction); the section heading above a survey's questions is written identically.",
+		"Maintenance": "Same spelling and meaning in French (la maintenance); it is the standard French term for taking a service offline for work.",
+		"Options": "Same spelling in French, and the French plural is also 'Options'.",
+		"Question": "Same spelling and meaning in French (une question).",
+		"Version {version}, build {build}, licence {licence}.": "Every word is identical in French: 'version' and 'licence' are spelled the same, French technical writing keeps 'build' untranslated, and the rest is placeholders and punctuation."
 	}
 }

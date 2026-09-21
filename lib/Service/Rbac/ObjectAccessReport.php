@@ -146,6 +146,8 @@ class ObjectAccessReport {
 	 * @param mixed $reference The id, uuid or slug.
 	 *
 	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
 	 */
 	public function schema(mixed $reference): ?Schema {
 		try {

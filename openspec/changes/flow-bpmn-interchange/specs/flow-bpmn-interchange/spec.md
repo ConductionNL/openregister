@@ -136,8 +136,77 @@ constructs.
 - **GIVEN** a file that is XML but does not validate against the BPMN 2.0 XSD
 - **WHEN** it is imported
 - **THEN** no flow MUST be created
-- **AND** the response MUST name the first schema violation
+- **AND** the response MUST name the first schema violation, with its element
+  and its line
 - @e2e exclude covered by importer unit tests
+
+#### Scenario: Malformed and unsupported are two different answers
+
+- **GIVEN** a malformed file and a valid file carrying a construct the engine
+  cannot express
+- **WHEN** both are imported
+- **THEN** the malformed one MUST be answered as malformed, with no mapping
+  report, because a report over a broken document attributes XML problems to
+  process constructs
+- **AND** the valid one MUST create a flow and be answered with a report
+  naming the construct by element id
+- **AND** a caller MUST be able to tell the two apart without reading the
+  sentence
+
+### Requirement: The OMG schema set is vendored, pinned and unmodified
+
+The five normative machine-readable documents of BPMN 2.0.2 (`BPMN20.xsd`,
+`Semantic.xsd`, `BPMNDI.xsd`, `DI.xsd`, `DC.xsd`) SHALL ship in the repository
+beside the serialisers, byte for byte as OMG publishes them. Validation SHALL
+read them from disk and SHALL NOT reach the network: a Nextcloud app installs
+as a tarball with no build step, so "fetch at build" becomes fetch at runtime
+inside a request, which an air-gapped install cannot do.
+
+The set SHALL NOT be edited. Camunda and Flowable both widen `calledElement`
+from `xsd:QName` to `xsd:string` in their vendored copies, and Flowable adds
+`skipExpression`; when our own output and the unmodified schema disagree, the
+output is what changes.
+
+Reading them from disk SHALL work on a running instance. Nextcloud's
+bootstrap makes libxml's external entity loader return null for every
+resource, the primary document included, so a validation that hands libxml a
+path reads nothing and refuses every document. Validation SHALL therefore
+make the five files, and only those five, reachable for the duration of the
+call, and SHALL leave the host's own resolver in force afterwards.
+
+A provenance file beside the schemas SHALL record the source URL, the fetch
+date, the BPMN version, and a SHA-256 per file, together with the
+specification's copyright line and its licence reference, because the files
+themselves carry no notice of any kind and cannot satisfy the attribution
+condition on their own. A test SHALL verify the checksums, so that an edit to
+a vendored schema reddens by file name.
+
+#### Scenario: A silent edit to a vendored schema reddens
+
+- **GIVEN** the vendored schema set and its recorded checksums
+- **WHEN** any of the five files is changed
+- **THEN** the checksum test MUST fail naming that file
+- @e2e exclude covered by BpmnSchemaProvenanceTest
+
+#### Scenario: Validation reads the vendored set where the host blocks entity loading
+
+- **GIVEN** a host whose libxml entity resolver returns null for every
+  resource, which is what Nextcloud installs
+- **WHEN** a flow is exported or a file is imported
+- **THEN** validation MUST read the root schema and every include and import
+  reached from it
+- **AND** it MUST NOT read any other file and MUST NOT reach the network
+- **AND** the resolver in force before the call MUST be in force after it
+- @e2e exclude covered by BpmnSchemaResolutionTest
+
+#### Scenario: The attribution the files cannot carry is recorded beside them
+
+- **GIVEN** schema files that carry no copyright or licence notice
+- **WHEN** the provenance file is read
+- **THEN** it MUST carry the source URL, the fetch date, the version, a
+  SHA-256 per file, the specification's copyright line and its licence
+  reference
+- @e2e exclude covered by BpmnSchemaProvenanceTest
 
 ### Requirement: BPMN is an interchange boundary, never an execution semantic
 

@@ -105,6 +105,19 @@ import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 
 /**
+ * Fallback counter for the timeline row key below.
+ *
+ * Only used when the backend row carries no `id`, `uid` or `uuid` of its own.
+ * Was `Math.random()`, the same shape CodeQL flagged as js/insecure-randomness
+ * in AppTab.vue (alert 1885): this key is a Vue list key, never a secret, so the
+ * RNG buys nothing and a counter cannot collide within a session. Not
+ * `crypto.randomUUID()` — secure-context only, undefined over plain http.
+ *
+ * @type {number}
+ */
+let fallbackRelationId = 0
+
+/**
  * RelationsTab — unified timeline of every entity linked to an object.
  *
  * Reads `GET /api/objects/{register}/{schema}/{id}/relations` (RelationsController),
@@ -314,8 +327,15 @@ export default {
 				title = raw.fullName || raw.email || ''
 			}
 
+			// Hoisted so the property stays on one line: prettier wraps a long
+			// `id:` across lines, and eslint's vue/new-line-between-multi-line-property
+			// then demands a blank line after it. The `||` chain still
+			// short-circuits, so the counter only advances when it is used.
+			const id =
+				raw.id || raw.uid || raw.uuid || `${type}-${++fallbackRelationId}`
+
 			return {
-				id: raw.id || raw.uid || raw.uuid || `${type}-${Math.random()}`,
+				id,
 				type,
 				title,
 				subtitle,

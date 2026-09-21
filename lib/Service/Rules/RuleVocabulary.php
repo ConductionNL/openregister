@@ -60,6 +60,11 @@ final class RuleVocabulary {
 	public const KIND_CALCULATION = 'calculation';
 
 	/**
+	 * A check an administrator added, with the sentence it says.
+	 */
+	public const KIND_ADMINISTERED_VALIDATION = 'administeredValidation';
+
+	/**
 	 * A flow triggered by this schema's objects.
 	 */
 	public const KIND_FLOW = 'flow';
@@ -113,13 +118,29 @@ final class RuleVocabulary {
 			'actions' => [self::ACTION_REFUSE_TRANSITION],
 			'description' => 'Decides whether a transition may proceed, and refuses it when it may not.',
 		],
-		self::KIND_FLOW => [
+		self::KIND_ADMINISTERED_VALIDATION => [
 			'order' => 4,
+			'source' => 'x-openregister-validations',
+			'actions' => [self::ACTION_REFUSE_WRITE],
+			'description' => 'Refuses or warns about a write, in the sentence the administrator wrote.',
+		],
+		self::KIND_FLOW => [
+			// Moved from 4 to 5 so the validation sits in front of it. That is
+			// the pipeline's real order, not a preference: a validation refuses
+			// BEFORE the object is stored, and a flow runs AFTER it is. `order`
+			// is the sort key of the inventory, so this changes where the two
+			// appear in a list and nothing else.
+			'order' => 5,
 			'source' => 'openregister_flow_triggers',
 			'actions' => [self::ACTION_RUN_FLOW],
 			'description' => 'Runs a flow after the object is stored.',
 		],
 	];
+
+	/**
+	 * Refuses the write outright, in the administrator's own words.
+	 */
+	public const ACTION_REFUSE_WRITE = 'refuseWrite';
 
 	/**
 	 * Writes a value onto the object being saved.
@@ -174,6 +195,7 @@ final class RuleVocabulary {
 		self::ACTION_READ_ONLY_FIELD => 'Renders a property but refuses a change to it.',
 		self::ACTION_REQUIRE_FIELD => 'Refuses a save that leaves a property empty.',
 		self::ACTION_REFUSE_TRANSITION => 'Refuses the transition the condition guards.',
+		self::ACTION_REFUSE_WRITE => 'Refuses the write, in the sentence the administrator wrote.',
 		self::ACTION_RUN_FLOW => 'Starts a flow run.',
 	];
 

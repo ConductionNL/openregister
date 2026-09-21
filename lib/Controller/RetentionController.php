@@ -33,6 +33,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -65,6 +66,7 @@ class RetentionController extends Controller {
 	 * @param MagicMapper $objectMapper Object mapper
 	 * @param SchemaMapper $schemaMapper Schema mapper
 	 * @param AuditTrailMapper $auditMapper Audit trail mapper
+	 * @param DestructionService $destructionService Withholds entries a reviewer decided against
 	 * @param IJobList $jobList Background job list
 	 * @param IUserSession $userSession User session
 	 * @param LoggerInterface $logger Logger
@@ -80,6 +82,7 @@ class RetentionController extends Controller {
 		private readonly MagicMapper $objectMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly AuditTrailMapper $auditMapper,
+		private readonly DestructionService $destructionService,
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
@@ -218,6 +221,17 @@ class RetentionController extends Controller {
 					}
 				}
 			}
+
+			// Withhold what a reviewer decided against, BEFORE the count is read.
+			//
+			// DestructionExecutionJob refuses a retained or transferred record, so
+			// the records themselves are safe on this route. The counts were not:
+			// this method is an independent approval implementation that never
+			// calls DestructionService::approveList(), and it computes both the
+			// audit trail and its response from $listData before the job runs,
+			// then never corrects them. A destruction certificate stating a count
+			// that never happened is its own defect on a statutory path.
+			$listData = $this->destructionService->withholdDecidedEntries($listData);
 
 			// Full approval — queue destruction execution.
 			$listData['status'] = 'approved';

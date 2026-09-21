@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
+use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -153,12 +154,22 @@ class BulkActionRegistry {
 		$catalogue = [];
 
 		foreach ($this->all() as $id => $action) {
+			// An action that cannot be undone says so BEFORE it runs, which is
+			// the whole of D-4: the operator reads it in the same list they
+			// pick the action from, not in the error after they tried.
+			$window = null;
+			if ($action instanceof ReversibleBulkActionInterface) {
+				$window = $action->getReversalWindow();
+			}
+
 			$catalogue[] = [
 				'id' => $id,
 				'label' => $action->getLabel(),
 				'description' => $action->getDescription(),
 				'requiresJustification' => $action->requiresJustification(),
 				'guards' => $action->getGuards(),
+				'reversible' => ($window !== null),
+				'reversalWindow' => $window,
 			];
 		}
 

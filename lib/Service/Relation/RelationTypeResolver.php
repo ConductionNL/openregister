@@ -261,6 +261,64 @@ class RelationTypeResolver {
 			$symmetric = false;
 		}
 
+		['label' => $label, 'inverse' => $inverse] = $this->labelsFor(
+			name: $name,
+			property: $property,
+			merged: $merged,
+			symmetric: $symmetric,
+			language: $language
+		);
+
+		$descriptor = [
+			'property' => $name,
+			'type' => $type,
+			'label' => $label,
+			'inverseLabel' => $inverse,
+			'symmetric' => $symmetric,
+			'inherits' => $this->inheritsOf(declaration: $merged),
+		];
+
+		// What the link exposes rides the descriptor rather than being read
+		// from the vocabulary a second time. There is one reader of
+		// `x-openregister-relation-types` and it is this class; a render path
+		// that parsed the annotation for itself would be a second reader of one
+		// vocabulary, which is the thing this resolver exists to prevent.
+		//
+		// The key is added only when it is DECLARED. An absent key means the
+		// link narrows nothing, which is what every relation type does today
+		// and what every existing schema must keep doing; a present-but-empty
+		// list means it exposes nothing, which is a different statement and a
+		// legitimate one. Writing an empty list for "undeclared" would turn
+		// every existing link into one that hands over nothing.
+		if (array_key_exists(LinkExposure::KEY, $merged) === true
+			&& is_array($merged[LinkExposure::KEY]) === true
+		) {
+			$descriptor[LinkExposure::KEY] = array_values(
+				array_map(static fn (mixed $property): string => (string)$property, $merged[LinkExposure::KEY])
+			);
+		}
+
+		return $descriptor;
+	}//end describe()
+
+	/**
+	 * The label and inverse label one relation reads under, in one language.
+	 *
+	 * Neither may come back null. A relation whose forward label fell through
+	 * to nothing would render as a blank chip, and an inverse that did would
+	 * render the other end of the same link as a blank one.
+	 *
+	 * @param string               $name      The property name.
+	 * @param mixed                $property  The property definition.
+	 * @param array<string, mixed> $merged    The vocabulary entry under the property's own declaration.
+	 * @param boolean              $symmetric Whether the relation reads the same from both ends.
+	 * @param string               $language  The BCP-47 tag.
+	 *
+	 * @return array{label: string, inverse: string} The two labels.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function labelsFor(string $name, mixed $property, array $merged, bool $symmetric, string $language): array {
 		$label = $this->text(value: ($merged['label'] ?? null), language: $language);
 		if ($label === null) {
 			$label = $this->titleOf(property: $property) ?? $name;
@@ -279,14 +337,10 @@ class RelationTypeResolver {
 		}
 
 		return [
-			'property' => $name,
-			'type' => $type,
 			'label' => $label,
-			'inverseLabel' => $inverse,
-			'symmetric' => $symmetric,
-			'inherits' => $this->inheritsOf(declaration: $merged),
+			'inverse' => $inverse,
 		];
-	}//end describe()
+	}//end labelsFor()
 
 	/**
 	 * The inheritance a declaration asks for, as role to property name.

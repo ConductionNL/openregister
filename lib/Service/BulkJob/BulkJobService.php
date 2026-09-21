@@ -27,13 +27,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\BulkJob;
 
+use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
+use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\ObjectService;
@@ -70,6 +73,24 @@ class BulkJobService {
 	 * @var int
 	 */
 	public const CEILING_DEFAULT = 1000;
+
+	/**
+	 * The instance ceiling on how much undo data one job may store.
+	 *
+	 * In bytes of encoded prior and applied values across every member. The
+	 * bound is explicit because an unbounded undo buffer is a second copy of
+	 * the register (D-2).
+	 *
+	 * @var string
+	 */
+	public const UNDO_CEILING_KEY = 'bulk_job_max_undo_bytes';
+
+	/**
+	 * The default undo ceiling: one mebibyte.
+	 *
+	 * @var int
+	 */
+	public const UNDO_CEILING_DEFAULT = 1048576;
 
 	/**
 	 * How many members one background batch walks.
@@ -153,6 +174,23 @@ class BulkJobService {
 	}//end getBatchSize()
 
 	/**
+	 * How much undo data one job may store on this instance, in bytes.
+	 *
+	 * @return int The ceiling.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 */
+	public function getUndoCeiling(): int {
+		$ceiling = $this->appConfig->getValueInt(self::APP_ID, self::UNDO_CEILING_KEY, self::UNDO_CEILING_DEFAULT);
+
+		if ($ceiling < 1) {
+			return self::UNDO_CEILING_DEFAULT;
+		}
+
+		return $ceiling;
+	}//end getUndoCeiling()
+
+	/**
 	 * Create a job, rehearse it, and write nothing.
 	 *
 	 * @param string $actionId The action to run.
@@ -182,7 +220,7 @@ class BulkJobService {
 	): BulkJob {
 		$action = $this->registry->get(id: $actionId);
 		$action->validateParameters(parameters: $parameters);
-		$this->assertScope(registerId: $registerId, schemaId: $schemaId);
+		$this->guards()->assertScope(registerId: $registerId, schemaId: $schemaId);
 
 		$selectionType = $this->selectionTypeOf(selection: $selection);
 		$ceiling = $this->getCeiling();
@@ -195,10 +233,21 @@ class BulkJobService {
 			ceiling: $ceiling
 		);
 
-		$this->assertCeiling(count: count($uuids), ceiling: $ceiling);
+		$this->guards()->assertCeiling(count: count($uuids), ceiling: $ceiling);
 
 		$objects = $this->resolver->hydrate(uuids: $uuids, registerId: $registerId, schemaId: $schemaId);
 		$this->executor->assertGuards(action: $action, objects: $objects);
+		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $parameters);
+
+		$window = null;
+		$until = null;
+		if ($action instanceof ReversibleBulkActionInterface) {
+			$window = $action->getReversalWindow();
+			// Provisional: the preview has to be able to NAME the window before
+			// the job commits, and the executor re-stamps this the moment the
+			// job stops writing.
+			$until = (new DateTime())->modify('+'.$window.' seconds');
+		}
 
 		$job = $this->jobMapper->createFromArray(
 			[
@@ -213,6 +262,8 @@ class BulkJobService {
 				'total' => count($uuids),
 				'report' => ['selection' => ['kind' => $selectionType, 'countAtCreation' => count($uuids)]],
 				'startedBy' => $actorUid,
+				'reversalWindow' => $window,
+				'reversibleUntil' => $until,
 			]
 		);
 
@@ -249,7 +300,7 @@ class BulkJobService {
 		}
 
 		$action = $this->registry->get(id: (string)$job->getAction());
-		$this->assertJustification(action: $action, job: $job);
+		$this->guards()->assertJustification(action: $action, job: $job);
 
 		if ($job->getSelectionType() === BulkJob::SELECTION_QUERY) {
 			$this->reconcileQuerySelection(job: $job, action: $action);
@@ -280,7 +331,12 @@ class BulkJobService {
 			return $this->jobMapper->save($job);
 		}
 
-		if ($job->getState() === BulkJob::STATE_PREVIEWED) {
+		// A previewed job has never run and a paused one has no batch in
+		// flight, so neither needs the `cancelling` handshake: there is no
+		// runner to notice it. Cancelling straight through matters because
+		// the alternative is returning the job unchanged, which reads on the
+		// console as a cancel that worked and did nothing.
+		if (in_array($job->getState(), [BulkJob::STATE_PREVIEWED, BulkJob::STATE_PAUSED], true) === true) {
 			$job->setState(BulkJob::STATE_CANCELLED);
 
 			return $this->jobMapper->save($job);
@@ -288,6 +344,72 @@ class BulkJobService {
 
 		return $job;
 	}//end cancel()
+
+	/**
+	 * Hold a running job where it stands, keeping its cursor.
+	 *
+	 * The batch already in flight finishes; the runner then reads a state
+	 * that is not `running` and does not re-enqueue itself, which is what
+	 * makes the pause hold rather than merely being recorded. Nothing is
+	 * rolled back, so resuming carries on at the same member.
+	 *
+	 * A pause is not a cancel: the members that were never walked stay
+	 * pending, and the job keeps its place in `ACTIVE_STATES`.
+	 *
+	 * @param BulkJob $job The running job.
+	 *
+	 * @return BulkJob The paused job.
+	 *
+	 * @throws BulkJobRefusedException When the job is not running.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function pause(BulkJob $job): BulkJob {
+		if ($job->getState() !== BulkJob::STATE_RUNNING) {
+			throw new BulkJobRefusedException(
+				message: 'Only a running job can be paused. This one is '.$job->getState().'.',
+				reason: 'not-pausable',
+				details: ['state' => $job->getState()]
+			);
+		}
+
+		$job->setState(BulkJob::STATE_PAUSED);
+
+		return $this->jobMapper->save($job);
+	}//end pause()
+
+	/**
+	 * Set a paused job running again from the member it stopped at.
+	 *
+	 * The cursor is left alone on purpose: a resume continues, it does not
+	 * restart, so an applied member is never walked twice. Re-enqueueing is
+	 * the half that matters, because pausing took the job out of the queue by
+	 * letting the runner fall through without adding itself back.
+	 *
+	 * @param BulkJob $job The paused job.
+	 *
+	 * @return BulkJob The running job.
+	 *
+	 * @throws BulkJobRefusedException When the job is not paused.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	public function resume(BulkJob $job): BulkJob {
+		if ($job->getState() !== BulkJob::STATE_PAUSED) {
+			throw new BulkJobRefusedException(
+				message: 'Only a paused job can be resumed. This one is '.$job->getState().'.',
+				reason: 'not-resumable',
+				details: ['state' => $job->getState()]
+			);
+		}
+
+		$job->setState(BulkJob::STATE_RUNNING);
+		$saved = $this->jobMapper->save($job);
+
+		$this->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+
+		return $saved;
+	}//end resume()
 
 	/**
 	 * Retry a job that stopped part way, without repeating a member.
@@ -391,86 +513,6 @@ class BulkJobService {
 	}//end members()
 
 	/**
-	 * Refuse a job that does not say which register and schema it acts on.
-	 *
-	 * The object search resolves its table from the register and the schema,
-	 * and answers an EMPTY LIST rather than an error when it has neither. A
-	 * job without a scope would therefore hydrate nothing, report every
-	 * member as not visible, and look like a working job over an unlucky
-	 * selection. Refusing it here is the difference between an error and a
-	 * confident wrong answer.
-	 *
-	 * @param int|null $registerId The register.
-	 * @param int|null $schemaId The schema.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When either is missing.
-	 */
-	private function assertScope(?int $registerId, ?int $schemaId): void {
-		if ($registerId !== null && $schemaId !== null) {
-			return;
-		}
-
-		throw new InvalidArgumentException(
-			'A bulk job needs both a register and a schema. The object search resolves its table from the two, '
-				.'and without them it answers an empty selection rather than an error.'
-		);
-	}//end assertScope()
-
-	/**
-	 * Refuse a selection larger than the instance ceiling.
-	 *
-	 * @param int $count The selection size.
-	 * @param int $ceiling The ceiling.
-	 *
-	 * @return void
-	 *
-	 * @throws BulkJobRefusedException When the selection is too large.
-	 */
-	private function assertCeiling(int $count, int $ceiling): void {
-		if ($count <= $ceiling) {
-			return;
-		}
-
-		throw new BulkJobRefusedException(
-			message: 'This instance allows at most '.$ceiling.' objects in one bulk job, and this selection holds '
-				.$count.'. Narrow the selection, or ask an administrator to raise the ceiling.',
-			reason: 'ceiling',
-			details: ['ceiling' => $ceiling, 'count' => $count]
-		);
-	}//end assertCeiling()
-
-	/**
-	 * Refuse a commit with no reason where the action requires one.
-	 *
-	 * @param BulkActionInterface $action The action.
-	 * @param BulkJob $job The job.
-	 *
-	 * @return void
-	 *
-	 * @throws BulkJobRefusedException When the reason is missing.
-	 */
-	private function assertJustification(BulkActionInterface $action, BulkJob $job): void {
-		if ($action->requiresJustification() === false) {
-			return;
-		}
-
-		$justification = (string)($job->getJustification() ?? '');
-
-		if (trim($justification) !== '') {
-			return;
-		}
-
-		throw new BulkJobRefusedException(
-			message: 'The action '.$action->getId().' cannot be committed without a written reason. '
-				.'Nothing was modified.',
-			reason: 'justification-required',
-			details: ['action' => $action->getId()]
-		);
-	}//end assertJustification()
-
-	/**
 	 * Re-resolve a query selection and report what changed since creation.
 	 *
 	 * @param BulkJob $job The job being committed.
@@ -570,4 +612,15 @@ class BulkJobService {
 
 		return ['ids' => $uuids];
 	}//end normaliseSelection()
+	/**
+	 * The refusals a job has to get past, built with this instance's ceiling.
+	 *
+	 * @return BulkJobGuards The guards.
+	 *
+	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 */
+	private function guards(): BulkJobGuards {
+		return new BulkJobGuards(undoCeiling: $this->getUndoCeiling());
+	}//end guards()
+
 }//end class
