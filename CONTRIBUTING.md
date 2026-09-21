@@ -130,6 +130,7 @@ Every pull request triggers our automated quality pipeline. **All checks must pa
 | ----------------------------- | ---------------------------------------------------------- |
 | **License (npm + composer)**  | Ensures all dependencies use approved open-source licenses |
 | **Security (npm + composer)** | Checks for known vulnerabilities in dependencies           |
+| **REUSE compliance**          | Every file has copyright + licence info, and every licence it names has a text under `LICENSES/`. **Blocking** — a red REUSE check fails the build |
 
 ### Running Quality Checks Locally
 
@@ -144,7 +145,44 @@ composer phpmd             # PHPMD mess detection
 # Frontend
 npm run lint               # ESLint
 npx stylelint "src/**/*.{css,scss,vue}"  # Stylelint
+
+# Licensing (same tool CI runs)
+docker run --rm -v "$PWD":/data fsfe/reuse:5 lint
 ```
+
+### Licensing (REUSE)
+
+`REUSE.toml` in the repository root declares copyright and licence for every
+file. Most files are covered by a blanket entry; third-party material gets its
+own block naming the publisher. New files normally need nothing — PHP files keep
+carrying their own SPDX header, and everything else falls under the blanket.
+
+If the REUSE check goes red, it is almost always one of three things:
+
+1. **A file names a licence that has no text under `LICENSES/`.** Add it:
+
+   ```bash
+   docker run --rm -v "$PWD":/data fsfe/reuse:5 download MIT
+   ```
+
+2. **You added third-party material.** Add an `[[annotations]]` block to
+   `REUSE.toml` naming the real rights holder *before* relying on the blanket —
+   the blanket will otherwise silently declare it Conduction's. Blocks are
+   ordered: the last matching one wins, so third-party blocks come after the
+   blanket and use `precedence = "override"`.
+
+3. **You wrote an SPDX tag in prose** — explaining the convention in a comment,
+   a README or a workflow file — and REUSE parsed your explanation as a real
+   tag. Wrap the passage in REUSE's ignore markers; `.github/workflows/`
+   `code-quality.yml` has a worked example of both markers and the rule for
+   using them. Two traps, both of which this repository has already hit: naming
+   the closing marker inside the region terminates it early, and a licence
+   identifier mentioned in prose without a licence text under `LICENSES/` fails
+   the same way a real one does.
+
+Run the lint locally before pushing — it is the same image and version CI uses,
+and it takes under a minute. `fsfe/reuse:6` is stricter about invalid SPDX
+expressions and is worth a second run if the failure is confusing.
 
 ## App Store Release Process
 

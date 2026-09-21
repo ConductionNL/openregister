@@ -20,7 +20,11 @@ SPDX-PackageDownloadLocation = "https://github.com/ConductionNL/openregister"
 # valid JSON, lockfiles are rewritten by the package managers, and a PNG has
 # nowhere to carry a comment. The blanket below is what the specification is
 # for. PHP files keep carrying their own SPDX lines per ADR-014 — the blanket
-# only fills in what has none.
+# only fills in what has none. ADR-014 is a fleet-wide decision and does not
+# live in this repository (openspec/architecture/ here holds adr-001 to
+# adr-010); the text is at ConductionNL/hydra,
+# openspec/architecture/adr-014-licensing.md. Noted because the bare reference
+# did not resolve from inside this repo — #3857 review, rjzondervan.
 #
 # HOW PRECEDENCE WORKS HERE (REUSE spec 3.3). When several tables match a file,
 # the LAST matching table in this file wins. `precedence = "closest"` means a
