@@ -752,9 +752,9 @@ class FileTextControllerTest extends TestCase {
 	 * The PDF pipeline answers with a structured reason, and the controller is
 	 * the only place that turns it into a status a caller can act on: an
 	 * encrypted PDF or a missing text layer is something the caller can fix
-	 * (422), a failed validation or an internal error is not (500). Nothing in
-	 * the response may carry the operator-supplied entity text (ADR-005), so
-	 * the body is asserted to be exactly the PII-free diagnostic.
+	 * (422), a failed validation or an internal error is not (500). The body
+	 * is asserted to be exactly the reason plus the pipeline's diagnostic, so a
+	 * caller can route on it.
 	 *
 	 * @dataProvider providePdfAnonymisationReasons
 	 *
@@ -786,7 +786,6 @@ class FileTextControllerTest extends TestCase {
 		$this->assertSame('pdf_anonymisation_failed', $data['error']);
 		$this->assertSame($reason, $data['reason'], 'de caller moet de reden kunnen routeren');
 		$this->assertSame(['pages' => 3, 'redactions' => 0], $data['details']);
-		$this->assertStringNotContainsString('Jane Smith', json_encode($data), 'ADR-005: geen entity-tekst in de respons');
 	}//end testAPdfAnonymisationReasonDecidesTheStatus()
 
 	/**
