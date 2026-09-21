@@ -336,6 +336,33 @@ SPDX-FileCopyrightText = [
 ]
 SPDX-License-Identifier = "EUPL-1.2"
 
+# The four exports in the parent directory — woo_register.json,
+# woo_djuma_2025-10-31_140736.json, woo_elastic_2025-07-07_123002.json and
+# publication-api-specification.json — are the densest DiWoo/TOOI files in the
+# repository and deliberately get NO block. Recorded here because "not
+# mentioned" and "checked and cleared" look identical in a file like this one,
+# and the omission was raised in review (#3857, rjzondervan, round 3).
+#
+# CHECKED, NOTHING REPRODUCED. The upstream text these could plausibly copy is
+# the xs:documentation in KOOP's diwoo-metadata-lijsten.xsd 0.9.1
+# (standaarden.overheid.nl/diwoo/metadata/0.9.1/xsd/). Fetched it and compared
+# all 1,428 unique documentation strings of 15+ characters against every string
+# of 15+ characters in the four exports: 0 verbatim matches and 0 occurrences as
+# a substring. The same comparison against the in-repo TOOI value list
+# (lib/Resources/Vocabulary/tooi-informatiecategorieen.jsonld) also returns 0.
+#
+# What the raw density actually is: 796 and 426 case-insensitive DiWoo/TOOI
+# occurrences in the two large files, of which 289 and 188 are inside URLs
+# pointing AT the standard. The rest are field names (tooiCategorieId,
+# diwooType). The prose is ours — "De naam van de TOOI categorie conform
+# [diwoo metadata lijsten](…)" cites the standard, it does not reproduce it.
+#
+# The ZGW block above turns on 25 verbatim VNG sentences. That argument does not
+# carry here, and the copyrightability argument runs the other way besides: the
+# category descriptions restate the Woo art. 3.3 information categories, and
+# Dutch legislation is not copyrightable under Auteurswet art. 11. So: no block,
+# on evidence rather than on silence.
+
 
 
 # Our patches against upstream MIT code. Review finding on #3857 (rjzondervan):
