@@ -66,6 +66,7 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -310,6 +311,7 @@ class ObjectService implements ObjectServiceInterface
      * @param IAppContainer                  $container            Application container.
      * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
      * @param AutoTransitionPass|null        $autoTransitions      Request-scoped pass applying automatic lifecycle moves.
+     * @param TokenGrantSource|null          $tokenGrantSource     The grant the request's token carries; suspended inside runAsAnonymous().
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -367,7 +369,13 @@ class ObjectService implements ObjectServiceInterface
         // default so the many unit tests that build this service positionally
         // keep working; the container resolves the real, SHARED instance by
         // type in production, as it does for FlowRunController's attribution.
-        private readonly ?AutoTransitionPass $autoTransitions = null
+        private readonly ?AutoTransitionPass $autoTransitions = null,
+        // The grant the request's API token carries, if it authenticated with
+        // one. Read here for exactly one reason: runAsAnonymous() has to
+        // suspend it. Nullable with a null default for the same reason as
+        // above — the unit tests build this service positionally — and the
+        // container resolves the real, SHARED instance by type in production.
+        private readonly ?TokenGrantSource $tokenGrantSource = null
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
         // - ExportService → uses SaveObjects → potentially loops back
@@ -563,6 +571,19 @@ class ObjectService implements ObjectServiceInterface
      * is asked. {@see AnonymousEvaluationContext} closes both doors for the
      * duration of the call.
      *
+     * A THIRD thing decides access without living on the session: the grant
+     * an API token carries ({@see TokenGrantSource}, bound by
+     * AuthorizationService before it sets a user). PermissionHandler consults
+     * it ahead of even the admin and owner bypasses, so a request that
+     * authenticated with a scoped token would be judged as nobody INTERSECTED
+     * WITH THAT TOKEN'S GRANT — narrower than the public answer, and narrower
+     * by something the public caller has no way to reproduce. Fail-closed, so
+     * never a leak; but this endpoint's contract is that every caller gets the
+     * SAME answer, and "same" is broken by narrowing just as surely as by
+     * widening. The grant is therefore suspended for the duration too. It is a
+     * ceiling on what its holder may do, and inside this scope there is no
+     * holder for it to apply to.
+     *
      * This exists for public endpoints whose contract is uniform visibility —
      * OpenCatalogi's `/api/search` (SCH-PFTS-001, WOO-536) — where a signed-in
      * administrator must see exactly what an anonymous caller sees. It is a
@@ -607,7 +628,25 @@ class ObjectService implements ObjectServiceInterface
         $this->userSession->setVolatileActiveUser(null);
 
         try {
-            return AnonymousEvaluationContext::run($operation);
+            // The token grant is per-request state on a DI service, not on the
+            // session, so neither of the two clears above reaches it. Suspend it
+            // around the same callable; TokenGrantSource restores it in its own
+            // `finally`, so the two scopes unwind independently and a throw in
+            // either one still leaves the request as it found it.
+            // `?? null` rather than `=== null`: several unit tests build this
+            // service with newInstanceWithoutConstructor(), which leaves every
+            // promoted property UNINITIALISED — a parameter default is not a
+            // property default. Reading one with `===` raises "must not be
+            // accessed before initialization"; `??` and isset() answer without
+            // throwing. Verified on PHP 8.3.
+            $grantSource = ($this->tokenGrantSource ?? null);
+            if ($grantSource === null) {
+                return AnonymousEvaluationContext::run($operation);
+            }
+
+            return $grantSource->runWithoutGrant(
+                static fn () => AnonymousEvaluationContext::run($operation)
+            );
         } finally {
             // ALWAYS restore, including on a throw — see runAs(). Restore the
             // PREVIOUS incognito state rather than switching it off, so nesting

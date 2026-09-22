@@ -18,6 +18,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -133,6 +135,144 @@ class ObjectServiceRunAsAnonymousTest extends TestCase {
 		$this->assertSame('bob', $this->current?->getUID(), 'the subject must be restored on a throw');
 		$this->assertFalse(AnonymousEvaluationContext::isActive(), 'the scope must be released on a throw');
 	}//end testTheSubjectAndScopeAreRestoredWhenTheCallableThrows()
+
+
+	/**
+	 * Build the service with a real TokenGrantSource wired in.
+	 *
+	 * newInstanceWithoutConstructor() leaves promoted properties UNINITIALISED —
+	 * a parameter default is not a property default — so each one this test
+	 * touches has to be set explicitly. That is also why runAsAnonymous() reads
+	 * the source with `??` instead of `=== null`.
+	 *
+	 * @param TokenGrantSource $source The source to wire in.
+	 *
+	 * @return ObjectService The service under test.
+	 */
+	private function serviceWithGrantSource(TokenGrantSource $source): ObjectService {
+		$reflection = new ReflectionClass(ObjectService::class);
+		$service    = $reflection->newInstanceWithoutConstructor();
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturnCallback(fn (): ?IUser => $this->current);
+		$session->method('setVolatileActiveUser')->willReturnCallback(
+			function (?IUser $user): void {
+				$this->current = $user;
+			}
+		);
+
+		foreach (['userSession' => $session, 'tokenGrantSource' => $source] as $name => $value) {
+			$property = $reflection->getProperty($name);
+			$property->setAccessible(true);
+			$property->setValue($service, $value);
+		}
+
+		return $service;
+	}//end serviceWithGrantSource()
+
+
+	/**
+	 * A grant is a ceiling on what ITS HOLDER may do, and inside this scope
+	 * there is no holder. PermissionHandler consults the grant ahead of even the
+	 * admin and owner bypasses, so leaving it bound would narrow the PUBLIC
+	 * answer by the private state of a token — two callers, two answers, from an
+	 * endpoint whose contract is that they get one (WOO-578, found reviewing
+	 * #3855 after #3913 introduced TokenGrantSource).
+	 *
+	 * @return void
+	 */
+	public function testTheTokenGrantIsSuspendedInsideTheScope(): void {
+		$source = new TokenGrantSource();
+		$grant  = TokenGrant::fromStored(stored: ['read' => ['*']], tokenId: 'consumer-1');
+		$source->bind(grant: $grant);
+
+		$service = $this->serviceWithGrantSource($source);
+
+		$inside = 'unset';
+		$service->runAsAnonymous(
+			static function () use (&$inside, $source): void {
+				$inside = $source->current();
+			}
+		);
+
+		$this->assertNull($inside, 'no grant may be in force inside an anonymous evaluation');
+		$this->assertSame($grant, $source->current(), 'and the caller gets their grant back afterwards');
+	}//end testTheTokenGrantIsSuspendedInsideTheScope()
+
+
+	/**
+	 * `bind(null)` is not the same state as never having bound: TokenGrantSource
+	 * documents the difference as "a token with no grant is calling" versus "a
+	 * person is calling". Suspending has to clear BOTH fields and restore both,
+	 * or the scope silently rewrites which of those two a later reader sees.
+	 *
+	 * @return void
+	 */
+	public function testABoundTokenWithoutAGrantIsAlsoInvisibleInsideTheScope(): void {
+		$source = new TokenGrantSource();
+		$source->bind(grant: null);
+		$this->assertTrue($source->isBound(), 'precondition: a machine principal bound, carrying no grant');
+
+		$service = $this->serviceWithGrantSource($source);
+
+		$inside = 'unset';
+		$service->runAsAnonymous(
+			static function () use (&$inside, $source): void {
+				$inside = $source->isBound();
+			}
+		);
+
+		$this->assertFalse($inside, 'inside the scope nothing is bound at all');
+		$this->assertTrue($source->isBound(), 'and the binding is back afterwards');
+	}//end testABoundTokenWithoutAGrantIsAlsoInvisibleInsideTheScope()
+
+
+	/**
+	 * Negative control. Without it the two tests above would also pass against a
+	 * TokenGrantSource that simply never reports a grant, which would make them
+	 * evidence of nothing.
+	 *
+	 * @return void
+	 */
+	public function testTheGrantIsVisibleOutsideTheScope(): void {
+		$source = new TokenGrantSource();
+		$grant  = TokenGrant::fromStored(stored: ['read' => ['*']], tokenId: 'consumer-1');
+		$source->bind(grant: $grant);
+
+		$this->serviceWithGrantSource($source);
+
+		$this->assertSame($grant, $source->current(), 'the recorder fires when nothing suspends it');
+		$this->assertTrue($source->isBound());
+	}//end testTheGrantIsVisibleOutsideTheScope()
+
+
+	/**
+	 * A throw inside the callable must not leave the request without its grant —
+	 * the restore has to sit in a `finally`, as it does for the subject.
+	 *
+	 * @return void
+	 */
+	public function testTheTokenGrantIsRestoredWhenTheCallableThrows(): void {
+		$source = new TokenGrantSource();
+		$grant  = TokenGrant::fromStored(stored: ['read' => ['*']], tokenId: 'consumer-1');
+		$source->bind(grant: $grant);
+
+		$service = $this->serviceWithGrantSource($source);
+
+		try {
+			$service->runAsAnonymous(
+				static function (): void {
+					throw new RuntimeException('the read failed');
+				}
+			);
+			$this->fail('Expected the exception to propagate.');
+		} catch (RuntimeException $e) {
+			$this->assertSame('the read failed', $e->getMessage());
+		}
+
+		$this->assertSame($grant, $source->current(), 'the grant must be restored on a throw');
+		$this->assertTrue($source->isBound());
+	}//end testTheTokenGrantIsRestoredWhenTheCallableThrows()
 
 
 	/**

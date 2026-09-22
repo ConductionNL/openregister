@@ -31,6 +31,19 @@ namespace OCA\OpenRegister\Service;
  * {@see \OCA\OpenRegister\Service\ObjectService::runAsAnonymous()} clears the
  * subject and opens the scope in one move.
  *
+ * WHAT THIS MARKER DOES NOT COVER, AND WHY THE SENTENCE ABOVE STILL HOLDS.
+ * "Whatever session or process context" is a claim about the ANSWER, and a
+ * third thing can change that answer without touching the session: the grant
+ * an API token carries ({@see \OCA\OpenRegister\Service\Rbac\TokenGrantSource},
+ * bound per request on a DI service). It narrows rather than widens, so it was
+ * never a leak — but an evaluation narrowed by one caller's token is not the
+ * same answer the public gets, and "the same answer" is the whole promise.
+ * That one is handled where the state lives: `runAsAnonymous()` suspends the
+ * grant alongside the subject. This marker is not the place for it, because the
+ * grant is not a thing the RBAC layer infers from an ABSENT user — it is state
+ * about a present one. Found by review of PR #3855 on 2026-09-22, after #3913
+ * introduced the mechanism between that PR's approval and its merge.
+ *
  * Deliberately NOT a query key. `_rbac` and `_multitenancy` travel in the query
  * dict and are stripped from request parameters by the controllers; a
  * `_forceAnonymous=false` that slipped through would switch the guarantee off
