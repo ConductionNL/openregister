@@ -163,18 +163,32 @@ class CronFileTextExtractionJob extends TimedJob {
 
 			$executionTime = microtime(true) - $startTime;
 
-			$logger->info(
-				message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'job_id' => $this->getId(),
-					'execution_time_seconds' => round($executionTime, 2),
-					'files_processed' => $processed,
-					'files_failed' => $failed,
-					'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-				]
-			);
+			// The cron path is the one that runs unattended, so it is the one that
+			// most needs to say when a walk stopped on MAX_PENDING_WINDOWS instead of
+			// on an empty queue: the offset is not carried between ticks, so every
+			// following tick re-walks the same windows. Logged at warning level,
+			// because in the counters alone a truncated run reads as a finished one.
+			$truncated = ($stats['truncated'] ?? false);
+			$logContext = [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'job_id' => $this->getId(),
+				'execution_time_seconds' => round($executionTime, 2),
+				'files_processed' => $processed,
+				'files_failed' => $failed,
+				'truncated' => $truncated,
+				'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+			];
+
+			if ($truncated === true) {
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded
+				$logger->warning(message: '[CronFileTextExtractionJob] Cron File Text Extraction Job stopped on the window limit before filling its batch - the queue head is not extractable and every tick will re-walk it', context: $logContext);
+			} else {
+				$logger->info(
+					message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
+					context: $logContext
+				);
+			}
 		} catch (\Exception $e) {
 			$executionTime = microtime(true) - $startTime;
 

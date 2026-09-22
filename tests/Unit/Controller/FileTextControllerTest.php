@@ -258,6 +258,30 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals(10, $data['total']);
 	}//end testBulkExtractSuccess()
 
+	/**
+	 * A walk that stopped on the window limit has to say so in the response as
+	 * well: with only processed/failed/total, a truncated run reads exactly like
+	 * a finished one.
+	 *
+	 * @return void
+	 */
+	public function testBulkExtractReportsATruncatedWalk(): void {
+		$this->request->method('getParam')
+			->willReturnMap(
+				[
+					['limit', 100, '10'],
+				]
+			);
+		$this->textExtractor->method('extractPendingFiles')
+			->with(10)
+			->willReturn(['processed' => 0, 'failed' => 100, 'total' => 100, 'truncated' => true]);
+
+		$result = $this->controller->bulkExtract();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertTrue($result->getData()['truncated']);
+	}//end testBulkExtractReportsATruncatedWalk()
+
 	public function testBulkExtractCapsLimitAt500(): void {
 		$this->request->method('getParam')
 			->willReturnMap(

@@ -226,8 +226,8 @@ class TextExtractionFilesystemContextTest extends TestCase {
 	// =========================================================================
 
 	/**
-	 * End to end at unit level: the owner that FileMapper derived from the
-	 * storage id is what the extraction sets the filesystem up with.
+	 * End to end at unit level: the user id inside the home storage id is what
+	 * the extraction sets the filesystem up with.
 	 *
 	 * @return void
 	 */
@@ -251,13 +251,64 @@ class TextExtractionFilesystemContextTest extends TestCase {
 				[
 					'mimetype' => 'text/plain',
 					'path' => 'files/Documenten/test.txt',
-					'owner' => 'bob',
+					'storage_id' => 'home::bob',
 				],
 			]
 		);
 
 		$this->assertSame('de inhoud van een testdocument', $text);
 	}//end testExtractionUsesTheOwnerFromTheFileMetadata()
+
+	/**
+	 * A storage that is not a user home must not reach getUserFolder(). The
+	 * `owner` field on a file record falls back to the whole storage id, so
+	 * passing that on would call getUserFolder('object::user:bob') on every file
+	 * of an instance with primary object storage: a guaranteed
+	 * NotPermittedException, caught and logged as a warning per file per run,
+	 * before falling through to the plain lookup it would have used anyway.
+	 *
+	 * @return void
+	 */
+	public function testNonHomeStorageSkipsTheUserFolderAndUsesTheRootLookup(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getContent')->willReturn('de inhoud van een testdocument');
+
+		$this->rootFolder->expects($this->never())->method('getUserFolder');
+		$this->rootFolder->expects($this->once())
+			->method('getById')
+			->with(1408)
+			->willReturn([$file]);
+
+		$text = $this->invoke(
+			'performTextExtraction',
+			[
+				1408,
+				[
+					'mimetype' => 'text/plain',
+					'path' => 'files/Documenten/test.txt',
+					// What getFile() reports for primary object storage: its `owner`
+					// field would be this whole string.
+					'storage_id' => 'object::user:bob',
+				],
+			]
+		);
+
+		$this->assertSame('de inhoud van een testdocument', $text);
+	}//end testNonHomeStorageSkipsTheUserFolderAndUsesTheRootLookup()
+
+	/**
+	 * homeStorageOwner() in isolation, including the shapes that must yield null.
+	 *
+	 * @return void
+	 */
+	public function testHomeStorageOwnerOnlyAcceptsAUserHome(): void {
+		$this->assertSame('bob', $this->invoke('homeStorageOwner', ['home::bob']));
+		$this->assertNull($this->invoke('homeStorageOwner', [null]));
+		$this->assertNull($this->invoke('homeStorageOwner', ['']));
+		$this->assertNull($this->invoke('homeStorageOwner', ['home::']));
+		$this->assertNull($this->invoke('homeStorageOwner', ['object::user:bob']));
+		$this->assertNull($this->invoke('homeStorageOwner', ['local::/mnt/extern/']));
+	}//end testHomeStorageOwnerOnlyAcceptsAUserHome()
 
 	// =========================================================================
 	// extractPendingFiles — the backfill must keep moving

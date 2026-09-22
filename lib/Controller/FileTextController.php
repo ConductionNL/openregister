@@ -277,6 +277,10 @@ class FileTextController extends Controller {
 					'processed' => $result['processed'],
 					'failed' => $result['failed'],
 					'total' => $result['total'],
+					// True when the walk stopped on MAX_PENDING_WINDOWS rather than
+					// on an empty queue. Without it a truncated run is
+					// indistinguishable from a finished one in the counters alone.
+					'truncated' => ($result['truncated'] ?? false),
 				]
 			);
 		} catch (\Exception $e) {

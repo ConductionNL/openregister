@@ -243,6 +243,79 @@ class CronFileTextExtractionJobTest extends TestCase {
 		$this->assertSame(1, $completionContext['files_failed']);
 	}
 
+	/**
+	 * The cron path is the one that runs unattended, so a walk that stopped on
+	 * MAX_PENDING_WINDOWS has to say so. Nothing carries the offset between
+	 * ticks, so every following tick re-walks the same unextractable head of the
+	 * queue and reports the same counters — a truncated run is indistinguishable
+	 * from a finished one unless the flag is surfaced.
+	 *
+	 * @return void
+	 */
+	public function testRunWarnsWhenTheWalkWasTruncated(): void {
+		$this->settingsService
+			->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
+		$this->textExtractor
+			->method('extractPendingFiles')
+			->willReturn(['processed' => 0, 'failed' => 100, 'total' => 100, 'truncated' => true]);
+
+		$warningContext = null;
+		$this->logger
+			->method('warning')
+			->willReturnCallback(static function (string $message, array $context = []) use (&$warningContext): void {
+				if (isset($context['truncated'])) {
+					$warningContext = $context;
+				}
+			});
+		$completionLine = null;
+		$this->logger
+			->method('info')
+			->willReturnCallback(static function (string $message, array $context = []) use (&$completionLine): void {
+				if (str_contains($message, 'Completed') === true) {
+					$completionLine = $message;
+				}
+			});
+
+		$this->runJob();
+
+		$this->assertNull($completionLine, 'A truncated walk must not log the completion line.');
+		$this->assertNotNull($warningContext);
+		$this->assertTrue($warningContext['truncated']);
+		$this->assertSame(0, $warningContext['files_processed']);
+		$this->assertSame(100, $warningContext['files_failed']);
+	}//end testRunWarnsWhenTheWalkWasTruncated()
+
+	/**
+	 * A complete walk keeps the info-level completion line, and carries the flag
+	 * as false rather than leaving it out.
+	 *
+	 * @return void
+	 */
+	public function testCompletionLineCarriesTheTruncatedFlag(): void {
+		$this->settingsService
+			->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'cron', 'batchSize' => 10]);
+		$this->textExtractor
+			->method('extractPendingFiles')
+			->willReturn(['processed' => 2, 'failed' => 0, 'total' => 2, 'truncated' => false]);
+
+		$completionContext = null;
+		$this->logger
+			->method('info')
+			->willReturnCallback(static function (string $message, array $context = []) use (&$completionContext): void {
+				if (isset($context['files_processed'], $context['files_failed'])) {
+					$completionContext = $context;
+				}
+			});
+
+		$this->runJob();
+
+		$this->assertNotNull($completionContext);
+		$this->assertArrayHasKey('truncated', $completionContext);
+		$this->assertFalse($completionContext['truncated']);
+	}//end testCompletionLineCarriesTheTruncatedFlag()
+
 	// -------------------------------------------------------------------------
 	// Outer exception handling (e.g. SettingsService fails)
 	// -------------------------------------------------------------------------

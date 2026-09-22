@@ -255,6 +255,41 @@ class FileSettingsHandlerTest extends TestCase {
 	}
 
 	/**
+	 * The same bound applies on read. Installations that stored a batch size
+	 * before the write-side clamp existed still have that value in appconfig, and
+	 * the cron job hands it straight to extractPendingFiles() with nothing in
+	 * between — so a bound that only guards the write path leaves them exposed.
+	 *
+	 * @dataProvider provideBatchSizes
+	 *
+	 * @param mixed $given    The value already stored in appconfig.
+	 * @param int   $expected The value that must come back out.
+	 */
+	public function testBatchSizeIsBoundedOnRead(mixed $given, int $expected): void {
+		$this->appConfig->method('getValueString')
+			->willReturn(json_encode(['batchSize' => $given]));
+
+		$result = $this->handler->getFileSettingsOnly();
+
+		$this->assertSame($expected, $result['batchSize']);
+	}
+
+	/**
+	 * A stored config without a batch size must not gain one on read: the cron
+	 * job has its own DEFAULT_BATCH_SIZE fallback for exactly that case.
+	 *
+	 * @return void
+	 */
+	public function testReadDoesNotInventABatchSize(): void {
+		$this->appConfig->method('getValueString')
+			->willReturn(json_encode(['extractionMode' => 'cron']));
+
+		$result = $this->handler->getFileSettingsOnly();
+
+		$this->assertArrayNotHasKey('batchSize', $result);
+	}
+
+	/**
 	 * @return array<string, array{0: mixed, 1: int}>
 	 */
 	public static function provideBatchSizes(): array {

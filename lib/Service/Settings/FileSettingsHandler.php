@@ -136,7 +136,18 @@ class FileSettingsHandler {
 				];
 			}//end if
 
-			return json_decode($fileConfig, true);
+			$fileSettings = json_decode($fileConfig, true);
+
+			// The same bound as updateFileSettings() applies on the way out. Values
+			// stored before that clamp existed are still in appconfig — the previous
+			// write path accepted 0, negatives and anything above 500 — and the cron
+			// job hands batchSize straight to extractPendingFiles(), so a bound that
+			// only guards the write path leaves those installations unprotected.
+			if (is_array($fileSettings) === true && array_key_exists('batchSize', $fileSettings) === true) {
+				$fileSettings['batchSize'] = max(1, min((int) $fileSettings['batchSize'], 500));
+			}
+
+			return $fileSettings;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve File Management settings: ' . $e->getMessage());
 		}//end try

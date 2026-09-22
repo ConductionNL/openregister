@@ -1100,8 +1100,7 @@ class FileMapper extends QBMapper {
 	 * @phpstan-param  int $offset
 	 * @phpstan-return list<array{
 	 *     fileid: int, path: string, name: string, mimetype: string,
-	 *     size: int, mtime: int, checksum: string|null, storage_id: string|null,
-	 *     owner: string|null
+	 *     size: int, mtime: int, checksum: string|null
 	 * }>
 	 *
 	 * @spec openspec/specs/text-extraction/spec.md
@@ -1128,10 +1127,7 @@ class FileMapper extends QBMapper {
 			'mt.mimetype',
 			'fc.size',
 			'fc.mtime',
-			'fc.checksum',
-			// The storage id carries the owner ("home::<uid>"), which the extraction
-			// needs to set up that user's filesystem before looking the file up.
-			'st.id AS storage_id'
+			'fc.checksum'
 		)
 			->from('filecache', 'fc')
 			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
@@ -1174,15 +1170,6 @@ class FileMapper extends QBMapper {
 
 		$row = $result->fetch();
 		while ($row !== false) {
-			// Derive the owner from the storage id, matching getFile()/getFiles().
-			$row['owner'] = null;
-			if (empty($row['storage_id']) === false) {
-				$row['owner'] = $row['storage_id'];
-				if (str_starts_with($row['storage_id'], 'home::') === true) {
-					$row['owner'] = substr($row['storage_id'], 6);
-				}
-			}
-
 			$files[] = $row;
 			$row = $result->fetch();
 		}

@@ -938,7 +938,13 @@ class TextExtractionService {
 		// Get the file node from Nextcloud.
 		try {
 			// Resolve the node with an explicit filesystem context; see resolveFileNode().
-			$file = $this->resolveFileNode(fileId: $fileId, owner: $ncFile['owner'] ?? null);
+			// Deliberately not $ncFile['owner']: getFile() falls back to the whole
+			// storage id when it is not a user home, so object storage, group folders
+			// and external storages arrive here as "object::user:bob" or "local::/mnt".
+			$file = $this->resolveFileNode(
+				fileId: $fileId,
+				owner: $this->homeStorageOwner(storageId: $ncFile['storage_id'] ?? null)
+			);
 
 			// Extract text based on mime type.
 			// Text-based files that can be read directly.
@@ -1015,6 +1021,42 @@ class TextExtractionService {
 	}//end performTextExtraction()
 
 	/**
+	 * Return the user id a storage id names, but only for a user home storage.
+	 *
+	 * `FileMapper::getFile()` exposes an `owner` field that falls back to the whole
+	 * storage id when it does not start with `home::`, because that field is also a
+	 * display value. Passing that fallback to `resolveFileNode()` would hand
+	 * `getUserFolder()` a string that can never be a user id — "object::user:bob" on
+	 * an instance with primary object storage, "local::/mnt/..." for external
+	 * storage, or a group folder id. `getUserFolder()` then throws
+	 * NotPermittedException ("Backends provided no user object"), which is caught
+	 * and logged at warning level for every file on every run before falling
+	 * through to the plain lookup it would have used anyway.
+	 *
+	 * Returning null for those storages skips the attempt that cannot succeed and
+	 * keeps the log free of a warning per file per run.
+	 *
+	 * @param string|null $storageId Storage id from the filecache row.
+	 *
+	 * @return string|null The user id, or null when the storage is not a user home.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	private function homeStorageOwner(?string $storageId): ?string {
+		if ($storageId === null || str_starts_with($storageId, 'home::') === false) {
+			return null;
+		}
+
+		$owner = substr($storageId, 6);
+
+		if ($owner === '') {
+			return null;
+		}
+
+		return $owner;
+	}//end homeStorageOwner()
+
+	/**
 	 * Resolve a file node, setting up the owner's filesystem first.
 	 *
 	 * `IRootFolder::getById()` only sees mounts that are already set up. In a
@@ -1036,8 +1078,8 @@ class TextExtractionService {
 	 * folder) behaves as before rather than regressing.
 	 *
 	 * @param int         $fileId Nextcloud file ID.
-	 * @param string|null $owner  Owner user id, derived from the storage id by
-	 *                            FileMapper; null when it could not be derived.
+	 * @param string|null $owner  Owner user id, or null when the file does not live
+	 *                            on a user home storage. See homeStorageOwner().
 	 *
 	 * @return \OCP\Files\File The resolved file node.
 	 *
