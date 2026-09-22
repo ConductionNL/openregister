@@ -26,6 +26,11 @@
         <UndefinedDocblockClass errorLevel="suppress"/>
         <UndefinedClass>
             <errorLevel type="suppress">
+                <!-- Nextcloud server legacy globals: not in nextcloud/ocp, no OCP
+                     equivalent, always present at runtime. ObjectService::runAsAnonymous()
+                     uses OC_User's incognito mode because it is the only switch
+                     Session::getUser() honours before its user_id fallback (WOO-578). -->
+                <referencedClass name="OC_User"/>
                 <!-- Nextcloud OCP Classes -->
                 <referencedClass name="OCP\AppFramework\App"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootstrap"/>
