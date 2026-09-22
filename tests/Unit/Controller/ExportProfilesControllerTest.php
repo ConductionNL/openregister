@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -66,7 +67,14 @@ final class ExportProfilesControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($isAdmin);
 
-		return new ExportProfilesController('openregister', $this->request, $this->service, $session, $groups);
+		return new ExportProfilesController(
+			'openregister',
+			$this->request,
+			$this->service,
+			$session,
+			$groups,
+			$this->createMock(ExportRunRecorder::class)
+		);
 	}//end controller()
 
 	private function profile(string $format = 'csv'): ExportProfile {
