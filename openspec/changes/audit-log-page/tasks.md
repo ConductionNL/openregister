@@ -4,7 +4,13 @@
 
 - [ ] 1.1 Filtered, cursor-paginated instance-wide query in
       `AuditTrailMapper` using the existing indexes.
-- [ ] 1.2 RBAC join for non-admins.
+- [x] 1.2 RBAC join for non-admins. DELIVERED 2026-09-22 as a separate,
+      narrower path rather than a widening of `index()`, exactly as the note
+      below asks: `GET /api/audit-trails/readable`, backed by
+      `lib/Service/Audit/ReadableAuditTrailLister.php`, archived as
+      `openspec/changes/archive/2026-09-22-audit-trail-readable-scope`. The
+      existing admin gate on `index()`, `statistics()` and `export()` is
+      untouched.
       > 🔴 **READ THIS BEFORE STARTING 1.2: IT WIDENS A SURFACE THAT WAS
       > DELIBERATELY CLOSED.** `AuditTrailController::index()` is admin-only
       > today, at the framework level AND with a body `requireAdmin()` as
