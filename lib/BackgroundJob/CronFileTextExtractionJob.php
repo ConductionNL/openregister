@@ -183,12 +183,13 @@ class CronFileTextExtractionJob extends TimedJob {
 			if ($truncated === true) {
 				// phpcs:ignore Generic.Files.LineLength.MaxExceeded
 				$logger->warning(message: '[CronFileTextExtractionJob] Cron File Text Extraction Job stopped on the window limit before filling its batch - the queue head is not extractable and every tick will re-walk it', context: $logContext);
-			} else {
-				$logger->info(
-					message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
-					context: $logContext
-				);
+				return;
 			}
+
+			$logger->info(
+				message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
+				context: $logContext
+			);
 		} catch (\Exception $e) {
 			$executionTime = microtime(true) - $startTime;
 
