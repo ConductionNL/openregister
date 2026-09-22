@@ -345,9 +345,20 @@ class MagicOrganizationHandler {
 	 * @param \OCP\IUser|null $user The resolved session user (null in CLI).
 	 *
 	 * @return bool True when the org filter should be bypassed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AnonymousEvaluationContext is an ambient-context
+	 *   marker; a static read is the whole point of it (WOO-578).
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function isSystemContext(?\OCP\IUser $user): bool {
 		if ($user !== null || PHP_SAPI !== 'cli' || $this->isSaasModeEnabled() === true) {
+			return false;
+		}
+
+		// A forced-anonymous evaluation (WOO-578) has no user on purpose; it is
+		// the one CLI case that is a caller, not the system.
+		if (\OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === true) {
 			return false;
 		}
 

@@ -114,4 +114,50 @@ class TokenGrantSource {
 	public function isBound(): bool {
 		return $this->bound;
 	}//end isBound()
+
+
+	/**
+	 * Run a callable with no grant in force, then put the binding back.
+	 *
+	 * A grant is a ceiling on what ITS HOLDER may do. An evaluation that has
+	 * deliberately stopped acting as anybody — {@see
+	 * \OCA\OpenRegister\Service\ObjectService::runAsAnonymous()} — has no
+	 * holder, so there is nothing for the ceiling to apply to. Leaving the
+	 * binding in place there does not narrow "the caller"; it narrows the
+	 * PUBLIC answer by the private state of a token that is no longer the
+	 * subject of the question, which is how two callers end up getting
+	 * different answers from an endpoint whose whole contract is that they
+	 * must not.
+	 *
+	 * 🔴 IT CLEARS BOTH FIELDS, NOT JUST THE GRANT. `bind(null)` would leave
+	 * `isBound()` true, and this class's own contract says that means "a token
+	 * with no grant is calling" — a different statement from "no token is
+	 * calling", which is what holds inside the scope. Both are saved and both
+	 * are restored.
+	 *
+	 * Restores in a `finally`, so a throw inside the callable cannot leak a
+	 * cleared binding forward, and nesting composes: an inner call restores
+	 * the outer call's state rather than the unbound one.
+	 *
+	 * @param callable $operation The operation to run with no grant in force.
+	 *
+	 * @return mixed Whatever the callable returns.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function runWithoutGrant(callable $operation) {
+		$previousGrant = $this->grant;
+		$previousBound = $this->bound;
+
+		$this->grant = null;
+		$this->bound = false;
+
+		try {
+			return $operation();
+		} finally {
+			$this->grant = $previousGrant;
+			$this->bound = $previousBound;
+		}
+	}//end runWithoutGrant()
 }//end class

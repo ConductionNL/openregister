@@ -598,11 +598,21 @@ class PermissionHandler {
 			}
 		}
 
+		// The RESOLVED subject, not the argument. A null `$userId` means "use the
+		// current user", which evaluatePermission() then reads from the session —
+		// so keying on the argument gave an admin-defaulted call and an anonymous
+		// call the same key `u_` with different verdicts. That matters wherever the
+		// subject changes within a request: runAsAnonymous() and runAs() both do.
+		$subject = $userId;
+		if ($subject === null) {
+			$subject = $this->userSession->getUser()?->getUID();
+		}
+
 		return sprintf(
 			's%d|a%s|u%s|o%s|i%s',
 			$schemaId,
 			$action,
-			$userId ?? '_',
+			$subject ?? '_anon',
 			$objectOwner ?? '_',
 			$objectUuid ?? '_'
 		);

@@ -1086,17 +1086,26 @@ class FileMapper extends QBMapper {
 	 * - Trashed files
 	 * - External/temporary storages
 	 *
-	 * @param int $limit Maximum number of untracked files to return
+	 * @param int $limit  Maximum number of untracked files to return
+	 * @param int $offset Number of rows to skip. Files that fail extraction keep
+	 *                    matching this query — nothing records the failure — and
+	 *                    the fileid ordering keeps them at the head of every
+	 *                    window. The offset lets a caller step over them instead
+	 *                    of re-reading the same unreadable files forever
+	 *                    (WOO-576).
 	 *
 	 * @return array List of untracked files with basic metadata
 	 *
 	 * @phpstan-param  int $limit
+	 * @phpstan-param  int $offset
 	 * @phpstan-return list<array{
 	 *     fileid: int, path: string, name: string, mimetype: string,
 	 *     size: int, mtime: int, checksum: string|null
 	 * }>
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
 	 */
-	public function findUntrackedFiles(int $limit = 100): array {
+	public function findUntrackedFiles(int $limit = 100, int $offset = 0): array {
 		$qb = $this->db->getQueryBuilder();
 
 		// Pre-create common parameters for cleaner query building.
@@ -1153,6 +1162,7 @@ class FileMapper extends QBMapper {
 			->andWhere($qb->expr()->gt('fc.size', $zeroSize))
 			// Exclude empty files.
 			->setMaxResults($limit)
+			->setFirstResult($offset)
 			->orderBy('fc.fileid', 'ASC');
 
 		$result = $qb->executeQuery();
