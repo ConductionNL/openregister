@@ -31,10 +31,23 @@ name: WOO-572 OR Hotfix Release
 # Basis: ConductionNL/opencatalogi @ hotfix/woo-572-fts-stable-line
 #        .github/workflows/hotfix-release.yaml (WOO-572 OC hotfix), rsync
 #        excludes aligned with ConductionNL/.github release.yml.
+#
+# BRANCH CONVENTION (agreed 2026-09-22, WOO-572): ONE hotfix branch per base
+# version, named hotfix/v<base>-woo, carrying every woo-N release cut on that
+# base. Work on a feature branch, merge it into this branch, bump <version> in
+# appinfo/info.xml to the next <base>-woo-N and push; the push cuts the tag.
+# Never create a second branch on the same base: a WOO environment runs ONE
+# build per app, so two branches on one base means the last deploy silently
+# drops the other one's fixes (this happened to v1.1.5-woo-1 on 2026-09-21 and
+# to v0.2.24-woo-2 on 2026-09-09). The step "Refuse to cut a WOO tag from the
+# wrong branch" enforces the name, the version segment and the ancestry.
+# Pushes that only touch .github/ do not cut a release (paths-ignore).
 on:
   push:
     branches:
-      - hotfix/woo-572-or-stable-line
+      - hotfix/v1.1.5-woo
+    paths-ignore:
+      - '.github/**'
 
 permissions:
   contents: write
@@ -57,6 +70,49 @@ jobs:
           echo "NEW_VERSION=${new_version}" >> $GITHUB_ENV
           echo "RELEASE_TAG=v${new_version}" >> $GITHUB_ENV
           echo "Building ${new_version} (tag v${new_version}) from ${GITHUB_SHA}"
+
+      # WOO hotfix-line guard (2026-09-22). The workflow file travels with any
+      # copy of this branch, so the guard refuses to cut a tag from anywhere but
+      # the one hotfix line for this base. Each check maps to a real incident:
+      #   1. branch name        — hotfix/v<base>-woo, nothing else;
+      #   2. version segment    — info.xml must read <base>-woo-<N> for THIS base
+      #                           (v1.1.5-woo-1 was overwritten from a second
+      #                           branch on the same base, 2026-09-21);
+      #   3. ancestry           — what the branch shares with main/development
+      #                           must not be newer than the base tag v<base>
+      #                           (v0.2.24-woo-2 was re-cut from a development-
+      #                           based branch that had merged the tag in, 2026-09-09);
+      #   4. existing tag       — if the tag exists it must already be on this
+      #                           branch; never move someone else's tag.
+      - name: Refuse to cut a WOO tag from the wrong branch
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          case "${BRANCH}" in
+            hotfix/v*-woo) ;;
+            *) echo "::error::${BRANCH} is not a WOO hotfix line (expected hotfix/v<base>-woo); refusing to cut ${RELEASE_TAG}"; exit 1 ;;
+          esac
+          line="${BRANCH#hotfix/v}"
+          case "${NEW_VERSION}" in
+            "${line}"-[1-9]*) ;;
+            *) echo "::error::appinfo/info.xml says ${NEW_VERSION}; on ${BRANCH} only ${line}-<N> may be cut"; exit 1 ;;
+          esac
+          base_tag="v${line%-woo}"
+          git fetch -q origin main development "refs/tags/${base_tag}:refs/tags/${base_tag}" 2>/dev/null || true
+          git merge-base --is-ancestor "${base_tag}" HEAD \
+            || { echo "::error::${BRANCH} does not descend from ${base_tag}"; exit 1; }
+          for ref in main development; do
+            git rev-parse -q --verify "origin/${ref}" >/dev/null || continue
+            shared="$(git merge-base HEAD "origin/${ref}")"
+            if ! git merge-base --is-ancestor "${shared}" "${base_tag}"; then
+              echo "::error::${BRANCH} shares $(git rev-parse --short "${shared}") with origin/${ref}, which is newer than ${base_tag}; this is not a hotfix line on ${base_tag}"; exit 1
+            fi
+          done
+          if git fetch -q origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}" 2>/dev/null \
+             && ! git merge-base --is-ancestor "${RELEASE_TAG}" HEAD; then
+            echo "::error::${RELEASE_TAG} already exists at $(git rev-parse --short "${RELEASE_TAG}") and is not on ${BRANCH}; refusing to move someone else's tag"; exit 1
+          fi
+          echo "${NEW_VERSION} belongs on ${BRANCH}; ${RELEASE_TAG} may be cut from ${GITHUB_SHA}"
 
       # NEXTCLOUD_SIGNING_KEY / NEXTCLOUD_SIGNING_CERT are repository secrets
       # on ConductionNL/openregister (same ones the shared release.yml uses).
