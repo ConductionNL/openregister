@@ -224,6 +224,53 @@ The system exposes an admin-only operational escape hatch at `DELETE /api/audit-
 - The `ClearAuditTrails.vue` dialog defaults to deleting ALL entries when no filters are active and surfaces a warning note-card to that effect; the UI flow tries to dissuade but does not block.
 - The companion routes `auditTrail#destroy` (DELETE `/api/audit-trails/{id}`) and `auditTrail#destroyMultiple` (DELETE `/api/audit-trails`) DO return HTTP 405 per the existing immutability REQ, which makes the `clear-all` carve-out inconsistent. Flagged as part of the drift in D-1 of the proposal.
 
+### Requirement: The audit trail is readable within a caller's own scope
+
+The system SHALL offer a scoped audit list, separate from the admin-only
+instance-wide index, that returns audit entries only for objects the calling
+user may read. Readability SHALL be decided by the same RBAC funnel the object
+read path uses, so that a grant, a schema rule and a register rule all mean
+here what they mean everywhere else. An anonymous caller SHALL receive
+nothing. An entry whose object cannot be resolved, or whose schema cannot be
+resolved, SHALL be absent rather than present, so that every failure to decide
+hides a row instead of showing it. The scoped list SHALL be cursor paginated,
+SHALL NOT count the table, and SHALL bound the number of rows it inspects per
+request.
+
+#### Scenario: a handler sees only the entries of objects they may read
+
+- **GIVEN** a trail with entries on an object the caller may read and entries on an object they may not
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** only the entries of the readable object are returned
+- @e2e exclude {the scope decision is a unit-level contract on ReadableAuditTrailLister, mutation-checked in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: an anonymous caller is told nothing
+
+- **GIVEN** a trail with entries
+- **WHEN** an anonymous caller lists the scoped audit trail
+- **THEN** no entries are returned and no query for candidates is made
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php::testAnonymousCallerGetsNothingAndAsksTheMapperNothing}
+
+#### Scenario: an entry whose object is gone is not shown
+
+- **GIVEN** an audit entry whose object no longer resolves
+- **WHEN** a non-admin lists the scoped audit trail
+- **THEN** that entry is absent
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+### Requirement: The scoped audit list withholds the instance-recon fields
+
+The scoped audit list SHALL NOT return the `session`, `request` and
+`ipAddress` of an entry. Those fields describe the instance rather than the
+object, and the admin-only index remains the only surface that carries them.
+
+#### Scenario: a scoped row carries the change but not the session
+
+- **GIVEN** an audit entry with a session, a request id and an IP address on a readable object
+- **WHEN** a non-admin lists the scoped audit trail
+- **THEN** the row carries its action, actor and changes, and carries no `session`, `request` or `ipAddress`
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
 ## Current Implementation Status
 - **Implemented:**
   - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash

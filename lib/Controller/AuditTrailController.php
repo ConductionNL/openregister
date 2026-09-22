@@ -332,7 +332,7 @@ class AuditTrailController extends Controller {
 	 *     through PermissionHandler::hasPermission(action: 'read') for the SESSION's user, and takes
 	 *     no object identifier from the request that could name somebody else's row.
 	 *
-	 * @spec openspec/changes/audit-trail-readable-scope/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
 	public function readable(): JSONResponse {
 		$user = $this->userSession->getUser();

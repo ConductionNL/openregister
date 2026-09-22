@@ -34,7 +34,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-readable-scope/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
  */
 
 declare(strict_types=1);
@@ -134,7 +134,7 @@ class ReadableAuditTrailLister {
 	 *     offset when there may be more — including when the scan budget ran
 	 *     out before the page filled.
 	 *
-	 * @spec openspec/changes/audit-trail-readable-scope/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
 	public function page(
 		?string $userId,
