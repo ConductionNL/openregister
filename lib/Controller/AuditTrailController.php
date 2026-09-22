@@ -33,6 +33,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Controller;
@@ -67,6 +68,7 @@ class AuditTrailController extends Controller {
 	 * @param AuditHashService $auditHashService The audit hash chain service
 	 * @param \OCP\IUserSession $userSession Active user session for caller identity.
 	 * @param \OCP\IGroupManager $groupManager Group manager for admin / role checks.
+	 * @param ReadableAuditTrailLister $readableLister Lists the trail within one caller's read scope.
 	 */
 	public function __construct(
 		string $appName,
@@ -76,6 +78,7 @@ class AuditTrailController extends Controller {
 		private readonly AuditHashService $auditHashService,
 		private readonly \OCP\IUserSession $userSession,
 		private readonly \OCP\IGroupManager $groupManager,
+		private readonly ReadableAuditTrailLister $readableLister,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -301,6 +304,68 @@ class AuditTrailController extends Controller {
 			]
 		);
 	}//end index()
+
+	/**
+	 * Get the audit trail as far as the calling user may read it
+	 *
+	 * A SECOND, NARROWER PATH — not a relaxation of index(). index() stays
+	 * admin-only for the reason written above it, and nothing here touches
+	 * it, so an error in this method cannot make that one wider than it was.
+	 *
+	 * What this returns is the entries of the objects the caller may read,
+	 * decided by the RBAC funnel the object read path already uses. An entry
+	 * whose object is gone, whose schema is gone, or whose readability cannot
+	 * be decided is absent: every unknown hides a row. `session`, `request`
+	 * and `ipAddress` are withheld, because they answer "who else was on this
+	 * instance" rather than "what happened to this object".
+	 *
+	 * The page is cursor-based and the table is never counted. `nextCursor`
+	 * comes back null when the trail is exhausted and an offset otherwise,
+	 * including when the scan budget ran out before the page filled, so a
+	 * short page is not the end of the list.
+	 *
+	 * @return JSONResponse The scoped page, or 401 when anonymous.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt Guarded in-body and downstream: the lister resolves every row's object
+	 *     through PermissionHandler::hasPermission(action: 'read') for the SESSION's user, and takes
+	 *     no object identifier from the request that could name somebody else's row.
+	 *
+	 * @spec openspec/changes/audit-trail-readable-scope/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 */
+	public function readable(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'Authentication required'],
+				statusCode: 401
+			);
+		}
+
+		$params = $this->extractRequestParameters();
+
+		$cursor = 0;
+		$requested = ($this->request->getParam(key: 'cursor') ?? $this->request->getParam(key: '_cursor'));
+		if ($requested !== null && $requested !== '') {
+			$cursor = (int)$requested;
+		} elseif (($params['offset'] ?? null) !== null) {
+			// An offset is accepted as a starting cursor so a client that only
+			// knows the older parameter still walks the list, rather than
+			// silently reading page one over and over.
+			$cursor = (int)$params['offset'];
+		}
+
+		$page = $this->readableLister->page(
+			userId: $user->getUID(),
+			limit: (int)$params['limit'],
+			cursor: $cursor,
+			filters: ($params['filters'] ?? []),
+			search: ($params['search'] ?? null)
+		);
+
+		return new JSONResponse(data: $page);
+	}//end readable()
 
 	/**
 	 * Get lifetime audit trail counts, optionally scoped to a register/schema

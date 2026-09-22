@@ -1340,6 +1340,12 @@ return [
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
+        // The scoped sibling of index(). Open to any signed-in user and narrower
+        // on purpose: only the entries of objects the caller may read, and
+        // without the session/request/ip columns. Declared ABOVE `show`, whose
+        // `{id}` requirement is `[^/]+` and would otherwise swallow the word
+        // `readable` as an audit-trail id.
+        ['name' => 'auditTrail#readable', 'url' => '/api/audit-trails/readable', 'verb' => 'GET'],
         ['name' => 'auditTrail#statistics', 'url' => '/api/audit-trails/statistics', 'verb' => 'GET'],
         ['name' => 'auditTrail#export', 'url' => '/api/audit-trails/export', 'verb' => 'GET'],
         ['name' => 'auditTrail#verify', 'url' => '/api/audit-trails/verify', 'verb' => 'GET'],
