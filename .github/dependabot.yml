@@ -42,6 +42,31 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@babel/preset-env"
         update-types: ["version-update:semver-major"]
+      # THIS REPO SETS THE FLEET'S DEXIE VERSION, SO THIS ONE IS NOT LIKE THE
+      # OTHERS ABOVE: it is not a compatibility limit on openregister, it is a
+      # brake on everybody else's pages.
+      #
+      # `openregister-integration-global.js` loads on EVERY page of a
+      # Nextcloud instance, beside whichever app's own bundles. Dexie refuses
+      # to initialise twice at different versions: the second copy throws
+      # "Two different versions of Dexie loaded in the same app" at module
+      # init and that app's SPA never mounts, rendering bare chrome with one
+      # console line and nothing else.
+      #
+      # So a Dependabot bump here does not put ONE app at risk, it blanks
+      # every app in the fleet still on the old version, on every instance,
+      # at once. Measured 2026-09-22 in the other direction, which is the
+      # milder one: portaliq and pipelinq had moved to 4.4.6 while this repo
+      # stayed at 4.4.5, and both were dark on cloud.conduction.nl --
+      # pipelinq since 19 September, unreported, because a blank app looks
+      # like a slow one.
+      #
+      # Moving Dexie is a COORDINATED FLEET BUMP, never an unattended one:
+      # every app moves in the same release window, and this repo moves LAST.
+      # The version is pinned exactly in package.json for the same reason --
+      # `^4.4.5` resolves to 4.4.6 on the next clean install and would ship
+      # the bump with nothing visible in the diff.
+      - dependency-name: "dexie"
     cooldown:
       default-days: 1
       include:
