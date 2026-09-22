@@ -130,8 +130,34 @@ class ContentSearchHandler {
 	 * @param int $limit The page's `_limit` (0 = unlimited/count-only).
 	 * @param bool $_rbac Whether to apply RBAC checks when resolving chunk-hit objects.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering when resolving chunk-hit objects.
+	 * @param int $offset The page's `_offset` over the COMBINED list (metadata
+	 *                    rows first, chunk-only rows behind them).
+	 * @param string|null $activeOrgUuid The caller's active organisation, forwarded
+	 *                                   to the overlap probe so it sees exactly
+	 *                                   what the metadata arm saw.
 	 *
 	 * @return array{results: ObjectEntity[], total: int}
+	 *
+	 * THE CHUNK ARM IS A SECOND LIST BEHIND THE METADATA ARM, AND IT MUST NOT
+	 * CONTAIN THE METADATA ARM'S ROWS. Both arms are paged as ONE list: the
+	 * metadata rows come first, the chunk-only rows follow once the metadata
+	 * arm is exhausted. That only works when the second list is (a) the same
+	 * on every page and (b) disjoint from the first.
+	 *
+	 * Deduplicating against `$results` gave neither. `$results` is only THIS
+	 * page of the metadata arm, so an owner that the metadata arm serves on
+	 * page 2 was still counted as a chunk-only owner on page 1, and `total`
+	 * moved from page to page. And without an offset into the chunk arm every
+	 * page past the metadata rows re-served the same chunk-only rows, so a
+	 * client walking `_page` never reached the end.
+	 *
+	 * Measured 2026-09-17 on a NC 32 rig with OpenCatalogi 2.1.0 in front of
+	 * this class: `_search=Klimaatakkoord&_content=true&_limit=1` gave total
+	 * 4, 5, 4, 5, ... across pages, and page 4 onward returned the same object
+	 * indefinitely (WOO-577). {@see metadataArmOverlap()} asks the metadata
+	 * arm which of the resolved owners it matches too, so the answer is a
+	 * property of the query, not of the page; {@see pageChunkArm()} slices
+	 * the remainder by the offset past the metadata arm.
 	 *
 	 * @psalm-param   array<string, mixed> $query
 	 * @phpstan-param array<string, mixed> $query
@@ -153,6 +179,8 @@ class ContentSearchHandler {
 		int $limit,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		int $offset = 0,
+		?string $activeOrgUuid = null,
 	): array {
 		$searchTerm = $query['_search'] ?? null;
 		if (is_string($searchTerm) === false || trim($searchTerm) === '') {
@@ -172,10 +200,10 @@ class ContentSearchHandler {
 		// hydrates ObjectEntity without populating Entity::$id (the underlying
 		// column is `_id`, not `id`), so getId() returns null on metadata-arm
 		// rows. UUID is populated and stable across both arms.
-		$seenUuids = [];
+		$seenOnPage = [];
 		foreach ($results as $object) {
 			if ($object instanceof ObjectEntity && $object->getUuid() !== null) {
-				$seenUuids[$object->getUuid()] = true;
+				$seenOnPage[$object->getUuid()] = true;
 			}
 		}
 
@@ -199,40 +227,234 @@ class ContentSearchHandler {
 		//
 		// Resolving every candidate rather than only `$room` of them costs at
 		// most CHUNK_CANDIDATE_LIMIT resolves, which is the worst case this
-		// class already budgets for and documents on that constant. `$total`
-		// stays stable across pages because the resolved set is a property of
-		// the query, not of the page: page 1 and page 3 resolve the same
-		// candidates and report the same number.
+		// class already budgets for and documents on that constant.
 		$scope = $this->resolveScope(query: $query);
 
 		$resolved = [];
 		foreach ($candidates as $object) {
-			if (isset($seenUuids[$object->getUuid()]) === true) {
-				continue;
-			}
-
 			if ($this->matchesScope(object: $object, scope: $scope) === false) {
 				continue;
 			}
 
-			// Seed the dedupe set as we go: two chunks of the same document
-			// are one owner, and must be counted once.
-			$seenUuids[$object->getUuid()] = true;
-			$resolved[] = $object;
-		}//end foreach
+			// Two chunks of the same document are one owner; resolveCandidates()
+			// already collapsed them, this keeps the invariant local.
+			$resolved[$object->getUuid()] = $object;
+		}
 
-		$room = PHP_INT_MAX;
+		// Owners the metadata arm matches too are already in its total; the
+		// rest is the chunk arm. See the docblock for why this is asked of the
+		// metadata arm itself rather than read off this page.
+		$overlap = $this->metadataArmOverlap(
+			query: $query,
+			owners: $resolved,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			activeOrgUuid: $activeOrgUuid
+		);
+		$chunkOnly = array_diff_key($resolved, $overlap);
+
+		$appended = $this->pageChunkArm(
+			chunkOnly: $chunkOnly,
+			seenOnPage: $seenOnPage,
+			results: $results,
+			limit: $limit,
+			offset: $offset,
+			metadataTotal: $total
+		);
+
+		return [
+			'results' => array_merge($results, $appended),
+			'total' => $total + count($chunkOnly),
+		];
+	}//end augmentWithChunkMatches()
+
+	/**
+	 * Slice the chunk arm for this page.
+	 *
+	 * The metadata arm occupies logical positions 0..metadataTotal-1 of the
+	 * combined list, so the chunk arm starts at `offset - metadataTotal` once
+	 * the metadata rows are exhausted, and at 0 on the page where they run
+	 * out. A row already on this page is never shown twice, whatever the
+	 * overlap probe said (belt and braces for a probe that under-reports).
+	 *
+	 * THE ANCHOR TRUSTS `metadataTotal`. It is the metadata arm's own count, from
+	 * a separate COUNT query than the one that produced the rows, so the two can
+	 * disagree — a write landing between the round-trips, or a count and a fetch
+	 * built by different code paths. When the count is too high the chunk arm
+	 * repeats its first owner for as many pages as the overstatement; when it is
+	 * too low, rows past the stated total are never reached by a client paging on
+	 * `total`. Nothing here can detect that: this method sees one page, not the
+	 * arm. The fix belongs where the disagreement is — the count and the fetch
+	 * agreeing — not in a correction guessed per page.
+	 *
+	 * @param array<string, ObjectEntity> $chunkOnly The chunk-only owners, keyed by uuid, in hit order.
+	 * @param array<string, true> $seenOnPage The uuids of this page's metadata rows.
+	 * @param ObjectEntity[] $results This page's metadata rows.
+	 * @param int $limit The page's `_limit` (0 = unlimited).
+	 * @param int $offset The page's `_offset` over the combined list.
+	 * @param int $metadataTotal The metadata arm's total.
+	 *
+	 * @return ObjectEntity[] The chunk-only rows to append to this page.
+	 *
+	 * @spec openspec/specs/search-index/spec.md
+	 */
+	private function pageChunkArm(
+		array $chunkOnly,
+		array $seenOnPage,
+		array $results,
+		int $limit,
+		int $offset,
+		int $metadataTotal,
+	): array {
+		$room = null;
 		if ($limit > 0) {
 			$room = max(0, $limit - count($results));
 		}
 
-		$appended = array_slice($resolved, 0, $room);
+		$remaining = array_slice($chunkOnly, max(0, $offset - $metadataTotal), null, true);
 
-		return [
-			'results' => array_merge($results, $appended),
-			'total' => $total + count($resolved),
-		];
-	}//end augmentWithChunkMatches()
+		return array_values(array_slice(array_diff_key($remaining, $seenOnPage), 0, $room));
+	}//end pageChunkArm()
+
+
+	/**
+	 * Ask the metadata arm which of the resolved chunk owners it matches as well.
+	 *
+	 * Runs the caller's own query — same term, same guards — restricted to the
+	 * given owners and without any paging, so the result does not depend on
+	 * which page is being served. One probe per (register, schema) the owners
+	 * live in, because that is the one search path on which an id restriction
+	 * is honoured: MagicMapper's multi-schema UNION path accepts `ids` and
+	 * `_ids` and applies neither (measured on the rig — a probe over three
+	 * tables came back as `LIMIT 2` without a uuid predicate, and reported the
+	 * first two metadata rows as the overlap). Bounded by CHUNK_CANDIDATE_LIMIT
+	 * ids in total.
+	 *
+	 * @param array $query The original search query.
+	 * @param array<string, ObjectEntity> $owners The resolved chunk owners, keyed by uuid.
+	 * @param bool $_rbac Whether RBAC applied to the metadata arm.
+	 * @param bool $_multitenancy Whether multitenancy applied to the metadata arm.
+	 * @param string|null $activeOrgUuid The caller's active organisation for the tenancy filter.
+	 *
+	 * @return array<string, true> The uuids the metadata arm matches, as a set.
+	 *
+	 * @psalm-param   array<string, mixed> $query
+	 * @phpstan-param array<string, mixed> $query
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags mirror the
+	 *   established QueryHandler/MagicMapper API pattern.
+	 *
+	 * @spec openspec/specs/search-index/spec.md
+	 */
+	private function metadataArmOverlap(
+		array $query,
+		array $owners,
+		bool $_rbac,
+		bool $_multitenancy,
+		?string $activeOrgUuid,
+	): array {
+		$probe = $this->probeQuery(query: $query);
+
+		$overlap = [];
+		foreach ($this->groupOwnersByTable(owners: $owners) as $group) {
+			$tableProbe = $probe;
+			$tableProbe['_register'] = $group['register'];
+			$tableProbe['_schema'] = $group['schema'];
+			$tableProbe['_ids'] = $group['uuids'];
+			$tableProbe['_limit'] = count($group['uuids']);
+
+			$matched = $this->objectMapper->searchObjectsPaginated(
+				searchQuery: $tableProbe,
+				countQuery: $tableProbe,
+				_activeOrgUuid: $activeOrgUuid,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy
+			);
+
+			foreach ($matched['results'] ?? [] as $row) {
+				if ($row instanceof ObjectEntity && $row->getUuid() !== null) {
+					$overlap[$row->getUuid()] = true;
+				}
+			}
+		}//end foreach
+
+		return $overlap;
+	}//end metadataArmOverlap()
+
+
+	/**
+	 * Group resolved owners by the (register, schema) table they live in.
+	 *
+	 * @param array<string, ObjectEntity> $owners The resolved chunk owners, keyed by uuid.
+	 *
+	 * @return array<string, array{register: int, schema: int, uuids: string[]}>
+	 *
+	 * @spec openspec/specs/search-index/spec.md
+	 */
+	private function groupOwnersByTable(array $owners): array {
+		$groups = [];
+		foreach ($owners as $uuid => $object) {
+			$register = $object->getRegister();
+			$schema = $object->getSchema();
+			if ($register === null || $schema === null) {
+				continue;
+			}
+
+			$key = $register.'/'.$schema;
+			$groups[$key]['register'] = (int) $register;
+			$groups[$key]['schema'] = (int) $schema;
+			$groups[$key]['uuids'][] = $uuid;
+		}
+
+		return $groups;
+	}//end groupOwnersByTable()
+
+
+	/**
+	 * The caller's query with paging and scope stripped, ready to be aimed at
+	 * one table with `_ids`. The restriction travels as `_ids` on the
+	 * single-table path; a `_ids` key on an UNSCOPED query would switch
+	 * MagicMapper to its id-lookup path, which ignores `_search`, so the scope
+	 * keys are always set by the caller before use.
+	 *
+	 * @param array $query The original search query.
+	 *
+	 * @return array The probe template.
+	 *
+	 * @psalm-param   array<string, mixed> $query
+	 * @phpstan-param array<string, mixed> $query
+	 * @psalm-return  array<string, mixed>
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @spec openspec/specs/search-index/spec.md
+	 */
+	private function probeQuery(array $query): array {
+		unset(
+			$query['_limit'],
+			$query['_offset'],
+			$query['_page'],
+			$query['_facetable'],
+			$query['_facets'],
+			$query['_aggregations'],
+			$query['_extend'],
+			$query['_fields'],
+			$query['_content_search'],
+			$query['_register'],
+			$query['_registers'],
+			$query['_schema'],
+			$query['_schemas'],
+			$query['register'],
+			$query['schema'],
+			$query['_ids'],
+		);
+		if (is_array($query['@self'] ?? null) === true) {
+			unset($query['@self']['register'], $query['@self']['registers'], $query['@self']['schema'], $query['@self']['schemas']);
+		}
+
+		$query['_offset'] = 0;
+
+		return $query;
+	}//end probeQuery()
 
 	/**
 	 * Fetch the chunk candidates for a term and resolve each to its owning
