@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Service\Audit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -162,11 +163,12 @@ class ReadableAuditTrailLister {
 		$this->schemaCache = [];
 
 		$results = [];
+		$found = 0;
 		$scanned = 0;
 		$rawOffset = $cursor;
 		$exhausted = false;
 
-		while (count($results) < $limit && $scanned < self::SCAN_BUDGET) {
+		while ($found < $limit && $scanned < self::SCAN_BUDGET) {
 			$batch = $this->auditTrailMapper->findAll(
 				limit: self::BATCH_SIZE,
 				offset: $rawOffset,
@@ -175,33 +177,28 @@ class ReadableAuditTrailLister {
 				search: $search
 			);
 
-			if ($batch === []) {
+			$batchSize = count($batch);
+			if ($batchSize === 0) {
 				$exhausted = true;
 				break;
 			}
 
-			$readable = $this->readableUuids(userId: $userId, batch: $batch);
+			$taken = $this->takeReadable(
+				batch: $batch,
+				readable: $this->readableUuids(userId: $userId, batch: $batch),
+				room: ($limit - $found),
+				results: $results
+			);
 
-			$consumed = 0;
-			foreach ($batch as $entry) {
-				$consumed++;
-				$scanned++;
+			$found += $taken['kept'];
+			$scanned += $taken['consumed'];
+			$rawOffset += $taken['consumed'];
 
-				$objectUuid = $entry->getObjectUuid();
-				if ($objectUuid === null || isset($readable[$objectUuid]) === false) {
-					continue;
-				}
-
-				$results[] = $this->scopedRow(entry: $entry);
-
-				if (count($results) >= $limit) {
-					break;
-				}
-			}//end foreach
-
-			$rawOffset += $consumed;
-
-			if (count($batch) < self::BATCH_SIZE && $consumed === count($batch)) {
+			// A batch shorter than the page size is the end of the trail, but
+			// only once it has been walked to the end: breaking out mid-batch
+			// to fill a page leaves rows behind, and calling that exhausted
+			// would lose them.
+			if ($batchSize < self::BATCH_SIZE && $taken['consumed'] === $batchSize) {
 				$exhausted = true;
 				break;
 			}
@@ -222,6 +219,44 @@ class ReadableAuditTrailLister {
 	}//end page()
 
 	/**
+	 * Append the readable rows of one batch, up to the room left on the page.
+	 *
+	 * Reports how many rows it walked as well as how many it kept, because the
+	 * cursor advances over the rows it SKIPPED too. A cursor that only counted
+	 * the kept rows would hand the next page the same unreadable rows again,
+	 * for ever.
+	 *
+	 * @param array<AuditTrail>   $batch    The candidate rows, in order.
+	 * @param array<string, true> $readable The readable object uuids.
+	 * @param int                 $room     How many more rows the page may hold.
+	 * @param array               $results  The page so far, appended to in place.
+	 *
+	 * @return array{consumed: int, kept: int} How many rows were walked and kept.
+	 */
+	private function takeReadable(array $batch, array $readable, int $room, array &$results): array {
+		$consumed = 0;
+		$kept = 0;
+
+		foreach ($batch as $entry) {
+			$consumed++;
+
+			$objectUuid = $entry->getObjectUuid();
+			if ($objectUuid === null || isset($readable[$objectUuid]) === false) {
+				continue;
+			}
+
+			$results[] = $this->scopedRow(entry: $entry);
+			$kept++;
+
+			if ($kept >= $room) {
+				break;
+			}
+		}
+
+		return ['consumed' => $consumed, 'kept' => $kept];
+	}//end takeReadable()
+
+	/**
 	 * The object uuids in this batch that the caller may read.
 	 *
 	 * Resolved in one cross-table lookup rather than one per row: a page of
@@ -236,21 +271,14 @@ class ReadableAuditTrailLister {
 	 * @return array<string, true> The readable object uuids, as a set.
 	 */
 	private function readableUuids(string $userId, array $batch): array {
-		$uuids = [];
-		foreach ($batch as $entry) {
-			$objectUuid = $entry->getObjectUuid();
-			if ($objectUuid !== null && $objectUuid !== '') {
-				$uuids[$objectUuid] = true;
-			}
-		}
-
+		$uuids = $this->candidateUuids(batch: $batch);
 		if ($uuids === []) {
 			return [];
 		}
 
 		try {
 			$objects = $this->objectMapper->findMultipleAcrossAllMagicTables(
-				uuids: array_keys($uuids),
+				uuids: $uuids,
 				includeDeleted: false
 			);
 		} catch (Throwable $e) {
@@ -262,40 +290,77 @@ class ReadableAuditTrailLister {
 		$readable = [];
 		foreach ($objects as $object) {
 			$objectUuid = $object->getUuid();
-			if ($objectUuid === null || $objectUuid === '') {
-				continue;
-			}
-
-			$schemaId = $object->getSchema();
-			if ($schemaId === null) {
-				continue;
-			}
-
-			$schema = $this->schema(schemaId: (int)$schemaId);
-			if ($schema === null) {
-				continue;
-			}
-
-			try {
-				$mayRead = $this->permissionHandler->hasPermission(
-					schema: $schema,
-					action: 'read',
-					userId: $userId,
-					objectOwner: $object->getOwner(),
-					_rbac: true,
-					object: $object
-				);
-			} catch (Throwable $e) {
-				continue;
-			}
-
-			if ($mayRead === true) {
+			if ($objectUuid !== null && $objectUuid !== '' && $this->mayRead(userId: $userId, object: $object) === true) {
 				$readable[$objectUuid] = true;
 			}
-		}//end foreach
+		}
 
 		return $readable;
 	}//end readableUuids()
+
+	/**
+	 * The distinct object uuids one batch of entries points at.
+	 *
+	 * @param array<AuditTrail> $batch The candidate rows.
+	 *
+	 * @return string[] The uuids, without repeats.
+	 *
+	 * @psalm-return list<string>
+	 */
+	private function candidateUuids(array $batch): array {
+		$uuids = [];
+		foreach ($batch as $entry) {
+			$objectUuid = $entry->getObjectUuid();
+			if ($objectUuid !== null && $objectUuid !== '') {
+				$uuids[$objectUuid] = true;
+			}
+		}
+
+		return array_keys($uuids);
+	}//end candidateUuids()
+
+	/**
+	 * Whether this caller may read this object.
+	 *
+	 * THE ONE FUNNEL. `PermissionHandler::hasPermission()` with action `read`
+	 * and the resolved entity is what the object read path itself asks, and it
+	 * consults `ObjectGrantResolver`, so an inherited grant means here exactly
+	 * what it means on the object. A second reachability rule written for this
+	 * page would be a second answer to the question the whole RBAC layer
+	 * exists for, and the two would drift.
+	 *
+	 * Every unknown answers no: a schema that will not resolve and a check
+	 * that throws both hide the row.
+	 *
+	 * @param string       $userId The caller.
+	 * @param ObjectEntity $object The object an entry belongs to.
+	 *
+	 * @return bool True when the caller may read it.
+	 */
+	private function mayRead(string $userId, ObjectEntity $object): bool {
+		$schemaId = $object->getSchema();
+		if ($schemaId === null) {
+			return false;
+		}
+
+		$schema = $this->schema(schemaId: (int)$schemaId);
+		if ($schema === null) {
+			return false;
+		}
+
+		try {
+			return $this->permissionHandler->hasPermission(
+				schema: $schema,
+				action: 'read',
+				userId: $userId,
+				objectOwner: $object->getOwner(),
+				_rbac: true,
+				object: $object
+			);
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end mayRead()
 
 	/**
 	 * A schema by id, resolved once per run.
