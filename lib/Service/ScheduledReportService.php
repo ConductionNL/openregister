@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -142,6 +143,8 @@ class ScheduledReportService {
 	 * @param IMailer $mailer Sends the email-delivery leg (deliveryMode email|both).
 	 * @param IConfig $config Resolves the instance's default mail sender.
 	 * @param ExportProfileService|null $profileService Runs a named export profile, when the schedule names one.
+	 * @param ExportRunRecorder|null $exportRuns Records what each run produced. Nullable and last so adding it is not
+	 *                                           a fatal at an existing construction site.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies — IMailer/IConfig are the
 	 *     two email-delivery additions on top of the original 9; each is a distinct, testable collaborator
@@ -160,6 +163,7 @@ class ScheduledReportService {
 		private readonly IMailer $mailer,
 		private readonly IConfig $config,
 		private readonly ?ExportProfileService $profileService = null,
+		private readonly ?ExportRunRecorder $exportRuns = null,
 	) {
 	}//end __construct()
 
@@ -619,10 +623,19 @@ class ScheduledReportService {
 			$mode = ($report->getDeliveryMode() ?? 'files');
 
 			$delivered = false;
+			$writtenFile = null;
 			if (in_array($mode, ['files', 'both'], true) === true) {
-				$this->deliverToFiles(report: $report, owner: $owner, filename: $filename, bytes: $export['bytes']);
+				$writtenFile = $this->deliverToFiles(report: $report, owner: $owner, filename: $filename, bytes: $export['bytes']);
 				$delivered = true;
 			}
+
+			// Record the run. Until this existed, a scheduled report wrote a
+			// copy of the register into somebody's Files and this platform
+			// then knew nothing about it: not who held it, not how many rows
+			// it carried, and not when it should stop existing. The file is
+			// what the sweep deletes; the row is what an administrator is
+			// asked about, and it outlives the file.
+			$this->recordRun(report: $report, owner: $owner, filename: $filename, export: $export, file: $writtenFile);
 
 			$emailFailureReason = null;
 			if (in_array($mode, ['email', 'both'], true) === true) {
@@ -920,11 +933,12 @@ class ScheduledReportService {
 	 * @param string $filename The delivery filename.
 	 * @param string $bytes The rendered bytes.
 	 *
-	 * @return void
+	 * @return \OCP\Files\Node|null The file it wrote, so the export run can name it. Without a file id
+	 *                              the sweep has nothing to delete and the retention is a label on a row.
 	 *
 	 * @throws RuntimeException When the delivery folder is rejected or the user folder is unavailable.
 	 */
-	private function deliverToFiles(ScheduledReport $report, \OCP\IUser $owner, string $filename, string $bytes): void {
+	private function deliverToFiles(ScheduledReport $report, \OCP\IUser $owner, string $filename, string $bytes): ?\OCP\Files\Node {
 		try {
 			$userFolder = $this->rootFolder->getUserFolder(userId: $owner->getUID());
 		} catch (NotFoundException $e) {
@@ -946,12 +960,83 @@ class ScheduledReportService {
 
 		$folder = $userFolder->get(path: $folderPath);
 		if ($folder->nodeExists(path: $filename) === true) {
-			$folder->get(path: $filename)->putContent(data: $bytes);
+			$existing = $folder->get(path: $filename);
+			$existing->putContent(data: $bytes);
+
+			// The node is RETURNED rather than discarded so the run can name
+			// the file it produced. Without a file id the sweep has nothing to
+			// delete, and the retention would be a label on a row.
+			return $existing;
+		}
+
+		return $folder->newFile(path: $filename, content: $bytes);
+	}//end deliverToFiles()
+
+	/**
+	 * Record what this run produced.
+	 *
+	 * Never throws. A report that delivered its file and then failed to write
+	 * its own record should not be reported as a failed report: the copy is
+	 * out there either way, and a swallowed record is a gap in the area rather
+	 * than a lost delivery. The gap is logged.
+	 *
+	 * @param ScheduledReport $report   The report.
+	 * @param \OCP\IUser      $owner    The owner the run was made for.
+	 * @param string          $filename The delivery filename.
+	 * @param array           $export   The rendered export, with its row count.
+	 * @param mixed           $file     The produced node, or null when nothing was written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
+	 */
+	private function recordRun(ScheduledReport $report, \OCP\IUser $owner, string $filename, array $export, $file): void {
+		if ($this->exportRuns === null) {
 			return;
 		}
 
-		$folder->newFile(path: $filename, content: $bytes);
-	}//end deliverToFiles()
+		$fileId = null;
+		$filePath = null;
+		if ($file instanceof \OCP\Files\Node) {
+			$fileId = $file->getId();
+			$filePath = $file->getPath();
+		}
+
+		try {
+			$this->exportRuns->record(
+				source: 'scheduled-report',
+				actor: $owner->getUID(),
+				format: (string)($report->getFormat() ?? 'csv'),
+				rowCount: (int)($export['rowCount'] ?? 0),
+				profile: (string)($report->getName() ?? ('report-' . (string)$report->getId())),
+				filename: $filename,
+				registerName: $this->nullableString(value: $report->getRegisterId()),
+				schemaName: $this->nullableString(value: $report->getSchemaId()),
+				fileId: $fileId,
+				filePath: $filePath
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ScheduledReportService] The report delivered but its export run was not recorded',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
+			);
+		}
+	}//end recordRun()
+
+	/**
+	 * An identifier as a string, or null when it is absent.
+	 *
+	 * @param mixed $value The identifier.
+	 *
+	 * @return string|null The identifier.
+	 */
+	private function nullableString($value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end nullableString()
 
 	/**
 	 * Deliver the export by email (deliveryMode email|both). Attaches the

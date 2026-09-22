@@ -1930,6 +1930,11 @@ return [
 		// export verb in the service, so an integration meets the same refusal
 		// a browser does. `contract` publishes what a consumer needs to read a
 		// produced file without guessing.
+		// The exports area: which copies of the register have left the
+		// building, who made them, when their file stops existing and how
+		// often the register served it. No catch-all sibling sits on
+		// /api/exports, so nothing here can be swallowed by a {id} route.
+		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
 		['name' => 'exportProfiles#contract', 'url' => '/api/export-profiles/contract', 'verb' => 'GET'],
 		['name' => 'exportProfiles#create', 'url' => '/api/export-profiles', 'verb' => 'POST'],
