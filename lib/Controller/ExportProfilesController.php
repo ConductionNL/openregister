@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCP\AppFramework\Controller;
@@ -46,6 +47,12 @@ use OCP\IUserSession;
 /**
  * ExportProfilesController administers export profiles and runs one.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The fourteenth dependency is the export-run
+ *     recorder, and it is here rather than inside the profile service on purpose: this is the
+ *     method that hands the bytes to a caller, so this is where "the register served a copy"
+ *     is a true statement. Pushing it one layer down would record a run for a call that had
+ *     not yet succeeded.
+ *
  * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
  */
 class ExportProfilesController extends Controller {
@@ -58,6 +65,7 @@ class ExportProfilesController extends Controller {
 	 * @param ExportProfileService $service      Profile administration and runs.
 	 * @param IUserSession         $userSession  Current-user session.
 	 * @param IGroupManager        $groupManager Group manager for the admin check.
+	 * @param ExportRunRecorder     $exportRuns   Records the export this run served.
 	 *
 	 * @return void
 	 */
@@ -67,6 +75,7 @@ class ExportProfilesController extends Controller {
 		private readonly ExportProfileService $service,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
+		private readonly ExportRunRecorder $exportRuns,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -272,6 +281,12 @@ class ExportProfilesController extends Controller {
 			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
 		}
 
+		// Record the run before the bytes leave. This path serves the export
+		// straight to the caller, so there is no file for a sweep to delete
+		// and the retention is null: the row is the record, and it is the
+		// register handing the copy over, which is what the count counts.
+		$this->recordRun(profile: $profile, actorUid: $userId, written: $written);
+
 		$contentType = 'text/csv';
 		if (($profile->getFormat() ?? 'csv') === 'json') {
 			$contentType = 'application/json';
@@ -292,6 +307,44 @@ class ExportProfilesController extends Controller {
 
 		return $response;
 	}//end run()
+
+	/**
+	 * Record what this profile run served.
+	 *
+	 * Never throws: the caller already holds the bytes by the time anything
+	 * here could fail, and turning a bookkeeping failure into a 500 would lose
+	 * an export that succeeded. The gap is logged by the recorder.
+	 *
+	 * The run is written with `served` status, no expiry and a download count
+	 * of one, because the bytes went straight out rather than into a file. A
+	 * download served from the register is exactly what the count counts.
+	 *
+	 * @param mixed  $profile  The export profile.
+	 * @param string $actorUid Who asked for it.
+	 * @param array  $written  The rendered export.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
+	 */
+	private function recordRun($profile, string $actorUid, array $written): void {
+		try {
+			$this->exportRuns->record(
+				source: 'export-profile',
+				actor: $actorUid,
+				format: (string)($profile->getFormat() ?? 'csv'),
+				rowCount: (int)($written['rowCount'] ?? 0),
+				profile: (string)($written['metadata']['profileUuid'] ?? ''),
+				filename: (string)($written['filename'] ?? ''),
+				retentionSeconds: null,
+				downloadCount: 1,
+				status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
+			);
+		} catch (\Throwable $e) {
+			// Deliberately swallowed: see the docblock.
+			unset($e);
+		}
+	}//end recordRun()
 
 	/**
 	 * The metadata line prefix a CSV export opens with, published so a consumer
