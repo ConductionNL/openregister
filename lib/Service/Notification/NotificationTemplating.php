@@ -121,6 +121,28 @@ class NotificationTemplating {
 					return htmlspecialchars((string)$context[$key], ENT_QUOTES, 'UTF-8');
 				}
 
+				// A DOTTED path, last, because the flat lookups above are the
+				// common case and must keep winning over a key that merely
+				// contains a dot.
+				//
+				// Without this the flow engine had two placeholder dialects that
+				// disagreed. `FlowValueTemplate` walks a dotted path, so an
+				// object-write storing `{{issueResult.number}}` worked, while the
+				// Talk and notification nodes did a flat `array_key_exists` and
+				// left the same placeholder in the text. Measured 2026-09-23: a
+				// pipeline posted "the issue is open at {{issueResult.url}}" into
+				// a Talk room, four messages in a row. The author had written one
+				// grammar across one chain and got it honoured in some steps and
+				// printed in others.
+				$nested = self::valueAtPath(path: $key, data: $data);
+				if ($nested === null) {
+					$nested = self::valueAtPath(path: $key, data: $context);
+				}
+
+				if (is_scalar($nested) === true) {
+					return htmlspecialchars((string)$nested, ENT_QUOTES, 'UTF-8');
+				}
+
 				// Left as it was found. See the docblock: a hole is harder to
 				// notice than a leak, and this evaluator now agrees with the
 				// registry's.
@@ -129,6 +151,35 @@ class NotificationTemplating {
 			$template
 		) ?? $template;
 	}//end interpolate()
+
+	/**
+	 * The value at a dotted path, or null when the path is absent.
+	 *
+	 * Deliberately the same walk as `FlowValueTemplate::valueAt()`, because the
+	 * point of having it here at all is that the two evaluators answer the same
+	 * question the same way. A flow author writes one grammar across one chain.
+	 *
+	 * @param string $path The dotted path.
+	 * @param array<string, mixed> $data The map to walk.
+	 *
+	 * @return mixed The value, or null when any segment is missing.
+	 */
+	private static function valueAtPath(string $path, array $data): mixed {
+		if (str_contains($path, '.') === false) {
+			return null;
+		}
+
+		$cursor = $data;
+		foreach (explode('.', $path) as $segment) {
+			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
+				return null;
+			}
+
+			$cursor = $cursor[$segment];
+		}
+
+		return $cursor;
+	}//end valueAtPath()
 
 	/**
 	 * The placeholders this template names that neither data nor context fills.
