@@ -125,6 +125,36 @@ class CredentialBrokerService {
 	 *
 	 * @var string
 	 */
+	/**
+	 * How long an upstream call may take when its provider does not say.
+	 *
+	 * This is Nextcloud's own HTTP client default, written down rather than
+	 * inherited, so that raising it for one provider is a visible decision.
+	 *
+	 * @var int
+	 */
+	private const DEFAULT_TIMEOUT_SECONDS = 30;
+
+	/**
+	 * The ceiling a provider entry cannot exceed.
+	 *
+	 * A held connection holds a PHP worker with it, so an unbounded value in a
+	 * config file is a way to exhaust the pool from a JSON edit.
+	 *
+	 * @var int
+	 */
+	private const MAX_TIMEOUT_SECONDS = 600;
+
+	/**
+	 * How long to wait for the connection itself, whatever the read timeout is.
+	 *
+	 * Separate on purpose: a host that will not accept a connection is down, and
+	 * that answer does not get truer by waiting three more minutes for it.
+	 *
+	 * @var int
+	 */
+	private const CONNECT_TIMEOUT_SECONDS = 10;
+
 	private const SCOPE_PERSONAL = 'personal';
 
 	/**
@@ -297,7 +327,8 @@ class CredentialBrokerService {
 			headers: $requestHeaders,
 			body: $body,
 			credentialId: $credentialId,
-			secret: (string)$secret
+			secret: (string)$secret,
+			timeoutSeconds: $this->timeoutFor(provider: $provider)
 		);
 	}//end request()
 
@@ -1371,6 +1402,7 @@ class CredentialBrokerService {
 	 * @param string $credentialId The credential UUID (for logging).
 	 * @param string $secret The raw secret injected into this call's headers, redacted out of any
 	 *                       transport failure's message before it is logged or re-thrown (design D1).
+	 * @param int $timeoutSeconds How long to wait, from the provider entry.
 	 *
 	 * @return array{status: int, headers: array<string, mixed>, body: string} The upstream response.
 	 *
@@ -1378,10 +1410,27 @@ class CredentialBrokerService {
 	 *
 	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
 	 */
-	private function performCall(string $method, string $url, array $headers, ?string $body, string $credentialId, string $secret): array {
+	private function performCall(
+		string $method,
+		string $url,
+		array $headers,
+		?string $body,
+		string $credentialId,
+		string $secret,
+		int $timeoutSeconds = self::DEFAULT_TIMEOUT_SECONDS,
+	): array {
+		// Set explicitly, because leaving it unset is not "no timeout": it takes
+		// Nextcloud's client default of 30 seconds, and the broker's heaviest
+		// traffic is LLM completions, which routinely take longer. Measured
+		// 2026-09-23: a reasoning model answering one flow step was cut off at
+		// 30,025 ms, and the failure surfaced as `cURL error 28` from a
+		// credential broker, which reads as a credential problem rather than as a
+		// request that was simply not given time to finish.
 		$options = [
 			'headers' => $headers,
 			'http_errors' => false,
+			'timeout' => $timeoutSeconds,
+			'connect_timeout' => self::CONNECT_TIMEOUT_SECONDS,
 		];
 		if ($body !== null) {
 			$options['body'] = $body;
@@ -1416,6 +1465,27 @@ class CredentialBrokerService {
 			'body' => (string)$rawBody,
 		];
 	}//end performCall()
+
+	/**
+	 * How long this provider's calls may take.
+	 *
+	 * Per provider rather than one number, because the right answer differs by an
+	 * order of magnitude: a payment status check that hangs for three minutes is a
+	 * fault, and a model completion that finishes in three minutes is ordinary. A
+	 * provider entry that says nothing keeps the old behaviour exactly.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 *
+	 * @return int Seconds.
+	 */
+	private function timeoutFor(array $provider): int {
+		$seconds = (int)($provider['timeoutSeconds'] ?? 0);
+		if ($seconds <= 0) {
+			return self::DEFAULT_TIMEOUT_SECONDS;
+		}
+
+		return min($seconds, self::MAX_TIMEOUT_SECONDS);
+	}//end timeoutFor()
 
 	/**
 	 * Describe a transport failure with the credential's secret redacted.
