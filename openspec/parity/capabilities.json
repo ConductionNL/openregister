@@ -170,7 +170,7 @@
   {
    "id": "mod-runtime-type",
    "area": "modelling",
-   "name": "Define a new kind of record in the browser and use it straight away, without a restart or a database migration.",
+   "name": "Define a new kind of record in the browser and use it straight away, without restarting anything.",
    "source": "competitor-derived",
    "openregister": "yes",
    "built": {
