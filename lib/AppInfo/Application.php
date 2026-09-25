@@ -97,6 +97,7 @@ use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AutoTransitionRecordListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\ConsentEnvelopeOnSaveListener;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
@@ -3312,6 +3313,12 @@ class Application extends App implements IBootstrap {
 		// into the object payload before persistence (see x-openregister-calculations).
 		$context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class);
+
+		// Consent envelope listener — fills evidentiary fields on every newly
+		// appended consent-shaped array entry and refuses any write that
+		// mutates or drops an already-persisted entry (see x-openregister-consent).
+		$context->registerEventListener(ObjectCreatingEvent::class, ConsentEnvelopeOnSaveListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, ConsentEnvelopeOnSaveListener::class);
 
 		// Quality annotation listener — materialises a per-object data-quality
 		// score (0-1) into the object payload before persistence
