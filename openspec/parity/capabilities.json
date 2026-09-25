@@ -1232,18 +1232,21 @@
    "area": "api",
    "name": "Read, create, change and delete records over a REST API generated from the type.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:1402 index, :3250 create, :3587 update, :4200 destroy; routes appinfo/routes.php:1164-1180 (/api/objects/{register}/{schema}[/{id}]), per-schema table generated from type"
    },
+   "reachedOn": "/objects (ObjectsIndex) + API /api/objects/{register}/{schema}",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:33 \"| REST API (CRUD) | DRF ViewSets, full CRUD on /objects and /objecttypes | Nextcloud API routes, full CRUD |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/rest-api/spec.md:12 \"Directus auto-generates a fully RESTful API for every collection (table) in the database. The API follows consistent patterns for CRUD operations, filtering, so\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:110 \"| 3 | REST API Auto-Generation | API | Very High | Full CRUD endpoints, 20+ filter operators, population, sparse fieldsets, pagination |\"",
@@ -1256,18 +1259,21 @@
    "area": "api",
    "name": "Query records over GraphQL generated from the types.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/GraphQLController.php:96 execute -> lib/Service/GraphQL/GraphQLService.php:100 (schema from lib/Service/GraphQL/SchemaGenerator.php); route appinfo/routes.php:1990 POST /api/graphql"
    },
+   "reachedOn": "API only: POST /api/graphql",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:33 \"| REST API (CRUD) | DRF ViewSets, full CRUD on /objects and /objecttypes | Nextcloud API routes, full CRUD |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/graphql-api/spec.md:12 \"Directus auto-generates a GraphQL API from the database schema, providing type-safe queries, mutations, and subscriptions. The GraphQL schema is dynamically bui\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/graphql-api/spec.md:12 \"Strapi's GraphQL plugin (`@strapi/plugin-graphql`) auto-generates a complete GraphQL schema from content type definitions. It provides queries, mutations, and f\"",
@@ -1279,18 +1285,21 @@
    "area": "api",
    "name": "Download an OpenAPI description of a register's API that stays in step with its types.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/OasService.php:209 createOas builds from live register/schemas; lib/Controller/OasController.php:115; route appinfo/routes.php:1667; UI download in src/components/cards/RegisterSchemaCard.vue:886 and src/sidebars/register/RegisterSideBar.vue:522"
    },
+   "reachedOn": "/registers (card action 'Download OAS')",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/api-endpoints/spec.md:118 \"- OpenAPI YAML: `/api/v2/openapi.yaml`\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/rest-api/spec.md:165 \"## OpenAPI Specification\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:122 \"| 15 | OpenAPI Generation | API | High | Auto-generated OpenAPI 3.x from Zod schemas, dual-purpose validation + documentation, conditional parameters |\"",
@@ -1303,18 +1312,22 @@
    "area": "api",
    "name": "Try the API from an interactive documentation page with example code.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "GraphiQL explorer lib/Controller/GraphQLController.php:155 route appinfo/routes.php:1991 lets you run queries; REST docs open in external read-only Redoc (src/components/cards/RegisterSchemaCard.vue:910). No REST try-it, no generated code samples"
    },
+   "reachedOn": "/api/graphql/explorer (not linked from any src page); /registers -> external Redoc",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "GraphiQL assets load from unpkg.com; no UI link to the explorer found in src/.",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/api-endpoints/spec.md:117 \"- ReDoc: `/api/v2/schema/` (HTML page with interactive docs)\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:91 \"2. **Code snippet generation** in 9 languages is very developer-friendly\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:30 \"The admin dashboard includes an interactive API Preview panel showing:\""
@@ -1325,18 +1338,21 @@
    "area": "api",
    "name": "Filter records with operators such as greater than, contains or between on any field.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:92 operators gte/lte/gt/lt/in/notIn/ne/isnull, applied per property at :2347 applyObjectFilters (gte+lte = between). No per-field substring 'contains'/like operator on text properties; only array-contains and global _search"
    },
+   "reachedOn": "API only: GET /api/objects/{register}/{schema}?field[gte]=...",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:57 \"| **GIN-indexed JSON querying** | `data_attrs` filter with 10+ operators (exact, gt, lt, icontains, has_key, jsonpath). PostgreSQL containment `@>`. | MEDIUM — \"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:33 \"| `specs/rest-api/spec.md` | Spec | Endpoint structure, 30+ filter operators, aggregation, deep queries |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/database/spec.md:70 \"- Attribute-level operators (`$eq`, `$contains`, `$gt`, etc.)\"",
@@ -1349,18 +1365,21 @@
    "area": "api",
    "name": "Filter records by a field of a linked record.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Query/RelatedRowFilterParser.php (_related[schema][fk][field]=v) applied via lib/Db/MagicMapper/MagicSearchHandler.php:548/563; plus _relations.<field>=id at :2915. Only reverse direction (rows pointing AT the record); no filter on a field of a forward-referenced record"
    },
+   "reachedOn": "API only: GET /api/objects/{register}/{schema}?_related[...]",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:79 \"| **Object cross-references** | Relations between objects across schemas/registers | No relation support |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:220 \"| **Deep relational queries** | Nested filter/sort/limit on related collections | Support relational query parameters for object relations |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/database/spec.md:72 \"- Relation filters (joins to related tables)\"",
@@ -1372,18 +1391,21 @@
    "area": "api",
    "name": "Ask for only the fields you need in an API response.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:793 and :2943 read _fields/fields and pass to render; routes appinfo/routes.php:1164,1176"
    },
+   "reachedOn": "API only: GET /api/objects/...?_fields=a,b",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:63 \"| **Sparse field selection** | `fields=` query parameter to return only specific fields. | LOW — optimization |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/translations-i18n/spec.md:64 \"GET /items/products/1?fields=*,translations.*\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/rest-api/spec.md:40 \"Select specific fields to return (sparse fieldsets).\"",
@@ -1396,18 +1418,21 @@
    "area": "api",
    "name": "Get linked records embedded in the response in one call.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:2941 _extend -> lib/Service/Object/RenderObject.php:3277 extendObject embeds referenced objects; routes appinfo/routes.php:1164,1176"
    },
+   "reachedOn": "API only: GET /api/objects/...?_extend=prop",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:79 \"| **Object cross-references** | Relations between objects across schemas/registers | No relation support |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:147 \"| 3 | REST API | Auto-generated RESTful API with 30+ filter operators, aggregation, deep relational queries |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:132 \"Every content type automatically gets full CRUD endpoints for both REST and GraphQL. The REST API includes 20+ filter operators (`$eq`, `$contains`, `$between`,\"",
@@ -1419,18 +1444,21 @@
    "area": "api",
    "name": "Get counts, sums and averages grouped by a field over the API.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/AggregationController.php:383 grouped (metric count/sum/avg, groupBy, metrics[] list :297); routes appinfo/routes.php:618-623"
    },
+   "reachedOn": "API only: GET /api/objects/aggregations/{register}/{schema}/grouped",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "partial",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:183 \"| 10 | **Mature Query Engine** | AST-based query builder with deep relational joins, 30+ filter operators, aggregation functions (count, sum, avg, min, max), ge\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:23 \"- **Aggregation:** Column footer with sum/avg/count/min/max\""
    }
@@ -1440,18 +1468,21 @@
    "area": "api",
    "name": "Send several changes in one request that all succeed or all fail together.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/BulkController.php:559 save, route appinfo/routes.php:1282. Not all-or-nothing: docblock :476-477 'Rows that DID write are not rolled back — this endpoint has never been transactional'; only per-chunk transactions lib/Db/MagicMapper/MagicBulkHandler.php:491"
    },
+   "reachedOn": "API only: POST /api/bulk/{register}/{schema}/save",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "partial",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/known-issues-and-limitations.md:47 \"3. **No bulk import** — No batch/bulk API for importing large datasets\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:30 \"- `PATCH /api/v2/db/data/bulk/noco/{baseId}/{tableId}` — Bulk update\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:20 \"- Batch API for transactional multi-operation requests\""
@@ -1462,18 +1493,21 @@
    "area": "api",
    "name": "Change only some fields of a record with a partial update.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:3812 patch; route appinfo/routes.php:1178 PATCH (and :1179 POST alias)"
    },
+   "reachedOn": "API only: PATCH /api/objects/{register}/{schema}/{id}",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:59 \"| **Merge PATCH (RFC 7396)** | Modified merge patch that preserves `null` values (null = delete requires `__empty__`). | LOW — PATCH works differently in NC |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/content-versioning/spec.md:75 \"PATCH /collections/articles\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:25 \"- `PATCH /api/v2/db/data/noco/{baseId}/{tableId}/{rowId}` — Update record\"",
@@ -1485,18 +1519,22 @@
    "area": "api",
    "name": "Receive changes to records the moment they happen over a live connection.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "SSE lib/Controller/GraphQLSubscriptionController.php:80 route appinfo/routes.php:1994; fed by GraphQLSubscriptionListener registered lib/AppInfo/Application.php:3568-3570; notify_push via NotifyPushListener :3573 (soft-fail without notify_push)"
    },
+   "reachedOn": "API only: GET /api/graphql/subscribe (SSE)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "SSE request polls for max 30s then closes; client must reconnect with Last-Event-ID.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:77 \"| **n8n workflow automation** | Built-in workflow triggers and actions | Only VNG Notifications (no workflow engine) |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:155 \"| 11 | Real-time WebSockets | WebSocket subscriptions for live data updates (REST WS + GraphQL WS) |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:166 \"The Community Edition lacks real-time capabilities -- no WebSocket subscriptions, no server-sent events, no live queries. The webhook system is fire-and-forget \"",
@@ -1509,18 +1547,22 @@
    "area": "api",
    "name": "Give an outside system its own API key, limited to what it may do.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Nextcloud app passwords give an outside system its own credential with the user's full rights. OR's scoped path is dead: AuthorizationService.php:257 authorizeJwt / :506 authorizeApiKey have no caller in lib/, so TokenGrantSource::bindFromConsumer (only called at :376) never runs; Consumers CRUD route appinfo/routes.php:13"
    },
+   "reachedOn": "Nextcloud personal security settings (app passwords); API /api/consumers",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
+   "note": "Scoped consumer tokens (TokenGrant narrowing) are built and tested but no request path invokes the consumer authorization methods.",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/permissions/spec.md:5 \"The Objects API has a **token-based permission model** with per-objecttype granularity.\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/sharing/spec.md:69 \"- Scoped API tokens for external access\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:112 \"| 5 | Access Control | Security | Very High | Dual auth system (admin RBAC + public JWT), 17 OAuth providers, API tokens, ABAC conditions (EE) |\"",
@@ -1532,18 +1574,21 @@
    "area": "api",
    "name": "Use an official client library in your own programming language.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "Searched repo root, package.json, git ls-files for sdk/client packages: none. Only an openapi.json and the in-app JS stores"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/api-compliancy/spec.md:65 \"| SDK generation | Automated CI | Not available |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/overview.md:64 \"sdk/              # TypeScript SDK for API consumers\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:31 \"- SDK code samples (JavaScript and Dart)\""
@@ -1554,18 +1599,21 @@
    "area": "api",
    "name": "Get a record as linked data with a stable identifier.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:3131 wantsJsonLd -> lib/Service/JsonLd/JsonLdSerializer.php:144 serialize, application/ld+json :376; @context docs lib/Controller/ContextsController.php:226 routes appinfo/routes.php:433-434"
    },
+   "reachedOn": "API only: GET /api/objects/{register}/{schema}/{id} with Accept: application/ld+json",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "no",
    "strapi": "unknown",
    "nocodb": "no",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:196 \"| 6 | **No JSON Schema / JSON-LD** | Does not use industry-standard JSON Schema for data modeling. No support for JSON-LD, linked data, or semantic web standard\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:150 \"| 3 | **No government standards support** | No NL Design System theming, no NLGov API compliance, no WOO/ZGW/GEMMA support, no Archiefwet compliance. Not design\""
    }
@@ -1575,18 +1623,22 @@
    "area": "api",
    "name": "Offer the data in the shape of a Dutch government API standard, such as ZGW or the Objects API.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "grep zgw/zaken/objecttypes/objects-api in appinfo/routes.php and lib/: no ZGW or Objects API output surface; only a zgw import migration pack (lib/Controller/MigrationPacksController.php:138) and a HaalCentraal lookup client"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Serving ZGW-shaped APIs is outside OpenRegister's routes; likely integriq's domain.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:62 \"| **VNG API compliance** | Full VNG API Strategy compliance, registered standard. | HIGH — competitive requirement |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:195 \"| 5 | **No Government Ecosystem** | No NL Design System support, no WCAG-focused theming, no Dutch government API compliance (NLGov), no Common Ground integrati\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:163 \"Strapi has no integration with government standards (VNG, NL Design System, Common Ground, ZGW, GEMMA). No compliance frameworks for Dutch or EU public-sector r\"",
@@ -1599,18 +1651,21 @@
    "area": "api",
    "name": "Publish a custom endpoint that serves a chosen query or mapping.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Endpoints CRUD appinfo/routes.php:11 + test :240 -> lib/Service/EndpointService.php:143 testEndpoint/:212 executeEndpoint. No route serves a defined endpoint to outside callers; executeEndpoint is only reached from testEndpoint"
    },
+   "reachedOn": "/endpoints (define + test only)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:32 \"| **Endpoint** | Custom REST endpoints | Custom search, proxy, aggregation |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:141 \"The marketplace at market.strapi.io offers community and verified plugins installable via npm. The plugin architecture supports both server-side (content types,\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/hooks-extensibility/spec.md:21 \"- **Custom routes**: Extend the API with custom endpoints\""
@@ -1621,37 +1676,42 @@
    "area": "api",
    "name": "Address a record by a permanent URN that survives a move.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/UrnController.php:76 resolve -> lib/Service/UrnService.php:223 resolveUrl; routes appinfo/routes.php:428-430"
    },
+   "reachedOn": "API only: GET /api/urn/resolve?urn=...",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "api-language",
    "area": "api",
    "name": "Receive record content in the language asked for in the request.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Middleware/LanguageMiddleware.php:101 (Accept-Language/_lang, Content-Language header :161) registered lib/AppInfo/Application.php:657; translations resolved at lib/Service/Object/RenderObject.php:658"
    },
+   "reachedOn": "API only: any object GET with Accept-Language",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "partial",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/translations-i18n/spec.md:69 \"GET /items/products?deep[translations][_filter][languages_code][_eq]=nl-NL\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:138 \"First-class content localization with per-content-type and per-field granularity. A single `documentId` spans all locale versions. The `locale` parameter integr\""
    }
@@ -1661,18 +1721,21 @@
    "area": "search",
    "name": "Search all records by text and get ranked results.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "_search across properties lib/Db/MagicMapper/MagicSearchHandler.php:1235-1377 (ILIKE); page /tables (SearchIndex) and appinfo/routes.php:1748 /api/search. Ranking only on request (_order[_relevance]) and only by pg_trgm similarity on _name (:3219-3227), PostgreSQL only; default order is not by relevance"
    },
+   "reachedOn": "/tables (Search / views)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "partial",
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:73 \"| **Full-text search** | Solr/Elasticsearch integration with faceted search | Basic Django ORM filtering only |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:200 \"| 10 | **No Semantic/Vector Search** | No built-in vector embeddings, semantic search, or AI-powered search capabilities. Full-text search is basic SQL-level on\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:52 \"| Full-text search | Partial (basic filters) | Yes |\"",
@@ -1685,18 +1748,21 @@
    "area": "search",
    "name": "Narrow a result list with counts per field value.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Db/MagicMapper/MagicFacetHandler.php:290 getSimpleFacets (via _facets, lib/Db/MagicMapper.php:1253); UI src/sidebars/search/SearchSideBar.vue:9,188 mounted on /tables by src/sidebars/SideBars.vue:3"
    },
+   "reachedOn": "/tables",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:74 \"| **Faceted search** | Configurable facets per schema | Not available |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/directus.md:51 \"| Faceted search | Partial (filters) | Yes |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:53 \"| Faceted search | No | Yes |\"",
@@ -1713,37 +1779,42 @@
     "4.17",
     "9.6"
    ],
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/FileSearchController.php:154 hybridSearch (ts_rank keyword + vector over file chunks) route appinfo/routes.php:1844. Returns file chunks, not the owning record; no screen; needs extraction+vectorisation"
    },
+   "reachedOn": "API only: POST /api/search/files/hybrid",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "srch-semantic",
    "area": "search",
    "name": "Find records by meaning rather than by exact words.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/VectorizationService.php:468 semanticSearch via lib/Controller/SettingsController.php:1007 route appinfo/routes.php:357 (no NoAdminRequired, so admin-only); users get it only indirectly through chat RAG lib/Service/Chat/ContextRetrievalHandler.php:216"
    },
+   "reachedOn": "API only (admin): GET /api/settings/search/semantic",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:75 \"| **AI/Vector embeddings** | Semantic search, vector storage | Not available |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:200 \"| 10 | **No Semantic/Vector Search** | No built-in vector embeddings, semantic search, or AI-powered search capabilities. Full-text search is basic SQL-level on\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:58 \"| AI / Vector embeddings | No | Yes |\"",
@@ -1760,37 +1831,42 @@
     "9.1",
     "9.12"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Search/ObjectsProvider.php:326 search, registered lib/AppInfo/Application.php:1313"
    },
+   "reachedOn": "Nextcloud unified search",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "srch-saved",
    "area": "search",
    "name": "Save a search with its filters and reopen it later.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Views CRUD lib/Controller/ViewsController.php:368 create, routes appinfo/routes.php:1781-1786; save/reopen UI in src/sidebars/search/SearchSideBar.vue:21-106 + src/modals/view/EditView.vue:447"
    },
+   "reachedOn": "/tables (Search / views sidebar)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:12 \"NocoDB supports 5 view types per table: Grid, Form, Gallery, Kanban, and Calendar. Each view has independent field visibility, sorting, filtering, and grouping.\""
    }
   },
@@ -1802,19 +1878,22 @@
    "dossiqRows": [
     "9.4"
    ],
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "isPublic sharing works (lib/Controller/ViewsController.php:578). Group sharing: read side lib/Db/ViewMapper.php:312 findAllFor, but nothing writes it: View::setSharedWith (lib/Db/View.php:274) has no caller, update() at ViewsController.php:573 omits it, and EditView.vue:463 sends sharedGroups/sharedUsers which the backend ignores"
    },
+   "reachedOn": "/tables (share with everyone only)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The 'Share with Groups' picker in EditView.vue is silently dropped by the backend.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "srch-alert",
@@ -1824,37 +1903,43 @@
    "dossiqRows": [
     "9.13"
    ],
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/BackgroundJob/ViewAlertSweepJob.php:149 (job in appinfo/info.xml:136) evaluates view.alert, but View::setAlert has no caller (git grep setAlert lib/), no UI field in src/modals/view or src/sidebars/search, and ViewAlertCrossedEvent (dispatched :191) has no listener"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Sweep job runs on nothing: no path sets an alert and the crossed event reaches no one.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "srch-geo",
    "area": "search",
    "name": "Find records inside an area on a map.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:2129 geoSearch (GeoJSON within/intersects) route appinfo/routes.php:1166, plus geojson/wfs :1167-1168. src/views/object/MapView.vue is imported by nothing, so no map screen"
    },
+   "reachedOn": "API only: POST /api/objects/{register}/{schema}/geo-search",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:56 \"| **PostGIS geometry** | Native GeometryField with `Content-Crs`/`Accept-Crs` headers. Within-polygon spatial queries. | LOW — niche use case, but VNG requires \"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:183 \"| 10 | **Mature Query Engine** | AST-based query builder with deep relational joins, 30+ filter operators, aggregation functions (count, sum, avg, min, max), ge\""
    }
@@ -1867,19 +1952,21 @@
    "dossiqRows": [
     "9.10"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:2513 objects route appinfo/routes.php:608 GET /api/objects (multi register/schema UNION via MagicFacetHandler.php:425 getSimpleFacetsUnion); UI /tables SearchIndex (src/manifest.json:141-146, 'Faceted cross-schema search')"
    },
+   "reachedOn": "/tables",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "srch-rights",
@@ -1889,18 +1976,21 @@
    "dossiqRows": [
     "9.7"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:2105 applyAccessControlFilters in every search query; related-row subquery requires access predicate lib/Service/Query/RelatedRowExistsClause.php"
    },
+   "reachedOn": "/tables, /objects, unified search",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/permissions/spec.md:5 \"The Objects API has a **token-based permission model** with per-objecttype granularity.\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:179 \"| 6 | **WebSocket Subscriptions** | Real-time data subscriptions via both REST-style and GraphQL WebSocket protocols. Permission-filtered so users only see what\""
    }
@@ -1913,18 +2003,22 @@
    "dossiqRows": [
     "12.15"
    ],
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/QueryHandler.php:381 'database search (the only search backend; the external Solr/index tier was removed)'; lib/Service/Settings/SearchBackendHandler.php:35 same. elasticsearch/elasticsearch still in composer.json:110 but unused in lib/"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Solr/Elasticsearch backends were removed; composer still requires elasticsearch.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "unknown",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:73 \"| **Full-text search** | Solr/Elasticsearch integration with faceted search | Basic Django ORM filtering only |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:200 \"| 10 | **No Semantic/Vector Search** | No built-in vector embeddings, semantic search, or AI-powered search capabilities. Full-text search is basic SQL-level on\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:153 \"| 6 | **No advanced search** | Basic filter/sort on table data but no full-text search engine integration (Solr, Elasticsearch), no faceted search, no semantic \"",
@@ -1936,19 +2030,21 @@
    "area": "search",
    "name": "See what users searched for and which searches found nothing.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "search logged at lib/Service/Object/SearchQueryHandler.php:946; stats incl. non_empty_searches lib/Db/SearchTrailMapper.php:299; routes appinfo/routes.php:1422-1433; UI src/views/logs/SearchTrailIndex.vue:153-211 flags 0-result searches"
    },
+   "reachedOn": "/search-trails",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "acc-type-rights",
@@ -3525,18 +3621,21 @@
    "area": "ai",
    "name": "Let an AI agent read and change records through MCP, within the user's own rights.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/McpServerController.php:129 handle (NoAdminRequired, session user) route appinfo/routes.php:1987; objects CRUD tools lib/Mcp/BuiltIn/ObjectsToolProvider.php:151 via ObjectService (RBAC on), registered lib/AppInfo/Application.php:3840"
    },
+   "reachedOn": "API only: POST /api/mcp (MCP Streamable HTTP)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:76 \"| **MCP protocol** | LLM-friendly API for AI agents | Not available |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/ai-assistant/spec.md:4 \"Directus provides two AI integration approaches: a built-in AI Assistant within the Data Studio, and an official MCP (Model Context Protocol) server for connect\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:175 \"Strapi has no MCP protocol, no AI-friendly API discovery, and no standardized machine-readable interface beyond OpenAPI. LLM and automation integration requires\"",
@@ -3548,18 +3647,21 @@
    "area": "ai",
    "name": "Ask questions about the data in a chat inside the app.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ChatController.php:415 sendMessage + streaming, routes appinfo/routes.php:1794-1803, RAG lib/Service/Chat/ContextRetrievalHandler.php:216. No chat screen in the app: src/components/AgentSelector.vue is imported by nothing, no manifest page"
    },
+   "reachedOn": "API only: POST /api/chat/send",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/ai-assistant/spec.md:4 \"Directus provides two AI integration approaches: a built-in AI Assistant within the Data Studio, and an official MCP (Model Context Protocol) server for connect\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/ai-features/spec.md:12 \"NocoDB integrates AI capabilities directly into its field type system, allowing users to create AI-powered columns and buttons without external configuration. T\""
    }
@@ -3569,37 +3671,42 @@
    "area": "ai",
    "name": "Build vector embeddings of records and files for AI search.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/VectorizationService.php:129 vectorizeBatch; lib/Controller/ObjectsController.php:6055 and lib/Controller/FileExtractionController.php:722, routes appinfo/routes.php:324,339; config UI src/views/settings/sections/LlmConfiguration.vue"
    },
+   "reachedOn": "OpenRegister admin settings (LLM / file configuration)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ai-provider",
    "area": "ai",
    "name": "Choose which LLM provider is used, including one that runs locally.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Provider choice incl. Ollama: lib/Service/Chat/ConversationManagementHandler.php:171; UI src/modals/settings/LLMConfigModal.vue:144 (OpenAI, Fireworks, Ollama) in src/views/settings/Settings.vue:63; routes appinfo/routes.php:294-299"
    },
+   "reachedOn": "OpenRegister admin settings (LLM configuration)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/ai-assistant/spec.md:12 \"- Configurable AI model providers (OpenAI, Anthropic, etc.)\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/integrations/spec.md:66 \"- `IntegrationsType.Ai` — AI provider integration\""
    }
@@ -3609,18 +3716,21 @@
    "area": "ai",
    "name": "Fill a field with AI output from a prompt over the record's other fields.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "git grep for x-openregister-ai/aiPrompt/TaskProcessing/TextProcessing in lib/: nothing; lib/Service/Flow/Nodes has no AI/LLM node; LLPhant used only in Chat, Tool, Vectorization, TextExtraction"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:75 \"- **AI Text** (LongText with AI meta) — AI-generated text content\""
    }
   },
@@ -3629,37 +3739,43 @@
    "area": "ai",
    "name": "Give the platform's assistant the records as context for its answers.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Context Chat content provider registered lib/AppInfo/Application.php:3017 (lib/ContextChat/ContentProviderRegistrationListener.php:70); objects submitted by lib/Listener/ContextChatSubmissionListener.php registered :3409 for schemas opted in via x-openregister-contextchat"
    },
+   "reachedOn": "Nextcloud Assistant (Context Chat)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Needs the context_chat app and per-schema opt-in.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ai-agent-limits",
    "area": "ai",
    "name": "Limit which tools and which data an AI agent may use.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Agent tools and views enforced in chat: lib/Service/Chat/ToolManagementHandler.php:119, lib/Service/Chat/ContextRetrievalHandler.php:141; agents API appinfo/routes.php:10. No agent screen in src; MCP callers get the user's full rights (lib/Service/Capability/ToolGrantResolver.php only referenced by its own siblings)"
    },
+   "reachedOn": "API only: /api/agents",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "partial",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/mcp-server/spec.md:12 \"NocoDB includes a built-in MCP (Model Context Protocol) server that enables AI tools to interact with NocoDB data. It uses the StreamableHTTP transport (same as\""
    }
   },
@@ -4056,38 +4172,42 @@
    "area": "ai",
    "name": "Describe a record type in plain words and have AI draft its fields.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "Searched lib/ and routes for generateSchema/draftSchema/suggestSchema: none. schemas#explore (appinfo/routes.php:1631, lib/Service/SchemaService.php:117) infers properties from existing data, not from a plain-language description"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ai-summarise",
    "area": "ai",
    "name": "Ask AI to summarise a record or an attached file.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "No summarise action; only possible by asking a chat agent that reads the record/files via tools (lib/Tool/ObjectsTool.php, RAG lib/Service/Chat/ContextRetrievalHandler.php:216) through appinfo/routes.php:1794"
    },
+   "reachedOn": "API only: POST /api/chat/send",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   }
  ],
  "pending": []
