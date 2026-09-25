@@ -167,18 +167,21 @@
    "area": "modelling",
    "name": "Define a new kind of record in the browser and use it straight away, without a restart or a database migration.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/modals/schema/EditSchema.vue (create schema) -> POST api/schemas (appinfo/routes.php:6 Schemas resource); lib/Db/MagicMapper.php:811 ensureTableForRegisterSchema creates/syncs the per-schema table on first save (MagicTableHandler.php:93), no migration"
    },
+   "reachedOn": "/schemas",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/overview.md:203 \"| POST | `/api/v2/objecttypes` | Create object type | Token (any) |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:210 \"- **Directus** operates at the **database level**: it introspects existing SQL tables, generates real DDL for new collections, and builds APIs from the physical\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/overview.md:73 \"4. **No dynamic schema at runtime**: Content types require server restart to apply\"",
@@ -191,18 +194,21 @@
    "area": "modelling",
    "name": "Describe a record type in standard JSON Schema that other tools can read.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Db/Schema.php:2104 getSchemaObject emits draft 2020-12 JSON Schema, used for validation (SaveObject.php:920); download route appinfo/routes.php:1620 called from src/views/schema/SchemaDetails.vue:69; OAS per register routes.php:1667"
    },
+   "reachedOn": "/schemas/:id (Download action)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/objects-api.md:8 \"- **Summary:** Schema-driven generic object storage with REST APIs — define object types via JSON Schema, then store and query objects validated against those s\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:196 \"| 6 | **No JSON Schema / JSON-LD** | Does not use industry-standard JSON Schema for data modeling. No support for JSON-LD, linked data, or semantic web standard\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:189 \"| Schema-driven data modeling | JSON files + visual builder | JSON Schema in database |\"",
@@ -215,18 +221,21 @@
    "area": "modelling",
    "name": "Build a record type by adding fields in a form, without writing schema code.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/views/schema/SchemaDetails.vue:46 'Add Property' opens src/modals/schema/EditSchemaProperty.vue (type/format/relation form, typeOptions :1185), saved via Schemas resource appinfo/routes.php:6"
    },
+   "reachedOn": "/schemas/:id",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/admin-interface/spec.md:22 \"- Inline: Last version only (shows JSON schema in readonly when published)\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:180 \"| 7 | **Rich Admin UI** | 43 form interfaces, 20 display renderers, 6 collection layouts (table, cards, calendar, kanban, map), 12 dashboard panel types. Highly\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:128 \"### Content-Type Builder GUI\"",
@@ -239,18 +248,22 @@
    "area": "modelling",
    "name": "Choose from rich field types such as email, URL, date, choice list or file, each with its own editor.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Types/formats (email, uri, date, file, oneOf, Nc*) chosen in EditSchemaProperty.vue:1185-1250; record form src/modals/object/ViewObject.vue:2997 getPropertyInputComponent gives own editors only to boolean and date/time, email/url as input types (:2979); enum choice lists and file fields render a plain text field"
    },
+   "reachedOn": "/schemas/:id and /objects (edit dialog)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "No enum select editor in the record form.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/known-issues-and-limitations.md:35 \"- **#302**: Dynamic field types undesirable for Java/Mendix developers\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:32 \"Directus supports 24 field types that map to underlying database column types:\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:26 \"## Field Types (Scalar)\"",
@@ -263,18 +276,21 @@
    "area": "modelling",
    "name": "Link a record to records of another type and follow the link from either side.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "$ref + inversedBy in EditSchemaProperty.vue:118; ObjectsController.php:4559 uses / :4612 used (routes.php:1186-1187) rendered as 'Uses' and 'Used by' tabs in src/views/object/ObjectDetails.vue:176/197"
    },
+   "reachedOn": "/objects/:register/:schema/:id",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:79 \"| **Object cross-references** | Relations between objects across schemas/registers | No relation support |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:12 \"Directus models data at the database level using real SQL tables and columns. Collections map to database tables, fields map to columns, and relationships are d\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:109 \"| 2 | Content Types & Schema | Core | Very High | JSON schema files, 18 scalar field types, 10 relation types, components, dynamic zones |\"",
@@ -290,18 +306,22 @@
    "dossiqRows": [
     "2.26"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/RelationHandler.php:985-988 resolves label/inverseLabel via RelationTypeResolver.php:192 on the uses/used rows (routes.php:1186-1187); shown as subname in ObjectDetails.vue:209 relationLabel; typed rows also via objectRelations routes.php:1211"
    },
+   "reachedOn": "/objects/:register/:schema/:id (Uses / Used by tabs)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Relation vocabulary is declared in schema JSON; no form field for it in EditSchemaProperty.",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:71 \"| `o2m` | One-to-Many | Inverse of M2O, virtual alias field |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:54 \"| `oneToMany` | Bidirectional one-to-many |\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:56 \"- **Links** (LinkToAnotherRecord) — Relations: HasMany, BelongsTo, ManyToMany, ManyToOne, OneToOne\""
@@ -312,18 +332,21 @@
    "area": "modelling",
    "name": "Group related record types into a register that is managed and shared as one unit.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Registers resource appinfo/routes.php:5 + registers#schemas :1665; register export/import as one unit routes.php:1655-1656 via src/modals/register/ImportRegister.vue and configurations export routes.php:1715"
    },
+   "reachedOn": "/registers, /registers/:id",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "unknown",
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:71 \"| **Registers** | Group schemas + objects into logical registers | No grouping concept — flat objecttype list |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:168 \"### Single-Tenant Architecture\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:152 \"| 5 | **No register/tenant isolation** | Bases and tables are organizational containers, not semantically meaningful registers with cross-referencing, validatio\"",
@@ -335,18 +358,22 @@
    "area": "modelling",
    "name": "Keep versions of a record type, with a draft that does not affect live records until it is published.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Schema/SchemaVersioningService.php diffs, semver-bumps and records a changelog on every schema update (SchemasController.php:184); changelog API routes.php:1634. No draft state: grep 'draft' in lib/Db/Schema.php and SchemasController.php finds only JSON Schema draft-2020-12 refs"
    },
+   "reachedOn": "API only: GET /api/schemas/{id}/changelog",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Edits go live immediately; there is no unpublished draft of a schema.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:54 \"| **Schema version lifecycle** | Draft → Published → New Version workflow. Only published versions validate objects. | MEDIUM — we have schemas but no lifecycle\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:194 \"| 4 | **Database-Coupled Schema** | Schema changes require actual DDL migrations (CREATE TABLE, ALTER COLUMN). No runtime dynamic schema changes. Cannot share/v\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:200 \"Fields are defined as JSON arrays with custom type identifiers. There is no JSON Schema support, no schema versioning, no schema inheritance, and no cross-colle\""
@@ -360,18 +387,22 @@
    "dossiqRows": [
     "3.16"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Columns re-synced on schema version change (MagicTableHandler.php:93-121); revalidate from EditSchema.vue:402 -> ValidateSchema.vue:383 -> bulk#runSchemaValidation routes.php:1287; migration plans SchemaMigrationController.php:359 queue SchemaRunJob (routes.php:1639)"
    },
+   "reachedOn": "/schemas/:id (Edit schema, Validate objects dialog); migration plans API only",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Plan-based migrate/rollback has no screen.",
    "objects-api": "no",
    "directus": "unknown",
    "strapi": "partial",
    "nocodb": "unknown",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:54 \"| **Schema version lifecycle** | Draft → Published → New Version workflow. Only published versions validate objects. | MEDIUM — we have schemas but no lifecycle\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:94 \"5. Schema sync diffs expected vs. actual database schema\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/migrations-system/spec.md:11 \"PocketBase includes a database migration system that tracks applied migrations and supports up/down operations. It also provides auto-migration generation based\""
@@ -385,18 +416,21 @@
    "dossiqRows": [
     "3.17"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Listener/CalculationOnSaveListener.php:105 materialises declared calculations incl. @ref/@aggregate on save, registered lib/AppInfo/Application.php:3313-3314; events dispatched MagicMapper.php:7148/7303; shown in src/views/schema/SchemaRulesTab.vue:51"
    },
+   "reachedOn": "/objects (computed field on the record); authored in schema JSON",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "partial",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:28 \"Collections can be 'folder' type (no actual table, just organizational) or 'alias' type (virtual, like computed/relational fields).\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:60 \"- **Formula** — Computed field with 65 formula functions\""
    }
@@ -409,18 +443,21 @@
    "dossiqRows": [
     "2.1"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Listener/GeneratedIdentifierListener.php:144 renders mask (e.g. Z-{year}-{seq:5}, GeneratedIdentifierDeclaration.php:283) from SequenceService reserveNext, registered Application.php:3239-3240; freezes value on update"
    },
+   "reachedOn": "/objects (on create); declared in schema JSON",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/object-crud-lifecycle/spec.md:31 \"| ObjectRecord.index | PositiveInt | Auto-incremented per object |\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:28 \"- **AutoNumber** — Auto-incrementing sequence number\""
    }
@@ -430,18 +467,21 @@
    "area": "modelling",
    "name": "Refuse a record that repeats another on a field or combination of fields that must be unique.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Listener/UniqueConstraintListener.php:100 enforces named (multi-field) uniqueness, refuse -> 422 or report, registered Application.php:3365-3366"
    },
+   "reachedOn": "/objects (save refused); declared in schema JSON",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:36 \"| `uid` | VARCHAR | URL-friendly unique identifier |\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:91 \"name TEXT UNIQUE, fields JSON, indexes JSON,\""
    }
@@ -451,18 +491,21 @@
    "area": "modelling",
    "name": "Refuse a record that breaks its type's rules, with a message that names the field.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/ValidateObject.php:2167 formatValidationError builds message with property path; returned 400 by ObjectsController.php:3376-3378 on create/update (Schemas/objects routes)"
    },
+   "reachedOn": "/objects (edit dialog save)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "partial",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/features.md:15 \"1. **Objecttype validation** — Data validated against JSON-schema on create/update\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:64 \"- **Email** — Validated email address\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/collections-system/spec.md:23 \"- `core/collection_validate.go` (694 lines) - Validation logic\""
@@ -473,18 +516,22 @@
    "area": "modelling",
    "name": "Take a field's allowed values from a managed vocabulary, so the list is maintained in one place.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Concept scheme URI field in EditSchemaProperty.vue:647; lib/Listener/CodedValueValidationListener.php:103 refuses values outside the vocabulary, registered Application.php:3346-3347; ConceptDeleteGuardListener Application.php:3358"
    },
+   "reachedOn": "/schemas/:id (property editor); enforced on /objects save",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The record form still shows a text field, not a picker from the scheme.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:47 \"| `enumeration` | VARCHAR | Constrained string from list |\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:31 \"- **SingleSelect** — Dropdown with colored options\""
    }
@@ -494,18 +541,21 @@
    "area": "modelling",
    "name": "Start a record type from a published standard model instead of from scratch.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/modals/schema/UploadSchema.vue:21 (file or URL) -> schemas#upload routes.php:1618; SchemasController.php:1691 applyDialect maps schema.org/GGM via SchemaImportService (:2347/:2370), JSON Schema/OpenAPI pass through"
    },
+   "reachedOn": "/schemas/:id (Upload)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/api-compliancy/spec.md:57 \"5. **National objecttype registry** — Shared national definitions reduce implementation effort\""
    }
   },
@@ -514,18 +564,22 @@
    "area": "modelling",
    "name": "Put a repeating group of sub-fields inside a record, such as several addresses.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Array with items.type object (nested-object/nested-schema handling) in EditSchemaProperty.vue:841-866 and :1440; validated as JSON Schema on save; record form edits it in the JSON editor ViewObject.vue:559"
    },
+   "reachedOn": "/schemas/:id; /objects (JSON editor)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "No per-row sub-form; the group is edited as JSON.",
    "objects-api": "unknown",
    "directus": "partial",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:48 \"- `json` - JSON column type\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:109 \"| 2 | Content Types & Schema | Core | Very High | JSON schema files, 18 scalar field types, 10 relation types, components, dynamic zones |\""
    }
@@ -535,18 +589,22 @@
    "area": "modelling",
    "name": "Store a location or an area on a record as a map geometry.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Geometry stored in a JSON property and served by ObjectsController.php:2188 geoJson / wfs / geo-search (routes.php:1166-1168, lib/Service/Geo/*); src/views/object/MapView.vue:61 states it has no route or importer; GeoJsonGeometryValidator has no caller in lib"
    },
+   "reachedOn": "API only: GET /api/geo/{register}/{schema}/geojson",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "No map screen and geometry is not validated on save.",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:56 \"| **PostGIS geometry** | Native GeometryField with `Content-Crs`/`Accept-Crs` headers. Within-polygon spatial queries. | LOW — niche use case, but VNG requires \"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:52 \"### Geometry types\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:68 \"- **Geometry** — Geographic shapes\"",
@@ -558,18 +616,22 @@
    "area": "modelling",
    "name": "Define a read-only record type that is computed from a query over other types.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Saved views (query + presentation) lib/Db/View.php:150, ViewsController routes.php:1781-1785, used in src/views/search/SearchIndex.vue and src/modals/view/EditView.vue; no read-only schema defined by a query (searched 'virtual schema', 'materialized view', 'x-openregister-view' in lib)"
    },
+   "reachedOn": "/tables (saved views)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "A saved view is a stored query, not a record type other features can reference.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/view-collections/spec.md:11 \"PocketBase supports View collections that are backed by SQL views rather than physical tables. This allows creating read-only computed datasets from one or more\""
    }
   },
@@ -578,18 +640,22 @@
    "area": "modelling",
    "name": "Put an existing database table under management without copying the data.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Source type 'Database (virtual register)' in src/modals/source/EditSource.vue:229, introspect action :423 -> sources#introspect routes.php:227; lib/Service/ObjectSource/DbalObjectSourceProvider.php serves rows live, registered Application.php:5125, dispatched ObjectService.php:3812"
    },
+   "reachedOn": "/sources",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Read-only by default; optional write-through per source.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:112 \"| Database | Dedicated PostgreSQL + PostGIS | Shares Nextcloud DB |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:210 \"- **Directus** operates at the **database level**: it introspects existing SQL tables, generates real DDL for new collections, and builds APIs from the physical\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:95 \"6. DDL statements are generated and executed (CREATE/ALTER TABLE)\"",
@@ -3225,18 +3291,22 @@
    "area": "exchange",
    "name": "Import records from a CSV or Excel file with a preview before anything is written.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/modals/register/ImportRegister.vue:409 accepts .csv/.xlsx -> registers#import routes.php:1656; dryRun preview only as API param RegistersController.php:1490 -> ImportService.php:473; grep dryRun/preview in ImportRegister.vue finds nothing"
    },
+   "reachedOn": "/registers (Import); preview API only",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Import writes directly from the UI; no preview step on screen.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/comparison/spec.md:118 \"2. **Bulk import/export** — Neither has built-in CSV/Excel import.\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/import-export/spec.md:12 \"Directus provides built-in import and export capabilities for collections, supporting CSV, JSON, XML, and YAML formats. Import/export operations run as backgrou\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/integrations/spec.md:47 \"- CSV import\""
@@ -3247,18 +3317,21 @@
    "area": "exchange",
    "name": "Export records to CSV, Excel or JSON.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/modals/register/ExportRegister.vue:90 Excel/CSV -> objects#export routes.php:1172 (ObjectsController.php:5464); JSON via registers#export default configuration branch RegistersController.php:1093 (routes.php:1655) and ExportConfiguration.vue"
    },
+   "reachedOn": "/registers (Export), /configurations",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "partial",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/comparison/spec.md:118 \"2. **Bulk import/export** — Neither has built-in CSV/Excel import.\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/import-export/spec.md:35 \"- **Format**: Output format (json, csv, xml, yaml)\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/account-management/spec.md:24 \"- Used for: attachments, exports, backups\""
@@ -3269,37 +3342,43 @@
    "area": "exchange",
    "name": "Export a record or a list as a PDF.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "PDF list export RegistersController.php:1055 -> ExportService.php:332 (Dompdf) via GET /api/registers/{id}/export?format=pdf (routes.php:1655); ExportRegister.vue:90 offers only Excel/CSV; ReportView.vue:47 PDF is for reports, not records; no single-record PDF found"
    },
+   "reachedOn": "API only: GET /api/registers/{id}/export?format=pdf",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "x-harvest",
    "area": "exchange",
    "name": "Keep a register in sync with an outside source by harvesting it on a schedule.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/BackgroundJob/SyncDataJob.php:91 hourly harvest of sync-enabled sources (appinfo/info.xml:147) via RestApiSourceFetcher only (Application.php:918); sync now/status routes.php:222-223; no UI sets syncEnabled/syncInterval (EditSource.vue has none)"
    },
+   "reachedOn": "API only: POST /api/sources/{id}/sync",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Only REST API sources; scheduling cannot be switched on from a screen.",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/objects-admin/spec.md:35 \"- Imported from URL (synced from Objecttypes API)\""
    }
   },
@@ -3308,18 +3387,21 @@
    "area": "exchange",
    "name": "Package a register with its types and settings and install it elsewhere.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Configurations bundle register+schemas(+objects): configuration#export routes.php:1715 from src/modals/configuration/ExportConfiguration.vue, configurations#import routes.php:1727 from ImportConfiguration.vue"
    },
+   "reachedOn": "/configurations",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "no",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/known-issues-and-limitations.md:11 \"- **#565**: Export/Import Object Types with UUID retention (approved, Dimpact + Rotterdam)\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:223 \"| JSON Schema portability | Fundamental architectural difference -- NocoDB's meta model is proprietary |\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:21 \"- **Export/Import**: Collection schema export as JSON, import from JSON\""
@@ -3330,56 +3412,66 @@
    "area": "exchange",
    "name": "Import and publish those packages from a GitHub or GitLab repository.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Import from GitHub/GitLab routes.php:1728-1729 via src/modals/configuration/ImportConfiguration.vue:82/97; publish PublishConfiguration.vue:267 -> configuration#publishToGitHub routes.php:1733"
    },
+   "reachedOn": "/configurations",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Publishing exists for GitHub only, not GitLab.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "x-federation",
    "area": "exchange",
    "name": "Read records from another installation as if they were local.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "OCM provider lib/Federation/OpenRegisterCloudFederationProvider.php records incoming shares (Application.php:5155); serving FederationController.php:238 (routes.php:20-22); FederatedObjectSourceProvider.php:117 reads remote live but only for a hand-bound shadow schema; no src/ file references federation"
    },
+   "reachedOn": "API only: /api/federation/shares",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Nothing creates the shadow schema automatically when a share is accepted.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "x-import-product",
    "area": "exchange",
    "name": "Import a whole base from another product such as Airtable in one step.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "No Airtable/Baserow/NocoDB importer (grep -i in lib, src, appinfo). Only Nextcloud Tables: TablesSchemaSyncService seeds one read-only virtual schema per table via occ TablesSyncCommand/repair (Application.php:2062), served by TablesObjectSourceProvider"
    },
+   "reachedOn": "none (occ openregister:tables:sync)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Nextcloud Tables is mirrored live, not imported, and there is no screen for it.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/integrations/spec.md:40 \"### Airtable Import\""
    }
   },
@@ -3388,18 +3480,22 @@
    "area": "exchange",
    "name": "Back up and restore all data from the admin screen.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Per-configuration export with includeObjects ExportConfiguration.vue:23 (routes.php:1715) and re-import ImportRegister.vue:508 (routes.php:1656); no all-data backup/restore (grep -i backup in lib/Controller, lib/Command finds none)"
    },
+   "reachedOn": "/configurations, /registers",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Backup is per register/configuration, not the whole instance from an admin screen.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:22 \"- **Backup management**: Create, download, upload, restore backups\""
    }
   },
@@ -3408,19 +3504,21 @@
    "area": "exchange",
    "name": "Map an old system's data onto register types with a reusable mapping.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "MigrationPacksController CRUD/import/export routes.php:1963-1969; applied on import via packId RegistersController.php:1489-1494 -> ImportService.php:472; grep packId/migration-pack in src finds nothing"
    },
+   "reachedOn": "API only: /api/migration-packs, POST /api/registers/{id}/import?packId=",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ai-mcp",
@@ -3570,95 +3668,107 @@
    "area": "modelling",
    "name": "Find likely duplicate records and review them in a list.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "DuplicateController.php:103 findDuplicates (routes.php:631, dismiss :643) listed in src/views/quality/DuplicatesIndex.vue:229 via store quality.js:237"
    },
+   "reachedOn": "/duplicates",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "q-merge",
    "area": "modelling",
    "name": "Merge duplicates into one golden record, with rules for which value wins.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "MdmMergeWizardModal (DuplicatesIndex.vue:121) -> merge#preview/execute MergeController.php:114 (routes.php:655-657, reversible); survivorship rules SurvivorshipRecomputeListener Application.php:3325, override routes.php:662 from GoldenRecordDetail.vue:86"
    },
+   "reachedOn": "/duplicates, /master-entities, /mergeOperations",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "q-score",
    "area": "modelling",
    "name": "See a data quality score per record or per type.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "QualityScoreOnSaveListener registered Application.php:3319-3320; QualityController.php:75 stats (routes.php:628-629) shown in src/views/quality/QualityIndex.vue:330"
    },
+   "reachedOn": "/quality",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "q-dangling",
    "area": "modelling",
    "name": "Stop a delete that would leave links dangling, or clean the links up.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/DeleteObject.php:843 canDelete + :913 applyDeletionActions (RESTRICT/CASCADE/SET_NULL, ReferentialIntegrityService.php:113); blocked delete -> 409 ObjectsController.php:4256"
    },
+   "reachedOn": "/objects (delete refused or links cleaned); onDelete declared in schema JSON",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "No onDelete field in the property editor; set it in schema JSON.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "q-link-exists",
    "area": "modelling",
    "name": "Refuse a link to a record that does not exist.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/SaveObject.php:4250/4422 validateReferences throws ReferenceValidationException (:5055) for properties with validateReference: true"
    },
+   "reachedOn": "/objects (save refused)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Opt-in per property, not in the property editor, and skipped for admins (SaveObject.php:4772).",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "op-dashboard",
