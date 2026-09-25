@@ -159,6 +159,11 @@
    "key": "filinq",
    "name": "Filinq",
    "kind": "app"
+  },
+  {
+   "key": "thematiq",
+   "name": "Thematiq",
+   "kind": "app"
   }
  ],
  "capabilities": [
@@ -3088,18 +3093,21 @@
    "area": "automation",
    "name": "Call an outside URL when a record is created, changed or deleted.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Listener/WebhookEventListener.php:146 dispatchEvent, registered for created/updated/deleted lib/AppInfo/Application.php:3554-3556; CRUD appinfo/routes.php:1915-1919; page src/manifest.json:245 (webhooks)"
    },
+   "reachedOn": "/webhooks",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/notifications/spec.md:11 \"Publish notifications to a Notificaties API when objects are created, updated, or deleted. Enables event-driven architectures where other applications react to \"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/flows-automation/spec.md:21 \"trigger: 'event' | 'schedule' | 'operation' | 'webhook' | 'manual';\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/webhooks/spec.md:62 \"- **HTTP delivery**: POST request with JSON payload to configured URL\"",
@@ -3112,18 +3120,21 @@
    "area": "automation",
    "name": "See a delivery log of webhook calls and have failed calls retried.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "logs appinfo/routes.php:1922-1924, manual retry :1925; lib/BackgroundJob/WebhookRetryJob.php:128 registered appinfo/info.xml:141; page src/manifest.json:253 (webhooks-logs)"
    },
+   "reachedOn": "/webhooks/logs",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/objects-admin/spec.md:175 \"| Notification delivery retry backoff | Integer | Default: 2 |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:166 \"The Community Edition lacks real-time capabilities -- no WebSocket subscriptions, no server-sent events, no live queries. The webhook system is fire-and-forget \"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/webhooks/spec.md:12 \"NocoDB provides a table-level webhook system for automating responses to data changes. Webhooks send HTTP notifications when records are inserted, updated, or d\""
@@ -3134,18 +3145,22 @@
    "area": "automation",
    "name": "Shape the webhook payload for the system that receives it.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/WebhookService.php:1022 applies a Mapping via applyMappingTransformation :1090 (lib/Db/Webhook.php:237 mapping id); src/modals/webhook/EditWebhook.vue has no mapping field (only responseMapping :507), so it is set over PUT /api/webhooks/{id} (routes.php:1918)"
    },
+   "reachedOn": "API only: PUT /api/webhooks/{id}",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The payload mapping runs, but no screen lets you pick one.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/webhooks/spec.md:30 \"- `payload` — Custom payload template\""
    }
   },
@@ -3154,18 +3169,22 @@
    "area": "automation",
    "name": "Build an automation that runs steps when a record changes, in a visual editor.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Listener/FlowTriggerListener registered for object created/updated/deleted lib/AppInfo/Application.php:3039-3041, runs lib/Service/Flow/FlowEngine.php; canvas page src/manifest.json:226 (flowDetail, type flow, CnFlowDetail from nextcloud-vue); flow routes appinfo/routes.php:788-826"
    },
+   "reachedOn": "/flows/:id",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The engine is OpenRegister's, the canvas component is the shared UI library's.",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/flows-automation/spec.md:12 \"Directus Flows is a built-in visual automation engine that enables users to create workflows triggered by events, schedules, webhooks, or manual actions. Flows \"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:182 \"PocketBase has hooks (Go and JS) but no visual workflow builder, no state machines, no approval flows, and no integration engine. Business logic requires writin\""
    }
@@ -3175,18 +3194,21 @@
    "area": "automation",
    "name": "Run an automation on a schedule.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/BackgroundJob/FlowScheduleWorker registered appinfo/info.xml:182 drives lib/Service/Flow/FlowScheduleService.php (cron per flow); entry node lib/Service/Flow/Nodes/TriggerScheduleNode.php"
    },
+   "reachedOn": "/flows/:id (On a schedule trigger)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/flows-automation/spec.md:12 \"Directus Flows is a built-in visual automation engine that enables users to create workflows triggered by events, schedules, webhooks, or manual actions. Flows \"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:20 \"- **Settings panels**: Application, mail, file storage, backups, crons\""
    }
@@ -3200,18 +3222,22 @@
     "3.1",
     "11.5"
    ],
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Flow/Bpmn/FlowBpmnImporter.php:120 import and FlowBpmnExporter, routes appinfo/routes.php:825-826; the imported model becomes a native flow run by lib/Service/Flow/FlowEngine.php, edited on the flow canvas, no BPMN modeller page"
    },
+   "reachedOn": "API only: POST /api/flows/import/bpmn, GET /api/flows/{id}/bpmn",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "BPMN is an interchange format here, not the engine or the editor.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:182 \"PocketBase has hooks (Go and JS) but no visual workflow builder, no state machines, no approval flows, and no integration engine. Business logic requires writin\""
    }
   },
@@ -3220,18 +3246,21 @@
    "area": "automation",
    "name": "Route a record through approval steps before it takes effect.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "approval as flow steps: lib/Service/Flow/Nodes/UserTaskNode.php and AwaitSignalNode.php, task inbox src/manifest.json flow-task-inbox (/flow-tasks); destruction-list approval appinfo/routes.php:2001. Not shown that a record change is held until approved: the save commits first (lib/Service/Object/SaveObject.php)"
    },
+   "reachedOn": "/flow-tasks",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "partial",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:118 \"| 11 | Review Workflows | Workflow | Medium (EE) | Multi-stage approval, assignees, stage permissions, Document Service middleware integration |\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:182 \"PocketBase has hooks (Go and JS) but no visual workflow builder, no state machines, no approval flows, and no integration engine. Business logic requires writin\""
    }
@@ -3241,18 +3270,22 @@
    "area": "automation",
    "name": "Allow only the declared status transitions on a record.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Lifecycle/TransitionEngine.php:295 transition() enforces declared transitions, route appinfo/routes.php:613 POST /api/objects/{id}/transition; searched SaveObject.php and lib/Listener for a refusal of a plain PUT that changes the state field and found none"
    },
+   "reachedOn": "API only: POST /api/objects/{id}/transition",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The transition endpoint guards the graph; a direct write to the state field was not shown to be refused.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "partial",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/review-workflows/spec.md:39 \"| `stage-permissions` | Permission rules per stage (who can transition) |\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:182 \"PocketBase has hooks (Go and JS) but no visual workflow builder, no state machines, no approval flows, and no integration engine. Business logic requires writin\""
    }
@@ -3262,18 +3295,22 @@
    "area": "automation",
    "name": "Notify users in the platform when records they care about change.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Listener/AnnotationNotificationListener.php:92 registered for created/updated/transitioned lib/AppInfo/Application.php:3415-3417, delivered through INotifier registered :954 (AnnotationNotifier) and :969"
    },
+   "reachedOn": "Nextcloud notifications",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Who is notified is declared per schema; a watcher alone is not notified unless the rule names watchers.",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/flows-automation/spec.md:83 \"| `notification` | Create in-app notification |\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/collaboration/spec.md:70 \"- Notification types: mentions, comments, shares\""
    }
@@ -3283,18 +3320,21 @@
    "area": "automation",
    "name": "Send an e-mail from a template when a record changes.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Flow/Nodes/SendEmailNode.php:47 'Send an email' step registered by lib/Listener/FlowNodeRegistrationListener.php:46, composed through FlowMessagingService; flow canvas src/manifest.json:226"
    },
+   "reachedOn": "/flows/:id (Send an email step)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/flows-automation/spec.md:82 \"| `mail` | Send email via configured SMTP |\""
    }
   },
@@ -3303,18 +3343,21 @@
    "area": "automation",
    "name": "Run your own code before or after a record is saved, to change it or refuse it.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:3269 interceptRequest(eventType 'object.creating') lets a pre-event webhook rewrite the payload (lib/Service/WebhookService.php:1383); only on create, and an interceptor failure is caught and logged (:3277) so it cannot refuse the save"
    },
+   "reachedOn": "API only: webhook with interception",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:31 \"| **Hook** | Event listeners (action/filter/init/schedule/embed) | Custom validation, external sync, cache warming |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:119 \"| 12 | Lifecycle Hooks | Extensibility | Very High | Database-level (18 hooks), Document Service middleware, Koa HTTP middleware -- three-tier architecture |\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/hooks-extensibility/spec.md:11 \"PocketBase provides two extensibility mechanisms: Go hooks (compile-time) and JavaScript hooks (runtime). Both use a priority-based event system that fires at v\""
@@ -3325,18 +3368,22 @@
    "area": "automation",
    "name": "Hand a change to an external workflow tool such as n8n.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "only through the generic webhook (lib/Listener/WebhookEventListener.php:146) aimed at an n8n webhook trigger; git grep -i n8n in lib finds one comment (lib/Service/Flow/FlowEngine.php:474), no n8n connector or node"
    },
+   "reachedOn": "/webhooks",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The research files still describe an n8n integration that the tree no longer carries.",
    "objects-api": "partial",
    "directus": "partial",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/notifications/spec.md:11 \"Publish notifications to a Notificaties API when objects are created, updated, or deleted. Enables event-driven architectures where other applications react to \"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:198 \"| 8 | **Limited Automation Integrations** | Flows engine has only 15 built-in operations. While extensible via custom operations, it lacks the breadth of n8n (9\""
    }
@@ -3349,38 +3396,42 @@
    "dossiqRows": [
     "3.20"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/BulkAction/ApplyRuleAction.php:62 registered by lib/Listener/BulkActionRegistrationListener.php:60 (Application.php:3068); POST /api/bulk-jobs appinfo/routes.php:1292 queues lib/BackgroundJob/BulkJobRunner via lib/Service/BulkJob/BulkJobService.php:313"
    },
+   "reachedOn": "API only: POST /api/bulk-jobs",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "auto-scheduled-report",
    "area": "automation",
    "name": "Send a report by e-mail on a schedule.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/BackgroundJob/ScheduledReportJob.php:91 registered appinfo/info.xml:189 runs lib/Service/ScheduledReportService.php, mail sent :1128 (deliveryMode email|both :101); routes appinfo/routes.php:1950-1952; no screen in src"
    },
+   "reachedOn": "API only: /api/scheduled-reports",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "x-import-file",
@@ -3552,16 +3603,16 @@
    "area": "exchange",
    "name": "Import a whole base from another product such as Airtable in one step.",
    "source": "competitor-derived",
-   "openregister": "partial",
+   "openregister": "no",
    "built": {
-    "state": "building",
+    "state": "none",
     "owner": "ConductionNL/openregister",
-    "evidence": "No Airtable/Baserow/NocoDB importer (grep -i in lib, src, appinfo). Only Nextcloud Tables: TablesSchemaSyncService seeds one read-only virtual schema per table via occ TablesSyncCommand/repair (Application.php:2062), served by TablesObjectSourceProvider"
+    "evidence": "No importer for another product's base: git grep -i 'airtable|baserow|nocodb' in lib, src and appinfo finds none. The only neighbour is lib/Service TablesSchemaSyncService, which mounts a Nextcloud Tables table as a read-only virtual schema (occ openregister:tables:sync), not an import."
    },
-   "reachedOn": "none (occ openregister:tables:sync)",
+   "reachedOn": "none",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Nextcloud Tables is mirrored live, not imported, and there is no screen for it.",
+   "note": "Rated no by the lane lead over the reader's partial: mounting Nextcloud Tables read-only is not importing a base.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
@@ -3891,18 +3942,21 @@
    "area": "operate",
    "name": "See registers, record counts and recent activity on a dashboard when you open the app.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/views/dashboard/DashboardIndex.vue:36 object, register, schema and search counts, activity over a date range :277; page src/manifest.json:53 (route /)"
    },
+   "reachedOn": "/",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "partial",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:156 \"| 12 | Insights & Dashboards | No-code analytics dashboard builder with 12 panel types |\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:11 \"PocketBase includes a full-featured admin dashboard built with Svelte, embedded in the binary and served at `/_/`. It provides collection management, record CRU\""
    }
@@ -3915,18 +3969,21 @@
    "dossiqRows": [
     "10.10"
    ],
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/views/reports/ReportView.vue:82 renders chart widgets, render/preview appinfo/routes.php:1885-1886 via lib/Service/Reporting/ReportRenderService.php; a report is authored as an object in a reports register imported from a template (src/views/reports/ReportsIndex.vue:48), no report builder"
    },
+   "reachedOn": "/reports",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:156 \"| 12 | Insights & Dashboards | No-code analytics dashboard builder with 12 panel types |\""
    }
   },
@@ -3935,37 +3992,42 @@
    "area": "operate",
    "name": "Feed an outside BI tool from the register.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "export profiles appinfo/routes.php:1938-1944, run returns CSV lib/Controller/ExportProfilesController.php:290 at a stable URL a BI tool can pull; no OData or direct connector (grep -i odata in appinfo/routes.php finds none)"
    },
+   "reachedOn": "API only: GET /api/export-profiles/{id}/run",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "op-install",
    "area": "operate",
    "name": "Install it from the platform's app store with no extra servers to run.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/info.xml:4 app id openregister, packaged as a Nextcloud app store app; runs on the Nextcloud database with no extra service (optional LLM, anonymiser and e-Depot connections listed in lib/Settings/connections.json)"
    },
+   "reachedOn": "Nextcloud app store",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:110 \"| Install method | Docker Compose (4 containers min) | Nextcloud app store (1 click) |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:199 \"| 9 | **Complex Deployment** | Requires separate infrastructure (Node.js server, database, optional Redis, optional storage driver). Cannot be installed as a on\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:160 \"Strapi requires a dedicated Node.js server process (Node >= 20), separate from any application frontend. The full stack includes Koa.js, Knex.js, React admin pa\"",
@@ -3978,18 +4040,21 @@
    "area": "operate",
    "name": "Run many tenants on one installation, each with its own quota.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Middleware/TenantQuotaMiddleware.php registered lib/AppInfo/Application.php:670 enforces per-organisation quota; lifecycle and usage appinfo/routes.php:1764-1769 (lib/Service/TenantLifecycleService.php:216); page src/manifest.json:101 (organisation)"
    },
+   "reachedOn": "/organisation",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "no",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:169 \"Strapi has no multi-tenancy support. Each content type exists in a single flat namespace. There is no concept of register-level isolation or domain-based data s\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:175 \"### 6.1 No Multi-Tenancy\""
    }
@@ -3999,18 +4064,21 @@
    "area": "operate",
    "name": "Expose metrics for a monitoring system.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "GET /api/metrics appinfo/routes.php:421 served by lib/AppHost GenericMetrics controller from the observability.metrics block of src/manifest.json"
    },
+   "reachedOn": "API only: GET /api/metrics (Prometheus)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/observability-metrics/spec.md:11 \"Comprehensive observability via OpenTelemetry metrics counters, structured logging (structlog), and integration with Prometheus/Grafana/Promtail stack.\""
    }
   },
@@ -4019,64 +4087,22 @@
    "area": "operate",
    "name": "Use the interface in Dutch as well as English.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "l10n/nl.json carries 3275 translated strings; UI strings go through t('openregister', ...) e.g. src/views/dashboard/DashboardIndex.vue:49"
    },
+   "reachedOn": "every page",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "no",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/known-issues-and-limitations.md:54 \"10. **English-only interface** — Does not comply with Dutch API Strategy recommendation for Dutch interfaces\""
-   }
-  },
-  {
-   "id": "op-screen-reader",
-   "area": "operate",
-   "name": "Use the data screens with a screen reader.",
-   "source": "competitor-derived",
-   "openregister": "unknown",
-   "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
-   },
-   "objects-api": "unknown",
-   "directus": "unknown",
-   "strapi": "partial",
-   "nocodb": "no",
-   "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
-    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/admin-panel/spec.md:99 \"Components follow WCAG accessibility guidelines.\"",
-    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:149 \"| 2 | **Canvas grid is not accessible** | Canvas content is invisible to screen readers, has no DOM elements for assistive technology, no native text selection,\""
-   }
-  },
-  {
-   "id": "op-design-system",
-   "area": "operate",
-   "name": "Apply the government design system to the app's look.",
-   "source": "competitor-derived",
-   "openregister": "unknown",
-   "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
-   },
-   "objects-api": "no",
-   "directus": "no",
-   "strapi": "no",
-   "nocodb": "no",
-   "pocketbase": "no",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
-    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/comparison/spec.md:70 \"| Theme support | Dark/light toggle | NL Design System | |\"",
-    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:195 \"| 5 | **No Government Ecosystem** | No NL Design System support, no WCAG-focused theming, no Dutch government API compliance (NLGov), no Common Ground integrati\"",
-    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:163 \"Strapi has no integration with government standards (VNG, NL Design System, Common Ground, ZGW, GEMMA). No compliance frameworks for Dutch or EU public-sector r\"",
-    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:150 \"| 3 | **No government standards support** | No NL Design System theming, no NLGov API compliance, no WOO/ZGW/GEMMA support, no Archiefwet compliance. Not design\"",
-    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:187 \"- NL Design System or WCAG compliance\""
    }
   },
   {
@@ -4084,18 +4110,21 @@
    "area": "operate",
    "name": "Promote configuration from test through acceptance to production.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "an organisation carries an OTAP environment (lib/Db/Organisation.php:271) that changes quota behaviour (lib/Middleware/TenantQuotaMiddleware.php:289); configuration drafts deploy with preview and rollback appinfo/routes.php:526-530; git grep -i promot in lib finds no promotion between environments"
    },
+   "reachedOn": "API only: /api/configuration/draft-sets",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "partial",
    "nocodb": "unknown",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/admin-panel/spec.md:86 \"- Transfer tokens (for data transfer between environments)\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/collections-system/spec.md:19 \"- Collection export/import as JSON for environment portability\""
    }
@@ -4105,18 +4134,21 @@
    "area": "operate",
    "name": "Install extensions from a marketplace to add field types or screens.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "another Nextcloud app from the app store can add flow steps through lib/Service/Flow/RegisterFlowNodesEvent.php:49 and bulk actions through the BulkAction registry; no field-type extension point and no in-app marketplace"
    },
+   "reachedOn": "Nextcloud app store",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:176 \"| 3 | **Extension Marketplace** | 274+ extensions across 10 granular types (interfaces, displays, layouts, modules, panels, themes, hooks, endpoints, operations\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:140 \"### Plugin Ecosystem (200+ plugins)\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:156 \"| 9 | **App Store deprecation signals instability** | The plugin/App Store system is being deprecated in favor of 'integrations', indicating architectural churn\""
@@ -4127,18 +4159,21 @@
    "area": "operate",
    "name": "Manage registers from the command line.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "25 occ commands declared in appinfo/info.xml (<command>), classes under lib/Command/ (26 files)"
    },
+   "reachedOn": "occ openregister:*",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/objecttype-import/spec.md:18 \"Management command `import_objecttypes` connects to an external Objecttypes API via `zgw-consumers` service client, fetches all objecttypes and their versions, \"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/architecture/spec.md:34 \"strapi/       # CLI + bootstrapper\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/migrations-system/spec.md:15 \"- Commands: `up` (apply all), `down [n]` (revert last n), `history-sync`\""
@@ -4152,18 +4187,21 @@
    "dossiqRows": [
     "11.15"
    ],
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "subsystems switch on or off in admin settings, e.g. src/views/settings/sections/MultitenancyConfiguration.vue:47 and RbacConfiguration.vue:44; no general per-feature toggle (grep -i 'feature flag|featureToggle' in lib/Service/SettingsService.php and appinfo/routes.php finds none)"
    },
+   "reachedOn": "/settings/admin/openregister",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/cloud-events-zaak/spec.md:24 \"**Feature flag**: `ENABLE_CLOUD_EVENTS` environment variable (default: false).\""
    }
   },
@@ -4210,5 +4248,59 @@
    "evidence": {}
   }
  ],
- "pending": []
+ "pending": [
+  {
+   "id": "op-screen-reader",
+   "area": "operate",
+   "name": "Use the data screens with a screen reader.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: Needs a screen-reader pass over /objects, /schemas and the record dialog; reading the code cannot settle it.",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/admin-panel/spec.md:99 \"Components follow WCAG accessibility guidelines.\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:149 \"| 2 | **Canvas grid is not accessible** | Canvas content is invisible to screen readers, has no DOM elements for assistive technology, no native text selection,\""
+   },
+   "status": "pending",
+   "pendingReason": "Needs a screen-reader pass over /objects, /schemas and the record dialog; reading the code cannot settle it."
+  },
+  {
+   "id": "op-design-system",
+   "area": "operate",
+   "name": "Apply the government design system to the app's look.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "provider": "thematiq",
+   "providerHow": "read-from-code",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: Whether thematiq's NL Design tokens actually reach OpenRegister's screens needs driving with thematiq enabled; the variables alone are a declaration.",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/comparison/spec.md:70 \"| Theme support | Dark/light toggle | NL Design System | |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:195 \"| 5 | **No Government Ecosystem** | No NL Design System support, no WCAG-focused theming, no Dutch government API compliance (NLGov), no Common Ground integrati\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:163 \"Strapi has no integration with government standards (VNG, NL Design System, Common Ground, ZGW, GEMMA). No compliance frameworks for Dutch or EU public-sector r\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:150 \"| 3 | **No government standards support** | No NL Design System theming, no NLGov API compliance, no WOO/ZGW/GEMMA support, no Archiefwet compliance. Not design\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:187 \"- NL Design System or WCAG compliance\""
+   },
+   "status": "pending",
+   "pendingReason": "Whether thematiq's NL Design tokens actually reach OpenRegister's screens needs driving with thematiq enabled; the variables alone are a declaration."
+  }
+ ]
 }
