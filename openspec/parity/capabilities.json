@@ -1,0 +1,3632 @@
+{
+ "_comment": "OpenRegister capability matrix. Authored here; the cross-product index in market-intelligence is generated from it. Built by _lane generator on 2026-09-25, see the PR body for method and the split of row sources.",
+ "comparedOn": "2026-09-25",
+ "category": "A self-hosted, schema-declarative object register for the public sector: an administrator declares record types at runtime as JSON Schema and gets validated storage, a generated REST, GraphQL and MCP interface, search, access control, audit and retention, inside Nextcloud, as the data layer other apps build on. Its category is the one Maykin's Objects API and Objecttypes API defines in the Dutch Common Ground stack; it overlaps the headless data platforms (Directus, Strapi) on the generated API and admin side, the no-code databases (NocoDB) on how people work with records, and the backend-as-a-service tools (PocketBase) on developer reach.",
+ "corpus": {
+  "repo": "ConductionNL/concurrentie-analyse (workspace checkout, read-only)",
+  "file": "openregister/<competitor>/MERGED-ANALYSIS.md, overview.md, specs/*/spec.md"
+ },
+ "ownRevision": "ConductionNL/openregister development 226f874",
+ "systems": [
+  {
+   "key": "openregister",
+   "name": "OpenRegister",
+   "vendor": "Conduction",
+   "isSelf": true,
+   "readOn": "2026-09-25",
+   "readHow": "code read at development 226f874, not driven"
+  },
+  {
+   "key": "objects-api",
+   "name": "Objects API and Objecttypes API",
+   "vendor": "Maykin Media",
+   "readOn": "2026-03-12",
+   "columnAddedOn": "2026-09-25",
+   "evidenceGrade": "docs-only",
+   "unknownReason": "not covered by the research files under concurrentie-analyse/openregister/objects-api/ (analysed 2026-03-12, read for this matrix 2026-09-25); nobody has driven Objects API and Objecttypes API for this row"
+  },
+  {
+   "key": "directus",
+   "name": "Directus",
+   "vendor": "Monospace",
+   "readOn": "2026-03-14",
+   "columnAddedOn": "2026-09-25",
+   "evidenceGrade": "docs-only",
+   "unknownReason": "not covered by the research files under concurrentie-analyse/openregister/directus/ (analysed 2026-03-14, read for this matrix 2026-09-25); nobody has driven Directus for this row"
+  },
+  {
+   "key": "strapi",
+   "name": "Strapi",
+   "vendor": "Strapi",
+   "readOn": "2026-03-14",
+   "columnAddedOn": "2026-09-25",
+   "evidenceGrade": "docs-only",
+   "unknownReason": "not covered by the research files under concurrentie-analyse/openregister/strapi/ (analysed 2026-03-14, read for this matrix 2026-09-25); nobody has driven Strapi for this row"
+  },
+  {
+   "key": "nocodb",
+   "name": "NocoDB",
+   "vendor": "NocoDB",
+   "readOn": "2026-03-14",
+   "columnAddedOn": "2026-09-25",
+   "evidenceGrade": "docs-only",
+   "unknownReason": "not covered by the research files under concurrentie-analyse/openregister/nocodb/ (analysed 2026-03-14, read for this matrix 2026-09-25); nobody has driven NocoDB for this row"
+  },
+  {
+   "key": "pocketbase",
+   "name": "PocketBase",
+   "vendor": "Gani Georgiev",
+   "readOn": "2026-03-14",
+   "columnAddedOn": "2026-09-25",
+   "evidenceGrade": "docs-only",
+   "unknownReason": "not covered by the research files under concurrentie-analyse/openregister/pocketbase/ (analysed 2026-03-14, read for this matrix 2026-09-25); nobody has driven PocketBase for this row"
+  }
+ ],
+ "areas": [
+  {
+   "key": "modelling",
+   "name": "Model the data and keep it sound",
+   "name_nl": "Data modelleren en zuiver houden"
+  },
+  {
+   "key": "records",
+   "name": "Work with records in the app",
+   "name_nl": "Werken met records in de app"
+  },
+  {
+   "key": "api",
+   "name": "Reach the data from other software",
+   "name_nl": "De data bereiken vanuit andere software"
+  },
+  {
+   "key": "search",
+   "name": "Find records",
+   "name_nl": "Records vinden"
+  },
+  {
+   "key": "access",
+   "name": "Decide who sees and changes what",
+   "name_nl": "Bepalen wie wat ziet en wijzigt"
+  },
+  {
+   "key": "history",
+   "name": "Know what changed and prove it",
+   "name_nl": "Weten wat er veranderde en het bewijzen"
+  },
+  {
+   "key": "retention",
+   "name": "Keep, archive and destroy by the rules",
+   "name_nl": "Bewaren, archiveren en vernietigen volgens de regels"
+  },
+  {
+   "key": "files",
+   "name": "Files on records",
+   "name_nl": "Bestanden bij records"
+  },
+  {
+   "key": "automation",
+   "name": "React to changes",
+   "name_nl": "Reageren op wijzigingen"
+  },
+  {
+   "key": "exchange",
+   "name": "Move data and models in and out",
+   "name_nl": "Data en modellen in- en uitvoeren"
+  },
+  {
+   "key": "ai",
+   "name": "AI and agents",
+   "name_nl": "AI en agents"
+  },
+  {
+   "key": "operate",
+   "name": "Run and administer it",
+   "name_nl": "Beheren en in de lucht houden"
+  }
+ ],
+ "providers": [
+  {
+   "key": "openregister",
+   "name": "OpenRegister",
+   "kind": "self"
+  },
+  {
+   "key": "nextcloud",
+   "name": "Nextcloud",
+   "kind": "platform"
+  },
+  {
+   "key": "integriq",
+   "name": "Integriq",
+   "kind": "app"
+  },
+  {
+   "key": "nextcloud-vue",
+   "name": "Conduction UI library",
+   "kind": "app"
+  },
+  {
+   "key": "n8n",
+   "name": "n8n",
+   "kind": "external"
+  },
+  {
+   "key": "opencatalogi",
+   "name": "OpenCatalogi",
+   "kind": "app"
+  },
+  {
+   "key": "filinq",
+   "name": "Filinq",
+   "kind": "app"
+  }
+ ],
+ "capabilities": [
+  {
+   "id": "mod-runtime-type",
+   "area": "modelling",
+   "name": "Define a new kind of record in the browser and use it straight away, without a restart or a database migration.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "no",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/overview.md:203 \"| POST | `/api/v2/objecttypes` | Create object type | Token (any) |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:210 \"- **Directus** operates at the **database level**: it introspects existing SQL tables, generates real DDL for new collections, and builds APIs from the physical\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/overview.md:73 \"4. **No dynamic schema at runtime**: Content types require server restart to apply\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/docs/docker-walkthrough.md:94 \"- Actions: Create New Table, Import Data, Connect External Data\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:45 \"The core philosophy is radical simplicity: create a collection in the admin UI, and a full CRUD REST API with auth, realtime, and file handling is immediately a\""
+   }
+  },
+  {
+   "id": "mod-json-schema",
+   "area": "modelling",
+   "name": "Describe a record type in standard JSON Schema that other tools can read.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "no",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/objects-api.md:8 \"- **Summary:** Schema-driven generic object storage with REST APIs — define object types via JSON Schema, then store and query objects validated against those s\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:196 \"| 6 | **No JSON Schema / JSON-LD** | Does not use industry-standard JSON Schema for data modeling. No support for JSON-LD, linked data, or semantic web standard\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:189 \"| Schema-driven data modeling | JSON files + visual builder | JSON Schema in database |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:151 \"| 4 | **No schema standardization** | Uses proprietary meta-driven schema (UITypes enum + SQL types) rather than industry standards like JSON Schema. Schema def\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:200 \"Fields are defined as JSON arrays with custom type identifiers. There is no JSON Schema support, no schema versioning, no schema inheritance, and no cross-colle\""
+   }
+  },
+  {
+   "id": "mod-visual-builder",
+   "area": "modelling",
+   "name": "Build a record type by adding fields in a form, without writing schema code.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "partial",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/admin-interface/spec.md:22 \"- Inline: Last version only (shows JSON schema in readonly when published)\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:180 \"| 7 | **Rich Admin UI** | 43 form interfaces, 20 display renderers, 6 collection layouts (table, cards, calendar, kanban, map), 12 dashboard panel types. Highly\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:128 \"### Content-Type Builder GUI\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/docs/docker-walkthrough.md:44 \"### 6. Field Type Picker (screenshot: 07-field-type-picker.png)\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:16 \"- **Field type picker**: Visual selector for 13+ field types\""
+   }
+  },
+  {
+   "id": "mod-field-types",
+   "area": "modelling",
+   "name": "Choose from rich field types such as email, URL, date, choice list or file, each with its own editor.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/known-issues-and-limitations.md:35 \"- **#302**: Dynamic field types undesirable for Java/Mendix developers\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:32 \"Directus supports 24 field types that map to underlying database column types:\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:26 \"## Field Types (Scalar)\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:12 \"NocoDB provides 30+ built-in field types organized into a `UITypes` enum in the SDK. Each field type maps to database-specific column types through SQL UI adapt\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/collections-system/spec.md:16 \"- 13 field types: text, editor, number, bool, email, URL, datetime, autodate, select, file, relation, JSON, password, geo_point\""
+   }
+  },
+  {
+   "id": "mod-relations",
+   "area": "modelling",
+   "name": "Link a record to records of another type and follow the link from either side.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:79 \"| **Object cross-references** | Relations between objects across schemas/registers | No relation support |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:12 \"Directus models data at the database level using real SQL tables and columns. Collections map to database tables, fields map to columns, and relationships are d\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:109 \"| 2 | Content Types & Schema | Core | Very High | JSON schema files, 18 scalar field types, 10 relation types, components, dynamic zones |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:56 \"- **Links** (LinkToAnotherRecord) — Relations: HasMany, BelongsTo, ManyToMany, ManyToOne, OneToOne\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:11 \"PocketBase automatically generates full CRUD REST endpoints for every collection. The API includes pagination, sorting, filtering, field selection, relation exp\""
+   }
+  },
+  {
+   "id": "mod-relation-inverse",
+   "area": "modelling",
+   "name": "Declare a typed link with a named inverse, so both ends show the relationship.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "2.26"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:71 \"| `o2m` | One-to-Many | Inverse of M2O, virtual alias field |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:54 \"| `oneToMany` | Bidirectional one-to-many |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:56 \"- **Links** (LinkToAnotherRecord) — Relations: HasMany, BelongsTo, ManyToMany, ManyToOne, OneToOne\""
+   }
+  },
+  {
+   "id": "mod-register-group",
+   "area": "modelling",
+   "name": "Group related record types into a register that is managed and shared as one unit.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "unknown",
+   "strapi": "no",
+   "nocodb": "partial",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:71 \"| **Registers** | Group schemas + objects into logical registers | No grouping concept — flat objecttype list |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:168 \"### Single-Tenant Architecture\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:152 \"| 5 | **No register/tenant isolation** | Bases and tables are organizational containers, not semantically meaningful registers with cross-referencing, validatio\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/collections-system/spec.md:28 \"OpenRegister's Schema/Register model is conceptually similar but more hierarchical. PocketBase's flat collection model is simpler but lacks OpenRegister's multi\""
+   }
+  },
+  {
+   "id": "mod-type-versions",
+   "area": "modelling",
+   "name": "Keep versions of a record type, with a draft that does not affect live records until it is published.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "no",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:54 \"| **Schema version lifecycle** | Draft → Published → New Version workflow. Only published versions validate objects. | MEDIUM — we have schemas but no lifecycle\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:194 \"| 4 | **Database-Coupled Schema** | Schema changes require actual DDL migrations (CREATE TABLE, ALTER COLUMN). No runtime dynamic schema changes. Cannot share/v\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:200 \"Fields are defined as JSON arrays with custom type identifiers. There is no JSON Schema support, no schema versioning, no schema inheritance, and no cross-colle\""
+   }
+  },
+  {
+   "id": "mod-migrate-records",
+   "area": "modelling",
+   "name": "Change a record type and have existing records migrated or revalidated to the new shape.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "3.16"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "unknown",
+   "strapi": "partial",
+   "nocodb": "unknown",
+   "pocketbase": "partial",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:54 \"| **Schema version lifecycle** | Draft → Published → New Version workflow. Only published versions validate objects. | MEDIUM — we have schemas but no lifecycle\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:94 \"5. Schema sync diffs expected vs. actual database schema\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/migrations-system/spec.md:11 \"PocketBase includes a database migration system that tracks applied migrations and supports up/down operations. It also provides auto-migration generation based\""
+   }
+  },
+  {
+   "id": "mod-computed",
+   "area": "modelling",
+   "name": "Have a field computed from other fields or linked records, such as a total or a deadline.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "3.17"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "partial",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:28 \"Collections can be 'folder' type (no actual table, just organizational) or 'alias' type (virtual, like computed/relational fields).\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:60 \"- **Formula** — Computed field with 65 formula functions\""
+   }
+  },
+  {
+   "id": "mod-sequence",
+   "area": "modelling",
+   "name": "Give each new record a number from a mask or a running sequence.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "2.1"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/object-crud-lifecycle/spec.md:31 \"| ObjectRecord.index | PositiveInt | Auto-incremented per object |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:28 \"- **AutoNumber** — Auto-incrementing sequence number\""
+   }
+  },
+  {
+   "id": "mod-unique",
+   "area": "modelling",
+   "name": "Refuse a record that repeats another on a field or combination of fields that must be unique.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:36 \"| `uid` | VARCHAR | URL-friendly unique identifier |\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:91 \"name TEXT UNIQUE, fields JSON, indexes JSON,\""
+   }
+  },
+  {
+   "id": "mod-validate",
+   "area": "modelling",
+   "name": "Refuse a record that breaks its type's rules, with a message that names the field.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "partial",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/features.md:15 \"1. **Objecttype validation** — Data validated against JSON-schema on create/update\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:64 \"- **Email** — Validated email address\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/collections-system/spec.md:23 \"- `core/collection_validate.go` (694 lines) - Validation logic\""
+   }
+  },
+  {
+   "id": "mod-vocabulary",
+   "area": "modelling",
+   "name": "Take a field's allowed values from a managed vocabulary, so the list is maintained in one place.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-types/spec.md:47 \"| `enumeration` | VARCHAR | Constrained string from list |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:31 \"- **SingleSelect** — Dropdown with colored options\""
+   }
+  },
+  {
+   "id": "mod-import-standard",
+   "area": "modelling",
+   "name": "Start a record type from a published standard model instead of from scratch.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "mod-repeating-group",
+   "area": "modelling",
+   "name": "Put a repeating group of sub-fields inside a record, such as several addresses.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "partial",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:48 \"- `json` - JSON column type\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:109 \"| 2 | Content Types & Schema | Core | Very High | JSON schema files, 18 scalar field types, 10 relation types, components, dynamic zones |\""
+   }
+  },
+  {
+   "id": "mod-geometry",
+   "area": "modelling",
+   "name": "Store a location or an area on a record as a map geometry.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "partial",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:56 \"| **PostGIS geometry** | Native GeometryField with `Content-Crs`/`Accept-Crs` headers. Within-polygon spatial queries. | LOW — niche use case, but VNG requires \"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:52 \"### Geometry types\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/data-modeling/spec.md:68 \"- **Geometry** — Geographic shapes\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/collections-system/spec.md:16 \"- 13 field types: text, editor, number, bool, email, URL, datetime, autodate, select, file, relation, JSON, password, geo_point\""
+   }
+  },
+  {
+   "id": "mod-view-type",
+   "area": "modelling",
+   "name": "Define a read-only record type that is computed from a query over other types.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/view-collections/spec.md:11 \"PocketBase supports View collections that are backed by SQL views rather than physical tables. This allows creating read-only computed datasets from one or more\""
+   }
+  },
+  {
+   "id": "mod-wrap-database",
+   "area": "modelling",
+   "name": "Put an existing database table under management without copying the data.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "no",
+   "nocodb": "yes",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:112 \"| Database | Dedicated PostgreSQL + PostGIS | Shares Nextcloud DB |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:210 \"- **Directus** operates at the **database level**: it introspects existing SQL tables, generates real DDL for new collections, and builds APIs from the physical\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:95 \"6. DDL statements are generated and executed (CREATE/ALTER TABLE)\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/nocodb.md:68 \"- Connects directly to existing SQL databases without data migration — works as a layer on top\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:119 \"| Database | Embedded SQLite | MySQL/PostgreSQL via Nextcloud |\""
+   }
+  },
+  {
+   "id": "rec-table",
+   "area": "records",
+   "name": "Browse the records of a type in a table with sortable columns you can choose.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "partial",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:70 \"| **Custom Vue.js frontend** | Full UI for managing registers, schemas, objects | Only Django Admin (no end-user UI) |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:150 \"- **6 layouts**: tabular (table), cards (grid), calendar, kanban, map\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/admin-panel/spec.md:58 \"- List view with configurable columns, filters, and sorting\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:18 \"- **Features:** Inline editing, row expansion, column resizing, column reordering\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:15 \"- **Record CRUD**: Table view with sorting, filtering, inline editing, rich text editor\""
+   }
+  },
+  {
+   "id": "rec-inline-edit",
+   "area": "records",
+   "name": "Edit a value directly in a table cell, the way you would in a spreadsheet.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/canvas-grid/spec.md:46 \"- Click on cell activates inline editor (DOM overlay on canvas)\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:15 \"- **Record CRUD**: Table view with sorting, filtering, inline editing, rich text editor\""
+   }
+  },
+  {
+   "id": "rec-form-edit",
+   "area": "records",
+   "name": "Open a record and edit it in a form generated from its type.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "partial",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:70 \"| **Custom Vue.js frontend** | Full UI for managing registers, schemas, objects | Only Django Admin (no end-user UI) |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:180 \"| 7 | **Rich Admin UI** | 43 form interfaces, 20 display renderers, 6 collection layouts (table, cards, calendar, kanban, map), 12 dashboard panel types. Highly\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:19 \"Admin panel walkthrough covering Content Manager, Content-Type Builder, Media Library, Settings, Users & Permissions, Marketplace, and API configuration screens\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:18 \"- **Features:** Inline editing, row expansion, column resizing, column reordering\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:11 \"PocketBase includes a full-featured admin dashboard built with Svelte, embedded in the binary and served at `/_/`. It provides collection management, record CRU\""
+   }
+  },
+  {
+   "id": "rec-kanban",
+   "area": "records",
+   "name": "See records as cards on a board, grouped by a status field.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:150 \"- **6 layouts**: tabular (table), cards (grid), calendar, kanban, map\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:39 \"### Kanban View\""
+   }
+  },
+  {
+   "id": "rec-calendar",
+   "area": "records",
+   "name": "See records on a calendar by one of their dates.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:150 \"- **6 layouts**: tabular (table), cards (grid), calendar, kanban, map\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:46 \"### Calendar View\""
+   }
+  },
+  {
+   "id": "rec-map",
+   "area": "records",
+   "name": "See records on a map by their location.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:150 \"- **6 layouts**: tabular (table), cards (grid), calendar, kanban, map\""
+   }
+  },
+  {
+   "id": "rec-gallery",
+   "area": "records",
+   "name": "See records as a gallery of cards with a cover image.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:150 \"- **6 layouts**: tabular (table), cards (grid), calendar, kanban, map\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:33 \"### Gallery View\""
+   }
+  },
+  {
+   "id": "rec-bulk",
+   "area": "records",
+   "name": "Select many records and change, delete or export them in one action.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "partial",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/objects-admin/spec.md:72 \"| Delete selected | Bulk action | Deletes selected objects |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:22 \"- **Bulk actions:** Multi-select rows, bulk delete/update\""
+   }
+  },
+  {
+   "id": "rec-bin",
+   "area": "records",
+   "name": "Recover a deleted record from a bin within a set period.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/versioning/spec.md:59 \"There is **no soft delete** or recycle bin.\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/data-modeling/spec.md:23 \"- **Archive**: Soft-delete configuration (field, value for archived/unarchived)\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:61 \"| Soft deletes | No (draft/publish) | Yes |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/nocodb.md:58 \"| Soft deletes | No | Yes |\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/pocketbase.md:58 \"| Soft deletes | No | Yes |\""
+   }
+  },
+  {
+   "id": "rec-lock",
+   "area": "records",
+   "name": "Lock a record while you edit it, with your name shown to anyone else who opens it.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "2.27"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "rec-draft-publish",
+   "area": "records",
+   "name": "Keep a draft of a record apart from the published version and publish it when ready.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/content-versioning/spec.md:12 \"Directus provides a built-in content versioning system that allows users to create draft versions of items, collaborate on changes, and promote versions to the \"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-versioning/spec.md:12 \"Strapi v5 provides content versioning through three interconnected systems: **Draft/Publish** for content lifecycle management, **History Versions** for trackin\""
+   }
+  },
+  {
+   "id": "rec-named-version",
+   "area": "records",
+   "name": "Work on a named draft version of a record and promote it once it is approved.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/content-versioning/spec.md:17 \"- **Version**: A named draft that contains a delta of changes from main\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/content-versioning/spec.md:12 \"Strapi v5 provides content versioning through three interconnected systems: **Draft/Publish** for content lifecycle management, **History Versions** for trackin\""
+   }
+  },
+  {
+   "id": "rec-revert",
+   "area": "records",
+   "name": "Restore a record to an earlier version.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "no",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/activity-revisions/spec.md:8 \"# Activity Log & Revisions\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:144 \"Native content lifecycle management where draft and published versions coexist as separate database rows sharing a `documentId`. History versions store full JSO\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:154 \"| 7 | **No time-travel or soft deletes** | Deleted records are permanently removed. No audit-trail-based data recovery, no temporal queries, no version history \""
+   }
+  },
+  {
+   "id": "rec-comments",
+   "area": "records",
+   "name": "Discuss a record in a comment thread on the record itself.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/activity-revisions/spec.md:19 \"- Comments on items\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/collaboration/spec.md:12 \"NocoDB provides multi-user collaboration features including workspaces, role-based access, row-level comments, reactions, audit logging, and real-time notificat\""
+   }
+  },
+  {
+   "id": "rec-tasks",
+   "area": "records",
+   "name": "Attach tasks with a due date and an assignee to a record.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "rec-favourites",
+   "area": "records",
+   "name": "Mark records as favourites and find the ones you opened recently.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "2.19"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "rec-follow",
+   "area": "records",
+   "name": "Follow a record and be notified when it changes.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "rec-presence",
+   "area": "records",
+   "name": "See who else is viewing or editing a record right now.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "partial",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/content-versioning/spec.md:81 \"Recent migrations (20260128A) add collaborative editing support, enabling real-time co-editing of version content.\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/collaboration/spec.md:81 \"- Presence indicators\""
+   }
+  },
+  {
+   "id": "rec-public-form",
+   "area": "records",
+   "name": "Publish a form that outsiders fill in to create records, without an account.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:30 \"- **Sharing:** Public form URL for external data collection\""
+   }
+  },
+  {
+   "id": "rec-share-link",
+   "area": "records",
+   "name": "Share one record with someone outside through a link that can expire.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "partial",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/sharing/spec.md:12 \"Directus allows users to create share links that grant temporary, scoped access to specific items. Shares enable external collaboration without requiring full u\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:69 \"- **Sharing** — Each view can be shared independently with a public URL\""
+   }
+  },
+  {
+   "id": "rec-translate",
+   "area": "records",
+   "name": "Hold a field's value in several languages and show readers their own language.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "11.13"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/translations-i18n/spec.md:32 \"Directus provides a dedicated `translations` relationship type that creates a structured i18n pattern:\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:117 \"| 10 | Internationalization | Content | High | Per-content-type and per-field localization, locale management, AI translations (v5 EE) |\""
+   }
+  },
+  {
+   "id": "rec-move",
+   "area": "records",
+   "name": "Move a record to another register or type without losing its history.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "rec-unread",
+   "area": "records",
+   "name": "See which records are new or changed since you last looked.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "api-rest",
+   "area": "api",
+   "name": "Read, create, change and delete records over a REST API generated from the type.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:33 \"| REST API (CRUD) | DRF ViewSets, full CRUD on /objects and /objecttypes | Nextcloud API routes, full CRUD |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/rest-api/spec.md:12 \"Directus auto-generates a fully RESTful API for every collection (table) in the database. The API follows consistent patterns for CRUD operations, filtering, so\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:110 \"| 3 | REST API Auto-Generation | API | Very High | Full CRUD endpoints, 20+ filter operators, population, sparse fieldsets, pagination |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:12 \"NocoDB auto-generates a full REST API for every table. The API supports CRUD operations, filtering, sorting, pagination, and nested data. API documentation is a\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:11 \"PocketBase automatically generates full CRUD REST endpoints for every collection. The API includes pagination, sorting, filtering, field selection, relation exp\""
+   }
+  },
+  {
+   "id": "api-graphql",
+   "area": "api",
+   "name": "Query records over GraphQL generated from the types.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:33 \"| REST API (CRUD) | DRF ViewSets, full CRUD on /objects and /objecttypes | Nextcloud API routes, full CRUD |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/graphql-api/spec.md:12 \"Directus auto-generates a GraphQL API from the database schema, providing type-safe queries, mutations, and subscriptions. The GraphQL schema is dynamically bui\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/graphql-api/spec.md:12 \"Strapi's GraphQL plugin (`@strapi/plugin-graphql`) auto-generates a complete GraphQL schema from content type definitions. It provides queries, mutations, and f\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/docs/api-and-sdk.md:93 \"- **Filter expressions** as a query language (vs. OData or GraphQL)\""
+   }
+  },
+  {
+   "id": "api-openapi",
+   "area": "api",
+   "name": "Download an OpenAPI description of a register's API that stays in step with its types.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/api-endpoints/spec.md:118 \"- OpenAPI YAML: `/api/v2/openapi.yaml`\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/rest-api/spec.md:165 \"## OpenAPI Specification\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:122 \"| 15 | OpenAPI Generation | API | High | Auto-generated OpenAPI 3.x from Zod schemas, dual-purpose validation + documentation, conditional parameters |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/nocodb.md:34 \"- Auto-generated REST APIs with Swagger documentation\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:186 \"- JSON Schema validation or OAS export\""
+   }
+  },
+  {
+   "id": "api-try-docs",
+   "area": "api",
+   "name": "Try the API from an interactive documentation page with example code.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "partial",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/api-endpoints/spec.md:117 \"- ReDoc: `/api/v2/schema/` (HTML page with interactive docs)\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:91 \"2. **Code snippet generation** in 9 languages is very developer-friendly\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:30 \"The admin dashboard includes an interactive API Preview panel showing:\""
+   }
+  },
+  {
+   "id": "api-filter-ops",
+   "area": "api",
+   "name": "Filter records with operators such as greater than, contains or between on any field.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:57 \"| **GIN-indexed JSON querying** | `data_attrs` filter with 10+ operators (exact, gt, lt, icontains, has_key, jsonpath). PostgreSQL containment `@>`. | MEDIUM — \"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:33 \"| `specs/rest-api/spec.md` | Spec | Endpoint structure, 30+ filter operators, aggregation, deep queries |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/database/spec.md:70 \"- Attribute-level operators (`$eq`, `$contains`, `$gt`, etc.)\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:51 \"- Operators: eq, neq, gt, gte, lt, lte, like, nlike, is, isnot, in, notin, btw, nbtw\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:15 \"- Filter syntax with operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `~` (contains), `?=` (any), `?~` (any contains)\""
+   }
+  },
+  {
+   "id": "api-filter-related",
+   "area": "api",
+   "name": "Filter records by a field of a linked record.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:79 \"| **Object cross-references** | Relations between objects across schemas/registers | No relation support |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:220 \"| **Deep relational queries** | Nested filter/sort/limit on related collections | Support relational query parameters for object relations |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/database/spec.md:72 \"- Relation filters (joins to related tables)\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:25 \"| `specs/search-filtering/` | Feature spec | Custom filter expression language, relation traversal, SQL compilation |\""
+   }
+  },
+  {
+   "id": "api-sparse",
+   "area": "api",
+   "name": "Ask for only the fields you need in an API response.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:63 \"| **Sparse field selection** | `fields=` query parameter to return only specific fields. | LOW — optimization |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/translations-i18n/spec.md:64 \"GET /items/products/1?fields=*,translations.*\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/rest-api/spec.md:40 \"Select specific fields to return (sparse fieldsets).\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:63 \"- `fields=Title,Status,Priority` — Select specific fields\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:11 \"PocketBase automatically generates full CRUD REST endpoints for every collection. The API includes pagination, sorting, filtering, field selection, relation exp\""
+   }
+  },
+  {
+   "id": "api-expand",
+   "area": "api",
+   "name": "Get linked records embedded in the response in one call.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:79 \"| **Object cross-references** | Relations between objects across schemas/registers | No relation support |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:147 \"| 3 | REST API | Auto-generated RESTful API with 30+ filter operators, aggregation, deep relational queries |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:132 \"Every content type automatically gets full CRUD endpoints for both REST and GraphQL. The REST API includes 20+ filter operators (`$eq`, `$contains`, `$between`,\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:17 \"- Relation expansion up to 6 levels (`?expand=author,author.company`)\""
+   }
+  },
+  {
+   "id": "api-aggregate",
+   "area": "api",
+   "name": "Get counts, sums and averages grouped by a field over the API.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "partial",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:183 \"| 10 | **Mature Query Engine** | AST-based query builder with deep relational joins, 30+ filter operators, aggregation functions (count, sum, avg, min, max), ge\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:23 \"- **Aggregation:** Column footer with sum/avg/count/min/max\""
+   }
+  },
+  {
+   "id": "api-batch",
+   "area": "api",
+   "name": "Send several changes in one request that all succeed or all fail together.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "partial",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/docs/known-issues-and-limitations.md:47 \"3. **No bulk import** — No batch/bulk API for importing large datasets\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:30 \"- `PATCH /api/v2/db/data/bulk/noco/{baseId}/{tableId}` — Bulk update\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:20 \"- Batch API for transactional multi-operation requests\""
+   }
+  },
+  {
+   "id": "api-partial-update",
+   "area": "api",
+   "name": "Change only some fields of a record with a partial update.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:59 \"| **Merge PATCH (RFC 7396)** | Modified merge patch that preserves `null` values (null = delete requires `__empty__`). | LOW — PATCH works differently in NC |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/content-versioning/spec.md:75 \"PATCH /collections/articles\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/api-rest/spec.md:25 \"- `PATCH /api/v2/db/data/noco/{baseId}/{tableId}/{rowId}` — Update record\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:14 \"- Automatic CRUD endpoints: `GET` (list/view), `POST` (create), `PATCH` (update), `DELETE`\""
+   }
+  },
+  {
+   "id": "api-live",
+   "area": "api",
+   "name": "Receive changes to records the moment they happen over a live connection.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "no",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:77 \"| **n8n workflow automation** | Built-in workflow triggers and actions | Only VNG Notifications (no workflow engine) |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:155 \"| 11 | Real-time WebSockets | WebSocket subscriptions for live data updates (REST WS + GraphQL WS) |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:166 \"The Community Edition lacks real-time capabilities -- no WebSocket subscriptions, no server-sent events, no live queries. The webhook system is fire-and-forget \"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/collaboration/spec.md:69 \"- Real-time delivery via WebSocket (Socket.IO gateway)\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:139 \"| 4 | **Realtime Subscriptions** | Data Sync | SSE-based push for collection/record changes, auth-aware, 5-min timeout with auto-reconnect | High | OpenRegister\""
+   }
+  },
+  {
+   "id": "api-keys",
+   "area": "api",
+   "name": "Give an outside system its own API key, limited to what it may do.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/permissions/spec.md:5 \"The Objects API has a **token-based permission model** with per-objecttype granularity.\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/sharing/spec.md:69 \"- Scoped API tokens for external access\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:112 \"| 5 | Access Control | Security | Very High | Dual auth system (admin RBAC + public JWT), 17 OAuth providers, API tokens, ABAC conditions (EE) |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:123 \"| 12 | Account Management | Admin | Setup configuration, API token management, MCP token UI, user management, OAuth 2.0 support | High |\""
+   }
+  },
+  {
+   "id": "api-sdk",
+   "area": "api",
+   "name": "Use an official client library in your own programming language.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/api-compliancy/spec.md:65 \"| SDK generation | Automated CI | Not available |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/overview.md:64 \"sdk/              # TypeScript SDK for API consumers\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auto-generated-api/spec.md:31 \"- SDK code samples (JavaScript and Dart)\""
+   }
+  },
+  {
+   "id": "api-linked-data",
+   "area": "api",
+   "name": "Get a record as linked data with a stable identifier.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "no",
+   "strapi": "unknown",
+   "nocodb": "no",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:196 \"| 6 | **No JSON Schema / JSON-LD** | Does not use industry-standard JSON Schema for data modeling. No support for JSON-LD, linked data, or semantic web standard\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:150 \"| 3 | **No government standards support** | No NL Design System theming, no NLGov API compliance, no WOO/ZGW/GEMMA support, no Archiefwet compliance. Not design\""
+   }
+  },
+  {
+   "id": "api-dutch-standard",
+   "area": "api",
+   "name": "Offer the data in the shape of a Dutch government API standard, such as ZGW or the Objects API.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:62 \"| **VNG API compliance** | Full VNG API Strategy compliance, registered standard. | HIGH — competitive requirement |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:195 \"| 5 | **No Government Ecosystem** | No NL Design System support, no WCAG-focused theming, no Dutch government API compliance (NLGov), no Common Ground integrati\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:163 \"Strapi has no integration with government standards (VNG, NL Design System, Common Ground, ZGW, GEMMA). No compliance frameworks for Dutch or EU public-sector r\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:150 \"| 3 | **No government standards support** | No NL Design System theming, no NLGov API compliance, no WOO/ZGW/GEMMA support, no Archiefwet compliance. Not design\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:188 \"- Dutch/EU government standards (ZGW, GEMMA, WOO, Archiefwet)\""
+   }
+  },
+  {
+   "id": "api-custom-endpoint",
+   "area": "api",
+   "name": "Publish a custom endpoint that serves a chosen query or mapping.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "unknown",
+   "pocketbase": "yes",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/extensions/spec.md:32 \"| **Endpoint** | Custom REST endpoints | Custom search, proxy, aggregation |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:141 \"The marketplace at market.strapi.io offers community and verified plugins installable via npm. The plugin architecture supports both server-side (content types,\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/hooks-extensibility/spec.md:21 \"- **Custom routes**: Extend the API with custom endpoints\""
+   }
+  },
+  {
+   "id": "api-urn",
+   "area": "api",
+   "name": "Address a record by a permanent URN that survives a move.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "api-language",
+   "area": "api",
+   "name": "Receive record content in the language asked for in the request.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "srch-fulltext",
+   "area": "search",
+   "name": "Search all records by text and get ranked results.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "partial",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "partial",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:73 \"| **Full-text search** | Solr/Elasticsearch integration with faceted search | Basic Django ORM filtering only |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:200 \"| 10 | **No Semantic/Vector Search** | No built-in vector embeddings, semantic search, or AI-powered search capabilities. Full-text search is basic SQL-level on\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:52 \"| Full-text search | Partial (basic filters) | Yes |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/nocodb.md:49 \"| Full-text search | Partial (DB-level) | Yes |\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/search-filtering/spec.md:31 \"OpenRegister uses Solr/Elasticsearch for search. PocketBase's SQLite-based search is simpler but lacks faceting, relevance scoring, and full-text search capabil\""
+   }
+  },
+  {
+   "id": "srch-facets",
+   "area": "search",
+   "name": "Narrow a result list with counts per field value.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:74 \"| **Faceted search** | Configurable facets per schema | Not available |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/directus.md:51 \"| Faceted search | Partial (filters) | Yes |\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:53 \"| Faceted search | No | Yes |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/nocodb.md:50 \"| Faceted search | No | Yes |\"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/search-filtering/spec.md:31 \"OpenRegister uses Solr/Elasticsearch for search. PocketBase's SQLite-based search is simpler but lacks faceting, relevance scoring, and full-text search capabil\""
+   }
+  },
+  {
+   "id": "srch-file-content",
+   "area": "search",
+   "name": "Find a record by words inside its attached files.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "4.17",
+    "9.6"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "srch-semantic",
+   "area": "search",
+   "name": "Find records by meaning rather than by exact words.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:75 \"| **AI/Vector embeddings** | Semantic search, vector storage | Not available |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:200 \"| 10 | **No Semantic/Vector Search** | No built-in vector embeddings, semantic search, or AI-powered search capabilities. Full-text search is basic SQL-level on\"",
+    "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:58 \"| AI / Vector embeddings | No | Yes |\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:153 \"| 6 | **No advanced search** | Basic filter/sort on table data but no full-text search engine integration (Solr, Elasticsearch), no faceted search, no semantic \"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:197 \"Search is SQLite-based with a custom filter expression language. There is no full-text search engine (Solr/Elasticsearch), no faceted search, no relevance scori\""
+   }
+  },
+  {
+   "id": "srch-unified",
+   "area": "search",
+   "name": "Find records from the platform's global search bar.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "9.1",
+    "9.12"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "srch-saved",
+   "area": "search",
+   "name": "Save a search with its filters and reopen it later.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "yes",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/views/spec.md:12 \"NocoDB supports 5 view types per table: Grid, Form, Gallery, Kanban, and Calendar. Each view has independent field visibility, sorting, filtering, and grouping.\""
+   }
+  },
+  {
+   "id": "srch-saved-shared",
+   "area": "search",
+   "name": "Share a saved search with a team or role.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "9.4"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "srch-alert",
+   "area": "search",
+   "name": "Be alerted when a saved search's count crosses a threshold.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "9.13"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "srch-geo",
+   "area": "search",
+   "name": "Find records inside an area on a map.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:56 \"| **PostGIS geometry** | Native GeometryField with `Content-Crs`/`Accept-Crs` headers. Within-polygon spatial queries. | LOW — niche use case, but VNG requires \"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:183 \"| 10 | **Mature Query Engine** | AST-based query builder with deep relational joins, 30+ filter operators, aggregation functions (count, sum, avg, min, max), ge\""
+   }
+  },
+  {
+   "id": "srch-across",
+   "area": "search",
+   "name": "Search across several registers and types at once.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "9.10"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "srch-rights",
+   "area": "search",
+   "name": "Only see search results you are allowed to read.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "9.7"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "yes",
+   "directus": "yes",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/permissions/spec.md:5 \"The Objects API has a **token-based permission model** with per-objecttype granularity.\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:179 \"| 6 | **WebSocket Subscriptions** | Real-time data subscriptions via both REST-style and GraphQL WebSocket protocols. Permission-filtered so users only see what\""
+   }
+  },
+  {
+   "id": "srch-engine",
+   "area": "search",
+   "name": "Run search on an external engine such as Solr or Elasticsearch for large volumes.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "12.15"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "unknown",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress",
+    "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:73 \"| **Full-text search** | Solr/Elasticsearch integration with faceted search | Basic Django ORM filtering only |\"",
+    "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:200 \"| 10 | **No Semantic/Vector Search** | No built-in vector embeddings, semantic search, or AI-powered search capabilities. Full-text search is basic SQL-level on\"",
+    "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:153 \"| 6 | **No advanced search** | Basic filter/sort on table data but no full-text search engine integration (Solr, Elasticsearch), no faceted search, no semantic \"",
+    "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:197 \"Search is SQLite-based with a custom filter expression language. There is no full-text search engine (Solr/Elasticsearch), no faceted search, no relevance scori\""
+   }
+  },
+  {
+   "id": "srch-trail",
+   "area": "search",
+   "name": "See what users searched for and which searches found nothing.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-type-rights",
+   "area": "access",
+   "name": "Grant a group read or write rights on a whole record type.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "13.1"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-row-rule",
+   "area": "access",
+   "name": "Limit which records a user sees by a rule on the record's own values.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "13.2"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-field",
+   "area": "access",
+   "name": "Hide or lock individual fields for some roles.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "11.25"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-record-share",
+   "area": "access",
+   "name": "Give one person or group access to one record.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "13.3",
+    "13.5"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-organisation",
+   "area": "access",
+   "name": "Keep each organisation's records apart in one installation.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-department-matrix",
+   "area": "access",
+   "name": "Set rights in a department by role matrix.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "13.6"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-admin-screen",
+   "area": "access",
+   "name": "Manage rights in an access-control screen, not in configuration files.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "13.16",
+    "11.19"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-sso",
+   "area": "access",
+   "name": "Sign in with the organisation's single sign-on provider.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-public-read",
+   "area": "access",
+   "name": "Open a record type to anonymous readers for publication.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-encrypt-field",
+   "area": "access",
+   "name": "Encrypt a sensitive field at rest.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-locked-rows",
+   "area": "access",
+   "name": "Show restricted records as locked entries in a list rather than hiding them.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "13.14"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-who-has-access",
+   "area": "access",
+   "name": "See who has access to a record and why.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-delegation",
+   "area": "access",
+   "name": "Let someone act on behalf of another user for a set period.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "acc-end-user-accounts",
+   "area": "access",
+   "name": "Let an app's end users sign up with their own accounts, separate from staff accounts.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-change-log",
+   "area": "history",
+   "name": "See every change to a record with who, when and the values before and after.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-reads",
+   "area": "history",
+   "name": "Log who viewed a record, not only who changed it.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "13.9"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-tamper-proof",
+   "area": "history",
+   "name": "Prove the audit trail has not been altered afterwards.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-viewer",
+   "area": "history",
+   "name": "Browse, filter and export the audit trail in a screen.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "10.5"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-as-of",
+   "area": "history",
+   "name": "See a record as it was on a given date.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-bitemporal",
+   "area": "history",
+   "name": "Record when a fact was true separately from when it was registered, and correct the past.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-activity",
+   "area": "history",
+   "name": "Show record changes in the platform's activity stream.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-deleted-trace",
+   "area": "history",
+   "name": "Keep a trace of a deleted record and who deleted it.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "hist-public-audit",
+   "area": "history",
+   "name": "Let the public query the audit trail of published records.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ret-period",
+   "area": "retention",
+   "name": "Give a record a retention period and a destruction date derived from its type.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "7.7"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ret-destroy",
+   "area": "retention",
+   "name": "Destroy records when their retention ends, after someone approves the list.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "8.7",
+    "13.10"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ret-legal-hold",
+   "area": "retention",
+   "name": "Put records on legal hold so they cannot be destroyed.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ret-edepot",
+   "area": "retention",
+   "name": "Transfer records to an e-Depot and keep proof of the transfer.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ret-archival-metadata",
+   "area": "retention",
+   "name": "Attach TMLO or MDTO archival metadata to records.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ret-selection-list",
+   "area": "retention",
+   "name": "Apply the national selection list to decide what is kept and for how long.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "gdpr-processing-register",
+   "area": "retention",
+   "name": "Keep a register of processing activities.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "gdpr-subject-request",
+   "area": "retention",
+   "name": "Handle a data subject's request to see or erase their data within the legal deadline.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "gdpr-export-area",
+   "area": "retention",
+   "name": "Offer prepared exports for download with an expiry and a record of delivery.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "10.7"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "gdpr-anonymise",
+   "area": "retention",
+   "name": "Anonymise personal data in records.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-attach",
+   "area": "files",
+   "name": "Attach files to a record and keep them in the platform's file store.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-extract",
+   "area": "files",
+   "name": "Extract the text from attached PDF, Word and mail files.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-preview",
+   "area": "files",
+   "name": "Preview an attached file without downloading it.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-image-transform",
+   "area": "files",
+   "name": "Get an image in another size or format on the fly through a URL.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-redact",
+   "area": "files",
+   "name": "Black out personal data in a PDF before it is shared.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-where-used",
+   "area": "files",
+   "name": "See which records a file belongs to from the file browser.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-save-to-record",
+   "area": "files",
+   "name": "Save any file or chat from the platform to a record.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "1.10"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-risk",
+   "area": "files",
+   "name": "Flag files that carry personal data or another risk.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "file-external-storage",
+   "area": "files",
+   "name": "Store attachments in S3 or another external storage.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-webhook",
+   "area": "automation",
+   "name": "Call an outside URL when a record is created, changed or deleted.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-webhook-log",
+   "area": "automation",
+   "name": "See a delivery log of webhook calls and have failed calls retried.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-webhook-shape",
+   "area": "automation",
+   "name": "Shape the webhook payload for the system that receives it.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-flow-editor",
+   "area": "automation",
+   "name": "Build an automation that runs steps when a record changes, in a visual editor.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-schedule",
+   "area": "automation",
+   "name": "Run an automation on a schedule.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-bpmn",
+   "area": "automation",
+   "name": "Model a process in BPMN and run it on records.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "3.1",
+    "11.5"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-approval",
+   "area": "automation",
+   "name": "Route a record through approval steps before it takes effect.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-transitions",
+   "area": "automation",
+   "name": "Allow only the declared status transitions on a record.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-notify",
+   "area": "automation",
+   "name": "Notify users in the platform when records they care about change.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-email",
+   "area": "automation",
+   "name": "Send an e-mail from a template when a record changes.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-code-hooks",
+   "area": "automation",
+   "name": "Run your own code before or after a record is saved, to change it or refuse it.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-external-workflow",
+   "area": "automation",
+   "name": "Hand a change to an external workflow tool such as n8n.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-bulk-rule",
+   "area": "automation",
+   "name": "Apply a rule to many existing records in the background.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "3.20"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "auto-scheduled-report",
+   "area": "automation",
+   "name": "Send a report by e-mail on a schedule.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-import-file",
+   "area": "exchange",
+   "name": "Import records from a CSV or Excel file with a preview before anything is written.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-export",
+   "area": "exchange",
+   "name": "Export records to CSV, Excel or JSON.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-export-pdf",
+   "area": "exchange",
+   "name": "Export a record or a list as a PDF.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-harvest",
+   "area": "exchange",
+   "name": "Keep a register in sync with an outside source by harvesting it on a schedule.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-package",
+   "area": "exchange",
+   "name": "Package a register with its types and settings and install it elsewhere.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-package-git",
+   "area": "exchange",
+   "name": "Import and publish those packages from a GitHub or GitLab repository.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-federation",
+   "area": "exchange",
+   "name": "Read records from another installation as if they were local.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-import-product",
+   "area": "exchange",
+   "name": "Import a whole base from another product such as Airtable in one step.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-backup",
+   "area": "exchange",
+   "name": "Back up and restore all data from the admin screen.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "x-mapping-pack",
+   "area": "exchange",
+   "name": "Map an old system's data onto register types with a reusable mapping.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-mcp",
+   "area": "ai",
+   "name": "Let an AI agent read and change records through MCP, within the user's own rights.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-chat",
+   "area": "ai",
+   "name": "Ask questions about the data in a chat inside the app.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-embeddings",
+   "area": "ai",
+   "name": "Build vector embeddings of records and files for AI search.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-provider",
+   "area": "ai",
+   "name": "Choose which LLM provider is used, including one that runs locally.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-field",
+   "area": "ai",
+   "name": "Fill a field with AI output from a prompt over the record's other fields.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-platform-assistant",
+   "area": "ai",
+   "name": "Give the platform's assistant the records as context for its answers.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-agent-limits",
+   "area": "ai",
+   "name": "Limit which tools and which data an AI agent may use.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "q-duplicates",
+   "area": "modelling",
+   "name": "Find likely duplicate records and review them in a list.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "q-merge",
+   "area": "modelling",
+   "name": "Merge duplicates into one golden record, with rules for which value wins.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "q-score",
+   "area": "modelling",
+   "name": "See a data quality score per record or per type.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "q-dangling",
+   "area": "modelling",
+   "name": "Stop a delete that would leave links dangling, or clean the links up.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "q-link-exists",
+   "area": "modelling",
+   "name": "Refuse a link to a record that does not exist.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-dashboard",
+   "area": "operate",
+   "name": "See registers, record counts and recent activity on a dashboard when you open the app.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-reports",
+   "area": "operate",
+   "name": "Build charts and reports over records without a separate BI tool.",
+   "source": "competitor-derived",
+   "dossiqRows": [
+    "10.10"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-bi-feed",
+   "area": "operate",
+   "name": "Feed an outside BI tool from the register.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-install",
+   "area": "operate",
+   "name": "Install it from the platform's app store with no extra servers to run.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-tenants",
+   "area": "operate",
+   "name": "Run many tenants on one installation, each with its own quota.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-metrics",
+   "area": "operate",
+   "name": "Expose metrics for a monitoring system.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-dutch-ui",
+   "area": "operate",
+   "name": "Use the interface in Dutch as well as English.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-screen-reader",
+   "area": "operate",
+   "name": "Use the data screens with a screen reader.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-design-system",
+   "area": "operate",
+   "name": "Apply the government design system to the app's look.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-otap",
+   "area": "operate",
+   "name": "Promote configuration from test through acceptance to production.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-marketplace",
+   "area": "operate",
+   "name": "Install extensions from a marketplace to add field types or screens.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-cli",
+   "area": "operate",
+   "name": "Manage registers from the command line.",
+   "source": "own-code-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "op-feature-toggles",
+   "area": "operate",
+   "name": "Switch individual features on or off per installation.",
+   "source": "own-code-derived",
+   "dossiqRows": [
+    "11.15"
+   ],
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-generate-type",
+   "area": "ai",
+   "name": "Describe a record type in plain words and have AI draft its fields.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  },
+  {
+   "id": "ai-summarise",
+   "area": "ai",
+   "name": "Ask AI to summarise a record or an attached file.",
+   "source": "competitor-derived",
+   "openregister": "unknown",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister"
+   },
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "evidence": {
+    "openregister": "not checked: code reading of this row still in progress"
+   }
+  }
+ ],
+ "pending": []
+}
