@@ -1892,18 +1892,21 @@
    "dossiqRows": [
     "13.1"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/PermissionHandler.php:414 hasPermission on schema authorization; list filter lib/Db/MagicMapper/MagicRbacHandler.php:482 called lib/Db/MagicMapper/MagicSearchHandler.php:2145; edited in src/views/settings/sections/PermissionMatrix.vue:543 (saveSchema)"
    },
+   "reachedOn": "OpenRegister admin settings, Permission Matrix section (src/settings.js); schema edit dialog /schemas",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:35 \"| Role-based permissions | Per-objecttype read/read_and_write permissions | Nextcloud RBAC + per-register permissions |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/row-level-security/spec.md:10 \"Users -> Roles -> Policies -> Permissions\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/access-control/spec.md:89 \"Each action can be enabled/disabled per role. No field-level or condition-based restrictions in the public API (unlike admin RBAC).\"",
@@ -1919,18 +1922,21 @@
    "dossiqRows": [
     "13.2"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "conditional 'match' rules compiled to SQL lib/Db/MagicMapper/MagicRbacHandler.php:852 processConditionalRule and :1942 buildMatchConditionsSql, applied via :482 applyRbacFilters from MagicSearchHandler.php:2145; single-object path PermissionHandler.php:636"
    },
+   "reachedOn": "every object list /objects and API GET /api/objects/{register}/{schema} (routes.php:1164); rules set in schema authorization JSON",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "partial",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/row-level-security/spec.md:4 \"Directus implements comprehensive row-level security through its permission system, allowing administrators to restrict which items (rows) a user can access wit\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/overview.md:33 \"| `permissions` | ABAC permission engine with conditions and domain rules |\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/overview.md:46 \"5. **Per-collection API rules** - Filter-based access control rules\""
@@ -1944,18 +1950,22 @@
    "dossiqRows": [
     "11.25"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/PropertyRbacHandler.php:150 filterReadableProperties called lib/Service/Object/RenderObject.php:789; lock on write lib/Service/Object/SaveObject.php:3214 getUnauthorizedProperties"
    },
+   "reachedOn": "object detail /objects/:register/:schema/:id and all object APIs; configured in schema property authorization",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "No property-authorization field seen in src/modals/schema/EditSchemaProperty.vue; configuration is schema JSON.",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "partial",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:55 \"| **Field-level authorization** | Per-token field restrictions using `glom` library. Unauthorized fields stripped from response, listed in `X-Unauthorized-Field\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/row-level-security/spec.md:24 \"### Field-Level Permissions\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/access-control/spec.md:89 \"Each action can be enabled/disabled per role. No field-level or condition-based restrictions in the public API (unlike admin RBAC).\""
@@ -1970,37 +1980,43 @@
     "13.3",
     "13.5"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "objectSharing#createShare appinfo/routes.php:103 (lib/Service/Rbac/ObjectSharingService.php); Shares tab src/views/object/ObjectDetails.vue:438 CnObjectAccessTab, rendered by ObjectsIndex.vue:31"
    },
+   "reachedOn": "/objects/:register/:schema/:id Shares tab",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Tab component comes from nextcloud-vue; grant logic and routes are OpenRegister's.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "acc-organisation",
    "area": "access",
    "name": "Keep each organisation's records apart in one installation.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Db/MagicMapper/MagicOrganizationHandler.php:130 applyOrganizationFilter called lib/Db/MagicMapper/MagicSearchHandler.php:2135; organisation#index appinfo/routes.php:1750; page src/manifest.json:101 (organisation)"
    },
+   "reachedOn": "/organisation",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "partial",
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/permissions/spec.md:59 \"| Multi-tenancy | Via token organization field | Via Nextcloud user/group system |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/directus.md:54 \"| Multi-tenancy | Partial (roles/permissions) | Yes |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:169 \"Strapi has no multi-tenancy support. Each content type exists in a single flat namespace. There is no concept of register-level isolation or domain-based data s\"",
@@ -2016,19 +2032,22 @@
    "dossiqRows": [
     "13.6"
    ],
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "matrix compiled into scopes lib/Service/Object/PermissionHandler.php:2699 compileDepartmentMatrix called from resolveAuthorization :2609; validated lib/Db/SchemaMapper.php:2360. No matrix editor in src (grep department/matrix key)"
    },
+   "reachedOn": "none as a screen; declared in schema authorization JSON ('matrix' key)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Enforced, but there is no screen to set the matrix; admins write it into the schema JSON.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "acc-admin-screen",
@@ -2039,18 +2058,22 @@
     "13.16",
     "11.19"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/views/settings/sections/PermissionMatrix.vue:543 saves schema authorization via schemaStore.saveSchema; RbacConfiguration.vue; mounted src/views/settings/Settings.vue:36-39"
    },
+   "reachedOn": "Nextcloud admin settings > OpenRegister (Permission Matrix, RBAC configuration)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Admin only; conditional rules and the department matrix still need schema JSON.",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/objects-admin/spec.md:123 \"| Is superuser | Checkbox | No | Bypasses all permission checks |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/MERGED-ANALYSIS.md:23 \"| `docs/04-access-control.md` | Documentation | Users, roles, policies, permissions |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/admin-panel/spec.md:82 \"- Users & roles management (admin users)\"",
@@ -2063,18 +2086,21 @@
    "area": "access",
    "name": "Sign in with the organisation's single sign-on provider.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "No SSO code in OpenRegister: grep saml/oidc/sso in lib/ and lib/Settings/connections.json found nothing. Sign-in is Nextcloud's (user_oidc / user_saml apps)."
    },
+   "reachedOn": "Nextcloud login",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/permissions/spec.md:60 \"| OIDC support | Yes (admin login) | Via Nextcloud OIDC |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/docs/00-summary.md:26 \"| **Authentication** | Email, OAuth2, OpenID, LDAP, SAML | Via Nextcloud auth | Comparable |\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/strapi.md:16 \"Open-core with MIT license for the community edition. Revenue comes from Strapi Cloud (managed hosting) and Enterprise Edition licenses (per admin-user subscrip\"",
@@ -2087,18 +2113,21 @@
    "area": "access",
    "name": "Open a record type to anonymous readers for publication.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectsController.php:1390 @PublicPage on index (:1402), routes.php:1164; public grant checked PermissionHandler.php:2248 publicGroupExplicitlyGranted; 'Public' column in src/views/settings/sections/PermissionMatrix.vue"
    },
+   "reachedOn": "API: GET /api/objects/{register}/{schema} anonymous; set in admin Permission Matrix",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/access-control/spec.md:132 \"Directus supports a special 'public' role for unauthenticated access. Policies attached to the public role define what anonymous users can see/do. This is disti\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/access-control/spec.md:77 \"### Public Roles\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/sharing/spec.md:33 \"- **Enable Public Access** — Toggle generates a base-level share link\""
@@ -2109,18 +2138,21 @@
    "area": "access",
    "name": "Encrypt a sensitive field at rest.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/SaveObject.php:5980 encryptProperties; decrypt lib/Service/Object/RenderObject.php:804 (x-openregister-encrypted); occ lib/Command/EncryptFieldCommand.php"
    },
+   "reachedOn": "transparent on every object write/read; flag set in schema property",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "partial",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/docs/content-types.md:1882 \"The Password field displays a password field that is encrypted.\""
    }
   },
@@ -2132,56 +2164,66 @@
    "dossiqRows": [
     "13.14"
    ],
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "Searched lib/ and src/ for restricted/locked-entry/placeholder-row patterns (_restricted, locked entr, stub, discover); MagicRbacHandler.php filters unreadable rows out of the SQL, nothing renders them as locked"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "_locked is the edit-lock column, not a visibility placeholder.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "acc-who-has-access",
    "area": "access",
    "name": "See who has access to a record and why.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/ObjectPermissionsController.php:118 index returns principals, verbs and the rule/level granting each, plus denies; routes.php:115; history as-of :179 routes.php:114"
    },
+   "reachedOn": "API only: GET /api/objects/{register}/{schema}/{id}/permissions",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "No OpenRegister screen calls /permissions; the Shares tab shows explicit shares only.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "acc-delegation",
    "area": "access",
    "name": "Let someone act on behalf of another user for a set period.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "grants with expiry lib/Db/DelegationGrant.php:291; consent API lib/Controller/DelegationController.php:157, routes.php:2200-2203; consumed only by flows lib/Service/Flow/FlowRunService.php:723"
    },
+   "reachedOn": "API only: /api/delegations; used when a flow runs as another user",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Delegation lets automations act as a user; a person cannot act on behalf of a colleague in the UI.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/auth-system/spec.md:21 \"- **Impersonation** (superuser can impersonate any auth record)\""
    }
   },
@@ -2190,18 +2232,22 @@
    "area": "access",
    "name": "Let an app's end users sign up with their own accounts, separate from staff accounts.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "Searched appinfo/routes.php and lib/ for signup/register-user/createUser: only lib/Service/File/FileOwnershipHandler.php. Outside parties use access links (routes.php:1052) or the portaliq seam (routes.php:2159), not own accounts"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "End-user accounts sit with portaliq, which asserts subjects to OpenRegister.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
    "nocodb": "unknown",
    "pocketbase": "yes",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/MERGED-ANALYSIS.md:70 \"| **Custom Vue.js frontend** | Full UI for managing registers, schemas, objects | Only Django Admin (no end-user UI) |\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/docs/10-authentication-sso.md:38 \"AUTH_<PROVIDER>_ALLOW_PUBLIC_REGISTRATION=\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/specs/access-control/spec.md:12 \"Strapi has two separate access control systems: the **Admin Panel** role-based access control (RBAC) for CMS administrators, and the **Users & Permissions** plu\"",
@@ -2213,18 +2259,21 @@
    "area": "history",
    "name": "See every change to a record with who, when and the values before and after.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Db/AuditTrailMapper.php:582 createAuditTrail stores user, time and changed old/new; object tab src/views/object/ObjectDetails.vue (Audit Trails); routes.php:1341-1342; page src/manifest.json:173"
    },
+   "reachedOn": "/audit-trails and the object detail Audit Trails tab",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "yes",
    "directus": "yes",
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/object-crud-lifecycle/spec.md:88 \"- Update is actually CREATE of new record (append-only pattern)\"",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/activity-revisions/spec.md:12 \"Directus maintains a comprehensive audit trail through two system collections: `directus_activity` (event log) and `directus_revisions` (data snapshots). Togeth\"",
     "strapi": "docs-only: concurrentie-analyse/openregister/strapi/MERGED-ANALYSIS.md:172 \"Key features are gated behind the proprietary Enterprise Edition: Review Workflows, Content Releases (scheduled publishing), Audit Logs, SSO (SAML/OIDC), custom\"",
@@ -2240,37 +2289,43 @@
    "dossiqRows": [
     "13.9"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/GetObject.php:198 createAuditTrail(action: 'read') on every user-facing find; 'read' counted in lib/Db/AuditTrailMapper.php:1785"
    },
+   "reachedOn": "/audit-trails (action read)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "hist-tamper-proof",
    "area": "history",
    "name": "Prove the audit trail has not been altered afterwards.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "SHA-256 chain lib/Service/AuditHashService.php:249 computeHash, write path AuditTrailMapper.php:117; AuditSealJob appinfo/info.xml:154; verify lib/Controller/AuditTrailController.php:771 routes.php:1351; src/views/settings/sections/LogIntegrity.vue:323"
    },
+   "reachedOn": "admin settings Log integrity section; API GET /api/audit-trails/verify",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Audit rows still have update/delete routes (routes.php:1357-1359); the chain detects, it does not prevent.",
    "objects-api": "partial",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/object-crud-lifecycle/spec.md:88 \"- Update is actually CREATE of new record (append-only pattern)\""
    }
   },
@@ -2282,18 +2337,21 @@
    "dossiqRows": [
     "10.5"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/views/logs/AuditTrailIndex.vue:50 export action calling /api/audit-trails/export (:581), auditTrail#export routes.php:1350, index routes.php:1342; page src/manifest.json:173"
    },
+   "reachedOn": "/audit-trails",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "partial",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/activity-revisions/spec.md:8 \"# Activity Log & Revisions\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/collaboration/spec.md:59 \"- Accessible via Account > Audit or API\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/specs/admin-dashboard/spec.md:19 \"- **Logs viewer**: Request/audit log with chart visualization, level filtering\""
@@ -2304,18 +2362,22 @@
    "area": "history",
    "name": "See a record as it was on a given date.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/RevertController.php:80 revert to a datetime/version (routes.php:1450) rebuilds from the audit trail; no read-only as-of view; grep src for revert found none"
    },
+   "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/revert",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "You can only restore a past state, not look at one without writing it back.",
    "objects-api": "yes",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "no",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/record-versioning-history/spec.md:19 \"- **Material history** (`date` param): filters by `start_at <= date` AND (`end_at >= date` OR `end_at IS NULL`)\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:154 \"| 7 | **No time-travel or soft deletes** | Deleted records are permanently removed. No audit-trail-based data recovery, no temporal queries, no version history \""
    }
@@ -2325,18 +2387,22 @@
    "area": "history",
    "name": "Record when a fact was true separately from when it was registered, and correct the past.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "corrections as their own recorded verb lib/Service/Object/CorrectionService.php:123, routes.php:1275; no valid-time on objects (validFrom only in lib/Db/ContactLink.php:209)"
    },
+   "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/correct",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Correcting the past is recorded; there is no separate 'true from' time axis.",
    "objects-api": "yes",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "no",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "objects-api": "docs-only: concurrentie-analyse/openregister/objects-api/specs/record-versioning-history/spec.md:11 \"Implements dual-perspective history (material and formal) per the Dutch StUF 03.01 standard. Every object maintains a chain of records representing its state ov\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:154 \"| 7 | **No time-travel or soft deletes** | Deleted records are permanently removed. No audit-trail-based data recovery, no temporal queries, no version history \""
    }
@@ -2346,37 +2412,42 @@
    "area": "history",
    "name": "Show record changes in the platform's activity stream.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Listener/ActivityEventListener.php:72 -> lib/Service/ActivityService.php:67/95, registered lib/AppInfo/Application.php:3636-3638; provider/filter/settings appinfo/info.xml:515-527"
    },
+   "reachedOn": "Nextcloud Activity app stream",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "hist-deleted-trace",
    "area": "history",
    "name": "Keep a trace of a deleted record and who deleted it.",
    "source": "competitor-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "soft delete records deletedBy lib/Service/Object/DeleteObject.php:336; deleted#index/topDeleters/destructionRecord routes.php:1435-1446; page src/manifest.json:165 (DeletedIndex.vue)"
    },
+   "reachedOn": "/deleted",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "yes",
    "strapi": "unknown",
    "nocodb": "yes",
    "pocketbase": "unknown",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "directus": "docs-only: concurrentie-analyse/openregister/directus/specs/activity-revisions/spec.md:23 \"- **Action**: `create`, `update`, `delete`, `login`, `comment`\"",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/specs/collaboration/spec.md:58 \"- Operations: DATA (insert, update, delete), META (column, view changes), AUTH\""
    }
@@ -2386,19 +2457,21 @@
    "area": "history",
    "name": "Let the public query the audit trail of published records.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "no",
    "built": {
     "state": "none",
-    "owner": "ConductionNL/openregister"
+    "owner": "ConductionNL/openregister",
+    "evidence": "No @PublicPage on any method in lib/Controller/AuditTrailController.php; routes.php:1341-1359 all session-bound. Only a public timeline projection exists (lib/Service/Timeline/PublicTimeline.php) via access links"
    },
+   "reachedOn": "none",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ret-period",
@@ -2408,19 +2481,21 @@
    "dossiqRows": [
     "7.7"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/RetentionService.php:147 applyArchivalMetadata called lib/Service/Object/SaveObject.php:3916; date via lib/Service/Archival/ArchiveActionDateCalculator.php; shown in Metadata tab src/views/object/ObjectDetails.vue:163"
    },
+   "reachedOn": "/objects/:register/:schema/:id Metadata tab",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ret-destroy",
@@ -2431,75 +2506,86 @@
     "8.7",
     "13.10"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/BackgroundJob/DestructionCheckJob.php:139 createDestructionList (info.xml:143); approve lib/Controller/RetentionController.php:243 queues DestructionExecutionJob; routes.php:2002, 2011-2014"
    },
+   "reachedOn": "API only: /api/archival/destruction-lists/{id}/approve",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "No OpenRegister screen for the destruction list; approval is API only.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ret-legal-hold",
    "area": "retention",
    "name": "Put records on legal hold so they cannot be destroyed.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/RetentionService.php:421 placeLegalHold; checked before destroy lib/BackgroundJob/DestructionExecutionJob.php:199; routes.php:2006-2008, 2015-2017"
    },
+   "reachedOn": "API only: POST /api/archival/legal-holds",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ret-edepot",
    "area": "retention",
    "name": "Transfer records to an e-Depot and keep proof of the transfer.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Controller/TransferController.php:268 queues TransferExecutionJob -> lib/Service/Edepot/EdepotTransferService.php (SIP via SipPackageBuilder, REST/SFTP/Integriq transports); proof lib/Service/Edepot/TransferRecordService.php; routes.php:2041-2049"
    },
+   "reachedOn": "API only: /api/transfers; e-Depot settings API routes.php:2035",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "connections.json:45 lists e-Depot as configurable only through the API.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "ret-archival-metadata",
    "area": "retention",
    "name": "Attach TMLO or MDTO archival metadata to records.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "TMLO populated on save lib/Service/Object/SaveObject.php:4671 (TmloService), export routes.php:1154-1156; MDTO XML lib/Service/Edepot/MdtoXmlGenerator.php used by SipPackageBuilder"
    },
+   "reachedOn": "API: /api/tmlo/{register}/{schema}/...; object Metadata tab",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:150 \"| 3 | **No government standards support** | No NL Design System theming, no NLGov API compliance, no WOO/ZGW/GEMMA support, no Archiefwet compliance. Not design\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:188 \"- Dutch/EU government standards (ZGW, GEMMA, WOO, Archiefwet)\""
    }
@@ -2509,18 +2595,21 @@
    "area": "retention",
    "name": "Apply the national selection list to decide what is kept and for how long.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Archival/SelectielijstImportService.php via lib/Controller/SelectielijstController.php, routes.php:2030-2032; resolved into retention lib/Service/RetentionService.php:377 lookupSelectielijstEntry"
    },
+   "reachedOn": "API only: POST /api/archival/selectielijst/import",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "no",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "nocodb": "docs-only: concurrentie-analyse/openregister/nocodb/MERGED-ANALYSIS.md:150 \"| 3 | **No government standards support** | No NL Design System theming, no NLGov API compliance, no WOO/ZGW/GEMMA support, no Archiefwet compliance. Not design\"",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:188 \"- Dutch/EU government standards (ZGW, GEMMA, WOO, Archiefwet)\""
    }
@@ -2530,18 +2619,21 @@
    "area": "retention",
    "name": "Keep a register of processing activities.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "verwerkingsactiviteiten CRUD routes.php:452-457; UI src/store/modules/avg.js:311 used by src/views/avg/AvgIndex.vue; page src/manifest.json:301"
    },
+   "reachedOn": "/avg",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "no",
    "evidence": {
-    "openregister": "not checked: code reading of this row still in progress",
     "pocketbase": "docs-only: concurrentie-analyse/openregister/pocketbase/MERGED-ANALYSIS.md:189 \"- DPIA, privacy-by-design, or data classification\""
    }
   },
@@ -2550,19 +2642,21 @@
    "area": "retention",
    "name": "Handle a data subject's request to see or erase their data within the legal deadline.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "DSAR cases routes.php:554-564 with lib/Service/Gdpr/DataSubjectDeadline.php (1 month, +2 extension); deadline column + overdue filter src/views/avg/AvgIndex.vue:565,607; erase routes.php:490"
    },
+   "reachedOn": "/avg Cases tab",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "gdpr-export-area",
@@ -2572,38 +2666,44 @@
    "dossiqRows": [
     "10.7"
    ],
-   "openregister": "unknown",
+   "openregister": "yes",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "exports area with expiry and served status lib/Db/ExportRun.php:95,124, recorder lib/Service/Export/ExportRunRecorder.php, sweep SweepExpiredExportRunsJob info.xml:162, exportRuns#index routes.php:1937; DSAR one-time bundle download src/store/modules/avg.js:874"
    },
+   "reachedOn": "API: GET /api/exports; /avg case bundle download",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The exports area itself has no OpenRegister screen.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "gdpr-anonymise",
    "area": "retention",
    "name": "Anonymise personal data in records.",
    "source": "own-code-derived",
-   "openregister": "unknown",
+   "openregister": "partial",
    "built": {
-    "state": "none",
-    "owner": "ConductionNL/openregister"
+    "state": "building",
+    "owner": "ConductionNL/openregister",
+    "evidence": "subject-scoped pseudonymise lib/Service/Gdpr/DataSubjectRequestService.php:240 via erase (default mode) routes.php:490; file anonymise routes.php:1826. lib/Service/Archival/AnonymisationSweep.php has no caller (git grep -w)"
    },
+   "reachedOn": "API: POST /api/gdpr/erase; /avg erasure",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "The schema-driven anonymisation sweep (AnonymisationSweep/AnonymisationRun) is built but never called.",
    "objects-api": "unknown",
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
    "pocketbase": "unknown",
-   "evidence": {
-    "openregister": "not checked: code reading of this row still in progress"
-   }
+   "evidence": {}
   },
   {
    "id": "file-attach",
