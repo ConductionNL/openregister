@@ -12,4 +12,4 @@
 ## 3. Documentation and spec sync
 
 - [x] 3.1 Confirm `openspec validate guardian-participant-messaging-leaf --strict` passes with zero errors.
-- [ ] 3.2 Run the diff-scoped gates (`php -l`, phpcs, phpstan, phpunit --filter) on every touched file and record exit codes in the PR body; report any inherited (pre-existing, non-touched-line) finding in one sentence rather than fixing it.
+- [x] 3.2 Run the diff-scoped gates (`php -l`, phpcs, phpstan, phpunit --filter) on every touched file and record exit codes in the PR body; report any inherited (pre-existing, non-touched-line) finding in one sentence rather than fixing it.
