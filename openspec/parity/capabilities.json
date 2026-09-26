@@ -87,6 +87,10 @@
      "jobPostings": "vendor careers page not returned by any tool call in this session"
     },
     "tendersNote": "intelligence database, 2026-09-26: 4 requirements in 2 tenders (Zaaksysteem/KCC 2021-06-03, Zaak/DMS-RMA/Integratieplatform 2021-04-23) name the Objecten API or Objecttypen API; none in the last twelve months"
+   },
+   "readVersion": {
+    "tag": "4.2.1",
+    "commit": "bfb1e56"
    }
   },
   {
@@ -140,6 +144,10 @@
      "trainingCurriculum": "no training or certification curriculum linked from directus.com navigation or footer",
      "tenders": "no tender or requirement in the intelligence database names Directus (tenders.name, tenders.description and requirements.text_nl searched on 2026-09-26)"
     }
+   },
+   "readVersion": {
+    "tag": "v12.4.1",
+    "commit": "d52fd4b"
    }
   },
   {
@@ -192,6 +200,10 @@
      "tenders": "no tender or requirement in the intelligence database names Strapi (tenders.name, tenders.description and requirements.text_nl searched on 2026-09-26)"
     },
     "notes": "trainingCurriculum is the tutorials blog category, not a formal certification programme; featurePage, pricing, demo, caseStudies, careers were relative links on https://strapi.io/"
+   },
+   "readVersion": {
+    "tag": "v5.55.1",
+    "commit": "7a67a88"
    }
   },
   {
@@ -262,6 +274,10 @@
      "tenders": "no tender or requirement in the intelligence database names NocoDB (tenders.name, tenders.description and requirements.text_nl searched on 2026-09-26)",
      "caseStudies": "no case study section: nocodb.com/case-studies returns 404; nocodb.com/customers renders no customer stories"
     }
+   },
+   "readVersion": {
+    "tag": "2026.09.0",
+    "commit": "61c74a6"
    }
   },
   {
@@ -323,6 +339,10 @@
      "jobPostings": "no company hiring; single maintainer project (gani.bg)",
      "tenders": "no tender or requirement in the intelligence database names PocketBase (tenders.name, tenders.description and requirements.text_nl searched on 2026-09-26)"
     }
+   },
+   "readVersion": {
+    "tag": "v0.40.4",
+    "commit": "5cec579"
    }
   }
  ],
@@ -5058,14 +5078,14 @@
    "minedFrom": "also on the Strapi roadmap: https://feedback.strapi.io/developer-experience/p/gracefully-handle-renaming-of-content-types-and-fields-in-the-ctb",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1639 POST /api/schemas/{id}/migrations -> lib/Controller/SchemaMigrationController.php:359 migrate -> lib/Service/Schema/SchemaMigrationPlanner.php:174 'rename' op, :222 applyRename moves the value per object, with preview (routes.php:1638) and rollback (routes.php:1640); lib/Service/Schema/SchemaDiffService.php:97 classifies a declared rename as one breaking change"
    },
    "reachedOn": "API only: POST /api/schemas/{id}/migrations",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a property rename carries its data through a migration run, but no page calls the migrations routes (not in or-frontend-api-paths.txt) and renaming a record type's slug, which moves its API path, has no carry-over",
+   "note": "a property rename carries its data through a migration run, but no page calls the migrations routes (not in or-frontend-api-paths.txt) and renaming a record type's slug, which moves its API path, has no carry-over built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "partial",
    "directus": "no",
    "strapi": "no",
@@ -5150,14 +5170,14 @@
    "minedFrom": "NocoDB shipped a tree view in https://github.com/nocodb/nocodb/releases/tag/2026.09.0",
    "openregister": "no",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchemaProperty.vue:718-745 'Show the hierarchy' renders a code list's concepts as an indented, non-collapsible list via lib/Controller/VocabularyController.php:166 ?tree; no record list layout shows parent and child records as a tree (grep treeview/TreeView in src: no match)"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "the only hierarchy view is for code list concepts inside the schema property editor",
+   "note": "the only hierarchy view is for code list concepts inside the schema property editor built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "no",
@@ -5180,14 +5200,14 @@
    "originUrl": "https://github.com/directus/directus/discussions/5162",
    "openregister": "no",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Edepot/EdepotTransferService.php:478 -> lib/Service/Edepot/PackagedFileChecksum.php:67 hash_file sha256 computed at e-Depot transfer time, with a fixity check only when the record already carries a checksum; lib/Service/Edepot/SipPackageBuilder.php:346 checksum in the SIP manifest; no checksum is stored when a file is uploaded (lib/Service/FileService.php: no checksum/sha256 match)"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "checksums exist only in the e-Depot package, whose transport is set through the settings API (lib/Settings/connections.json edepot entry)",
+   "note": "checksums exist only in the e-Depot package, whose transport is set through the settings API (lib/Settings/connections.json edepot entry) built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -5210,14 +5230,14 @@
    "originUrl": "https://github.com/directus/directus/releases/tag/v12.0.0",
    "openregister": "no",
    "built": {
-    "state": "partial",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:573 POST /api/translations/object/{uuid}/bulk-translate -> lib/Service/BulkTranslationService.php:154 provider->translate; the only bound provider is lib/AppInfo/Application.php:661-666 IdentityTranslationProvider (a no-op); src/dialogs/i18n/BulkTranslateDialog.vue:278 has no opener anywhere in src; no glossary or style guide input (grep glossary in lib/Service/Translation: no match)"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a provider seam with a no-op default, no AI provider, no glossary, and a dialog nothing opens",
+   "note": "a provider seam with a no-op default, no AI provider, no glossary, and a dialog nothing opens built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'specified' because the evidence shows only a seam or a declaration that reaches nothing, so specified.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "partial",
@@ -5240,14 +5260,14 @@
    "originUrl": "https://github.com/nocodb/nocodb/releases/tag/2026.08.0",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1781-1791 /api/views CRUD plus /api/views/{id}/kanban and /calendar -> lib/Controller/ViewsController.php:439 isPublic and sharedWith -> lib/Db/ViewMapper.php:321 lists views that are mine, public or shared with my group; page: src/views/search/SearchIndex.vue:183 viewsStore.activeView renders a saved view as table, kanban or calendar"
    },
    "reachedOn": "search page (src/views/search/SearchIndex.vue) with a saved, shared view",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a saved view is a focused, shareable filter on the search page, but it is not an access boundary: what a viewer sees still comes from schema RBAC, and there is no page builder with page-level access; leaf apps build such pages from nextcloud-vue manifests instead",
+   "note": "a saved view is a focused, shareable filter on the search page, but it is not an access boundary: what a viewer sees still comes from schema RBAC, and there is no page builder with page-level access; leaf apps build such pages from nextcloud-vue manifests instead built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "partial",
@@ -5360,14 +5380,14 @@
    "originUrl": "https://github.com/nocodb/nocodb/releases/tag/0.301.3",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/search/SearchIndex.vue:398 opens src/modals/object/CopyObject.vue to start a record from a copy of an existing one; schema property defaults fill a new record lib/Service/Object/SaveObject.php:1544; src/views/templates/TemplatesIndex.vue:63 'Templates are coming soon' is about document templates and calls no route"
    },
    "reachedOn": "search page, copy action on a record",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "copy a record or rely on per-field defaults; no named, saved record templates to choose from",
+   "note": "copy a record or rely on per-field defaults; no named, saved record templates to choose from built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "partial",
@@ -5420,14 +5440,14 @@
    "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.31.0",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "every upload refuses executables: lib/Service/File/CreateFileHandler.php:200 blockExecutableFile on the file routes (appinfo/routes.php:1453 files#create, :1458 files#createMultipart) and lib/Service/Object/SaveObject/FilePropertyHandler.php:1101 on file properties; a per-property allow list is enforced at FilePropertyHandler.php:1105 from $propertyConfig['allowedTypes'] (set at :477); but the property editor writes a different key, src/modals/schema/EditSchemaProperty.vue:171 fileConfiguration.allowedMimeTypes, which the save path never reads"
    },
    "reachedOn": "executable block on every upload; the type allow list only through schema JSON or API (allowedTypes), not through the editor",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "hollow control: the 'Allowed MIME Types' field in the property editor is stored but not enforced, because enforcement reads allowedTypes and the editor writes fileConfiguration.allowedMimeTypes",
+   "note": "hollow control: the 'Allowed MIME Types' field in the property editor is stored but not enforced, because enforcement reads allowedTypes and the editor writes fileConfiguration.allowedMimeTypes built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
@@ -5450,14 +5470,14 @@
    "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.55.0",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "nextcloud/server",
     "evidence": "record files live in Nextcloud storage (object store primary storage keeps the bucket private, nextcloud/server lib/private/Files/ObjectStore/S3.php) and are served only through Nextcloud; an expiring public link comes from a Nextcloud share, lib/Service/ShareLinkService.php:290 sets the expiration; Open Register's own access links with a required expiry (lib/Db/AccessLink.php:292, subject file :101) are minted at appinfo/routes.php:1066 accessLink#mint, which no page calls (not in or-frontend-api-paths.txt)"
    },
    "reachedOn": "Nextcloud Files share link with an expiry date; Open Register access links API only: POST /api/access-links",
    "provider": "nextcloud",
    "providerHow": "read-from-code",
-   "note": "private storage and expiring links exist, but as day-granular share links streamed through Nextcloud, not short-lived presigned bucket URLs",
+   "note": "private storage and expiring links exist, but as day-granular share links streamed through Nextcloud, not short-lived presigned bucket URLs built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "yes",
@@ -5480,14 +5500,14 @@
    "originUrl": "https://github.com/strapi/strapi/issues/23493",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings) and lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles); Open Register's own settings save only announces, lib/Service/Settings/ConfigurationSettingsHandler.php:689-695; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)"
    },
    "reachedOn": "audit trail page (/api/audit-trails) for leaf app settings and feature toggles",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "its own RBAC, multitenancy and retention settings and schema or register edits leave no audit row; Nextcloud logs role changes to a file, not a screen",
+   "note": "its own RBAC, multitenancy and retention settings and schema or register edits leave no audit row; Nextcloud logs role changes to a file, not a screen built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "partial",
@@ -5690,14 +5710,14 @@
    "originUrl": "https://github.com/pocketbase/pocketbase/releases/tag/v0.39.0",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "no SQL console: the Operations page (src/views/operations/OperationsConsoleIndex.vue:580 -> appinfo/routes.php:1311 operationsConsole#index) shows jobs and failures; ad hoc queries go through GraphQL, appinfo/routes.php:1990 POST /api/graphql and :1991 GET /api/graphql/explorer, and reports can run a GraphQL data source, src/store/modules/reports.js:56 -> src/views/reports/ReportView.vue:482"
    },
    "reachedOn": "GraphQL explorer page (/api/graphql/explorer) and report data sources",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a query console exists in GraphQL rather than SQL; downloading the query result as a file was not traced",
+   "note": "a query console exists in GraphQL rather than SQL; downloading the query result as a file was not traced built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -5809,14 +5829,14 @@
    "originUrl": "https://github.com/maykinmedia/open-object/blob/master/CHANGELOG.rst",
    "openregister": "no",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "no confidentiality field on a record type: lib/Db/Schema.php and lib/Db/Register.php carry none (Register.php:253 'classification' is the register type); confidentiality exists per record, read under three spellings by lib/Controller/FederationController.php:84-100 to keep non-public records out of federation shares"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a per-record confidentiality value (ZGW vertrouwelijkheidaanduiding) is honoured by federation, but types cannot be labelled or listed by level",
+   "note": "a per-record confidentiality value (ZGW vertrouwelijkheidaanduiding) is honoured by federation, but types cannot be labelled or listed by level built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "no",
@@ -5839,14 +5859,14 @@
    "originUrl": "https://github.com/maykinmedia/open-object/blob/master/CHANGELOG.rst",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/Schema.php:161 description, :168 version, :255 owner, :269 organisation, :445 linked contact ids; the same on lib/Db/Register.php:137, :186, :200, :308; no contact role, source system, update frequency or documentation url field; served by appinfo/routes.php GET /api/schemas/{id} and edited in src/modals/schema/EditSchema.vue"
    },
    "reachedOn": "schema edit modal and API only: GET /api/schemas/{id}",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "owner, organisation and description exist; the catalogue fields a data catalogue needs (source system, update frequency, contact person as a role) do not",
+   "note": "owner, organisation and description exist; the catalogue fields a data catalogue needs (source system, update frequency, contact person as a role) do not built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "yes",
    "directus": "partial",
    "strapi": "partial",
@@ -5869,14 +5889,14 @@
    "originUrl": "https://github.com/maykinmedia/open-object/issues/534",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "requests are slowed or refused by rate: lib/Controller/ObjectsController.php:1400 #[UserRateLimit(limit: 600, period: 60)] (19 rate-limit attributes in that controller, enforced by Nextcloud core), per-caller ceilings lib/Middleware/ApiCallerMiddleware.php:136 -> lib/Service/ApiCaller/CallerRateLimiter.php:114 (registered lib/AppInfo/Application.php:752, fails open), tenant quotas lib/AppInfo/Application.php:670 TenantQuotaMiddleware; no circuit breaker on a failing dependency (the only 'circuit breaker' is a table-scan cap, lib/Service/LinkedEntityService.php:55)"
    },
    "reachedOn": "API only: every /api/objects route",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "rate limits and quotas exist; shedding load because Solr, the database or an outside source is failing does not",
+   "note": "rate limits and quotas exist; shedding load because Solr, the database or an outside source is failing does not built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "partial",
@@ -5900,14 +5920,14 @@
    "minedFrom": "Gemeente Leusden zaaksysteem 2026-04-11, requirement 203972 in the intelligence database: \"De Oplossing signaleert het als de vernietigingstermijn van een zaak strijdig is met de vernietigingstermijn van gerelateerde zaken\"; also open-object issue https://github.com/maykinmedia/open-object/issues/708",
    "openregister": "no",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "a record's archive date can be derived from a linked record, lib/Service/Archival/ArchiveActionDateCalculator.php:178-179 brondatumFromRelation, but nothing compares destruction dates across linked records: grep related, relation, linked in lib/Service/Archival/DestructionService.php and DestructionReviewService.php finds nothing; the cascade wording in lib/Service/Archival/ArchivalRetentionGuard.php:134-141 (CONTEXT_CASCADE) has no caller outside the class"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "dates can follow a parent, so they are aligned by design, but a conflict is never signalled",
+   "note": "dates can follow a parent, so they are aligned by design, but a conflict is never signalled built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "partial",
    "directus": "no",
    "strapi": "no",
@@ -5931,14 +5951,14 @@
    "minedFrom": "Gemeente Noordwijk omni-channel contactcenter 2026-04-08, requirement 204149: \"De API-specificatie moet voldoen aan de eisen zoals gesteld in de Nederlandse API-Strategie en de verplichte standaard OpenAPI Specification\"",
    "openregister": "partial",
    "built": {
-    "state": "partial",
+    "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> :1874 validateNlGovRules, which checks two rules only, API-01 methods and API-03 status codes (:2084-2092); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)"
    },
    "reachedOn": "API only: GET /api/registers/{id}/oas and every API response header",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "an OpenAPI document and a narrow self-check, not conformance to the full ADR ruleset or its linter; the API-01 check also flags PATCH, which the rules allow",
+   "note": "an OpenAPI document and a narrow self-check, not conformance to the full ADR ruleset or its linter; the API-01 check also flags PATCH, which the rules allow built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
    "objects-api": "yes",
    "directus": "partial",
    "strapi": "partial",
