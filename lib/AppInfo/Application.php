@@ -2555,6 +2555,7 @@ class Application extends App implements IBootstrap {
 					userSession: $container->get('OCP\IUserSession'),
 					l10n: $container->get('OCP\IL10N'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
+					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
 				);
 			}
 		);

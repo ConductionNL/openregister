@@ -3278,6 +3278,14 @@ class Schema extends Entity implements JsonSerializable {
 		// instance 2026-09-19 — POST with the annotation returned 201 and the
 		// configuration column was empty.
 		HierarchyGrantExpander::ANNOTATION,
+		// Whether this schema's objects may invite an external
+		// (non-Nextcloud-user) participant into a linked Talk room by email,
+		// via TalkLinkService::inviteExternalParticipant() — default OFF.
+		// Absent from this list setConfiguration() would silently DROP it,
+		// so an author enabling guardian participation would read a 200 and
+		// every subsequent invite would answer 403 "does not allow", the
+		// same silent no-op class every entry above records.
+		'x-openregister-talk-participants',
 	];
 
 	/**
