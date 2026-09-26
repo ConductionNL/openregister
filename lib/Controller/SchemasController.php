@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
@@ -963,6 +964,14 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (ConsentDeclarationException $e) {
+			// An x-openregister-consent declaration that cannot be honoured must
+			// not silently ship a property that never fills evidence — the
+			// refusal names the property rather than being logged (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DependentValueDeclarationException $e) {
 			// A dependent value table that names nothing constrains nothing,
 			// and the object it was written to guard would save cleanly. The
@@ -1254,6 +1263,14 @@ class SchemasController extends Controller {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
 			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (ConsentDeclarationException $e) {
+			// An x-openregister-consent declaration that cannot be honoured must
+			// not silently ship a property that never fills evidence — the
+			// refusal names the property rather than being logged (ADR-005).
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
@@ -1786,6 +1803,14 @@ class SchemasController extends Controller {
 			// A calculation a property form forwarded is the caller's input and
 			// a person is waiting on the answer, so the refusal names the node
 			// that refused rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (ConsentDeclarationException $e) {
+			// An x-openregister-consent declaration that cannot be honoured must
+			// not silently ship a property that never fills evidence — the
+			// refusal names the property rather than being logged (ADR-005).
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
