@@ -28,6 +28,8 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Service\TalkLinkService;
@@ -52,6 +54,7 @@ class TalkLinkServiceTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 	private IL10N&MockObject $l10n;
 	private LoggerInterface&MockObject $logger;
+	private SchemaMapper&MockObject $schemaMapper;
 	private TalkLinkService $service;
 
 	protected function setUp(): void {
@@ -70,6 +73,10 @@ class TalkLinkServiceTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->l10n = $this->createMock(IL10N::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->schemaMapper = $this->getMockBuilder(SchemaMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['find'])
+			->getMock();
 
 		// l10n->t() is called from extractRoomFields → buildSubtitle.
 		// Return the input verbatim so the test doesn't depend on the
@@ -82,7 +89,8 @@ class TalkLinkServiceTest extends TestCase {
 			$this->appManager,
 			$this->userSession,
 			$this->l10n,
-			$this->logger
+			$this->logger,
+			$this->schemaMapper
 		);
 	}
 
@@ -251,5 +259,100 @@ class TalkLinkServiceTest extends TestCase {
 		}
 
 		$this->markTestSkipped('Integration test — exercised manually with a seeded Talk room');
+	}
+
+	/**
+	 * A room token that is not linked to the given object is refused up front.
+	 */
+	public function testInviteExternalParticipantThrowsWhenLinkNotFound(): void {
+		$this->mapper->method('findByObjectAndRoom')->willReturn(null);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(404);
+		$this->expectExceptionMessage('Talk link not found');
+
+		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+	}
+
+	/**
+	 * A schema that has not opted in via `x-openregister-talk-participants`
+	 * refuses the invite, even for a validly linked room.
+	 */
+	public function testInviteExternalParticipantThrowsWhenSchemaDoesNotOptIn(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration([]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(403);
+
+		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+	}
+
+	/**
+	 * A malformed email is refused before any Talk call is attempted.
+	 */
+	public function testInviteExternalParticipantThrowsOnInvalidEmail(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(400);
+
+		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'not-an-email');
+	}
+
+	/**
+	 * No logged-in user refuses the invite (mirrors linkRoom/createAndLinkRoom).
+	 */
+	public function testInviteExternalParticipantThrowsWhenNoUser(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$this->expectException(Exception::class);
+
+		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+	}
+
+	/**
+	 * Once past validation, an unavailable Talk degrades to a descriptor
+	 * (AD-23) rather than throwing.
+	 */
+	public function testInviteExternalParticipantDegradesWhenTalkUnavailable(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
+
+		// class_exists('OCA\\Talk\\Manager') is also false in this test
+		// environment (spreed not installed), so resolveManager() always
+		// returns null regardless of the appManager stub.
+		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+
+		$this->assertFalse($result['invited']);
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('talk-not-available', $result['cause']);
 	}
 }

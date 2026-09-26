@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCP\App\IAppManager;
@@ -80,6 +81,7 @@ class TalkLinkService {
 	 * @param IUserSession $userSession Active session.
 	 * @param IL10N $l10n Translation service.
 	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaMapper $schemaMapper Resolves the schema an object belongs to (external-participant opt-in check).
 	 */
 	public function __construct(
 		private readonly TalkLinkMapper $talkLinkMapper,
@@ -88,6 +90,7 @@ class TalkLinkService {
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
+		private readonly SchemaMapper $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -191,6 +194,107 @@ class TalkLinkService {
 			throw new Exception('Talk link not found', 404);
 		}
 	}//end unlinkRoom()
+
+	/**
+	 * Invite an external (non-Nextcloud-user) participant to a linked Talk
+	 * room by email.
+	 *
+	 * Reuses `ParticipantService::addUsers()` — the same call
+	 * `createAndLinkRoom()` already makes for `actorType: 'users'` — with
+	 * `actorType: 'emails'` instead, rather than inventing a second Talk API
+	 * surface. Gated on the object's schema declaring
+	 * `x-openregister-talk-participants: true` in its configuration: staff
+	 * and learners (ordinary Nextcloud accounts, added through Talk's own
+	 * UI or {@see linkRoom()}) are entirely unaffected either way — this
+	 * only widens who this platform endpoint may invite.
+	 *
+	 * @param string $objectUuid Parent OR object uuid.
+	 * @param string $roomToken Talk room token (must already be linked to `$objectUuid`).
+	 * @param string $email External participant's email address.
+	 * @param string|null $displayName Optional display name (defaults to the email).
+	 *
+	 * @return array{invited: bool, unavailable?: bool, cause?: string, actorType?: string, actorId?: string}
+	 *     Degrades to `{invited: false, unavailable: true, cause: ...}` (AD-23)
+	 *     when Talk's participant API is unavailable — never throws for that.
+	 *
+	 * @throws Exception When the room is not linked to the object (404), the
+	 *                   object's schema does not opt in (403), the email is
+	 *                   malformed (400), or no user is logged in.
+	 *
+	 * @spec openspec/changes/guardian-participant-messaging-leaf/specs/guardian-participant-messaging-leaf/spec.md
+	 */
+	public function inviteExternalParticipant(string $objectUuid, string $roomToken, string $email, ?string $displayName = null): array {
+		$link = $this->talkLinkMapper->findByObjectAndRoom($objectUuid, $roomToken);
+		if ($link === null) {
+			throw new Exception('Talk link not found', 404);
+		}
+
+		if ($this->schemaAllowsExternalParticipants(schemaId: (int)$link->getSchemaId()) === false) {
+			throw new Exception('This schema does not allow external Talk participants', 403);
+		}
+
+		if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+			throw new Exception('Invalid email address', 400);
+		}
+
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$manager = $this->resolveManager();
+		if ($manager === null) {
+			return ['invited' => false, 'unavailable' => true, 'cause' => 'talk-not-available'];
+		}
+
+		$room = $this->findRoom(manager: $manager, roomToken: $roomToken, userUid: $user->getUID());
+		if ($room === null) {
+			return ['invited' => false, 'unavailable' => true, 'cause' => 'room-not-found'];
+		}
+
+		$participantService = $this->resolveParticipantService();
+		if ($participantService === null || method_exists($participantService, 'addUsers') === false) {
+			return ['invited' => false, 'unavailable' => true, 'cause' => 'participant-service-unavailable'];
+		}
+
+		$resolvedDisplayName = $displayName;
+		if ($resolvedDisplayName === null || $resolvedDisplayName === '') {
+			$resolvedDisplayName = $email;
+		}
+
+		try {
+			$participantService->addUsers($room, [
+				['actorType' => 'emails', 'actorId' => $email, 'displayName' => $resolvedDisplayName],
+			]);
+		} catch (Throwable $e) {
+			$this->logger->warning('Failed to invite external Talk participant: ' . $e->getMessage());
+			return ['invited' => false, 'unavailable' => true, 'cause' => $e->getMessage()];
+		}
+
+		return ['invited' => true, 'actorType' => 'emails', 'actorId' => $email];
+	}//end inviteExternalParticipant()
+
+	/**
+	 * Whether a schema opts into external (non-Nextcloud-user) Talk participants.
+	 *
+	 * @param int $schemaId The schema id to check.
+	 *
+	 * @return bool
+	 */
+	private function schemaAllowsExternalParticipants(int $schemaId): bool {
+		try {
+			$schema = $this->schemaMapper->find(id: (string)$schemaId, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		$configuration = $schema->getConfiguration();
+		if (is_array($configuration) === false) {
+			return false;
+		}
+
+		return ($configuration['x-openregister-talk-participants'] ?? false) === true;
+	}//end schemaAllowsExternalParticipants()
 
 	/**
 	 * Return the linked rooms for an object, refreshing cached fields
