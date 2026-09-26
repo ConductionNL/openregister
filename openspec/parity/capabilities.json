@@ -14,7 +14,8 @@
    "vendor": "Conduction",
    "isSelf": true,
    "readOn": "2026-09-25",
-   "readHow": "code read at development 226f874, not driven"
+   "readHow": "code read at development 226f874 on 2026-09-25 for the first 167 rows; the 30 wave-5 demand-signal rows read on 2026-09-26 at 0034196ac (development 86a2fb876 plus this file only); not driven",
+   "readVersion": "0034196ac"
   },
   {
    "key": "objects-api",
@@ -5045,6 +5046,910 @@
     "strapi": "source read at v5.55.1, not driven: searched \"summar\" in packages/core/content-manager, packages/core/upload, packages/plugins/i18n: no match",
     "nocodb": "source read at 2026.09.0, not driven: NocoAI 'Find, count and summarise records' (https://nocodb.com/docs/product/noco-ai/capabilities line 77) and AI Text field prompts (UITypes.ts:112) are paid; CE only exposes readAttachment over MCP to an outside agent (mcp.service.ts:346), which can then summarise",
     "pocketbase": "source read at v0.40.4, not driven: no AI integration (see ai-mcp)"
+   }
+  },
+  {
+   "id": "mod-rename-lossless",
+   "area": "modelling",
+   "name": "Rename a field or a record type later without losing the data or breaking the links to it.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/directus/directus/discussions/2711",
+   "minedFrom": "also on the Strapi roadmap: https://feedback.strapi.io/developer-experience/p/gracefully-handle-renaming-of-content-types-and-fields-in-the-ctb",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/routes.php:1639 POST /api/schemas/{id}/migrations -> lib/Controller/SchemaMigrationController.php:359 migrate -> lib/Service/Schema/SchemaMigrationPlanner.php:174 'rename' op, :222 applyRename moves the value per object, with preview (routes.php:1638) and rollback (routes.php:1640); lib/Service/Schema/SchemaDiffService.php:97 classifies a declared rename as one breaking change"
+   },
+   "reachedOn": "API only: POST /api/schemas/{id}/migrations",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "a property rename carries its data through a migration run, but no page calls the migrations routes (not in or-frontend-api-paths.txt) and renaming a record type's slug, which moves its API path, has no carry-over",
+   "objects-api": "partial",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: an objecttype is identified by its uuid (objects-api:src/objects/core/models.py:29) and objects point at it by that uuid URL (objects-api:src/objects/api/serializers.py:250-256), so renaming the type name (objects-api:src/objects/core/models.py:41) keeps data and links; a field lives in the JSON schema of an objecttype version (objects-api:src/objects/core/models.py:194), and renaming it means a new version while existing records keep their old typeVersion and old key, with no data migration; searched \"rename|migrate_data\" in src/objects/core, src/objects/api: no match",
+    "directus": "source read at v12.4.1, not driven: directus:api/src/services/fields.ts:503 updateField alters type, schema and meta of an existing field key but has no path that renames the column, and directus:api/src/services/collections.ts:457 updateOne changes only collection meta; searched \"renameColumn|renameTable|rename\" in api/src/services: no match (renameColumn only in system migrations api/src/database/migrations/20230927A-themes.ts:39); open request github.com/directus/directus/discussions/2711",
+    "strapi": "source read at v5.55.1, not driven: the schema sync diffs the old and new model and drops what is gone strapi:packages/core/database/src/schema/builder.ts:265-270 (dropColumn) and :104-111 (removed tables); searched \"renameColumn|renameTable\" in packages/core/database/src: only a one off v5 identifier migration strapi:packages/core/database/src/migrations/internal-migrations/5.0.0-01-convert-identifiers-long-than-max-length.ts:49,61, so a field renamed in the content type builder loses its column data",
+    "nocodb": "source read at 2026.09.0, not driven: a table rename issues a database rename nocodb:packages/nocodb/src/services/tables.service.ts:245 (sqlOpPlus tableRename), a column rename updates the column in place and rewrites formulas that reference it nocodb:packages/nocodb/src/services/columns.service.ts:615-625; links and formulas point at column and model ids, not names, so they survive",
+    "pocketbase": "source read at v0.40.4, not driven: pocketbase:core/collection_record_table_sync.go:73-74 a collection rename renames the table in place, :111-125 a field rename renames the column via a temporary name, data kept; relation fields point at the target by id, not name (pocketbase:core/field_relation.go:80 CollectionId), so links survive. Gap: API rules and view queries that name the old field are not rewritten, the collection validation rejects the save until they are fixed"
+   }
+  },
+  {
+   "id": "mod-composite-key",
+   "area": "modelling",
+   "name": "Identify a record by a combination of fields, such as a municipality code plus a case number, instead of one id.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/directus/directus/discussions/12137",
+   "openregister": "no",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/routes.php:1171,1177 objects are addressed by {id} (uuid or slug) only; lib/Service/Import/MatchResolver.php:116 resolve() matches an import row on several declared properties, but only inside import previews (routes.php:1336), not as the record's identity in the API or in links"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "combination uniqueness exists as a listener (lib/AppInfo/Application.php:3365 UniqueConstraintListener), which is mod-unique, not identity",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "partial",
+   "pocketbase": "partial",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: records store their payload in one JSON data column (objects-api:src/objects/core/models.py:305); the only uniqueness is object uuid and (object, index) (objects-api:src/objects/core/models.py:362, objects-api:src/objects/api/validators.py:15); searched \"unique_together|UniqueConstraint|unique=True\" in src: nothing over data fields",
+    "directus": "source read at v12.4.1, not driven: directus:packages/types/src/items.ts:8 PrimaryKey is a single string or number and directus:api/src/services/items.ts:1017 resolves one primary field per collection; the schema helper directus:api/src/database/helpers/schema/types.ts:91 changePrimaryKey can build a composite key but is called only from system migrations (api/src/database/migrations/20240204A-marketplace.ts:80), no route or UI; open request github.com/directus/directus/discussions/12137",
+    "strapi": "source read at v5.55.1, not driven: every table gets a single increments id strapi:packages/core/database/src/schema/schema.ts:142-144 and documents are addressed by one documentId; the content type builder offers unique per attribute only strapi:packages/core/content-type-builder/server/src/controllers/validation/types.ts:120; searched \"composite|primaryKey\" in packages/core/database/src/metadata: no match",
+    "nocodb": "source read at 2026.09.0, not driven: composite primary keys are read and addressed as joined ids nocodb:packages/nocodb/src/helpers/dbHelpers.ts:130-140,191, but only for tables of an external data source that already has one; tables created in NocoDB get a single id",
+    "pocketbase": "source read at v0.40.4, not driven: pocketbase:core/db_model.go:5 'composite pk are not supported' and pocketbase:core/field_text.go:315 validation_unsupported_composite_pk; records are addressed and linked by one id. A multi-column UNIQUE index can be added per collection (pocketbase:core/collection_model.go:649 AddIndex(name, unique, columnsExpr), UI pocketbase:ui/src/collections/indexUpsertModal.js:69), so a code plus number combination can be enforced as unique but not used as the key"
+   }
+  },
+  {
+   "id": "api-upsert",
+   "area": "api",
+   "name": "Create a record or update the existing one that matches a key, in a single API call.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/nocodb/nocodb/issues/5126",
+   "minedFrom": "also Directus discussion https://github.com/directus/directus/discussions/5706",
+   "openregister": "partial",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/routes.php:1171 POST /api/objects/{register}/{schema} -> lib/Controller/ObjectsController.php:3313 create is an upsert unless _failIfExists -> lib/Service/Object/SaveObject.php:3260 an existing identifier is updated; bulk: routes.php:1282 POST /api/bulk/{register}/{schema}/save; key-based matching only via lib/Service/Import/MatchResolver.php:116 in the two-step import preview (routes.php:1336 create, :1339 commit)"
+   },
+   "reachedOn": "API only: POST /api/objects/{register}/{schema}",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "single-call upsert matches on the record's own id only; matching on a declared business key takes an import preview plus a commit",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "no",
+   "nocodb": "yes",
+   "pocketbase": "partial",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: ObjectViewSet has separate perform_create and perform_update (objects-api:src/objects/api/v2/views.py:370, :383); a client may supply the uuid on create but it must be new (objects-api:src/objects/api/serializers.py:243-248, objects-api:src/objects/api/validators.py:15-17); searched \"upsert|update_or_create\" in src: only setup_configuration steps (objects-api:src/objects/setup_configuration/steps/objecttypes.py:44)",
+    "directus": "source read at v12.4.1, not driven: directus:api/src/services/items.ts:1016 upsertOne and :1045 upsertMany match on the primary key only and no /items route calls them (only upsertSingleton at directus:api/src/controllers/items.ts:140); bulk create or update is reachable via POST /utils/import?mode=merge directus:api/src/controllers/utils.ts:120, which calls upsertOne per row directus:api/src/services/import/import.ts:265; no match on a business key other than the primary key",
+    "strapi": "source read at v5.55.1, not driven: searched \"upsert\" in packages/core/core/src, packages/core/content-manager/server/src and packages/plugins/graphql/server/src: no match; REST offers create and update by documentId only, the nearest is a single type PUT which creates or updates the one entry, not a keyed upsert",
+    "nocodb": "source read at 2026.09.0, not driven: v3 data API route POST records/upsert nocodb:packages/nocodb/src/controllers/v3/data-v3.controller.ts:67 creates or updates records matched on given fields",
+    "pocketbase": "source read at v0.40.4, not driven: pocketbase:apis/batch.go:39-60 'upsert' handler: PUT /api/collections/{c}/records inside the batch endpoint updates when body.id exists, else creates. Matches on the record id only, not on another key field, and the batch API is off by default (pocketbase:core/settings_model.go:172-173 Batch Enabled false); the plain record routes have no PUT (pocketbase:apis/record_crud.go:29-33)"
+   }
+  },
+  {
+   "id": "rec-tree",
+   "area": "records",
+   "name": "Browse records that form a hierarchy, such as departments or product groups, as a collapsible tree.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/directus/directus/discussions/3054",
+   "minedFrom": "NocoDB shipped a tree view in https://github.com/nocodb/nocodb/releases/tag/2026.09.0",
+   "openregister": "no",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/modals/schema/EditSchemaProperty.vue:718-745 'Show the hierarchy' renders a code list's concepts as an indented, non-collapsible list via lib/Controller/VocabularyController.php:166 ?tree; no record list layout shows parent and child records as a tree (grep treeview/TreeView in src: no match)"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "the only hierarchy view is for code list concepts inside the schema property editor",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "no",
+   "nocodb": "partial",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no hierarchy on objects or an admin tree view; searched \"tree|mptt|treebeard|parent\" in src/objects/core, src/objects/api: only nested route lookups (objects-api:src/objects/api/serializers.py:38); links between objects are free URLs in data",
+    "directus": "source read at v12.4.1, not driven: directus:app/src/interfaces/list-o2m-tree-view/list-o2m-tree-view.vue nested draggable tree of related items inside one item form (NestedDraggable.vue); directus:app/src/layouts has only calendar, cards, kanban, map and tabular, no tree layout for browsing a collection; open request github.com/directus/directus/discussions/3054",
+    "strapi": "source read at v5.55.1, not driven: searched \"tree|nested|parent\" in packages/core/content-manager/admin/src/pages/ListView: only unrelated test and menu files, no tree layout; the list view is a flat table, a self relation shows as a relation field",
+    "nocodb": "source read at 2026.09.0, not driven: a hierarchical list view with levels exists in the model nocodb:packages/nocodb-sdk/src/lib/globals.ts:49 (ViewTypes.LIST), nocodb:packages/nocodb/src/models/ListViewLevel.ts:3 and strings nocodb:packages/nc-gui/lang/en.json:3571,5533, but the view component is a CE stub nocodb:packages/nc-gui/components/smartsheet/list/index.vue:2; docs https://nocodb.com/docs/product-docs/views/view-types/list say Business plan and above; not in the public repo, the official image may carry it",
+    "pocketbase": "source read at v0.40.4, not driven: searched 'tree|hierarch|parent' in ui/src: no match; records list is a flat table pocketbase:ui/src/records/recordsList.js. A self relation field can model a hierarchy but nothing renders it as a tree"
+   }
+  },
+  {
+   "id": "file-checksum",
+   "area": "files",
+   "name": "Keep a checksum of every stored file so anyone can prove later that it has not changed.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/directus/directus/discussions/5162",
+   "openregister": "no",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Edepot/EdepotTransferService.php:478 -> lib/Service/Edepot/PackagedFileChecksum.php:67 hash_file sha256 computed at e-Depot transfer time, with a fixity check only when the record already carries a checksum; lib/Service/Edepot/SipPackageBuilder.php:346 checksum in the SIP manifest; no checksum is stored when a file is uploaded (lib/Service/FileService.php: no checksum/sha256 match)"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "checksums exist only in the e-Depot package, whose transport is set through the settings API (lib/Settings/connections.json edepot entry)",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: Open Object stores no files, file storage is delegated to a Documenten API such as Open Zaak; searched \"checksum|sha256|hash\" in src/objects/core, src/objects/api: no match",
+    "directus": "source read at v12.4.1, not driven: searched \"checksum|md5|sha256|hash\" in packages/system-data/src/fields/files.yaml and \"checksum|sha256|createHash\" in api/src/services/files.ts and api/src/services/files/: no match; files carry filesize and type only; open request github.com/directus/directus/discussions/5162",
+    "strapi": "source read at v5.55.1, not driven: the file model hash field strapi:packages/core/upload/server/src/content-types/file.ts:53 is a generated file name strapi:packages/core/upload/server/src/services/upload.ts:168 (generateFileName), not a content digest; searched \"sha256|checksum|md5\" in packages/core/upload/server/src: no stored checksum",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"checksum|md5|sha\" in packages/nocodb/src/services/attachments.service.ts and models/FileReference.ts: only comments about the sharp image library; attachments are stored with url, size and mimetype, no content digest",
+    "pocketbase": "source read at v0.40.4, not driven: searched 'checksum|sha256|md5|etag' in core, apis, tools/filesystem: only crc32 used to derive collection and field ids (pocketbase:core/db.go:60-62, core/collection_model.go:749); the file field stores only the file name (pocketbase:core/field_file.go)"
+   }
+  },
+  {
+   "id": "ai-translate",
+   "area": "ai",
+   "name": "Have AI translate a record's text fields into other languages, following a shared glossary and style guide.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/directus/directus/releases/tag/v12.0.0",
+   "openregister": "no",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/routes.php:573 POST /api/translations/object/{uuid}/bulk-translate -> lib/Service/BulkTranslationService.php:154 provider->translate; the only bound provider is lib/AppInfo/Application.php:661-666 IdentityTranslationProvider (a no-op); src/dialogs/i18n/BulkTranslateDialog.vue:278 has no opener anywhere in src; no glossary or style guide input (grep glossary in lib/Service/Translation: no match)"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "a provider seam with a no-op default, no AI provider, no glossary, and a dialog nothing opens",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no AI or translation feature; searched \"openai|llm|translat\" in src/objects (python): only Django gettext for UI strings",
+    "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/settings.yaml:927 ai_translation_default_model, :936 ai_translation_glossary, :970 ai_translation_style_guide; directus:app/src/interfaces/translations/use-translation-job.ts:222 calls /ai/object; gated by the ai_translations_enabled entitlement directus:api/src/license/entitlements/manager.ts:191 and directus:app/src/stores/license.ts:45, which is false in the Core tier without a licence key",
+    "strapi": "source read at v5.55.1, not driven: AI translation of a document into other locales exists strapi:packages/plugins/i18n/server/src/services/ai-translations.ts:33-63 with admin hook strapi:packages/plugins/i18n/admin/src/hooks/useAITranslations.ts, but only on an Enterprise licence with the cms-ai feature strapi:packages/core/admin/server/src/ai/services/ai.ts:7,28-34; searched \"glossary|styleGuide\" in packages/plugins/i18n: no match, so no shared glossary or style guide",
+    "nocodb": "source read at 2026.09.0, not driven: AI Text and AI Button field types exist nocodb:packages/nocodb-sdk/src/lib/UITypes.ts:111-112, so a prompt such as translate {Notes} fills a field, but the AI routes are only named in the ACL nocodb:packages/nocodb/src/utils/acl.ts:280-285 with no CE controller; pricing https://nocodb.com/pricing lists AI features on every plan; not in the public repo, the official image may carry it; searched \"glossary\" in packages/nocodb/src and nc-gui/lang/en.json: none, so no shared glossary or style guide",
+    "pocketbase": "source read at v0.40.4, not driven: no AI integration at all; searched 'llm|openai|translat' in core, apis and ui/src: no match"
+   }
+  },
+  {
+   "id": "op-app-page",
+   "area": "operate",
+   "name": "Build a focused app page on the records for people who should not see the whole register.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/nocodb/nocodb/releases/tag/2026.08.0",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/routes.php:1781-1791 /api/views CRUD plus /api/views/{id}/kanban and /calendar -> lib/Controller/ViewsController.php:439 isPublic and sharedWith -> lib/Db/ViewMapper.php:321 lists views that are mine, public or shared with my group; page: src/views/search/SearchIndex.vue:183 viewsStore.activeView renders a saved view as table, kanban or calendar"
+   },
+   "reachedOn": "search page (src/views/search/SearchIndex.vue) with a saved, shared view",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "a saved view is a focused, shareable filter on the search page, but it is not an access boundary: what a viewer sees still comes from schema RBAC, and there is no page builder with page-level access; leaf apps build such pages from nextcloud-vue manifests instead",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: API-first product with the Django admin as the only staff screen (objects-api:src/objects/core/admin.py:140-141, :347-348) and a static start page (objects-api:src/objects/templates/index.html); no page or app builder; end user screens are built elsewhere, for example in Open Formulieren or a portal",
+    "directus": "source read at v12.4.1, not driven: directus:app/src/modules/insights dashboards built from panels, readable per policy; directus:packages/system-data/src/fields/settings.yaml:77 module_bar hides modules; a truly focused page for a group needs a custom module extension (app/src/modules is extendable through the extension registry), so configuration covers dashboards only, not form or record detail pages with their own access",
+    "strapi": "source read at v5.55.1, not driven: no configurable app pages: the admin is the content manager for everyone with role based permissions; a focused page needs a hand written admin plugin page registered via addMenuLink strapi:packages/core/admin/admin/src/core/apis/router.tsx:144, or a separate front end on the API",
+    "nocodb": "source read at 2026.09.0, not driven: Interfaces (focused pages with page level access) are named in strings nocodb:packages/nc-gui/lang/en.json:796,858,5641 and referenced from nocodb:packages/nc-gui/components/nc/DependencyList.vue, but no interface builder component is in the CE repo; pricing https://nocodb.com/pricing lists Interfaces on Plus and above, not Free; not in the public repo, the official image may carry it. Locked shared views are the free nearest option",
+    "pocketbase": "source read at v0.40.4, not driven: the only UI is the superuser dashboard: every page route is superuserOnly or an auth confirmation page (pocketbase:ui/src/router.js:129-174); searched 'page builder|interface|dashboard' in ui/src: no end-user app pages. A frontend served from pb_public is hand-written"
+   }
+  },
+  {
+   "id": "rec-form-update",
+   "area": "records",
+   "name": "Change an existing record through a form link, not only create new ones.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/nocodb/nocodb/issues/7091",
+   "openregister": "no",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "an outsider can read, comment on and add files to one record by link, but cannot change its values through a form",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no public form surface in this repo, only the API and the staff admin (objects-api:src/objects/core/admin.py:347); updating an existing object from a form is done by Open Formulieren through the Objects API (PUT or PATCH, objects-api:src/objects/api/v2/views.py:383), outside this product",
+    "directus": "source read at v12.4.1, not driven: no hosted forms at all: searched \"form|public\" in app/src/modules and api/src/controllers (see rec-public-form in the r1 pack); shares (directus:api/src/controllers/shares.ts:26) give read access to one item, not edit; an update link would need a custom frontend against PATCH /items with a Public policy",
+    "strapi": "source read at v5.55.1, not driven: no hosted form links: searched \"form\" routes in packages/core/content-manager/server/src/routes/admin.ts and packages/plugins/users-permissions/server/src/routes, only authenticated admin and API routes; updating a record from outside needs a custom front end calling PUT with a token",
+    "nocodb": "source read at 2026.09.0, not driven: the public shared view route only inserts rows nocodb:packages/nocodb/src/controllers/public-datas.controller.ts:126-129 (POST shared-view rows); searched \"prefill|update\" routes in public-datas.controller.ts: no route to edit an existing record through a form link",
+    "pocketbase": "source read at v0.40.4, not driven: no form feature: searched 'form link|public form|share' in ui/src and apis: none; end users can PATCH a record only through the API subject to the updateRule (pocketbase:apis/record_crud.go:32), so an update form must be hand-built"
+   }
+  },
+  {
+   "id": "acc-ldap",
+   "area": "access",
+   "name": "Sign in with the organisation's LDAP or Active Directory accounts.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/nocodb/nocodb/issues/9676",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "nextcloud/server",
+    "evidence": "nextcloud/server apps/user_ldap (LDAP and Active Directory user and group backend, admin setting LDAP/AD integration); Open Register has no own login and resolves every user through Nextcloud's IUserSession, so LDAP accounts sign in to it unchanged"
+   },
+   "reachedOn": "Nextcloud login page, configured under admin settings LDAP/AD integration",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
+   "note": "shipped Nextcloud app user_ldap; LDAP groups also feed Open Register's group-based RBAC",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: admin sign in is local accounts or OIDC (objects-api:src/objects/urls.py:60 mozilla_django_oidc, objects-api:src/objects/conf/base.py:197 AdminOIDCConfigurationStep); searched \"ldap\" in src and requirements/base.txt: no match; LDAP or AD only via an OIDC broker such as Keycloak",
+    "directus": "source read at v12.4.1, not driven: directus:api/src/auth/drivers/ldap.ts LDAP driver with bind DN and group mapping (ldap.test.ts); but directus:api/src/auth.ts:39 checks the sso_enabled entitlement and :42 warns configured providers are unavailable under the current licence tier, so LDAP needs a licence key (false in Core)",
+    "strapi": "source read at v5.55.1, not driven: admin SSO only with an Enterprise licence having the sso feature strapi:packages/core/admin/ee/server/src/bootstrap.ts:9, providers are hand configured passport strategies in admin.auth.providers strapi:packages/core/admin/ee/server/src/services/passport/sso.ts:21, so LDAP means adding a passport ldap strategy by code; searched \"ldap\" in packages: no built in LDAP provider",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"ldap\" in packages/nocodb/src (ts): no match; sign in is email and password, Google, and SAML or OIDC SSO which pricing https://nocodb.com/pricing puts on Business and above; LDAP only through an SSO broker in front",
+    "pocketbase": "source read at v0.40.4, not driven: searched 'ldap|activedirectory|saml' in all Go sources: no match; auth methods are password, OTP, MFA and OAuth2 (generic OIDC pocketbase:tools/auth/oidc.go:26, Microsoft pocketbase:tools/auth/microsoft.go:30). Entra ID over OIDC is the nearest path, not LDAP"
+   }
+  },
+  {
+   "id": "mod-index",
+   "area": "modelling",
+   "name": "Add a database index on a field so large record types stay fast to filter and sort.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/nocodb/nocodb/issues/8949",
+   "openregister": "partial",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/modals/schema/EditSchemaProperty.vue:380 'Facetable' switch per property -> lib/Db/MagicMapper.php:3580-3584 createTableIndexes adds CREATE INDEX on each facetable column (and on relation columns :3552); runs on table creation lib/Db/MagicMapper.php:2309 and on resync src/components/cards/RegisterSchemaCard.vue:952 -> appinfo/routes.php:279 tables#sync -> lib/Controller/TablesController.php:140 -> lib/Db/MagicMapper/MagicTableHandler.php:473 updateTableIndexes"
+   },
+   "reachedOn": "schema property editor (Facetable) plus the register card's table sync",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "the index is a side effect of marking a field facetable, not an explicit index option; the trigram 'searchable' index (MagicMapper.php:3603) has no switch in the editor",
+   "objects-api": "partial",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: one fixed GIN index covers the whole data JSON of every record plus fixed type and time indexes (objects-api:src/objects/core/models.py:363-376); an administrator cannot add an index on a chosen field, searched \"Index\" in src/objects/core, src/objects/api: only these model Meta indexes",
+    "directus": "source read at v12.4.1, not driven: directus:app/src/modules/settings/routes/data-model/field-detail/field-detail-advanced/field-detail-advanced-schema.vue:459 checkbox \"Field is indexed\" (en-US.yaml:1083); directus:api/src/services/fields.ts:1008 and :1046 create or drop the database index on is_indexed, with an optional concurrent build",
+    "strapi": "source read at v5.55.1, not driven: a content type schema may declare indexes, carried into the database model strapi:packages/core/core/src/utils/transform-content-types-to-models.ts:319 and kept by the builder strapi:packages/core/content-type-builder/server/src/services/schema-builder/schema-handler.ts:275, but only by editing schema.json by hand; the content type builder UI has no index option",
+    "nocodb": "source read at 2026.09.0, not driven: the only index NocoDB creates is its own on the soft delete column nocodb:packages/nocodb/src/services/tables.service.ts:1237-1245; searched \"createIndex|addIndex\" in packages/nocodb/src/controllers and packages/nc-gui/lang/en.json: no user facing index option",
+    "pocketbase": "source read at v0.40.4, not driven: per-collection indexes, unique or not, with optional WHERE: pocketbase:core/collection_model.go:372 Indexes, :649 AddIndex; dashboard modal pocketbase:ui/src/collections/indexUpsertModal.js:69-79 adds and edits index definitions that are applied to the table on save"
+   }
+  },
+  {
+   "id": "rec-template",
+   "area": "records",
+   "name": "Start a new record from a saved template with values already filled in.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/nocodb/nocodb/releases/tag/0.301.3",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/views/search/SearchIndex.vue:398 opens src/modals/object/CopyObject.vue to start a record from a copy of an existing one; schema property defaults fill a new record lib/Service/Object/SaveObject.php:1544; src/views/templates/TemplatesIndex.vue:63 'Templates are coming soon' is about document templates and calls no route"
+   },
+   "reachedOn": "search page, copy action on a record",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "copy a record or rely on per-field defaults; no named, saved record templates to choose from",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no record templates or default value presets beyond JSON schema defaults; searched \"template|preset|prefill\" in src/objects/core, src/objects/api (python): only admin change_list templates (objects-api:src/objects/core/admin.py:152, :368)",
+    "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/collections.yaml:290 item_duplication_fields lets an admin choose which fields carry over when a user saves an item as a copy; searched \"template\" in app/src/lang/translations/en-US.yaml: no saved record templates (template strings are display templates only, :1086)",
+    "strapi": "source read at v5.55.1, not driven: no saved record templates; the nearest is cloning an existing entry strapi:packages/core/content-manager/server/src/routes/admin.ts:247-248 (collection-types clone) and auto-clone :262; searched \"template\" in packages/core/content-manager/server/src: only model configuration and the preview script",
+    "nocodb": "source read at 2026.09.0, not driven: record template picker is wired into the add row menu nocodb:packages/nc-gui/components/smartsheet/grid/canvas/components/AddNewRowMenu.vue:27-29, but the composable is a CE stub that returns no templates nocodb:packages/nc-gui/composables/useRecordTemplate.ts:3-18; pricing https://nocodb.com/pricing lists record templates on Plus and above; not in the public repo, the official image may carry it",
+    "pocketbase": "source read at v0.40.4, not driven: searched 'template|duplicate|prefill' in ui/src/records: only filterDuplicatesByKey helpers (pocketbase:ui/src/records/recordsPickerModal.js:142); the record form pocketbase:ui/src/records/recordUpsertModal.js has no saved templates. Field defaults are limited to autodate and text autogenerate patterns"
+   }
+  },
+  {
+   "id": "acc-sessions",
+   "area": "access",
+   "name": "See your active sign-in sessions and devices and sign them out remotely.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.50.0",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "nextcloud/server",
+    "evidence": "nextcloud/server apps/settings/lib/Settings/Personal/Security/Authtokens.php 'Devices and sessions' in personal security settings; apps/settings/appinfo/routes.php:16 AuthSettings#destroy revokes a session, :17 wipe a device; Open Register's own /api/user/me/tokens (appinfo/routes.php:1907, lib/Service/UserService.php:1317) lists only its API tokens, not sessions"
+   },
+   "reachedOn": "Nextcloud personal settings, Security, Devices and sessions",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
+   "note": "every Open Register user signs in through Nextcloud, so Nextcloud's session list and remote sign-out apply",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "yes",
+   "nocodb": "no",
+   "pocketbase": "partial",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: django-sessionprofile is installed (objects-api:requirements/base.txt:168) to tie sessions to users, but no screen lists a user's sessions or devices or signs them out; searched \"sessionprofile|session\" in src/objects (python, templates): no view",
+    "directus": "source read at v12.4.1, not driven: directus:api/src/services/users.ts:129 and :134 only delete a user's rows in directus_sessions when the user is disabled or changed; searched \"sessions\" in api/src/controllers: no route to list or revoke own sessions, and no session list in app/src/modules/users",
+    "strapi": "source read at v5.55.1, not driven: admin users list their own sessions and revoke one or all strapi:packages/core/admin/server/src/routes/users.ts:18-23, controller strapi:packages/core/admin/server/src/controllers/authenticated-session.ts:19-60, page strapi:packages/core/admin/admin/src/pages/SessionsPage.tsx; admin panel users only, not end users of the users-permissions plugin",
+    "nocodb": "source read at 2026.09.0, not driven: only sign out of the current session nocodb:packages/nocodb/src/modules/auth/auth.controller.ts:101-113; a password change rotates token_version nocodb:packages/nocodb/src/services/users/users.service.ts:187-195 which ends every session, but searched \"sessions\" in packages/nc-gui/lang/en.json and packages/nocodb/src/modules/auth: no list of sessions or devices",
+    "pocketbase": "source read at v0.40.4, not driven: auth tokens are stateless JWTs, so there is no session or device list: searched 'session|revoke|logout' in apis: only MFA session checks (pocketbase:apis/record_helpers.go:242). Sign out everywhere exists by rotating the record tokenKey, done on password change (pocketbase:core/record_model_auth.go:65) and by a superuser in the record form (pocketbase:ui/src/records/recordUpsertModal.js:884 tokenKey field)"
+   }
+  },
+  {
+   "id": "file-type-limit",
+   "area": "files",
+   "name": "Limit which file types may be uploaded, so risky files are refused at the door.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.31.0",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "every upload refuses executables: lib/Service/File/CreateFileHandler.php:200 blockExecutableFile on the file routes (appinfo/routes.php:1453 files#create, :1458 files#createMultipart) and lib/Service/Object/SaveObject/FilePropertyHandler.php:1101 on file properties; a per-property allow list is enforced at FilePropertyHandler.php:1105 from $propertyConfig['allowedTypes'] (set at :477); but the property editor writes a different key, src/modals/schema/EditSchemaProperty.vue:171 fileConfiguration.allowedMimeTypes, which the save path never reads"
+   },
+   "reachedOn": "executable block on every upload; the type allow list only through schema JSON or API (allowedTypes), not through the editor",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "hollow control: the 'Allowed MIME Types' field in the property editor is stored but not enforced, because enforcement reads allowedTypes and the editor writes fileConfiguration.allowedMimeTypes",
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "yes",
+   "nocodb": "partial",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: Open Object accepts no file uploads, attachments live in a Documenten API (Open Zaak); the API parses JSON only (objects-api:src/objects/conf/api.py:6); searched \"FILE_UPLOAD|mime|upload\" in src/objects: no upload handling",
+    "directus": "source read at v12.4.1, not driven: directus:api/src/services/files.ts:291 and directus:api/src/controllers/files.ts:78 refuse an upload whose mime type is outside FILES_MIME_TYPE_ALLOW_LIST (default */* at directus:packages/env/src/constants/defaults.ts:235), also for resumable uploads at directus:api/src/services/tus/data-store.ts:77; configured by environment variable, not per field in the studio",
+    "strapi": "source read at v5.55.1, not driven: upload security config allowedTypes and deniedTypes strapi:packages/core/upload/server/src/utils/mime-validation.ts:100-110 checks the detected mime type and refuses the upload :138; set in config/plugins, not per field (a media field can also restrict allowed kinds in the builder)",
+    "nocodb": "source read at 2026.09.0, not driven: an attachment field can limit allowed mime types in its options nocodb:packages/nc-gui/components/smartsheet/column/AttachmentOptions.vue:33-34,61-65 (meta supportedAttachmentMimeTypes), but the check runs in the browser nocodb:packages/nc-gui/components/cell/attachment/utils.ts:179-190; searched \"supportedAttachmentMimeTypes\" in packages/nocodb/src: no server side check, so an API upload is not refused",
+    "pocketbase": "source read at v0.40.4, not driven: per file field allow list of mime types: pocketbase:core/field_file.go:111-114 MimeTypes, enforced on upload at :298-299 via validators.UploadedFileMimeType; picked in the field options UI (mime list pocketbase:ui/src/mimeTypes.js). Allow list only, no global deny list"
+   }
+  },
+  {
+   "id": "file-signed-links",
+   "area": "files",
+   "name": "Keep attachments in a private bucket and hand out short-lived signed links to them.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.55.0",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "nextcloud/server",
+    "evidence": "record files live in Nextcloud storage (object store primary storage keeps the bucket private, nextcloud/server lib/private/Files/ObjectStore/S3.php) and are served only through Nextcloud; an expiring public link comes from a Nextcloud share, lib/Service/ShareLinkService.php:290 sets the expiration; Open Register's own access links with a required expiry (lib/Db/AccessLink.php:292, subject file :101) are minted at appinfo/routes.php:1066 accessLink#mint, which no page calls (not in or-frontend-api-paths.txt)"
+   },
+   "reachedOn": "Nextcloud Files share link with an expiry date; Open Register access links API only: POST /api/access-links",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
+   "note": "private storage and expiring links exist, but as day-granular share links streamed through Nextcloud, not short-lived presigned bucket URLs",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "yes",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no file storage in Open Object, so no private bucket or signed links; files are delegated to a Documenten API such as Open Zaak; searched \"signed|presign|storage\" in src/objects (python): no match",
+    "directus": "source read at v12.4.1, not driven: no presigned bucket urls: searched \"presign|getSignedUrl\" in api/src and packages/storage-driver-s3/src, no match; files stay in the (private) storage and are streamed through the authenticated assets route directus:api/src/controllers/assets.ts:158, and time-limited share links exist for items via directus_shares date_end and max_uses directus:packages/system-data/src/fields/shares.yaml:41,45",
+    "strapi": "source read at v5.55.1, not driven: with the official S3 provider and a private ACL bucket strapi:packages/providers/upload-aws-s3/src/index.ts:565-567 isPrivate, the upload plugin hands out presigned urls strapi:packages/providers/upload-aws-s3/src/index.ts:579 getSignedUrl; local disk storage has no signed links",
+    "nocodb": "source read at 2026.09.0, not driven: with a storage adapter that signs (S3 and compatible) attachments are served as presigned urls nocodb:packages/nocodb/src/helpers/attachmentHelpers.ts:350-356 (PresignedUrl.getSignedUrl), expiry set by NC_ATTACHMENT_EXPIRE_SECONDS nocodb:packages/nocodb/src/services/utils.service.ts:606-608, and NC_SECURE_ATTACHMENTS nocodb:packages/nocodb/src/utils/envs.ts:5 keeps local files behind signed links too",
+    "pocketbase": "source read at v0.40.4, not driven: a file field can be Protected (pocketbase:core/field_file.go:128-135); such files are served only with a short-lived file token from POST /api/files/token (pocketbase:apis/file.go:44, :62-80), checked on download at :115-116; token lifetime 180 s by default (pocketbase:core/collection_model_auth_options.go:90-92). Storage may be a private S3 bucket (pocketbase:core/settings_model.go:129 S3). The link is a PocketBase JWT through the server, not a bucket presigned URL (searched 'presign' in tools, core, apis: none)"
+   }
+  },
+  {
+   "id": "hist-admin-actions",
+   "area": "history",
+   "name": "See admin and configuration actions, such as role, token and locale changes, in the audit trail, not only record changes.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/strapi/strapi/issues/23493",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings) and lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles); Open Register's own settings save only announces, lib/Service/Settings/ConfigurationSettingsHandler.php:689-695; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)"
+   },
+   "reachedOn": "audit trail page (/api/audit-trails) for leaf app settings and feature toggles",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "its own RBAC, multitenancy and retention settings and schema or register edits leave no audit row; Nextcloud logs role changes to a file, not a screen",
+   "objects-api": "partial",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "partial",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: objecttype create and update through the API emit structured log events with the token identity (objects-api:src/objects/api/v2/views.py:103-126), to stdout logs, not a queryable trail; staff screen changes to tokens, permissions and objecttypes go through Django ModelAdmin (objects-api:src/objects/token/admin.py:128-129, objects-api:src/objects/core/admin.py:140-141), which keeps Django's per object admin history; no combined admin audit view. Behaviour here rests partly on open_api_framework, an installed package whose INSTALLED_APPS and admin wiring are not in the objects-api repo, so it was inferred from the dependency; a running instance would settle it.",
+    "directus": "source read at v12.4.1, not driven: system collections default to accountability all directus:packages/system-data/src/collections/collections.yaml:11 and only activity, presets, revisions and oauth tables opt out (:22,:58,:66,:127); roles, policies and settings services extend ItemsService (directus:api/src/services/roles.ts:12, policies.ts:9, settings.ts:17), so their create, update and delete write an activity row directus:api/src/services/items.ts:331-341",
+    "strapi": "source read at v5.55.1, not driven: audit logs record user, role, permission, content type, component, login and logout events besides entry and media changes strapi:packages/core/admin/ee/server/src/audit-logs/services/lifecycles.ts:13-40, but only with an Enterprise licence feature audit-logs strapi:packages/core/admin/ee/server/src/index.ts:34-43; api token and locale changes are not in that event list",
+    "nocodb": "source read at 2026.09.0, not driven: the CE app hooks listener receives user, invite, role, table, column and view events but most cases only break nocodb:packages/nocodb/src/services/app-hooks-listener.service.ts:33-131, so they are not written to an audit; pricing https://nocodb.com/pricing puts workspace audit logs on Scale and above; not in the public repo, the official image may carry it",
+    "pocketbase": "source read at v0.40.4, not driven: no audit trail of changes, but the request log records every API call including superuser collection, settings and token changes with method, url, status, auth collection and authId (pocketbase:apis/middlewares.go:366 logRequest, :424-435 url and authId attributes); viewed and filtered in the dashboard (pocketbase:apis/logs.go:19, ui route pocketbase:ui/src/router.js:166). It holds no before and after values and defaults to 5 days retention (pocketbase:core/settings_model.go:158 MaxDays 5)"
+   }
+  },
+  {
+   "id": "rec-preview-site",
+   "area": "records",
+   "name": "Preview a draft record in the real public website before publishing it.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.46.0",
+   "openregister": "no",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister",
+    "evidence": "no draft or preview state on records: grep draft in lib/Service/Object and lib/Db/ObjectEntity.php finds nothing of the kind, and the only preview routes are for erasure, configuration draft sets and imports (appinfo/routes.php:498, :536); no preview token for a public site"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "the public site is a sibling (opencatalogi or portaliq); Open Register offers it no draft-preview hook",
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no publish step or website preview for objects; records are valid from start_at (objects-api:src/objects/core/models.py:311); only objecttype versions have a draft or published status (objects-api:src/objects/core/models.py:204); searched \"preview\" in src/objects: no match",
+    "directus": "source read at v12.4.1, not driven: collection meta preview_url directus:packages/system-data/src/fields/collections.yaml:141 drives a live preview of the draft item in a split pane directus:app/src/modules/content/routes/item.vue:440,466",
+    "strapi": "source read at v5.55.1, not driven: preview routes open the draft in the configured front end url strapi:packages/core/content-manager/server/src/preview/index.ts:12-24, registered without a licence check strapi:packages/core/content-manager/server/src/register.ts:7, but the folder is under the Strapi Enterprise License strapi:packages/core/content-manager/server/src/preview/LICENSE:5 and needs a hand written handler in config/admin that maps an entry to a front end url",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"preview_url|previewUrl\" in packages/nocodb/src/models: no match; NocoDB has no draft and publish cycle and no link to an outside website, only its own shared views",
+    "pocketbase": "source read at v0.40.4, not driven: headless backend with no draft or publish state and no preview setting: searched 'preview url|draft|publish' in core, apis, ui/src: only the record and file preview modals of the dashboard (pocketbase:ui/src/records/recordPreviewModal.js)"
+   }
+  },
+  {
+   "id": "acc-passkey",
+   "area": "access",
+   "name": "Sign in with a passkey or security key instead of a password.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/pocketbase/pocketbase/issues/6800",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "nextcloud/server",
+    "evidence": "nextcloud/server core/Controller/WebAuthnController.php:29 passwordless WebAuthn login, lib/private/Authentication/Login/WebAuthnChain.php:12; devices registered under apps/settings/lib/Settings/Personal/Security/WebAuthn.php; Open Register uses the Nextcloud session, so a passkey sign-in reaches it"
+   },
+   "reachedOn": "Nextcloud login page, passkeys added in personal settings, Security",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
+   "note": "shipped Nextcloud core feature",
+   "objects-api": "partial",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: maykin_2fa with WebAuthn routes on the admin (objects-api:src/objects/urls.py:10-11, :36-37) and a WebAuthn relying party name (objects-api:src/objects/conf/base.py:109-110): a security key works as a second factor for the staff screen, not as a passwordless sign in; the API itself uses tokens. Behaviour here rests partly on open_api_framework, an installed package whose INSTALLED_APPS and admin wiring are not in the objects-api repo, so it was inferred from the dependency; a running instance would settle it.",
+    "directus": "source read at v12.4.1, not driven: searched \"webauthn|passkey\" in api/src, app/src and packages: only an icon name in directus:app/src/interfaces/select-icon/icons.json; sign in is password with optional TOTP, or SSO providers",
+    "strapi": "source read at v5.55.1, not driven: searched \"webauthn|passkey\" in packages (ts, tsx): no match; admin sign in is password or EE SSO, end users use users-permissions password or OAuth providers",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"webauthn|passkey\" in packages/nocodb/src and packages/nc-gui/lang/en.json: no match; sign in is password with optional two factor codes, Google, or paid SSO",
+    "pocketbase": "source read at v0.40.4, not driven: searched 'webauthn|passkey|fido' in the whole repo: no match; auth methods are password, OTP and OAuth2 (pocketbase:apis/record_auth.go:31-42), MFA combines two of those"
+   }
+  },
+  {
+   "id": "mod-custom-messages",
+   "area": "modelling",
+   "name": "Write your own wording for a validation error, per field and per language.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/pocketbase/pocketbase/issues/3798",
+   "openregister": "no",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/ValidateObject.php:2144 generateErrorMessage builds fixed English strings such as :2186 'The required property ({property}) is missing'; grep errorMessage or x-error in ValidateObject.php and lib/Service/Schemas/PropertyValidatorHandler.php: no schema key for a custom message"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "messages name the field but their wording and language are fixed",
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "partial",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: data is validated against the objecttype JSON schema and the raw jsonschema message is returned (objects-api:src/objects/core/utils.py:81-89); no per field or per language custom message; searched \"errorMessage|error_message\" in src/objects: only fixed developer written messages on filters (objects-api:src/objects/utils/filters.py:10), none configurable per objecttype",
+    "directus": "source read at v12.4.1, not driven: per field validation_message directus:packages/system-data/src/fields/fields.yaml:110, shown on a failed rule by directus:app/src/composables/use-validation-error-details.ts:67 and passed through translateLiteral so a $t: translation key gives per language wording directus:app/src/stores/fields.ts:173-174",
+    "strapi": "source read at v5.55.1, not driven: the content type builder has no per field error text: searched \"validationMessage|customMessage\" in packages/core/content-type-builder: no field option; own wording, per language, needs a hand written lifecycle hook or middleware that throws a ValidationError with that text",
+    "nocodb": "source read at 2026.09.0, not driven: form fields carry custom validations with a validator, a value and an own warning message nocodb:packages/nc-gui/lang/en.json:3713-3720, but the builder is not in the CE repo (searched \"customValidations\" in packages/nc-gui .vue and .ts: only the string file) and pricing https://nocodb.com/pricing puts custom validation on Plus and above; one message per rule, no per language variant; not in the public repo, the official image may carry it",
+    "pocketbase": "source read at v0.40.4, not driven: built-in messages are fixed English strings with a code, for example pocketbase:core/validators/db.go:70 validation_not_unique 'Value must be unique'; own wording per field or language needs a hand-written OnRecordValidate hook (pocketbase:core/base.go:958) or client-side mapping of the error codes"
+   }
+  },
+  {
+   "id": "x-backup-encrypt",
+   "area": "exchange",
+   "name": "Encrypt backups so a copy in outside storage cannot be read without a key.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/pocketbase/pocketbase/issues/7706",
+   "openregister": "no",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister",
+    "evidence": "no backup feature: grep backup in appinfo/routes.php finds no route, and the lib/Service hits (ChatService, SharedSchemaDedupeService, SchemaTableMigrator, BulkRelationHandler) are internal copies, not backups; Nextcloud's server-side encryption (nextcloud/server apps/encryption) covers stored files only, not the database tables that hold the records"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "backups are left to the hosting layer; neither Open Register nor Nextcloud produces an encrypted backup archive",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "yes",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no built in backup feature; bin/dump_data.sh is a pg_dump helper for component data (objects-api:bin/dump_data.sh:3-11) with no encryption option; searched \"encrypt|gpg|openssl\" in bin, src: no match; backups are left to the hosting database",
+    "directus": "source read at v12.4.1, not driven: Directus has no built in backup: searched \"backup\" in api/src, only a test file name match (api/src/services/files/lib/assert-valid-storage-path.test.ts); backup and its encryption are left to the database and storage operator",
+    "strapi": "source read at v5.55.1, not driven: the strapi export CLI encrypts the archive by default with a key given on the prompt or by the key option strapi:packages/core/strapi/src/cli/commands/export/command.ts:25-36, and import decrypts it (packages/core/strapi/src/cli/commands/import/action.ts); note the cipher is aes-128-ecb, a weak mode, and there is no scheduled backup, only this manual export",
+    "nocodb": "source read at 2026.09.0, not driven: no backup feature in the CE repo: searched \"backup|snapshot\" in packages/nocodb/src/services, only an internal column data backup during type changes nocodb:packages/nocodb/src/services/column-data-backup-handler.service.ts:4 and view or hook code; backup and its encryption are left to the database operator",
+    "pocketbase": "source read at v0.40.4, not driven: backups are plain zip archives (pocketbase:core/backup_create.go:4 archive/zip, :67 CreateBackup), optionally stored on S3 (pocketbase:core/settings_model.go:128 Backups); searched 'encrypt' in core and apis: only the optional settings encryption, whose comment says backups are not encrypted (pocketbase:core/settings_query.go:54-55)"
+   }
+  },
+  {
+   "id": "op-mail-language",
+   "area": "operate",
+   "name": "Send the system e-mails, such as verification and password reset, in the recipient's own language.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/pocketbase/pocketbase/issues/593",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "nextcloud/server",
+    "evidence": "nextcloud/server apps/settings/lib/Mailer/NewUserMailHelper.php:54 the welcome and set-password mail uses getUserLanguage($user); the password reset mail (core/Controller/LostController.php:66 IL10N) is sent in the language of the reset request; Open Register's own notification mail resolves the recipient's locale per user, lib/Service/Notification/AnnotationNotificationDispatcher.php:685 resolveUserLocale"
+   },
+   "reachedOn": "Nextcloud account mails; Open Register notifications per recipient",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
+   "note": "account mails come from Nextcloud; the reset mail follows the requesting browser, which is normally the recipient",
+   "objects-api": "no",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "partial",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: the system mails are the Django admin password reset (objects-api:src/objects/urls.py:25-28, :39-42), rendered in the site language LANGUAGE_CODE en-us (objects-api:src/objects/conf/base.py:62); the initial superuser mail is a hard coded text (objects-api:src/objects/accounts/management/commands/createinitialsuperuser.py:69); users carry no language preference",
+    "directus": "source read at v12.4.1, not driven: one liquid template per mail type (directus:api/src/services/mail/templates/password-reset.liquid, user-invitation.liquid) sent without the recipient language directus:api/src/services/users.ts:646-656; a per language mail needs a hand written email.send filter hook directus:api/src/services/mail/index.ts:67 or overridden templates",
+    "strapi": "source read at v5.55.1, not driven: users-permissions keeps one editable template per mail type, such as reset_password strapi:packages/plugins/users-permissions/server/src/bootstrap/index.js:57-58 and email_confirmation read at strapi:packages/plugins/users-permissions/server/src/services/user.js:167, with no locale variant; a per language mail needs a hand written extension of the plugin service",
+    "nocodb": "source read at 2026.09.0, not driven: system mails are fixed English React templates, such as nocodb:packages/nocodb/src/services/mail/templates/password-reset.tsx:29 Password reset requested; searched \"locale|language|i18n\" in packages/nocodb/src/services/mail/mail.service.ts and the templates: no match, so no per recipient language",
+    "pocketbase": "source read at v0.40.4, not driven: one editable template per auth collection and mail type (pocketbase:mails/record.go:20 AuthAlert.EmailTemplate, :251 resolveEmailTemplate with {RECORD:field} placeholders); searched 'lang|locale' in mails and auth options: none. A per-recipient language needs a hand-written OnMailerRecordVerificationSend or PasswordResetSend hook (pocketbase:core/base.go:1070, :1074) that swaps the message"
+   }
+  },
+  {
+   "id": "mod-json-field-schema",
+   "area": "modelling",
+   "name": "Check the contents of a JSON field against a JSON Schema before saving.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/pocketbase/pocketbase/issues/1154",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Service/Object/ValidateObject.php:1827 validates the whole object against the schema with the Opis JSON Schema validator, so a property of type object with its own properties, required list and formats is checked before save; nested objects keep their structure for validation (ValidateObject.php:837 'nested-object'); the nested schema is set through src/views/schema/SchemaDetails.vue:60 upload modal -> src/modals/schema/UploadSchema.vue:144 -> src/store/modules/schema.js:321 /api/schemas/upload"
+   },
+   "reachedOn": "schema details, upload schema (JSON Schema) modal, then every object save",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "the property editor offers no field for the nested schema, only a JSON default (src/modals/schema/EditSchemaProperty.vue:306), so it is set by uploading or editing the schema JSON",
+   "objects-api": "yes",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: the heart of the product: every record's data is validated against the JSON schema of its objecttype version with Draft 2020-12 (objects-api:src/objects/core/utils.py:68-89, :92-110), schema stored per version (objects-api:src/objects/core/models.py:194) and itself checked on save (objects-api:src/objects/core/models.py:218-221), with optional strict format checking (objects-api:src/objects/core/models.py:197)",
+    "directus": "source read at v12.4.1, not driven: searched \"ajv|json-schema|jsonschema\" in api/src: only the AI chat tool schema parser directus:api/src/ai/chat/utils/parse-json-schema-7.ts; field validation is the filter rule language on field meta, not JSON Schema, so a JSON field is only checked by filter rules or a custom hook",
+    "strapi": "source read at v5.55.1, not driven: searched \"ajv|jsonschema|json-schema\" in packages/core/core/src and packages/core/utils/src: only MCP and route schema registry tests; a json attribute is only checked for valid JSON, a schema check needs a hand written lifecycle hook",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"jsonschema|ajv\" in packages/nocodb/src/db and helpers: only error helper files (ncError.ts, catchError.ts) for request validation; the JSON field type checks well formed JSON only",
+    "pocketbase": "source read at v0.40.4, not driven: the json field checks only valid JSON and max size (pocketbase:core/field_json.go:23 DefaultJSONFieldMaxSize, JSONField); searched 'jsonschema' in the repo: no match. A schema check needs a hand-written OnRecordValidate hook"
+   }
+  },
+  {
+   "id": "op-sql-console",
+   "area": "operate",
+   "name": "Run an ad hoc SQL query against the data from the admin screen and download the result.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/pocketbase/pocketbase/releases/tag/v0.39.0",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "no SQL console: the Operations page (src/views/operations/OperationsConsoleIndex.vue:580 -> appinfo/routes.php:1311 operationsConsole#index) shows jobs and failures; ad hoc queries go through GraphQL, appinfo/routes.php:1990 POST /api/graphql and :1991 GET /api/graphql/explorer, and reports can run a GraphQL data source, src/store/modules/reports.js:56 -> src/views/reports/ReportView.vue:482"
+   },
+   "reachedOn": "GraphQL explorer page (/api/graphql/explorer) and report data sources",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "a query console exists in GraphQL rather than SQL; downloading the query result as a file was not traced",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no SQL console; the admin object list offers only a data attribute filter syntax (objects-api:src/objects/templates/admin/core/object_change_list.html:45); searched \"\\.raw\\(|cursor\\(|sql\" in src/objects (python, excluding migrations): no console",
+    "directus": "source read at v12.4.1, not driven: searched \"sql console|raw sql|knex.raw(req\" in api/src/controllers: no route that runs ad hoc SQL; the studio offers insights panels and exports over the item API, not SQL",
+    "strapi": "source read at v5.55.1, not driven: searched \"sql\" console routes in packages/core/admin/server/src/routes and packages/core/content-manager/server/src/routes: no ad hoc query route or admin page; data access is through the content manager and API only",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"sqlEditor|runSql|SQL editor\" in packages/nc-gui/components and packages/nc-gui/lang/en.json: no ad hoc SQL screen (the old SQL client is gone); SQL views of an external source can be read as tables, not queried ad hoc",
+    "pocketbase": "source read at v0.40.4, not driven: POST /api/sql superuser only (pocketbase:apis/sql.go:24-25), max 1000 rows and 3 minute timeout (:17-18); dashboard page pocketbase:ui/src/settings/sql/pageSQLConsole.js routed at pocketbase:ui/src/router.js:174, with CSV download at pageSQLConsole.js:167-176"
+   }
+  },
+  {
+   "id": "acc-ip-allowlist",
+   "area": "access",
+   "name": "Allow administrator access only from listed IP addresses or networks.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/pocketbase/pocketbase/releases/tag/v0.38.0",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "nextcloud/server",
+    "evidence": "nextcloud/server lib/private/Security/Ip/RemoteAddress.php:19 config allowed_admin_ranges; lib/private/AppFramework/Middleware/Security/SecurityMiddleware.php:162 refuses admin-only controller methods from other addresses; lib/private/Group/Manager.php:325 isAdmin answers false outside the ranges, which also covers Open Register's in-method admin checks"
+   },
+   "reachedOn": "Nextcloud config.php allowed_admin_ranges, applied to every Open Register admin route",
+   "provider": "nextcloud",
+   "providerHow": "read-from-code",
+   "note": "set in config.php, not in a screen",
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: django-ipware is present only as a django-axes lockout dependency (objects-api:requirements/base.txt:121, :137); searched \"allowlist|whitelist|ALLOWED_IPS|ip_address\" in src/objects: only the lockout signal argument (objects-api:src/objects/accounts/signals.py:54); IP limits would sit in the reverse proxy",
+    "directus": "source read at v12.4.1, not driven: policy field ip_access directus:packages/system-data/src/fields/policies.yaml:47 drops a policy (including one with admin access) when the request IP is outside the listed networks directus:api/src/permissions/utils/filter-policies-by-ip.ts:7-17, loaded at directus:api/src/permissions/lib/fetch-policies.ts:37",
+    "strapi": "source read at v5.55.1, not driven: the built in strapi::ip middleware wraps koa-ip with whitelist and blacklist options strapi:packages/core/core/src/middlewares/ip.ts:1-6, registered at strapi:packages/core/core/src/middlewares/index.ts:22; configured in config/middlewares it applies to the whole server, limiting only the admin panel needs route level middleware written by hand",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"ip_allow|allowedIp|ipWhitelist|allowlist\" in packages/nocodb/src (ts): only unrelated allowlists in nocodb:packages/nocodb/src/db/sql-client/lib/KnexClient.ts:22 and nocodb:packages/nocodb/src/interface/Mail.ts:209; no IP restriction for admin access",
+    "pocketbase": "source read at v0.40.4, not driven: settings SuperuserIPs list of IPs or CIDR subnets (pocketbase:core/settings_model.go:123-125), validated as IP or subnet at :285; enforced by the pbSuperuserIPsWhitelist middleware (pocketbase:apis/middlewares.go:307-316) and in file and backup downloads (pocketbase:apis/file.go:121, apis/backup.go:73)"
+   }
+  },
+  {
+   "id": "mod-diagram",
+   "area": "modelling",
+   "name": "See the record types and the links between them as a diagram.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/pocketbase/pocketbase/releases/tag/v0.37.0",
+   "openregister": "no",
+   "built": {
+    "state": "none",
+    "owner": "ConductionNL/openregister",
+    "evidence": "grep diagram, mermaid, cytoscape, vis-network and erd in src: no diagram component (the two hits are wording in delete modals); the model is exported as OpenAPI per register (appinfo/routes.php:1667 oas#generate), not drawn"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "objects-api": "no",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no diagram of objecttypes and their links, links between objects are free URLs inside data; searched \"diagram|graph|erd|mermaid\" in src/objects (python, html, js): no match",
+    "directus": "source read at v12.4.1, not driven: searched \"diagram|erd|mermaid\" in app/src/modules/settings: no match except unrelated peerDependencies in collection-options.vue; the data model screen is a list of collections and fields, relations are shown per field",
+    "strapi": "source read at v5.55.1, not driven: searched \"diagram|reactflow|xyflow\" in packages/core/content-type-builder/admin/src: no match; the content type builder lists types and their fields, relations are shown per field only",
+    "nocodb": "source read at 2026.09.0, not driven: entity relationship diagram of a base nocodb:packages/nc-gui/components/erd/View.vue with table nodes and relation edges (TableNode.vue, RelationEdge.vue), mounted in the base ERD dialog nocodb:packages/nc-gui/components/dlg/Base/Erd.vue:60",
+    "pocketbase": "source read at v0.40.4, not driven: dashboard collections overview has a 'Fields and relations' tab rendering an entity relation diagram (pocketbase:ui/src/collections/collectionsOverviewModal.js:23, :119-122 app.components.erd, component pocketbase:ui/src/base/erd.js)"
+   }
+  },
+  {
+   "id": "auto-filtered-subscription",
+   "area": "automation",
+   "name": "Subscribe only to changes of records whose values match a filter, instead of every change to a type.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/maykinmedia/open-object/issues/405",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "src/modals/webhook/EditWebhook.vue:407 filters field (key: value per line, placeholder :625) -> appinfo/routes.php:1917 webhooks#create, :1918 update -> lib/Db/Webhook.php:146 filters; delivery lib/Service/WebhookService.php:734 skips a webhook whose filters do not match, :952 passesFilters with dot-path keys; the payload carries the record values, lib/Listener/WebhookEventListener.php:171 'object' => jsonSerialize()"
+   },
+   "reachedOn": "webhooks page, edit webhook modal (filters), for example object.status: open",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "filters are equality or in-list matches on payload values, no ranges or expressions",
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "yes",
+   "pocketbase": "yes",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: notifications go to Open Notificaties on one objecten channel whose only kenmerk is object_type (objects-api:src/objects/api/kanalen.py:69-73, get_kenmerken at :26-43), so a subscriber can narrow to a type but not to records whose values match a filter; subscription itself lives in Open Notificaties",
+    "directus": "source read at v12.4.1, not driven: a websocket subscription carries a query directus:api/src/websocket/handlers/subscribe.ts:169-171, the changed keys are re read through that query and an empty result is not sent :130-132, so a filter limits events to matching records; for outbound calls a Flow event trigger plus the condition operation directus:api/src/operations/condition/index.ts:11 filters on values",
+    "strapi": "source read at v5.55.1, not driven: webhooks subscribe to event names only and every enabled webhook for that event fires strapi:packages/core/core/src/services/webhook-runner.ts:101-110, with no content type or value filter; a filtered notification needs a hand written lifecycle hook that checks the values and calls out",
+    "nocodb": "source read at 2026.09.0, not driven: a webhook with condition on runs only when the record matches its filters nocodb:packages/nocodb/src/utils/webhook-invoker.ts:402-425 (hook.condition, hook.getFilters, validateCondition), evaluated by nocodb:packages/nocodb/src/helpers/webhookHelpers.ts:66-92; pricing https://nocodb.com/pricing lists conditional webhooks on Free",
+    "pocketbase": "source read at v0.40.4, not driven: realtime subscription options carry a query with a filter parameter (pocketbase:apis/realtime.go:640-646); each change is only broadcast to a client when the record matches that client-side filter, checked with the collection access rule first (pocketbase:apis/realtime.go:863-893)"
+   }
+  },
+  {
+   "id": "acc-classification",
+   "area": "access",
+   "name": "Label each record type with a confidentiality level such as open, internal or confidential, and list types by that level.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/maykinmedia/open-object/blob/master/CHANGELOG.rst",
+   "openregister": "no",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "no confidentiality field on a record type: lib/Db/Schema.php and lib/Db/Register.php carry none (Register.php:253 'classification' is the register type); confidentiality exists per record, read under three spellings by lib/Controller/FederationController.php:84-100 to keep non-public records out of federation shares"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "a per-record confidentiality value (ZGW vertrouwelijkheidaanduiding) is honoured by federation, but types cannot be labelled or listed by level",
+   "objects-api": "yes",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: each objecttype carries data_classification (objects-api:src/objects/core/models.py:58) with choices open, intern, confidential, strictly confidential (objects-api:src/objects/core/constants.py:11-15), and the objecttypes endpoint filters on dataClassification (objects-api:src/objects/api/v2/filters.py:141-149, used by objects-api:src/objects/api/v2/views.py:99)",
+    "directus": "source read at v12.4.1, not driven: searched \"classification|confidential\" in api/src and packages/system-data/src: no match outside file and oauth code; collection meta (directus:packages/system-data/src/fields/collections.yaml:14-269) has note, icon, color, archive and accountability settings, no confidentiality level; a custom field per item is possible but no type level label or list by level",
+    "strapi": "source read at v5.55.1, not driven: searched \"classification|confidential\" in packages/core (ts): only a component classification comment in strapi:packages/core/types/src/struct/schema.ts:319, no confidentiality level on content types and no list by level",
+    "nocodb": "source read at 2026.09.0, not driven: searched \"classification|confidential\" in packages/nocodb/src/models and services: only the OAuth client model; tables carry a description and meta, no confidentiality level and no list by level",
+    "pocketbase": "source read at v0.40.4, not driven: collection model has rules, name, type, fields, indexes and a system flag only, no confidentiality label (pocketbase:core/collection_model.go:352-378); searched \"classification|confidential\" in core, apis: no match"
+   }
+  },
+  {
+   "id": "mod-catalogue-meta",
+   "area": "modelling",
+   "name": "Describe each record type with its owner, contact person, source system and update frequency, so it can be listed in a data catalogue.",
+   "source": "demand-signal",
+   "origin": "changelog",
+   "originUrl": "https://github.com/maykinmedia/open-object/blob/master/CHANGELOG.rst",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "lib/Db/Schema.php:161 description, :168 version, :255 owner, :269 organisation, :445 linked contact ids; the same on lib/Db/Register.php:137, :186, :200, :308; no contact role, source system, update frequency or documentation url field; served by appinfo/routes.php GET /api/schemas/{id} and edited in src/modals/schema/EditSchema.vue"
+   },
+   "reachedOn": "schema edit modal and API only: GET /api/schemas/{id}",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "owner, organisation and description exist; the catalogue fields a data catalogue needs (source system, update frequency, contact person as a role) do not",
+   "objects-api": "yes",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: objecttype model carries maintainer organization and department, contact person and e-mail, source system, update frequency, provider organization, documentation URL and labels (objects-api:src/objects/core/models.py:65-123), exposed on the objecttypes API (objects-api:src/objects/api/v2/views.py:95-99)",
+    "directus": "source read at v12.4.1, not driven: collection meta has only a free text note, icon, color and translations directus:packages/system-data/src/fields/collections.yaml:21,37,42,70; no owner, contact person, source system or update frequency fields, so catalogue metadata needs a custom collection linked by hand",
+    "strapi": "source read at v5.55.1, not driven: a content type schema info carries displayName, a free text description and an icon strapi:packages/core/types/src/struct/schema.ts:60,105; no owner, contact, source system or update frequency fields for a catalogue",
+    "nocodb": "source read at 2026.09.0, not driven: a table has a free text description nocodb:packages/nocodb/src/models/Model.ts:105,258 and a meta blob :133; no owner, contact person, source system or update frequency fields for a catalogue",
+    "pocketbase": "source read at v0.40.4, not driven: collection model carries no owner, contact, source system or update frequency metadata (pocketbase:core/collection_model.go:352-378); searched \"owner|contact|frequency\" in core/collection*.go: no match"
+   }
+  },
+  {
+   "id": "op-backpressure",
+   "area": "operate",
+   "name": "Keep the register responsive under heavy load by slowing down or refusing requests when a dependency is failing.",
+   "source": "demand-signal",
+   "origin": "featureRequest",
+   "originUrl": "https://github.com/maykinmedia/open-object/issues/534",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "requests are slowed or refused by rate: lib/Controller/ObjectsController.php:1400 #[UserRateLimit(limit: 600, period: 60)] (19 rate-limit attributes in that controller, enforced by Nextcloud core), per-caller ceilings lib/Middleware/ApiCallerMiddleware.php:136 -> lib/Service/ApiCaller/CallerRateLimiter.php:114 (registered lib/AppInfo/Application.php:752, fails open), tenant quotas lib/AppInfo/Application.php:670 TenantQuotaMiddleware; no circuit breaker on a failing dependency (the only 'circuit breaker' is a table-scan cap, lib/Service/LinkedEntityService.php:55)"
+   },
+   "reachedOn": "API only: every /api/objects route",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "rate limits and quotas exist; shedding load because Solr, the database or an outside source is failing does not",
+   "objects-api": "no",
+   "directus": "yes",
+   "strapi": "partial",
+   "nocodb": "no",
+   "pocketbase": "partial",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: no API throttling or circuit breaker: the only limiter is django-axes login lockout (objects-api:requirements/base.txt:121, objects-api:src/objects/accounts/signals.py:49-51) and a default timeout on outgoing requests (objects-api:src/objects/conf/base.py:90); searched \"throttl|ratelimit|circuit\" in src/objects: no match",
+    "directus": "source read at v12.4.1, not driven: pressure limiter on by default directus:packages/env/src/constants/defaults.ts:216-222 rejects requests when event loop utilisation, delay or memory pass thresholds directus:api/src/app.ts:162-172; a separate request rate limiter is configurable by env",
+    "strapi": "source read at v5.55.1, not driven: a rate limiter guards admin login, register and reset routes strapi:packages/core/admin/server/src/routes/authentication.ts:8,25 (admin::rateLimit) and the email send route :46; searched \"circuit|pressure|load shed\" in packages/core/core/src: no general load shedding when a dependency fails",
+    "nocodb": "source read at 2026.09.0, not driven: the data, meta and public API limiter guards are CE stubs that always allow nocodb:packages/nocodb/src/guards/data-api-limiter.guard.ts:10-12, meta-api-limiter.guard.ts:11-13, public-api-limiter.guard.ts:27-29; searched \"circuit|pressure\" in packages/nocodb/src/guards and middlewares: no load shedding; the official image may carry real rate limits, which still would not shed load on a failing dependency",
+    "pocketbase": "source read at v0.40.4, not driven: configurable per-path rate limit rules (pocketbase:core/settings_model.go:131, :177-179) enforced by the pbRateLimit middleware returning 429 (pocketbase:apis/middlewares_rate_limit.go:15, :185); fixed pool and query timeout (pocketbase:core/base.go:34-38) and sqlite busy_timeout (pocketbase:core/db_connect.go:14); no circuit breaker or load shedding on a failing dependency, searched \"circuit|backpressure|load.?shed\" in the repo: no match"
+   }
+  },
+  {
+   "id": "ret-linked-destroy-conflict",
+   "area": "retention",
+   "name": "Warn when a record's destruction date conflicts with that of the records linked to it.",
+   "source": "demand-signal",
+   "origin": "tender",
+   "originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/419447",
+   "minedFrom": "Gemeente Leusden zaaksysteem 2026-04-11, requirement 203972 in the intelligence database: \"De Oplossing signaleert het als de vernietigingstermijn van een zaak strijdig is met de vernietigingstermijn van gerelateerde zaken\"; also open-object issue https://github.com/maykinmedia/open-object/issues/708",
+   "openregister": "no",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "a record's archive date can be derived from a linked record, lib/Service/Archival/ArchiveActionDateCalculator.php:178-179 brondatumFromRelation, but nothing compares destruction dates across linked records: grep related, relation, linked in lib/Service/Archival/DestructionService.php and DestructionReviewService.php finds nothing; the cascade wording in lib/Service/Archival/ArchivalRetentionGuard.php:134-141 (CONTEXT_CASCADE) has no caller outside the class"
+   },
+   "reachedOn": "nothing",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "dates can follow a parent, so they are aligned by design, but a conflict is never signalled",
+   "objects-api": "partial",
+   "directus": "no",
+   "strapi": "no",
+   "nocodb": "no",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: experimental guard for linked destruction: when Open Archiefbeheer deletes an object for one zaak (zaak query param) and the object still references other zaken, the object is kept and only that reference is removed, answering 200 with behouden (objects-api:src/objects/api/v2/views.py:276-299, :404-426), active only with ENABLE_CLOUD_EVENTS (:407); no destruction dates on objects, so no date conflict warning; searched \"retention|archiefnominatie|destruction\" in src/objects: only this path",
+    "directus": "source read at v12.4.1, not driven: Directus has no destruction dates or retention schedule: searched \"retention|destroy|archiefnominatie\" in api/src/services, only matches in files, assets, import and mcp-oauth code for other meanings; the archive setting (collections.yaml:200) is a soft status field, not a destruction date",
+    "strapi": "source read at v5.55.1, not driven: Strapi has no destruction dates or retention schedule: searched \"retention|destroy\" in packages/core/core/src/services, only matches in event hub, cron and http server teardown code",
+    "nocodb": "source read at 2026.09.0, not driven: the only retention is trash_retention_days for deleted records nocodb:packages/nocodb/src/models/Model.ts:119,1429; searched \"retention|destroy\" in packages/nocodb/src/models: no destruction date per record and no check against linked records",
+    "pocketbase": "source read at v0.40.4, not driven: no retention or destruction date concept; the only link-aware delete behaviour is the relation field cascadeDelete flag (pocketbase:core/field_relation.go:82-84); searched \"retention|destroy.?date|archiv\" in core, apis: only log retention (pocketbase:apis/middlewares.go:345)"
+   }
+  },
+  {
+   "id": "api-nl-design-rules",
+   "area": "api",
+   "name": "Offer an API that follows the Dutch API design rules, as the national API strategy requires.",
+   "source": "demand-signal",
+   "origin": "tender",
+   "originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/418890",
+   "minedFrom": "Gemeente Noordwijk omni-channel contactcenter 2026-04-08, requirement 204149: \"De API-specificatie moet voldoen aan de eisen zoals gesteld in de Nederlandse API-Strategie en de verplichte standaard OpenAPI Specification\"",
+   "openregister": "partial",
+   "built": {
+    "state": "partial",
+    "owner": "ConductionNL/openregister",
+    "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> :1874 validateNlGovRules, which checks two rules only, API-01 methods and API-03 status codes (:2084-2092); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)"
+   },
+   "reachedOn": "API only: GET /api/registers/{id}/oas and every API response header",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "an OpenAPI document and a narrow self-check, not conformance to the full ADR ruleset or its linter; the API-01 check also flags PATCH, which the rules allow",
+   "objects-api": "yes",
+   "directus": "partial",
+   "strapi": "partial",
+   "nocodb": "partial",
+   "pocketbase": "no",
+   "evidence": {
+    "objects-api": "source read at 4.2.1, not driven: a VNG Common Ground standard API built on commonground-api-common (objects-api:requirements/base.txt:65): APIVersionHeaderMiddleware sets API-version (objects-api:src/objects/conf/base.py:56, documented in objects-api:src/objects/api/v2/openapi.yaml:251-255), the vng_api_common exception handler for problem responses (objects-api:src/objects/conf/api.py:17), Accept-Crs and Content-Crs for geo (objects-api:src/objects/api/v2/openapi.yaml:96, :281), OAS 3.0.3 (objects-api:src/objects/api/v2/openapi.yaml:1); full ADR conformance not checked rule by rule",
+    "directus": "source read at v12.4.1, not driven: REST API with OpenAPI output (directus:api/src/services/specifications.ts) and filter, sort, fields and paging query params, but its conventions are its own (/items/{collection}, data envelope, meta), not the Dutch API design rules (no _links HAL, no API-Version header, no NLGov profile); searched \"API-Version|nlgov|adr\" in api/src: no match",
+    "strapi": "source read at v5.55.1, not driven: REST API with a generated OpenAPI document (packages/core/openapi/src, metadata strapi:packages/core/openapi/src/assemblers/document/metadata.ts:20), but Strapi conventions (/api/{plural}, data and meta envelope, documentId, populate) rather than the Dutch API design rules; searched \"API-Version|nlgov|_links\" in packages/core/core/src/core-api and packages/core/openapi/src: no match",
+    "nocodb": "source read at 2026.09.0, not driven: REST data API v3 with Swagger output (packages/nocodb/src/controllers/v3, data-v3.controller.ts:67), but NocoDB conventions (/api/v3/data/{baseId}/{tableId}/records, own paging envelope) rather than the Dutch API design rules; searched \"API-Version|nlgov|_links\" in packages/nocodb/src/controllers/v3: no match",
+    "pocketbase": "source read at v0.40.4, not driven: PocketBase uses its own REST conventions: page and perPage params (pocketbase:tools/search/provider.go:48-49), its own ApiError body rather than application/problem+json (pocketbase:tools/router/error.go:36), no API-Version header; searched \"problem\\+json|api-version|dutch|api.?design\" in apis: no match"
    }
   }
  ],
