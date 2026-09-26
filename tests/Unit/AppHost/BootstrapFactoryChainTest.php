@@ -35,6 +35,7 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeSettings;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
+use OCA\OpenRegister\AppHost\Service\PublicPageResolver;
 use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
 use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
 use OCP\App\IAppManager;
@@ -74,6 +75,12 @@ class BootstrapFactoryChainTest extends TestCase {
 			'OCP\\AppFramework\\Services\\IInitialState' => $this->createMock(IInitialState::class),
 			'Psr\\Log\\LoggerInterface' => $this->createMock(LoggerInterface::class),
 		];
+
+		// The generic dashboard controller asks the container for the leaf's
+		// own public-page resolver, so the public flag lands under the leaf app
+		// id the SPA reads it with. A mock is enough: the factory only injects
+		// it, and nothing here asks it a question.
+		$map[PublicPageResolver::class] = $this->createMock(PublicPageResolver::class);
 
 		// The observability factories only ask the container for these three
 		// already-built engine services (never their dependency trees), so a

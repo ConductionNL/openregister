@@ -25,6 +25,8 @@ use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 
 /**
  * Maps JSON Schema properties to GraphQL types and generates input types.
@@ -94,36 +96,11 @@ class TypeMapperHandler {
 	private ?ObjectType $auditTrailType = null;
 
 	/**
-	 * Shared GroupByInput input type. Backs the optional `groupBy`
-	 * argument on every auto-generated list query. See the
-	 * `add-time-bucket-aggregation` change for the spec contract.
+	 * The five shared aggregation types, built once each.
 	 *
-	 * @var InputObjectType|null
+	 * @var AggregationTypes
 	 */
-	private ?InputObjectType $groupByInputType = null;
-
-	/**
-	 * Shared TimeInterval enum (MINUTE..YEAR). Used inside GroupByInput.
-	 *
-	 * @var EnumType|null
-	 */
-	private ?EnumType $timeIntervalType = null;
-
-	/**
-	 * Shared AggregationMetric enum (COUNT|SUM|AVG|MIN|MAX). Used
-	 * inside GroupByInput.
-	 *
-	 * @var EnumType|null
-	 */
-	private ?EnumType $aggMetricType = null;
-
-	/**
-	 * Shared GroupBucket object type. Element shape of the `groups`
-	 * field on every Connection.
-	 *
-	 * @var ObjectType|null
-	 */
-	private ?ObjectType $groupBucketType = null;
+	private AggregationTypes $aggregationTypes;
 
 	/**
 	 * Callback to resolve a $ref string to a RegisterSchema.
@@ -161,6 +138,9 @@ class TypeMapperHandler {
 	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
 	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
 	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
+	 *                                               last so no construction site shifts; absent, a governed
+	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
 		array $scalars,
@@ -168,12 +148,18 @@ class TypeMapperHandler {
 		callable $objectTypeFactory,
 		callable $fieldNameConverter,
 		callable $typeNameConverter,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED property is withheld, which is the safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 		$this->scalars = $scalars;
 		$this->refResolver = $refResolver;
 		$this->objectTypeFactory = $objectTypeFactory;
 		$this->fieldNameConverter = $fieldNameConverter;
 		$this->typeNameConverter = $typeNameConverter;
+		$this->aggregationTypes = new AggregationTypes();
+		$this->aggregationTypes->setScalars(scalars: $scalars);
 
 	}//end __construct()
 
@@ -205,6 +191,7 @@ class TypeMapperHandler {
 	 */
 	public function setScalars(array $scalars): void {
 		$this->scalars = $scalars;
+		$this->aggregationTypes->setScalars(scalars: $scalars);
 
 	}//end setScalars()
 
@@ -330,24 +317,7 @@ class TypeMapperHandler {
 		}
 
 		$typeName = ($this->typeNameConverter)($filterSlug, $schema->getId());
-		$fields = [];
-
-		$properties = $schema->getProperties() ?? [];
-		foreach ($properties as $name => $property) {
-			if (is_array(value: $property) === false) {
-				continue;
-			}
-
-			$fieldName = ($this->fieldNameConverter)($name);
-
-			// Each filter field accepts the base type or a comparison object.
-			$baseType = $this->mapPropertyToGraphQLType(property: $property);
-			// Simple types use the base type; complex types use JSON for filtering.
-			$fields[$fieldName] = $baseType;
-			if ($baseType instanceof ObjectType || $baseType instanceof \GraphQL\Type\Definition\ListOfType) {
-				$fields[$fieldName] = $this->scalars['JSON'];
-			}
-		}
+		$fields = $this->filterFieldsFor(schema: $schema);
 
 		if (empty($fields) === true) {
 			$fields['_empty'] = [
@@ -366,6 +336,48 @@ class TypeMapperHandler {
 		$this->inputTypes[$key] = $inputType;
 		return $inputType;
 	}//end getFilterInputType()
+
+	/**
+	 * The filterable fields of one schema, keyed by GraphQL field name.
+	 *
+	 * A GraphQL type IS a description of the shape, and a field name is
+	 * information. A governed property named here can be introspected by anyone
+	 * who can reach the endpoint, and the governed names are the ones worth
+	 * protecting: a property carries an authorization block or a scope
+	 * precisely because it is sensitive.
+	 *
+	 * @param RegisterSchema $schema The register schema
+	 *
+	 * @return array<string, mixed> The fields
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function filterFieldsFor(RegisterSchema $schema): array {
+		$fields = [];
+
+		$properties = $schema->getProperties() ?? [];
+		foreach ($properties as $name => $property) {
+			if (is_array(value: $property) === false) {
+				continue;
+			}
+
+			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
+				continue;
+			}
+
+			$fieldName = ($this->fieldNameConverter)($name);
+
+			// Each filter field accepts the base type or a comparison object.
+			// Simple types use the base type; complex types use JSON.
+			$baseType = $this->mapPropertyToGraphQLType(property: $property);
+			$fields[$fieldName] = $baseType;
+			if ($baseType instanceof ObjectType || $baseType instanceof \GraphQL\Type\Definition\ListOfType) {
+				$fields[$fieldName] = $this->scalars['JSON'];
+			}
+		}
+
+		return $fields;
+	}//end filterFieldsFor()
 
 	/**
 	 * Get a create input type for a schema.
@@ -480,6 +492,15 @@ class TypeMapperHandler {
 				continue;
 			}
 
+			// A GraphQL type IS a description of the shape, and a field name is
+			// information. A governed property named here can be introspected by
+			// anyone who can reach the endpoint, and the governed names are the
+			// ones worth protecting: a property carries an authorization block
+			// or a scope precisely because it is sensitive.
+			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
+				continue;
+			}
+
 			$fieldName = ($this->fieldNameConverter)($name);
 			$type = $this->mapPropertyToInputType(property: $property);
 			$fields[$fieldName] = $type;
@@ -531,7 +552,7 @@ class TypeMapperHandler {
 					'facets' => $this->scalars['JSON'],
 					'facetable' => Type::listOf(Type::string()),
 					'groups' => [
-						'type' => Type::listOf(Type::nonNull($this->getGroupBucketType())),
+						'type' => Type::listOf(Type::nonNull($this->aggregationTypes->getGroupBucketType())),
 						'description' => 'Ad-hoc bucket aggregation result; null unless `groupBy` was supplied.',
 					],
 					// JSON rather than a typed shape, deliberately.
@@ -559,248 +580,6 @@ class TypeMapperHandler {
 		$this->connectionTypes[$schemaId] = $connectionType;
 		return $connectionType;
 	}//end getConnectionType()
-
-	/**
-	 * Get (or lazily build) the shared GroupBucket object type.
-	 *
-	 * @return ObjectType The GroupBucket type.
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	public function getGroupBucketType(): ObjectType {
-		if ($this->groupBucketType !== null) {
-			return $this->groupBucketType;
-		}
-
-		$this->groupBucketType = new ObjectType(
-			[
-				'name' => 'GroupBucket',
-				'description' => 'A single bucket in an aggregation result.',
-				'fields' => [
-					// NULLABLE, and it was not.
-					//
-					// `key: String!` forced the resolver to coerce a null group
-					// key to '' — a row whose group field is null became
-					// indistinguishable from one whose value is genuinely the
-					// empty string. The engine returns null there and means it.
-					'key' => [
-						'type' => Type::string(),
-						'description' => 'Group key for a single-field grouping. '
-							. 'NULL when the grouped field is null on those rows — which is not the '
-							. 'same as an empty string. Null for a composite grouping; use `keys`.',
-					],
-					// ALSO NULLABLE. A multi-metric result carries `values` and
-					// no `value` at all, so `Float!` would have forced 0.0 —
-					// reporting zero for every bucket rather than admitting the
-					// figure lives elsewhere.
-					'value' => [
-						'type' => Type::float(),
-						'description' => 'Single-metric value. NULL for a multi-metric grouping; use `values`.',
-					],
-					'keys' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Composite group key as a {field: value} map. '
-							. 'Present when the aggregation groups on more than one field.',
-					],
-					'values' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Figure per response key, for a multi-metric aggregation '
-							. '(`sum_amount`, or an `as` alias such as `totalDebit`).',
-					],
-					'joined' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Figures pulled from a joined schema, keyed '
-							. '`<Schema>.<field>`. Present only when the aggregation declares a join.',
-					],
-				],
-			]
-		);
-
-		return $this->groupBucketType;
-	}//end getGroupBucketType()
-
-	/**
-	 * Get (or lazily build) the shared TimeInterval enum.
-	 *
-	 * @return EnumType The TimeInterval enum.
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	public function getTimeIntervalType(): EnumType {
-		if ($this->timeIntervalType !== null) {
-			return $this->timeIntervalType;
-		}
-
-		$this->timeIntervalType = new EnumType(
-			[
-				'name' => 'TimeInterval',
-				'description' => 'Bucketing interval for ad-hoc time-bucket aggregations.',
-				'values' => [
-					'MINUTE' => ['value' => 'MINUTE'],
-					'HOUR' => ['value' => 'HOUR'],
-					'DAY' => ['value' => 'DAY'],
-					'WEEK' => ['value' => 'WEEK'],
-					'MONTH' => ['value' => 'MONTH'],
-					'QUARTER' => ['value' => 'QUARTER'],
-					'YEAR' => ['value' => 'YEAR'],
-				],
-			]
-		);
-
-		return $this->timeIntervalType;
-	}//end getTimeIntervalType()
-
-	/**
-	 * Get (or lazily build) the shared AggregationMetric enum.
-	 *
-	 * @return EnumType The AggregationMetric enum.
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	public function getAggregationMetricType(): EnumType {
-		if ($this->aggMetricType !== null) {
-			return $this->aggMetricType;
-		}
-
-		$this->aggMetricType = new EnumType(
-			[
-				'name' => 'AggregationMetric',
-				'description' => 'Metric for ad-hoc aggregations.',
-				'values' => [
-					'COUNT' => ['value' => 'COUNT'],
-					'SUM' => ['value' => 'SUM'],
-					'AVG' => ['value' => 'AVG'],
-					'MIN' => ['value' => 'MIN'],
-					'MAX' => ['value' => 'MAX'],
-				],
-			]
-		);
-
-		return $this->aggMetricType;
-	}//end getAggregationMetricType()
-
-	/**
-	 * Get (or lazily build) the shared GroupByInput input type.
-	 *
-	 * @return InputObjectType The GroupByInput type.
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	public function getGroupByInputType(): InputObjectType {
-		if ($this->groupByInputType !== null) {
-			return $this->groupByInputType;
-		}
-
-		$this->groupByInputType = new InputObjectType(
-			[
-				'name' => 'GroupByInput',
-				'description' => 'Ad-hoc aggregation arg; `interval` set => time-bucketed, otherwise categorical groupBy.',
-				'fields' => [
-					'field' => [
-						'type' => Type::nonNull(Type::string()),
-						'description' => 'Field to group on. Must be a declared schema property or magic metadata column.',
-					],
-					'interval' => [
-						'type' => $this->getTimeIntervalType(),
-						'description' => 'Optional bucketing interval. When supplied, requires `from` + `to`.',
-					],
-					'from' => [
-						'type' => Type::string(),
-						'description' => 'ISO-8601 lower bound, inclusive. Required when `interval` is set.',
-					],
-					'to' => [
-						'type' => Type::string(),
-						'description' => 'ISO-8601 upper bound, exclusive. Required when `interval` is set.',
-					],
-					'metric' => [
-						'type' => $this->getAggregationMetricType(),
-						'defaultValue' => 'COUNT',
-						'description' => 'Aggregation metric. Default COUNT.',
-					],
-					'metricField' => [
-						'type' => Type::string(),
-						'description' => 'Field to aggregate over. Required when metric != COUNT.',
-					],
-					// Composite grouping. `field` above stays required and
-					// remains the single-field spelling; `fields` is the
-					// multi-field one, and a bucket then carries `keys` rather
-					// than `key`.
-					'fields' => [
-						'type' => Type::listOf(Type::nonNull(Type::string())),
-						'description' => 'Group on several fields (cross-tab). Each bucket then carries '
-							. '`keys` as a {field: value} map, and `key` is null.',
-					],
-					// Several figures over one grouping. Each bucket then
-					// carries `values`, and `value` is null.
-					'metrics' => [
-						'type' => Type::listOf(Type::nonNull($this->getAggregationMetricInputType())),
-						'description' => 'Several figures over one grouping. Each bucket then carries '
-							. '`values` keyed by response key or `as` alias, and `value` is null.',
-					],
-				],
-			]
-		);
-
-		return $this->groupByInputType;
-	}//end getGroupByInputType()
-
-	/**
-	 * Get (or lazily build) the AggregationMetricInput type.
-	 *
-	 * One entry of an ad-hoc `metrics` list. `condition` scopes THIS figure to a
-	 * subset of the grouped rows — the debit/credit split — and `as` names its
-	 * response key, which a conditional metric needs: two conditional sums over
-	 * one field both derive `sum_<field>`, so without an alias the second would
-	 * overwrite the first and quietly return one figure where two were asked for.
-	 *
-	 * `condition` is JSON because it is a filter OBJECT, the same shape as the
-	 * aggregation's own filter. Deliberately not a string expression — a second,
-	 * string-shaped grammar is precisely what the engine has been unpicking.
-	 *
-	 * @return InputObjectType The metric-entry input type.
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function getAggregationMetricInputType(): InputObjectType {
-		// Cached in the shared $inputTypes map rather than a field of its
-		// own: a dedicated property took the class to 16 fields, one over the
-		// phpmd TooManyFields threshold, and its name was past the
-		// LongVariable limit. The map already exists for exactly this — one
-		// shared input type cached by purpose.
-		$cacheKey = 'shared:AggregationMetricInput';
-		if (isset($this->inputTypes[$cacheKey]) === true) {
-			return $this->inputTypes[$cacheKey];
-		}
-
-		$this->inputTypes[$cacheKey] = new InputObjectType(
-			[
-				'name' => 'AggregationMetricInput',
-				'description' => 'One figure in a multi-metric aggregation.',
-				'fields' => [
-					'metric' => [
-						'type' => Type::nonNull($this->getAggregationMetricType()),
-						'description' => 'The metric to compute.',
-					],
-					'field' => [
-						'type' => Type::string(),
-						'description' => 'Field to aggregate. Required for every metric except COUNT.',
-					],
-					'condition' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Filter object scoping THIS figure to a subset of the grouped '
-							. 'rows, e.g. {"side": "debit"}. Same shape as the aggregation filter.',
-					],
-					'as' => [
-						'type' => Type::string(),
-						'description' => 'Response key for this figure. Required in practice whenever two '
-							. 'entries share a metric+field pair, since both derive the same default key.',
-					],
-				],
-			]
-		);
-
-		return $this->inputTypes[$cacheKey];
-	}//end getAggregationMetricInputType()
 
 	/**
 	 * Get the shared PageInfo type.
@@ -885,7 +664,7 @@ class TypeMapperHandler {
 			'offset' => ['type' => Type::int(), 'description' => 'Offset for pagination'],
 			'after' => ['type' => Type::string(), 'description' => 'Cursor for forward pagination'],
 			'groupBy' => [
-				'type' => $this->getGroupByInputType(),
+				'type' => $this->aggregationTypes->getGroupByInputType(),
 				'description' => 'Optional ad-hoc aggregation; when supplied, the connection emits a `groups` field.',
 			],
 			// A DECLARED aggregation, by name.
@@ -1009,4 +788,25 @@ class TypeMapperHandler {
 
 		return $result;
 	}//end getPropertyAuthDescriptions()
+	/**
+	 * Whether this caller may be told that a property exists.
+	 *
+	 * Asks the same `AggregateVisibility` the OpenAPI description asks, which in
+	 * turn asks `PropertyRbacHandler`. One answer to "may this person see this
+	 * field", asked in more places; this class holds no rule of its own.
+	 *
+	 * @param RegisterSchema $schema   The schema.
+	 * @param string         $property The property name.
+	 *
+	 * @return bool Whether it may be described.
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	private function mayDescribe(RegisterSchema $schema, string $property): bool {
+		return (new AggregateVisibility(rbac: $this->propertyRbac))->maySummarise(
+			schema: $schema,
+			property: $property
+		);
+	}//end mayDescribe()
+
 }//end class

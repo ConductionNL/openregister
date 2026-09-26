@@ -56,7 +56,13 @@ class FlowTimerRepairStepsTest extends TestCase {
 					callback: static fn (array $data): bool => count($data['components']['objects']) === 3
 						&& isset($data['components']['schemas']['working-calendar'])
 				),
-				'1.1.0',
+				// Bumped with the register in #3970: the seed imports with
+				// `force: false`, so the VERSION is the only thing that makes
+				// the new `serviceHours` property land on an instance that
+				// already holds the register, and administrator edits survive.
+				// The commit moved the constant and left this expectation
+				// behind, which is the one test this branch broke.
+				'1.2.0',
 				false
 			)
 			->willReturn([]);

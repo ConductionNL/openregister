@@ -27,6 +27,8 @@ use DateTime;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -150,6 +152,35 @@ class ViewMapper extends QBMapper {
 	}//end __construct()
 
 	/**
+	 * Views carrying an alert, oldest evaluation first.
+	 *
+	 * 🔑 THE ORDER IS THE WATERMARK. Taking the least recently evaluated views
+	 * means a bounded pass walks the whole set over several ticks instead of
+	 * re-counting the same busy ones, so no view starves behind a neighbour.
+	 * A view never evaluated sorts first, which is what makes an alert somebody
+	 * set a minute ago run on the next pass.
+	 *
+	 * @param int $limit Most views to return.
+	 *
+	 * @return View[] The views.
+	 *
+	 * @psalm-return array<int, View>
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-the-alert-sweep-is-bounded
+	 */
+	public function findWithAlerts(int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('alert'))
+			->orderBy('alert_evaluated_at', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findWithAlerts()
+
+
+	/**
 	 * Find a view by its ID
 	 *
 	 * Retrieves view by ID (supports both integer ID and UUID) with RBAC and
@@ -251,6 +282,80 @@ class ViewMapper extends QBMapper {
 
 		return $entities;
 	}//end findAll()
+
+	/**
+	 * Every view this caller may see, each carrying the access they hold.
+	 *
+	 * The union `view-group-share` asks for: the caller's own views, the views
+	 * shared with a group they are in, and the public ones.
+	 *
+	 * 🔑 THE GROUP MATCH IS DONE IN PHP AND THAT IS DELIBERATE. `shared_with`
+	 * is JSON in a TEXT column, and the portable ways to match inside it are a
+	 * `LIKE '%"group":"x"%'` — which matches a group whose name is a substring
+	 * of another, and breaks the day the encoder emits a space after the colon
+	 * — or a backend-specific JSON operator, which is four spellings that have
+	 * to agree forever on a question about authorization. The row count makes
+	 * the choice free: a view list is tens of rows per organisation, not
+	 * millions, so the SQL narrows to "mine, public, or shared with anybody"
+	 * and this walks what comes back.
+	 *
+	 * A view the caller may not see is DROPPED rather than returned without an
+	 * access: a row with a null access reaching a client is a row somebody
+	 * renders.
+	 *
+	 * @param ViewerReach $reach The caller, their groups and whether they administer the instance.
+	 *
+	 * @return View[] The views, each with its `access` set.
+	 *
+	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 */
+	public function findAllFor(ViewerReach $reach): array {
+		$this->verifyRbacPermission(action: 'read', entityType: 'view');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->orX(
+					$qb->expr()->eq('owner', $qb->createNamedParameter($reach->userId, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('is_public', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)),
+					$qb->expr()->isNotNull('shared_with')
+				)
+			)
+			->orderBy('created', 'DESC');
+
+		$this->applyOrganisationFilter(qb: $qb);
+
+		$resolver = new ViewShareResolver();
+		$visible = [];
+		foreach ($this->findEntities(query: $qb) as $entity) {
+			$view = $entity->jsonSerialize();
+
+			$access = $resolver->accessFor(
+				view: $view,
+				userId: $reach->userId,
+				userGroups: $reach->groups
+			);
+
+			// An administrator reaches every view, and reaches it AS an
+			// administrator rather than as its owner: `accessFor()` answers what
+			// the view grants, and calling that `owner` would put a level on a
+			// row they cannot hand back.
+			if ($access === null) {
+				if ($reach->isAdmin === false) {
+					continue;
+				}
+
+				$access = ViewShareResolver::ACCESS_WRITE;
+			}
+
+			$entity->setAccess($access);
+			$this->enrichWithConfigurationInfo(view: $entity);
+			$visible[] = $entity;
+		}
+
+		return $visible;
+	}//end findAllFor()
 
 	/**
 	 * Create a new view from an Entity

@@ -96,6 +96,15 @@ class TextExtractionService {
 	private const MAX_CHUNKS_PER_FILE = 1000;
 
 	/**
+	 * Maximum number of findUntrackedFiles() windows a single extractPendingFiles()
+	 * call will walk while stepping over files that keep failing (WOO-576). Caps
+	 * the work done by one cron tick when a large block of files is unreadable.
+	 *
+	 * @var int
+	 */
+	private const MAX_PENDING_WINDOWS = 10;
+
+	/**
 	 * Minimum chunk size in characters
 	 *
 	 * @var int
@@ -928,18 +937,14 @@ class TextExtractionService {
 
 		// Get the file node from Nextcloud.
 		try {
-			// Get file by ID using Nextcloud's file system.
-			$nodes = $this->rootFolder->getById($fileId);
-
-			if (empty($nodes) === true) {
-				throw new Exception('File not found in Nextcloud file system');
-			}
-
-			$file = $nodes[0];
-
-			if ($file instanceof \OCP\Files\File === false) {
-				throw new Exception('Node is not a file');
-			}
+			// Resolve the node with an explicit filesystem context; see resolveFileNode().
+			// Deliberately not $ncFile['owner']: getFile() falls back to the whole
+			// storage id when it is not a user home, so object storage, group folders
+			// and external storages arrive here as "object::user:bob" or "local::/mnt".
+			$file = $this->resolveFileNode(
+				fileId: $fileId,
+				owner: $this->homeStorageOwner(storageId: $ncFile['storage_id'] ?? null)
+			);
 
 			// Extract text based on mime type.
 			// Text-based files that can be read directly.
@@ -1014,6 +1019,116 @@ class TextExtractionService {
 			throw $e;
 		}//end try
 	}//end performTextExtraction()
+
+	/**
+	 * Return the user id a storage id names, but only for a user home storage.
+	 *
+	 * `FileMapper::getFile()` exposes an `owner` field that falls back to the whole
+	 * storage id when it does not start with `home::`, because that field is also a
+	 * display value. Passing that fallback to `resolveFileNode()` would hand
+	 * `getUserFolder()` a string that can never be a user id — "object::user:bob" on
+	 * an instance with primary object storage, "local::/mnt/..." for external
+	 * storage, or a group folder id. `getUserFolder()` then throws
+	 * NotPermittedException ("Backends provided no user object"), which is caught
+	 * and logged at warning level for every file on every run before falling
+	 * through to the plain lookup it would have used anyway.
+	 *
+	 * Returning null for those storages skips the attempt that cannot succeed and
+	 * keeps the log free of a warning per file per run.
+	 *
+	 * @param string|null $storageId Storage id from the filecache row.
+	 *
+	 * @return string|null The user id, or null when the storage is not a user home.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	private function homeStorageOwner(?string $storageId): ?string {
+		if ($storageId === null || str_starts_with($storageId, 'home::') === false) {
+			return null;
+		}
+
+		$owner = substr($storageId, 6);
+
+		if ($owner === '') {
+			return null;
+		}
+
+		return $owner;
+	}//end homeStorageOwner()
+
+	/**
+	 * Resolve a file node, setting up the owner's filesystem first.
+	 *
+	 * `IRootFolder::getById()` only sees mounts that are already set up. In a
+	 * background job or a cron run there is no logged-in user, so no user mounts
+	 * exist and the lookup returns an empty array; in request context it only
+	 * sees the mounts of the *calling* user, so a file owned by somebody else is
+	 * invisible too. Both cases surface as "File not found in Nextcloud file
+	 * system" and leave the source without chunks (WOO-576).
+	 *
+	 * Nextcloud 34 added a fallback in `Root::getByIdInPath()` that loads mounts
+	 * from the mount cache and, lacking a filesystem user, takes "the user from
+	 * the first mount info" — which is why this never reproduced on 34 or newer.
+	 * On Nextcloud 33 and below there is no such fallback, so the context has to
+	 * be established here.
+	 *
+	 * `getUserFolder()` sets up the user's filesystem as a side effect, which is
+	 * exactly what is missing. The plain `getById()` remains as a fallback so a
+	 * file whose owner cannot be determined (an unusual storage id, a group
+	 * folder) behaves as before rather than regressing.
+	 *
+	 * @param int         $fileId Nextcloud file ID.
+	 * @param string|null $owner  Owner user id, or null when the file does not live
+	 *                            on a user home storage. See homeStorageOwner().
+	 *
+	 * @return \OCP\Files\File The resolved file node.
+	 *
+	 * @throws Exception When the file cannot be found, or is not a file.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	private function resolveFileNode(int $fileId, ?string $owner): \OCP\Files\File {
+		$nodes = [];
+
+		if ($owner !== null && $owner !== '') {
+			try {
+				// Sets up the user's mounts as a side effect — the whole point.
+				$nodes = $this->rootFolder->getUserFolder($owner)->getById($fileId);
+			} catch (Throwable $e) {
+				// An unknown or disabled user must not abort the extraction; fall
+				// through to the root lookup below.
+				$this->logger->warning(
+					message: '[TextExtractionService] Could not set up filesystem for owner',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'fileId' => $fileId,
+						'owner' => $owner,
+						'error' => $e->getMessage(),
+					]
+				);
+
+				$nodes = [];
+			}//end try
+		}//end if
+
+		if (empty($nodes) === true) {
+			// No owner, or the owner's folder did not hold the file.
+			$nodes = $this->rootFolder->getById($fileId);
+		}
+
+		if (empty($nodes) === true) {
+			throw new Exception('File not found in Nextcloud file system');
+		}
+
+		$file = reset($nodes);
+
+		if ($file instanceof \OCP\Files\File === false) {
+			throw new Exception('Node is not a file');
+		}
+
+		return $file;
+	}//end resolveFileNode()
 
 	/**
 	 * Discover files in Nextcloud that aren't tracked in the extraction system yet
@@ -1107,9 +1222,13 @@ class TextExtractionService {
 	 *
 	 * @param int $limit Maximum number of files to process
 	 *
-	 * @return int[] Statistics about the extraction process: {processed, failed, total}
+	 * @return int[] Statistics about the extraction process: {processed, failed, total, truncated}
 	 *
-	 * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
+	 * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>, truncated: bool}
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The windowed walk is a loop plus
+	 *   four single-line guards — budget reached, window empty, row without a usable
+	 *   fileid, pool exhausted. Each is a guard clause, not nested logic.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1119,50 +1238,100 @@ class TextExtractionService {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
 		);
 
-		// Get files without chunks.
-		$untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
-
-		$this->logger->debug(
-			message: '[TextExtractionService] Found files without chunks',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'count' => count($untrackedFiles),
-				'limit' => $limit,
-			]
-		);
-
 		$processed = 0;
 		$failed = 0;
+		$seen = 0;
+		$offset = 0;
+		$windows = 0;
+		$untrackedFiles = [];
 
-		foreach ($untrackedFiles as $ncFile) {
-			try {
-				$this->logger->debug(
-					message: '[TextExtractionService] Processing file',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => $ncFile['fileid'],
-						'fileName' => $ncFile['name'] ?? 'unknown',
-					]
-				);
+		// A file that fails keeps matching findUntrackedFiles(): nothing records the
+		// failure, and the query orders by fileid ASC with a fixed window. So a
+		// handful of permanently unreadable files with low fileids sit at the head
+		// of every window forever and the backfill never reaches the real
+		// attachments behind them (WOO-576). Successful files drop out of the query
+		// by themselves once they have chunks, so stepping the offset past the
+		// failures of the previous window is enough to move on.
+		while ($processed < $limit && $windows < self::MAX_PENDING_WINDOWS) {
+			$untrackedFiles = $this->fileMapper->findUntrackedFiles(limit: $limit, offset: $offset);
+			$windows++;
 
-				// Trigger extraction for this file.
-				$this->extractFile(fileId: $ncFile['fileid'], forceReExtract: false);
-				$processed++;
-			} catch (Exception $e) {
-				$failed++;
-				$this->logger->error(
-					message: '[TextExtractionService] Failed to extract file',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => $ncFile['fileid'] ?? 'unknown',
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
+			if (empty($untrackedFiles) === true) {
+				break;
+			}
+
+			$this->logger->debug(
+				message: '[TextExtractionService] Found files without chunks',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'count' => count($untrackedFiles),
+					'limit' => $limit,
+					'offset' => $offset,
+					'window' => $windows,
+				]
+			);
+
+			$seen += count($untrackedFiles);
+			$failedInWindow = 0;
+
+			foreach ($untrackedFiles as $ncFile) {
+				if ($processed >= $limit) {
+					break;
+				}
+
+				// A row without a usable fileid is skipped rather than passed on. The
+				// cron job used to carry this guard and lost it when its own loop moved
+				// here; `fc.fileid` is a NOT NULL primary key so it should not fire, but
+				// a safety net someone wrote deliberately is not worth dropping silently.
+				$fileId = (int) ($ncFile['fileid'] ?? 0);
+				if ($fileId === 0) {
+					continue;
+				}
+
+				try {
+					$this->logger->debug(
+						message: '[TextExtractionService] Processing file',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'fileId' => $ncFile['fileid'],
+							'fileName' => $ncFile['name'] ?? 'unknown',
+						]
+					);
+
+					// Trigger extraction for this file.
+					$this->extractFile(fileId: $fileId, forceReExtract: false);
+					$processed++;
+				} catch (Exception $e) {
+					$failed++;
+					$failedInWindow++;
+					$this->logger->error(
+						message: '[TextExtractionService] Failed to extract file',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'fileId' => $ncFile['fileid'] ?? 'unknown',
+							'error' => $e->getMessage(),
+						]
+					);
+				}//end try
+			}//end foreach
+
+			if (count($untrackedFiles) < $limit) {
+				// The pool is exhausted — a shorter window than asked for is the end.
+				break;
+			}
+
+			if ($failedInWindow === 0) {
+				// Everything in this window succeeded, so all of it has chunks now and
+				// drops out of the next query by itself. Keep the offset where it is.
+				continue;
+			}
+
+			// Step over exactly the files that will still be at the head next time.
+			$offset += $failedInWindow;
+		}//end while
 
 		$this->logger->debug(
 			message: '[TextExtractionService] Extraction complete',
@@ -1178,7 +1347,12 @@ class TextExtractionService {
 		return [
 			'processed' => $processed,
 			'failed' => $failed,
-			'total' => count($untrackedFiles),
+			'total' => $seen,
+			// The walk is capped at MAX_PENDING_WINDOWS windows. Hitting that cap
+			// while the budget still had room means files may remain pending that
+			// this run never looked at — indistinguishable from "done" in the
+			// counters alone, which is how a truncated backfill reads as a finished one.
+			'truncated' => ($windows >= self::MAX_PENDING_WINDOWS && $processed < $limit),
 		];
 	}//end extractPendingFiles()
 

@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
+use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
@@ -378,11 +379,22 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 		// it is the same resolution `FlowService::run()` performs, so the guard
 		// can no longer disagree with the thing it guards.
 		try {
-			$this->flows->find(uuid: $flowId);
+			$flow = $this->flows->find(uuid: $flowId);
 		} catch (\Throwable $e) {
 			// One message for "absent" and "not yours" alike, so this cannot be
 			// used to discover which ids exist.
 			throw new UnexpectedValueException('No such flow: ' . $flowId);
+		}
+
+		// 🔴 AND THE PER-FLOW DECISION, which organisation scoping is not. An
+		// agent holding a session in the right organisation could otherwise run
+		// any flow in it, including one nobody has adopted. The rule is the one
+		// every other run path asks, so the agent and the editor cannot get
+		// different answers about the same flow.
+		try {
+			$this->flows->assertRunnable(flow: $flow);
+		} catch (FlowRunRefused $refused) {
+			throw new UnexpectedValueException($refused->getMessage());
 		}
 	}//end assertRunnable()
 

@@ -25,7 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -119,11 +118,7 @@ class CronFileTextExtractionJob extends TimedJob {
 
 			$textExtractor = $this->container->get(TextExtractionService::class);
 
-			/*
-			 * @var FileMapper $fileMapper
-			 */
 
-			$fileMapper = $this->container->get(FileMapper::class);
 
 			// Check if extraction mode is set to 'cron'.
 			$fileSettings = $settingsService->getFileSettingsOnly();
@@ -151,86 +146,49 @@ class CronFileTextExtractionJob extends TimedJob {
 				]
 			);
 
-			// Get pending files based on extraction scope.
-			$pendingFiles = $this->getPendingFiles(
-				fileMapper: $fileMapper,
-				extractionScope: $extractionScope,
-				batchSize: $batchSize,
-				logger: $logger
-			);
-
-			if (empty($pendingFiles) === true) {
+			// One selection loop for every extraction path. The job used to take a
+			// single window of findUntrackedFiles() and walk it itself, so a handful
+			// of permanently unreadable files with low fileids filled that window on
+			// every run and the cron mode never reached a newer upload (WOO-576, the
+			// same head-of-queue effect the bulk endpoint had). extractPendingFiles()
+			// steps its window past the failures, so the cron mode inherits that.
+			$stats = $textExtractor->extractPendingFiles(limit: $batchSize);
+			$processed = $stats['processed'];
+			$failed = $stats['failed'];
+			if ($stats['total'] === 0) {
 				// phpcs:ignore Generic.Files.LineLength.MaxExceeded
 				$logger->info(message: '[CronFileTextExtractionJob] No pending files found for cron extraction', context: ['file' => __FILE__, 'line' => __LINE__]);
 				return;
 			}
 
-			$logger->info(
-				message: '[CronFileTextExtractionJob] Processing files in cron job',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'files_count' => count($pendingFiles),
-					'batch_size' => $batchSize,
-				]
-			);
-
-			// Process each file.
-			$processed = 0;
-			$failed = 0;
-
-			foreach ($pendingFiles as $file) {
-				try {
-					$fileId = (int)($file['fileid'] ?? 0);
-
-					if ($fileId === 0) {
-						continue;
-					}
-
-					$logger->debug(
-						message: '[CronFileTextExtractionJob] Processing file in cron job',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'file_id' => $fileId,
-							'file_name' => $file['name'] ?? 'unknown',
-						]
-					);
-
-					$textExtractor->extractFile(fileId: $fileId, forceReExtract: false);
-					$processed++;
-
-					$logger->debug(
-						message: '[CronFileTextExtractionJob] File processed successfully in cron job',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
-					);
-				} catch (\Exception $e) {
-					$failed++;
-					$logger->error(
-						message: '[CronFileTextExtractionJob] Failed to process file in cron job',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'file_id' => $fileId ?? 0,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-
 			$executionTime = microtime(true) - $startTime;
+
+			// The cron path is the one that runs unattended, so it is the one that
+			// most needs to say when a walk stopped on MAX_PENDING_WINDOWS instead of
+			// on an empty queue: the offset is not carried between ticks, so every
+			// following tick re-walks the same windows. Logged at warning level,
+			// because in the counters alone a truncated run reads as a finished one.
+			$truncated = ($stats['truncated'] ?? false);
+			$logContext = [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'job_id' => $this->getId(),
+				'execution_time_seconds' => round($executionTime, 2),
+				'files_processed' => $processed,
+				'files_failed' => $failed,
+				'truncated' => $truncated,
+				'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+			];
+
+			if ($truncated === true) {
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded
+				$logger->warning(message: '[CronFileTextExtractionJob] Cron File Text Extraction Job stopped on the window limit before filling its batch - the queue head is not extractable and every tick will re-walk it', context: $logContext);
+				return;
+			}
 
 			$logger->info(
 				message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'job_id' => $this->getId(),
-					'execution_time_seconds' => round($executionTime, 2),
-					'files_processed' => $processed,
-					'files_failed' => $failed,
-					'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-				]
+				context: $logContext
 			);
 		} catch (\Exception $e) {
 			$executionTime = microtime(true) - $startTime;
@@ -253,71 +211,4 @@ class CronFileTextExtractionJob extends TimedJob {
 		}//end try
 	}//end run()
 
-	/**
-	 * Get pending files for text extraction based on scope and batch size.
-	 *
-	 * Retrieves files that need text extraction based on the configured extraction scope.
-	 * Files are returned in batches to prevent overwhelming the system.
-	 *
-	 * @param FileMapper $fileMapper File mapper for database queries
-	 * @param string $extractionScope Extraction scope (objects, all, etc.)
-	 * @param int $batchSize Maximum number of files to retrieve
-	 * @param LoggerInterface $logger Logger for debug messages
-	 *
-	 * @return array<int, array<string, mixed>> List of pending files with metadata.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function getPendingFiles(
-		FileMapper $fileMapper,
-		string $extractionScope,
-		int $batchSize,
-		LoggerInterface $logger,
-	): array {
-		// Log query parameters for debugging.
-		$logger->debug(
-			message: '[CronFileTextExtractionJob] Fetching pending files for cron extraction',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'extraction_scope' => $extractionScope,
-				'batch_size' => $batchSize,
-			]
-		);
-
-		try {
-			// Get pending files based on extraction scope.
-			// Files are considered "pending" if they have no extracted text or if extraction failed previously.
-			$pendingFiles = $fileMapper->findUntrackedFiles(
-				limit: $batchSize
-			);
-
-			$logger->debug(
-				message: '[CronFileTextExtractionJob] Retrieved pending files',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'count' => count($pendingFiles),
-					'batch_size' => $batchSize,
-					'scope' => $extractionScope,
-				]
-			);
-
-			return $pendingFiles;
-		} catch (\Exception $e) {
-			// Log error but don't throw - return empty array to continue gracefully.
-			$logger->error(
-				message: '[CronFileTextExtractionJob] Failed to retrieve pending files',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'extraction_scope' => $extractionScope,
-					'batch_size' => $batchSize,
-				]
-			);
-
-			return [];
-		}//end try
-	}//end getPendingFiles()
 }//end class

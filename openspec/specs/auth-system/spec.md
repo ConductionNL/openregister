@@ -852,6 +852,33 @@ base64 input and SHALL preserve passwords that contain a colon.
 - **WHEN** a Basic auth credential's password contains one or more `:` characters
 - **THEN** the full password (after the first `:`) is used, not a truncated prefix
 
+### Requirement: OAuth2 token scopes MUST translate to RBAC verdicts
+For external API consumers authenticating via OAuth2, the access token's `scope` claim MUST be translated into RBAC verdicts before the request reaches `PermissionHandler`. The token's scopes constrain the request to the intersection of (the Nextcloud-user's group-derived RBAC capability) AND (the scopes asserted on the token); a token with narrower scopes than the user's groups MUST NOT widen access, and an unknown scope MUST cause the request to be rejected with HTTP 401. The translation MUST be reversible: the OAS `security: [{ "oauth2": [groups] }, { "basicAuth": [] }]` block already emitted per operation by `OasService::applyRbacToOperation()` MUST be the authoritative scope catalog that token issuers and resource servers agree on.
+
+#### Scenario: OAuth2 token with full scope set authorizes against the user's RBAC capability
+- **GIVEN** a Nextcloud user `api-zaaksysteem` is in groups `[behandelaar, leesrechten]` and a Consumer is configured with `authorizationType: oauth2`
+- **AND** the user has read access to schema `meldingen` via the `behandelaar` group
+- **WHEN** an OAuth2 access token is presented with `scope: "behandelaar leesrechten"` against `GET /api/objects/zaken/meldingen`
+- **THEN** the `AuthorizationService` MUST resolve the token to the Nextcloud user, set the user session, and proceed with the standard `PermissionHandler::hasPermission()` check
+- **AND** the request MUST succeed with HTTP 200 and return the meldingen the user is authorized to read
+
+#### Scenario: OAuth2 token with narrowed scope reduces access
+- **GIVEN** the same user as above with groups `[behandelaar, leesrechten]`
+- **WHEN** an OAuth2 token is presented with `scope: "leesrechten"` only (no `behandelaar`)
+- **THEN** the request MUST be evaluated as if the user were ONLY in the `leesrechten` group, regardless of the user's broader Nextcloud group membership
+- **AND** any RBAC rule that requires `behandelaar` MUST be denied with HTTP 403 even though the underlying user qualifies
+
+#### Scenario: OAuth2 token with unknown scope is rejected
+- **GIVEN** an OAuth2 token presents `scope: "behandelaar admin-everything"` where `admin-everything` is not in the OAS-derived scope catalog
+- **THEN** the request MUST be rejected with HTTP 401
+- **AND** the response body MUST NOT leak which scopes are valid (return a generic `invalid_scope` per RFC 6750 §3.1)
+
+#### Scenario: Token-scope catalog matches the OAS security block
+- **GIVEN** `OasService::createOas()` has emitted `components.securitySchemes.oauth2.flows.authorizationCode.scopes` for a deployment
+- **WHEN** the auth-system bootstraps the token-scope translator
+- **THEN** the translator's accepted scope vocabulary MUST equal the keys of that scopes map
+- **AND** any deployment-specific scope added to OAS MUST automatically become acceptable to the translator without code changes
+
 ## Current Implementation Status
 - **Fully implemented:**
   - `Consumer` entity (`lib/Db/Consumer.php`) with fields: uuid, name, description, domains (CORS), ips (IP allow-list), authorizationType (none/basic/bearer/apiKey/oauth2/jwt), authorizationConfiguration (JSON with keys, algorithms, secrets), userId (mapped Nextcloud user), created, updated
@@ -884,33 +911,6 @@ base64 input and SHALL preserve passwords that contain a colon.
   - Rate limiting exists via `SecurityService` with APCu-backed counters, but is not integrated into the `AuthorizationService` flow for every authentication method
   - Public schema access exists via `@PublicPage` endpoints but mixed public/private schema discovery filtering is not explicitly implemented in schema listing endpoints
   - Group membership caching relies on Nextcloud's internal caching; no explicit per-request cache in OpenRegister handlers
-
-### Requirement: OAuth2 token scopes MUST translate to RBAC verdicts
-For external API consumers authenticating via OAuth2, the access token's `scope` claim MUST be translated into RBAC verdicts before the request reaches `PermissionHandler`. The token's scopes constrain the request to the intersection of (the Nextcloud-user's group-derived RBAC capability) AND (the scopes asserted on the token); a token with narrower scopes than the user's groups MUST NOT widen access, and an unknown scope MUST cause the request to be rejected with HTTP 401. The translation MUST be reversible: the OAS `security: [{ "oauth2": [groups] }, { "basicAuth": [] }]` block already emitted per operation by `OasService::applyRbacToOperation()` MUST be the authoritative scope catalog that token issuers and resource servers agree on.
-
-#### Scenario: OAuth2 token with full scope set authorizes against the user's RBAC capability
-- **GIVEN** a Nextcloud user `api-zaaksysteem` is in groups `[behandelaar, leesrechten]` and a Consumer is configured with `authorizationType: oauth2`
-- **AND** the user has read access to schema `meldingen` via the `behandelaar` group
-- **WHEN** an OAuth2 access token is presented with `scope: "behandelaar leesrechten"` against `GET /api/objects/zaken/meldingen`
-- **THEN** the `AuthorizationService` MUST resolve the token to the Nextcloud user, set the user session, and proceed with the standard `PermissionHandler::hasPermission()` check
-- **AND** the request MUST succeed with HTTP 200 and return the meldingen the user is authorized to read
-
-#### Scenario: OAuth2 token with narrowed scope reduces access
-- **GIVEN** the same user as above with groups `[behandelaar, leesrechten]`
-- **WHEN** an OAuth2 token is presented with `scope: "leesrechten"` only (no `behandelaar`)
-- **THEN** the request MUST be evaluated as if the user were ONLY in the `leesrechten` group, regardless of the user's broader Nextcloud group membership
-- **AND** any RBAC rule that requires `behandelaar` MUST be denied with HTTP 403 even though the underlying user qualifies
-
-#### Scenario: OAuth2 token with unknown scope is rejected
-- **GIVEN** an OAuth2 token presents `scope: "behandelaar admin-everything"` where `admin-everything` is not in the OAS-derived scope catalog
-- **THEN** the request MUST be rejected with HTTP 401
-- **AND** the response body MUST NOT leak which scopes are valid (return a generic `invalid_scope` per RFC 6750 §3.1)
-
-#### Scenario: Token-scope catalog matches the OAS security block
-- **GIVEN** `OasService::createOas()` has emitted `components.securitySchemes.oauth2.flows.authorizationCode.scopes` for a deployment
-- **WHEN** the auth-system bootstraps the token-scope translator
-- **THEN** the translator's accepted scope vocabulary MUST equal the keys of that scopes map
-- **AND** any deployment-specific scope added to OAS MUST automatically become acceptable to the translator without code changes
 
 ## Standards & References
 - **OAuth 2.0 (RFC 6749)** — Authorization framework for Consumer entity auth types

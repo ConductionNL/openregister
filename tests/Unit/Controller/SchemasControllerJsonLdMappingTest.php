@@ -134,4 +134,72 @@ class SchemasControllerJsonLdMappingTest extends TestCase {
 
 		$this->assertSame(201, $response->getStatus());
 	}
+	/**
+	 * 🔴 ASSERTED FROM THE CALLER, not from the guard. The operand check had
+	 * a full implementation and a full set of messages and no call site at
+	 * all, and a unit test of the guard alone would have passed the whole
+	 * time it was dead. What this pins is that `create()` reaches it.
+	 *
+	 * @return void
+	 */
+	public function testCreateRefusesAFilterReadingAPropertyTheSchemaDoesNotDeclare(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'title' => 'Zaak',
+				'properties' => [
+					'municipality' => ['type' => 'string'],
+					'caseType' => [
+						'$ref' => 'case-type',
+						'x-openregister-reference-filter' => [
+							['field' => 'municipality', 'op' => 'eq', 'from' => 'gemeente'],
+						],
+					],
+				],
+			]
+		);
+
+		$far = new Schema();
+		$far->setProperties(['municipality' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($far);
+
+		// Nothing is written: the author is refused before the schema exists.
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+
+		$response = $this->controller->create();
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertStringContainsString('this schema does not declare it', $response->getData()['error']);
+	}
+
+	/**
+	 * The control: the same payload with the operand declared saves.
+	 *
+	 * @return void
+	 */
+	public function testCreateAcceptsAFilterWhoseOperandsBothExist(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'title' => 'Zaak',
+				'properties' => [
+					'municipality' => ['type' => 'string'],
+					'caseType' => [
+						'$ref' => 'case-type',
+						'x-openregister-reference-filter' => [
+							['field' => 'municipality', 'op' => 'eq', 'from' => 'municipality'],
+						],
+					],
+				],
+			]
+		);
+
+		$far = new Schema();
+		$far->setProperties(['municipality' => ['type' => 'string']]);
+
+		$created = new Schema();
+		$created->setId(1);
+		$this->schemaMapper->method('find')->willReturn($far);
+		$this->schemaMapper->expects($this->once())->method('createFromArray')->willReturn($created);
+
+		$this->assertSame(201, $this->controller->create()->getStatus());
+	}
 }

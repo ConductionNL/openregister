@@ -45,11 +45,15 @@ use Psr\Log\LoggerInterface;
 class ConditionMatcher {
 
 	/**
-	 * Cached active organisation UUID
+	 * Active organisation UUID, memoised PER SUBJECT.
 	 *
-	 * @var string|null
+	 * Not a single value: the subject can change within one request — both
+	 * ObjectService::runAs() and runAsAnonymous() swap it — and a flat memo would
+	 * answer a later evaluation with an earlier caller's organisation.
+	 *
+	 * @var array<string, string|null>
 	 */
-	private ?string $cachedActiveOrg = null;
+	private array $cachedActiveOrg = [];
 
 	/**
 	 * Supported `$user.<property>` dot-path tokens.
@@ -457,9 +461,14 @@ class ConditionMatcher {
 	 * @spec openspec/specs/actions/spec.md
 	 */
 	private function getActiveOrganisationUuid(): ?string {
-		// Return cached value if available.
-		if ($this->cachedActiveOrg !== null) {
-			return $this->cachedActiveOrg;
+		// Keyed by the subject, because the subject can change within a request:
+		// ObjectService::runAsAnonymous() and runAs() both swap it. A flat memo
+		// resolved under an admin session would otherwise answer `@organisation.uuid`
+		// with that admin's organisation inside an evaluation meant to be anonymous,
+		// admitting their tenant's rows to a public read.
+		$subject = ($this->userSession->getUser()?->getUID() ?? '_anon');
+		if (array_key_exists($subject, $this->cachedActiveOrg) === true) {
+			return $this->cachedActiveOrg[$subject];
 		}
 
 		try {
@@ -467,8 +476,8 @@ class ConditionMatcher {
 			$activeOrg = $organisationService->getActiveOrganisation();
 
 			if ($activeOrg !== null) {
-				$this->cachedActiveOrg = $activeOrg->getUuid();
-				return $this->cachedActiveOrg;
+				$this->cachedActiveOrg[$subject] = $activeOrg->getUuid();
+				return $this->cachedActiveOrg[$subject];
 			}
 		} catch (\Exception $e) {
 			$this->logger->debug(
@@ -476,6 +485,10 @@ class ConditionMatcher {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
 		}
+
+		// Memoise the miss too, so an anonymous evaluation does not re-ask the
+		// container once per condition.
+		$this->cachedActiveOrg[$subject] = null;
 
 		return null;
 	}//end getActiveOrganisationUuid()

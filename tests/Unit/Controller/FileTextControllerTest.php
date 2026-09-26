@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -257,6 +258,30 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals(10, $data['total']);
 	}//end testBulkExtractSuccess()
 
+	/**
+	 * A walk that stopped on the window limit has to say so in the response as
+	 * well: with only processed/failed/total, a truncated run reads exactly like
+	 * a finished one.
+	 *
+	 * @return void
+	 */
+	public function testBulkExtractReportsATruncatedWalk(): void {
+		$this->request->method('getParam')
+			->willReturnMap(
+				[
+					['limit', 100, '10'],
+				]
+			);
+		$this->textExtractor->method('extractPendingFiles')
+			->with(10)
+			->willReturn(['processed' => 0, 'failed' => 100, 'total' => 100, 'truncated' => true]);
+
+		$result = $this->controller->bulkExtract();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertTrue($result->getData()['truncated']);
+	}//end testBulkExtractReportsATruncatedWalk()
+
 	public function testBulkExtractCapsLimitAt500(): void {
 		$this->request->method('getParam')
 			->willReturnMap(
@@ -276,6 +301,43 @@ class FileTextControllerTest extends TestCase {
 		$this->assertTrue($data['success']);
 		$this->assertEquals(500, $data['processed']);
 	}//end testBulkExtractCapsLimitAt500()
+
+	/**
+	 * The cap needs a floor to match. `?limit=0` used to reach the service,
+	 * which walked nothing and answered `processed 0, failed 0, total 0` — a
+	 * success an admin cannot tell apart from "the queue is empty".
+	 *
+	 * @dataProvider provideNonPositiveLimits
+	 *
+	 * @param string $requested The limit as it arrives on the request.
+	 */
+	public function testBulkExtractFloorsANonPositiveLimitAtOne(string $requested): void {
+		$this->request->method('getParam')
+			->willReturnMap(
+				[
+					['limit', 100, $requested],
+				]
+			);
+		$this->textExtractor->expects($this->once())
+			->method('extractPendingFiles')
+			->with(1)
+			->willReturn(['processed' => 1, 'failed' => 0, 'total' => 1]);
+
+		$result = $this->controller->bulkExtract();
+
+		$this->assertEquals(200, $result->getStatus());
+	}//end testBulkExtractFloorsANonPositiveLimitAtOne()
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function provideNonPositiveLimits(): array {
+		return [
+			'zero'     => ['0'],
+			'negative' => ['-10'],
+			'garbage'  => ['abc'],
+		];
+	}//end provideNonPositiveLimits()
 
 	public function testBulkExtractUsesDefaultLimit(): void {
 		$this->request->method('getParam')
@@ -643,4 +705,124 @@ class FileTextControllerTest extends TestCase {
 
 		$this->assertEquals(403, $result->getStatus());
 	}//end testBulkExtractRejectsNonAdmin()
+
+	// =========================================================================
+	// deleteFileText — a stub, but a guarded one
+	// =========================================================================
+
+	/**
+	 * The endpoint is not implemented yet and says so with 501. What matters is
+	 * that it says so only to a caller who can reach the file: the IDOR guard
+	 * runs BEFORE the stub, so the response cannot be used to probe which file
+	 * ids exist.
+	 *
+	 * @return void
+	 */
+	public function testDeleteFileTextReportsNotImplementedForAnAccessibleFile(): void {
+		$result = $this->controller->deleteFileText(1);
+
+		$this->assertEquals(501, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertStringContainsString('not yet implemented', $data['message']);
+	}//end testDeleteFileTextReportsNotImplementedForAnAccessibleFile()
+
+	/**
+	 * A file the caller cannot reach answers 404 — the same answer a missing
+	 * file gives, so the two are indistinguishable from outside.
+	 *
+	 * @return void
+	 */
+	public function testDeleteFileTextRejectsInaccessibleFile(): void {
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn($bob);
+
+		$rootFolder = $this->createMock(IRootFolder::class);
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->willReturn([]);
+		$rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn(false);
+
+		$controller = new FileTextController(
+			'openregister',
+			$this->request,
+			$this->textExtractor,
+			$this->fileService,
+			$this->entityRelationMapper,
+			$this->logger,
+			$this->config,
+			$this->manualEntityService,
+			$userSession,
+			$rootFolder,
+			$groupManager
+		);
+
+		$result = $controller->deleteFileText(1);
+
+		$this->assertEquals(404, $result->getStatus());
+		$this->assertFalse($result->getData()['success']);
+	}//end testDeleteFileTextRejectsInaccessibleFile()
+
+	// =========================================================================
+	// PDF anonymisation: reason -> HTTP status
+	// =========================================================================
+
+	/**
+	 * The PDF pipeline answers with a structured reason, and the controller is
+	 * the only place that turns it into a status a caller can act on: an
+	 * encrypted PDF or a missing text layer is something the caller can fix
+	 * (422), a failed validation or an internal error is not (500). The body
+	 * is asserted to be exactly the reason plus the pipeline's diagnostic, so a
+	 * caller can route on it.
+	 *
+	 * @dataProvider providePdfAnonymisationReasons
+	 *
+	 * @param string $reason   The reason the pipeline reports.
+	 * @param int    $expected The status the caller should see.
+	 */
+	public function testAPdfAnonymisationReasonDecidesTheStatus(string $reason, int $expected): void {
+		$fileNode = $this->createMock(\OCP\Files\File::class);
+		$fileNode->method('getName')->willReturn('contract.pdf');
+		$this->fileService->method('getFileById')->willReturn($fileNode);
+
+		$this->entityRelationMapper->method('findEntitiesForAnonymization')
+			->willReturn([['entity_value' => 'Jane Smith', 'entity_type' => 'PERSON']]);
+
+		$this->fileService->method('anonymizeDocument')
+			->willThrowException(
+				new PdfAnonymisationException(
+					reason: $reason,
+					message: 'pipeline said no',
+					diagnostic: ['pages' => 3, 'redactions' => 0]
+				)
+			);
+
+		$result = $this->controller->anonymizeFile(1);
+
+		$this->assertEquals($expected, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertSame('pdf_anonymisation_failed', $data['error']);
+		$this->assertSame($reason, $data['reason'], 'de caller moet de reden kunnen routeren');
+		$this->assertSame(['pages' => 3, 'redactions' => 0], $data['details']);
+	}//end testAPdfAnonymisationReasonDecidesTheStatus()
+
+	/**
+	 * @return array<string, array{0: string, 1: int}>
+	 */
+	public static function providePdfAnonymisationReasons(): array {
+		return [
+			'encrypted pdf'       => [PdfAnonymisationException::REASON_ENCRYPTED_PDF, Http::STATUS_UNPROCESSABLE_ENTITY],
+			'no text layer'       => [PdfAnonymisationException::REASON_TEXT_LAYER_MISSING, Http::STATUS_UNPROCESSABLE_ENTITY],
+			'validation failed'   => [PdfAnonymisationException::REASON_VALIDATION_FAILED, Http::STATUS_INTERNAL_SERVER_ERROR],
+			'internal error'      => [PdfAnonymisationException::REASON_INTERNAL_ERROR, Http::STATUS_INTERNAL_SERVER_ERROR],
+			'an unmapped reason'  => ['something_new', Http::STATUS_INTERNAL_SERVER_ERROR],
+		];
+	}//end providePdfAnonymisationReasons()
+
 }//end class

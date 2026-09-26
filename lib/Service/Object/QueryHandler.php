@@ -22,6 +22,10 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\Search\HistoryNarrowing;
+use OCA\OpenRegister\Service\Search\HistoryPredicate;
+use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
+use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\IAppContainer;
 use OCP\IRequest;
@@ -87,6 +91,9 @@ class QueryHandler {
 	 * @param IAppContainer $container App container.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IRequest $request Request object.
+	 * @param HistoryNarrowing|null $historyNarrowing Resolves a history predicate to the ids the query keeps.
+	 * @param SearchDictionaryProvider|null $dictionary The administered synonym and stopword dictionary.
+	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid on a ready-made query.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -104,8 +111,49 @@ class QueryHandler {
 		private readonly IAppContainer $container,
 		private readonly LoggerInterface $logger,
 		private readonly IRequest $request,
+		// LAST AND NULLABLE on purpose: every existing construction of this
+		// handler, in production wiring and in tests, keeps working unchanged.
+		private readonly ?HistoryNarrowing $historyNarrowing = null,
+		private readonly ?SearchDictionaryProvider $dictionary = null,
+		private readonly ?SearchReferenceResolver $referenceResolver = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Resolve the register and schema references a ready-made query carries.
+	 *
+	 * `@self.register`, `@self.schema` and their `_register` / `_schema` and
+	 * plural spellings arrive here as ids, uuids or slugs, because the caller
+	 * built the query by hand. Downstream they meet `(int)`, and `(int)'zaken'`
+	 * is `0`: the search then ran against a register that cannot exist and
+	 * reported nothing found. filinq's download gate read that as "no agreement
+	 * rule", dossiq's cascades read it as "nothing linked".
+	 *
+	 * A reference is resolved when it needs resolving and refused when it names
+	 * nothing. Both are what the write path already did with the same value.
+	 *
+	 * @param array $query The search query.
+	 *
+	 * @phpstan-param array<string, mixed> $query
+	 * @psalm-param   array<string, mixed> $query
+	 *
+	 * @return array The query with every register/schema reference resolved.
+	 *
+	 * @phpstan-return array<string, mixed>
+	 * @psalm-return   array<string, mixed>
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
+	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function normaliseReferences(array $query): array {
+		if ($this->referenceResolver === null) {
+			return $query;
+		}
+
+		return $this->referenceResolver->normaliseQuery(query: $query);
+	}//end normaliseReferences()
 
 	/**
 	 * Count search objects matching the query.
@@ -135,6 +183,11 @@ class QueryHandler {
 		?array $ids = null,
 		?string $uses = null,
 	): int {
+		// A count is where the empty page hurt most: dossiq persisted a usage
+		// right as false from a count that never ran, because the schema
+		// reference behind it int-cast to 0. Resolve or refuse, never zero.
+		$query = $this->normaliseReferences(query: $query);
+
 		$activeOrgUuid = null;
 		if ($_multitenancy === true) {
 			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
@@ -192,6 +245,12 @@ class QueryHandler {
 		?array $views = null,
 		bool $_viewScopeRequired = false,
 	): array|int {
+		// A caller that hands a ready-made query instead of going through
+		// buildSearchQuery() reaches the same int-cast further down, in
+		// MagicMapper. Resolve here too, so a slug means the same thing on both
+		// routes (openregister#3990).
+		$query = $this->normaliseReferences(query: $query);
+
 		// Apply view filters if provided.
 		if ($views !== null && empty($views) === false) {
 			$query = $this->searchQueryHandler->applyViewsToQuery(
@@ -371,6 +430,10 @@ class QueryHandler {
 		$startTime = microtime(true);
 		$metrics = [];
 
+		// Same seam as searchObjects(): a register or schema reference that
+		// names nothing is refused here, never answered with an empty page.
+		$query = $this->normaliseReferences(query: $query);
+
 		// Extract pagination parameters (limit=0 is valid for count/facets-only requests).
 		// Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
 		$limit = min(max(0, (int)($query['_limit'] ?? self::DEFAULT_PAGE_SIZE)), self::MAX_PAGE_SIZE);
@@ -399,6 +462,44 @@ class QueryHandler {
 		$countQuery = $query;
 		unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
 
+		// A history predicate is answered from the projection and applied as a
+		// NARROWING of the id set, never as a second result source: the query
+		// below is the one that enforces RBAC, tenant isolation and the
+		// published predicate, and an id set can only take objects away from
+		// what it already allows.
+		//
+		// The two filter keys are removed from both queries. Left in, they are
+		// unknown parameters that the search path reads as PROPERTY filters,
+		// and a property nothing has matches nothing — a wrong answer that
+		// looks exactly like a right one.
+		$historyPredicate = HistoryPredicate::parse(query: $query);
+		$historyNarrowed = false;
+		unset(
+			$paginatedQuery[HistoryPredicate::WAS_EVER],
+			$paginatedQuery[HistoryPredicate::CHANGED_BETWEEN],
+			$countQuery[HistoryPredicate::WAS_EVER],
+			$countQuery[HistoryPredicate::CHANGED_BETWEEN]
+		);
+
+		// The administered dictionary rewrites the TERM before it travels, so a
+		// change an administrator makes takes effect on the next search with no
+		// index to rebuild (ADR-007). A term already carrying operators is left
+		// exactly as typed: the person has said precisely what they want, and
+		// splicing synonyms into their brackets would answer a question they
+		// did not ask.
+		$expansion = $this->expandSearchTerm(query: $query);
+		if ($expansion !== null && $expansion->changed() === true) {
+			$paginatedQuery['_search'] = $expansion->term();
+			$countQuery['_search'] = $expansion->term();
+		}
+
+		if ($historyPredicate->narrows() === true && $this->historyNarrowing !== null) {
+			$historyStart = microtime(true);
+			$ids = $this->historyNarrowing->narrow(predicate: $historyPredicate, ids: $ids);
+			$historyNarrowed = ($ids === []);
+			$metrics['history'] = round((microtime(true) - $historyStart) * 1000, 2);
+		}
+
 		// Get active organization context for multi-tenancy.
 		$activeOrgUuid = null;
 		if ($_multitenancy === true) {
@@ -407,15 +508,31 @@ class QueryHandler {
 
 		// Use optimized combined search+count that loads register/schema once.
 		$searchStart = microtime(true);
-		$searchResult = $this->objectMapper->searchObjectsPaginated(
-			searchQuery: $paginatedQuery,
-			countQuery: $countQuery,
-			_activeOrgUuid: $activeOrgUuid,
-			_rbac: $_rbac,
-			_multitenancy: $_multitenancy,
-			ids: $ids,
-			uses: $uses
-		);
+		// The history predicate left no candidates. An EMPTY id set is not the
+		// same instruction as no id set: passed on, it is read as "no id
+		// filter" and would answer with the whole register. So the search is
+		// not issued at all.
+		$searchResult = [
+			'results' => [],
+			'total' => 0,
+			'registers' => [],
+			'schemas' => [],
+			'ignoredFilters' => [],
+			'source' => 'database',
+		];
+
+		if ($historyNarrowed === false) {
+			$searchResult = $this->objectMapper->searchObjectsPaginated(
+				searchQuery: $paginatedQuery,
+				countQuery: $countQuery,
+				_activeOrgUuid: $activeOrgUuid,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy,
+				ids: $ids,
+				uses: $uses
+			);
+		}
+
 		$metrics['search'] = round((microtime(true) - $searchStart) * 1000, 2);
 
 		$results = $searchResult['results'];
@@ -445,7 +562,9 @@ class QueryHandler {
 				total: $total,
 				limit: $limit,
 				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
+				_multitenancy: $_multitenancy,
+				offset: $offset,
+				activeOrgUuid: $activeOrgUuid
 			);
 			$results = $augmented['results'];
 			$total = $augmented['total'];
@@ -559,6 +678,20 @@ class QueryHandler {
 			],
 		];
 
+		// Say what the history filter was understood to mean. A result nobody
+		// expected should carry its own reason, and a filter that did not read
+		// says so here instead of quietly doing nothing.
+		if ($historyPredicate->narrows() === true || $historyPredicate->unparsed() !== []) {
+			$paginatedResults['@self']['history'] = $historyPredicate->jsonSerialize();
+		}
+
+		// Expansion is the one search feature that returns rows the searcher
+		// did not ask for. Unreported, that reads as a broken search and the
+		// person has no way to discover that an administrator taught it a word.
+		if ($expansion !== null && $expansion->isReportable() === true) {
+			$paginatedResults['@self']['dictionary'] = $expansion->jsonSerialize();
+		}
+
 		// Add registers and schemas indexed by ID to response @self.
 		// Only include when explicitly requested via _extend parameter.
 		// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
@@ -636,4 +769,49 @@ class QueryHandler {
 
 		return $paginatedResults;
 	}//end searchObjectsPaginatedDatabase()
+
+	/**
+	 * Rewrite a plain search term through the administered dictionary.
+	 *
+	 * Answers null when there is nothing to do: no dictionary wired, no term,
+	 * an empty dictionary, or a term that already carries operators, brackets,
+	 * quotes or wildcards. That last one is deliberate — the person has said
+	 * precisely what they want, and splicing synonyms into their expression
+	 * would answer a different question while looking like the same search.
+	 *
+	 * @param array $query The search query.
+	 *
+	 * @phpstan-param array<string, mixed> $query
+	 *
+	 * @psalm-param array<string, mixed> $query
+	 *
+	 * @return \OCA\OpenRegister\Service\Search\DictionaryExpansion|null The expansion, or null.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function expandSearchTerm(array $query): ?\OCA\OpenRegister\Service\Search\DictionaryExpansion {
+		if ($this->dictionary === null) {
+			return null;
+		}
+
+		$term = ($query['_search'] ?? null);
+		if (is_string($term) === false || trim($term) === '') {
+			return null;
+		}
+
+		if ((new SearchTermParser())->needsParsing(term: trim($term)) === true) {
+			return null;
+		}
+
+		$dictionary = $this->dictionary->forLanguage();
+		if ($dictionary->isEmpty() === true) {
+			return null;
+		}
+
+		return $dictionary->expand(
+			term: trim($term),
+			perGroupCap: $this->dictionary->perGroupCap(),
+			perQueryCap: $this->dictionary->perQueryCap()
+		);
+	}//end expandSearchTerm()
 }//end class

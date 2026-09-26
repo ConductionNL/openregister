@@ -6,7 +6,9 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -52,7 +54,9 @@ class AuditTrailControllerTest extends TestCase {
 			$this->auditTrailMapper,
 			$this->auditHashService,
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->createMock(ReadableAuditTrailLister::class),
+			$this->createMock(ExportRunRecorder::class)
 		);
 	}
 
@@ -570,7 +574,9 @@ class AuditTrailControllerTest extends TestCase {
 			$this->auditTrailMapper,
 			$this->auditHashService,
 			$session,
-			$groupMgr
+			$groupMgr,
+			$this->createMock(ReadableAuditTrailLister::class),
+			$this->createMock(ExportRunRecorder::class)
 		);
 	}
 
