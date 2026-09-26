@@ -29,12 +29,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluator;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IRequest;
@@ -64,12 +64,13 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	private const ANNOTATION_KEY = 'x-openregister-consent';
 
 	/**
-	 * Fields the platform fills on every newly appended entry; a
-	 * caller-supplied value under any of these keys is discarded.
+	 * Pure property-level evaluator (append-only check + evidence fill). No
+	 * Nextcloud dependency, so it needs no DI registration — this listener
+	 * owns the one instance it needs.
 	 *
-	 * @var array<int, string>
+	 * @var ConsentEnvelopeEvaluator
 	 */
-	private const EVIDENCE_FIELDS = ['by', 'timestamp', 'ip', 'userAgent', 'contentHash'];
+	private readonly ConsentEnvelopeEvaluator $evaluator;
 
 	/**
 	 * Constructor.
@@ -87,6 +88,7 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->evaluator = new ConsentEnvelopeEvaluator();
 	}//end __construct()
 
 	/**
@@ -120,57 +122,31 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 */
 	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject, ?ObjectEntity $oldObject): void {
 		try {
-			$reference = $newObject->getSchema();
-			if ($reference === null || $reference === '') {
+			$context = $this->resolveContext(newObject: $newObject, oldObject: $oldObject);
+			if ($context === null) {
 				return;
 			}
 
-			$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-			$consentProperties = $this->consentProperties(schema: $schema);
-			if ($consentProperties === []) {
+			$changed = $this->applyConsentProperties(
+				event: $event,
+				properties: $context['properties'],
+				incomingData: $context['incoming'],
+				persistedData: $context['persisted']
+			);
+
+			if ($event->isPropagationStopped() === true) {
+				// Refused — the event already carries the reason.
 				return;
 			}
 
-			$incomingData = $newObject->getObject();
-			if (is_array($incomingData) === false) {
-				return;
-			}
-
-			$persistedData = [];
-			if ($oldObject !== null && is_array($oldObject->getObject()) === true) {
-				$persistedData = $oldObject->getObject();
-			}
-
-			$changed = false;
-			foreach ($consentProperties as $name => $annotation) {
-				$result = $this->evaluateProperty(
-					event: $event,
-					name: $name,
-					annotation: $annotation,
-					incoming: ($incomingData[$name] ?? []),
-					persisted: ($persistedData[$name] ?? []),
-					allData: $incomingData
-				);
-
-				if ($event->isPropagationStopped() === true) {
-					// Refused — the event already carries the reason.
-					return;
-				}
-
-				if ($result !== ($incomingData[$name] ?? [])) {
-					$incomingData[$name] = $result;
-					$changed = true;
-				}
-			}
-
-			if ($changed === true) {
+			if ($changed !== null) {
 				// Mutate the entity directly, the same idiom
 				// CalculationOnSaveListener uses (`$object->setObject($data)`),
 				// rather than the separate setModifiedData()/MagicMapper-merge
 				// path: this listener has already assembled the complete,
 				// correct payload for every touched property, so a shallow
 				// merge downstream would be redundant, not additive.
-				$newObject->setObject($incomingData);
+				$newObject->setObject($changed);
 			}
 		} catch (Throwable $failure) {
 			// A consent property that cannot be evaluated must not become the
@@ -184,6 +160,90 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 			);
 		}//end try
 	}//end evaluate()
+
+	/**
+	 * Resolve the schema's consent-shaped properties plus the incoming and
+	 * previously persisted payloads for one write, or null when there is
+	 * nothing for this listener to do.
+	 *
+	 * @param ObjectEntity $newObject The object as the caller submitted it.
+	 * @param ObjectEntity|null $oldObject The previously persisted object, or null on create.
+	 *
+	 * @return array{properties: array<string, array<string, mixed>>, incoming: array<string, mixed>, persisted: array<string, mixed>}|null
+	 */
+	private function resolveContext(ObjectEntity $newObject, ?ObjectEntity $oldObject): ?array {
+		$reference = $newObject->getSchema();
+		if ($reference === null || $reference === '') {
+			return null;
+		}
+
+		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		$consentProperties = $this->consentProperties(schema: $schema);
+		if ($consentProperties === []) {
+			return null;
+		}
+
+		$incomingData = $newObject->getObject();
+		if (is_array($incomingData) === false) {
+			return null;
+		}
+
+		$persistedData = [];
+		if ($oldObject !== null && is_array($oldObject->getObject()) === true) {
+			$persistedData = $oldObject->getObject();
+		}
+
+		return [
+			'properties' => $consentProperties,
+			'incoming' => $incomingData,
+			'persisted' => $persistedData,
+		];
+	}//end resolveContext()
+
+	/**
+	 * Evaluate every declared consent-shaped property against one write.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event (refused via `setErrors()`+`stopPropagation()`).
+	 * @param array<string, array<string, mixed>> $properties The schema's `x-openregister-consent` properties.
+	 * @param array<string, mixed> $incomingData The caller-submitted object payload.
+	 * @param array<string, mixed> $persistedData The previously persisted object payload (empty on create).
+	 *
+	 * @return array<string, mixed>|null The updated payload to persist, or null when nothing changed
+	 *     (also null once the event is stopped — the caller checks `isPropagationStopped()`).
+	 */
+	private function applyConsentProperties(
+		ObjectCreatingEvent|ObjectUpdatingEvent $event,
+		array $properties,
+		array $incomingData,
+		array $persistedData
+	): ?array {
+		$changed = false;
+		foreach ($properties as $name => $annotation) {
+			$result = $this->evaluateProperty(
+				event: $event,
+				name: $name,
+				annotation: $annotation,
+				incoming: ($incomingData[$name] ?? []),
+				persisted: ($persistedData[$name] ?? []),
+				allData: $incomingData
+			);
+
+			if ($event->isPropagationStopped() === true) {
+				return null;
+			}
+
+			if ($result !== ($incomingData[$name] ?? [])) {
+				$incomingData[$name] = $result;
+				$changed = true;
+			}
+		}
+
+		if ($changed === false) {
+			return null;
+		}
+
+		return $incomingData;
+	}//end applyConsentProperties()
 
 	/**
 	 * The `x-openregister-consent` properties declared on a schema, keyed by property name.
@@ -214,8 +274,9 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	}//end consentProperties()
 
 	/**
-	 * Evaluate one consent-shaped property: enforce append-only, then fill
-	 * evidence on every newly appended entry.
+	 * Evaluate one consent-shaped property: resolves the NC-coupled inputs
+	 * (acting identity, IP, user agent) and delegates the pure append-only
+	 * check + evidence fill to {@see ConsentEnvelopeEvaluator}.
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event (refused via `setErrors()`+`stopPropagation()`).
 	 * @param string $name The property name (for error messages).
@@ -235,66 +296,51 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 		mixed $persisted,
 		array $allData
 	): array {
-		if (is_array($incoming) === true) {
-			$incoming = array_values($incoming);
-		} else {
-			$incoming = [];
+		$result = $this->evaluator->evaluate(
+			name: $name,
+			annotation: $annotation,
+			incoming: $incoming,
+			persisted: $persisted,
+			actingIdentity: $this->resolveActingIdentity(annotation: $annotation, allData: $allData),
+			ipAddress: $this->safeRemoteAddress(),
+			userAgent: $this->safeUserAgent()
+		);
+
+		if ($result['refused'] === true) {
+			$this->refuse(event: $event, name: $name, message: (string)$result['message']);
 		}
 
-		if (is_array($persisted) === true) {
-			$persisted = array_values($persisted);
-		} else {
-			$persisted = [];
-		}
-
-		if (count($incoming) < count($persisted)) {
-			$this->refuse(event: $event, name: $name, message: sprintf(
-				'Property "%s" is append-only (x-openregister-consent): the submitted value has fewer entries than the persisted value.',
-				$name
-			));
-
-			return $incoming;
-		}
-
-		for ($index = 0; $index < count($persisted); $index++) {
-			if (($incoming[$index] ?? null) !== $persisted[$index]) {
-				$this->refuse(event: $event, name: $name, message: sprintf(
-					'Property "%s" is append-only (x-openregister-consent): entry %d cannot be changed, only new entries may be appended.',
-					$name,
-					$index
-				));
-
-				return $incoming;
-			}
-		}
-
-		$purpose = (string)($annotation['purpose'] ?? '');
-		$subjectProperty = $annotation['subjectProperty'] ?? null;
-
-		$actor = $this->userSession->getUser();
-		$actingIdentity = null;
-		if ($actor !== null) {
-			$actingIdentity = $actor->getUID();
-		}
-
-		if ($actingIdentity === null && is_string($subjectProperty) === true) {
-			$resolved = ($allData[$subjectProperty] ?? null);
-			if (is_string($resolved) === true) {
-				$actingIdentity = $resolved;
-			}
-		}
-
-		for ($index = count($persisted); $index < count($incoming); $index++) {
-			$entry = $incoming[$index];
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$incoming[$index] = $this->fillEvidence(entry: $entry, purpose: $purpose, actingIdentity: $actingIdentity);
-		}
-
-		return $incoming;
+		return $result['value'];
 	}//end evaluateProperty()
+
+	/**
+	 * Resolve the identity to record as "by" on a newly appended entry: the
+	 * acting Nextcloud user, or — when the caller writes on a data subject's
+	 * behalf and no user is active — the declared `subjectProperty`'s value.
+	 *
+	 * @param array<string, mixed> $annotation The property's `x-openregister-consent` declaration.
+	 * @param array<string, mixed> $allData The full incoming object payload.
+	 *
+	 * @return string|null
+	 */
+	private function resolveActingIdentity(array $annotation, array $allData): ?string {
+		$actor = $this->userSession->getUser();
+		if ($actor !== null) {
+			return $actor->getUID();
+		}
+
+		$subjectProperty = ($annotation['subjectProperty'] ?? null);
+		if (is_string($subjectProperty) === false) {
+			return null;
+		}
+
+		$resolved = ($allData[$subjectProperty] ?? null);
+		if (is_string($resolved) === true) {
+			return $resolved;
+		}
+
+		return null;
+	}//end resolveActingIdentity()
 
 	/**
 	 * Refuse the current write with a structured error.
@@ -313,38 +359,6 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 		]);
 		$event->stopPropagation();
 	}//end refuse()
-
-	/**
-	 * Fill the read-only evidentiary fields on one newly appended entry.
-	 *
-	 * @param array<string, mixed> $entry The caller-submitted entry.
-	 * @param string $purpose The property's declared purpose.
-	 * @param string|null $actingIdentity The resolved acting identity ("by").
-	 *
-	 * @return array<string, mixed> The entry with evidence fields filled.
-	 */
-	private function fillEvidence(array $entry, string $purpose, ?string $actingIdentity): array {
-		foreach (self::EVIDENCE_FIELDS as $field) {
-			unset($entry[$field]);
-		}
-
-		$decision = (string)($entry['decision'] ?? '');
-		$evidenceOf = (string)($entry['evidenceOf'] ?? '');
-		$timestamp = (new DateTimeImmutable())->format(DATE_ATOM);
-
-		$entry['by'] = $actingIdentity;
-		$entry['timestamp'] = $timestamp;
-		$entry['ip'] = $this->safeRemoteAddress();
-		$entry['userAgent'] = $this->safeUserAgent();
-		$entry['contentHash'] = hash('sha256', $purpose . $decision . $evidenceOf);
-
-		$entry['withdrawnAt'] = null;
-		if ($decision === 'withdrawn') {
-			$entry['withdrawnAt'] = $timestamp;
-		}
-
-		return $entry;
-	}//end fillEvidence()
 
 	/**
 	 * The caller's remote address, or null when unavailable (e.g. a CLI/occ write).

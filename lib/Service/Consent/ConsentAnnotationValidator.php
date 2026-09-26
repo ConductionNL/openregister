@@ -59,6 +59,8 @@ final class ConsentAnnotationValidator {
 	 * @param array<string, mixed> $schema Full schema (must include `properties`).
 	 *
 	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/changes/consent-evidence-envelope/specs/consent-evidence-envelope/spec.md
 	 */
 	public function validate(array $schema): array {
 		$properties = ($schema['properties'] ?? []);
