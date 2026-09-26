@@ -229,6 +229,37 @@ class TalkLinkService {
 			throw new Exception('Talk link not found', 404);
 		}
 
+		$this->assertInviteAllowed(link: $link, email: $email);
+
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$targets = $this->resolveInviteTargets(roomToken: $roomToken, userUid: $user->getUID());
+		if ($targets['degraded'] === true) {
+			return ['invited' => false, 'unavailable' => true, 'cause' => $targets['cause']];
+		}
+
+		return $this->sendInvite(
+			participantService: $targets['participantService'],
+			room: $targets['room'],
+			email: $email,
+			displayName: $displayName
+		);
+	}//end inviteExternalParticipant()
+
+	/**
+	 * Refuse an invite whose schema has not opted in, or whose email is malformed.
+	 *
+	 * @param TalkLink $link The resolved link row (carries the schema id).
+	 * @param string $email The caller-submitted email address.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the schema does not opt in (403) or the email is malformed (400).
+	 */
+	private function assertInviteAllowed(TalkLink $link, string $email): void {
 		if ($this->schemaAllowsExternalParticipants(schemaId: (int)$link->getSchemaId()) === false) {
 			throw new Exception('This schema does not allow external Talk participants', 403);
 		}
@@ -236,27 +267,46 @@ class TalkLinkService {
 		if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
 			throw new Exception('Invalid email address', 400);
 		}
+	}//end assertInviteAllowed()
 
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
+	/**
+	 * Resolve the Talk room and participant service an invite needs, or a degrade descriptor.
+	 *
+	 * @param string $roomToken Talk room token.
+	 * @param string $userUid Current user id (for room lookup).
+	 *
+	 * @return array{degraded: bool, cause?: string, room?: object, participantService?: object}
+	 */
+	private function resolveInviteTargets(string $roomToken, string $userUid): array {
 		$manager = $this->resolveManager();
 		if ($manager === null) {
-			return ['invited' => false, 'unavailable' => true, 'cause' => 'talk-not-available'];
+			return ['degraded' => true, 'cause' => 'talk-not-available'];
 		}
 
-		$room = $this->findRoom(manager: $manager, roomToken: $roomToken, userUid: $user->getUID());
+		$room = $this->findRoom(manager: $manager, roomToken: $roomToken, userUid: $userUid);
 		if ($room === null) {
-			return ['invited' => false, 'unavailable' => true, 'cause' => 'room-not-found'];
+			return ['degraded' => true, 'cause' => 'room-not-found'];
 		}
 
 		$participantService = $this->resolveParticipantService();
 		if ($participantService === null || method_exists($participantService, 'addUsers') === false) {
-			return ['invited' => false, 'unavailable' => true, 'cause' => 'participant-service-unavailable'];
+			return ['degraded' => true, 'cause' => 'participant-service-unavailable'];
 		}
 
+		return ['degraded' => false, 'room' => $room, 'participantService' => $participantService];
+	}//end resolveInviteTargets()
+
+	/**
+	 * Send the actual Talk invite, degrading (never throwing) when Talk's own call fails.
+	 *
+	 * @param object $participantService Talk's `ParticipantService`.
+	 * @param object $room The target Talk room.
+	 * @param string $email External participant's email address.
+	 * @param string|null $displayName Optional display name (defaults to the email).
+	 *
+	 * @return array{invited: bool, unavailable?: bool, cause?: string, actorType?: string, actorId?: string}
+	 */
+	private function sendInvite(object $participantService, object $room, string $email, ?string $displayName): array {
 		$resolvedDisplayName = $displayName;
 		if ($resolvedDisplayName === null || $resolvedDisplayName === '') {
 			$resolvedDisplayName = $email;
@@ -272,7 +322,7 @@ class TalkLinkService {
 		}
 
 		return ['invited' => true, 'actorType' => 'emails', 'actorId' => $email];
-	}//end inviteExternalParticipant()
+	}//end sendInvite()
 
 	/**
 	 * Whether a schema opts into external (non-Nextcloud-user) Talk participants.

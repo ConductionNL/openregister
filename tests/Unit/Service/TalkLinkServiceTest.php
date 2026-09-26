@@ -41,6 +41,55 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
+
+/**
+ * Minimal Talk `Manager`/`ParticipantService` stubs, aliased under Talk's own
+ * class names so `resolveManager()`/`resolveParticipantService()`'s
+ * `class_exists()` guard can be exercised for real. Follows the same
+ * documented convention {@see \Unit\Service\Integration\Providers\TalkProviderTest}
+ * already uses ("these tests stub them via anonymous/named classes, no
+ * upstream fork") — guarded so a real `spreed` install is never overridden,
+ * matching `TalkObjectSourceProviderTest::testFailsClosedWhenTalkAbsent()`'s
+ * own `class_exists()` skip-if-present convention.
+ */
+class TalkLinkServiceTestManagerStub {
+	public ?object $room = null;
+
+	public function getRoomForUserByToken(string $token, string $userId): object {
+		if ($this->room === null) {
+			throw new RuntimeException('room not found');
+		}
+
+		return $this->room;
+	}
+}
+
+/**
+ * Minimal Talk `ParticipantService` stub — see {@see TalkLinkServiceTestManagerStub}.
+ */
+class TalkLinkServiceTestParticipantServiceStub {
+	/** @var array<int, array{0: object, 1: array<int, array<string, string>>}> */
+	public array $calls = [];
+
+	public bool $throwsOnAddUsers = false;
+
+	public function addUsers(object $room, array $participants): void {
+		if ($this->throwsOnAddUsers === true) {
+			throw new RuntimeException('addUsers failed');
+		}
+
+		$this->calls[] = [$room, $participants];
+	}
+}
+
+if (class_exists('OCA\\Talk\\Manager') === false) {
+	class_alias(TalkLinkServiceTestManagerStub::class, 'OCA\\Talk\\Manager');
+}
+
+if (class_exists('OCA\\Talk\\Service\\ParticipantService') === false) {
+	class_alias(TalkLinkServiceTestParticipantServiceStub::class, 'OCA\\Talk\\Service\\ParticipantService');
+}
 
 /**
  * TalkLinkServiceTest.
@@ -344,15 +393,212 @@ class TalkLinkServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$this->setupUser();
+		// isEnabledForUser=false makes isTalkAvailable() false, so
+		// resolveManager() returns null at its very first check —
+		// independent of whether OCA\Talk\Manager is aliased for other tests.
 		$this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
 
-		// class_exists('OCA\\Talk\\Manager') is also false in this test
-		// environment (spreed not installed), so resolveManager() always
-		// returns null regardless of the appManager stub.
 		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
 
 		$this->assertFalse($result['invited']);
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('talk-not-available', $result['cause']);
+	}
+
+	/**
+	 * Configure the mocks so `resolveManager()` succeeds (Talk "installed",
+	 * via the aliased stub class) and hand back the given manager +
+	 * participant-service stubs.
+	 */
+	private function talkAvailable(TalkLinkServiceTestManagerStub $manager, ?TalkLinkServiceTestParticipantServiceStub $participantService): void {
+		$this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(true);
+		$this->container->method('get')->willReturnCallback(
+			static function (string $id) use ($manager, $participantService): object {
+				if ($id === 'OCA\\Talk\\Manager') {
+					return $manager;
+				}
+
+				if ($id === 'OCA\\Talk\\Service\\ParticipantService') {
+					if ($participantService === null) {
+						throw new RuntimeException('ParticipantService not resolvable');
+					}
+
+					return $participantService;
+				}
+
+				throw new RuntimeException('unexpected container lookup: ' . $id);
+			}
+		);
+	}
+
+	private function opaqueRoom(): object {
+		return new class {
+		};
+	}
+
+	/**
+	 * A room that cannot be found (Talk available, but the token matches
+	 * nothing) degrades rather than throwing.
+	 */
+	public function testInviteExternalParticipantDegradesWhenRoomNotFound(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->setupUser();
+		$manager = new TalkLinkServiceTestManagerStub();
+		// $manager->room stays null: getRoomForUserByToken() throws, and the
+		// stub declares no getRoomByToken() fallback — findRoom() returns null.
+		$this->talkAvailable(manager: $manager, participantService: null);
+
+		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+
+		$this->assertFalse($result['invited']);
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('room-not-found', $result['cause']);
+	}
+
+	/**
+	 * A resolvable room but an unresolvable participant service degrades
+	 * rather than throwing.
+	 */
+	public function testInviteExternalParticipantDegradesWhenParticipantServiceUnavailable(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->setupUser();
+		$manager = new TalkLinkServiceTestManagerStub();
+		$manager->room = $this->opaqueRoom();
+		$this->talkAvailable(manager: $manager, participantService: null);
+
+		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+
+		$this->assertFalse($result['invited']);
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('participant-service-unavailable', $result['cause']);
+	}
+
+	/**
+	 * The full success path: a resolvable room and participant service
+	 * actually receive the `addUsers()` call with the `emails` actor type.
+	 */
+	public function testInviteExternalParticipantSucceeds(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->setupUser();
+		$manager = new TalkLinkServiceTestManagerStub();
+		$manager->room = $this->opaqueRoom();
+		$participantService = new TalkLinkServiceTestParticipantServiceStub();
+		$this->talkAvailable(manager: $manager, participantService: $participantService);
+
+		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test', 'Jan de Vries');
+
+		$this->assertTrue($result['invited']);
+		$this->assertSame('emails', $result['actorType']);
+		$this->assertSame('guardian@example.test', $result['actorId']);
+		$this->assertCount(1, $participantService->calls);
+		$this->assertSame(
+			[['actorType' => 'emails', 'actorId' => 'guardian@example.test', 'displayName' => 'Jan de Vries']],
+			$participantService->calls[0][1]
+		);
+	}
+
+	/**
+	 * No display name supplied falls back to the email address.
+	 */
+	public function testInviteExternalParticipantDefaultsDisplayNameToEmail(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->setupUser();
+		$manager = new TalkLinkServiceTestManagerStub();
+		$manager->room = $this->opaqueRoom();
+		$participantService = new TalkLinkServiceTestParticipantServiceStub();
+		$this->talkAvailable(manager: $manager, participantService: $participantService);
+
+		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+
+		$this->assertSame('guardian@example.test', $participantService->calls[0][1][0]['displayName']);
+	}
+
+	/**
+	 * Talk's own `addUsers()` call failing degrades rather than throwing.
+	 */
+	public function testInviteExternalParticipantDegradesWhenAddUsersThrows(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-talk-participants' => true]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->setupUser();
+		$manager = new TalkLinkServiceTestManagerStub();
+		$manager->room = $this->opaqueRoom();
+		$participantService = new TalkLinkServiceTestParticipantServiceStub();
+		$participantService->throwsOnAddUsers = true;
+		$this->talkAvailable(manager: $manager, participantService: $participantService);
+
+		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+
+		$this->assertFalse($result['invited']);
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('addUsers failed', $result['cause']);
+	}
+
+	/**
+	 * A schema whose stored configuration is not an array (never set) is
+	 * treated as not opted in.
+	 */
+	public function testInviteExternalParticipantTreatsMissingConfigurationAsNotOptedIn(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$schema = new Schema();
+		// setConfiguration() never called: getConfiguration() returns null.
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(403);
+
+		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+	}
+
+	/**
+	 * A schema lookup that throws is treated as not opted in (fail closed).
+	 */
+	public function testInviteExternalParticipantTreatsSchemaLookupFailureAsNotOptedIn(): void {
+		$link = new TalkLink();
+		$link->setSchemaId(30);
+		$this->mapper->method('findByObjectAndRoom')->willReturn($link);
+
+		$this->schemaMapper->method('find')->willThrowException(new RuntimeException('schema not found'));
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(403);
+
+		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
 	}
 }
