@@ -57,6 +57,10 @@ The section renders only for administrators. Its two routes follow the posture t
 
 The console does not have a tenant switch. It runs under the administrator's session, so the resolvers apply the administrator's active organisation and its children, as the `graphql-api` requirement "Multi-tenancy MUST be enforced on all GraphQL operations" (`openspec/specs/graphql-api/spec.md:460-481`) describes for every caller. To ask about another organisation, an administrator switches their active organisation in the usual place, and the audit row of the run names the organisation it ran in.
 
+## Declarative-vs-imperative decision
+
+The question an administrator asks is declarative: a GraphQL document, including `groupBy` aggregations the `graphql-api` capability already declares. The console adds no aggregation of its own and no schema keyword. The runner around it (read-only refusal, caps, audit, download) is imperative, because it is request handling, not a rule on data.
+
 ## Risks
 
 - **Security.** Administrator-only, queries only, no CDN, no variable values in the audit. The export guards against CSV formula injection (D-3).

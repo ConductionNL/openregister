@@ -85,6 +85,10 @@ When a breaker on a declared connection key (`lib/Settings/connections.json`, fo
 
 The defaults in D-1 and D-4 are stored under `IAppConfig` keys in a `load_shedding` group and edited in a "Load shedding" section of the Open Register admin settings. An unreadable or out-of-range value falls back to its default and logs at warning. A switch turns database-pressure shedding off entirely for an instance that prefers slow answers to refusals; dependency breakers cannot be switched off, only tuned.
 
+## Declarative-vs-imperative decision
+
+Imperative. A breaker reacts to failures observed at run time, and no schema author has anything to declare about it: a dependency's health is not a property of a record. The one declared part is which controller methods are sheddable, and that is an attribute on the method in code (`#[Sheddable]`), not a runtime setting, so the set is reviewed with the code and a reflection test lists it. The deferred webhook keeps the webhook's own declaration untouched; only its delivery waits.
+
 ## Risks
 
 - **Security.** The 503 names a dependency class only (D-5). The dependency list and the reset are administrator-only, and a reset is audited.

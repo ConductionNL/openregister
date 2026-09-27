@@ -49,6 +49,10 @@ REQ-IPC-004 writes a restorable copy before a destruction. That copy is written 
 
 From `import-preview-and-conflict-policy` tasks 5.1 and 5.2: the writer and reader must take a PHP stream, not a file path, so `EncryptedSetWriter` can sit between them and the destination. The start requests must accept an `encryption` block: `{"mode": "passphrase", "passphrase": "<PASSPHRASE>"}` or `{"mode": "key", "keyId": "<credential uuid>"}`. From task 4.1: the copy writer must take the same stream. This change's tasks 3.1 and 3.2 wire these in once those tasks land, and tasks 1.x and 2.x are buildable before.
 
+## Declarative-vs-imperative decision
+
+Imperative. Encryption is a layer on how a copy is written, chosen per export or by one archival setting (`destructionCopyEncryption`, D-6). It declares nothing on a schema and changes no lifecycle rule: the destruction's own rule, no copy means no destruction (REQ-IPC-004), stays as it is, and this change only adds "no encryptable copy" as a way for the copy to fail.
+
 ## Risks
 
 - **Security.** Authenticated encryption per chunk, a cleartext header that says nothing about the contents, no passphrase in a job argument or a log, the export key only in the broker. A wrong key and an altered file give the same answer.
