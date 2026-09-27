@@ -2846,4 +2846,67 @@ class OasServiceTest extends TestCase {
 		// security freshly added.
 		$this->assertArrayHasKey('security', $operation);
 	}
+
+	// ========================================================================
+	// PATCH in the document and the NLGov method rule (#4059)
+	// ========================================================================
+
+	public function testAddCrudPathsDocumentsPatchOnTheObjectPath(): void {
+		$register = $this->createRegister(1, 'People', [10], null, '1.0', 'people');
+		$schema = $this->createSchema(10, 'Person', ['name' => ['type' => 'string']], 'person');
+		$this->setPrivateProperty('oas', ['paths' => [], 'components' => ['schemas' => []]]);
+
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, ['updateGroups' => []], '']);
+
+		$paths = $this->getPrivateProperty('oas')['paths'];
+		$this->assertArrayHasKey('/objects/people/person/{id}', $paths);
+		$item = $paths['/objects/people/person/{id}'];
+		$this->assertArrayHasKey('patch', $item, 'objects#patch is served, so the document must list it.');
+		$this->assertSame('patchPerson', $item['patch']['operationId']);
+		$this->assertArrayHasKey('application/merge-patch+json', $item['patch']['requestBody']['content']);
+		$this->assertArrayNotHasKey('required', $item['patch']['requestBody']['content']['application/merge-patch+json']['schema']);
+		$this->assertSame('updatePerson', $item['put']['operationId']);
+	}
+
+	public function testNlGovRulesAcceptPatchHeadAndOptions(): void {
+		$report = new \OCA\OpenRegister\Service\Oas\OasValidationReport();
+		$this->setPrivateProperty('report', $report);
+		$this->setPrivateProperty('oas', [
+			'paths' => [
+				'/objects/a/b/{id}' => [
+					'summary' => 'One object',
+					'parameters' => [],
+					'get' => ['responses' => ['200' => []]],
+					'put' => ['responses' => ['200' => []]],
+					'patch' => ['responses' => ['200' => []]],
+					'delete' => ['responses' => ['204' => []]],
+					'head' => ['responses' => ['200' => []]],
+					'options' => ['responses' => ['204' => []]],
+				],
+			],
+		]);
+
+		$this->invokePrivateMethod('validateNlGovRules');
+
+		$this->assertSame([], $report->getErrors());
+	}
+
+	public function testNlGovRulesStillRefuseANonStandardMethodUnderTheRightRule(): void {
+		$report = new \OCA\OpenRegister\Service\Oas\OasValidationReport();
+		$this->setPrivateProperty('report', $report);
+		$this->setPrivateProperty('oas', [
+			'paths' => [
+				'/x' => [
+					'trace' => ['responses' => ['200' => []]],
+				],
+			],
+		]);
+
+		$this->invokePrivateMethod('validateNlGovRules');
+
+		$errors = $report->getErrors();
+		$this->assertCount(1, $errors);
+		$this->assertStringContainsString('/core/http-methods', json_encode($errors, JSON_UNESCAPED_SLASHES));
+		$this->assertStringNotContainsString('API-01', json_encode($errors));
+	}
 }

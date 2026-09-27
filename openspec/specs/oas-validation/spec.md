@@ -330,10 +330,13 @@ The generated OAS MUST be verifiable against NL API Design Rules (Forum Standaar
 #### Scenario: Standard HTTP methods documented (API-01)
 - GIVEN any schema's CRUD paths
 - WHEN OAS is generated
-- THEN only standard HTTP methods MUST be used: GET (list, read), POST (create), PUT (update), DELETE (delete)
+- THEN only standard HTTP methods MUST be used: GET (list, read), POST (create), PUT (update), PATCH (partial update), DELETE (delete), and the RFC 9110 methods HEAD and OPTIONS
+- AND every object path `/{id}` MUST document PATCH, because `objects#patch` serves it
 - AND no custom HTTP methods or non-standard verbs SHALL appear
+- NOTE: the published rule is `/core/http-methods` (numbered API-03 in the 1.0 ruleset, not API-01, which is about safety and idempotency); the scenario heading keeps its old name so existing `@spec` anchors resolve
 
 #### Scenario: Standard HTTP status codes used (API-03)
+- NOTE: the published rule is `/core/http-response-code`; the heading keeps its old name so existing `@spec` anchors resolve
 - GIVEN any operation in the generated OAS
 - WHEN response codes are validated
 - THEN only standard HTTP status codes SHALL be used: 200, 201, 204, 400, 403, 404, 500
