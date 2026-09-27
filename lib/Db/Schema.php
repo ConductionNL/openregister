@@ -1255,8 +1255,21 @@ class Schema extends Entity implements JsonSerializable {
 		// that an authorization block, an event listener and the
 		// grantable-rights index can all refer to; the app still enforces its
 		// own operation.
+		//
+		// 🔴 THE CANONICAL VERBS COME FROM THE CATALOGUE, NOT FROM A LIST HERE.
+		// `PermissionCatalogue::CANONICAL` publishes nine grantable verbs, and
+		// the permission matrix writes any of them into a schema's block. This
+		// method used to accept four of them. An administrator who narrowed
+		// `export` on a schema (which is what the catalogue exists to allow)
+		// made that schema fail EVERY later import of its app with "Invalid
+		// authorization action 'export'": the app's fragment never named the
+		// verb, the stored block did, and the merge is what gets validated.
+		// Measured on the dev instance 2026-09-27: ~280 schemas of 17 apps carry
+		// `export`, and pipelinq's `lead` and `enquiry` were the first two seen
+		// refused, only because that app's re-import had just learned to report
+		// a rejection. Same fix as the control keys above: read the one list.
 		$validActions = array_merge(
-			['create', 'read', 'update', 'delete'],
+			array_keys(PermissionCatalogue::CANONICAL),
 			$this->declaredActionNames()
 		);
 

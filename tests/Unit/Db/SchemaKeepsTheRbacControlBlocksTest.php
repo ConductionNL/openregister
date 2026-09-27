@@ -321,6 +321,40 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	}//end testEveryControlKeyTheCatalogueNamesCanBeSaved()
 
 	/**
+	 * Every canonical verb the catalogue publishes is a valid action in a block.
+	 *
+	 * The permission matrix writes any of the nine canonical verbs into a
+	 * schema's authorization. This validator accepted four of them, so an
+	 * administrator who narrowed `export` on a schema made that schema fail
+	 * every later import of its app: the fragment never named the verb, the
+	 * stored block did, and the merged block is what gets validated. Measured
+	 * 2026-09-27: ~280 schemas of 17 apps carried `export`; pipelinq's `lead`
+	 * was the first one seen refused. Reading the catalogue is the fix, so the
+	 * tenth verb added there tomorrow does not break the import again.
+	 *
+	 * @return void
+	 */
+	public function testEveryCanonicalVerbTheCatalogueNamesCanBeSaved(): void {
+		// Positive control: the verb that broke the import is in the list this test walks.
+		$this->assertArrayHasKey('export', PermissionCatalogue::CANONICAL);
+
+		foreach (array_keys(PermissionCatalogue::CANONICAL) as $verb) {
+			$schema = new Schema();
+			$schema->setAuthorization(
+				[
+					'read' => ['behandelaars'],
+					$verb => ['behandelaars'],
+				]
+			);
+
+			$this->assertTrue(
+				$schema->validateAuthorization(),
+				"canonical verb '{$verb}' was refused as an unknown action"
+			);
+		}
+	}//end testEveryCanonicalVerbTheCatalogueNamesCanBeSaved()
+
+	/**
 	 * The action vocabulary is still CLOSED.
 	 *
 	 * The counterweight to the test above, and the reason the fix reads the
