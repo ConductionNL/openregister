@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\PurgeObjectCommand;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -54,6 +55,13 @@ class PurgeObjectCommandTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
 
 	/**
+	 * Audit trail mapper double, for --import-job.
+	 *
+	 * @var AuditTrailMapper&MockObject
+	 */
+	private AuditTrailMapper&MockObject $auditTrailMapper;
+
+	/**
 	 * UUIDs actually destroyed.
 	 *
 	 * @var string[]
@@ -70,6 +78,7 @@ class PurgeObjectCommandTest extends TestCase {
 
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->purged = [];
 
 		$this->objectMapper->method('delete')->willReturnCallback(
@@ -111,7 +120,11 @@ class PurgeObjectCommandTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$tester = new CommandTester(
-			new PurgeObjectCommand(objectMapper: $this->objectMapper, schemaMapper: $this->schemaMapper)
+			new PurgeObjectCommand(
+				objectMapper: $this->objectMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: $this->auditTrailMapper
+			)
 		);
 		$tester->execute(array_merge(['uuid' => ['obj-1'], '--apply' => true], $options));
 
@@ -189,7 +202,11 @@ class PurgeObjectCommandTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$tester = new CommandTester(
-			new PurgeObjectCommand(objectMapper: $this->objectMapper, schemaMapper: $this->schemaMapper)
+			new PurgeObjectCommand(
+				objectMapper: $this->objectMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: $this->auditTrailMapper
+			)
 		);
 		$tester->execute(['uuid' => ['obj-1']]);
 
@@ -197,4 +214,117 @@ class PurgeObjectCommandTest extends TestCase {
 		$this->assertStringContainsString('would purge', $tester->getDisplay());
 		$this->assertSame([], $this->purged);
 	}//end testDryRunDestroysNothing()
+
+	/**
+	 * Run the command in job mode against a set of prepared objects.
+	 *
+	 * @param array<string, bool|null> $objects UUID => archival flag, or null for an object that is gone.
+	 * @param array<string, mixed>     $options Extra console options.
+	 *
+	 * @return CommandTester The finished tester.
+	 */
+	private function runJobPurge(array $objects, array $options = []): CommandTester {
+		$this->auditTrailMapper->method('objectUuidsByImportJobId')
+			->with('job-demo')
+			->willReturn(array_keys($objects));
+
+		$this->objectMapper->method('find')->willReturnCallback(
+			static function (string $identifier) use ($objects): ObjectEntity {
+				if (($objects[$identifier] ?? null) === null) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('gone');
+				}
+
+				$object = new ObjectEntity();
+				$object->setUuid($identifier);
+				$object->setSchema($objects[$identifier] === true ? '2' : '1');
+				$object->setDeleted(['deleted' => '2026-01-01T00:00:00+00:00']);
+				return $object;
+			}
+		);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static function (int $id): Schema {
+				$schema = new Schema();
+				$schema->setSlug($id === 2 ? 'attendance-record' : 'lesson');
+				$configuration = [];
+				if ($id === 2) {
+					$configuration = ['x-openregister-archival' => ['retention' => ['default' => 'P5Y']]];
+				}
+
+				$schema->setConfiguration($configuration);
+				return $schema;
+			}
+		);
+
+		$tester = new CommandTester(
+			new PurgeObjectCommand(
+				objectMapper: $this->objectMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: $this->auditTrailMapper
+			)
+		);
+		$tester->execute(array_merge(['--import-job' => 'job-demo', '--apply' => true], $options));
+
+		return $tester;
+	}//end runJobPurge()
+
+	/**
+	 * --import-job purges every object the job created.
+	 *
+	 * @return void
+	 */
+	public function testImportJobPurgesTheObjectsTheJobCreated(): void {
+		$tester = $this->runJobPurge(['obj-a' => false, 'obj-b' => false]);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertSame(['obj-a', 'obj-b'], $this->purged);
+		$this->assertStringContainsString('import job job-demo created 2 object(s)', $tester->getDisplay());
+	}//end testImportJobPurgesTheObjectsTheJobCreated()
+
+	/**
+	 * Job mode keeps the archival refusal; --force still lifts it.
+	 *
+	 * @return void
+	 */
+	public function testImportJobKeepsTheArchivalRefusal(): void {
+		$tester = $this->runJobPurge(['obj-a' => false, 'obj-arch' => true]);
+
+		$this->assertSame(1, $tester->getStatusCode());
+		$this->assertSame(['obj-a'], $this->purged);
+		$this->assertStringContainsString('x-openregister-archival', $tester->getDisplay());
+	}//end testImportJobKeepsTheArchivalRefusal()
+
+	/**
+	 * In job mode a missing object is already gone, not a failure.
+	 *
+	 * @return void
+	 */
+	public function testImportJobReportsAMissingObjectAsAlreadyGone(): void {
+		$tester = $this->runJobPurge(['obj-gone' => null, 'obj-a' => false]);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('obj-gone: already gone', $tester->getDisplay());
+		$this->assertSame(['obj-a'], $this->purged);
+	}//end testImportJobReportsAMissingObjectAsAlreadyGone()
+
+	/**
+	 * With neither UUIDs nor a job the command refuses and destroys nothing.
+	 *
+	 * @return void
+	 */
+	public function testRefusesToRunWithNeitherUuidsNorAnImportJob(): void {
+		$this->objectMapper->expects($this->never())->method('find');
+
+		$tester = new CommandTester(
+			new PurgeObjectCommand(
+				objectMapper: $this->objectMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: $this->auditTrailMapper
+			)
+		);
+		$tester->execute(['--apply' => true]);
+
+		$this->assertSame(1, $tester->getStatusCode());
+		$this->assertStringContainsString('--import-job', $tester->getDisplay());
+		$this->assertSame([], $this->purged);
+	}//end testRefusesToRunWithNeitherUuidsNorAnImportJob()
 }//end class

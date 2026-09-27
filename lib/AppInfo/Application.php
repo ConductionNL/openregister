@@ -1351,6 +1351,17 @@ class Application extends App implements IBootstrap {
 			$logger->debug('[Application] ShippedConfigurationGuard unavailable for ImportHandler: ' . $e->getMessage());
 		}
 
+		// Stamps each app import with an import job id so a setup wizard can
+		// remove the example set it loaded. Resolved like the guard above, but
+		// its absence is logged as a warning: without it app imports cannot be
+		// removed by job, which somebody should hear about.
+		$importJobRecorder = null;
+		try {
+			$importJobRecorder = $container->get(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class);
+		} catch (\Throwable $e) {
+			$logger->warning('[Application] AppImportJobRecorder unavailable for ImportHandler: ' . $e->getMessage());
+		}
+
 		$importHandler = new ConfigurationImportHandler(
 			schemaMapper: $container->get(SchemaMapper::class),
 			registerMapper: $container->get(RegisterMapper::class),
@@ -1363,7 +1374,8 @@ class Application extends App implements IBootstrap {
 			appDataPath: $appDataPath,
 			uploadHandler: $container->get(ConfigurationUploadHandler::class),
 			objectService: $container->get(ObjectService::class),
-			shippedGuard: $shippedGuard
+			shippedGuard: $shippedGuard,
+			importJobRecorder: $importJobRecorder
 		);
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed

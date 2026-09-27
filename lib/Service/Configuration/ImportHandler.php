@@ -298,6 +298,8 @@ class ImportHandler {
 	 * @param ?IAppManager $appManager App manager for the seed-data app dependency check; null skips that check.
 	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
 	 *        guard that keeps local changes to an app-shipped schema.
+	 * @param ?AppImportJobRecorder $importJobRecorder Stamps each app import with an import job id and
+	 *        records the jobs that created objects; null imports untagged, as before.
 	 */
 	public function __construct(
 		SchemaMapper $schemaMapper,
@@ -314,6 +316,7 @@ class ImportHandler {
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		private readonly ?IAppManager $appManager = null,
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
+		private readonly ?AppImportJobRecorder $importJobRecorder = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -3902,11 +3905,12 @@ class ImportHandler {
 				);
 			}//end if
 
-			// Perform the import using the configuration entity.
-			$result = $this->importFromJson(
+			// Perform the import using the configuration entity, under its own
+			// import job id so the objects it creates can be removed by job
+			// later (a setup wizard's "remove this example set").
+			$result = $this->importFromJsonAsJob(
 				data: $data,
 				configuration: $configuration,
-				owner: $appId,
 				appId: $appId,
 				version: $version,
 				force: $force
@@ -4058,6 +4062,74 @@ class ImportHandler {
 			throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
 		}//end try
 	}//end importFromApp()
+
+	/**
+	 * Run importFromJson() for an app under its own import job id.
+	 *
+	 * Every audit row the import writes carries the id; the stamp is ended in
+	 * `finally`, so a throwing import never leaks it. A job that created
+	 * objects is recorded per app id, and its id is returned as
+	 * `importJobId` (null when nothing traceable was created).
+	 *
+	 * @param array         $data          The configuration data.
+	 * @param Configuration $configuration The configuration entity.
+	 * @param string        $appId         The app id the import runs under.
+	 * @param string        $version       The configuration version.
+	 * @param bool          $force         Force import regardless of version.
+	 *
+	 * @return array The importFromJson() result plus `importJobId`.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors importFromApp()'s force flag.
+	 *
+	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
+	 */
+	private function importFromJsonAsJob(
+		array $data,
+		Configuration $configuration,
+		string $appId,
+		string $version,
+		bool $force
+	): array {
+		if ($this->importJobRecorder === null) {
+			$result = $this->importFromJson(
+				data: $data,
+				configuration: $configuration,
+				owner: $appId,
+				appId: $appId,
+				version: $version,
+				force: $force
+			);
+			$result['importJobId'] = null;
+			return $result;
+		}
+
+		$importJobId = $this->importJobRecorder->begin();
+		try {
+			$result = $this->importFromJson(
+				data: $data,
+				configuration: $configuration,
+				owner: $appId,
+				appId: $appId,
+				version: $version,
+				force: $force
+			);
+		} finally {
+			$this->importJobRecorder->end();
+		}
+
+		$recorded = $this->importJobRecorder->record(
+			appId: $appId,
+			importJobId: $importJobId,
+			version: $version,
+			objectsWritten: count((array)($result['objects'] ?? []))
+		);
+		$result['importJobId'] = null;
+		if ($recorded === true) {
+			$result['importJobId'] = $importJobId;
+		}
+
+		return $result;
+	}//end importFromJsonAsJob()
 
 	/**
 	 * Reconcile the magic table of every imported schema, in every register that holds it.
