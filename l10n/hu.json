@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Az elmúlt %n órában számolva.",
             "Az elmúlt %n órában számolva."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "A hivatkozással fiók nélküli személy is hozzáférhet ehhez az objektumhoz. A választott napon lejár, és minden használatát rögzítjük.",
+        "Access links": "Hozzáférési hivatkozások",
+        "Comment": "Megjegyzés",
+        "Comments": "Megjegyzések",
+        "Copy link": "Hivatkozás másolása",
+        "Create link": "Hivatkozás létrehozása",
+        "Download": "Letöltés",
+        "Expires on": "Lejárat",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "A hivatkozás lejárhatott, kikapcsolták vagy visszavonták. A küldője újat hozhat létre.",
+        "Link created. Copy it and send it to the person it is for.": "A hivatkozás elkészült. Másolja ki, és küldje el annak, akinek szól.",
+        "No comments yet.": "Még nincsenek megjegyzések.",
+        "No links to this object yet.": "Ehhez az objektumhoz még nincs hivatkozás.",
+        "Password protected": "Jelszóval védett",
+        "Shared with you": "Megosztva Önnel",
+        "Thank you, it was added.": "Köszönjük, hozzáadva.",
+        "That did not work. Try again later.": "Nem sikerült. Próbálja újra később.",
+        "That password is not right.": "Ez a jelszó nem helyes.",
+        "The holder may": "A birtokos jogosult",
+        "This link does not open anything": "Ez a hivatkozás nem nyit meg semmit",
+        "This link is closed with a password": "Ez a hivatkozás jelszóval védett",
+        "This link is open until {date}.": "Ez a hivatkozás {date}-ig nyitva van.",
+        "This record has no visible fields.": "Ennek a rekordnak nincsenek látható mezői.",
+        "Upload": "Feltöltés"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

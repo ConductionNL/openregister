@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Talt over den siste timen.",
             "Talt over de siste %n timene."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "En lenke gir noen uten konto tilgang til dette objektet. Den utløper på valgt dato, og hver bruk registreres.",
+        "Access links": "Tilgangslenker",
+        "Comment": "Kommentar",
+        "Comments": "Kommentarer",
+        "Copy link": "Kopier lenke",
+        "Create link": "Opprett lenke",
+        "Download": "Last ned",
+        "Expires on": "Utløper",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Lenken kan ha utløpt, blitt slått av eller trukket tilbake. Personen som sendte den, kan lage en ny.",
+        "Link created. Copy it and send it to the person it is for.": "Lenken er opprettet. Kopier den og send den til personen den er ment for.",
+        "No comments yet.": "Ingen kommentarer ennå.",
+        "No links to this object yet.": "Ingen lenker til dette objektet ennå.",
+        "Password protected": "Passordbeskyttet",
+        "Shared with you": "Delt med deg",
+        "Thank you, it was added.": "Takk, det er lagt til.",
+        "That did not work. Try again later.": "Det fungerte ikke. Prøv igjen senere.",
+        "That password is not right.": "Passordet er feil.",
+        "The holder may": "Innehaveren kan",
+        "This link does not open anything": "Denne lenken åpner ingenting",
+        "This link is closed with a password": "Denne lenken er beskyttet med et passord",
+        "This link is open until {date}.": "Denne lenken er åpen til {date}.",
+        "This record has no visible fields.": "Denne posten har ingen synlige felt.",
+        "Upload": "Last opp"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

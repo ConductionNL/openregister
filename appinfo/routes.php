@@ -1062,6 +1062,9 @@ return [
             'verb' => 'POST',
             'requirements' => ['anchor' => '[A-Za-z0-9]+'],
         ],
+        // The page a holder lands on (#4061): renders what the link opens for a
+        // person, reading the holder endpoints above; it decides nothing itself.
+        ['name' => 'accessLinkPage#show', 'url' => '/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
         ['name' => 'accessLink#index', 'url' => '/api/access-links', 'verb' => 'GET'],
         ['name' => 'accessLink#mint', 'url' => '/api/access-links', 'verb' => 'POST'],
         ['name' => 'accessLink#update', 'url' => '/api/access-links/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],

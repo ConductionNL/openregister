@@ -73,7 +73,14 @@ class AccessLinkServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->secureRandom->method('generate')->willReturn('AnchorValueThatIsOpaque');
-		$this->urlGenerator->method('linkToRoute')->willReturn('/index.php/apps/openregister/api/public/links/AnchorValueThatIsOpaque');
+		// Answers per route, so a test can tell the API link from the page link.
+		$this->urlGenerator->method('linkToRoute')->willReturnCallback(
+			fn (string $route, array $parameters = []): string => match ($route) {
+				'openregister.accessLink.open' => '/index.php/apps/openregister/api/public/links/' . ($parameters['anchor'] ?? ''),
+				'openregister.accessLinkPage.show' => '/index.php/apps/openregister/links/' . ($parameters['anchor'] ?? ''),
+				default => '/index.php/unknown-route',
+			}
+		);
 		$this->urlGenerator->method('getAbsoluteURL')->willReturnCallback(
 			static fn (string $path): string => 'https://nc.example.org' . $path
 		);
@@ -405,6 +412,21 @@ class AccessLinkServiceTest extends TestCase {
 
 		$this->assertCount(1, $rows);
 		$this->assertStringContainsString('AnchorValueThatIsOpaque', (string)$rows[0]['url']);
+	}
+
+	/**
+	 * The owner descriptor keeps `url` exactly as it was, the JSON API link that
+	 * dossiq's CaseAccessLinkController and other API callers read, and adds
+	 * `pageUrl`, the page a person without an account can open (#4061).
+	 */
+	public function testTheOwnerDescriptorKeepsTheApiUrlAndAddsThePageUrl(): void {
+		$this->mapper->method('findByCreator')->willReturn([$this->liveLink()]);
+
+		$rows = $this->service->listForUser(userId: 'owner');
+
+		$this->assertStringEndsWith('/index.php/apps/openregister/api/public/links/AnchorValueThatIsOpaque', (string)$rows[0]['url']);
+		$this->assertArrayHasKey('pageUrl', $rows[0]);
+		$this->assertStringEndsWith('/index.php/apps/openregister/links/AnchorValueThatIsOpaque', (string)$rows[0]['pageUrl']);
 	}
 
 	/**

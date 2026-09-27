@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Пресметано за последниот %n час.",
             "Пресметано за последните %n часа."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Врската му дава пристап до овој објект на некој без сметка. Истекува на избраниот датум и секоја употреба се евидентира.",
+        "Access links": "Врски за пристап",
+        "Comment": "Коментар",
+        "Comments": "Коментари",
+        "Copy link": "Копирај врска",
+        "Create link": "Создај врска",
+        "Download": "Преземи",
+        "Expires on": "Истекува",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Врската можеби истекла, е исклучена или повлечена. Лицето што ја испратило може да создаде нова.",
+        "Link created. Copy it and send it to the person it is for.": "Врската е создадена. Копирајте ја и испратете ја до лицето за кое е наменета.",
+        "No comments yet.": "Сè уште нема коментари.",
+        "No links to this object yet.": "Сè уште нема врски до овој објект.",
+        "Password protected": "Заштитено со лозинка",
+        "Shared with you": "Споделено со Вас",
+        "Thank you, it was added.": "Благодариме, додадено е.",
+        "That did not work. Try again later.": "Не успеа. Обидете се повторно подоцна.",
+        "That password is not right.": "Таа лозинка не е точна.",
+        "The holder may": "Имателот смее",
+        "This link does not open anything": "Оваа врска не отвора ништо",
+        "This link is closed with a password": "Оваа врска е заштитена со лозинка",
+        "This link is open until {date}.": "Оваа врска е отворена до {date}.",
+        "This record has no visible fields.": "Овој запис нема видливи полиња.",
+        "Upload": "Прикачи"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

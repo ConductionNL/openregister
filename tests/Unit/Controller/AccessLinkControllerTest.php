@@ -283,6 +283,47 @@ class AccessLinkControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->upload(anchor: 'a')->getStatus());
 	}
 
+	public function testAnUploadSentAsBase64IsStoredAsItsBytes(): void {
+		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,upload'));
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn($this->object());
+		$this->params['name'] = 'scan.png';
+		$this->params['content'] = base64_encode("\x89PNG\r\n");
+		$this->params['encoding'] = 'base64';
+		$this->acts->expects($this->once())
+			->method('upload')
+			->with($this->anything(), $this->anything(), 'scan.png', "\x89PNG\r\n")
+			->willReturn(['id' => 1]);
+
+		$this->assertSame(Http::STATUS_CREATED, $this->controller->upload(anchor: 'a')->getStatus());
+	}
+
+	public function testAnUploadWithUnreadableBase64IsRefused(): void {
+		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,upload'));
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn($this->object());
+		$this->params['name'] = 'scan.png';
+		$this->params['content'] = '***not base64***';
+		$this->params['encoding'] = 'base64';
+		$this->acts->expects($this->never())->method('upload');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->upload(anchor: 'a')->getStatus());
+	}
+
+	public function testAnUploadWithoutAnEncodingIsStoredAsSent(): void {
+		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,upload'));
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn($this->object());
+		$this->params['name'] = 'advies.txt';
+		$this->params['content'] = 'akkoord';
+		$this->acts->expects($this->once())
+			->method('upload')
+			->with($this->anything(), $this->anything(), 'advies.txt', 'akkoord')
+			->willReturn(['id' => 2]);
+
+		$this->assertSame(Http::STATUS_CREATED, $this->controller->upload(anchor: 'a')->getStatus());
+	}
+
 	public function testAnUploadThroughADeadLinkAnswers404(): void {
 		$this->links->method('resolve')->willReturn(null);
 

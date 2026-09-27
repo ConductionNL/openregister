@@ -440,6 +440,16 @@
 								:schema="String(relationContext.schema)"
 								:objectId="String(relationContext.id)" />
 						</AppTab>
+						<!--
+							Access links (#4061): share this object by link with
+							someone who has no account, and manage the links made.
+						-->
+						<AppTab
+							v-if="relationContext"
+							:title="t('openregister', 'Access links')">
+							<ObjectAccessLinks
+								:objectId="String(relationContext.id)" />
+						</AppTab>
 						<AppTab
 							v-if="objectStore.auditTrails"
 							:title="t('openregister', 'Audit Trails')">
@@ -546,6 +556,7 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ObjectAccessLinks from '../../components/access-links/ObjectAccessLinks.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
@@ -590,6 +601,7 @@ export default {
 		CnIntegrationWidget,
 		CnObjectAccessTab,
 		CnObjectMetadataWidget,
+		ObjectAccessLinks,
 	},
 
 	/**

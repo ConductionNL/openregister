@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Loetud viimase tunni jooksul.",
             "Loetud viimase %n tunni jooksul."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Lingiga saab kontota inimene sellele objektile ligi. See aegub valitud kuupäeval ja iga kasutus salvestatakse.",
+        "Access links": "Juurdepääsulingid",
+        "Comment": "Kommentaar",
+        "Comments": "Kommentaarid",
+        "Copy link": "Kopeeri link",
+        "Create link": "Loo link",
+        "Download": "Laadi alla",
+        "Expires on": "Aegub",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Link võib olla aegunud, välja lülitatud või tühistatud. Selle saatja saab luua uue.",
+        "Link created. Copy it and send it to the person it is for.": "Link loodud. Kopeeri see ja saada inimesele, kellele see on mõeldud.",
+        "No comments yet.": "Kommentaare veel pole.",
+        "No links to this object yet.": "Sellele objektile veel linke pole.",
+        "Password protected": "Parooliga kaitstud",
+        "Shared with you": "Sinuga jagatud",
+        "Thank you, it was added.": "Aitäh, lisatud.",
+        "That did not work. Try again later.": "See ei õnnestunud. Proovi hiljem uuesti.",
+        "That password is not right.": "See parool pole õige.",
+        "The holder may": "Omanik võib",
+        "This link does not open anything": "See link ei ava midagi",
+        "This link is closed with a password": "See link on parooliga kaitstud",
+        "This link is open until {date}.": "See link on avatud kuni {date}.",
+        "This record has no visible fields.": "Sellel kirjel pole nähtavaid välju.",
+        "Upload": "Laadi üles"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

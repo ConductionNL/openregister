@@ -3275,7 +3275,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Counted over the last hour.",
             "Counted over the last %n hours."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.",
+        "Access links": "Access links",
+        "Comment": "Comment",
+        "Comments": "Comments",
+        "Copy link": "Copy link",
+        "Create link": "Create link",
+        "Download": "Download",
+        "Expires on": "Expires on",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "It may have expired, been switched off or been revoked. The person who sent it can make a new one.",
+        "Link created. Copy it and send it to the person it is for.": "Link created. Copy it and send it to the person it is for.",
+        "No comments yet.": "No comments yet.",
+        "No links to this object yet.": "No links to this object yet.",
+        "Password protected": "Password protected",
+        "Shared with you": "Shared with you",
+        "Thank you, it was added.": "Thank you, it was added.",
+        "That did not work. Try again later.": "That did not work. Try again later.",
+        "That password is not right.": "That password is not right.",
+        "The holder may": "The holder may",
+        "This link does not open anything": "This link does not open anything",
+        "This link is closed with a password": "This link is closed with a password",
+        "This link is open until {date}.": "This link is open until {date}.",
+        "This record has no visible fields.": "This record has no visible fields.",
+        "Upload": "Upload"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

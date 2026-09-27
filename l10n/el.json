@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Μετρήθηκε την τελευταία %n ώρα.",
             "Μετρήθηκε τις τελευταίες %n ώρες."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Ένας σύνδεσμος δίνει σε κάποιον χωρίς λογαριασμό πρόσβαση σε αυτό το αντικείμενο. Λήγει την επιλεγμένη ημερομηνία και κάθε χρήση καταγράφεται.",
+        "Access links": "Σύνδεσμοι πρόσβασης",
+        "Comment": "Σχόλιο",
+        "Comments": "Σχόλια",
+        "Copy link": "Αντιγραφή συνδέσμου",
+        "Create link": "Δημιουργία συνδέσμου",
+        "Download": "Λήψη",
+        "Expires on": "Λήγει στις",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Ο σύνδεσμος μπορεί να έχει λήξει, απενεργοποιηθεί ή ανακληθεί. Όποιος τον έστειλε μπορεί να δημιουργήσει νέο.",
+        "Link created. Copy it and send it to the person it is for.": "Ο σύνδεσμος δημιουργήθηκε. Αντιγράψτε τον και στείλτε τον στο άτομο για το οποίο προορίζεται.",
+        "No comments yet.": "Δεν υπάρχουν ακόμη σχόλια.",
+        "No links to this object yet.": "Δεν υπάρχουν ακόμη σύνδεσμοι προς αυτό το αντικείμενο.",
+        "Password protected": "Προστατεύεται με κωδικό",
+        "Shared with you": "Κοινόχρηστο με εσάς",
+        "Thank you, it was added.": "Ευχαριστούμε, προστέθηκε.",
+        "That did not work. Try again later.": "Δεν λειτούργησε. Δοκιμάστε ξανά αργότερα.",
+        "That password is not right.": "Αυτός ο κωδικός δεν είναι σωστός.",
+        "The holder may": "Ο κάτοχος μπορεί",
+        "This link does not open anything": "Αυτός ο σύνδεσμος δεν ανοίγει τίποτα",
+        "This link is closed with a password": "Αυτός ο σύνδεσμος προστατεύεται με κωδικό",
+        "This link is open until {date}.": "Αυτός ο σύνδεσμος είναι ανοιχτός έως {date}.",
+        "This record has no visible fields.": "Αυτή η εγγραφή δεν έχει ορατά πεδία.",
+        "Upload": "Μεταφόρτωση"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -3337,7 +3337,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Geteld over het afgelopen uur.",
             "Geteld over de afgelopen %n uur."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Met een link krijgt iemand zonder account toegang tot dit object. De link verloopt op de gekozen datum en elk gebruik wordt vastgelegd.",
+        "Access links": "Toegangslinks",
+        "Comment": "Reactie",
+        "Comments": "Reacties",
+        "Copy link": "Link kopiëren",
+        "Create link": "Link maken",
+        "Download": "Downloaden",
+        "Expires on": "Verloopt op",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Misschien is de link verlopen, uitgezet of ingetrokken. Degene die hem stuurde kan een nieuwe maken.",
+        "Link created. Copy it and send it to the person it is for.": "Link gemaakt. Kopieer hem en stuur hem naar de persoon voor wie hij is.",
+        "No comments yet.": "Nog geen reacties.",
+        "No links to this object yet.": "Nog geen links naar dit object.",
+        "Password protected": "Beveiligd met wachtwoord",
+        "Shared with you": "Met je gedeeld",
+        "Thank you, it was added.": "Bedankt, het is toegevoegd.",
+        "That did not work. Try again later.": "Dat lukte niet. Probeer het later opnieuw.",
+        "That password is not right.": "Dat wachtwoord klopt niet.",
+        "The holder may": "De houder mag",
+        "This link does not open anything": "Deze link opent niets",
+        "This link is closed with a password": "Deze link is afgesloten met een wachtwoord",
+        "This link is open until {date}.": "Deze link is open tot {date}.",
+        "This record has no visible fields.": "Dit record heeft geen zichtbare velden.",
+        "Upload": "Uploaden"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
