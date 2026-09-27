@@ -41,6 +41,8 @@ use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
+use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
+use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
@@ -1191,6 +1193,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateMdtoMappingAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
+		$this->validateConsentAnnotation(schema: $schema);
 		$this->validateRelationAnnotation(schema: $schema);
 		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
@@ -1629,6 +1632,49 @@ class SchemaMapper extends QBMapper {
 			. 'invalid and was ignored (calculation not evaluated): ' . implode(' ', $messages)
 		);
 	}//end validateCalculationsAnnotation()
+
+	/**
+	 * Validate the `x-openregister-consent` annotation on a schema's properties.
+	 *
+	 * Blocking, and deliberately so (unlike the optional
+	 * `x-openregister-notifications` annotation, which degrades to a warning):
+	 * an evidentiary consent property that silently never fills evidence is
+	 * worse than a save that names the mistake, since an app author would
+	 * otherwise believe consent is being proven when it is not.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws ConsentDeclarationException When a declaration cannot be honoured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consent-evidence-envelope/specs/consent-evidence-envelope/spec.md
+	 */
+	private function validateConsentAnnotation(Schema $schema): void {
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false) {
+			return;
+		}
+
+		$hasAnnotation = false;
+		foreach ($properties as $definition) {
+			if (is_array($definition) === true && isset($definition['x-openregister-consent']) === true) {
+				$hasAnnotation = true;
+				break;
+			}
+		}
+
+		if ($hasAnnotation === false) {
+			return;
+		}
+
+		$errors = (new ConsentAnnotationValidator())->validate(['properties' => $properties]);
+		if ($errors === []) {
+			return;
+		}
+
+		throw new ConsentDeclarationException(errors: $errors);
+	}//end validateConsentAnnotation()
 
 	/**
 	 * Validate the relation declarations on a schema's properties.
