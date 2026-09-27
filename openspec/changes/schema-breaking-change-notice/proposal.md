@@ -114,5 +114,5 @@ opencatalogi's matrix: "Missing half: nobody who builds on the data is told".
   own change.
 - Holding a breaking change for a notice period before it applies. The gate
   stays a single acknowledgement.
-- Webhook owners (from `webhooks-from-flows-and-for-owners`) as recipients; a
+- Webhook owners (from `webhooks-for-owners`) as recipients; a
   later change can add them once owners exist.

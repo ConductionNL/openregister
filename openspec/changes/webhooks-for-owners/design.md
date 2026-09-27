@@ -1,4 +1,4 @@
-# Design: webhooks-from-flows-and-for-owners
+# Design: webhooks-for-owners
 
 Read at openregister development c53dd0685c.
 

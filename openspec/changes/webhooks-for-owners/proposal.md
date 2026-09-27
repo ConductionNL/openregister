@@ -3,7 +3,7 @@ kind: code
 depends_on: [flow-powerful-steps-need-a-right]
 ---
 
-# Proposal: webhooks-from-flows-and-for-owners
+# Proposal: webhooks-for-owners
 
 ## Summary
 
