@@ -243,6 +243,58 @@ class AuditTrailMapper extends QBMapper {
 	}//end findByImportJobId()
 
 	/**
+	 * Count the audit rows tagged with an import-job UUID.
+	 *
+	 * The cheap question behind "did this import create anything that can be
+	 * removed by job": it reads the same rows softDeleteByImportJobId() reads,
+	 * without loading their payloads.
+	 *
+	 * @param string      $importJobId UUID of the import job.
+	 * @param string|null $action      Action filter (e.g. `'create'`); null counts every action.
+	 *
+	 * @return int
+	 *
+	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
+	 */
+	public function countByImportJobId(string $importJobId, ?string $action = 'create'): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'row_count'))
+			->from('openregister_audit_trails')
+			->where($qb->expr()->eq('import_job_id', $qb->createNamedParameter($importJobId, IQueryBuilder::PARAM_STR)));
+
+		if ($action !== null) {
+			$qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action, IQueryBuilder::PARAM_STR)));
+		}
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countByImportJobId()
+
+	/**
+	 * The UUIDs of the objects an import job created, oldest first.
+	 *
+	 * @param string $importJobId UUID of the import job.
+	 *
+	 * @return array<int, string> Distinct object UUIDs from the job's `create` rows.
+	 *
+	 * @spec openspec/changes/demo-data-purge-by-batch/specs/archival-annotation-vocabulary/spec.md#requirement-the-cli-purge-must-accept-an-import-job-instead-of-a-list-of-uuids
+	 */
+	public function objectUuidsByImportJobId(string $importJobId): array {
+		$uuids = [];
+		foreach ($this->findByImportJobId(importJobId: $importJobId, action: 'create') as $row) {
+			$uuid = $row->getObjectUuid();
+			if ($uuid !== null && $uuid !== '') {
+				$uuids[$uuid] = true;
+			}
+		}
+
+		return array_keys($uuids);
+	}//end objectUuidsByImportJobId()
+
+	/**
 	 * The change history of one object, oldest first, for deriving a projection.
 	 *
 	 * Purged rows are excluded, not skipped afterwards: a tombstoned row's

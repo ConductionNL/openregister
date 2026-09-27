@@ -105,3 +105,39 @@ If your app ships a register and it never appears:
 2. If it is listed as `absent`, the descriptor is valid and the import never
    landed. Import it from the panel or the command, then check your Repair step:
    per ADR-005 Rule 1, shipping the JSON alone does nothing at runtime.
+
+## Removing example data an app loaded
+
+Every `importFromApp()` call runs under its own import job id. Each audit row the
+import writes carries that id. When the job created at least one object,
+OpenRegister records it under the app id the import used, for example
+`learniq.demo` or `decidesk.profile.municipality`. The import result returns the id
+as `importJobId`.
+
+Load each example set under its own app id. Then a setup wizard can offer "remove
+this example set" with one call:
+
+```php
+$jobs = $configurationService->importJobs(appId: 'learniq.demo');
+$report = $configurationService->softDeleteAppImports(appId: 'learniq.demo');
+// $report: appId, jobs (one report per job), softDeleted (a count), errors.
+```
+
+Hide the button when `importJobs()` is empty. The removal soft-deletes only the
+objects those jobs created, never objects they merely updated. It runs in-process
+as a system operation, so decide in your own controller who may press it. A job
+whose objects all went is forgotten. A job with errors stays recorded, so you can
+retry.
+
+An app's example data never leaves over HTTP: the import rollback route answers
+`409` for an app import job, because archival schemas refuse HTTP deletes. An
+administrator destroys the soft-deleted rows for good from the shell:
+
+```bash
+occ openregister:objects:purge --import-job <id>                 # dry run
+occ openregister:objects:purge --import-job <id> --apply         # destroys trashed, non-archival rows
+occ openregister:objects:purge --import-job <id> --apply --force # also archival and live rows
+```
+
+When the audit trail is off, nothing can be traced. The import then logs a warning
+naming the app, and no job is recorded.

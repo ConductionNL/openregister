@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
@@ -574,6 +575,88 @@ class ConfigurationService {
 			)
 		);
 	}//end importFromApp()
+
+	/**
+	 * The recorded import jobs of an app id, oldest first.
+	 *
+	 * Only jobs that created at least one traceable object are recorded, so an
+	 * empty list means there is nothing an app can remove by job; a setup
+	 * wizard hides its "remove this example set" button then.
+	 *
+	 * @param string $appId The app id the imports ran under (e.g. `learniq.demo`).
+	 *
+	 * @return array<int, array{jobId: string, version: string, created: int, importedAt: string}>
+	 *
+	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 */
+	public function importJobs(string $appId): array {
+		return $this->getImportJobRecorder()->jobs(appId: $appId);
+	}//end importJobs()
+
+	/**
+	 * Soft-delete every object the recorded imports of an app id created.
+	 *
+	 * The call a setup wizard's "remove this example set" makes. It runs
+	 * in-process and as a system operation, as importFromApp() did: the
+	 * objects were written by the system, and an administrator's own RBAC on,
+	 * say, an append-only schema must not stop the app removing its own
+	 * example rows. WHO may remove is the calling app's decision; nothing
+	 * routes here over HTTP.
+	 *
+	 * A job whose report has no errors is forgotten. A job with errors stays
+	 * recorded, so the removal can be retried or finished with
+	 * `occ openregister:objects:purge --import-job <id>`.
+	 *
+	 * @param string $appId The app id the imports ran under.
+	 *
+	 * @return array{appId: string, jobs: array<int, array<string, mixed>>, softDeleted: int, errors: array<int, array<string, string>>}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the static scoped-elevation helper importFromApp() uses.
+	 *
+	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 */
+	public function softDeleteAppImports(string $appId): array {
+		return SystemOperationContext::run(
+			fn (): array => $this->removeRecordedImports(appId: $appId)
+		);
+	}//end softDeleteAppImports()
+
+	/**
+	 * Remove each recorded import of an app id and forget the clean ones.
+	 *
+	 * @param string $appId The app id the imports ran under.
+	 *
+	 * @return array{appId: string, jobs: array<int, array<string, mixed>>, softDeleted: int, errors: array<int, array<string, string>>}
+	 */
+	private function removeRecordedImports(string $appId): array {
+		$recorder = $this->getImportJobRecorder();
+		$importService = $this->container->get(ImportService::class);
+
+		$summary = ['appId' => $appId, 'jobs' => [], 'softDeleted' => 0, 'errors' => []];
+		foreach ($recorder->jobs(appId: $appId) as $job) {
+			$report = $importService->softDeleteByImportJobId(importJobId: $job['jobId']);
+			$summary['jobs'][] = $report;
+			$summary['softDeleted'] += count($report['softDeleted']);
+			foreach ($report['errors'] as $error) {
+				$summary['errors'][] = ['importJobId' => $job['jobId'], 'uuid' => $error['uuid'], 'error' => $error['error']];
+			}
+
+			if ($report['errors'] === []) {
+				$recorder->forget(appId: $appId, importJobId: $job['jobId']);
+			}
+		}
+
+		return $summary;
+	}//end removeRecordedImports()
+
+	/**
+	 * The app import job recorder, resolved lazily like the ImportHandler.
+	 *
+	 * @return AppImportJobRecorder
+	 */
+	private function getImportJobRecorder(): AppImportJobRecorder {
+		return $this->container->get(AppImportJobRecorder::class);
+	}//end getImportJobRecorder()
 
 	/**
 	 * Check the remote version of a configuration

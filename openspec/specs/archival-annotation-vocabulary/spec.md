@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # archival-annotation-vocabulary Specification
