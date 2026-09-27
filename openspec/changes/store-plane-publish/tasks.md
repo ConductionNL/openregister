@@ -22,7 +22,7 @@
 ## 5. Spec and verification
 
 - [x] 5.1 Mark `openspec/specs/apphost-store-plane/spec.md` as in progress, and run `openspec validate store-plane-publish`; verify it reports valid.
-- [ ] 5.2 Run `composer check:strict` once, `npm run lint`, and the hydra gates; record each exit code in the PR body, with the learniq adoption steps from design.md.
+- [x] 5.2 Run `composer check:strict` once, `npm run lint`, and the hydra gates; record each exit code in the PR body, with the learniq adoption steps from design.md.
 
 Acceptance criteria (plain reminders, not tasks):
 - No leaf app needs `IClientService` or an objects-API URL to publish.
