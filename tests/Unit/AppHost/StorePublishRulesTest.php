@@ -31,6 +31,12 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\AppHost\Store\StorePublishRules
+ *
+ * The body rules read the descriptor's field list, so these cases execute
+ * StoreDescriptor; declared with `@uses` so they are not risky under
+ * `beStrictAboutCoverageMetadata`.
+ *
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
  */
 class StorePublishRulesTest extends TestCase {
 	/**

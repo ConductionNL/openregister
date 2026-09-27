@@ -84,6 +84,13 @@ class ShapelessActionAuthService {
 
 /**
  * @covers \OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer
+ *
+ * The publish check reads the descriptor's group list, so the canPublish
+ * cases execute StoreDescriptor. `beStrictAboutCoverageMetadata` marks that
+ * risky unless declared, and the coverage guard then drops those tests'
+ * coverage; `@uses`, as GenericStoreControllerTest does for the same reason.
+ *
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
  */
 class StoreActionAuthorizerTest extends TestCase {
 	/**
