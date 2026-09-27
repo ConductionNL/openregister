@@ -7,7 +7,7 @@
 
 ## 2. API
 
-- [ ] 2.1 `GET /api/flows/{id}/progress` and `GET /api/flows/progress` with `flow.read`, organisation scoping and window validation. Verify: controller tests for 200, 403 without `flow.read`, 404 for another organisation's flow, 400 for a 400-day window.
+- [ ] 2.1 `GET /api/flows/{id}/progress` and `GET /api/flows/progress` with the same organisation-scoped access as `GET /api/flows/{id}` and window validation. Verify: controller tests for 200 for a non-admin organisation member, 404 for another organisation's flow, 401 without a session, 400 for a 400-day window.
 - [ ] 2.2 `flow` and `node` filters on `TaskInboxCriteria` and `GET /api/flow-tasks`, and `tasksHref` on each step. Verify: `TaskInboxServiceTest` and a mapper test for the join.
 
 ## 3. Metrics

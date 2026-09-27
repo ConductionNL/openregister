@@ -24,15 +24,22 @@ so the report cannot disagree with the inbox's `overdue` flag
 Each step row carries the node's display name from the flow definition, so a
 reader sees "Legal review", not `node-7`.
 
-## D-2: two routes, the existing right
+## D-2: two routes, the same access as reading the flow
 
 - `GET /api/flows/{id}/progress?from=&to=` resolves the flow through
-  `FlowService::find()` (`lib/Service/Flow/FlowService.php`), which already
-  refuses a flow outside the caller's active organisation, and requires
-  `flow.read` through `FlowController::denyUnless()`
-  (`lib/Controller/FlowController.php:169-186`, used for reads at `:599`).
+  `FlowService::find()` (`lib/Service/Flow/FlowService.php:190`), which refuses
+  a flow outside the caller's active organisation. That is exactly the access
+  `GET /api/flows/{id}` gives today (`lib/Controller/FlowController.php:743-752`,
+  no action right), so a person who can open the flow can see its progress.
 - `GET /api/flows/progress?from=&to=&_page=&_limit=` returns per-flow totals
-  (no per-step rows) for the flows the caller may list, `_limit` at most 50.
+  (no per-step rows) for the flows `GET /api/flows` lists for the caller,
+  `_limit` at most 50.
+
+It does not use `flow.read`. That right is checked by `denyUnless()` for BPMN
+export and versions (`FlowController.php:599`, `:1054`) but has no entry in
+`lib/actions.seed.json`, and an action with no entry denies. Guarding the report
+on it would refuse every team lead who is not an administrator, on every
+instance, while the same lead can read the whole flow definition.
 
 Both refuse a window longer than 366 days or with `from` after `to` with 400
 naming the parameter. Registered above `/api/flows/{id}` in `appinfo/routes.php`

@@ -14,7 +14,7 @@ as duration unknown, not averaged as zero.
 
 #### Scenario: a team lead sees where work is stuck
 
-- **GIVEN** a team lead with `flow.read` and a permit flow with steps "Intake" and "Legal review"
+- **GIVEN** a team lead, not an administrator, in the organisation that owns a permit flow with steps "Intake" and "Legal review"
 - **AND** in the last 90 days three runs, two of them waiting at "Legal review" with one task past its due date
 - **WHEN** the lead calls `GET /api/flows/{id}/progress`
 - **THEN** the response is 200 and the "Legal review" step reads open 2, overdue 1
@@ -28,10 +28,11 @@ as duration unknown, not averaged as zero.
 - **THEN** the response is 400 and its message names `from`
 - @e2e exclude {specified only; task 2.1 adds the controller test, task 4.2 adds tests/e2e/ci/flow-progress.spec.ts}
 
-### Requirement: The report respects flow rights and organisations
+### Requirement: The report respects organisations and shows no content
 
-The progress endpoints SHALL require the `flow.read` right, SHALL answer 404
-for a flow outside the caller's active organisation, and SHALL count only runs
+The progress endpoints SHALL give the same access as reading the flow with
+`GET /api/flows/{id}`, SHALL answer 404 for a flow outside the caller's active
+organisation, and SHALL count only runs
 and tasks of the caller's organisation. They SHALL return counts and durations
 only, never task titles, assignees or subjects.
 
@@ -50,7 +51,7 @@ counts by status and the open and overdue task totals, paginated with
 
 #### Scenario: a manager compares flows
 
-- **GIVEN** a manager with `flow.read` in an organisation with 60 flows
+- **GIVEN** a manager in an organisation with 60 flows
 - **WHEN** they call `GET /api/flows/progress?_limit=50`
 - **THEN** the response lists 50 flows with their totals and `total` 60
 - @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/flow-progress.spec.ts}
