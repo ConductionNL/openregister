@@ -48,7 +48,7 @@ window, already restored, or not permitted.
 - **THEN** the dialog lists two activities to restore, one quote to re-link and one quote changed since, before anything is written
 - @e2e exclude {specified only; task 3.2 adds tests/e2e/ci/restore-with-cascade.spec.ts}
 
-### Requirement: The cascade evidence is findable and outlives nothing it serves
+### Requirement: The cascade evidence is findable and lasts as long as the recovery window
 
 Every audit entry written for a cascade delete, a cleared reference or a
 defaulted reference SHALL carry the triggering object's uuid in an indexed
