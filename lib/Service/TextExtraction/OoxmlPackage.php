@@ -154,9 +154,11 @@ class OoxmlPackage {
 	}//end relationships()
 
 	/**
-	 * The parts this reader refused so far.
+	 * The parts this reader refused so far, so the caller can log their names (never their content).
 	 *
 	 * @return list<string>
+	 *
+	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
 	 */
 	public function refusedParts(): array {
 		return $this->refusedParts;
