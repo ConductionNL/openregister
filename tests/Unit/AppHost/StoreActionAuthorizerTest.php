@@ -31,7 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -99,7 +101,11 @@ class StoreActionAuthorizerTest extends TestCase {
 			$container->method('get')->willReturn($service);
 		}
 
-		return new StoreActionAuthorizer($container, $this->createMock(LoggerInterface::class));
+		return new StoreActionAuthorizer(
+			$container,
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IGroupManager::class)
+		);
 	}
 
 	/**
@@ -191,7 +197,158 @@ class StoreActionAuthorizerTest extends TestCase {
 			->method('error')
 			->with($this->stringContains('catalog.instantiate'), $this->anything());
 
-		$authorizer = new StoreActionAuthorizer($container, $logger);
+		$authorizer = new StoreActionAuthorizer($container, $logger, $this->createMock(IGroupManager::class));
 		$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class));
+	}
+
+	/**
+	 * A descriptor that names the given publish groups.
+	 *
+	 * @param array<int, string> $groups The publish groups.
+	 *
+	 * @return StoreDescriptor
+	 */
+	private function publishing(array $groups): StoreDescriptor {
+		return new StoreDescriptor(
+			appId: 'learniq',
+			schema: 'shared-course-package',
+			defaultRegister: 'learniq',
+			publishFields: ['title'],
+			publishGroups: $groups
+		);
+	}
+
+	/**
+	 * A user with the given uid.
+	 *
+	 * @param string $uid The user id.
+	 *
+	 * @return IUser
+	 */
+	private function user(string $uid): IUser {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		return $user;
+	}
+
+	/**
+	 * A group manager with the given groups and memberships.
+	 *
+	 * @param array<string, array<int, string>> $members Group id => member uids.
+	 * @param array<int, string>                $admins  Administrator uids.
+	 *
+	 * @return IGroupManager
+	 */
+	private function groupManager(array $members, array $admins = []): IGroupManager {
+		$manager = $this->createMock(IGroupManager::class);
+		$manager->method('groupExists')->willReturnCallback(
+			static fn (string $gid): bool => array_key_exists($gid, $members)
+		);
+		$manager->method('isInGroup')->willReturnCallback(
+			static fn (string $uid, string $gid): bool => in_array($uid, ($members[$gid] ?? []), true)
+		);
+		$manager->method('isAdmin')->willReturnCallback(
+			static fn (string $uid): bool => in_array($uid, $admins, true)
+		);
+		return $manager;
+	}
+
+	/**
+	 * An authorizer over the given group manager and logger.
+	 *
+	 * @param IGroupManager        $groups The group manager.
+	 * @param LoggerInterface|null $logger The logger, or a silent mock.
+	 *
+	 * @return StoreActionAuthorizer
+	 */
+	private function publishAuthorizer(IGroupManager $groups, ?LoggerInterface $logger = null): StoreActionAuthorizer {
+		return new StoreActionAuthorizer(
+			$this->createMock(ContainerInterface::class),
+			($logger ?? $this->createMock(LoggerInterface::class)),
+			$groups
+		);
+	}
+
+	/**
+	 * A member of a named group may publish.
+	 *
+	 * @return void
+	 */
+	public function testCanPublishPermitsAMemberOfANamedGroup(): void {
+		$authorizer = $this->publishAuthorizer($this->groupManager(['instructors' => ['teacher']]));
+
+		$this->assertTrue($authorizer->canPublish($this->publishing(['instructors']), $this->user('teacher')));
+	}
+
+	/**
+	 * A user outside every named group is refused.
+	 *
+	 * @return void
+	 */
+	public function testCanPublishRefusesANonMember(): void {
+		$authorizer = $this->publishAuthorizer(
+			$this->groupManager(['instructors' => ['teacher'], 'learners' => ['pupil']])
+		);
+
+		$this->assertFalse($authorizer->canPublish($this->publishing(['instructors']), $this->user('pupil')));
+	}
+
+	/**
+	 * 🔴 No named group refuses everybody, administrators included, and says why.
+	 *
+	 * @return void
+	 */
+	public function testCanPublishRefusesWhenNoGroupIsNamed(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->exactly(2))
+			->method('error')
+			->with($this->stringContains('learniq'), $this->anything());
+		$authorizer = $this->publishAuthorizer($this->groupManager(['admin' => ['root']], ['root']), $logger);
+
+		$this->assertFalse($authorizer->canPublish($this->publishing([]), $this->user('root')));
+		$this->assertFalse(
+			$authorizer->canPublish($this->publishing(['  ']), $this->user('root')),
+			'A blank group name names nobody.'
+		);
+	}
+
+	/**
+	 * A named group that does not exist admits nobody, and is logged.
+	 *
+	 * @return void
+	 */
+	public function testCanPublishLogsAGroupThatDoesNotExist(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('error')
+			->with($this->stringContains('instrutcors'), $this->anything());
+		$authorizer = $this->publishAuthorizer($this->groupManager(['instructors' => ['teacher']]), $logger);
+
+		$this->assertFalse($authorizer->canPublish($this->publishing(['instrutcors']), $this->user('teacher')));
+	}
+
+	/**
+	 * An administrator passes once a group is named, as ADR-023's matrix lets them.
+	 *
+	 * @return void
+	 */
+	public function testCanPublishAdmitsAnAdministratorOnlyWhenAGroupIsNamed(): void {
+		$authorizer = $this->publishAuthorizer(
+			$this->groupManager(['instructors' => ['teacher'], 'admin' => ['root']], ['root'])
+		);
+
+		$this->assertTrue($authorizer->canPublish($this->publishing(['instructors']), $this->user('root')));
+		$this->assertFalse($authorizer->canPublish($this->publishing([]), $this->user('root')));
+	}
+
+	/**
+	 * The ADR-023 EVERYONE entry admits any signed-in user.
+	 *
+	 * @return void
+	 */
+	public function testCanPublishHonoursEveryone(): void {
+		$authorizer = $this->publishAuthorizer($this->groupManager([]));
+
+		$this->assertTrue($authorizer->canPublish($this->publishing(['@authenticated']), $this->user('anybody')));
 	}
 }
