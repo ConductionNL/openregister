@@ -9,7 +9,8 @@
  * only up to a size cap (never trusting the size the zip directory claims),
  * and any part that declares a DOCTYPE is refused, which closes entity
  * expansion and external entity loading together. Used by
- * PresentationExtractor (pptx-structured-reader).
+ * PresentationExtractor (pptx-structured-reader) and DocumentExtractor
+ * (docx-structured-reader).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

@@ -137,7 +137,7 @@ classDiagram
 Extracts text from Nextcloud files using various extraction methods:
 
 **Supported Formats:**
-- **Documents**: PDF, DOCX, DOC, ODT, RTF
+- **Documents**: PDF, DOCX, DOC, ODT, RTF. DOCX, DOCM, DOTX and DOTM can also be read into headings and sections, see [Structured document reading](#structured-document-reading)
 - **Spreadsheets**: XLSX, XLS, CSV
 - **Presentations**: not indexed for search yet. PPTX, PPTM and PPSX can be read into structured slides, see [Structured presentation reading](#structured-presentation-reading)
 - **Text Files**: TXT, MD, HTML, JSON, XML
@@ -163,6 +163,30 @@ Each slide comes back in the order the deck presents it, with:
 Apps resolve it from the server container: `$container->get(PresentationExtractor::class)->extract(file: $file)`. Call `supports(mimeType, fileName)` first to skip files it does not read, such as legacy `.ppt` and `.odp`.
 
 Every deck is treated as hostile input. A part that declares a DOCTYPE is refused, each part is read up to 20 MiB, and a deck stops at 500 slides with `truncated: true`. A failure logs the file id and MIME type, never the content.
+
+### Structured document reading
+
+`DocumentExtractor` reads a Word document into its headings and what sits under them, so an app can turn one document into one lesson or chapter with a block per section. It follows the same contract as `PresentationExtractor`: pass it a Nextcloud `File`, get a result back, or `null` when the file is not a readable document.
+
+The result holds:
+
+- `title`: the first paragraph in the Title style, else the title in the document properties, else empty
+- `sections`: one per heading, in document order, each with its `heading` text, its `level` (1 to 9) and its `blocks`. Text before the first heading sits in a first section with an empty heading and level 0
+- `text`: the flat text, exactly what `WordExtractor` gives search, so both always agree
+- `truncated`: true when the document was too long to read to the end
+
+Each block has a `type`:
+
+- `paragraph`, with its `text`
+- `list`, with `items`; each item has its `text`, its `level` (1 is the outer level) and whether it is `ordered` (numbered) or bulleted
+- `table`, with `rows`; each row is a list of cell texts
+- `image`, with the picture's path in the package (or its link), `external` for a linked picture, its `name` and its alt text in `description`; the bytes stay in the file
+
+Headings are found by outline level or by style name, so a Dutch Word document (style `Kop 1`) and a LibreOffice document read the same way. A text box is read once, even when the file stores it twice. Deleted text of tracked changes is left out. Headers, footers and footnotes stay out of the sections, but they are in `text`.
+
+Apps resolve it from the server container: `$container->get(DocumentExtractor::class)->extract(file: $file)`. Call `supports(mimeType, fileName)` first to skip files it does not read, such as legacy `.doc` and `.odt`.
+
+Every document is treated as hostile input. A part that declares a DOCTYPE is refused, each part is read up to 20 MiB, and a document stops after 10,000 paragraphs and tables with `truncated: true`. A failure logs the file id and MIME type, never the content.
 
 ### Object Handler
 
