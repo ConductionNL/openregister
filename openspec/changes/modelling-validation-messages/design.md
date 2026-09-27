@@ -34,8 +34,8 @@ data path, which points at the parent.
 
 `LanguageService` resolves `?_lang=`, then `Accept-Language`, then the register
 default, then `nl` (`openspec/specs/i18n-api-language-negotiation/spec.md`,
-requirement "Resolution precedence MUST be query then header then register-default
-then 'nl'"). The validator asks it for the current language. Fallback order: the
+requirement "Resolution precedence MUST be query → header → register-default
+→ 'nl'"). The validator asks it for the current language. Fallback order: the
 resolved language, `nl`, the first declared language, the generated message.
 
 ## D-4: placeholders are substituted, never evaluated
