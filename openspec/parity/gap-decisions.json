@@ -171,7 +171,7 @@
     "row": "op-sql-console",
     "matrix": "openregister",
     "decision": "build",
-    "reason": "Partial with a changelog demand row plus pocketbase rated yes. The GraphQL explorer exists; an administrator's read-only query with a downloadable result is the missing half.",
+    "reason": "Partial with a changelog demand row plus pocketbase rated yes. The missing half is an administrator's read-only query with a downloadable result. The change answers it on the GraphQL surface and refuses raw SQL in its design D-1: SQL would skip RBAC, organisation scoping, field encryption and the reveal audit, and reach Nextcloud's own tables.",
     "change": "operate-admin-query-console",
     "decidedOn": "2026-09-27"
   },
@@ -235,7 +235,7 @@
     "row": "ret-linked-destroy-conflict",
     "matrix": "openregister",
     "decision": "build",
-    "reason": "Tender demand (TenderNed 419447); no destruction or review service compares dates across linked records and no change covers it.",
+    "reason": "Tender demand (TenderNed 419447). ArchivalRetentionGuard keeps retained children out of a cascade at delete time (called from ReferentialIntegrityService.php:318), but no destruction review compares dates across linked records, and no change covers that.",
     "change": "retention-linked-destruction-conflict",
     "decidedOn": "2026-09-27"
   },
@@ -339,7 +339,7 @@
     "row": "od-table-download",
     "matrix": "opencatalogi",
     "decision": "build",
-    "reason": "Partial with a changelog demand row plus two competitors rated yes. Open Register exports CSV, Excel and PDF to signed-in users; TSV, XML and a download for public readers are the missing half. Parsing an attached table into rows stays opencatalogi's.",
+    "reason": "Partial with a changelog demand row plus two competitors rated yes. Open Register exports CSV, Excel and PDF to signed-in users. XML is already a requirement in data-import-export (specified, not built) and the change builds it; TSV and a download for public readers are new. Parsing an attached table into rows stays opencatalogi's.",
     "change": "export-open-formats-and-public-download",
     "decidedOn": "2026-09-27"
   },
