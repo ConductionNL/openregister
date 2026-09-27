@@ -139,7 +139,7 @@ Extracts text from Nextcloud files using various extraction methods:
 **Supported Formats:**
 - **Documents**: PDF, DOCX, DOC, ODT, RTF
 - **Spreadsheets**: XLSX, XLS, CSV
-- **Presentations**: PPTX
+- **Presentations**: not indexed for search yet. PPTX, PPTM and PPSX can be read into structured slides, see [Structured presentation reading](#structured-presentation-reading)
 - **Text Files**: TXT, MD, HTML, JSON, XML
 - **Images**: JPG, PNG, GIF, WebP, TIFF (via OCR)
 
@@ -147,6 +147,22 @@ Extracts text from Nextcloud files using various extraction methods:
 - **LLPhant**: Local PHP-based extraction
 - **Dolphin**: AI-powered extraction with OCR
 - **Native**: Direct text reading for plain text files
+
+### Structured presentation reading
+
+`PresentationExtractor` reads a PowerPoint deck into slides instead of flat text, so an app can turn one deck into one lesson or chapter with a block per slide. It sits next to `WordExtractor` and follows the same contract: pass it a Nextcloud `File`, get a result back, or `null` when the file is not a readable deck.
+
+Each slide comes back in the order the deck presents it, with:
+
+- `number` and `hidden`
+- `title`, from the title placeholder
+- `body`, every other paragraph in the order the shapes sit on the slide, including groups and table cells
+- `notes`, the speaker notes, without the slide number or slide image
+- `images`, each picture's path in the package (or its link) with its alt text; the bytes stay in the file
+
+Apps resolve it from the server container: `$container->get(PresentationExtractor::class)->extract(file: $file)`. Call `supports(mimeType, fileName)` first to skip files it does not read, such as legacy `.ppt` and `.odp`.
+
+Every deck is treated as hostile input. A part that declares a DOCTYPE is refused, each part is read up to 20 MiB, and a deck stops at 500 slides with `truncated: true`. A failure logs the file id and MIME type, never the content.
 
 ### Object Handler
 
