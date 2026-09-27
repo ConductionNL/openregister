@@ -1,5 +1,6 @@
 ---
 kind: code
+depends_on: [flow-powerful-steps-need-a-right]
 ---
 
 # Proposal: webhooks-from-flows-and-for-owners
@@ -108,7 +109,9 @@ lead's call, not this change's.
   administrator's webhook, exactly as today.
 - A new action right `webhook.own` in Open Register's action matrix, seeded to
   administrators only, which an administrator grants to the groups that should
-  own subscriptions.
+  own subscriptions on the action rights screen that
+  `flow-powerful-steps-need-a-right` adds (Open Register has no screen for its
+  own action matrix at this sha).
 - A holder of `webhook.own` may create, list, read, update, test and delete
   their own webhooks and read their logs through the existing `/api/webhooks`
   routes. They never see another person's webhook or an administrator's.

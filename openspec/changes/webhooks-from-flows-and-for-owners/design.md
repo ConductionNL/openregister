@@ -15,10 +15,25 @@ is unchanged and still returns both kinds.
 `lib/actions.seed.json` gains `"webhook.own": ["admin"]`, with a `$why` entry in
 the same style as `$why-correcting-is-admin-only`: nobody but an administrator
 could create a webhook yesterday, so seeding it to administrators locks nobody
-out, and listing it makes it visible in Admin Settings so an administrator can
-grant it to, for example, planninq's project owners. The check is
-`OpenRegisterActionAuthService::can()` through the same `FlowAccess`-style seam
-the flow endpoints use (`lib/Service/Flow/FlowAccess.php:92-94`).
+out. The check is `OpenRegisterActionAuthService::can()` through the same
+`FlowAccess`-style seam the flow endpoints use
+(`lib/Service/Flow/FlowAccess.php:92-94`).
+
+Two facts at this sha make the seed alone useless, and this change does not
+pretend otherwise:
+
+- the seed is applied only to an empty matrix
+  (`lib/AppHost/Repair/GenericInitializeActions.php:85-120`), so on every
+  existing instance `webhook.own` would never appear;
+- Open Register has no endpoint or screen to read or change its own action
+  matrix; the repair step is the only writer.
+
+Both are provided by `flow-powerful-steps-need-a-right` (D-5 there:
+`GenericActionAuthService::addMissing()` and `GET`/`PUT
+/api/settings/action-rights` with its settings section). This change depends on
+it and registers `webhook.own` with `addMissing()`, so an upgraded instance gets
+the entry, granted to administrators, and an administrator grants it to, for
+example, planninq's project owners on that screen.
 
 ## D-3: the controller scopes by owner instead of refusing
 
