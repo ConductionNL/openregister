@@ -2,6 +2,8 @@
 
 Reads a PowerPoint deck into structured slides, so a consuming app can turn one deck into one lesson draft with a block per slide. Each slide keeps its order, title, body text, speaker notes and image references, which flat search text loses.
 
+@e2e exclude Backend PHP document reader (OOXML package parsing for slide order, titles, body, notes, images and input bounds) with no OpenRegister UI surface; exercised by PHPUnit on decks built inside the test. Covered by PHPUnit.
+
 ## ADDED Requirements
 
 ### Requirement: Slides come back in presentation order (REQ-PPTX-001)
