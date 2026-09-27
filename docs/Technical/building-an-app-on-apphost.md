@@ -202,6 +202,44 @@ The same pattern applies to the settings service (`AppHostSettingsService::confi
 the action-auth service, the repair steps, the admin settings, and the deep-link
 listener.
 
+## Publishing to a store registry
+
+The store plane can write one object to the registry your app's store reads from.
+Never build the objects-API URL yourself: hydra gate 62 fails any `lib/` file that
+does. Call `GenericStoreService::publish()` instead. It applies the SSRF guard,
+refuses redirects, sends the token only as a Bearer header and times out after
+10 seconds.
+
+A descriptor publishes only when it names two lists. `publishFields` says which
+properties may leave your server; the slug always travels. `publishGroups` says who
+may send them. Pass the groups your own action matrix holds for the publish action,
+so an administrator changes it in one place.
+
+```php
+$descriptor = new StoreDescriptor(
+    appId: 'petstore',
+    schema: 'shared-pet',
+    defaultRegister: 'petstore',
+    publishFields: ['title', 'description', 'species'],
+    publishGroups: $actionAuth->getAllowedGroups(action: 'pet.share')
+);
+
+if ($authorizer->canPublish(descriptor: $descriptor, user: $user) === false) {
+    return new JSONResponse(['outcome' => 'forbidden'], Http::STATUS_FORBIDDEN);
+}
+
+$result = $storeService->publish(descriptor: $descriptor, payload: $pet);
+// ['outcome' => 'ok', 'slug' => 'shared-pet-rex'] on success.
+```
+
+`$authorizer` is `StoreActionAuthorizer`. An empty group list refuses everybody,
+administrators included. `id`, `uuid` and `@self` never travel, so a publish cannot
+replace an object on the registry. The outcomes are `ok`, `not_publishable`,
+`not_configured`, `too_large` (over 20 MiB), `store_unreachable`, `rate_limited`,
+`store_rejected` (the registry refused the object) and `store_invalid_response`
+(the registry stored a different slug, or answered with something that is not an
+object). Map each to a status in your own controller.
+
 ## The stub floor (what cannot be deleted)
 
 Nextcloud instantiates a few classes **by class name** read from `info.xml`,
