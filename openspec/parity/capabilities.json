@@ -5438,16 +5438,16 @@
    "source": "demand-signal",
    "origin": "changelog",
    "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.31.0",
-   "openregister": "partial",
+   "openregister": "yes",
    "built": {
     "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "every upload refuses executables: lib/Service/File/CreateFileHandler.php:200 blockExecutableFile on the file routes (appinfo/routes.php:1453 files#create, :1458 files#createMultipart) and lib/Service/Object/SaveObject/FilePropertyHandler.php:1101 on file properties; a per-property allow list is enforced at FilePropertyHandler.php:1105 from $propertyConfig['allowedTypes'] (set at :477); but the property editor writes a different key, src/modals/schema/EditSchemaProperty.vue:171 fileConfiguration.allowedMimeTypes, which the save path never reads"
+    "evidence": "every upload refuses executables: lib/Service/File/CreateFileHandler.php:200 blockExecutableFile on the file routes (appinfo/routes.php:1453 files#create, :1458 files#createMultipart) and lib/Service/Object/SaveObject/FilePropertyHandler.php:1101 on file properties; a per-property allow list and size limit are enforced at FilePropertyHandler.php:1105-1124 through resolveAllowedTypes and resolveMaxSizeBytes, which read allowedTypes and maxSize (bytes) from schema JSON or the API and, when those are absent, the property editor's fileConfiguration.allowedMimeTypes and fileConfiguration.maxSize (MB, converted to bytes) written at src/modals/schema/EditSchemaProperty.vue:171,181 (#4058)"
    },
-   "reachedOn": "executable block on every upload; the type allow list only through schema JSON or API (allowedTypes), not through the editor",
+   "reachedOn": "schema property editor (Allowed MIME Types, Maximum File Size) and schema JSON or API (allowedTypes, maxSize); executables refused on every upload",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "hollow control: the 'Allowed MIME Types' field in the property editor is stored but not enforced, because enforcement reads allowedTypes and the editor writes fileConfiguration.allowedMimeTypes built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "per property allow list and size limit, set in the property editor or in schema JSON, enforced on the object save path; the editor's field was hollow until #4058 (2026-09-27), when the upload check started reading fileConfiguration. built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
