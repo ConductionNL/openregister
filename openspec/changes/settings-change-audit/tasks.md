@@ -42,10 +42,21 @@
       (`null` on the side where the key was absent), which a single mask token
       for both would have collapsed.
       `AppHostSettingsService::secretConfigKeys()` is the per-app hook.
-- [ ] 1.3 OpenRegister's own `SettingsService` domains route through the
+- [x] 1.3 OpenRegister's own `SettingsService` domains route through the
       writer. Unblocked — the writer exists and is a two-line call — but it is
       a separate service with its own write paths, so it is its own task rather
       than a rider on this one.
+      Done (#4060): `lib/Service/Settings/OwnSettingsChangeRecorder.php` takes a
+      snapshot before each door and hands before and after to
+      `SettingsChangeAuditor::recordUpdate()` (app `openregister`, one row per
+      `section.field`) and to the `SecuritySettingAnnouncer`. Doors wired:
+      `ConfigurationSettingsHandler::updateSettings()`, `updateRbacSettingsOnly()`,
+      `updateOrganisationSettingsOnly()`, `updateMultitenancySettingsOnly()`, and
+      `ObjectRetentionHandler::updateObjectSettingsOnly()`,
+      `updateRetentionSettingsOnly()`, `updateArchivalSettingsOnly()`. Proven by
+      `tests/Unit/Service/Settings/OwnSettingsChangeRecorderTest.php`. Not yet
+      wired: the LLM, file, Solr and cache handlers, which save through their own
+      classes.
 
 ## 2. Reader
 
