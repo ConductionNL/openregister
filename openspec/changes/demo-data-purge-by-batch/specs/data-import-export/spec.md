@@ -65,7 +65,7 @@ by job. A silent empty list would read as "nothing to remove".
 
 ### Requirement: An app MUST be able to remove the objects its recorded imports created
 
-`ConfigurationService::importJobs($appId)` SHALL return the recorded list for that app id.
+`ConfigurationService::listImportJobs($appId)` SHALL return the recorded list for that app id.
 `ConfigurationService::softDeleteAppImports($appId)` SHALL soft-delete, through
 `ImportService::softDeleteByImportJobId()`, every object each recorded job created, and
 SHALL run as a system operation, as the import did. A job whose report has no errors SHALL

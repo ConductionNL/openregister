@@ -33,7 +33,7 @@ learniq.
   as `importJobId`.
 - When an import wrote objects and none of them carries the job id, OpenRegister logs a
   warning: the audit trail is off, so this import cannot be removed by job.
-- `ConfigurationService::importJobs($appId)` lists the recorded jobs, and
+- `ConfigurationService::listImportJobs($appId)` lists the recorded jobs, and
   `ConfigurationService::softDeleteAppImports($appId)` soft-deletes every object those
   jobs created and forgets each job that removed cleanly. This is the call a setup
   wizard's "remove this example set" makes. It runs in-process, as the import did.

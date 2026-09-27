@@ -194,13 +194,13 @@ class ConfigurationServiceAppImportsTest extends TestCase {
 	}
 
 	/**
-	 * importJobs() hands back the recorder's list for that app id.
+	 * listImportJobs() hands back the recorder's list for that app id.
 	 *
 	 * @return void
 	 */
 	public function testImportJobsListsTheRecordedJobs(): void {
 		$this->recorder->method('jobs')->with('learniq.demo')->willReturn([$this->job('job-a', 405)]);
 
-		$this->assertSame('job-a', $this->service()->importJobs('learniq.demo')[0]['jobId']);
+		$this->assertSame('job-a', $this->service()->listImportJobs('learniq.demo')[0]['jobId']);
 	}
 }

@@ -589,9 +589,9 @@ class ConfigurationService {
 	 *
 	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
 	 */
-	public function importJobs(string $appId): array {
+	public function listImportJobs(string $appId): array {
 		return $this->getImportJobRecorder()->jobs(appId: $appId);
-	}//end importJobs()
+	}//end listImportJobs()
 
 	/**
 	 * Soft-delete every object the recorded imports of an app id created.

@@ -8,7 +8,7 @@
 
 ## 2. Remove
 
-- [x] 2.1 Add `ConfigurationService::importJobs()` and `softDeleteAppImports()` (lazy container resolution, system operation, forget clean jobs); verify with `vendor/bin/phpunit --filter ConfigurationServiceAppImportsTest`.
+- [x] 2.1 Add `ConfigurationService::listImportJobs()` and `softDeleteAppImports()` (lazy container resolution, system operation, forget clean jobs); verify with `vendor/bin/phpunit --filter ConfigurationServiceAppImportsTest`.
 - [x] 2.2 Add `--import-job` to `PurgeObjectCommand` (UUID argument optional, missing object in job mode is already gone, refuse when given nothing); verify with `vendor/bin/phpunit --filter PurgeObjectCommandTest`.
 - [x] 2.3 Make `RegistersController::rollbackImport()` answer 409 for a recorded app import job; verify with `vendor/bin/phpunit --filter RegistersControllerTest`.
 

@@ -118,12 +118,12 @@ Load each example set under its own app id. Then a setup wizard can offer "remov
 this example set" with one call:
 
 ```php
-$jobs = $configurationService->importJobs(appId: 'learniq.demo');
+$jobs = $configurationService->listImportJobs(appId: 'learniq.demo');
 $report = $configurationService->softDeleteAppImports(appId: 'learniq.demo');
 // $report: appId, jobs (one report per job), softDeleted (a count), errors.
 ```
 
-Hide the button when `importJobs()` is empty. The removal soft-deletes only the
+Hide the button when `listImportJobs()` is empty. The removal soft-deletes only the
 objects those jobs created, never objects they merely updated. It runs in-process
 as a system operation, so decide in your own controller who may press it. A job
 whose objects all went is forgotten. A job with errors stays recorded, so you can

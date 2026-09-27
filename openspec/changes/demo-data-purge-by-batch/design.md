@@ -129,7 +129,7 @@ None. This change adds no schema.
 
 - [Audit trails disabled] → nothing is stamped, nothing is recorded, and the import logs
   a warning naming the app. The wizard should hide its remove button when
-  `importJobs()` is empty.
+  `listImportJobs()` is empty.
 - [An audit row expires] → a schema whose retention expires audit rows loses the trace
   after that period. The platform default is indefinite retention.
 - [A user edited an example object] → it is still removed, because the job created it.
