@@ -2604,6 +2604,21 @@ class ImportHandler {
 					$schemaData['title'] = $key;
 				}
 
+				// The component key IS the slug in every app configuration this
+				// handler has ever received: the register lists name schemas by
+				// key, and `$schemaSlugLower` below already reads the key when
+				// `slug` is absent. Only importSchema()'s guard disagreed, and
+				// it rejected the fragment outright. pipelinq shipped sixteen
+				// schemas over four fragments without a `slug`, all sixteen
+				// went dark for nine days, and the app's re-import reported
+				// success. Defaulting the slug here, exactly as `title` is
+				// defaulted two lines up, makes the payload say what every
+				// caller already assumed. A slug that is present but blank is
+				// left alone: that is a mistake to reject, not to paper over.
+				if (array_key_exists('slug', $schemaData) === false && is_string($key) === true) {
+					$schemaData['slug'] = $key;
+				}
+
 				// Blanking `schemasMap` is a TEMPORARY mutation of shared state
 				// whose only purpose is to stop importSchema() resolving $refs in
 				// Pass 1. Its undo therefore belongs to leaving this region — on
