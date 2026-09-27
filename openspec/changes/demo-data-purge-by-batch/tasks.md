@@ -15,7 +15,7 @@
 ## 3. Spec and verification
 
 - [x] 3.1 Mark `openspec/specs/data-import-export/spec.md` and `openspec/specs/archival-annotation-vocabulary/spec.md` in progress and run `openspec validate demo-data-purge-by-batch`; verify it reports valid.
-- [ ] 3.2 Run `composer check:strict` once, `npm run lint`, and the hydra gates; record each exit code in the PR body.
+- [x] 3.2 Run `composer check:strict` once, `npm run lint`, and the hydra gates; record each exit code in the PR body.
 
 Acceptance criteria (plain reminders, not tasks):
 - A wizard can remove its example set with one service call.
