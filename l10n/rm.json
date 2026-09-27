@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Quintà sur in temp da %n ura(s).",
             "Quintà sur las ultimas %n uras."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Ina colliaziun dat ad insatgi senza conto access a quest object. Ella scada a la data tschernida e mintga utilisaziun vegn registrada.",
+        "Access links": "Colliaziuns d'access",
+        "Comment": "Commentari",
+        "Comments": "Commentaris",
+        "Copy link": "Copiar la colliaziun",
+        "Create link": "Crear ina colliaziun",
+        "Download": "Telechargiar",
+        "Expires on": "Scada ils",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "La colliaziun è forsa scadida, deactivada u revocada. La persuna che l'ha tramessa po crear ina nova.",
+        "Link created. Copy it and send it to the person it is for.": "Colliaziun creada. Copiai ella e tramettai ella a la persuna per la quala ella è destinada.",
+        "No comments yet.": "Anc nagins commentaris.",
+        "No links to this object yet.": "Anc naginas colliaziuns cun quest object.",
+        "Password protected": "Protegì cun pled-clav",
+        "Shared with you": "Partì cun Vus",
+        "Thank you, it was added.": "Grazia, quai è vegnì agiuntà.",
+        "That did not work. Try again later.": "Quai n'ha betg funcziunà. Empruvai pli tard anc ina giada.",
+        "That password is not right.": "Quest pled-clav n'è betg correct.",
+        "The holder may": "Il possessur dastga",
+        "This link does not open anything": "Questa colliaziun n'avra nagut",
+        "This link is closed with a password": "Questa colliaziun è protegida cun in pled-clav",
+        "This link is open until {date}.": "Questa colliaziun è averta fin ils {date}.",
+        "This record has no visible fields.": "Quest register n'ha nagins champs visibels.",
+        "Upload": "Chargiar si"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

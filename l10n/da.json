@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Talt over den seneste time.",
             "Talt over de seneste %n timer."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Et link giver en person uden konto adgang til dette objekt. Det udløber på den valgte dato, og hver brug registreres.",
+        "Access links": "Adgangslinks",
+        "Comment": "Kommentér",
+        "Comments": "Kommentarer",
+        "Copy link": "Kopiér link",
+        "Create link": "Opret link",
+        "Download": "Hent",
+        "Expires on": "Udløber",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Linket kan være udløbet, slået fra eller tilbagekaldt. Personen, der sendte det, kan oprette et nyt.",
+        "Link created. Copy it and send it to the person it is for.": "Linket er oprettet. Kopiér det og send det til den person, det er til.",
+        "No comments yet.": "Ingen kommentarer endnu.",
+        "No links to this object yet.": "Ingen links til dette objekt endnu.",
+        "Password protected": "Beskyttet med adgangskode",
+        "Shared with you": "Delt med dig",
+        "Thank you, it was added.": "Tak, det er tilføjet.",
+        "That did not work. Try again later.": "Det lykkedes ikke. Prøv igen senere.",
+        "That password is not right.": "Adgangskoden er forkert.",
+        "The holder may": "Indehaveren må",
+        "This link does not open anything": "Dette link åbner ingenting",
+        "This link is closed with a password": "Dette link er beskyttet med en adgangskode",
+        "This link is open until {date}.": "Dette link er åbent indtil {date}.",
+        "This record has no visible fields.": "Denne post har ingen synlige felter.",
+        "Upload": "Overfør"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

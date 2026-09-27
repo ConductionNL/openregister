@@ -32,6 +32,13 @@
 - [x] 6.1 Hand the link to the dossiq lane for `CaseSharingService`, with candidate ids C-communication-7, C-access-and-privacy-5, C-access-and-privacy-25 and C-access-and-privacy-83.
 - [x] 6.2 Tell the D9 lane that C-access-and-privacy-25 is `platform-cloud-federation-provider`.
 
+## 7. Screens (#4061)
+
+- [x] 7.1 Owner side in Open Register's own UI: an "Access links" tab on the object detail page (`src/components/access-links/ObjectAccessLinks.vue`) creates a link (capabilities, expiry, optional password and label), lists the caller's links to that object with their state, and switches them off, on, or revokes them, through `/api/access-links`.
+- [x] 7.2 Holder side: `GET /links/{anchor}` (`AccessLinkPageController`) serves a public page (`src/views/accessLink/AccessLinkPage.vue`) that renders what `/api/public/links/{anchor}` returns as fields and text, never raw JSON, with the comment box and upload field only when the link declares them. It reads the same holder endpoints, so every access decision, the password check, the throttling and the audit stay in `AccessLinkController`. The record is shown through the schema's anonymous-readable properties only, as `AccessLinkReader::filteredProperties()` already serves them.
+- [x] 7.3 The owner descriptor keeps `url` (the JSON API link that dossiq's `CaseAccessLinkController` and other API callers read) and adds `pageUrl`. Leaf apps may keep their own holder page; Open Register's own UI now has both sides.
+- [ ] 7.4 Share-by-link on a saved view and on a file row (the API supports both subjects; only the object screen exists).
+
 ## What landed
 
 `lib/Db/AccessLink.php` and `lib/Db/AccessLinkMapper.php` hold the row and its

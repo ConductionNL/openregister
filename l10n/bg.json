@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Изчислено за последния %n час.",
             "Изчислено за последните %n часа."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Връзката дава достъп до този обект на човек без акаунт. Изтича на избраната дата и всяко използване се записва.",
+        "Access links": "Връзки за достъп",
+        "Comment": "Коментар",
+        "Comments": "Коментари",
+        "Copy link": "Копиране на връзката",
+        "Create link": "Създаване на връзка",
+        "Download": "Изтегляне",
+        "Expires on": "Изтича на",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Връзката може да е изтекла, изключена или отменена. Човекът, който я е изпратил, може да създаде нова.",
+        "Link created. Copy it and send it to the person it is for.": "Връзката е създадена. Копирайте я и я изпратете на човека, за когото е предназначена.",
+        "No comments yet.": "Все още няма коментари.",
+        "No links to this object yet.": "Все още няма връзки към този обект.",
+        "Password protected": "Защитено с парола",
+        "Shared with you": "Споделено с Вас",
+        "Thank you, it was added.": "Благодарим, добавено е.",
+        "That did not work. Try again later.": "Не се получи. Опитайте отново по-късно.",
+        "That password is not right.": "Тази парола не е вярна.",
+        "The holder may": "Притежателят може",
+        "This link does not open anything": "Тази връзка не отваря нищо",
+        "This link is closed with a password": "Тази връзка е защитена с парола",
+        "This link is open until {date}.": "Тази връзка е отворена до {date}.",
+        "This record has no visible fields.": "Този запис няма видими полета.",
+        "Upload": "Качване"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

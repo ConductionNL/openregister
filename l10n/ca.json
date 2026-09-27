@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Comptat durant l'última hora.",
             "Comptat durant les últimes %n hores."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Un enllaç dona accés a aquest objecte a algú sense compte. Caduca en la data triada i cada ús queda registrat.",
+        "Access links": "Enllaços d'accés",
+        "Comment": "Comentari",
+        "Comments": "Comentaris",
+        "Copy link": "Copia l'enllaç",
+        "Create link": "Crea un enllaç",
+        "Download": "Baixa",
+        "Expires on": "Caduca el",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Pot ser que l'enllaç hagi caducat, s'hagi desactivat o revocat. La persona que el va enviar en pot crear un de nou.",
+        "Link created. Copy it and send it to the person it is for.": "Enllaç creat. Copieu-lo i envieu-lo a la persona a qui va adreçat.",
+        "No comments yet.": "Encara no hi ha comentaris.",
+        "No links to this object yet.": "Encara no hi ha enllaços a aquest objecte.",
+        "Password protected": "Protegit amb contrasenya",
+        "Shared with you": "Compartit amb vós",
+        "Thank you, it was added.": "Gràcies, s'ha afegit.",
+        "That did not work. Try again later.": "No ha funcionat. Torneu-ho a provar més tard.",
+        "That password is not right.": "Aquesta contrasenya no és correcta.",
+        "The holder may": "El titular pot",
+        "This link does not open anything": "Aquest enllaç no obre res",
+        "This link is closed with a password": "Aquest enllaç està protegit amb una contrasenya",
+        "This link is open until {date}.": "Aquest enllaç està obert fins al {date}.",
+        "This record has no visible fields.": "Aquest registre no té camps visibles.",
+        "Upload": "Puja"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

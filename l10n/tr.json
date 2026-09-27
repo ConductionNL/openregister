@@ -3277,7 +3277,30 @@
         "_Counted over the last hour._::_Counted over the last %n hours._": [
             "Son %n saat içinde sayıldı.",
             "Son %n saat içinde sayıldı."
-        ]
+        ],
+        "A link gives someone without an account access to this object. It expires on the chosen date and every use is recorded.": "Bağlantı, hesabı olmayan birine bu nesneye erişim verir. Seçilen tarihte sona erer ve her kullanım kaydedilir.",
+        "Access links": "Erişim bağlantıları",
+        "Comment": "Yorum",
+        "Comments": "Yorumlar",
+        "Copy link": "Bağlantıyı kopyala",
+        "Create link": "Bağlantı oluştur",
+        "Download": "İndir",
+        "Expires on": "Bitiş tarihi",
+        "It may have expired, been switched off or been revoked. The person who sent it can make a new one.": "Bağlantının süresi dolmuş, kapatılmış ya da iptal edilmiş olabilir. Gönderen kişi yeni bir bağlantı oluşturabilir.",
+        "Link created. Copy it and send it to the person it is for.": "Bağlantı oluşturuldu. Kopyalayın ve kime yönelikse ona gönderin.",
+        "No comments yet.": "Henüz yorum yok.",
+        "No links to this object yet.": "Bu nesneye henüz bağlantı yok.",
+        "Password protected": "Parola korumalı",
+        "Shared with you": "Sizinle paylaşıldı",
+        "Thank you, it was added.": "Teşekkürler, eklendi.",
+        "That did not work. Try again later.": "Olmadı. Daha sonra yeniden deneyin.",
+        "That password is not right.": "Bu parola doğru değil.",
+        "The holder may": "Bağlantı sahibi şunları yapabilir",
+        "This link does not open anything": "Bu bağlantı hiçbir şey açmıyor",
+        "This link is closed with a password": "Bu bağlantı parola ile korunuyor",
+        "This link is open until {date}.": "Bu bağlantı {date} tarihine kadar açık.",
+        "This record has no visible fields.": "Bu kaydın görünür alanı yok.",
+        "Upload": "Yükle"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

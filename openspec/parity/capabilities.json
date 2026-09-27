@@ -5292,12 +5292,12 @@
    "built": {
     "state": "none",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances"
+    "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account, minted since #4061 from the object detail page (src/components/access-links/ObjectAccessLinks.vue) and opened on a public page (/links/{anchor}, lib/Controller/AccessLinkPageController.php, src/views/accessLink/AccessLinkPage.vue) -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "an outsider can read, comment on and add files to one record by link, but cannot change its values through a form",
+   "note": "an outsider can read, comment on and add files to one record by link, made and managed on the object's Access links tab since #4061, but cannot change its values through a form",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -5472,9 +5472,9 @@
    "built": {
     "state": "built",
     "owner": "nextcloud/server",
-    "evidence": "record files live in Nextcloud storage (object store primary storage keeps the bucket private, nextcloud/server lib/private/Files/ObjectStore/S3.php) and are served only through Nextcloud; an expiring public link comes from a Nextcloud share, lib/Service/ShareLinkService.php:290 sets the expiration; Open Register's own access links with a required expiry (lib/Db/AccessLink.php:292, subject file :101) are minted at appinfo/routes.php:1066 accessLink#mint, which no page calls (not in or-frontend-api-paths.txt)"
+    "evidence": "record files live in Nextcloud storage (object store primary storage keeps the bucket private, nextcloud/server lib/private/Files/ObjectStore/S3.php) and are served only through Nextcloud; an expiring public link comes from a Nextcloud share, lib/Service/ShareLinkService.php:290 sets the expiration; Open Register's own access links with a required expiry (lib/Db/AccessLink.php:292, subject file :101) are minted at appinfo/routes.php accessLink#mint, which the object detail page calls since #4061 (src/components/access-links/ObjectAccessLinks.vue, object subject only); a link over one file is still minted through the API"
    },
-   "reachedOn": "Nextcloud Files share link with an expiry date; Open Register access links API only: POST /api/access-links",
+   "reachedOn": "Nextcloud Files share link with an expiry date; Open Register access links from the object's Access links tab (object subject) or POST /api/access-links (file subject)",
    "provider": "nextcloud",
    "providerHow": "read-from-code",
    "note": "private storage and expiring links exist, but as day-granular share links streamed through Nextcloud, not short-lived presigned bucket URLs built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
