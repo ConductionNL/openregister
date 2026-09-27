@@ -118,12 +118,25 @@ class OasService {
 	private OasValidationReport $report;
 
 	/**
-	 * NLGov-permitted HTTP methods on documented operations (API-01).
+	 * Standard HTTP methods an operation may use (NLGov API Design Rules 2.2.1).
+	 * Old numbering: API-01 here meant /core/http-methods, API-03 meant /core/http-response-code.
+	 * The rule table names GET, POST, PUT, PATCH and DELETE; HEAD and OPTIONS
+	 * are standard RFC 9110 methods the rule's note allows, so documenting them
+	 * is not a violation.
+	 *
+	 * @var list<string>
 	 */
-	private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'delete', 'parameters'];
+	private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
 
 	/**
-	 * NLGov-permitted HTTP response status codes (API-03).
+	 * Path item keys that are not operations (OpenAPI 3.x Path Item Object).
+	 *
+	 * @var list<string>
+	 */
+	private const PATH_ITEM_FIELDS = ['parameters', 'summary', 'description', 'servers', '$ref'];
+
+	/**
+	 * NLGov-permitted HTTP response status codes (/core/http-response-code).
 	 *
 	 * @var list<string>
 	 */
@@ -834,23 +847,27 @@ class OasService {
 		// Individual resource endpoints (tags are inside individual operations).
 		$getOn = $this->createGetOperation(schema: $schema);
 		$putOn = $this->createPutOperation(schema: $schema);
+		$patchOn = $this->createPatchOperation(schema: $schema);
 		$deleteOn = $this->createDeleteOperation(schema: $schema);
 
 		// Apply operationId prefix for uniqueness across registers.
 		if ($operationIdPrefix !== '') {
 			$getOn['operationId'] = $operationIdPrefix . $getOn['operationId'];
 			$putOn['operationId'] = $operationIdPrefix . $putOn['operationId'];
+			$patchOn['operationId'] = $operationIdPrefix . $patchOn['operationId'];
 			$deleteOn['operationId'] = $operationIdPrefix . $deleteOn['operationId'];
 		}
 
 		// Append RBAC group info to descriptions and add 403 responses.
 		$this->rbacAnnotator->applyRbacToOperation(operation: $getOn, groups: $rbac['readGroups'] ?? []);
 		$this->rbacAnnotator->applyRbacToOperation(operation: $putOn, groups: $rbac['updateGroups'] ?? []);
+		$this->rbacAnnotator->applyRbacToOperation(operation: $patchOn, groups: $rbac['updateGroups'] ?? []);
 		$this->rbacAnnotator->applyRbacToOperation(operation: $deleteOn, groups: $rbac['deleteGroups'] ?? []);
 
 		$this->oas['paths'][$basePath . '/{id}'] = [
 			'get' => $getOn,
 			'put' => $putOn,
+			'patch' => $patchOn,
 			'delete' => $deleteOn,
 		];
 	}//end addCrudPaths()
@@ -1359,6 +1376,42 @@ class OasService {
 			],
 		];
 	}//end createPutOperation()
+
+	/**
+	 * Create PATCH operation (partial update, objects#patch).
+	 *
+	 * Same path, response and errors as PUT, but only the fields sent change,
+	 * so the body is a JSON merge patch (RFC 7396) of the object and nothing in
+	 * it is required.
+	 *
+	 * @param object $schema The schema object
+	 *
+	 * @return array OpenAPI operation definition for PATCH.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
+	 */
+	private function createPatchOperation(object $schema): array {
+		$operation = $this->createPutOperation(schema: $schema);
+		$title = $schema->getTitle();
+
+		$operation['summary'] = 'Partially update a ' . $title . ' object';
+		$operation['operationId'] = 'patch' . $this->pascalCase(string: $title);
+		$operation['description'] = 'Change only the fields sent; fields left out keep their stored value';
+		$operation['parameters'][0]['description'] = 'Unique identifier of the ' . $title . ' object to patch';
+		$operation['requestBody'] = [
+			'required' => true,
+			'content' => [
+				'application/merge-patch+json' => [
+					'schema' => ['type' => 'object'],
+				],
+				'application/json' => [
+					'schema' => ['type' => 'object'],
+				],
+			],
+		];
+
+		return $operation;
+	}//end createPatchOperation()
 
 	/**
 	 * Create POST operation.
@@ -1870,7 +1923,7 @@ class OasService {
 		// Pass 5: tag consistency — referenced tags must be defined; defined tags must be used.
 		$this->validateTagConsistency();
 
-		// Pass 6: NLGov rules — HTTP method whitelist (API-01) and status code whitelist (API-03).
+		// Pass 6: NLGov rules — /core/http-methods and /core/http-response-code whitelists.
 		$this->validateNlGovRules();
 
 		// Pass 7: Strict-mode meta-schema validation against the
@@ -2084,8 +2137,10 @@ class OasService {
 	 * NLGov API Design Rules — narrow checks that are verifiable from the
 	 * OAS document alone:
 	 *
-	 * - API-01: only GET, POST, PUT, DELETE on documented operations.
-	 * - API-03: only standard HTTP status codes on responses.
+	 * - /core/http-methods (API-03 in the 1.0 numbering): only standard HTTP
+	 *   methods on documented operations: GET, POST, PUT, PATCH, DELETE, and
+	 *   the RFC 9110 methods HEAD and OPTIONS.
+	 * - /core/http-response-code: only standard HTTP status codes on responses.
 	 *
 	 * @return void
 	 */
@@ -2095,6 +2150,7 @@ class OasService {
 		}
 
 		$allowedMethods = array_flip(self::ALLOWED_HTTP_METHODS);
+		$pathItemFields = array_flip(self::PATH_ITEM_FIELDS);
 		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
 
 		foreach ($this->oas['paths'] as $pathName => $pathItem) {
@@ -2104,8 +2160,12 @@ class OasService {
 
 			foreach ($pathItem as $method => $operation) {
 				$methodKey = strtolower((string)$method);
+				if (isset($pathItemFields[$methodKey]) === true) {
+					continue;
+				}
+
 				if (isset($allowedMethods[$methodKey]) === false) {
-					$reason = 'violates NLGov API-01 (only GET, POST, PUT, DELETE allowed).';
+					$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
 					$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
 					$this->report->addError(
 						path: 'paths.' . $pathName . '.' . $method,
@@ -2115,7 +2175,7 @@ class OasService {
 					continue;
 				}
 
-				if ($methodKey === 'parameters' || is_array($operation) === false) {
+				if (is_array($operation) === false) {
 					continue;
 				}
 
@@ -2124,7 +2184,7 @@ class OasService {
 					if (isset($allowedCodes[$statusKey]) === false) {
 						$this->report->addWarning(
 							path: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode,
-							message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov API-03 conventions.',
+							message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
 							code: OasValidationReport::CODE_INVALID_STATUS_CODE,
 						);
 					}

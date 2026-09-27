@@ -5953,12 +5953,12 @@
    "built": {
     "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> :1874 validateNlGovRules, which checks two rules only, API-01 methods and API-03 status codes (:2084-2092); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)"
+    "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> validateNlGovRules, which checks two rules only, /core/http-methods (GET, POST, PUT, PATCH, DELETE, plus HEAD and OPTIONS per the rule's note) and /core/http-response-code, named by their NLGov API Design Rules 2.2.1 ids since #4059; addCrudPaths documents PATCH (merge patch) on every object path, matching objects#patch (appinfo/routes.php:1178); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)"
    },
    "reachedOn": "API only: GET /api/registers/{id}/oas and every API response header",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "an OpenAPI document and a narrow self-check, not conformance to the full ADR ruleset or its linter; the API-01 check also flags PATCH, which the rules allow built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "an OpenAPI document and a narrow self-check, not conformance to the full ADR ruleset or its linter; since #4059 (2026-09-27) the document lists PATCH and the method check accepts it, so the rating stays partial only for the unchecked rules. built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something.",
    "objects-api": "yes",
    "directus": "partial",
    "strapi": "partial",
