@@ -14,4 +14,4 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run `composer check:strict`, `npm run lint` and the hydra gates once before push, and record each exit code in the PR body
+- [x] 4.1 Run `composer check:strict`, `npm run lint` and the hydra gates once before push, and record each exit code in the PR body

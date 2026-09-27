@@ -192,7 +192,7 @@ class PresentationExtractor {
 			if ($result === null || $result['slides'] === []) {
 				$this->logger->warning(
 					message: '[PresentationExtractor] Presentation holds no readable slides',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId()]
+					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $mimeType]
 				);
 				return null;
 			}

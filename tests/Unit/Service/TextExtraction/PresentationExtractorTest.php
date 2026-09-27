@@ -501,6 +501,13 @@ class PresentationExtractorTest extends TestCase {
 		$parts = $this->presentation([]);
 		$parts['ppt/_rels/presentation.xml.rels'] = $this->rels([]);
 
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with(
+				$this->stringContains('holds no readable slides'),
+				$this->callback(static fn (array $context): bool => $context['fileId'] === 404 && $context['mimeType'] === self::PPTX_MIME)
+			);
+
 		$this->assertNull($this->extractor->extract(file: $this->mockFile(content: $this->zip($parts))));
 
 	}

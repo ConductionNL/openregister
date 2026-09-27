@@ -25,7 +25,7 @@ The extractor SHALL return the slides in the order the deck presents them, which
 
 ### Requirement: Each slide carries its title and its body text in shape order (REQ-PPTX-002)
 
-Each slide SHALL carry `title`: the text of its title or centred-title placeholder, or an empty string when it has none. Each slide SHALL carry `body`: the non-empty paragraphs of every other text-bearing shape, in the order the shapes appear on the slide. Text inside grouped shapes and inside table cells SHALL be included in that order. Runs within one paragraph SHALL be joined into one string with whitespace collapsed.
+Each slide SHALL carry `title`: the text of its title or centred-title placeholder, or an empty string when it has none. Each slide SHALL carry `body`: the non-empty paragraphs of every other text-bearing shape, in the order the shapes appear on the slide. Text inside grouped shapes and inside table cells SHALL be included in that order. Slide number, date, header and footer placeholders are page furniture and SHALL NOT be included. Runs within one paragraph SHALL be joined into one string with whitespace collapsed.
 
 #### Scenario: Title and body are separated
 
@@ -33,6 +33,7 @@ Each slide SHALL carry `title`: the text of its title or centred-title placehold
 - **WHEN** the deck is extracted
 - **THEN** the slide's `title` is "Fotosynthese"
 - **AND** its `body` is `["Planten maken voedsel", "Licht, water en CO2"]`
+- **AND** a slide-number placeholder on the same slide does not appear in `body`
 
 #### Scenario: Grouped shapes and table cells keep their place
 
@@ -80,7 +81,7 @@ Each slide SHALL carry `images`: one entry per picture on the slide, in shape or
 
 ### Requirement: A deck that cannot be read degrades to no result (REQ-PPTX-005)
 
-The extractor SHALL return `null`, not throw, when the input is not a readable deck: corrupt or non-zip bytes, a package without a presentation part, a deck with no slides, or a format it does not read (legacy binary `.ppt`, `.odp`). It SHALL log the failure with the file id, MIME type and exception class, and SHALL NOT log any document content. A missing zip extension on the server is a deployment error and SHALL throw.
+The extractor SHALL return `null`, not throw, when the input is not a readable deck: corrupt or non-zip bytes, a package without a presentation part, a deck with no slides, or a format it does not read (legacy binary `.ppt`, `.odp`). It SHALL log the failure with the file id and MIME type, plus the exception class when one was thrown, and SHALL NOT log any document content. A missing zip extension on the server is a deployment error and SHALL throw.
 
 #### Scenario: Garbage bytes return null without leaking content
 

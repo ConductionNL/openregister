@@ -47,7 +47,7 @@ The public result does not expose the parser, so the internals can switch to `ph
 
 ### Title, body and notes by placeholder type
 
-A shape is a title when its placeholder type is `title` or `ctrTitle`. Every other text-bearing shape (`p:sp` with `p:txBody`, including subtitles and untyped placeholders) goes to `body`, and so do table cells in a `p:graphicFrame`. Group shapes (`p:grpSp`) are walked in place. On a notes page only the `body` placeholder is notes; the slide image, slide number, header, footer and date placeholders are skipped.
+A shape is a title when its placeholder type is `title` or `ctrTitle`. Page furniture (`sldNum`, `dt`, `ftr`, `hdr`, `sldImg` placeholders) is skipped everywhere. Every other text-bearing shape (`p:sp` with `p:txBody`, including subtitles, untyped placeholders and plain text boxes) goes to `body`, and so do table cells in a `p:graphicFrame`. Group shapes (`p:grpSp`) are walked in place, and one branch of each `mc:AlternateContent` block is read (the fallback, else the first choice), so no shape is read twice. On a notes page every non-furniture text shape is notes: PowerPoint writes notes in a `body` placeholder, but LibreOffice writes them as a plain text box, which the real-suite cross-check caught.
 
 ### Relationships resolve relative to the part
 
