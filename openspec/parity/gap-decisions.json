@@ -955,8 +955,8 @@
     "row": "int-outbound-webhooks",
     "matrix": "buildiq",
     "decision": "build",
-    "reason": "Partial with three competitors rated yes. Webhook subscriptions are admin-only and no flow step posts to a webhook (no HTTP node in lib/Service/Flow/Nodes); that is the missing half.",
-    "change": "webhooks-from-flows-and-for-owners",
+    "reason": "Partial with three competitors rated yes. Webhook subscriptions are admin-only (WebhooksController::index checks isCurrentUserAdmin); subscriptions a non-admin owns, limited to what they may read, are specified here. A flow already posts to a webhook through integriq's openconnector.source-call node, which the open flow-messaging-nodes names as the one outbound HTTP path.",
+    "change": "webhooks-for-owners",
     "decidedOn": "2026-09-27"
   },
   {
@@ -1131,8 +1131,8 @@
     "row": "int-webhooks",
     "matrix": "planninq",
     "decision": "build",
-    "reason": "Four competitors rated yes; the same missing half as buildiq int-outbound-webhooks, so one change.",
-    "change": "webhooks-from-flows-and-for-owners",
+    "reason": "Four competitors rated yes; the same missing half as buildiq int-outbound-webhooks (a project owner cannot subscribe a webhook), so one change.",
+    "change": "webhooks-for-owners",
     "decidedOn": "2026-09-27"
   },
   {
