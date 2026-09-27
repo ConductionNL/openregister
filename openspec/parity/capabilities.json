@@ -1158,7 +1158,7 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched src and lib for gallery/cover/coverImage/CnCardGrid; card viewMode exists only for registers, schemas, sources, configurations (src/store/modules/register.js:20), not records. SearchIndex.vue presentations are table/kanban/calendar only (:211)."
    },
@@ -1176,7 +1176,8 @@
     "objects-api": "source read at 4.2.1, not driven: searched \"gallery|thumbnail|image\" in src/objects/js, templates: no match",
     "strapi": "source read at v5.55.1, not driven: searched \"gallery|card view\" in packages/core/content-manager/admin/src: no match; card grid exists only for media assets in strapi:packages/core/upload/admin/src",
     "pocketbase": "source read at v0.40.4, not driven: searched \"gallery|grid view|cover\" in ui/src/records: none; list view only pocketbase:ui/src/records/recordsList.js:584 (file thumbs in cells via ui/src/records/recordFileThumb.js)"
-   }
+   },
+   "note": "OpenSpec pass 2026-09-27: specified in openspec/changes/records-gallery-view."
   },
   {
    "id": "rec-bulk",
@@ -1271,7 +1272,7 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched appinfo/routes.php for object publish/depublish/draft (only flow#publish :854 and config draft-sets :526); lib/Db/ObjectEntity.php has no published/depublished field; no draft copy in lib/Service/Object*."
    },
@@ -1289,7 +1290,8 @@
     "objects-api": "source read at 4.2.1, not driven: drafts exist only for type versions (core/constants.py:5); records have no status, every PUT/PATCH creates the live record at once (objects-api:src/objects/api/serializers.py:299 update creates a new ObjectRecord). A future startAt can schedule a record but it is not a draft",
     "nocodb": "source read at 2026.09.0, not driven: searched \"draft|publish\" in packages/nocodb/src/models and db/BaseModelSqlv2.ts: no record-level draft; drafts in nocodb:packages/nc-gui/lang/en.json:1316 'Fork to Draft' belong to Interfaces pages, not records",
     "pocketbase": "source read at v0.40.4, not driven: searched \"draft|publish\" in core and ui/src/records: none; a record has one live row saved via pocketbase:apis/record_crud.go:32. A status field plus list rules can mimic it (pocketbase:core/collection_model.go:358)"
-   }
+   },
+   "note": "OpenSpec pass 2026-09-27: specified in openspec/changes/records-draft-versions."
   },
   {
    "id": "rec-named-version",
@@ -1298,7 +1300,7 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched lib and appinfo/routes.php for promote/workingCopy/change request/named version on objects; only flow versions (appinfo/routes.php:852) and config draft-sets exist."
    },
@@ -1316,7 +1318,8 @@
     "objects-api": "source read at 4.2.1, not driven: records are numbered by index only (objects-api:src/objects/core/models.py:296); no named or branched versions, no approval. searched \"branch|named version|approve\" in src/objects: no match",
     "nocodb": "source read at 2026.09.0, not driven: searched \"version|draft\" in packages/nocodb/src/models and services/datas.service.ts: no named record versions; audit rows only (packages/nocodb/src/services/audits.service.ts:16)",
     "pocketbase": "source read at v0.40.4, not driven: searched \"version|revision\" in core/record_*.go: none; single row per record pocketbase:core/record_model.go:1483"
-   }
+   },
+   "note": "OpenSpec pass 2026-09-27: specified in openspec/changes/records-draft-versions."
   },
   {
    "id": "rec-revert",
@@ -2043,14 +2046,14 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "grep zgw/zaken/objecttypes/objects-api in appinfo/routes.php and lib/: no ZGW or Objects API output surface; only a zgw import migration pack (lib/Controller/MigrationPacksController.php:138) and a HaalCentraal lookup client"
    },
    "reachedOn": "none",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Serving ZGW-shaped APIs is outside OpenRegister's routes; likely integriq's domain.",
+   "note": "Serving ZGW-shaped APIs is outside OpenRegister's routes; likely integriq's domain. OpenSpec pass 2026-09-27: decided-no. Recorded decision: hydra ADR-091 decision 6 puts NL statutory API shapes (ZGW and its siblings) in OpenConnector, now integriq, and api-as-a-versioned-surface repeats that ZGW endpoints stay integriq's.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "no",
@@ -2356,14 +2359,14 @@
    ],
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BackgroundJob/ViewAlertSweepJob.php:149 (job in appinfo/info.xml:136) evaluates view.alert, but View::setAlert has no caller (git grep setAlert lib/), no UI field in src/modals/view or src/sidebars/search, and ViewAlertCrossedEvent (dispatched :191) has no listener"
    },
    "reachedOn": "none",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Sweep job runs on nothing: no path sets an alert and the crossed event reaches no one.",
+   "note": "Sweep job runs on nothing: no path sets an alert and the crossed event reaches no one. OpenSpec pass 2026-09-27: specified in openspec/changes/saved-view-count-alert.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -2474,14 +2477,14 @@
    ],
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/QueryHandler.php:381 'database search (the only search backend; the external Solr/index tier was removed)'; lib/Service/Settings/SearchBackendHandler.php:35 same. elasticsearch/elasticsearch still in composer.json:110 but unused in lib/"
    },
    "reachedOn": "none",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Solr/Elasticsearch backends were removed; composer still requires elasticsearch.",
+   "note": "Solr/Elasticsearch backends were removed; composer still requires elasticsearch. OpenSpec pass 2026-09-27: decided-no. Recorded decision: openregister ADR-007 makes the built-in database search the only backend, and adding one is an ADR-level decision; remove-solr-and-publishing removed Solr and Elasticsearch.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -2910,14 +2913,14 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched appinfo/routes.php and lib/ for signup/register-user/createUser: only lib/Service/File/FileOwnershipHandler.php. Outside parties use access links (routes.php:1052) or the portaliq seam (routes.php:2159), not own accounts"
    },
    "reachedOn": "none",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "End-user accounts sit with portaliq, which asserts subjects to OpenRegister.",
+   "note": "End-user accounts sit with portaliq, which asserts subjects to OpenRegister. OpenSpec pass 2026-09-27: decided-no. Recorded decision: hydra ADR-086 section 8 gives each portaliq website its own account store ('local', portal accounts), so end-user sign-up is portaliq's; the matrix note says the same. Three competitors rate yes, but decided-no comes before build in the rule.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
@@ -4308,14 +4311,14 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "No importer for another product's base: git grep -i 'airtable|baserow|nocodb' in lib, src and appinfo finds none. The only neighbour is lib/Service TablesSchemaSyncService, which mounts a Nextcloud Tables table as a read-only virtual schema (occ openregister:tables:sync), not an import."
    },
    "reachedOn": "none",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Rated no by the lane lead over the reader's partial: mounting Nextcloud Tables read-only is not importing a base.",
+   "note": "Rated no by the lane lead over the reader's partial: mounting Nextcloud Tables read-only is not importing a base. OpenSpec pass 2026-09-27: specified in openspec/changes/import-preview-and-conflict-policy.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -5078,14 +5081,14 @@
    "minedFrom": "also on the Strapi roadmap: https://feedback.strapi.io/developer-experience/p/gracefully-handle-renaming-of-content-types-and-fields-in-the-ctb",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1639 POST /api/schemas/{id}/migrations -> lib/Controller/SchemaMigrationController.php:359 migrate -> lib/Service/Schema/SchemaMigrationPlanner.php:174 'rename' op, :222 applyRename moves the value per object, with preview (routes.php:1638) and rollback (routes.php:1640); lib/Service/Schema/SchemaDiffService.php:97 classifies a declared rename as one breaking change"
    },
    "reachedOn": "API only: POST /api/schemas/{id}/migrations",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a property rename carries its data through a migration run, but no page calls the migrations routes (not in or-frontend-api-paths.txt) and renaming a record type's slug, which moves its API path, has no carry-over built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "a property rename carries its data through a migration run, but no page calls the migrations routes (not in or-frontend-api-paths.txt) and renaming a record type's slug, which moves its API path, has no carry-over built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/modelling-rename-without-loss. The built half stays as the evidence describes; the change covers the missing half.",
    "objects-api": "partial",
    "directus": "no",
    "strapi": "no",
@@ -5108,14 +5111,14 @@
    "originUrl": "https://github.com/directus/directus/discussions/12137",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1171,1177 objects are addressed by {id} (uuid or slug) only; lib/Service/Import/MatchResolver.php:116 resolve() matches an import row on several declared properties, but only inside import previews (routes.php:1336), not as the record's identity in the API or in links"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "combination uniqueness exists as a listener (lib/AppInfo/Application.php:3365 UniqueConstraintListener), which is mod-unique, not identity",
+   "note": "combination uniqueness exists as a listener (lib/AppInfo/Application.php:3365 UniqueConstraintListener), which is mod-unique, not identity OpenSpec pass 2026-09-27: specified in openspec/changes/modelling-composite-identity.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -5170,14 +5173,14 @@
    "minedFrom": "NocoDB shipped a tree view in https://github.com/nocodb/nocodb/releases/tag/2026.09.0",
    "openregister": "no",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchemaProperty.vue:718-745 'Show the hierarchy' renders a code list's concepts as an indented, non-collapsible list via lib/Controller/VocabularyController.php:166 ?tree; no record list layout shows parent and child records as a tree (grep treeview/TreeView in src: no match)"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "the only hierarchy view is for code list concepts inside the schema property editor built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "the only hierarchy view is for code list concepts inside the schema property editor built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/records-tree-view.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "no",
@@ -5260,14 +5263,14 @@
    "originUrl": "https://github.com/nocodb/nocodb/releases/tag/2026.08.0",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1781-1791 /api/views CRUD plus /api/views/{id}/kanban and /calendar -> lib/Controller/ViewsController.php:439 isPublic and sharedWith -> lib/Db/ViewMapper.php:321 lists views that are mine, public or shared with my group; page: src/views/search/SearchIndex.vue:183 viewsStore.activeView renders a saved view as table, kanban or calendar"
    },
    "reachedOn": "search page (src/views/search/SearchIndex.vue) with a saved, shared view",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a saved view is a focused, shareable filter on the search page, but it is not an access boundary: what a viewer sees still comes from schema RBAC, and there is no page builder with page-level access; leaf apps build such pages from nextcloud-vue manifests instead built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "a saved view is a focused, shareable filter on the search page, but it is not an access boundary: what a viewer sees still comes from schema RBAC, and there is no page builder with page-level access; leaf apps build such pages from nextcloud-vue manifests instead built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: decided-no. The missing half is a page builder with page-level access, which openspec/specs/no-code-app-builder/spec.md hands to the root openspec as a cross-app capability built by buildiq; saved, shared views stay Open Register's and are built.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "partial",
@@ -5290,14 +5293,14 @@
    "originUrl": "https://github.com/nocodb/nocodb/issues/7091",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account, minted since #4061 from the object detail page (src/components/access-links/ObjectAccessLinks.vue) and opened on a public page (/links/{anchor}, lib/Controller/AccessLinkPageController.php, src/views/accessLink/AccessLinkPage.vue) -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "an outsider can read, comment on and add files to one record by link, made and managed on the object's Access links tab since #4061, but cannot change its values through a form",
+   "note": "an outsider can read, comment on and add files to one record by link, made and managed on the object's Access links tab since #4061, but cannot change its values through a form OpenSpec pass 2026-09-27: specified in openspec/changes/or-form-and-journey-registry.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -5350,14 +5353,14 @@
    "originUrl": "https://github.com/nocodb/nocodb/issues/8949",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchemaProperty.vue:380 'Facetable' switch per property -> lib/Db/MagicMapper.php:3580-3584 createTableIndexes adds CREATE INDEX on each facetable column (and on relation columns :3552); runs on table creation lib/Db/MagicMapper.php:2309 and on resync src/components/cards/RegisterSchemaCard.vue:952 -> appinfo/routes.php:279 tables#sync -> lib/Controller/TablesController.php:140 -> lib/Db/MagicMapper/MagicTableHandler.php:473 updateTableIndexes"
    },
    "reachedOn": "schema property editor (Facetable) plus the register card's table sync",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "the index is a side effect of marking a field facetable, not an explicit index option; the trigram 'searchable' index (MagicMapper.php:3603) has no switch in the editor",
+   "note": "the index is a side effect of marking a field facetable, not an explicit index option; the trigram 'searchable' index (MagicMapper.php:3603) has no switch in the editor OpenSpec pass 2026-09-27: specified in openspec/changes/modelling-property-index-switch. The built half stays as the evidence describes; the change covers the missing half.",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "partial",
@@ -5380,14 +5383,14 @@
    "originUrl": "https://github.com/nocodb/nocodb/releases/tag/0.301.3",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/search/SearchIndex.vue:398 opens src/modals/object/CopyObject.vue to start a record from a copy of an existing one; schema property defaults fill a new record lib/Service/Object/SaveObject.php:1544; src/views/templates/TemplatesIndex.vue:63 'Templates are coming soon' is about document templates and calls no route"
    },
    "reachedOn": "search page, copy action on a record",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "copy a record or rely on per-field defaults; no named, saved record templates to choose from built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "copy a record or rely on per-field defaults; no named, saved record templates to choose from built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/records-saved-templates. The built half stays as the evidence describes; the change covers the missing half.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "partial",
@@ -5530,14 +5533,14 @@
    "originUrl": "https://github.com/strapi/strapi/releases/tag/v5.46.0",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no draft or preview state on records: grep draft in lib/Service/Object and lib/Db/ObjectEntity.php finds nothing of the kind, and the only preview routes are for erasure, configuration draft sets and imports (appinfo/routes.php:498, :536); no preview token for a public site"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "the public site is a sibling (opencatalogi or portaliq); Open Register offers it no draft-preview hook",
+   "note": "the public site is a sibling (opencatalogi or portaliq); Open Register offers it no draft-preview hook OpenSpec pass 2026-09-27: specified in openspec/changes/records-draft-versions.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "partial",
@@ -5590,14 +5593,14 @@
    "originUrl": "https://github.com/pocketbase/pocketbase/issues/3798",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/ValidateObject.php:2144 generateErrorMessage builds fixed English strings such as :2186 'The required property ({property}) is missing'; grep errorMessage or x-error in ValidateObject.php and lib/Service/Schemas/PropertyValidatorHandler.php: no schema key for a custom message"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "messages name the field but their wording and language are fixed",
+   "note": "messages name the field but their wording and language are fixed OpenSpec pass 2026-09-27: specified in openspec/changes/modelling-validation-messages.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "partial",
@@ -5770,7 +5773,7 @@
    "originUrl": "https://github.com/pocketbase/pocketbase/releases/tag/v0.37.0",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "grep diagram, mermaid, cytoscape, vis-network and erd in src: no diagram component (the two hits are wording in delete modals); the model is exported as OpenAPI per register (appinfo/routes.php:1667 oas#generate), not drawn"
    },
@@ -5788,7 +5791,8 @@
     "strapi": "source read at v5.55.1, not driven: searched \"diagram|reactflow|xyflow\" in packages/core/content-type-builder/admin/src: no match; the content type builder lists types and their fields, relations are shown per field only",
     "nocodb": "source read at 2026.09.0, not driven: entity relationship diagram of a base nocodb:packages/nc-gui/components/erd/View.vue with table nodes and relation edges (TableNode.vue, RelationEdge.vue), mounted in the base ERD dialog nocodb:packages/nc-gui/components/dlg/Base/Erd.vue:60",
     "pocketbase": "source read at v0.40.4, not driven: dashboard collections overview has a 'Fields and relations' tab rendering an entity relation diagram (pocketbase:ui/src/collections/collectionsOverviewModal.js:23, :119-122 app.components.erd, component pocketbase:ui/src/base/erd.js)"
-   }
+   },
+   "note": "OpenSpec pass 2026-09-27: specified in openspec/changes/modelling-schema-diagram."
   },
   {
    "id": "auto-filtered-subscription",
@@ -5829,14 +5833,14 @@
    "originUrl": "https://github.com/maykinmedia/open-object/blob/master/CHANGELOG.rst",
    "openregister": "no",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no confidentiality field on a record type: lib/Db/Schema.php and lib/Db/Register.php carry none (Register.php:253 'classification' is the register type); confidentiality exists per record, read under three spellings by lib/Controller/FederationController.php:84-100 to keep non-public records out of federation shares"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a per-record confidentiality value (ZGW vertrouwelijkheidaanduiding) is honoured by federation, but types cannot be labelled or listed by level built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "a per-record confidentiality value (ZGW vertrouwelijkheidaanduiding) is honoured by federation, but types cannot be labelled or listed by level built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/modelling-type-catalogue-metadata.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "no",
@@ -5859,14 +5863,14 @@
    "originUrl": "https://github.com/maykinmedia/open-object/blob/master/CHANGELOG.rst",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/Schema.php:161 description, :168 version, :255 owner, :269 organisation, :445 linked contact ids; the same on lib/Db/Register.php:137, :186, :200, :308; no contact role, source system, update frequency or documentation url field; served by appinfo/routes.php GET /api/schemas/{id} and edited in src/modals/schema/EditSchema.vue"
    },
    "reachedOn": "schema edit modal and API only: GET /api/schemas/{id}",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "owner, organisation and description exist; the catalogue fields a data catalogue needs (source system, update frequency, contact person as a role) do not built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "owner, organisation and description exist; the catalogue fields a data catalogue needs (source system, update frequency, contact person as a role) do not built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/modelling-type-catalogue-metadata. The built half stays as the evidence describes; the change covers the missing half.",
    "objects-api": "yes",
    "directus": "partial",
    "strapi": "partial",
