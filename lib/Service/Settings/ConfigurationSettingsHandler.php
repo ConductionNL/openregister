@@ -114,6 +114,7 @@ class ConfigurationSettingsHandler {
 	 * @param IAppManager $appManager App manager, read for the app's own version info.
 	 * @param string $appName Application name.
 	 * @param SecuritySettingAnnouncer|null $announcer Tells the administrators when a marked setting moves.
+	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail, and announces it.
 	 *
 	 * @return void
 	 */
@@ -126,6 +127,7 @@ class ConfigurationSettingsHandler {
 		private readonly IAppManager $appManager,
 		string $appName = 'openregister',
 		private readonly ?SecuritySettingAnnouncer $announcer = null,
+		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
 		$this->appConfig = $appConfig;
 		$this->groupManager = $groupManager;
@@ -572,6 +574,7 @@ class ConfigurationSettingsHandler {
 		// did. Cheap by construction: the registry reads only the marked keys,
 		// never getSettings(), which also lists every group and user.
 		$beforeSecurity = $this->announcer?->snapshot();
+		$beforeChange = $this->changeRecorder?->snapshot(keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
 
 		try {
 			// Handle RBAC settings.
@@ -686,12 +689,16 @@ class ConfigurationSettingsHandler {
 				$this->appConfig->setValueString($this->appName, 'solr', json_encode($solrConfig));
 			}//end if
 
-			// Announcing is not recording: `settings-change-audit` owns the
-			// record, this tells a person at the moment it happens. After the
-			// writes and inside the try, so a save that threw announces
-			// nothing. Fail-soft inside the announcer, so a notification that
-			// cannot be delivered does not turn a successful save into an error.
-			if ($this->announcer !== null && $beforeSecurity !== null) {
+			// Record and announce after the writes and inside the try, so a
+			// save that threw records nothing. The recorder writes the
+			// `settings.updated` rows through the SettingsChangeAuditor and
+			// announces the security-marked settings; both are fail-soft, so a
+			// row or a notification that cannot be written does not turn a
+			// successful save into an error. Without a recorder (older wiring)
+			// the announcer still tells a person on its own.
+			if ($beforeChange !== null) {
+				$this->changeRecorder?->record(before: $beforeChange, keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
+			} elseif ($this->announcer !== null && $beforeSecurity !== null) {
 				$this->announcer->announce($beforeSecurity, $this->announcer->snapshot());
 			}
 
@@ -773,6 +780,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateRbacSettingsOnly(array $rbacData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['rbac']);
 		try {
 			$rbacConfig = [
 				'enabled' => $rbacData['enabled'] ?? true,
@@ -783,6 +791,7 @@ class ConfigurationSettingsHandler {
 			];
 
 			$this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['rbac']);
 
 			return [
 				'rbac' => $rbacConfig,
@@ -855,6 +864,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateOrganisationSettingsOnly(array $organisationData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['organisation']);
 		try {
 			$organisationConfig = [
 				'default_organisation' => $organisationData['default_organisation'] ?? null,
@@ -862,6 +872,7 @@ class ConfigurationSettingsHandler {
 			];
 
 			$this->appConfig->setValueString($this->appName, 'organisation', json_encode($organisationConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['organisation']);
 
 			return [
 				'organisation' => $organisationConfig,
@@ -1015,6 +1026,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateMultitenancySettingsOnly(array $multitenancyData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['multitenancy']);
 		try {
 			// Default: enabled=true for proper data isolation.
 			$multitenancyConfig = [
@@ -1026,6 +1038,7 @@ class ConfigurationSettingsHandler {
 			];
 
 			$this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['multitenancy']);
 
 			return [
 				'multitenancy' => $multitenancyConfig,
@@ -1035,6 +1048,24 @@ class ConfigurationSettingsHandler {
 			throw new RuntimeException('Failed to update Multitenancy settings: ' . $e->getMessage());
 		}
 	}//end updateMultitenancySettingsOnly()
+
+	/**
+	 * Hand a per-section save to the change recorder.
+	 *
+	 * @param array{settings: array<string, mixed>, security: array<string, mixed>}|null $before The snapshot, or null.
+	 * @param array<int, string>                                                         $keys   The keys the save wrote.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	private function recordSettingsChange(?array $before, array $keys): void {
+		if ($before === null || $this->changeRecorder === null) {
+			return;
+		}
+
+		$this->changeRecorder->record(before: $before, keys: $keys);
+	}//end recordSettingsChange()
 
 	/**
 	 * Get LLM settings only

@@ -5502,12 +5502,12 @@
    "built": {
     "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings) and lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles); Open Register's own settings save only announces, lib/Service/Settings/ConfigurationSettingsHandler.php:689-695; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)"
+    "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings), lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles) and, since #4060, lib/Service/Settings/OwnSettingsChangeRecorder.php for Open Register's own settings: every save door in lib/Service/Settings/ConfigurationSettingsHandler.php (updateSettings, updateRbacSettingsOnly, updateOrganisationSettingsOnly, updateMultitenancySettingsOnly) and lib/Service/Settings/ObjectRetentionHandler.php (object, retention, archival) snapshots before the write and records after it, one row per section.field; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)"
    },
-   "reachedOn": "audit trail page (/api/audit-trails) for leaf app settings and feature toggles",
+   "reachedOn": "audit trail page (/api/audit-trails) for leaf app settings, feature toggles and Open Register's own RBAC, multitenancy, organisation, object, retention and archival settings",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "its own RBAC, multitenancy and retention settings and schema or register edits leave no audit row; Nextcloud logs role changes to a file, not a screen built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "Open Register's own access control, multitenancy and retention settings write an audit row since #4060 (2026-09-27); schema or register edits, the LLM, file and search settings, and role changes (Nextcloud logs those to a file) still leave no row, so the rating stays partial. built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something.",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "partial",
