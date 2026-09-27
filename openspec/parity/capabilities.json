@@ -1992,7 +1992,7 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched repo root, package.json, git ls-files for sdk/client packages: none. Only an openapi.json and the in-app JS stores"
    },
@@ -2010,7 +2010,8 @@
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:README.md:30 official JavaScript SDK pocketbase/js-sdk and :31 Dart SDK pocketbase/dart-sdk; the dashboard itself uses the JS SDK pocketbase:ui/package.json:11",
     "strapi": "source read at v5.55.1, not driven: no SDK in this monorepo (searched \"@strapi/client\" in packages: no match); official client at https://github.com/strapi/client (separate public repo, pushed 2026-09-25), JavaScript and TypeScript only",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb-sdk/package.json:2 npm package nocodb-sdk with nocodb:packages/nocodb-sdk/src/lib/Api.ts:8526 generated Api client; nocodb:packages/nocodb-sdk-v2/package.json:2. JavaScript/TypeScript only, no other languages in the repo"
-   }
+   },
+   "note": "OpenSpec pass 2026-09-27: specified in openspec/changes/api-client-libraries."
   },
   {
    "id": "api-linked-data",
@@ -5142,14 +5143,14 @@
    "minedFrom": "also Directus discussion https://github.com/directus/directus/discussions/5706",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1171 POST /api/objects/{register}/{schema} -> lib/Controller/ObjectsController.php:3313 create is an upsert unless _failIfExists -> lib/Service/Object/SaveObject.php:3260 an existing identifier is updated; bulk: routes.php:1282 POST /api/bulk/{register}/{schema}/save; key-based matching only via lib/Service/Import/MatchResolver.php:116 in the two-step import preview (routes.php:1336 create, :1339 commit)"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "single-call upsert matches on the record's own id only; matching on a declared business key takes an import preview plus a commit",
+   "note": "single-call upsert matches on the record's own id only; matching on a declared business key takes an import preview plus a commit OpenSpec pass 2026-09-27: specified in openspec/changes/api-upsert-on-a-declared-key. The built half stays as the evidence describes; the change covers the missing half.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "no",
@@ -5240,7 +5241,7 @@
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a provider seam with a no-op default, no AI provider, no glossary, and a dialog nothing opens built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'specified' because the evidence shows only a seam or a declaration that reaches nothing, so specified.",
+   "note": "a provider seam with a no-op default, no AI provider, no glossary, and a dialog nothing opens built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'specified' because the evidence shows only a seam or a declaration that reaches nothing, so specified. OpenSpec pass 2026-09-27: specified in openspec/changes/ai-translation-with-a-glossary.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "partial",
@@ -5503,14 +5504,14 @@
    "originUrl": "https://github.com/strapi/strapi/issues/23493",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings), lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles) and, since #4060, lib/Service/Settings/OwnSettingsChangeRecorder.php for Open Register's own settings: every save door in lib/Service/Settings/ConfigurationSettingsHandler.php (updateSettings, updateRbacSettingsOnly, updateOrganisationSettingsOnly, updateMultitenancySettingsOnly) and lib/Service/Settings/ObjectRetentionHandler.php (object, retention, archival) snapshots before the write and records after it, one row per section.field; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)"
    },
    "reachedOn": "audit trail page (/api/audit-trails) for leaf app settings, feature toggles and Open Register's own RBAC, multitenancy, organisation, object, retention and archival settings",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Open Register's own access control, multitenancy and retention settings write an audit row since #4060 (2026-09-27); schema or register edits, the LLM, file and search settings, and role changes (Nextcloud logs those to a file) still leave no row, so the rating stays partial. built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something.",
+   "note": "Open Register's own access control, multitenancy and retention settings write an audit row since #4060 (2026-09-27); schema or register edits, the LLM, file and search settings, and role changes (Nextcloud logs those to a file) still leave no row, so the rating stays partial. built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something. OpenSpec pass 2026-09-27: specified in openspec/changes/history-schema-and-settings-edits-audited. The built half stays as the evidence describes; the change covers the missing half. The LLM, file and search settings part is task 1.3 of the open change settings-change-audit, whose handlers still bypass OwnSettingsChangeRecorder.",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "partial",
@@ -5623,14 +5624,14 @@
    "originUrl": "https://github.com/pocketbase/pocketbase/issues/7706",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no backup feature: grep backup in appinfo/routes.php finds no route, and the lib/Service hits (ChatService, SharedSchemaDedupeService, SchemaTableMigrator, BulkRelationHandler) are internal copies, not backups; Nextcloud's server-side encryption (nextcloud/server apps/encryption) covers stored files only, not the database tables that hold the records"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "backups are left to the hosting layer; neither Open Register nor Nextcloud produces an encrypted backup archive",
+   "note": "backups are left to the hosting layer; neither Open Register nor Nextcloud produces an encrypted backup archive OpenSpec pass 2026-09-27: specified in openspec/changes/exchange-encrypted-instance-export.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "yes",
@@ -5713,14 +5714,14 @@
    "originUrl": "https://github.com/pocketbase/pocketbase/releases/tag/v0.39.0",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no SQL console: the Operations page (src/views/operations/OperationsConsoleIndex.vue:580 -> appinfo/routes.php:1311 operationsConsole#index) shows jobs and failures; ad hoc queries go through GraphQL, appinfo/routes.php:1990 POST /api/graphql and :1991 GET /api/graphql/explorer, and reports can run a GraphQL data source, src/store/modules/reports.js:56 -> src/views/reports/ReportView.vue:482"
    },
    "reachedOn": "GraphQL explorer page (/api/graphql/explorer) and report data sources",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "a query console exists in GraphQL rather than SQL; downloading the query result as a file was not traced built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "a query console exists in GraphQL rather than SQL; downloading the query result as a file was not traced built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/operate-admin-query-console. The built half stays as the evidence describes; the change covers the missing half. The change answers the row on the GraphQL surface and refuses raw SQL (its design D-1).",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -5893,14 +5894,14 @@
    "originUrl": "https://github.com/maykinmedia/open-object/issues/534",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "requests are slowed or refused by rate: lib/Controller/ObjectsController.php:1400 #[UserRateLimit(limit: 600, period: 60)] (19 rate-limit attributes in that controller, enforced by Nextcloud core), per-caller ceilings lib/Middleware/ApiCallerMiddleware.php:136 -> lib/Service/ApiCaller/CallerRateLimiter.php:114 (registered lib/AppInfo/Application.php:752, fails open), tenant quotas lib/AppInfo/Application.php:670 TenantQuotaMiddleware; no circuit breaker on a failing dependency (the only 'circuit breaker' is a table-scan cap, lib/Service/LinkedEntityService.php:55)"
    },
    "reachedOn": "API only: every /api/objects route",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "rate limits and quotas exist; shedding load because Solr, the database or an outside source is failing does not built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "rate limits and quotas exist; shedding load because Solr, the database or an outside source is failing does not built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/operate-load-shedding. The built half stays as the evidence describes; the change covers the missing half.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "partial",
@@ -5924,14 +5925,14 @@
    "minedFrom": "Gemeente Leusden zaaksysteem 2026-04-11, requirement 203972 in the intelligence database: \"De Oplossing signaleert het als de vernietigingstermijn van een zaak strijdig is met de vernietigingstermijn van gerelateerde zaken\"; also open-object issue https://github.com/maykinmedia/open-object/issues/708",
    "openregister": "no",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "a record's archive date can be derived from a linked record, lib/Service/Archival/ArchiveActionDateCalculator.php:178-179 brondatumFromRelation, but nothing compares destruction dates across linked records: grep related, relation, linked in lib/Service/Archival/DestructionService.php and DestructionReviewService.php finds nothing; the cascade wording in lib/Service/Archival/ArchivalRetentionGuard.php:134-141 (CONTEXT_CASCADE) has no caller outside the class"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "dates can follow a parent, so they are aligned by design, but a conflict is never signalled built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is.",
+   "note": "dates can follow a parent, so they are aligned by design, but a conflict is never signalled built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something, so built, with the own rating left as it is. OpenSpec pass 2026-09-27: specified in openspec/changes/retention-linked-destruction-conflict.",
    "objects-api": "partial",
    "directus": "no",
    "strapi": "no",
@@ -5955,14 +5956,14 @@
    "minedFrom": "Gemeente Noordwijk omni-channel contactcenter 2026-04-08, requirement 204149: \"De API-specificatie moet voldoen aan de eisen zoals gesteld in de Nederlandse API-Strategie en de verplichte standaard OpenAPI Specification\"",
    "openregister": "partial",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> validateNlGovRules, which checks two rules only, /core/http-methods (GET, POST, PUT, PATCH, DELETE, plus HEAD and OPTIONS per the rule's note) and /core/http-response-code, named by their NLGov API Design Rules 2.2.1 ids since #4059; addCrudPaths documents PATCH (merge patch) on every object path, matching objects#patch (appinfo/routes.php:1178); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)"
    },
    "reachedOn": "API only: GET /api/registers/{id}/oas and every API response header",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "an OpenAPI document and a narrow self-check, not conformance to the full ADR ruleset or its linter; since #4059 (2026-09-27) the document lists PATCH and the method check accepts it, so the rating stays partial only for the unchecked rules. built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something.",
+   "note": "an OpenAPI document and a narrow self-check, not conformance to the full ADR ruleset or its linter; since #4059 (2026-09-27) the document lists PATCH and the method check accepts it, so the rating stays partial only for the unchecked rules. built.state was 'partial' (outside the schema enum) until corrections round 5 (2026-09-27); mapped to 'built' because the evidence shows code that runs and reaches something. OpenSpec pass 2026-09-27: specified in openspec/changes/api-nl-design-rules-conformance. The built half stays as the evidence describes; the change covers the missing half.",
    "objects-api": "yes",
    "directus": "partial",
    "strapi": "partial",
