@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\Chunk;
+use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
@@ -72,6 +74,7 @@ class FileTextController extends Controller {
 	 * @param IUserSession $userSession Session user accessor (for the manual-entity endpoint)
 	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param ChunkMapper|null $chunkMapper Stored chunks, which hold a file's extracted text
 	 */
 	public function __construct(
 		string $appName,
@@ -85,6 +88,7 @@ class FileTextController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IRootFolder $rootFolder,
 		private readonly IGroupManager $groupManager,
+		private readonly ?ChunkMapper $chunkMapper = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -131,6 +135,11 @@ class FileTextController extends Controller {
 	/**
 	 * Get extracted text for a file
 	 *
+	 * The text is read back from the file's stored chunks, in order, with the
+	 * overlap between neighbouring chunks removed and the metadata chunk left
+	 * out (openregister#4106). A file the caller cannot open answers 404, as
+	 * extraction does, so its existence is not disclosed.
+	 *
 	 * @param int $fileId Nextcloud file ID
 	 *
 	 * @NoAdminRequired
@@ -139,24 +148,35 @@ class FileTextController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with file text or error
 	 *
-	 * @no-admin-idor-exempt Deprecated no-op stub: returns HTTP 404 unconditionally
-	 *   and performs no file/object read; there is no per-object resource to guard.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function getFileText(int $fileId): JSONResponse {
-		try {
-			// TextExtractionService works with chunks, not FileText entities.
-			// For now, return a message indicating this endpoint needs to be updated.
-			// TODO: Implement chunk retrieval for file text display.
+		if ($this->hasFileAccess(fileId: $fileId) === false) {
 			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'This endpoint is deprecated. Use chunk-based endpoints instead.',
-					'file_id' => $fileId,
-				],
+				data: ['success' => false, 'message' => 'File not found or access denied', 'file_id' => $fileId],
 				statusCode: 404
 			);
+		}
+
+		try {
+			$chunks = [];
+			if ($this->chunkMapper !== null) {
+				$chunks = $this->chunkMapper->findBySource(sourceType: 'file', sourceId: $fileId);
+			}
+
+			$text = $this->joinChunkText(chunks: $chunks);
+			if ($text === null) {
+				return new JSONResponse(
+					data: [
+						'success' => false,
+						'message' => 'No extracted text for this file. Extract it first.',
+						'file_id' => $fileId,
+					],
+					statusCode: 404
+				);
+			}
+
+			return new JSONResponse(data: ['success' => true, 'file_id' => $fileId, 'text' => $text]);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[FileTextController] Failed to get file text',
@@ -171,12 +191,48 @@ class FileTextController extends Controller {
 			return new JSONResponse(
 				data: [
 					'success' => false,
-					'message' => 'Failed to retrieve file text: ' . $e->getMessage(),
+					'message' => 'Failed to retrieve file text',
 				],
 				statusCode: 500
 			);
 		}//end try
 	}//end getFileText()
+
+	/**
+	 * Join a file's content chunks back into its text.
+	 *
+	 * Chunks are stored in index order with byte offsets into the extracted
+	 * text; neighbouring chunks overlap, so each chunk contributes only what
+	 * lies past the end of the previous one. The metadata chunk (index -1) is
+	 * not part of the text.
+	 *
+	 * @param Chunk[] $chunks The file's chunks, ordered by chunk index.
+	 *
+	 * @return string|null The text, or null when there is no content chunk.
+	 *
+	 * @spec openspec/specs/api-test-coverage/spec.md
+	 */
+	private function joinChunkText(array $chunks): ?string {
+		$text = null;
+		$end = 0;
+		foreach ($chunks as $chunk) {
+			if ($chunk->getChunkIndex() < 0) {
+				continue;
+			}
+
+			// Chunks are trimmed, so a gap between two of them was whitespace.
+			$gap = '';
+			if ($text !== null && $chunk->getStartOffset() > $end) {
+				$gap = ' ';
+			}
+
+			$skip = max(0, $end - $chunk->getStartOffset());
+			$text = ($text ?? '').$gap.substr($chunk->getTextContent(), $skip);
+			$end = max($end, $chunk->getEndOffset());
+		}
+
+		return $text;
+	}//end joinChunkText()
 
 	/**
 	 * Extract text from a file (force re-extraction)

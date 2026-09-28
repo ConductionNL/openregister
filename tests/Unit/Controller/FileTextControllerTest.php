@@ -89,26 +89,45 @@ class FileTextControllerTest extends TestCase {
 	// =========================================================================
 	// getFileText
 	// =========================================================================
-	public function testGetFileTextReturnsDeprecated(): void {
+	public function testGetFileTextWithoutExtractedTextAnswers404(): void {
+		// No chunk store is wired here, so there is no text to return (openregister#4106).
 		$result = $this->controller->getFileText(1);
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$this->assertEquals(404, $result->getStatus());
 		$data = $result->getData();
 		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('deprecated', $data['message']);
+		$this->assertStringContainsString('No extracted text', $data['message']);
 		$this->assertEquals(1, $data['file_id']);
-	}//end testGetFileTextReturnsDeprecated()
+	}//end testGetFileTextWithoutExtractedTextAnswers404()
 
-	public function testGetFileTextReturnsDeprecatedWithDifferentFileId(): void {
-		$result = $this->controller->getFileText(42);
+	public function testGetFileTextOnAFileTheCallerCannotOpenAnswers404(): void {
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->willReturn([]);
+		$rootFolder = $this->createMock(IRootFolder::class);
+		$rootFolder->method('getUserFolder')->willReturn($userFolder);
+		$controller = new FileTextController(
+			'openregister',
+			$this->request,
+			$this->textExtractor,
+			$this->fileService,
+			$this->entityRelationMapper,
+			$this->logger,
+			$this->config,
+			$this->manualEntityService,
+			$this->userSession,
+			$rootFolder,
+			$this->groupManager
+		);
+
+		$result = $controller->getFileText(42);
 
 		$this->assertEquals(404, $result->getStatus());
 		$data = $result->getData();
 		$this->assertFalse($data['success']);
 		$this->assertEquals(42, $data['file_id']);
-		$this->assertStringContainsString('chunk-based endpoints', $data['message']);
-	}//end testGetFileTextReturnsDeprecatedWithDifferentFileId()
+		$this->assertStringContainsString('access denied', $data['message']);
+	}//end testGetFileTextOnAFileTheCallerCannotOpenAnswers404()
 
 	// =========================================================================
 	// extractFileText
