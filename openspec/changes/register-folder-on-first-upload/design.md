@@ -16,7 +16,7 @@ The object's folder id is stored with `MagicMapper::update()`, which does no RBA
 - Repeated and concurrent first uploads end with one recorded folder and no failed upload.
 
 **Non-Goals:**
-- Provisioning register folders eagerly at register creation or import (the issue's option 1). It would still need this path for every register that already exists without a folder, and for a folder deleted since; it is a candidate follow-up.
+- Provisioning register folders eagerly at import (the issue's option 1). Registers created through the API already get their folder at creation (`RegisterService::createFromArray` calls `ensureRegisterFolderExists`); registers imported by `ImportHandler` do not. Eager provisioning at import would still need this path for every register that already exists without a folder, and for a folder deleted since; it is a candidate follow-up.
 - Changing where folders live or who owns them. `createFolderPath()` and the ownership transfer are unchanged.
 - The object folder write, which already works for a session-less request.
 
