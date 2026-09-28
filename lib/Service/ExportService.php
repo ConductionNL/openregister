@@ -74,6 +74,13 @@ class ExportService {
 	public const MAX_PDF_EXPORT_ROWS = 5000;
 
 	/**
+	 * Request parameters of the export route that are not object filters.
+	 *
+	 * @var string[]
+	 */
+	private const NON_FILTER_EXPORT_PARAMS = ['register', 'schema', 'format', 'type', 'multi'];
+
+	/**
 	 * Register mapper instance
 	 *
 	 * @var RegisterMapper
@@ -797,12 +804,20 @@ class ExportService {
 			$objectFilters['schema'] = $schema->getId();
 		}
 
-		// Apply additional filters.
+		// Apply additional filters. A property filter narrows the export as it
+		// narrows the list it came from; it used to be skipped, so a filtered
+		// list exported every row the caller could read (openregister#4088).
+		// The route's own parameters and `_`-prefixed controls are not filters.
+		$propertyFilters = [];
 		foreach ($filters as $key => $value) {
+			$key = (string) $key;
 			if (str_starts_with($key, '@self.') === false) {
-				// These are JSON object property filters - not supported by findAll.
-				// For now, we'll skip them to get basic functionality working.
-				// TODO: Add support for JSON property filtering in MagicMapper.
+				if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
+					&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
+				) {
+					$propertyFilters[$key] = $value;
+				}
+
 				continue;
 			}
 
@@ -822,13 +837,14 @@ class ExportService {
 
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// Set a very high limit to get all objects (export needs all data).
+		// The export's own keys come first, so no property filter can replace them.
 		$query = [
 			'@self' => $objectFilters,
 			'_limit' => 999999,
 			// Very high limit to get all objects.
 			'_includeDeleted' => false,
 			'_multitenancy_explicit' => $multiExplicitlySet,
-		];
+		] + $propertyFilters;
 
 		return $this->objectService->searchObjects(
 			query: $query,
