@@ -62,12 +62,18 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 
 	private LoggerInterface&MockObject $logger;
 
+	private IUserSession&MockObject $userSession;
+
+	private IGroupManager&MockObject $groupManager;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->db = $this->createMock(IDBConnection::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 	}//end setUp()
 
 	/**
@@ -84,8 +90,8 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 			$this->registerMapper,
 			$this->createMock(IConfig::class),
 			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			$this->userSession,
+			$this->groupManager,
 			$this->createMock(IUserManager::class),
 			$this->createMock(IAppConfig::class),
 			$this->logger,
@@ -173,7 +179,8 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
 
-		$found = $mapper->findDeletedAcrossAllMagicTables();
+		// Unscoped (an admin or system caller): this test is about the merge.
+		$found = $mapper->findDeletedAcrossAllMagicTables(_rbac: false, _multitenancy: false);
 
 		$this->assertCount(2, $found);
 		$this->assertContainsOnlyInstancesOf(ObjectEntity::class, $found);
@@ -203,7 +210,7 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
 
 		// offset 1, limit 1 over the newest-first set [a, b, c] -> [b].
-		$found = $mapper->findDeletedAcrossAllMagicTables(limit: 1, offset: 1);
+		$found = $mapper->findDeletedAcrossAllMagicTables(limit: 1, offset: 1, _rbac: false, _multitenancy: false);
 
 		$this->assertCount(1, $found);
 		$this->assertSame('b', $found[0]->getUuid());
@@ -222,13 +229,107 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
 		$expr->method('isNotNull')->willReturn('cond');
 		$qb->method('expr')->willReturn($expr);
-		foreach (['select', 'from', 'where', 'orderBy'] as $chain) {
+		foreach (['select', 'from', 'where', 'orderBy', 'andWhere'] as $chain) {
 			$qb->method($chain)->willReturnSelf();
 		}
 
 		$qb->method('executeQuery')->willReturn($this->resultReturning($rows));
 		return $qb;
 	}//end makeSelectQbReturning()
+
+	/**
+	 * Point table discovery at one magic table, register 1 schema 1.
+	 *
+	 * @return void
+	 */
+	private function discoverOneTable(): void {
+		$discoverStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+		$discoverStmt->method('execute')->willReturn($this->resultReturning([['table_name' => 'oc_openregister_table_1_1']]));
+		$this->db->method('prepare')->willReturn($discoverStmt);
+	}//end discoverOneTable()
+
+	/**
+	 * A scoped scan skips a table whose schema cannot be resolved (openregister#4078).
+	 *
+	 * Whether the caller may read such a table cannot be answered, so the
+	 * answer is no. Before the fix every trashed row of every table was
+	 * returned to any signed-in caller.
+	 *
+	 * @return void
+	 */
+	public function testScopedScanSkipsATableWhoseSchemaCannotBeResolved(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverOneTable();
+
+		$qb = $this->makeSelectQbReturning(
+			[
+				['_uuid' => 'someone-elses', '_updated' => '2024-03-01T00:00:00Z', '_deleted' => '2024-03-02T00:00:00Z'],
+			]
+		);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		$this->assertSame([], $mapper->findDeletedAcrossAllMagicTables(_rbac: true, _multitenancy: true));
+	}//end testScopedScanSkipsATableWhoseSchemaCannotBeResolved()
+
+	/**
+	 * A scoped scan narrows each table with the list path's access control, in the query.
+	 *
+	 * @return void
+	 */
+	public function testScopedScanNarrowsTheQueryWithTheListAccessControl(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverOneTable();
+
+		$qb = $this->makeSelectQbReturning([]);
+		$qb->expects($this->atLeastOnce())->method('andWhere');
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setAuthorization(['read' => ['admin']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		// A signed-in caller in no group: the schema's read rule does not admit them.
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('burger');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+
+		$mapper->findDeletedAcrossAllMagicTables(_rbac: true, _multitenancy: false);
+	}//end testScopedScanNarrowsTheQueryWithTheListAccessControl()
+
+	/**
+	 * The count skips what the listing skips, so the total matches the pages.
+	 *
+	 * @return void
+	 */
+	public function testScopedCountSkipsATableWhoseSchemaCannotBeResolved(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverOneTable();
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$expr->method('isNotNull')->willReturn('cond');
+		$qb->method('expr')->willReturn($expr);
+		foreach (['select', 'from', 'where', 'andWhere'] as $chain) {
+			$qb->method($chain)->willReturnSelf();
+		}
+
+		$func = $this->createMock(\OCP\DB\QueryBuilder\IFunctionBuilder::class);
+		$func->method('count')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryFunction::class));
+		$qb->method('func')->willReturn($func);
+		$result = $this->createMock(IResult::class);
+		$result->method('fetch')->willReturn(['cnt' => 5]);
+		$qb->method('executeQuery')->willReturn($result);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		$this->assertSame(0, $mapper->countDeletedAcrossAllMagicTables(_rbac: true, _multitenancy: true));
+		$this->assertSame(5, $mapper->countDeletedAcrossAllMagicTables(_rbac: false, _multitenancy: false));
+	}//end testScopedCountSkipsATableWhoseSchemaCannotBeResolved()
 
 	// -------------------------------------------------------------------------
 	// restoreObject()

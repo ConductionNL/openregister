@@ -229,7 +229,8 @@ class FlowMessagingEquivalenceTest extends TestCase {
 			),
 			userManager: $this->userManager,
 			appConfig: $this->appConfig,
-			logger: $this->logger
+			logger: $this->logger,
+			eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 		);
 	}//end makeMessaging()
 

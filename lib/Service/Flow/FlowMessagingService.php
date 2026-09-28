@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCA\OpenRegister\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Service\Notification\NotificationChannelPolicy;
@@ -47,6 +48,7 @@ use OCA\OpenRegister\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Service\Notification\TalkSender;
 use OCA\OpenRegister\Service\Notification\TalkSendException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -91,6 +93,42 @@ class FlowMessagingService {
 	public const REPORT_SAMPLE = FlowEngine::LOG_ITEM_SAMPLE;
 
 	/**
+	 * The send-email step's `externalRecipients` modes. `none` is the default
+	 * and refuses every address; `object` sends only to addresses the item
+	 * itself holds; `any` sends to every valid address.
+	 */
+	public const EXTERNAL_NONE = 'none';
+
+	public const EXTERNAL_OBJECT = 'object';
+
+	public const EXTERNAL_ANY = 'any';
+
+	public const EXTERNAL_RECIPIENT_MODES = [self::EXTERNAL_NONE, self::EXTERNAL_OBJECT, self::EXTERNAL_ANY];
+
+	/**
+	 * Why an address was refused, as written into `refusedRecipients`.
+	 */
+	public const REFUSED_EXTERNAL_OFF = 'external-recipients-off';
+
+	public const REFUSED_NOT_ON_ITEM = 'not-on-item';
+
+	public const REFUSED_INVALID_ADDRESS = 'invalid-address';
+
+	/**
+	 * The address rules: what counts as an address, which may be mailed.
+	 *
+	 * @var FlowRecipientAddresses
+	 */
+	private readonly FlowRecipientAddresses $addresses;
+
+	/**
+	 * Announces each sent email as a FlowEmailSentEvent.
+	 *
+	 * @var FlowEmailAnnouncer
+	 */
+	private readonly FlowEmailAnnouncer $announcer;
+
+	/**
 	 * Constructor. Every dependency is one of the subsystem's call-shared
 	 * units — the same objects the declarative dispatcher invokes.
 	 *
@@ -105,8 +143,13 @@ class FlowMessagingService {
 	 * @param IUserManager $userManager Resolves the acting user.
 	 * @param IAppConfig $appConfig App config for the recipient bound.
 	 * @param LoggerInterface $logger Logger for send diagnostics.
+	 * @param IEventDispatcher $eventDispatcher Announces each sent email (FlowEmailSentEvent).
+	 * @param FlowRunContext|null $runContext The ambient step frame, for the sending step's node id.
+	 *                                        Nullable so a caller without a run still constructs it.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected shared units.
+	 *
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function __construct(
 		private readonly NotificationChannelPolicy $channelPolicy,
@@ -120,7 +163,11 @@ class FlowMessagingService {
 		private readonly IUserManager $userManager,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		IEventDispatcher $eventDispatcher,
+		?FlowRunContext $runContext = null,
 	) {
+		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipientResolver);
+		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $eventDispatcher, logger: $logger, runContext: $runContext);
 
 	}//end __construct()
 
@@ -283,6 +330,8 @@ class FlowMessagingService {
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Guards multiply; all are required.
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The chain reads top to bottom in
 	 * the order the spec states it; splitting it would hide the order.
+	 *
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function sendPerRecipient(
 		string $channel,
@@ -295,22 +344,44 @@ class FlowMessagingService {
 	): array {
 		$actor = $this->resolveActingUser(context: $context);
 
+		// Addresses are an email-channel concept. Every other channel keeps
+		// reading an address as an unknown recipient, as it always did.
+		$acceptAddresses = ($channel === 'email');
+		$mode = $this->addresses->externalRecipientMode(config: $config);
+
 		// Resolve recipients per item, post-expansion, before anything sends.
 		$perItem = [];
 		$unknown = [];
+		$refused = [];
 		$distinct = [];
+		$distinctAddresses = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$resolved = $this->resolveRecipients(recipients: ($config['recipients'] ?? []), json: $json);
-			$perItem[$index] = ['json' => $json, 'uids' => $resolved['uids']];
+			$resolved = $this->resolveRecipients(
+				recipients: ($config['recipients'] ?? []),
+				json: $json,
+				acceptAddresses: $acceptAddresses
+			);
+			$screened = $this->addresses->screenAddresses(addresses: $resolved['addresses'], json: $json, mode: $mode);
+			$perItem[$index] = ['json' => $json, 'uids' => $resolved['uids'], 'addresses' => $screened['allowed']];
 			foreach ($resolved['uids'] as $uid) {
 				$distinct[$uid] = true;
+			}
+
+			foreach (array_keys($screened['allowed']) as $address) {
+				$distinctAddresses[$address] = true;
 			}
 
 			foreach ($resolved['unknown'] as $bad) {
 				$unknown[$bad] = true;
 			}
-		}
+
+			foreach ($screened['refused'] as $key => $entry) {
+				$refused[$key] = $entry;
+			}
+		}//end foreach
+
+		$refused = array_values($refused);
 
 		if ($unknown !== []) {
 			$this->logger->info(
@@ -324,30 +395,34 @@ class FlowMessagingService {
 
 		$outcomes = $this->emptyOutcomes();
 		$failures = [];
+		$recipientCount = (count($distinct) + count($distinctAddresses));
 
 		// KILL SWITCH, first and channel-wide: a silenced channel is a skip
 		// recorded per recipient, never a failure and never a silent no-op.
 		if ($this->channelPolicy->isChannelEnabled(channel: $channel) === false) {
-			foreach (array_keys($distinct) as $uid) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: (string)$uid);
+			foreach (array_merge(array_keys($distinct), array_keys($distinctAddresses)) as $recipient) {
+				$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: (string)$recipient);
 			}
 
 			$report = $this->buildReport(
 				channel: $channel,
 				actor: $actor,
-				recipients: count($distinct),
+				recipients: $recipientCount,
 				outcomes: $outcomes,
-				unknown: array_keys($unknown)
+				unknown: array_keys($unknown),
+				refused: $refused
 			);
 			$this->writeReport(context: $context, report: $report);
 
 			return $report;
-		}
+		}//end if
 
 		// PREFERENCE, per recipient: a user who turned the channel off stays
 		// not-messaged on it, flow or no flow. Applied before the bound so a
 		// preference-skipped user still counts toward the resolved total the
 		// bound judges (the config addressed them; their settings vetoed it).
+		// An external address has no preferences to consult: the step's
+		// `externalRecipients` allowlist is its gate.
 		$sendable = [];
 		foreach (array_keys($distinct) as $uid) {
 			if ($this->preferenceAllows(uid: (string)$uid, channel: $channel) === false) {
@@ -358,30 +433,31 @@ class FlowMessagingService {
 			$sendable[(string)$uid] = true;
 		}
 
-		// RECIPIENT BOUND, post-expansion: bounding the resolved humans, not
+		// RECIPIENT BOUND, post-expansion: bounding the resolved people, not
 		// the config entries. Refusal is a step failure naming the count and
 		// the bound, routed through the step's `onError` policy — and nothing
 		// has been sent yet.
 		$bound = $this->recipientBound();
-		if (count($distinct) > $bound) {
+		if ($recipientCount > $bound) {
 			$report = $this->buildReport(
 				channel: $channel,
 				actor: $actor,
-				recipients: count($distinct),
+				recipients: $recipientCount,
 				outcomes: $outcomes,
-				unknown: array_keys($unknown)
+				unknown: array_keys($unknown),
+				refused: $refused
 			);
 			$this->writeReport(context: $context, report: $report);
 
 			throw new RuntimeException(
 				sprintf(
-					'The recipient list resolved to %d users, above the bound of %d; nothing was sent. Narrow the recipients, or raise "%s" in app config.',
-					count($distinct),
+					'The recipient list resolved to %d recipients, above the bound of %d; nothing was sent. Narrow the recipients, or raise "%s" in app config.',
+					$recipientCount,
 					$bound,
 					self::CONFIG_RECIPIENT_BOUND
 				)
 			);
-		}
+		}//end if
 
 		// RATE LIMIT then SEND, per recipient per item. The limiter's buckets
 		// are the subsystem's own — a shared budget with declarative sends.
@@ -420,8 +496,21 @@ class FlowMessagingService {
 				if ($outcome === 'dispatched') {
 					$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $uid);
 					$deliveredThisItem[] = $uid;
+					if ($channel === 'email') {
+						$this->announcer->announce(
+							recipient: $uid,
+							kind: FlowEmailSentEvent::KIND_USER,
+							subject: $title,
+							body: $body,
+							json: $entry['json'],
+							context: $context,
+							stepName: $stepName,
+							actor: $actor
+						);
+					}
+
 					continue;
-				}
+				}//end if
 
 				if ($outcome === 'kill-switch') {
 					$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: $uid);
@@ -431,6 +520,19 @@ class FlowMessagingService {
 				$this->addOutcome(outcomes: $outcomes, bucket: 'failed', recipient: $uid);
 				$failures[] = sprintf('%s to "%s" failed (%s)', $channel, $uid, $outcome);
 			}//end foreach
+
+			foreach ($this->sendToAddresses(
+				addresses: $entry['addresses'],
+				title: $title,
+				body: $body,
+				json: $entry['json'],
+				context: $context,
+				stepName: $stepName,
+				actor: $actor,
+				outcomes: $outcomes
+			) as $failure) {
+				$failures[] = $failure;
+			}
 
 			// WEB-PUSH rides along with the nc-notification send under the
 			// dispatcher's existing rules, with no flow-side configuration:
@@ -452,9 +554,10 @@ class FlowMessagingService {
 		$report = $this->buildReport(
 			channel: $channel,
 			actor: $actor,
-			recipients: count($distinct),
+			recipients: $recipientCount,
 			outcomes: $outcomes,
-			unknown: array_keys($unknown)
+			unknown: array_keys($unknown),
+			refused: $refused
 		);
 		$this->writeReport(context: $context, report: $report);
 
@@ -466,6 +569,76 @@ class FlowMessagingService {
 
 		return $report;
 	}//end sendPerRecipient()
+
+	/**
+	 * Send one item's email to its allowed external addresses.
+	 *
+	 * The same rate limiter and the same channel sender as a user send; the
+	 * address simply skips the user lookup. Each dispatched email is
+	 * announced with a {@see FlowEmailSentEvent}.
+	 *
+	 * @param array<string, string> $addresses The allowed addresses, address => display name.
+	 * @param string $title The rendered subject.
+	 * @param string $body The rendered body.
+	 * @param array $json The item's json.
+	 * @param array $context The run context.
+	 * @param string $stepName The step's type id.
+	 * @param string $actor The acting user.
+	 * @param array<string, array<int, string>> $outcomes The outcome buckets, by reference.
+	 *
+	 * @return array<int, string> The failure descriptions, empty when every send went out.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The send's full context; bundling it
+	 * into an array would only move the list into an untyped shape.
+	 *
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function sendToAddresses(
+		array $addresses,
+		string $title,
+		string $body,
+		array $json,
+		array $context,
+		string $stepName,
+		string $actor,
+		array &$outcomes,
+	): array {
+		$failures = [];
+		foreach ($addresses as $address => $name) {
+			$address = (string)$address;
+			if ($this->rateLimiter->tryConsume(ruleId: $stepName, recipient: $address) === false) {
+				$this->addOutcome(outcomes: $outcomes, bucket: 'rateLimited', recipient: $address);
+				continue;
+			}
+
+			$outcome = $this->emailSender->sendToAddress(address: $address, displayName: $name, subject: $title, body: $body);
+
+			if ($outcome === EmailSender::OUTCOME_DISPATCHED) {
+				$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $address);
+				$this->announcer->announce(
+					recipient: $address,
+					kind: FlowEmailSentEvent::KIND_EXTERNAL,
+					subject: $title,
+					body: $body,
+					json: $json,
+					context: $context,
+					stepName: $stepName,
+					actor: $actor
+				);
+				continue;
+			}
+
+			if ($outcome === EmailSender::OUTCOME_KILL_SWITCH) {
+				$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: $address);
+				continue;
+			}
+
+			$this->addOutcome(outcomes: $outcomes, bucket: 'failed', recipient: $address);
+			$failures[] = sprintf('email to "%s" failed (%s)', $address, $outcome);
+		}//end foreach
+
+		return $failures;
+	}//end sendToAddresses()
 
 	/**
 	 * Deliver one message to one recipient over one channel, via the
@@ -551,16 +724,26 @@ class FlowMessagingService {
 	 * verified — and unknown ids are returned for the run log rather than
 	 * silently dropped.
 	 *
+	 * With `$acceptAddresses` (the email channel), an entry that is not a
+	 * user or group but holds an `@` is a candidate address, and so is a
+	 * field value that is one, or an object carrying `email` /
+	 * `emailAddress`. Candidates are screened by the caller; this method only
+	 * sorts them out.
+	 *
 	 * @param mixed $recipients The config value.
 	 * @param array $json The item's json.
+	 * @param bool $acceptAddresses Whether addresses are candidates (email) or unknowns.
 	 *
-	 * @return array{uids: array<int, string>, unknown: array<int, string>}
+	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Three entry shapes (template, user, group)
-	 * each with its own verification and unknown-reporting branch.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
+	 * fact about the channel, not a mode of this method's own.
+	 *
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
-	private function resolveRecipients(mixed $recipients, array $json): array {
+	private function resolveRecipients(mixed $recipients, array $json, bool $acceptAddresses = false): array {
 		$uids = [];
+		$addresses = [];
 		$unknown = [];
 
 		if (is_string($recipients) === true) {
@@ -576,59 +759,22 @@ class FlowMessagingService {
 
 			$matches = [];
 			if (preg_match('/^\{\{\s*(?:item\.)?([a-zA-Z0-9_.-]+)\s*\}\}$/', $entry, $matches) === 1) {
-				$field = $matches[1];
-				$resolved = $this->recipientResolver->resolve(
-					recipientsSpec: [
-						[
-							'kind' => 'relation',
-							'relation' => $field,
-						],
-					],
-					data: $json,
-					object: null,
-					context: []
-				);
-				$candidates = $this->recipientResolver->extractUidsFromRelation(value: ($json[$field] ?? null));
-				foreach (array_diff($candidates, $resolved) as $bad) {
-					$unknown[] = $bad;
-				}
-
-				foreach ($resolved as $uid) {
-					$uids[] = $uid;
-				}
-
-				continue;
-			}//end if
-
-			if ($this->recipientResolver->userExists(uid: $entry) === true) {
-				$uids[] = $entry;
+				$resolved = $this->addresses->resolveTemplate(field: $matches[1], json: $json, acceptAddresses: $acceptAddresses);
+				array_push($uids, ...$resolved['uids']);
+				array_push($addresses, ...$resolved['addresses']);
+				array_push($unknown, ...$resolved['unknown']);
 				continue;
 			}
 
-			if ($this->recipientResolver->groupExists(gid: $entry) === true) {
-				$members = $this->recipientResolver->resolve(
-					recipientsSpec: [
-						[
-							'kind' => 'groups',
-							'groups' => [$entry],
-						],
-					],
-					data: [],
-					object: null,
-					context: []
-				);
-				foreach ($members as $uid) {
-					$uids[] = $uid;
-				}
-
-				continue;
-			}
-
-			$unknown[] = $entry;
+			$resolved = $this->addresses->resolveLiteral(entry: $entry, acceptAddresses: $acceptAddresses);
+			array_push($uids, ...$resolved['uids']);
+			array_push($addresses, ...$resolved['addresses']);
+			array_push($unknown, ...$resolved['unknown']);
 		}//end foreach
 
 		return [
 			'uids' => array_values(array_unique($uids)),
+			'addresses' => $addresses,
 			'unknown' => array_values(array_unique($unknown)),
 		];
 	}//end resolveRecipients()
@@ -767,12 +913,21 @@ class FlowMessagingService {
 	 * @param int $recipients The resolved distinct recipient count.
 	 * @param array<string, array<int, string>> $outcomes The outcome buckets.
 	 * @param array<int, string> $unknown Unresolvable recipient entries.
+	 * @param array<int, array{recipient: string, reason: string}> $refused Addresses the step's allowlist refused.
 	 *
 	 * @return array The report.
 	 *
 	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
-	private function buildReport(string $channel, string $actor, int $recipients, array $outcomes, array $unknown): array {
+	private function buildReport(
+		string $channel,
+		string $actor,
+		int $recipients,
+		array $outcomes,
+		array $unknown,
+		array $refused = [],
+	): array {
 		$report = [
 			'channel' => $channel,
 			'actor' => $actor,
@@ -796,6 +951,18 @@ class FlowMessagingService {
 				'sample' => array_slice(array_values($unknown), 0, self::REPORT_SAMPLE),
 			];
 			if (count($unknown) > self::REPORT_SAMPLE) {
+				$truncated = true;
+			}
+		}
+
+		// Refused is not unknown: the address resolved, and the step's
+		// allowlist declined it. Each entry names why.
+		if ($refused !== []) {
+			$report['refusedRecipients'] = [
+				'count' => count($refused),
+				'sample' => array_slice(array_values($refused), 0, self::REPORT_SAMPLE),
+			];
+			if (count($refused) > self::REPORT_SAMPLE) {
 				$truncated = true;
 			}
 		}
