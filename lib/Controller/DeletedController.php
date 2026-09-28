@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -69,6 +71,7 @@ class DeletedController extends Controller {
 	 * @param AuditTrailMapper $auditTrailMapper Reads back a destruction record and records a restore
 	 * @param DeletionServiceBundle $deletion The destruction-pipeline collaborators (window, right, scope, recorder, clock)
 	 * @param DeletedObjectAuthorizer $authorizer Answers the authorization and schema-resolution questions
+	 * @param RenderObject $renderObject Strips write-only and unreadable properties before a trashed row is served
 	 *
 	 * @return void
 	 */
@@ -81,6 +84,7 @@ class DeletedController extends Controller {
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly DeletionServiceBundle $deletion,
 		private readonly DeletedObjectAuthorizer $authorizer,
+		private readonly RenderObject $renderObject,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -225,16 +229,32 @@ class DeletedController extends Controller {
 	public function index(): JSONResponse {
 		$params = $this->extractRequestParameters();
 
+		// The trash shows a caller only what they could read before it was
+		// deleted (openregister#4078). The posture comes from the caller's
+		// admin status, never from a request parameter, exactly as the object
+		// list derives it.
+		$scoped = ($this->authorizer->isCurrentUserAdmin() === false);
+
 		try {
 			// Objects live in per-register/schema magic tables, so there is no
 			// single table for searchObjectsPaginated() to query without a
 			// register/schema context — it always fell through to an empty
-			// result. Scan every magic table for soft-deleted rows directly.
+			// result. Scan every magic table for soft-deleted rows directly,
+			// narrowed in the query to the rows this caller may read so the
+			// total and the pages agree.
 			$deletedObjects = $this->objectEntityMapper->findDeletedAcrossAllMagicTables(
 				limit: $params['limit'],
-				offset: $params['offset']
+				offset: $params['offset'],
+				_rbac: $scoped,
+				_multitenancy: $scoped
 			);
-			$total = $this->objectEntityMapper->countDeletedAcrossAllMagicTables();
+			$total = $this->objectEntityMapper->countDeletedAcrossAllMagicTables(_rbac: $scoped, _multitenancy: $scoped);
+
+			// A trashed row is served through the same render boundary as a
+			// live one: write-only values never leave, and properties the
+			// caller may not read are stripped.
+			$deletedObjects = array_values($deletedObjects);
+			$this->renderObject->redactWriteOnlyFromRows(rows: $deletedObjects, _rbac: $scoped);
 
 			// Calculate pagination.
 			$pages = 1;
@@ -244,7 +264,7 @@ class DeletedController extends Controller {
 
 			return new JSONResponse(
 				data: [
-					'results' => $this->withWindows(objects: array_values($deletedObjects)),
+					'results' => $this->withWindows(objects: $deletedObjects),
 					'total' => $total,
 					'page' => $params['page'] ?? 1,
 					'pages' => $pages,
@@ -277,8 +297,13 @@ class DeletedController extends Controller {
 		try {
 			// Count soft-deleted rows across every magic table. countAll() with
 			// no register/schema context returns 0 (it cannot pick a table), so
-			// the dedicated cross-table count is required.
-			$totalDeleted = $this->objectEntityMapper->countDeletedAcrossAllMagicTables();
+			// the dedicated cross-table count is required. It counts only what
+			// this caller could list (openregister#4078).
+			$scoped = ($this->authorizer->isCurrentUserAdmin() === false);
+			$totalDeleted = $this->objectEntityMapper->countDeletedAcrossAllMagicTables(
+				_rbac: $scoped,
+				_multitenancy: $scoped
+			);
 
 			// Get deleted today count.
 			$today = (new DateTime())->format('Y-m-d');
@@ -834,6 +859,13 @@ class DeletedController extends Controller {
 					'clocks' => $this->deletion->clock->clocksFor(object: $object),
 				]
 			);
+		} catch (DoesNotExistException $e) {
+			// The lookup is read-scoped: an object this caller may not read is
+			// answered as absent, not as a server error (openregister#4078).
+			return new JSONResponse(
+				data: ['error' => 'Object not found'],
+				statusCode: 404
+			);
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Failed to preview the destruction: ' . $e->getMessage()],
@@ -870,9 +902,18 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			$records = $this->auditTrailMapper->findForObjectByAction(
-				objectUuid: $id,
-				actions: [DestructionScope::DESTRUCTION_ACTION]
+			// A destruction record names who destroyed what, where. It is
+			// served only to a caller who may read the schema it was destroyed
+			// from (openregister#4078); a record they may not read is left out,
+			// so the answer does not reveal that it exists.
+			$records = array_values(
+				array_filter(
+					$this->auditTrailMapper->findForObjectByAction(
+						objectUuid: $id,
+						actions: [DestructionScope::DESTRUCTION_ACTION]
+					),
+					fn (\OCA\OpenRegister\Db\AuditTrail $record): bool => $this->authorizer->userMayReadDestructionRecord(record: $record)
+				)
 			);
 
 			return new JSONResponse(
