@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "See link on parooliga kaitstud",
         "This link is open until {date}.": "See link on avatud kuni {date}.",
         "This record has no visible fields.": "Sellel kirjel pole nähtavaid välju.",
-        "Upload": "Laadi üles"
+        "Upload": "Laadi üles",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "See teenusepakkuja pole selles serveris veel seadistatud. Palu administraatoril see seadistada.",
+        "The provider's server did not accept the connection. Try again later.": "Teenusepakkuja server ei võtnud ühendust vastu. Proovi hiljem uuesti."
     },
     "nplurals=2; plural=(n != 1);"
 )

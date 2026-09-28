@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Þessi tengill er varinn með lykilorði",
         "This link is open until {date}.": "Þessi tengill er opinn til {date}.",
         "This record has no visible fields.": "Þessi færsla hefur engin sýnileg svæði.",
-        "Upload": "Hlaða upp"
+        "Upload": "Hlaða upp",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Þessi þjónustuaðili hefur ekki enn verið settur upp á þessum þjóni. Biddu kerfisstjórann þinn að stilla hann.",
+        "The provider's server did not accept the connection. Try again later.": "Þjónn þjónustuaðilans tók ekki við tengingunni. Reyndu aftur síðar."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Ši nuoroda apsaugota slaptažodžiu",
         "This link is open until {date}.": "Ši nuoroda atidaryta iki {date}.",
         "This record has no visible fields.": "Šis įrašas neturi matomų laukų.",
-        "Upload": "Įkelti"
+        "Upload": "Įkelti",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Šis tiekėjas šiame serveryje dar nesukonfigūruotas. Paprašykite administratoriaus jį sukonfigūruoti.",
+        "The provider's server did not accept the connection. Try again later.": "Tiekėjo serveris nepriėmė jungimosi. Bandykite dar kartą vėliau."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

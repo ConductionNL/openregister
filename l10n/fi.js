@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Tämä linkki on suojattu salasanalla",
         "This link is open until {date}.": "Tämä linkki on auki {date} asti.",
         "This record has no visible fields.": "Tällä tietueella ei ole näkyviä kenttiä.",
-        "Upload": "Lähetä"
+        "Upload": "Lähetä",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tätä palveluntarjoajaa ei ole vielä määritetty tälle palvelimelle. Pyydä järjestelmänvalvojaa määrittämään se.",
+        "The provider's server did not accept the connection. Try again later.": "Palveluntarjoajan palvelin ei hyväksynyt yhteyttä. Yritä myöhemmin uudelleen."
     },
     "nplurals=2; plural=(n != 1);"
 )

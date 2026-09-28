@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Αυτός ο σύνδεσμος προστατεύεται με κωδικό",
         "This link is open until {date}.": "Αυτός ο σύνδεσμος είναι ανοιχτός έως {date}.",
         "This record has no visible fields.": "Αυτή η εγγραφή δεν έχει ορατά πεδία.",
-        "Upload": "Μεταφόρτωση"
+        "Upload": "Μεταφόρτωση",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Αυτός ο πάροχος δεν έχει ρυθμιστεί ακόμα σε αυτόν τον διακομιστή. Ζητήστε από τον διαχειριστή σας να τον ρυθμίσει.",
+        "The provider's server did not accept the connection. Try again later.": "Ο διακομιστής του παρόχου δεν αποδέχτηκε τη σύνδεση. Δοκιμάστε ξανά αργότερα."
     },
     "nplurals=2; plural=(n != 1);"
 )

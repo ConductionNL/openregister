@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Este enlace está protegido con contraseña",
         "This link is open until {date}.": "Este enlace está abierto hasta el {date}.",
         "This record has no visible fields.": "Este registro no tiene campos visibles.",
-        "Upload": "Subir"
+        "Upload": "Subir",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Este proveedor aún no está configurado en este servidor. Pide a tu administrador que lo configure.",
+        "The provider's server did not accept the connection. Try again later.": "El servidor del proveedor no aceptó la conexión. Inténtalo de nuevo más tarde."
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

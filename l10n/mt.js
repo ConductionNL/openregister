@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Dan il-link huwa protett b'password",
         "This link is open until {date}.": "Dan il-link huwa miftuħ sa {date}.",
         "This record has no visible fields.": "Dan ir-rekord m'għandux oqsma viżibbli.",
-        "Upload": "Tella'"
+        "Upload": "Tella'",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Dan il-fornitur għadu mhux issettjat fuq dan is-server. Itlob lill-amministratur tiegħek biex jikkonfigurah.",
+        "The provider's server did not accept the connection. Try again later.": "Is-server tal-fornitur ma aċċettax il-konnessjoni. Erġa' pprova aktar tard."
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

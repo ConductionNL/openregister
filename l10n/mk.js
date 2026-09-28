@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Оваа врска е заштитена со лозинка",
         "This link is open until {date}.": "Оваа врска е отворена до {date}.",
         "This record has no visible fields.": "Овој запис нема видливи полиња.",
-        "Upload": "Прикачи"
+        "Upload": "Прикачи",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Овој давател сè уште не е поставен на овој сервер. Замоли го администраторот да го конфигурира.",
+        "The provider's server did not accept the connection. Try again later.": "Серверот на давателот не го прифати поврзувањето. Обиди се повторно подоцна."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Tá an nasc seo cosanta le pasfhocal",
         "This link is open until {date}.": "Tá an nasc seo oscailte go dtí {date}.",
         "This record has no visible fields.": "Níl aon réimsí infheicthe ag an taifead seo.",
-        "Upload": "Uaslódáil"
+        "Upload": "Uaslódáil",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Níl an soláthraí seo socraithe ar an bhfreastalaí seo fós. Iarr ar do riarthóir é a chumrú.",
+        "The provider's server did not accept the connection. Try again later.": "Níor ghlac freastalaí an tsoláthraí leis an gceangal. Bain triail eile as ar ball."
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

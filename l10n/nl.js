@@ -3298,7 +3298,9 @@ OC.L10N.register(
         "This link is closed with a password": "Deze link is afgesloten met een wachtwoord",
         "This link is open until {date}.": "Deze link is open tot {date}.",
         "This record has no visible fields.": "Dit record heeft geen zichtbare velden.",
-        "Upload": "Uploaden"
+        "Upload": "Uploaden",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Deze provider is nog niet ingesteld op deze server. Vraag de beheerder om deze in te stellen.",
+        "The provider's server did not accept the connection. Try again later.": "De server van de provider heeft de koppeling niet geaccepteerd. Probeer het later opnieuw."
     },
     "nplurals=2; plural=(n != 1);"
 )

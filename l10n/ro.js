@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Acest link este protejat cu parolă",
         "This link is open until {date}.": "Acest link este deschis până la {date}.",
         "This record has no visible fields.": "Această înregistrare nu are câmpuri vizibile.",
-        "Upload": "Încărcați"
+        "Upload": "Încărcați",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Acest furnizor nu este încă configurat pe acest server. Roagă-ți administratorul să îl configureze.",
+        "The provider's server did not accept the connection. Try again later.": "Serverul furnizorului nu a acceptat conexiunea. Încearcă din nou mai târziu."
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )
