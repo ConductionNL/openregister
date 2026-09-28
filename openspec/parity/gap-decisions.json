@@ -1174,5 +1174,277 @@
     "reason": "Partial, built, no demand, one competitor (openproject).",
     "change": null,
     "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "auto-ai-step",
+    "matrix": "integriq",
+    "decision": "existing",
+    "reason": "Owner move from integriq. The AI step exists as a contributed node: open change or-flow-nodes gave the engine RegisterFlowNodesEvent (tasks ticked), and hermiq contributes hermiq.agent-step through it (hermiq lib/Flow/HermiqAgentNode.php at hermiq development 5ac16d315), listed in the node catalogue the shared canvas reads. Buildiq's merged change ai-llm-steps-and-computed-fields records the same correction. The integriq row reads no and decided-no; that is for the coordinator to correct.",
+    "change": "or-flow-nodes",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-code",
+    "matrix": "integriq",
+    "decision": "build",
+    "reason": "Owner move from integriq. All six competitors rate yes, and buildiq's merged change logic-script-step depends on it (the whole runtime is OpenRegister's, issue #2066). No change existed; no code node exists in lib/Service/Flow/Nodes at 555af7212.",
+    "change": "flow-code-step-in-a-sidecar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-error-path",
+    "matrix": "integriq",
+    "decision": "build",
+    "reason": "Owner move from integriq. Four competitors rate yes (n8n, MuleSoft, WSO2, Frank!Framework). FlowEngine knows stop, continue and dead_letter only (FlowEngine.php:105-109) and FlowRunService::retry() re-queues the whole run. No open or archived change covers a per-step branch or retry.",
+    "change": "flow-error-branch-and-step-retry",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-compensate",
+    "matrix": "integriq",
+    "decision": "defer",
+    "reason": "Owner move from integriq. No competitor rates it yes (n8n, MuleSoft and Frank!Framework partial), no demand row, and it is outside integriq's core area (sources, gateway). No OpenRegister change covers compensation across steps.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-templates",
+    "matrix": "integriq",
+    "decision": "existing",
+    "reason": "Owner move from integriq. A ready-made flow is a shared flow installed from the store: federated-config-sharing ships FlowShareableConfigType (lib/Service/Config/Types/FlowShareableConfigType.php at 555af7212), and the open change store-over-federated-config points the store surface at it so that a flow arrives as a flow. The picker on the canvas is nextcloud-vue's.",
+    "change": "store-over-federated-config",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "src-secrets-manager",
+    "matrix": "integriq",
+    "decision": "build",
+    "reason": "Owner move from integriq. Demand row featureRequest (apache/apisix#12755), three competitors yes (Tyk, APISIX, Frank!Framework), and it is in integriq's core area (sources). Built as a per-credential reference to an outside vault read by the broker, so ADR-064's single custody leaf stays; ADR-064 gets one paragraph (task 3.2).",
+    "change": "credential-outside-vault-reference",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-failure-alerts",
+    "matrix": "pipelinq",
+    "decision": "defer",
+    "reason": "Owner move from pipelinq. A changelog demand row and one competitor yes (Pipedrive), outside pipelinq's core area (clients, pipeline). No OpenRegister change covers alerting on or switching off a repeatedly failing flow; the load-shedding and stale-run changes are about capacity and abandoned runs.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "plat-translated-field-names",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Owner move from pipelinq. Demand row featureRequest (pdpartnerassociation top 6) and three competitors yes (HubSpot, EspoCRM, Odoo). The archived register-i18n change translates object content, not property names; nothing carries a name per language.",
+    "change": "modelling-field-names-per-language",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "acc-row-level",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "OpenRegister half of buildiq's row (buildiq half built by archived 2026-07-11-data-scopes-authoring, whose Upstream leaf requirements ask for the @creator sentinel, authorization.conditions and the authorization.scopes capability). Four competitors yes. At 555af7212 lib/ reads neither @creator nor authorization.conditions, and only UrnCapability and IntegrationsCapability are registered.",
+    "change": "access-owner-and-condition-scopes",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-bulk-edit-and-transitions",
+    "matrix": "nextcloud-vue",
+    "decision": "existing",
+    "reason": "set-field half: already shipped as openregister:set-properties (lib/BulkAction/SetPropertiesAction.php, #3742) under the open change bulk-action-jobs, writing through patchObject(). The nextcloud-vue proposal's two-actions reading predates it.",
+    "change": "bulk-action-jobs",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-bulk-edit-and-transitions",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "transition half: a half nextcloud-vue's merged change depends on (rows opencatalogi pub-bulk, buildiq data-bulk-edit). No bulk action moves objects through TransitionEngine.",
+    "change": "records-bulk-transition",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-copy-with-relations",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "A half nextcloud-vue's merged change depends on (stackiq row land-copy-entry, changelog demand and two competitors yes). OpenRegister has objects#move and no copy.",
+    "change": "records-copy-with-links",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "notes-replies-group-mentions-and-images",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "A half nextcloud-vue's merged change depends on (Reply is not shown until notes carry parentId; rows buildiq pg-record-comments, planninq col-threaded-comments). NotesController::create() reads no parent at 555af7212.",
+    "change": "notes-replies-by-parent",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "form-conditions-from-schema",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "Required-when half: nextcloud-vue's merged change names server enforcement as OpenRegister's (listener in the shape of DependentValueListener). Nothing in lib/ reads x-openregister-required-when; field-rules-by-state covers required per lifecycle state, not per condition.",
+    "change": "modelling-required-when-enforced",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-export-follows-the-page",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "A half nextcloud-vue's merged change depends on: without a kept exportable flag the Export menu never appears on a real instance. Schema::setConfiguration drops it ($boolFields at Schema.php:2683) and hydrate drops a top-level one. Clustered with stackiq insight-exports-and-custom-reports.",
+    "change": "modelling-schema-exportable-flag",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "form-options-from-concept-scheme",
+    "matrix": "nextcloud-vue",
+    "decision": "existing",
+    "reason": "The conceptScheme slug-versus-uri mismatch lives inside the open change property-code-list-from-concept-scheme, which folded the conceptScheme spelling into CodedPropertyDeclarationFactory (task 1.1). This pass added its task 4.4: resolve a scheme value by uri, then slug, then uuid in one place.",
+    "change": "property-code-list-from-concept-scheme",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "audit-trail-restore-version",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "Findings of nextcloud-vue's merged change (exception text in the revert route's 403, 423 and 500 bodies, against ADR-005) together with buildiq data-restore-record-version (RevertHandler writes with ObjectEntityMapper::update(), bypassing validation, listeners and the audit entry the content-versioning spec requires; that spec names a route that does not exist).",
+    "change": "history-revert-through-the-save-path",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "insight-exports-and-custom-reports",
+    "matrix": "stackiq",
+    "decision": "build",
+    "reason": "Keep-exportable half named by stackiq's merged change (four list pages wait on it). Clustered with nextcloud-vue index-export-follows-the-page.",
+    "change": "modelling-schema-exportable-flag",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "operations-record-reconciliation",
+    "matrix": "stackiq",
+    "decision": "build",
+    "reason": "Two halves stackiq's merged change names as OpenRegister's: relinking every reference inside the merge unit so a reversal restores them (ADR-045: relink and reverse on any schema), and a deep link to /duplicates with register and schema. MergeService relinks only the configured reverse reference (relinkReverseFk, MergeService.php:684); DuplicatesIndex.vue reads no route query. No change covered either.",
+    "change": "mdm-merge-relinks-every-reference",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "events-world-scope-and-upcoming",
+    "matrix": "larpinq",
+    "decision": "build",
+    "reason": "A half larpinq's merged change depends on for its world lens in lists (row evt-world-scoping, four competitors yes); without it larpinq falls back to two queries on the dashboard only. The operators of one property are ANDed (MagicSearchHandler.php:1535-1556), so value or empty cannot be one query today.",
+    "change": "search-value-or-empty-filter",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "surfaces-document-house-style",
+    "matrix": "thematiq",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 404703, 415897, 298070) named in thematiq's merged change, whose Risks say a sibling that never reads the profile leaves the tender unmet. ExportService::exportToPdf() (ExportService.php:332) has no logo, font or footer.",
+    "change": "export-pdf-house-style",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-copilot-documents-and-code-help",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "File-text read half buildiq's merged change depends on for PDF and Word input (rows ai-code-assist with five competitors yes, ai-spec-to-app); GET /api/files/{fileId}/text is a stub answering 404 (FileTextController.php:147-160, issue #4106). Clustered with the vector facade.",
+    "change": "search-file-text-and-vector-facade",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-agents-knowledge-and-run-trace",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Vector search facade half buildiq's merged change and hermiq's open vector-rag both name as OpenRegister's (row ai-agent-knowledge-base). No public vector facade exists; the file search routes return chunks without a read check, fixed in the same change.",
+    "change": "search-file-text-and-vector-facade",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-llm-steps-and-computed-fields",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Changed-fields condition half buildiq's merged change depends on (AI steps run on created and manual only until it lands; rows ai-computed-column, ai-llm-action). TriggerObjectNode config keys are event, register and schema only (TriggerObjectNode.php:169-171).",
+    "change": "flow-trigger-transitions-and-changed-fields",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "logic-automation-actions-that-run",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Lifecycle-transition start half buildiq's merged change depends on (rows logic-action-update-record, logic-action-webhook, logic-rules-engine). The engine fires object.transitioned (FlowTriggerListener.php:236), but a converted flow's trigger node refuses it (TriggerObjectNode::EVENTS), and nothing filters on the transition.",
+    "change": "flow-trigger-transitions-and-changed-fields",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "logic-automation-actions-that-run",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "Manual-start half (a signed-in app user starting a published manual flow on a record): specified by the open change macro-flows-with-next-item, which binds a declared action to a published manual flow at POST /api/objects/{register}/{schema}/{id}/actions/{action} with the action's authorisation.",
+    "change": "macro-flows-with-next-item",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "logic-script-step",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Code step half: the whole runtime is OpenRegister issue #2066, which buildiq's merged change depends on (row logic-custom-code-step, three competitors yes). Clustered with integriq auto-code.",
+    "change": "flow-code-step-in-a-sidecar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "data-external-database-sources",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Query-table half buildiq's merged change depends on (rows data-external-db, five competitors yes, buildiq core; int-sql-query). Premise partly did not hold up: query-backed schemas shipped in #2043 (DbalObjectSourceProvider::isQueryBacked, 12a52c7fc) without a change. The change adds the statement guard, the read-only transaction and timeout, and the preview route that are missing.",
+    "change": "dbal-query-schema-guarded-and-previewed",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "data-model-diagram",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "x-openregister-relations half of buildiq's merged change (row data-model-diagram, three competitors yes): without it every relation a maker drew is missing from the diagram. Added to the open change modelling-schema-diagram as design D-1a, a requirement and task 1.1a.",
+    "change": "modelling-schema-diagram",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "lifecycle-release-test-gate",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Validate-only half buildiq's merged change depends on (row lc-automated-tests, two competitors yes). ObjectServiceInterface has no validate method and objects#validate re-validates stored objects.",
+    "change": "records-validate-without-saving",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "platform-record-lock",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Freeze-refuses-delete half of pipelinq's merged change (its task 3.1 asks OpenRegister for it). DeleteObject never reads @self.frozen; delete guards are ObjectDeletingEvent listeners (Application.php:3359, :3378). Clustered with the retention date half.",
+    "change": "archival-frozen-refuses-delete-and-dates-follow",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "platform-client-retention",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Recalculation half of pipelinq's merged change (D3 and D4: its task 1.3 test fails until it lands). RetentionService::recalculateArchiveActionDate() compares sources only under eigenschap, afgehandeld and termijn (RetentionService.php:317-336).",
+    "change": "archival-frozen-refuses-delete-and-dates-follow",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "platform-client-retention",
+    "matrix": "pipelinq",
+    "decision": "existing",
+    "reason": "Anonymise-outcome half (D6: read the profile beside the archive block): the open change anonymising-as-an-archival-outcome owns the profile; this pass added its design D-6, a scenario and task 2.2a, because AnonymisationPlanner reads only x-openregister-archival.anonymisation.",
+    "change": "anonymising-as-an-archival-outcome",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "requests-inbound-to-queue",
+    "matrix": "pipelinq",
+    "decision": "defer",
+    "reason": "Decision table contains: pipelinq's merged change puts rules on words in the subject or text out of scope and names it a follow-up, so nothing depends on it. The tender rows behind it (req-mail-routing) ask for rules on address, domain and sender group, which the current comparison and set grammar expresses. No DMN change covers contains.",
+    "change": null,
+    "decidedOn": "2026-09-28"
   }
 ]
