@@ -58,8 +58,10 @@ class OAuth2StateService {
 	 *
 	 * The vault key is PENDING_PREFIX plus the nonce, and Nextcloud's credential
 	 * vault keeps it in `oc_storages_credentials.identifier`, a 64-character
-	 * column: 28 + 32 fits, where a longer nonce fails the insert and with it
-	 * every connect start. 32 alphanumeric characters is about 190 bits.
+	 * column: 28 + 32 fits. A longer nonce fails the insert, and with it every
+	 * connect start, wherever the length is enforced (PostgreSQL, MySQL in strict
+	 * mode); non-strict MySQL truncates the key instead. 32 alphanumeric
+	 * characters is about 190 bits.
 	 *
 	 * @var integer
 	 */

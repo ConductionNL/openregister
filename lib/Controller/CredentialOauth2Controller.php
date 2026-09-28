@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
+use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
 use OCA\OpenRegister\Service\Credential\OAuth2StateService;
@@ -145,7 +146,8 @@ class CredentialOauth2Controller extends Controller {
 	 * with a 500: 400 for a request that names no usable provider or host, 403
 	 * for a guard that refuses the caller, 409 when the provider has no OAuth2
 	 * client configured on this server, and 502 when a per-instance provider's
-	 * server will not register a client.
+	 * server will not register a client. A client credential this start minted
+	 * is removed again when a later step fails.
 	 *
 	 * @return JSONResponse `{authorizationUrl, expiresIn}`, or a static error.
 	 *
@@ -161,6 +163,7 @@ class CredentialOauth2Controller extends Controller {
 		$providerId = (string)$this->request->getParam('provider', '');
 		$requestedScope = (string)$this->request->getParam('scope', 'personal');
 
+		// The request and the caller: a refusal here is theirs, so 400 or 403.
 		try {
 			$provider = $this->connect->oauth2Provider(providerId: $providerId);
 			$organisation = $this->connections->gatedOrganisation(uid: $uid, requestedScope: $requestedScope);
@@ -173,7 +176,23 @@ class CredentialOauth2Controller extends Controller {
 				organisation: $organisation,
 				host: $host
 			);
+		} catch (CredentialAccessDeniedException $denied) {
+			$this->logger->info(
+				'[CredentialOauth2Controller] refused a connection start',
+				['uid' => $uid, 'provider' => $providerId]
+			);
 
+			return new JSONResponse(['message' => 'Connection not permitted'], Http::STATUS_FORBIDDEN);
+		} catch (InvalidArgumentException $invalid) {
+			return new JSONResponse(['message' => 'Invalid connection request'], Http::STATUS_BAD_REQUEST);
+		} catch (Throwable $failure) {
+			return $this->startFailed(failure: $failure);
+		}
+
+		// This server's own setup and the provider's: nothing here is the caller's
+		// fault, so anything but the two named states is a 500.
+		$minted = '';
+		try {
 			// A per-instance provider has no application to bring, so one is created at
 			// the account's own server HERE, before the URL that names its client id is
 			// built. The client secret it issues goes straight to the broker as its own
@@ -183,6 +202,9 @@ class CredentialOauth2Controller extends Controller {
 				claims: $claims,
 				redirectUri: $this->endpoints->callbackUrl()
 			);
+			$minted = (string)($claims[OAuth2InstanceClient::MINTED_KEY] ?? '');
+			unset($claims[OAuth2InstanceClient::MINTED_KEY]);
+
 			$issued = $this->states->issue(claims: $claims);
 			$url = $this->connect->authorizationUrl(
 				provider: $provider,
@@ -192,24 +214,66 @@ class CredentialOauth2Controller extends Controller {
 				challenge: $issued['challenge']
 			);
 		} catch (OAuth2ClientNotConfiguredException $notConfigured) {
-			// Caught before its parent: a missing client is this server's setup, not a refusal of the caller.
+			$this->discardMintedClient(credentialId: $minted, scope: $requestedScope);
+
 			return new JSONResponse(['message' => 'This provider is not configured on this server'], Http::STATUS_CONFLICT);
-		} catch (CredentialAccessDeniedException $denied) {
-			return new JSONResponse(['message' => 'Connection not permitted'], Http::STATUS_FORBIDDEN);
-		} catch (InvalidArgumentException $invalid) {
-			return new JSONResponse(['message' => 'Invalid connection request'], Http::STATUS_BAD_REQUEST);
 		} catch (OAuth2RegistrationFailedException $upstream) {
 			$this->logger->warning('[CredentialOauth2Controller] the provider server did not register a client: ' . $upstream->getMessage());
 
 			return new JSONResponse(['message' => 'The provider server did not accept the connection'], Http::STATUS_BAD_GATEWAY);
 		} catch (Throwable $failure) {
-			$this->logger->error('[CredentialOauth2Controller] could not start a connection: ' . $failure->getMessage(), ['exception' => $failure]);
+			$this->discardMintedClient(credentialId: $minted, scope: $requestedScope);
 
-			return new JSONResponse(['message' => 'Unable to start the connection'], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->startFailed(failure: $failure);
 		}
 
 		return new JSONResponse(['authorizationUrl' => $url, 'expiresIn' => OAuth2StateService::STATE_TTL_SECONDS]);
 	}//end start()
+
+	/**
+	 * Answer a genuine fault: log it and return a static 500.
+	 *
+	 * The class and message only, never the exception itself. Nextcloud writes an
+	 * exception's trace with its arguments, and a failed per-instance mint has the
+	 * freshly issued client secret among them.
+	 *
+	 * @param Throwable $failure The fault.
+	 *
+	 * @return JSONResponse The static 500.
+	 */
+	private function startFailed(Throwable $failure): JSONResponse {
+		$this->logger->error(
+			'[CredentialOauth2Controller] could not start a connection: ' . $failure::class . ': ' . $failure->getMessage()
+		);
+
+		return new JSONResponse(['message' => 'Unable to start the connection'], Http::STATUS_INTERNAL_SERVER_ERROR);
+	}//end startFailed()
+
+	/**
+	 * Remove the client credential a failed start minted, so it does not linger.
+	 *
+	 * Best effort: the start has already failed, so a cleanup fault is logged by
+	 * class and not raised over it.
+	 *
+	 * @param string $credentialId The minted client credential, or an empty string when none was.
+	 * @param string $scope The scope it was minted in.
+	 *
+	 * @return void
+	 */
+	private function discardMintedClient(string $credentialId, string $scope): void {
+		if ($credentialId === '') {
+			return;
+		}
+
+		try {
+			$this->connections->discard(credentialId: $credentialId, scope: $scope);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[CredentialOauth2Controller] could not remove the client credential a failed start minted: ' . $failure::class,
+				['credentialId' => $credentialId]
+			);
+		}
+	}//end discardMintedClient()
 
 	/**
 	 * GET /oauth2/callback — receive a provider's redirect, or relay it onward.

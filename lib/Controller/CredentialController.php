@@ -608,7 +608,9 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 		}
 
-		if (preg_match('/^[a-z0-9_-]+$/', $appId) !== 1) {
+		// At most 32 characters: the key is `openregister/credential-app-key/` (32) plus
+		// the id, and Nextcloud's credential vault keeps it in a 64-character column.
+		if (preg_match('/^[a-z0-9_-]{1,32}$/', $appId) !== 1) {
 			return new JSONResponse(['message' => 'Invalid app id'], Http::STATUS_BAD_REQUEST);
 		}
 

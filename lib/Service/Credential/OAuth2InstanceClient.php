@@ -50,6 +50,17 @@ use Throwable;
  */
 class OAuth2InstanceClient {
 	/**
+	 * Claims key naming the client credential this call minted.
+	 *
+	 * Set only when ensure() registered a new client, never for one it reused,
+	 * so a caller whose later step fails knows exactly what to remove. It is not
+	 * a claim: the caller takes it out before the claims are signed.
+	 *
+	 * @var string
+	 */
+	public const MINTED_KEY = '_minted';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CredentialBrokerService $broker Mints the client-secret credential.
@@ -72,7 +83,8 @@ class OAuth2InstanceClient {
 	 * @param array<string, mixed> $claims The claims assembled so far.
 	 * @param string $redirectUri The callback to register.
 	 *
-	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef.
+	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef, and
+	 *                              MINTED_KEY when a new client was registered.
 	 *
 	 * @throws OAuth2RegistrationFailedException When the account's server refuses the registration.
 	 *
@@ -103,7 +115,14 @@ class OAuth2InstanceClient {
 			organisation: ($claims['o'] ?? null)
 		);
 
-		return array_merge($claims, ['cl' => $registered['clientId'], 'cr' => $registered['clientCredentialRef']]);
+		return array_merge(
+			$claims,
+			[
+				'cl' => $registered['clientId'],
+				'cr' => $registered['clientCredentialRef'],
+				self::MINTED_KEY => $registered['clientCredentialRef'],
+			]
+		);
 	}//end ensure()
 
 	/**

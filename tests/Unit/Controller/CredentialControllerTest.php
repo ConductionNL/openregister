@@ -51,6 +51,9 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequest
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialControllerTest extends TestCase {
 	/**
@@ -435,4 +438,49 @@ class CredentialControllerTest extends TestCase {
 			new SharePrincipalDeriver()
 		);
 	}//end makeUpdateController()
+
+	/**
+	 * An app id longer than 32 characters is refused with 400 before anything is
+	 * stored: its vault key would not fit the 64-character identifier column.
+	 */
+	public function testRegisterAppRefusesAnIdTooLongForTheVaultKey(): void {
+		$tokens = $this->createMock(CredentialAppTokenService::class);
+		$tokens->expects($this->once())->method('registerApp')->with(str_repeat('a', 32))->willReturn('SECRET');
+
+		$controller = $this->makeAdminController(tokens: $tokens);
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $controller->registerApp(appId: str_repeat('a', 33))->getStatus());
+		$this->assertSame(Http::STATUS_CREATED, $controller->registerApp(appId: str_repeat('a', 32))->getStatus());
+	}//end testRegisterAppRefusesAnIdTooLongForTheVaultKey()
+
+	/**
+	 * A controller whose session is an administrator.
+	 *
+	 * @param CredentialAppTokenService $tokens The app-token service.
+	 *
+	 * @return CredentialController The wired controller.
+	 */
+	private function makeAdminController(CredentialAppTokenService $tokens): CredentialController {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->method('isAdmin')->willReturn(true);
+
+		return new CredentialController(
+			'openregister',
+			$this->createMock(IRequest::class),
+			$session,
+			$groups,
+			$this->createMock(ObjectService::class),
+			$this->createMock(CredentialStore::class),
+			$this->createMock(ProviderCatalogue::class),
+			$this->createMock(CredentialBrokerService::class),
+			$tokens,
+			$this->createMock(OrganisationService::class),
+			new SharePrincipalDeriver()
+		);
+	}//end makeAdminController()
 }//end class
