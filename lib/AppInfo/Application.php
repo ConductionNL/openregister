@@ -1426,6 +1426,10 @@ class Application extends App implements IBootstrap {
 				\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class,
 				'GroupProvisioner',
 			],
+			'setSchemaVersioning' => [
+				\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
+				'SchemaVersioningService',
+			],
 		];
 
 		foreach ($optional as $setter => $service) {

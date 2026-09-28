@@ -48,6 +48,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -273,6 +275,13 @@ class ImportHandler {
 	private ?GroupProvisioner $groupProvisioner = null;
 
 	/**
+	 * Classifies, versions and records a schema change an import makes (openregister#4102).
+	 *
+	 * @var SchemaVersioningService|null
+	 */
+	private ?SchemaVersioningService $schemaVersioning = null;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -452,6 +461,22 @@ class ImportHandler {
 	public function setGroupProvisioner(?GroupProvisioner $groupProvisioner): void {
 		$this->groupProvisioner = $groupProvisioner;
 	}//end setGroupProvisioner()
+
+	/**
+	 * Set the schema versioning service.
+	 *
+	 * Optional: when null, a schema update from an import is not classified,
+	 * as before openregister#4102.
+	 *
+	 * @param SchemaVersioningService|null $schemaVersioning The versioning service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function setSchemaVersioning(?SchemaVersioningService $schemaVersioning): void {
+		$this->schemaVersioning = $schemaVersioning;
+	}//end setSchemaVersioning()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -2198,7 +2223,26 @@ class ImportHandler {
 					appVersion: $version
 				);
 
+				// Classify the change as every other definition update is
+				// (openregister#4102): bump the version when the app did not,
+				// and record it in the changelog below.
+				$changeSet = $this->classifyImportedSchemaChange(data: $data, existing: $existingSchema);
+				if ($changeSet !== null && $changeSet->hasChanges() === true
+					&& version_compare((string) ($data['version'] ?? '0.0.0'), (string) ($existingSchema->getVersion() ?? '0.0.0'), '<=') === true
+				) {
+					$data['version'] = $this->schemaVersioning?->nextVersion(existing: $existingSchema, changeSet: $changeSet);
+				}
+
 				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
+				if ($changeSet !== null) {
+					$this->schemaVersioning?->recordChangelog(
+						schemaId: $existingSchema->getId(),
+						version: $existingSchema->getVersion(),
+						changeSet: $changeSet,
+						acknowledged: false
+					);
+				}
+
 				if ($owner !== null) {
 					$existingSchema->setOwner($owner);
 				}
@@ -2232,6 +2276,51 @@ class ImportHandler {
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end importSchema()
+
+	/**
+	 * Classify the definition change an import makes to an existing schema.
+	 *
+	 * A breaking change is logged as a warning and not refused: an app update
+	 * that could not land its own schema would leave the app half upgraded.
+	 * The changelog entry is left unacknowledged, which is how a reader of the
+	 * schema learns a breaking change arrived by import.
+	 *
+	 * @param array  $data     The incoming schema data, after the shipped-baseline guard.
+	 * @param Schema $existing The stored schema.
+	 *
+	 * @return SchemaChangeSet|null The change set, or null when not classified.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function classifyImportedSchemaChange(array $data, Schema $existing): ?SchemaChangeSet {
+		if ($this->schemaVersioning === null
+			|| (isset($data['properties']) === false && isset($data['required']) === false)
+		) {
+			return null;
+		}
+
+		$changeSet = $this->schemaVersioning->classify(
+			existing: $existing,
+			newDefinition: [
+				'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
+				'required' => ($data['required'] ?? $existing->getRequired() ?? []),
+			]
+		);
+
+		if ($changeSet->isBreaking() === true) {
+			$this->logger->warning(
+				message: '[ImportHandler] Import applied a breaking schema change; recorded unacknowledged in the changelog.',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema_id' => $existing->getId(),
+					'schema_slug' => $existing->getSlug(),
+				]
+			);
+		}
+
+		return $changeSet;
+	}//end classifyImportedSchemaChange()
 
 	/**
 	 * Compute a stable content hash of a configuration's definitional payload.
