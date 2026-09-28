@@ -35,7 +35,8 @@ class FileSearchControllerCoverageTest extends TestCase {
 			$this->request,
 			$this->vectorService,
 			$this->chunkMapper,
-			$this->logger
+			$this->logger,
+			$this->passThroughScope()
 		);
 	}
 
@@ -144,4 +145,16 @@ class FileSearchControllerCoverageTest extends TestCase {
 		$this->assertFalse($data['success']);
 		$this->assertStringContainsString('No endpoint', $data['message']);
 	}
+
+	/**
+	 * A read scope that keeps every hit: these tests are about the response shape, not the scope.
+	 *
+	 * @return \OCA\OpenRegister\Service\File\FileReadScope
+	 */
+	private function passThroughScope(): \OCA\OpenRegister\Service\File\FileReadScope {
+		$scope = $this->createMock(\OCA\OpenRegister\Service\File\FileReadScope::class);
+		$scope->method('readableResults')->willReturnArgument(0);
+
+		return $scope;
+	}//end passThroughScope()
 }

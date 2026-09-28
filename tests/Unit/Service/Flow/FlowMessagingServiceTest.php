@@ -268,7 +268,8 @@ class FlowMessagingServiceTest extends TestCase {
 			),
 			userManager: $this->userManager,
 			appConfig: $this->appConfig,
-			logger: $logger
+			logger: $logger,
+			eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 		);
 	}//end makeService()
 
