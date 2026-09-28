@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Service\FileService;
@@ -96,8 +97,12 @@ class FolderManagementHandler {
 	 * @param AuditTrailMapper $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
 	 * @param IUserMountCache $mountCache Mount cache, used to recognise a folder OpenRegister manages
 	 *                                    without setting up the owning user's mounts.
+	 * @param RegisterFolderRecorder $folderRecorder Records a register's folder id as bookkeeping, so a
+	 *                                               first upload needs no register-update permission.
 	 * @param FileService|null $fileService File service facade for cross-handler coordination
 	 *                                      (injected lazily to avoid circular dependency).
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
@@ -108,6 +113,7 @@ class FolderManagementHandler {
 		private readonly LoggerInterface $logger,
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly IUserMountCache $mountCache,
+		private readonly RegisterFolderRecorder $folderRecorder,
 		private ?FileService $fileService = null,
 	) {
 	}//end __construct()
@@ -175,6 +181,11 @@ class FolderManagementHandler {
 	/**
 	 * Creates a folder for a Register and stores the folder ID.
 	 *
+	 * The folder id is recorded as bookkeeping, not as an edit of the register:
+	 * the first upload into a register is often a portal request with no session,
+	 * which may not update registers and acts in the default organisation, so
+	 * RegisterMapper::update() refused it and the upload failed (portaliq#29).
+	 *
 	 * @param Register $register The register to create the folder for.
 	 * @param IUser|null $currentUser The current user to share the folder with.
 	 *
@@ -188,6 +199,7 @@ class FolderManagementHandler {
 	 * @psalm-return Node
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
 	 */
 	public function createRegisterFolderById(Register $register, ?IUser $currentUser = null): Node {
 		$folderProperty = $register->getFolder();
@@ -208,13 +220,17 @@ class FolderManagementHandler {
 
 		$folderNode = $this->createFolderPath(folderPath: $folderPath);
 
-		// Store the folder ID instead of the path.
-		$register->setFolder((string)$folderNode->getId());
-
-		// The "About to update" / "Register updated" pair that used to bracket
-		// this call said nothing the line below does not already say, and said
-		// it twice at info.
-		$this->registerMapper->update($register);
+		// Store the folder ID instead of the path: one column, only while it still
+		// holds what was read above, so a folder another request recorded first stays.
+		$folderId = (string)$folderNode->getId();
+		$recorded = $this->folderRecorder->record(registerId: (int)$register->getId(), expected: $folderProperty, folderId: $folderId);
+		$register->setFolder($folderId);
+		if ($recorded === false) {
+			$this->logger->debug(
+				message: '[FolderManagementHandler] Register folder id was recorded by another request first; using folder ' . $folderId,
+				context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $register->getId()]
+			);
+		}
 
 		$this->logger->debug(
 			message: '[FolderManagementHandler] Created register folder with ID: ' . $folderNode->getId(),
@@ -518,6 +534,7 @@ class FolderManagementHandler {
 	 * @throws Exception If folder creation fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
 	 */
 	public function createFolderPath(string $folderPath): Node {
 		$folderPath = trim(string: $folderPath, characters: '/');
@@ -528,11 +545,8 @@ class FolderManagementHandler {
 		// Check if folder exists and if not create it.
 		try {
 			// First, check if the root folder exists, and if not, create it and share it with the openregister group.
-			try {
-				$userFolder->get(self::ROOT_FOLDER);
-			} catch (NotFoundException) {
-				$userFolder->newFolder(self::ROOT_FOLDER);
-
+			$root = $this->getOrCreateFolder(parent: $userFolder, path: self::ROOT_FOLDER);
+			if ($root['created'] === true) {
 				if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
 					$this->groupManager->createGroup(self::APP_GROUP);
 				}
@@ -543,29 +557,27 @@ class FolderManagementHandler {
 				}
 			}
 
-			try {
-				// Try to get the folder if it already exists.
-				$node = $userFolder->get(path: $folderPath);
+			$folder = $this->getOrCreateFolder(parent: $userFolder, path: $folderPath);
+			$node = $folder['node'];
+			if ($folder['created'] === false) {
 				$this->logger->debug(
 					message: "[FolderManagementHandler] This folder already exists: $folderPath",
 					context: ['file' => __FILE__, 'line' => __LINE__]
 				);
 				return $node;
-			} catch (NotFoundException) {
-				// Folder does not exist, create it.
-				$node = $userFolder->newFolder(path: $folderPath);
-				$this->logger->debug(
-					message: "[FolderManagementHandler] Created folder: $folderPath",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
+			}
 
-				// Transfer ownership to OpenRegister and share with current user if needed.
-				if ($this->fileService !== null) {
-					$this->fileService->transferFolderOwnershipIfNeeded(folder: $node);
-				}
+			$this->logger->debug(
+				message: "[FolderManagementHandler] Created folder: $folderPath",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 
-				return $node;
-			}//end try
+			// Transfer ownership to OpenRegister and share with current user if needed.
+			if ($this->fileService !== null) {
+				$this->fileService->transferFolderOwnershipIfNeeded(folder: $node);
+			}
+
+			return $node;
 		} catch (NotPermittedException $e) {
 			// End try.
 			$this->logger->error(
@@ -575,6 +587,54 @@ class FolderManagementHandler {
 			throw new Exception("Can't create folder $folderPath");
 		}//end try
 	}//end createFolderPath()
+
+	/**
+	 * Get a folder, creating it when it is missing; take one a concurrent request just created.
+	 *
+	 * Two first uploads into a register can both find no folder and both call
+	 * newFolder(); the second is refused because the folder now exists. Looking
+	 * once more turns that refusal into the folder both uploads need.
+	 *
+	 * @param Folder $parent The folder to look in.
+	 * @param string $path The path below it.
+	 *
+	 * @return array{node: Node, created: bool} The folder, and whether this call created it.
+	 *
+	 * @throws NotPermittedException When the folder cannot be created and does not exist.
+	 */
+	private function getOrCreateFolder(Folder $parent, string $path): array {
+		$existing = $this->findNode(parent: $parent, path: $path);
+		if ($existing !== null) {
+			return ['node' => $existing, 'created' => false];
+		}
+
+		try {
+			return ['node' => $parent->newFolder($path), 'created' => true];
+		} catch (NotPermittedException $refused) {
+			$existing = $this->findNode(parent: $parent, path: $path);
+			if ($existing === null) {
+				throw $refused;
+			}
+
+			return ['node' => $existing, 'created' => false];
+		}
+	}//end getOrCreateFolder()
+
+	/**
+	 * The node at a path below a folder, or null when there is none.
+	 *
+	 * @param Folder $parent The folder to look in.
+	 * @param string $path The path below it.
+	 *
+	 * @return Node|null
+	 */
+	private function findNode(Folder $parent, string $path): ?Node {
+		try {
+			return $parent->get($path);
+		} catch (NotFoundException) {
+			return null;
+		}
+	}//end findNode()
 
 	/**
 	 * Public interface to create a folder (delegates to createFolderPath).

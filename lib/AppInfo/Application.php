@@ -1208,6 +1208,7 @@ class Application extends App implements IBootstrap {
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
 					mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
+					folderRecorder: $container->get(\OCA\OpenRegister\Db\RegisterFolderRecorder::class),
 					fileService: null
 				);
 			}
