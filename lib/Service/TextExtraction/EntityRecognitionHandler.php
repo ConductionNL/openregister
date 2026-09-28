@@ -657,40 +657,11 @@ class EntityRecognitionHandler {
 				return [];
 			}
 
-			if ($useExternal === false) {
-				// Internal: call the ExApp through AppAPI (signed; routing by app id).
-				$responseData = $this->anonymisationBackendService->requestOpenAnonymiser(
-					route: '/api/v1/analyze',
-					params: $requestBody
-				);
-
-				// Fall back to a configured external endpoint if the ExApp is unreachable.
-				if ($responseData === null && $anonEndpoint !== '') {
-					$responseData = $this->postAnalyzeRequest(
-						url: $anonEndpoint . '/api/v1/analyze',
-						requestBody: $requestBody,
-						serviceName: 'OpenAnonymiser'
-					);
-				}
-			} else {
-				if ($anonEndpoint === '') {
-					$this->logger->warning(
-						message: '[EntityRecognitionHandler] OpenAnonymiser external endpoint not configured, falling back to regex',
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					return $this->detectWithRegex(
-						text: $text,
-						entityTypes: $entityTypes,
-						confidenceThreshold: $confidenceThreshold
-					);
-				}
-
-				$responseData = $this->postAnalyzeRequest(
-					url: $anonEndpoint . '/api/v1/analyze',
-					requestBody: $requestBody,
-					serviceName: 'OpenAnonymiser'
-				);
-			}//end if
+			$responseData = $this->sendOpenAnonymiserRequest(
+				requestBody: $requestBody,
+				anonEndpoint: $anonEndpoint,
+				useExternal: $useExternal
+			);
 
 			if ($responseData === null) {
 				$this->logger->warning(
@@ -744,6 +715,52 @@ class EntityRecognitionHandler {
 	}//end detectWithOpenAnonymiser()
 
 	/**
+	 * Send an analyze request to OpenAnonymiser over the configured transport.
+	 *
+	 * Internal calls the ExApp through AppAPI and falls back to a configured
+	 * external endpoint when the ExApp is unreachable; external posts to the
+	 * operator-entered URL. A 4xx is thrown by either transport (or#4115).
+	 *
+	 * @param array  $requestBody  The analyze request body.
+	 * @param string $anonEndpoint The external endpoint, without a trailing slash; empty when none.
+	 * @param bool   $useExternal  Whether the operator chose the external endpoint.
+	 *
+	 * @return array|null The response data, or null when OpenAnonymiser could not be reached.
+	 *
+	 * @throws AnalyzeRequestRejectedException When OpenAnonymiser refuses the request.
+	 */
+	private function sendOpenAnonymiserRequest(array $requestBody, string $anonEndpoint, bool $useExternal): ?array {
+		$responseData = null;
+		if ($useExternal === false) {
+			$responseData = $this->anonymisationBackendService->requestOpenAnonymiser(
+				route: '/api/v1/analyze',
+				params: $requestBody
+			);
+		}
+
+		if ($responseData !== null) {
+			return $responseData;
+		}
+
+		if ($anonEndpoint === '') {
+			if ($useExternal === true) {
+				$this->logger->warning(
+					message: '[EntityRecognitionHandler] OpenAnonymiser external endpoint not configured, falling back to regex',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+
+			return null;
+		}
+
+		return $this->postAnalyzeRequest(
+			url: $anonEndpoint.'/api/v1/analyze',
+			requestBody: $requestBody,
+			serviceName: 'OpenAnonymiser'
+		);
+	}//end sendOpenAnonymiserRequest()
+
+	/**
 	 * Build the request body for an analyze API call.
 	 *
 	 * Constructs the JSON request payload with text, language, and optional entity type filters.
@@ -792,6 +809,8 @@ class EntityRecognitionHandler {
 	 * @param string $serviceName Human-readable service name for log messages.
 	 *
 	 * @return array|null Parsed JSON response array, or null on failure.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The exception's own status predicate.
 	 */
 	private function postAnalyzeRequest(string $url, array $requestBody, string $serviceName): ?array {
 		$ch = curl_init($url);

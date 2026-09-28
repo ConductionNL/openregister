@@ -381,32 +381,7 @@ class AnonymisationBackendService {
 				return null;
 			}
 
-			$status = $response->getStatusCode();
-			// Reached and refused: a request error, not an unreachable ExApp
-			// (or#4115). Thrown so the caller neither retries another
-			// transport nor falls back to regex as if the ExApp were down.
-			if (AnalyzeRequestRejectedException::isRequestError(status: $status) === true) {
-				$body = $response->getBody();
-				$detail = '';
-				if (is_string($body) === true) {
-					$detail = $body;
-				}
-
-				throw new AnalyzeRequestRejectedException(service: 'OpenAnonymiser', status: $status, detail: $detail);
-			}
-
-			if ($status < 200 || $status >= 300) {
-				$this->logger->error('[AnonymisationBackendService] ExApp ' . $appId . ' returned HTTP ' . $status);
-				return null;
-			}
-
-			$decoded = json_decode((string)$response->getBody(), true);
-
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-
-			return null;
+			return $this->decodeExAppResponse(response: $response, appId: $appId);
 		} catch (AnalyzeRequestRejectedException $e) {
 			throw $e;
 		} catch (Throwable $e) {
@@ -414,6 +389,49 @@ class AnonymisationBackendService {
 			return null;
 		}//end try
 	}//end requestOpenAnonymiser()
+
+	/**
+	 * Decode an ExApp response, or refuse it when the ExApp rejected the request.
+	 *
+	 * A 4xx means the ExApp was reached and refused the request (or#4115), so it
+	 * is thrown rather than read as an unreachable ExApp: the caller must neither
+	 * retry another transport nor fall back to regex.
+	 *
+	 * @param IResponse $response The ExApp response.
+	 * @param string    $appId    The ExApp id, for the log line.
+	 *
+	 * @return array<string, mixed>|null The decoded body, or null on a non-2xx or non-JSON answer.
+	 *
+	 * @throws AnalyzeRequestRejectedException When the ExApp answers 4xx.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The exception's own status predicate.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	private function decodeExAppResponse(IResponse $response, string $appId): ?array {
+		$status = $response->getStatusCode();
+		if (AnalyzeRequestRejectedException::isRequestError(status: $status) === true) {
+			$body = $response->getBody();
+			$detail = '';
+			if (is_string($body) === true) {
+				$detail = $body;
+			}
+
+			throw new AnalyzeRequestRejectedException(service: 'OpenAnonymiser', status: $status, detail: $detail);
+		}
+
+		if ($status < 200 || $status >= 300) {
+			$this->logger->error('[AnonymisationBackendService] ExApp ' . $appId . ' returned HTTP ' . $status);
+			return null;
+		}
+
+		$decoded = json_decode((string)$response->getBody(), true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return null;
+	}//end decodeExAppResponse()
 
 	/**
 	 * Probe the configured Presidio endpoint over HTTP.
