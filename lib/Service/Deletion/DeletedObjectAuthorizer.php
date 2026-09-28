@@ -170,6 +170,27 @@ class DeletedObjectAuthorizer {
 	}//end userMayReadDestructionRecord()
 
 	/**
+	 * The destruction records the caller may read, in their original order.
+	 *
+	 * A record the caller may not read is left out rather than refused, so the
+	 * answer does not reveal that it exists.
+	 *
+	 * @param array<int, AuditTrail> $records The destruction records of one object.
+	 *
+	 * @return array<int, AuditTrail> The readable ones.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function readableDestructionRecords(array $records): array {
+		return array_values(
+			array_filter(
+				$records,
+				fn (AuditTrail $record): bool => $this->userMayReadDestructionRecord(record: $record)
+			)
+		);
+	}//end readableDestructionRecords()
+
+	/**
 	 * Resolve a soft-deleted object's schema, or null when it cannot be found.
 	 *
 	 * @param ObjectEntity $object The object whose schema to resolve.

@@ -229,19 +229,14 @@ class DeletedController extends Controller {
 	public function index(): JSONResponse {
 		$params = $this->extractRequestParameters();
 
-		// The trash shows a caller only what they could read before it was
-		// deleted (openregister#4078). The posture comes from the caller's
-		// admin status, never from a request parameter, exactly as the object
-		// list derives it.
+		// Read-scoped for a non-admin, as the object list is (openregister#4078).
 		$scoped = ($this->authorizer->isCurrentUserAdmin() === false);
 
 		try {
 			// Objects live in per-register/schema magic tables, so there is no
 			// single table for searchObjectsPaginated() to query without a
 			// register/schema context — it always fell through to an empty
-			// result. Scan every magic table for soft-deleted rows directly,
-			// narrowed in the query to the rows this caller may read so the
-			// total and the pages agree.
+			// result. Scan every magic table for soft-deleted rows directly.
 			$deletedObjects = $this->objectEntityMapper->findDeletedAcrossAllMagicTables(
 				limit: $params['limit'],
 				offset: $params['offset'],
@@ -250,9 +245,7 @@ class DeletedController extends Controller {
 			);
 			$total = $this->objectEntityMapper->countDeletedAcrossAllMagicTables(_rbac: $scoped, _multitenancy: $scoped);
 
-			// A trashed row is served through the same render boundary as a
-			// live one: write-only values never leave, and properties the
-			// caller may not read are stripped.
+			// Same render boundary as a live row: no write-only or unreadable property leaves.
 			$deletedObjects = array_values($deletedObjects);
 			$this->renderObject->redactWriteOnlyFromRows(rows: $deletedObjects, _rbac: $scoped);
 
@@ -297,13 +290,9 @@ class DeletedController extends Controller {
 		try {
 			// Count soft-deleted rows across every magic table. countAll() with
 			// no register/schema context returns 0 (it cannot pick a table), so
-			// the dedicated cross-table count is required. It counts only what
-			// this caller could list (openregister#4078).
+			// the dedicated cross-table count is required, read-scoped (#4078).
 			$scoped = ($this->authorizer->isCurrentUserAdmin() === false);
-			$totalDeleted = $this->objectEntityMapper->countDeletedAcrossAllMagicTables(
-				_rbac: $scoped,
-				_multitenancy: $scoped
-			);
+			$totalDeleted = $this->objectEntityMapper->countDeletedAcrossAllMagicTables(_rbac: $scoped, _multitenancy: $scoped);
 
 			// Get deleted today count.
 			$today = (new DateTime())->format('Y-m-d');
@@ -860,12 +849,8 @@ class DeletedController extends Controller {
 				]
 			);
 		} catch (DoesNotExistException $e) {
-			// The lookup is read-scoped: an object this caller may not read is
-			// answered as absent, not as a server error (openregister#4078).
-			return new JSONResponse(
-				data: ['error' => 'Object not found'],
-				statusCode: 404
-			);
+			// The lookup is read-scoped: an unreadable object is absent, not a server error.
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Failed to preview the destruction: ' . $e->getMessage()],
@@ -902,17 +887,10 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			// A destruction record names who destroyed what, where. It is
-			// served only to a caller who may read the schema it was destroyed
-			// from (openregister#4078); a record they may not read is left out,
-			// so the answer does not reveal that it exists.
-			$records = array_values(
-				array_filter(
-					$this->auditTrailMapper->findForObjectByAction(
-						objectUuid: $id,
-						actions: [DestructionScope::DESTRUCTION_ACTION]
-					),
-					fn (\OCA\OpenRegister\Db\AuditTrail $record): bool => $this->authorizer->userMayReadDestructionRecord(record: $record)
+			$records = $this->authorizer->readableDestructionRecords(
+				records: $this->auditTrailMapper->findForObjectByAction(
+					objectUuid: $id,
+					actions: [DestructionScope::DESTRUCTION_ACTION]
 				)
 			);
 
