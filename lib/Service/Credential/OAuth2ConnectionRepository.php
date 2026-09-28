@@ -119,7 +119,8 @@ class OAuth2ConnectionRepository {
 	 *
 	 * @return string|null The organisation UUID, or null for a personal connect.
 	 *
-	 * @throws InvalidArgumentException When there is no active organisation, or the caller does not administer it.
+	 * @throws InvalidArgumentException When there is no active organisation.
+	 * @throws CredentialAccessDeniedException When the caller does not administer the organisation.
 	 *
 	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
@@ -134,7 +135,7 @@ class OAuth2ConnectionRepository {
 		}
 
 		if ($this->organisationService->isOrganisationAdmin($uuid, $uid) === false) {
-			throw new InvalidArgumentException(message: 'only an organisation administrator may connect a shared account');
+			throw new CredentialAccessDeniedException(message: 'only an organisation administrator may connect a shared account');
 		}
 
 		return $uuid;

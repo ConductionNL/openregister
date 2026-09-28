@@ -48,8 +48,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
@@ -138,6 +141,12 @@ class CredentialOauth2Controller extends Controller {
 	/**
 	 * POST /api/credentials/oauth2/start — begin connecting an account.
 	 *
+	 * A refusal answers with the status of its cause, and only a genuine fault
+	 * with a 500: 400 for a request that names no usable provider or host, 403
+	 * for a guard that refuses the caller, 409 when the provider has no OAuth2
+	 * client configured on this server, and 502 when a per-instance provider's
+	 * server will not register a client.
+	 *
 	 * @return JSONResponse `{authorizationUrl, expiresIn}`, or a static error.
 	 *
 	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
@@ -164,13 +173,7 @@ class CredentialOauth2Controller extends Controller {
 				organisation: $organisation,
 				host: $host
 			);
-		} catch (InvalidArgumentException $invalid) {
-			return new JSONResponse(['message' => 'Invalid connection request'], Http::STATUS_BAD_REQUEST);
-		} catch (Throwable $refused) {
-			return new JSONResponse(['message' => 'Connection not permitted'], Http::STATUS_FORBIDDEN);
-		}
 
-		try {
 			// A per-instance provider has no application to bring, so one is created at
 			// the account's own server HERE, before the URL that names its client id is
 			// built. The client secret it issues goes straight to the broker as its own
@@ -188,8 +191,19 @@ class CredentialOauth2Controller extends Controller {
 				state: $issued['state'],
 				challenge: $issued['challenge']
 			);
+		} catch (OAuth2ClientNotConfiguredException $notConfigured) {
+			// Caught before its parent: a missing client is this server's setup, not a refusal of the caller.
+			return new JSONResponse(['message' => 'This provider is not configured on this server'], Http::STATUS_CONFLICT);
+		} catch (CredentialAccessDeniedException $denied) {
+			return new JSONResponse(['message' => 'Connection not permitted'], Http::STATUS_FORBIDDEN);
+		} catch (InvalidArgumentException $invalid) {
+			return new JSONResponse(['message' => 'Invalid connection request'], Http::STATUS_BAD_REQUEST);
+		} catch (OAuth2RegistrationFailedException $upstream) {
+			$this->logger->warning('[CredentialOauth2Controller] the provider server did not register a client: ' . $upstream->getMessage());
+
+			return new JSONResponse(['message' => 'The provider server did not accept the connection'], Http::STATUS_BAD_GATEWAY);
 		} catch (Throwable $failure) {
-			$this->logger->warning('[CredentialOauth2Controller] could not start a connection: ' . $failure->getMessage());
+			$this->logger->error('[CredentialOauth2Controller] could not start a connection: ' . $failure->getMessage(), ['exception' => $failure]);
 
 			return new JSONResponse(['message' => 'Unable to start the connection'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
@@ -396,7 +410,7 @@ class CredentialOauth2Controller extends Controller {
 		$reauthorise = trim((string)$this->request->getParam('credentialId', ''));
 
 		if ($reauthorise !== '' && $this->connections->findManageable(credentialId: $reauthorise, uid: $uid) === null) {
-			throw new InvalidArgumentException(message: 'the credential named for re-authorisation is not manageable by this caller');
+			throw new CredentialAccessDeniedException(message: 'the credential named for re-authorisation is not manageable by this caller');
 		}
 
 		$scopes = $this->request->getParam('scopes');

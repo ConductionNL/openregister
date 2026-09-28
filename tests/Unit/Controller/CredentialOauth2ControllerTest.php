@@ -32,8 +32,11 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\CredentialOauth2Controller;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
 use OCA\OpenRegister\Service\Credential\OAuth2StateService;
@@ -200,6 +203,60 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->start()->getStatus());
 	}
 
+	public function testStartReturnsTheAuthorizationUrl(): void {
+		$response = $this->makeController(params: ['provider' => 'linkedin'])->start();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('https://provider.example/authorize?state=STATE', $response->getData()['authorizationUrl']);
+	}
+
+	public function testStartAnswers409WhenTheProviderHasNoClientConfigured(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['authorizationUrl' => new OAuth2ClientNotConfiguredException('no OAuth2 client id is configured for provider linkedin')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+	}
+
+	public function testStartAnswers502WhenTheProviderServerWillNotRegisterAClient(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'mastodon'],
+			startThrows: ['ensureInstanceClient' => new OAuth2RegistrationFailedException('application registration failed')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+	}
+
+	public function testStartAnswers403WhenAGuardRefusesTheCaller(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin', 'scope' => 'organisation'],
+			startThrows: ['gatedOrganisation' => new CredentialAccessDeniedException('only an organisation administrator may connect a shared account')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}
+
+	public function testStartAnswers403ForACredentialTheCallerMayNotReauthorise(): void {
+		$response = $this->makeController(params: ['provider' => 'linkedin', 'credentialId' => 'someone-elses'])->start();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}
+
+	public function testStartAnswers500OnlyForAGenuineFault(): void {
+		$afterClaims = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['issue' => new RuntimeException('the vault insert failed')],
+		)->start();
+		$beforeClaims = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['gatedOrganisation' => new RuntimeException('the organisation store is down')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $afterClaims->getStatus());
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $beforeClaims->getStatus());
+	}
+
 	public function testDisconnectRevokesUpstreamThenDisablesLocally(): void {
 		$controller = $this->makeController(
 			params: [],
@@ -282,6 +339,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		?array $manageable = null,
 		?string $revokeResult = '',
 		bool $disableFails = false,
+		array $startThrows = [],
 	): CredentialOauth2Controller {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
@@ -292,6 +350,11 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$states = $this->createMock(OAuth2StateService::class);
 		$states->method('parseUnverified')->willReturn($unverifiedClaims);
 		$states->method('consume')->willReturn($consumed);
+		if (isset($startThrows['issue']) === true) {
+			$states->method('issue')->willThrowException($startThrows['issue']);
+		} else {
+			$states->method('issue')->willReturn(['state' => 'STATE', 'nonce' => 'n', 'verifier' => 'v', 'challenge' => 'CHALLENGE']);
+		}
 
 		$relayGuard = $this->createMock(OAuth2RelayGuard::class);
 		$relayGuard->method('permits')->willReturn($relayPermits);
@@ -363,6 +426,21 @@ class CredentialOauth2ControllerTest extends TestCase {
 		);
 
 		$connect->method('oauth2Provider')->willReturn(['identifier' => 'mastodon', 'kind' => 'oauth2-token-set']);
+		if (isset($startThrows['ensureInstanceClient']) === true) {
+			$connect->method('ensureInstanceClient')->willThrowException($startThrows['ensureInstanceClient']);
+		} else {
+			$connect->method('ensureInstanceClient')->willReturnArgument(1);
+		}
+
+		if (isset($startThrows['authorizationUrl']) === true) {
+			$connect->method('authorizationUrl')->willThrowException($startThrows['authorizationUrl']);
+		} else {
+			$connect->method('authorizationUrl')->willReturn('https://provider.example/authorize?state=STATE');
+		}
+
+		if (isset($startThrows['gatedOrganisation']) === true) {
+			$connections->method('gatedOrganisation')->willThrowException($startThrows['gatedOrganisation']);
+		}
 		$connect->method('revokeUpstream')->willReturnCallback(
 			function () use ($revokeResult): string {
 				if ($revokeResult === null) {

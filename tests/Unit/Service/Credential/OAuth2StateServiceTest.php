@@ -166,6 +166,22 @@ class OAuth2StateServiceTest extends TestCase {
 	}
 
 	/**
+	 * The pending record's key fits Nextcloud's credential vault, whose
+	 * `oc_storages_credentials.identifier` column holds 64 characters. A longer
+	 * key fails the insert, and with it every connect start.
+	 *
+	 * @return void
+	 */
+	public function testThePendingRecordKeyFitsTheVaultIdentifierColumn(): void {
+		$this->makeService()->issue(claims: ['sub' => 'user-1']);
+
+		self::assertNotEmpty($this->vault);
+		foreach (array_keys($this->vault) as $identifier) {
+			self::assertLessThanOrEqual(64, strlen($identifier), $identifier);
+		}
+	}
+
+	/**
 	 * Build the service with a deterministic signer, random source and vault.
 	 *
 	 * @return OAuth2StateService The service under test.
