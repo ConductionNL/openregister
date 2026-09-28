@@ -198,4 +198,32 @@ class SendMessagingNodesTest extends TestCase {
 		$this->assertSame([], glob($nodesDir . '/*Activity*'));
 		$this->assertSame([], glob($nodesDir . '/*WebPush*'));
 	}//end testThePaletteHasExactlyTheseThreeMessagingTypesAndNoWebhook()
+
+	/**
+	 * The external-recipients option is declared, formed and validated.
+	 *
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	public function testSendEmailDeclaresAndValidatesExternalRecipients(): void {
+		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+
+		$this->assertContains('externalRecipients', $email->configKeys());
+		$formKeys = array_column($email->configForm(), 'key');
+		$this->assertContains('externalRecipients', $formKeys);
+		// Every form field writes a key the node actually reads.
+		$this->assertSame([], array_diff($formKeys, $email->configKeys()));
+
+		$base = ['recipients' => ['bob'], 'body' => 'b'];
+		foreach (['', 'none', 'object', 'any', 'Object'] as $mode) {
+			$email->validateConfig(config: $base + ['externalRecipients' => $mode]);
+		}
+
+		try {
+			$email->validateConfig(config: $base + ['externalRecipients' => 'everyone']);
+			$this->fail('An unknown externalRecipients mode must be refused.');
+		} catch (UnexpectedValueException $e) {
+			$this->assertStringContainsString('everyone', $e->getMessage());
+			$this->assertStringContainsString('none, object or any', $e->getMessage());
+		}
+	}//end testSendEmailDeclaresAndValidatesExternalRecipients()
 }//end class
