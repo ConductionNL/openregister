@@ -115,6 +115,20 @@ class FlowMessagingService {
 	public const REFUSED_INVALID_ADDRESS = 'invalid-address';
 
 	/**
+	 * The address rules: what counts as an address, which may be mailed.
+	 *
+	 * @var FlowRecipientAddresses
+	 */
+	private readonly FlowRecipientAddresses $addresses;
+
+	/**
+	 * Announces each sent email as a FlowEmailSentEvent.
+	 *
+	 * @var FlowEmailAnnouncer
+	 */
+	private readonly FlowEmailAnnouncer $announcer;
+
+	/**
 	 * Constructor. Every dependency is one of the subsystem's call-shared
 	 * units — the same objects the declarative dispatcher invokes.
 	 *
@@ -149,9 +163,11 @@ class FlowMessagingService {
 		private readonly IUserManager $userManager,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly ?FlowRunContext $runContext = null,
+		IEventDispatcher $eventDispatcher,
+		?FlowRunContext $runContext = null,
 	) {
+		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipientResolver);
+		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $eventDispatcher, logger: $logger, runContext: $runContext);
 
 	}//end __construct()
 
@@ -331,7 +347,7 @@ class FlowMessagingService {
 		// Addresses are an email-channel concept. Every other channel keeps
 		// reading an address as an unknown recipient, as it always did.
 		$acceptAddresses = ($channel === 'email');
-		$mode = $this->externalRecipientMode(config: $config);
+		$mode = $this->addresses->externalRecipientMode(config: $config);
 
 		// Resolve recipients per item, post-expansion, before anything sends.
 		$perItem = [];
@@ -346,7 +362,7 @@ class FlowMessagingService {
 				json: $json,
 				acceptAddresses: $acceptAddresses
 			);
-			$screened = $this->screenAddresses(addresses: $resolved['addresses'], json: $json, mode: $mode);
+			$screened = $this->addresses->screenAddresses(addresses: $resolved['addresses'], json: $json, mode: $mode);
 			$perItem[$index] = ['json' => $json, 'uids' => $resolved['uids'], 'addresses' => $screened['allowed']];
 			foreach ($resolved['uids'] as $uid) {
 				$distinct[$uid] = true;
@@ -481,7 +497,7 @@ class FlowMessagingService {
 					$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $uid);
 					$deliveredThisItem[] = $uid;
 					if ($channel === 'email') {
-						$this->announceEmail(
+						$this->announcer->announce(
 							recipient: $uid,
 							kind: FlowEmailSentEvent::KIND_USER,
 							subject: $title,
@@ -599,7 +615,7 @@ class FlowMessagingService {
 
 			if ($outcome === EmailSender::OUTCOME_DISPATCHED) {
 				$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $address);
-				$this->announceEmail(
+				$this->announcer->announce(
 					recipient: $address,
 					kind: FlowEmailSentEvent::KIND_EXTERNAL,
 					subject: $title,
@@ -623,186 +639,6 @@ class FlowMessagingService {
 
 		return $failures;
 	}//end sendToAddresses()
-
-	/**
-	 * Announce one dispatched email to listeners.
-	 *
-	 * After the send, never before: a listener files what went out. A
-	 * listener that throws is logged and does not fail the step, because the
-	 * step's retry would send the email a second time.
-	 *
-	 * @param string $recipient The uid or address.
-	 * @param string $kind The channel kind (FlowEmailSentEvent::KIND_*).
-	 * @param string $subject The rendered subject.
-	 * @param string $body The rendered body.
-	 * @param array $json The item's json.
-	 * @param array $context The run context.
-	 * @param string $stepName The step's type id.
-	 * @param string $actor The acting user.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per field of the event contract.
-	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
-	 */
-	private function announceEmail(
-		string $recipient,
-		string $kind,
-		string $subject,
-		string $body,
-		array $json,
-		array $context,
-		string $stepName,
-		string $actor,
-	): void {
-		$self = (array)($json['@self'] ?? []);
-
-		$frame = $this->runContext?->current();
-		$step = $stepName;
-		if (is_array($frame) === true && trim((string)($frame['node'] ?? '')) !== '') {
-			$step = (string)$frame['node'];
-		}
-
-		$event = new FlowEmailSentEvent(
-			register: $this->stringOrNull(value: ($self['register'] ?? null)),
-			schema: $this->stringOrNull(value: ($self['schema'] ?? null)),
-			objectUuid: $this->stringOrNull(value: ($self['id'] ?? ($json['uuid'] ?? null))),
-			recipient: $recipient,
-			channelKind: $kind,
-			subject: $subject,
-			body: $body,
-			flowId: $this->stringOrNull(value: ($context[FlowRunService::FLOW_ID_CONTEXT_KEY] ?? null)),
-			runId: $this->stringOrNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
-			stepName: $step,
-			actingUser: $actor
-		);
-
-		try {
-			$this->eventDispatcher->dispatchTyped($event);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				sprintf('[FlowMessagingService] a FlowEmailSentEvent listener failed after the email was sent: %s', $e->getMessage()),
-				['exception' => $e]
-			);
-		}
-	}//end announceEmail()
-
-	/**
-	 * A scalar as a non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string, or null when empty or not scalar.
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$value = trim((string)$value);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
-
-	/**
-	 * The step's `externalRecipients` mode, defaulting to closed.
-	 *
-	 * @param array $config The step configuration.
-	 *
-	 * @return string One of the EXTERNAL_* modes.
-	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
-	 */
-	private function externalRecipientMode(array $config): string {
-		$mode = strtolower(trim((string)($config['externalRecipients'] ?? '')));
-		if (in_array($mode, self::EXTERNAL_RECIPIENT_MODES, true) === true) {
-			return $mode;
-		}
-
-		// An unrecognised value is refused at save time by the node; a stored
-		// one that slipped past falls back to the closed mode, never open.
-		return self::EXTERNAL_NONE;
-	}//end externalRecipientMode()
-
-	/**
-	 * Apply the step's allowlist to one item's candidate addresses.
-	 *
-	 * @param array<int, array{address: string, name: string}> $addresses The candidates.
-	 * @param array $json The item's json.
-	 * @param string $mode The allowlist mode.
-	 *
-	 * @return array{allowed: array<string, string>, refused: array<string, array{recipient: string, reason: string}>}
-	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
-	 */
-	private function screenAddresses(array $addresses, array $json, string $mode): array {
-		$allowed = [];
-		$refused = [];
-		$onItem = null;
-
-		foreach ($addresses as $candidate) {
-			$address = trim($candidate['address']);
-			$key = strtolower($address);
-
-			$reason = null;
-			if (filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
-				$reason = self::REFUSED_INVALID_ADDRESS;
-			} else if ($mode === self::EXTERNAL_NONE) {
-				$reason = self::REFUSED_EXTERNAL_OFF;
-			} else if ($mode === self::EXTERNAL_OBJECT) {
-				$onItem ??= $this->addressesOnItem(value: $json);
-				if (isset($onItem[$key]) === false) {
-					$reason = self::REFUSED_NOT_ON_ITEM;
-				}
-			}
-
-			if ($reason !== null) {
-				$refused[$key . '|' . $reason] = ['recipient' => $address, 'reason' => $reason];
-				continue;
-			}
-
-			// Keyed case-insensitively, so one person is mailed once per item
-			// however many fields spell their address.
-			if (isset($allowed[$key]) === false) {
-				$allowed[$key] = $candidate['name'];
-			}
-		}//end foreach
-
-		return ['allowed' => $allowed, 'refused' => $refused];
-	}//end screenAddresses()
-
-	/**
-	 * Every string on the item that could be an address, normalised.
-	 *
-	 * @param mixed $value The item's json, or a value inside it.
-	 *
-	 * @return array<string, true> The normalised strings holding an `@`.
-	 */
-	private function addressesOnItem(mixed $value): array {
-		if (is_string($value) === true) {
-			$value = strtolower(trim($value));
-			if (str_contains($value, '@') === true) {
-				return [$value => true];
-			}
-
-			return [];
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		$found = [];
-		foreach ($value as $inner) {
-			$found += $this->addressesOnItem(value: $inner);
-		}
-
-		return $found;
-	}//end addressesOnItem()
 
 	/**
 	 * Deliver one message to one recipient over one channel, via the
@@ -900,8 +736,6 @@ class FlowMessagingService {
 	 *
 	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Four entry shapes (template, user, group,
-	 * address) each with its own verification and unknown-reporting branch.
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
 	 * fact about the channel, not a mode of this method's own.
 	 *
@@ -925,69 +759,17 @@ class FlowMessagingService {
 
 			$matches = [];
 			if (preg_match('/^\{\{\s*(?:item\.)?([a-zA-Z0-9_.-]+)\s*\}\}$/', $entry, $matches) === 1) {
-				$field = $matches[1];
-				$value = $this->normaliseRoleValue(value: ($json[$field] ?? null));
-				if ($acceptAddresses === true) {
-					$split = $this->splitAddresses(value: $value);
-					$value = $split['rest'];
-					foreach ($split['addresses'] as $address) {
-						$addresses[] = $address;
-					}
-				}
-
-				$resolved = $this->recipientResolver->resolve(
-					recipientsSpec: [
-						[
-							'kind' => 'relation',
-							'relation' => $field,
-						],
-					],
-					data: [$field => $value],
-					object: null,
-					context: []
-				);
-				$candidates = $this->recipientResolver->extractUidsFromRelation(value: $value);
-				foreach (array_diff($candidates, $resolved) as $bad) {
-					$unknown[] = $bad;
-				}
-
-				foreach ($resolved as $uid) {
-					$uids[] = $uid;
-				}
-
-				continue;
-			}//end if
-
-			if ($this->recipientResolver->userExists(uid: $entry) === true) {
-				$uids[] = $entry;
+				$resolved = $this->addresses->resolveTemplate(field: $matches[1], json: $json, acceptAddresses: $acceptAddresses);
+				array_push($uids, ...$resolved['uids']);
+				array_push($addresses, ...$resolved['addresses']);
+				array_push($unknown, ...$resolved['unknown']);
 				continue;
 			}
 
-			if ($this->recipientResolver->groupExists(gid: $entry) === true) {
-				$members = $this->recipientResolver->resolve(
-					recipientsSpec: [
-						[
-							'kind' => 'groups',
-							'groups' => [$entry],
-						],
-					],
-					data: [],
-					object: null,
-					context: []
-				);
-				foreach ($members as $uid) {
-					$uids[] = $uid;
-				}
-
-				continue;
-			}
-
-			if ($acceptAddresses === true && str_contains($entry, '@') === true) {
-				$addresses[] = ['address' => $entry, 'name' => ''];
-				continue;
-			}
-
-			$unknown[] = $entry;
+			$resolved = $this->addresses->resolveLiteral(entry: $entry, acceptAddresses: $acceptAddresses);
+			array_push($uids, ...$resolved['uids']);
+			array_push($addresses, ...$resolved['addresses']);
+			array_push($unknown, ...$resolved['unknown']);
 		}//end foreach
 
 		return [
@@ -996,90 +778,6 @@ class FlowMessagingService {
 			'unknown' => array_values(array_unique($unknown)),
 		];
 	}//end resolveRecipients()
-
-	/**
-	 * Wrap a single role object in a list.
-	 *
-	 * The relation reader walks a list; handed one object it would walk the
-	 * object's VALUES and read a display name as a uid. A field holding one
-	 * `{ "uid": ..., "displayName": ... }` is a list of one.
-	 *
-	 * @param mixed $value The field's value.
-	 *
-	 * @return mixed The value, a single role object wrapped.
-	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-notification-step-reads-role-fields-on-the-item
-	 */
-	private function normaliseRoleValue(mixed $value): mixed {
-		if (is_array($value) === false || $value === [] || array_is_list($value) === true) {
-			return $value;
-		}
-
-		foreach (['userId', 'uid', 'user_id', 'email', 'emailAddress'] as $key) {
-			if (array_key_exists($key, $value) === true) {
-				return [$value];
-			}
-		}
-
-		return $value;
-	}//end normaliseRoleValue()
-
-	/**
-	 * Take the addresses out of a field's value, leaving the user entries.
-	 *
-	 * A string is an address when it holds an `@` and names no user (a uid
-	 * may itself look like an address, and a user wins). An object is a
-	 * user when it carries `uid` / `userId` / `user_id`, otherwise an address
-	 * when it carries `email` / `emailAddress`, the convention the party
-	 * model reads.
-	 *
-	 * @param mixed $value The field's value.
-	 *
-	 * @return array{rest: mixed, addresses: array<int, array{address: string, name: string}>}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two entry shapes, each with a user and an address branch.
-	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
-	 */
-	private function splitAddresses(mixed $value): array {
-		if (is_string($value) === true) {
-			$value = [$value];
-		}
-
-		if (is_array($value) === false) {
-			return ['rest' => $value, 'addresses' => []];
-		}
-
-		$rest = [];
-		$addresses = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true) {
-				$entry = trim($entry);
-				if (str_contains($entry, '@') === true && $this->recipientResolver->userExists(uid: $entry) === false) {
-					$addresses[] = ['address' => $entry, 'name' => ''];
-					continue;
-				}
-
-				$rest[] = $entry;
-				continue;
-			}
-
-			if (is_array($entry) === true && $this->stringOrNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) === null) {
-				$address = $this->stringOrNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
-				if ($address !== null) {
-					$addresses[] = [
-						'address' => $address,
-						'name' => (string)($this->stringOrNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
-					];
-					continue;
-				}
-			}
-
-			$rest[] = $entry;
-		}//end foreach
-
-		return ['rest' => $rest, 'addresses' => $addresses];
-	}//end splitAddresses()
 
 	/**
 	 * Whether the recipient's own preference allows this channel.

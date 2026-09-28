@@ -180,7 +180,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				'label' => $this->l10n->t('Who to mail'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'User or group ids, email addresses, or a field on the item such as {{ assignee }} or {{ contacts }}. Groups are expanded. Addresses are sent to only as far as external recipients allows.'
+					'User or group ids, email addresses, or a field such as {{ assignee }}. Groups are expanded; addresses need external recipients.'
 				),
 				'required' => true,
 			],
@@ -189,7 +189,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				'label' => $this->l10n->t('External recipients'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'Whether email addresses outside Nextcloud may be mailed: none (the default) refuses them, object only mails addresses found on the item itself, any mails every valid address. A refused address is listed in the run log.'
+					'Set to none to refuse email addresses, object to mail only addresses on the item, or any to mail every valid address.'
 				),
 			],
 			[

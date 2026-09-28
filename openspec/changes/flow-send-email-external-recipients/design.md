@@ -51,3 +51,12 @@ there is one, otherwise the node type. The flow id comes from the new
 
 Addresses appear in the report samples exactly as user ids do: bounded by
 the log's sampling rule. The report never holds a body.
+
+## Decision 6: two small collaborators, built by the service
+
+The address rules live in `FlowRecipientAddresses` (classify a literal or a
+`{{ field }}` entry, screen addresses against the allowlist) and the event in
+`FlowEmailAnnouncer`. `FlowMessagingService` constructs both from its own
+dependencies, so the guard chain stays readable and no DI registration
+changes. Neither adds a resolver or a sender: users still resolve through
+`NotificationRecipientResolver`, mail still goes through `EmailSender`.
