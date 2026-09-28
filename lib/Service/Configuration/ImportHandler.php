@@ -49,8 +49,11 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\App\IAppManager;
@@ -241,6 +244,13 @@ class ImportHandler {
 	private ?FileService $fileService = null;
 
 	/**
+	 * Optional provisioner that gives every register an app import returns its Files folder.
+	 *
+	 * @var RegisterFolderProvisioner|null
+	 */
+	private ?RegisterFolderProvisioner $folderProvisioner = null;
+
+	/**
 	 * Optional user session for tasks/notes that require a logged-in actor.
 	 *
 	 * @var IUserSession|null
@@ -271,6 +281,15 @@ class ImportHandler {
 	 * @var GroupProvisioner|null
 	 */
 	private ?GroupProvisioner $groupProvisioner = null;
+
+	/**
+	 * Classifies a schema change an import makes, bumps its version and
+	 * writes the changelog, as an edit through the schema API does (#4102).
+	 * Null where it could not be resolved; the import then runs unchanged.
+	 *
+	 * @var SchemaVersioningService|null
+	 */
+	private ?SchemaVersioningService $schemaVersioning = null;
 
 	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
@@ -399,6 +418,20 @@ class ImportHandler {
 	}//end setFileService()
 
 	/**
+	 * Inject the provisioner importFromApp() uses to give imported registers their folder.
+	 *
+	 * @param RegisterFolderProvisioner|null $provisioner Optional provisioner; without it the
+	 *                                                    first upload makes the folder instead.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
+	 */
+	public function setRegisterFolderProvisioner(?RegisterFolderProvisioner $provisioner): void {
+		$this->folderProvisioner = $provisioner;
+	}//end setRegisterFolderProvisioner()
+
+	/**
 	 * Inject the IUserSession used to detect whether a logged-in actor
 	 * exists at seed time. Tasks + notes are skipped without one.
 	 *
@@ -452,6 +485,22 @@ class ImportHandler {
 	public function setGroupProvisioner(?GroupProvisioner $groupProvisioner): void {
 		$this->groupProvisioner = $groupProvisioner;
 	}//end setGroupProvisioner()
+
+	/**
+	 * Set the schema versioning service.
+	 *
+	 * Optional: when null, imported schema changes are written unclassified,
+	 * as they were before #4102.
+	 *
+	 * @param SchemaVersioningService|null $schemaVersioning Optional versioning service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function setSchemaVersioning(?SchemaVersioningService $schemaVersioning): void {
+		$this->schemaVersioning = $schemaVersioning;
+	}//end setSchemaVersioning()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -1471,6 +1520,83 @@ class ImportHandler {
 	}//end recordShippedBaseline()
 
 	/**
+	 * Classify the definition an import is about to write against the stored one.
+	 *
+	 * Null when there is no versioning service, when the import carries no
+	 * definition, or when classifying failed: the import itself never breaks
+	 * on this, it is only left unclassified, which is how it was before.
+	 *
+	 * @param Schema               $existing The schema already stored.
+	 * @param array<string, mixed> $data     The incoming schema, as it will be written.
+	 *
+	 * @return SchemaChangeSet|null The change set, or null when not classified.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function classifyImportedSchemaChange(Schema $existing, array $data): ?SchemaChangeSet {
+		if ($this->schemaVersioning === null
+			|| (isset($data['properties']) === false && isset($data['required']) === false)
+		) {
+			return null;
+		}
+
+		try {
+			return $this->schemaVersioning->classify(
+				existing: $existing,
+				newDefinition: [
+					'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
+					'required' => ($data['required'] ?? $existing->getRequired() ?? []),
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Could not classify an imported schema change: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schema_id' => $existing->getId()]
+			);
+			return null;
+		}
+	}//end classifyImportedSchemaChange()
+
+	/**
+	 * Write the changelog entry for an imported schema change, and log a breaking one.
+	 *
+	 * @param Schema               $schema    The schema as written.
+	 * @param SchemaChangeSet|null $changeSet The classified change, or null when not classified.
+	 * @param string|null          $appId     The app whose import made the change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function recordImportedSchemaChange(Schema $schema, ?SchemaChangeSet $changeSet, ?string $appId): void {
+		if ($this->schemaVersioning === null || $changeSet === null || $changeSet->hasChanges() === false) {
+			return;
+		}
+
+		$this->schemaVersioning->recordChangelog(
+			schemaId: (int)$schema->getId(),
+			version: $schema->getVersion(),
+			changeSet: $changeSet,
+			acknowledged: false
+		);
+
+		if ($changeSet->isBreaking() === true) {
+			$this->logger->warning(
+				message: '[ImportHandler] A configuration import made a breaking change to a schema; recorded in its changelog.',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema_id' => $schema->getId(),
+					'schema_slug' => $schema->getSlug(),
+					'version' => $schema->getVersion(),
+					'app' => $appId,
+					'changes' => $changeSet->getChanges(),
+				]
+			);
+		}
+	}//end recordImportedSchemaChange()
+
+	/**
 	 * Whether an incoming schema says anything different from the stored one.
 	 *
 	 * @param array<string, mixed> $data The incoming schema definition.
@@ -2198,6 +2324,18 @@ class ImportHandler {
 					appVersion: $version
 				);
 
+				// Classify the change against the stored definition, whatever
+				// path it came in by (#4102). An import has nobody to answer a
+				// breaking-change prompt, so a breaking change is recorded and
+				// logged rather than refused. The version the app ships is kept
+				// when it is newer; otherwise the classification decides it.
+				$changeSet = $this->classifyImportedSchemaChange(existing: $existingSchema, data: $data);
+				if ($changeSet !== null && $changeSet->hasChanges() === true
+					&& version_compare($incomingVersion, $existingVersion, '>') === false
+				) {
+					$data['version'] = $this->schemaVersioning->nextVersion(existing: $existingSchema, changeSet: $changeSet);
+				}
+
 				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
 				if ($owner !== null) {
 					$existingSchema->setOwner($owner);
@@ -2207,7 +2345,10 @@ class ImportHandler {
 					$existingSchema->setApplication($appId);
 				}
 
-				return $this->schemaMapper->update($existingSchema);
+				$existingSchema = $this->schemaMapper->update($existingSchema);
+				$this->recordImportedSchemaChange(schema: $existingSchema, changeSet: $changeSet, appId: $appId);
+
+				return $existingSchema;
 			}//end if
 
 			// Create new schema.
@@ -4048,6 +4189,22 @@ class ImportHandler {
 				configuration: $configuration,
 				result: $result
 			);
+
+			// REGISTER FOLDERS AT IMPORT (register-folder-at-import): an
+			// API-created register gets its Files folder at creation; an
+			// app-imported one did not, so the first upload had to make it
+			// (portaliq#29). Every register this import returned, including an
+			// auto-created one, gets its folder here. The id is recorded as
+			// bookkeeping (no update event, no organisation check) and a
+			// failure is logged, never thrown: the first upload still makes it.
+			try {
+				$this->folderProvisioner?->ensureFolders(registers: ($result['registers'] ?? []));
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: "[ImportHandler] Register folder provisioning failed for app {$appId}: " . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
 
 			// MAGIC-TABLE COLUMN SYNC (fixes #2082): reconcile the physical
 			// table of EVERY imported schema, in every register that holds it.
