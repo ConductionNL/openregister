@@ -1470,7 +1470,7 @@ class PermissionHandler {
 	 * the object-over-schema precedence for free, and gets it from the same
 	 * value the rule chain is about to use.
 	 *
-	 * A check with NO object is never gated. A scope is a property of an object,
+	 * A check with NO object, or a create, is never gated. A scope is a property of an object,
 	 * so with no object there is nothing to be private — and gating here would
 	 * turn a schema whose DEFAULT is private into a schema nobody can create in,
 	 * which inverts the meaning of a default.
@@ -1491,7 +1491,9 @@ class PermissionHandler {
 		?string $objectOwner,
 		string $action,
 	): ?bool {
-		if ($object === null) {
+		// A create is asked about the incoming data (openregister#4094), which
+		// is not an object yet and so cannot be private.
+		if ($object === null || $action === 'create') {
 			return null;
 		}
 
