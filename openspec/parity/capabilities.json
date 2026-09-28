@@ -654,12 +654,12 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Schema/SchemaVersioningService.php diffs, semver-bumps and records a changelog on every schema update (SchemasController.php:184); changelog API routes.php:1634. No draft state: grep 'draft' in lib/Db/Schema.php and SchemasController.php finds only JSON Schema draft-2020-12 refs"
+    "evidence": "lib/Service/Schema/SchemaVersioningService.php diffs, semver-bumps and records a changelog on every schema update (SchemasController.php:184); changelog API routes.php:1634. No draft state: grep 'draft' in lib/Db/Schema.php and SchemasController.php finds only JSON Schema draft-2020-12 refs; Corrections round 8 (2026-09-28), openregister#4102: the version bump and changelog run only on PUT /api/schemas/{id}, lib/Controller/SchemasController.php:1140-1182 is the only caller of SchemaVersioningService, while a configuration or app import saves the schema through schemaMapper->update() with no classification, version bump or changelog entry, lib/Service/Configuration/ImportHandler.php:2210 and :2224 at 555af72."
    },
    "reachedOn": "API only: GET /api/schemas/{id}/changelog",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Edits go live immediately; there is no unpublished draft of a schema.",
+   "note": "Edits go live immediately; there is no unpublished draft of a schema. Corrections round 8 (2026-09-28): schema changes that arrive through a configuration or app import get no version bump and no changelog entry, openregister#4102; rating kept because partial already reflects the missing draft state, and edits through the schema API are still versioned.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "no",
@@ -3675,12 +3675,12 @@
    "built": {
     "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/TextExtractionService.php:262 entity recognition then :284 riskLevelService->updateRiskLevel; shown src/components/files-sidebar/ExtractionTab.vue:105 Risk level; filter lib/Controller/FileExtractionController.php:151"
+    "evidence": "lib/Service/TextExtractionService.php:262 entity recognition then :284 riskLevelService->updateRiskLevel; shown src/components/files-sidebar/ExtractionTab.vue:105 Risk level; filter lib/Controller/FileExtractionController.php:151; Corrections round 8 (2026-09-28), openregister#4104: the regex detector has no BSN pattern and files a BSN as PHONE at best, and the Presidio path asks for US_SSN, so a Dutch BSN is never flagged as a citizen service number and its file is rated medium instead of very high, lib/Service/TextExtraction/EntityRecognitionHandler.php:505-526 and :869, lib/Service/RiskLevelService.php:78 and :82 at 555af72."
    },
    "reachedOn": "Nextcloud Files sidebar and /files",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Entity recognition is off by default (entityRecognitionEnabled false, TextExtractionService.php:252); an admin must switch it on.",
+   "note": "Entity recognition is off by default (entityRecognitionEnabled false, TextExtractionService.php:252); an admin must switch it on. Corrections round 8 (2026-09-28): a Dutch BSN is not recognised as a citizen service number, at best it is filed as a phone number, so its file is rated too low, openregister#4104; rating kept because files are still flagged for the personal data the detector does recognise (e-mail, phone, IBAN, and names through Presidio), the gap is one identifier type.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
