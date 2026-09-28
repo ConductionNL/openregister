@@ -443,7 +443,12 @@ class RegisterService {
 	}//end updateFromArray()
 
 	/**
-	 * Delete a register.
+	 * Delete a register, then remove its folder.
+	 *
+	 * The folder goes only after the row is gone: the mapper refuses a register
+	 * that still has objects, and that refusal must leave the folder in place.
+	 * A folder that cannot be removed is logged, not raised, because the
+	 * register itself is already deleted (openregister#4107).
 	 *
 	 * @param Register $register The register to delete
 	 *
@@ -453,10 +458,21 @@ class RegisterService {
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 *
-	 * @spec exclude Pure pass-through to RegisterMapper::delete; no business logic.
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function delete(Register $register): Register {
-		return $this->registerMapper->delete($register);
+		$deleted = $this->registerMapper->delete($register);
+
+		try {
+			$this->fileService->deleteRegisterFolder(register: $register);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: "[RegisterService] Register {$register->getId()} was deleted but its folder was not removed: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $deleted;
 	}//end delete()
 
 	/**

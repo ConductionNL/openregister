@@ -395,6 +395,60 @@ class FolderManagementHandler {
 	}//end getRegisterFolderById()
 
 	/**
+	 * Remove the folder of a register whose row was just deleted.
+	 *
+	 * Without this the folder stayed under "Open Registers" with every file in
+	 * it, and a register created later with the same title was handed that
+	 * folder, because createFolderPath() returns the folder already at a path.
+	 *
+	 * Only the folder the register recorded by id is removed, and only when it
+	 * is a register folder (directly below "Open Registers") that no other
+	 * register records. Two registers of one title share a folder path, so a
+	 * register that never recorded a folder id is left alone rather than looked
+	 * up by path. The delete is Nextcloud's normal node delete: with the trash
+	 * bin app enabled the folder and its files move to the owner's trash.
+	 *
+	 * @param Register $register The register whose row was deleted.
+	 *
+	 * @return bool True when the folder was removed; false when there was nothing this register may remove.
+	 *
+	 * @throws NotPermittedException When Nextcloud refuses to delete the folder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function deleteRegisterFolder(Register $register): bool {
+		$folderId = (string)($register->getFolder() ?? '');
+		if (ctype_digit($folderId) === false) {
+			return false;
+		}
+
+		if ($this->folderRecorder->isRecordedByAnotherRegister(folderId: $folderId, registerId: (int)$register->getId()) === true) {
+			$this->logger->info(
+				message: '[FolderManagementHandler] Kept folder ' . $folderId . ' of deleted register ' . $register->getId() . ': another register records it',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		$folder = $this->getNodeById(nodeId: (int)$folderId);
+		if ($folder instanceof Folder === false || $this->isRegisterFolderPath(path: $folder->getPath()) === false) {
+			$this->logger->warning(
+				message: '[FolderManagementHandler] Kept folder ' . $folderId . ' of deleted register ' . $register->getId() . ': it is not a register folder',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		$folder->delete();
+		$this->logger->info(
+			message: '[FolderManagementHandler] Removed folder ' . $folderId . ' of deleted register ' . $register->getId(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return true;
+	}//end deleteRegisterFolder()
+
+	/**
 	 * Get the object folder for an object entity.
 	 *
 	 * Attempts to retrieve the object folder using the stored folder ID.
@@ -1186,6 +1240,23 @@ class FolderManagementHandler {
 
 		return preg_match($pattern, $path) === 1;
 	}//end isManagedFolderPath()
+
+	/**
+	 * Whether a node path is a register folder: one level below an `Open Registers` root.
+	 *
+	 * Narrower than isManagedFolderPath() on purpose: the root itself holds every
+	 * register's folder, and a folder two levels down is an object's, so neither
+	 * may be removed as a register's folder.
+	 *
+	 * @param string $path The node path to test, "/<uid>/files/<path in the home>".
+	 *
+	 * @return bool True when the path is "/<uid>/files/Open Registers/<one folder>".
+	 */
+	private function isRegisterFolderPath(string $path): bool {
+		$pattern = '#^/[^/]+/files/' . preg_quote(self::ROOT_FOLDER, '#') . '/[^/]+/?$#';
+
+		return preg_match($pattern, $path) === 1;
+	}//end isRegisterFolderPath()
 
 	/**
 	 * Write a `folder_access_denied` entry to the audit trail.

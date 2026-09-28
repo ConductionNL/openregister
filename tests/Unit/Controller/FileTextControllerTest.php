@@ -89,26 +89,65 @@ class FileTextControllerTest extends TestCase {
 	// =========================================================================
 	// getFileText
 	// =========================================================================
-	public function testGetFileTextReturnsDeprecated(): void {
+	public function testGetFileTextReturnsTheExtractedText(): void {
+		$this->textExtractor->expects($this->once())
+			->method('getExtractedText')
+			->with(1)
+			->willReturn('The extracted text.');
+
 		$result = $this->controller->getFileText(1);
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertEquals(404, $result->getStatus());
+		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('deprecated', $data['message']);
+		$this->assertTrue($data['success']);
+		$this->assertSame('The extracted text.', $data['text']);
 		$this->assertEquals(1, $data['file_id']);
-	}//end testGetFileTextReturnsDeprecated()
+	}//end testGetFileTextReturnsTheExtractedText()
 
-	public function testGetFileTextReturnsDeprecatedWithDifferentFileId(): void {
+	public function testGetFileTextIs404WhenNothingWasExtracted(): void {
+		$this->textExtractor->method('getExtractedText')->willReturn(null);
+
 		$result = $this->controller->getFileText(42);
 
 		$this->assertEquals(404, $result->getStatus());
 		$data = $result->getData();
 		$this->assertFalse($data['success']);
 		$this->assertEquals(42, $data['file_id']);
-		$this->assertStringContainsString('chunk-based endpoints', $data['message']);
-	}//end testGetFileTextReturnsDeprecatedWithDifferentFileId()
+		$this->assertStringContainsString('extract', $data['message']);
+	}//end testGetFileTextIs404WhenNothingWasExtracted()
+
+	public function testGetFileTextRefusesAFileTheCallerCannotOpen(): void {
+		$stranger = $this->createMock(IUser::class);
+		$stranger->method('getUID')->willReturn('stranger');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($stranger);
+		$emptyFolder = $this->createMock(Folder::class);
+		$emptyFolder->method('getById')->willReturn([]);
+		$rootFolder = $this->createMock(IRootFolder::class);
+		$rootFolder->method('getUserFolder')->willReturn($emptyFolder);
+
+		$this->textExtractor->expects($this->never())->method('getExtractedText');
+
+		$controller = new FileTextController(
+			'openregister',
+			$this->request,
+			$this->textExtractor,
+			$this->fileService,
+			$this->entityRelationMapper,
+			$this->logger,
+			$this->config,
+			$this->manualEntityService,
+			$session,
+			$rootFolder,
+			$this->groupManager
+		);
+
+		$result = $controller->getFileText(7);
+
+		$this->assertEquals(404, $result->getStatus());
+		$this->assertArrayNotHasKey('text', $result->getData());
+	}//end testGetFileTextRefusesAFileTheCallerCannotOpen()
 
 	// =========================================================================
 	// extractFileText
