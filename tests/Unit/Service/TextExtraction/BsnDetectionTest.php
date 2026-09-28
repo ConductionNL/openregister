@@ -111,6 +111,7 @@ class BsnDetectionTest extends TestCase {
 	public function testAValidBsnIsNotLabelledPhone(): void {
 		$entities = $this->detect('BSN 111222333');
 
+		$this->assertCount(1, $this->ofType($entities, EntityRecognitionHandler::ENTITY_TYPE_SSN));
 		foreach ($this->ofType($entities, EntityRecognitionHandler::ENTITY_TYPE_PHONE) as $phone) {
 			$this->assertFalse(
 				$phone['position_start'] < 13 && $phone['position_end'] > 4,

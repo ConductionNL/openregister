@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\TextExtraction\PatternSet\NlPatternSet;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
@@ -487,12 +488,66 @@ class EntityRecognitionHandler {
 			}
 		}//end foreach
 
+		// Country-specific identifiers come from a jurisdiction pattern set,
+		// not from the generic patterns above (or#4104). The Dutch set finds
+		// a BSN only when it passes the elfproef, and reports it as SSN, the
+		// type the risk service rates very high.
+		if ($entityTypes === null || in_array(self::ENTITY_TYPE_SSN, $entityTypes, true) === true) {
+			$entities = $this->withoutPhoneOverlapping(
+				entities: array_merge($entities, (new NlPatternSet())->detect(text: $text))
+			);
+		}
+
 		// Filter by confidence threshold.
 		return array_filter(
 			$entities,
 			fn ($e) => $e['confidence'] >= $confidenceThreshold
 		);
 	}//end detectWithRegex()
+
+	/**
+	 * Drop PHONE matches that overlap a BSN.
+	 *
+	 * The phone pattern matches any run of digits, so a BSN was also, or
+	 * instead, labelled PHONE, which rates the file medium where a BSN rates
+	 * it very high. A span proved to be a BSN by the elfproef is not a phone
+	 * number.
+	 *
+	 * @param array $entities The detected entities.
+	 *
+	 * @return array The entities without a PHONE that overlaps an SSN span.
+	 */
+	private function withoutPhoneOverlapping(array $entities): array {
+		$bsnSpans = [];
+		foreach ($entities as $entity) {
+			if ($entity['type'] === self::ENTITY_TYPE_SSN) {
+				$bsnSpans[] = [$entity['position_start'], $entity['position_end']];
+			}
+		}
+
+		if ($bsnSpans === []) {
+			return $entities;
+		}
+
+		return array_values(
+			array_filter(
+				$entities,
+				static function (array $entity) use ($bsnSpans): bool {
+					if ($entity['type'] !== self::ENTITY_TYPE_PHONE) {
+						return true;
+					}
+
+					foreach ($bsnSpans as [$start, $end]) {
+						if ($entity['position_start'] < $end && $entity['position_end'] > $start) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			)
+		);
+	}//end withoutPhoneOverlapping()
 
 	/**
 	 * Get regex pattern definitions for entity detection.
