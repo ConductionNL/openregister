@@ -69,7 +69,8 @@ class DeletedControllerTest extends TestCase {
 			$this->userSession,
 			$this->createMock(originalClassName: AuditTrailMapper::class),
 			$deletion,
-			$authorizer
+			$authorizer,
+			$this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class)
 		);
 	}
 

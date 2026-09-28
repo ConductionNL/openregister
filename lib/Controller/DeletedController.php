@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -69,6 +71,7 @@ class DeletedController extends Controller {
 	 * @param AuditTrailMapper $auditTrailMapper Reads back a destruction record and records a restore
 	 * @param DeletionServiceBundle $deletion The destruction-pipeline collaborators (window, right, scope, recorder, clock)
 	 * @param DeletedObjectAuthorizer $authorizer Answers the authorization and schema-resolution questions
+	 * @param RenderObject $renderObject Strips write-only and unreadable properties before a trashed row is served
 	 *
 	 * @return void
 	 */
@@ -81,6 +84,7 @@ class DeletedController extends Controller {
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly DeletionServiceBundle $deletion,
 		private readonly DeletedObjectAuthorizer $authorizer,
+		private readonly RenderObject $renderObject,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -225,6 +229,9 @@ class DeletedController extends Controller {
 	public function index(): JSONResponse {
 		$params = $this->extractRequestParameters();
 
+		// Read-scoped for a non-admin, as the object list is (openregister#4078).
+		$scoped = ($this->authorizer->isCurrentUserAdmin() === false);
+
 		try {
 			// Objects live in per-register/schema magic tables, so there is no
 			// single table for searchObjectsPaginated() to query without a
@@ -232,9 +239,15 @@ class DeletedController extends Controller {
 			// result. Scan every magic table for soft-deleted rows directly.
 			$deletedObjects = $this->objectEntityMapper->findDeletedAcrossAllMagicTables(
 				limit: $params['limit'],
-				offset: $params['offset']
+				offset: $params['offset'],
+				_rbac: $scoped,
+				_multitenancy: $scoped
 			);
-			$total = $this->objectEntityMapper->countDeletedAcrossAllMagicTables();
+			$total = $this->objectEntityMapper->countDeletedAcrossAllMagicTables(_rbac: $scoped, _multitenancy: $scoped);
+
+			// Same render boundary as a live row: no write-only or unreadable property leaves.
+			$deletedObjects = array_values($deletedObjects);
+			$this->renderObject->redactWriteOnlyFromRows(rows: $deletedObjects, _rbac: $scoped);
 
 			// Calculate pagination.
 			$pages = 1;
@@ -244,7 +257,7 @@ class DeletedController extends Controller {
 
 			return new JSONResponse(
 				data: [
-					'results' => $this->withWindows(objects: array_values($deletedObjects)),
+					'results' => $this->withWindows(objects: $deletedObjects),
 					'total' => $total,
 					'page' => $params['page'] ?? 1,
 					'pages' => $pages,
@@ -277,8 +290,9 @@ class DeletedController extends Controller {
 		try {
 			// Count soft-deleted rows across every magic table. countAll() with
 			// no register/schema context returns 0 (it cannot pick a table), so
-			// the dedicated cross-table count is required.
-			$totalDeleted = $this->objectEntityMapper->countDeletedAcrossAllMagicTables();
+			// the dedicated cross-table count is required, read-scoped (#4078).
+			$scoped = ($this->authorizer->isCurrentUserAdmin() === false);
+			$totalDeleted = $this->objectEntityMapper->countDeletedAcrossAllMagicTables(_rbac: $scoped, _multitenancy: $scoped);
 
 			// Get deleted today count.
 			$today = (new DateTime())->format('Y-m-d');
@@ -834,6 +848,9 @@ class DeletedController extends Controller {
 					'clocks' => $this->deletion->clock->clocksFor(object: $object),
 				]
 			);
+		} catch (DoesNotExistException $e) {
+			// The lookup is read-scoped: an unreadable object is absent, not a server error.
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Failed to preview the destruction: ' . $e->getMessage()],
@@ -870,9 +887,11 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			$records = $this->auditTrailMapper->findForObjectByAction(
-				objectUuid: $id,
-				actions: [DestructionScope::DESTRUCTION_ACTION]
+			$records = $this->authorizer->readableDestructionRecords(
+				records: $this->auditTrailMapper->findForObjectByAction(
+					objectUuid: $id,
+					actions: [DestructionScope::DESTRUCTION_ACTION]
+				)
 			);
 
 			return new JSONResponse(
