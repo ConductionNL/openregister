@@ -19,8 +19,11 @@ use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Audit\SecuritySettingRegistry;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\OwnSettingsChangeRecorder;
+use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -304,4 +307,47 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 
 		$this->assertSame(0, $recorder->record(before: ['settings' => [], 'security' => []], keys: ['rbac']));
 	}//end testAFailingAuditorNeverThrows()
+	/**
+	 * Changing the LLM model through the LLM settings door is recorded, and the key stays secret (openregister#4100).
+	 *
+	 * @return void
+	 */
+	public function testLlmDoorRecordsTheChangedKeyAndMarksTheApiKeySecret(): void {
+		$this->store['llm'] = json_encode(['enabled' => true, 'openaiConfig' => ['apiKey' => 'sk-old', 'model' => 'small']]);
+
+		$handler = new LlmSettingsHandler($this->appConfig, 'openregister', $this->recorder());
+		$handler->updateLLMSettingsOnly(['openaiConfig' => ['apiKey' => 'sk-new', 'model' => 'large']]);
+
+		$this->assertSame(['small', 'large'], $this->lastChange('llm.openaiConfig.model'));
+		$call = $this->recorded[array_key_last($this->recorded)];
+		$this->assertContains('llm.openaiConfig.apiKey', $call['secretKeys']);
+	}//end testLlmDoorRecordsTheChangedKeyAndMarksTheApiKeySecret()
+
+	/**
+	 * The file settings door is recorded (openregister#4100).
+	 *
+	 * @return void
+	 */
+	public function testFileDoorRecordsTheChangedKey(): void {
+		$this->store['fileManagement'] = json_encode(['maxFileSize' => 100]);
+
+		$handler = new FileSettingsHandler($this->appConfig, 'openregister', $this->recorder());
+		$handler->updateFileSettingsOnly(['maxFileSize' => 200]);
+
+		$this->assertSame([100, 200], $this->lastChange('fileManagement.maxFileSize'));
+	}//end testFileDoorRecordsTheChangedKey()
+
+	/**
+	 * The search backend door is recorded (openregister#4100).
+	 *
+	 * @return void
+	 */
+	public function testSearchBackendDoorRecords(): void {
+		$this->store['search_backend'] = json_encode(['active' => 'solr']);
+
+		$handler = new SearchBackendHandler($this->appConfig, $this->createMock(LoggerInterface::class), 'openregister', $this->recorder());
+		$handler->updateSearchBackendConfig('database');
+
+		$this->assertSame(['solr', 'database'], $this->lastChange('search_backend.active'));
+	}//end testSearchBackendDoorRecords()
 }//end class
