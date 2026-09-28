@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -67,6 +68,7 @@ class SchemaImportController extends Controller {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly LoggerInterface $logger,
+		private readonly ?SchemaVersioningService $schemaVersioning = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -265,6 +267,17 @@ class SchemaImportController extends Controller {
 	 * @return Schema The updated schema entity.
 	 */
 	private function applyMerge(Schema $schema, array $diff): Schema {
+		// The caller confirmed each conflict, but the merge still changes the
+		// definition, so it is classified, versioned and recorded as every
+		// definition update is (#4102). Classified before the properties move.
+		$changeSet = $this->schemaVersioning?->classify(
+			existing: $schema,
+			newDefinition: ['properties' => $diff['merged'], 'required' => ($schema->getRequired() ?? [])]
+		);
+		if ($changeSet !== null && $changeSet->hasChanges() === true) {
+			$schema->setVersion($this->schemaVersioning->nextVersion(existing: $schema, changeSet: $changeSet));
+		}
+
 		$schema->setProperties($diff['merged']);
 
 		// Refresh the import baseline + jsonld block from the new source so the
@@ -282,7 +295,17 @@ class SchemaImportController extends Controller {
 
 		$schema->setConfiguration($configuration);
 
-		return $this->schemaMapper->update($schema);
+		$schema = $this->schemaMapper->update($schema);
+		if ($changeSet !== null) {
+			$this->schemaVersioning?->recordChangelog(
+				schemaId: (int)$schema->getId(),
+				version: $schema->getVersion(),
+				changeSet: $changeSet,
+				acknowledged: false
+			);
+		}
+
+		return $schema;
 	}//end applyMerge()
 
 	/**
