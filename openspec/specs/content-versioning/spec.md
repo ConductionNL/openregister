@@ -146,7 +146,7 @@ Users MUST be able to revert an object to any previous version from its history.
 #### Scenario: Rollback to a specific version number
 - **GIVEN** object `melding-1` is at version `1.0.5` (status: `afgehandeld`)
 - **AND** version `1.0.2` had status `in_behandeling`
-- **WHEN** the user sends `POST /index.php/apps/openregister/api/revert/{register}/{schema}/{id}` with body `{"version": "1.0.2"}`
+- **WHEN** the user sends `POST /index.php/apps/openregister/api/objects/{register}/{schema}/{id}/revert` with body `{"version": "1.0.2"}`
 - **THEN** the `RevertHandler.revert()` MUST reconstruct the object state at version `1.0.2`
 - **AND** the object MUST be saved as a new version `1.0.6` with the reconstructed data
 - **AND** the audit trail MUST record action `revert` with metadata `{"revertedToVersion": "1.0.2"}`
@@ -486,7 +486,7 @@ This requirement (tracked as REQ-018) documents the observed event-dispatch cont
   - `RevertHandler.revert()` reverts an object to a previous state using audit trail data, dispatches `ObjectRevertedEvent`
   - `AuditTrailMapper.revertObject()` reconstructs object state by applying audit trail changes in reverse
   - `AuditTrailMapper.findByObjectUntil()` supports three revert modes: DateTime, audit trail ID, and semantic version string
-  - `RevertController` exposes the revert API at `POST /api/revert/{register}/{schema}/{id}` accepting `datetime`, `auditTrailId`, or `version` parameters
+  - `RevertController` exposes the revert API at `POST /api/objects/{register}/{schema}/{id}/revert` accepting `datetime`, `auditTrailId`, or `version` parameters
   - `LockHandler` prevents rollback of locked objects (integrated in `RevertHandler`)
   - `AuditTrail` entity includes comprehensive metadata: uuid, action, changed, user, userName, session, request, ipAddress, version, created, organisationId, organisationIdType, processingActivityId, confidentiality, retentionPeriod, expires, size
   - `AuditTrailMapper.clearLogs()` respects the `expires` field for retention-based cleanup
