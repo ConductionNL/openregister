@@ -60,6 +60,7 @@ class SchemaImportController extends Controller {
 	 * @param SchemaMapper $schemaMapper Schema persistence.
 	 * @param RegisterMapper $registerMapper Register lookup/association.
 	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaVersioningService|null $schemaVersioning Classifies, versions and logs a merged definition change (#4102).
 	 */
 	public function __construct(
 		string $appName,
