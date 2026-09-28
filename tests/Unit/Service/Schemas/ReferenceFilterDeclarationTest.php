@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
  * The declaration, its save-time checks and its resolution.
  *
  * @covers \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterException
  */
 class ReferenceFilterDeclarationTest extends TestCase {
 

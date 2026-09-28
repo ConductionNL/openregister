@@ -46,6 +46,11 @@ use ReflectionMethod;
  * The generated description and the read rule.
  *
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
+ * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
+ * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration
  */
 class SchemaShapeExposureTest extends TestCase {
 

@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Archival\DestructionService::approveList
  * @covers \OCA\OpenRegister\Service\RetentionService::generateDestructionCertificate
+ * @uses \OCA\OpenRegister\Service\Archival\DestructionService
+ * @uses \OCA\OpenRegister\Service\RetentionService
  */
 class DestructionCertificateContentTest extends TestCase {
 	private DestructionService $destructionService;

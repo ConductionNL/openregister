@@ -41,6 +41,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Listener\FlowRunLockReleaseListener
+ * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
  */
 final class FlowRunLockReleaseListenerTest extends TestCase {
 

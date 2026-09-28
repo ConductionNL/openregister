@@ -40,6 +40,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class ReadableAuditTrailListerTest extends TestCase {
 

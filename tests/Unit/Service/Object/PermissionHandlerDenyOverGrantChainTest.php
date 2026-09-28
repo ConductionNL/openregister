@@ -68,6 +68,16 @@ use Psr\Log\NullLogger;
  * Task 4.2: the role grant and the grant that arrives from outside the block.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 

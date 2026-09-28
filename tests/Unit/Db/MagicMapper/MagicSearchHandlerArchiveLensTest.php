@@ -35,6 +35,7 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 final class MagicSearchHandlerArchiveLensTest extends TestCase {
 

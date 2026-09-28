@@ -51,6 +51,13 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodePreflight
  * @covers \OCA\OpenRegister\Listener\FlowNodePreflightListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowConnectivity
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
+ * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  */
 class FlowNodePreflightRegressionTest extends TestCase {
 	use FiltersFlowLevelFindings;

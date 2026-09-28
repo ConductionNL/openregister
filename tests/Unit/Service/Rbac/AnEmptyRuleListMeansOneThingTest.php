@@ -54,6 +54,7 @@ use Psr\Log\NullLogger;
  * `PropertyRbacHandler` and the empty rule list.
  *
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class AnEmptyRuleListMeansOneThingTest extends TestCase {
 

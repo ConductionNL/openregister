@@ -41,6 +41,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter
+ * @uses \OCA\OpenRegister\Service\ApiCaller\CallerPolicy
  */
 class CallerRateLimiterTest extends TestCase {
 

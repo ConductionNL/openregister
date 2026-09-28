@@ -31,6 +31,10 @@ use PHPUnit\Framework\TestCase;
  * Coverage of ZaaktypeCaseSkeletonMapper over the design's fixture.
  *
  * @covers \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
+ * @uses \OCA\OpenRegister\Repair\SeedCaseFixtures
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanDefinition
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
  */
 class ZaaktypeCaseSkeletonMapperTest extends TestCase {
 

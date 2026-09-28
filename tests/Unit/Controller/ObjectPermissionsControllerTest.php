@@ -57,6 +57,15 @@ use Psr\Log\NullLogger;
  * Tasks 7.2 and 7.3, over the wire.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectPermissionsController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessHistory
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessReport
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  */
 class ObjectPermissionsControllerTest extends TestCase {
 

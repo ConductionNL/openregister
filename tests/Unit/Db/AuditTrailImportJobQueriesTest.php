@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
+ * @uses \OCA\OpenRegister\Db\AuditTrail
  */
 class AuditTrailImportJobQueriesTest extends TestCase {
 	/**

@@ -38,6 +38,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RunLockRegistry
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\RunObjectLock
  */
 final class RunLockRegistryTest extends TestCase {
 

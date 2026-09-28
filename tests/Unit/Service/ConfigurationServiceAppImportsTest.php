@@ -48,6 +48,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ConfigurationService
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ConfigurationServiceAppImportsTest extends TestCase {
 	/**

@@ -45,6 +45,7 @@ use RuntimeException;
  * Unit tests for the one anonymous timeline reader.
  *
  * @covers \OCA\OpenRegister\Service\Timeline\PublicTimeline
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class PublicTimelineTest extends TestCase {
 

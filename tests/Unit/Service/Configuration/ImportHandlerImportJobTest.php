@@ -45,6 +45,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Db\Configuration
  */
 class ImportHandlerImportJobTest extends TestCase {
 	/**

@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * Task 7.2: the access set of one object.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  */
 class ObjectPermissionsResolverTest extends TestCase {
 

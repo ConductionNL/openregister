@@ -39,6 +39,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class RegisterScopedSchemaResolverTest extends TestCase {
 

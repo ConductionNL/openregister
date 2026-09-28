@@ -52,6 +52,13 @@ use Psr\Log\NullLogger;
  * `buildRbacPredicateForAlias()`.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::buildRbacPredicateForAlias
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  */
 class MagicRbacPredicateForAliasTest extends TestCase {
 

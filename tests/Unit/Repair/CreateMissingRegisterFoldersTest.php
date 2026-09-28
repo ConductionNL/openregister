@@ -34,6 +34,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Repair\CreateMissingRegisterFolders
+ * @uses \OCA\OpenRegister\Db\Register
  */
 class CreateMissingRegisterFoldersTest extends TestCase {
 

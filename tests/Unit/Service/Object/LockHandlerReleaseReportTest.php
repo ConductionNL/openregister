@@ -51,6 +51,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\LockHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  *
  * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-is-released-through-its-own-endpoint-and-a-release-says-whether-there-was-one
  */

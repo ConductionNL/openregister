@@ -62,6 +62,9 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaCalculator
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @covers \OCA\OpenRegister\Db\FlowTimerFire
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingDayRoll
  */
 class FlowTimerServiceTest extends TestCase {
 

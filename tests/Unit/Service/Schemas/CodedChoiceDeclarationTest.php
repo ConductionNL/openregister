@@ -39,6 +39,10 @@ use PHPUnit\Framework\TestCase;
  * The save-time guard on a coded choice.
  *
  * @covers \OCA\OpenRegister\Service\Schemas\CodedChoiceDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\CodedChoiceException
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
  */
 class CodedChoiceDeclarationTest extends TestCase {
 

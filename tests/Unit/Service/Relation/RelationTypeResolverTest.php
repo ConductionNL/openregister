@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Relation\RelationTypeResolver
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
  */
 class RelationTypeResolverTest extends TestCase {
 	private RelationTypeResolver $resolver;

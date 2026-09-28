@@ -54,6 +54,14 @@ use Psr\Log\NullLogger;
  * Tasks 8.1, 8.2 and 8.4, decided rather than described.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DerivedGrantResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class PermissionHandlerDerivedAndScopedTest extends TestCase {
 

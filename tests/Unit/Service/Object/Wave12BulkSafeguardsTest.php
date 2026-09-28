@@ -38,6 +38,9 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects::applyBulkSafeguards
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects::stripSelfInjectionFields
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects
  */
 class Wave12BulkSafeguardsTest extends TestCase {
 

@@ -42,6 +42,10 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Listener\ObjectMetricsListener
  * @covers \OCA\OpenRegister\Service\MetricsService::recordMetric
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
+ * @uses \OCA\OpenRegister\Service\MetricsService
  */
 class ObjectMetricsListenerTest extends TestCase {
 	/**

@@ -36,6 +36,8 @@ use Psr\Log\NullLogger;
  * `AggregateVisibility`.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\AggregateVisibility
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration
  */
 class AggregateVisibilityTest extends TestCase {
 

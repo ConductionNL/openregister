@@ -34,6 +34,8 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Case\CasePlanAuthorizationService
  * @covers \OCA\OpenRegister\Exception\CaseAccessDeniedException
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
  */
 class CasePlanAuthorizationServiceTest extends TestCase {
 

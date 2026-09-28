@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\AppHost\Repair\GenericInitializeActions
+ * @uses \OCA\OpenRegister\AppHost\Service\GenericActionAuthService
  */
 class GenericInitializeActionsTest extends TestCase {
 

@@ -40,6 +40,9 @@ use RuntimeException;
  * Coverage of CaseRealisationService.
  *
  * @covers \OCA\OpenRegister\Service\Case\CaseRealisationService
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class CaseRealisationServiceTest extends TestCase {
 

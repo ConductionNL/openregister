@@ -35,6 +35,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @covers \OCA\OpenRegister\Service\Task\TaskBuilder
+ * @uses \OCA\OpenRegister\Db\TaskInboxCriteria
+ * @uses \OCA\OpenRegister\Service\Task\TaskPriority
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
  */
 class TaskKindTest extends TestCase {
 	use FluentQueryBuilderTrait;

@@ -48,6 +48,9 @@ use Twig\Loader\ArrayLoader;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
  * @covers \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class SaveObjectArchiveGuardTest extends TestCase {
 

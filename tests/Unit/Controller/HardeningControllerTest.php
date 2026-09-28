@@ -41,6 +41,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\HardeningController
+ * @uses \OCA\OpenRegister\Controller\HardeningStatementController
+ * @uses \OCA\OpenRegister\Service\Hardening\ElevationRequiredException
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
  */
 class HardeningControllerTest extends TestCase {
 

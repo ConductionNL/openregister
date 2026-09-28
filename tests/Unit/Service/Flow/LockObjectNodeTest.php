@@ -39,6 +39,11 @@ use UnexpectedValueException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
+ * @uses \OCA\OpenRegister\Exception\LockedException
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  */
 final class LockObjectNodeTest extends TestCase {
 

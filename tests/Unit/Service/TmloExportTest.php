@@ -46,6 +46,15 @@ use Psr\Log\LoggerInterface;
  * Unit tests for TMLO MDTO XML export
  *
  * @covers \OCA\OpenRegister\Service\TmloService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Archival\ObjectArchivalAnnotation
+ * @uses \OCA\OpenRegister\Service\Archival\RetentionEvaluator
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoPreconditions
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoSourceReader
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoValueReader
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator
  */
 class TmloExportTest extends TestCase {
 

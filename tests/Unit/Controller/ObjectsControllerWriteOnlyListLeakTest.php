@@ -67,6 +67,17 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Service\LanguageService
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
+ * @uses \OCA\OpenRegister\Service\Object\TranslationHandler
+ * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
+ * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Support\FilterParams
  */
 class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

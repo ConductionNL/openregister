@@ -47,6 +47,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\PresenceService
+ * @uses \OCA\OpenRegister\Db\ObjectPresence
  *
  * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md
  */

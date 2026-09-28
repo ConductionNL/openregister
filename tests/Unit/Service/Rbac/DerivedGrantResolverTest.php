@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * Task 8.1: the claim becomes a role, a group and an area.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\DerivedGrantResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  */
 class DerivedGrantResolverTest extends TestCase {
 

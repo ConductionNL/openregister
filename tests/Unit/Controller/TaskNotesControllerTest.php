@@ -56,6 +56,7 @@ use PHPUnit\Framework\TestCase;
  * Authorization and HTTP translation for /api/flow-tasks/{uuid}/notes.
  *
  * @covers \OCA\OpenRegister\Controller\TaskNotesController
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskNotesControllerTest extends TestCase {
 
