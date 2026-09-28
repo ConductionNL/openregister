@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\RegisterFolderRecorder;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -60,7 +61,7 @@ class RegisterFolderRecorderTest extends TestCase {
 		parent::setUp();
 		$this->db = $this->createMock(IDBConnection::class);
 		$this->qb = $this->createMock(IQueryBuilder::class);
-		foreach (['update', 'set', 'where', 'andWhere'] as $fluent) {
+		foreach (['update', 'set', 'select', 'from', 'where', 'andWhere', 'setMaxResults'] as $fluent) {
 			$this->qb->method($fluent)->willReturnCallback(function (mixed ...$arguments) use ($fluent): IQueryBuilder {
 				// Defaulted arguments (an alias left out) arrive as null and are not part of the statement.
 				$this->calls[] = $fluent . '(' . implode(', ', array_map(fn (mixed $argument): string => $this->render($argument), array_filter($arguments, static fn (mixed $argument): bool => $argument !== null))) . ')';
@@ -74,6 +75,7 @@ class RegisterFolderRecorderTest extends TestCase {
 		$expr = $this->createMock(IExpressionBuilder::class);
 		$expr->method('eq')->willReturnCallback(static fn (string $column, string $value): string => "$column = $value");
 		$expr->method('isNull')->willReturnCallback(static fn (string $column): string => "$column IS NULL");
+		$expr->method('neq')->willReturnCallback(static fn (string $column, string $value): string => "$column <> $value");
 		$expr->method('orX')->willReturnCallback(
 			function (string ...$parts): ICompositeExpression {
 				$composite = $this->createMock(ICompositeExpression::class);
@@ -157,4 +159,40 @@ class RegisterFolderRecorderTest extends TestCase {
 
 		$this->assertFalse($this->recorder->record(registerId: 7, expected: null, folderId: '502'));
 	}//end testItAnswersFalseWhenAnotherRequestRecordedFirst()
+
+	/**
+	 * The shared-folder question looks for any other register row with the folder id, with no RBAC filter.
+	 *
+	 * @return void
+	 */
+	public function testItAsksWhetherAnyOtherRegisterRecordsTheFolder(): void {
+		$result = $this->createMock(IResult::class);
+		$result->method('fetchOne')->willReturn(9);
+		$this->qb->method('executeQuery')->willReturn($result);
+
+		$this->assertTrue($this->recorder->isRecordedByAnotherRegister(folderId: '501', registerId: 7));
+		$this->assertSame(
+			[
+				'select(id)',
+				'from(openregister_registers)',
+				"where(folder = '501')",
+				'andWhere(id <> 7)',
+				'setMaxResults(1)',
+			],
+			$this->calls
+		);
+	}//end testItAsksWhetherAnyOtherRegisterRecordsTheFolder()
+
+	/**
+	 * No other row with the folder id means the folder is this register's alone.
+	 *
+	 * @return void
+	 */
+	public function testItAnswersFalseWhenNoOtherRegisterRecordsTheFolder(): void {
+		$result = $this->createMock(IResult::class);
+		$result->method('fetchOne')->willReturn(false);
+		$this->qb->method('executeQuery')->willReturn($result);
+
+		$this->assertFalse($this->recorder->isRecordedByAnotherRegister(folderId: '501', registerId: 7));
+	}//end testItAnswersFalseWhenNoOtherRegisterRecordsTheFolder()
 }//end class
