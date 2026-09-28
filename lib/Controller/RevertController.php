@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,6 +77,8 @@ class RevertController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with reverted object or error
 	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One catch per refusal the handler can raise, each mapped to its own status
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-11
 	 */
 	public function revert(string $register, string $schema, string $id): JSONResponse {
@@ -117,6 +121,12 @@ class RevertController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
 		} catch (LockedException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 423);
+		} catch (ObjectStateWriteException $e) {
+			// A frozen object refuses a revert as it refuses any write (#4105).
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
+		} catch (ValidationException $e) {
+			// The restored data no longer fits the current schema.
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}//end try
