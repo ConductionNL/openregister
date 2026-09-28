@@ -102,9 +102,9 @@ class OperatorEvaluator {
 				return $this->operatorLessThanOrEqual(value: $value, operand: $operand);
 			default:
 				// Fail-closed on unknown operators to match the SQL path.
-				// MagicRbacHandler::buildSingleOperatorCondition returns null for
-				// unknown operators; applyRbacFilters then produces no SQL clause
-				// that could satisfy the rule, and the row is excluded. Returning
+				// MagicRbacHandler emits the impossible predicate (1 = 0) for an
+				// operator it cannot build, so the whole rule denies on the list
+				// even beside other properties (openregister#4089). Returning
 				// true here would grant access on malformed rules (fail-open),
 				// creating a list-vs-find security drift.
 				$this->logger->warning(
@@ -163,7 +163,10 @@ class OperatorEvaluator {
 	 * @return bool True if value is in operand array
 	 */
 	private function operatorIn(mixed $value, mixed $operand): bool {
-		if (is_array($operand) === false) {
+		// Only a list is a list of values: a scalar or a map (such as an
+		// unsupported `$lookup`) differs from its own array_values() and
+		// denies (openregister#4089).
+		if ($operand !== array_values((array) $operand)) {
 			return false;
 		}
 
@@ -249,8 +252,10 @@ class OperatorEvaluator {
 	 * @return bool True if value is not in operand array
 	 */
 	private function operatorNotIn(mixed $value, mixed $operand): bool {
-		if (is_array($operand) === false) {
-			return true;
+		// A scalar or map operand denies, as the list query does; it used to
+		// grant every object (openregister#4089). See operatorIn().
+		if ($operand !== array_values((array) $operand)) {
+			return false;
 		}
 
 		if ($value === null) {
