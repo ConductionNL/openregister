@@ -183,6 +183,9 @@ class TextExtractionService {
 	 *
 	 * @param int $fileId Nextcloud file ID from oc_filecache
 	 * @param bool $forceReExtract Force re-extraction even if file hasn't changed
+	 * @param array<int, string>|null $entityTypes Entity types to detect, or null for every type.
+	 *                                             filinq passes the types an operator left switched on;
+	 *                                             before or#4115 PHP dropped this argument silently.
 	 *
 	 * @return void
 	 *
@@ -193,7 +196,7 @@ class TextExtractionService {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function extractFile(int $fileId, bool $forceReExtract = false): void {
+	public function extractFile(int $fileId, bool $forceReExtract = false, ?array $entityTypes = null): void {
 		$this->logger->debug(
 			message: '[TextExtractionService] Starting file extraction',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
@@ -259,13 +262,18 @@ class TextExtractionService {
 				return;
 			}
 
+			$entityOptions = [
+				'method' => $entityMethod,
+				'confidence_threshold' => 0.5,
+			];
+			if ($entityTypes !== null) {
+				$entityOptions['entity_types'] = array_values($entityTypes);
+			}
+
 			$entityResult = $this->entityHandler->processSourceChunks(
 				sourceType: 'file',
 				sourceId: $fileId,
-				options: [
-					'method' => $entityMethod,
-					'confidence_threshold' => 0.5,
-				]
+				options: $entityOptions
 			);
 
 			$this->logger->debug(

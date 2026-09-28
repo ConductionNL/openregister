@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
+use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\App\IAppManager;
@@ -348,6 +349,8 @@ class AnonymisationBackendService {
 	 *
 	 * @return array<string, mixed>|null Decoded JSON response, or null on failure.
 	 *
+	 * @throws AnalyzeRequestRejectedException When the ExApp answers 4xx: it was reached and refused the request.
+	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function requestOpenAnonymiser(string $route, array $params, string $method = 'POST'): ?array {
@@ -379,6 +382,19 @@ class AnonymisationBackendService {
 			}
 
 			$status = $response->getStatusCode();
+			// Reached and refused: a request error, not an unreachable ExApp
+			// (or#4115). Thrown so the caller neither retries another
+			// transport nor falls back to regex as if the ExApp were down.
+			if (AnalyzeRequestRejectedException::isRequestError(status: $status) === true) {
+				$body = $response->getBody();
+				$detail = '';
+				if (is_string($body) === true) {
+					$detail = $body;
+				}
+
+				throw new AnalyzeRequestRejectedException(service: 'OpenAnonymiser', status: $status, detail: $detail);
+			}
+
 			if ($status < 200 || $status >= 300) {
 				$this->logger->error('[AnonymisationBackendService] ExApp ' . $appId . ' returned HTTP ' . $status);
 				return null;
@@ -391,6 +407,8 @@ class AnonymisationBackendService {
 			}
 
 			return null;
+		} catch (AnalyzeRequestRejectedException $e) {
+			throw $e;
 		} catch (Throwable $e) {
 			$this->logger->error('[AnonymisationBackendService] ExApp request to ' . $appId . ' failed: ' . $e->getMessage());
 			return null;

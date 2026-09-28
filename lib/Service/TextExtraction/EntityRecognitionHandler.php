@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
@@ -73,6 +74,27 @@ class EntityRecognitionHandler {
 	public const ENTITY_TYPE_IBAN = 'IBAN';
 	public const ENTITY_TYPE_SSN = 'SSN';
 	public const ENTITY_TYPE_IP_ADDRESS = 'IP_ADDRESS';
+
+	/**
+	 * Our entity types in anonymiq's (OpenAnonymiser's) own vocabulary.
+	 *
+	 * Anonymiq validates `entities` against its SUPPORTED_PII_ENTITIES_TO_ANONYMIZE
+	 * (anonymiq `src/api/config.py`) and answers 422 to any other name, so the
+	 * Presidio names (`EMAIL_ADDRESS`, `IBAN_CODE`, `US_SSN`) must not be sent
+	 * to it (or#4115). A type it does not know is left out.
+	 *
+	 * @var array<string, string>
+	 */
+	private const OPENANONYMISER_ENTITY_NAMES = [
+		self::ENTITY_TYPE_PERSON => 'PERSON',
+		self::ENTITY_TYPE_LOCATION => 'LOCATION',
+		self::ENTITY_TYPE_PHONE => 'PHONE_NUMBER',
+		self::ENTITY_TYPE_EMAIL => 'EMAIL',
+		self::ENTITY_TYPE_ORGANIZATION => 'ORGANIZATION',
+		self::ENTITY_TYPE_IBAN => 'IBAN',
+		self::ENTITY_TYPE_DATE => 'DATE_TIME',
+		self::ENTITY_TYPE_ADDRESS => 'ADDRESS',
+	];
 
 	/**
 	 * Detection method constants.
@@ -620,8 +642,20 @@ class EntityRecognitionHandler {
 			// Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
 			$useExternal = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
 
-			// Build request body (shared by both transports).
-			$requestBody = $this->buildAnalyzeRequestBody(text: $text, language: 'nl', entityTypes: $entityTypes);
+			// Build request body (shared by both transports), in anonymiq's
+			// own entity names: it rejects Presidio's (or#4115).
+			$requestBody = $this->buildAnalyzeRequestBody(
+				text: $text,
+				language: 'nl',
+				entityTypes: $entityTypes,
+				nameMap: self::OPENANONYMISER_ENTITY_NAMES
+			);
+
+			// A filter anonymiq knows none of asks it for nothing. Sending no
+			// `entities` list would ask it for EVERY type instead.
+			if ($entityTypes !== null && $entityTypes !== [] && isset($requestBody['entities']) === false) {
+				return [];
+			}
 
 			if ($useExternal === false) {
 				// Internal: call the ExApp through AppAPI (signed; routing by app id).
@@ -692,6 +726,14 @@ class EntityRecognitionHandler {
 				method: self::METHOD_OPENANONYMISER,
 				defaultConfidence: 0.85
 			);
+		} catch (AnalyzeRequestRejectedException $e) {
+			// Reached and refused: the request is wrong, not the network, and
+			// the regex fallback would hide that behind e-mail/phone/IBAN only.
+			$this->logger->error(
+				message: '[EntityRecognitionHandler] ' . $e->getMessage() . ' (a request error; the regex detector is not used for it)',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'status' => $e->getStatus()]
+			);
+			throw $e;
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[EntityRecognitionHandler] OpenAnonymiser detection failed: ' . $e->getMessage(),
@@ -709,10 +751,11 @@ class EntityRecognitionHandler {
 	 * @param string $text Text to analyze.
 	 * @param string $language Language code (e.g. 'en', 'nl').
 	 * @param array|null $entityTypes Entity types to detect (null = all).
+	 * @param array<string, string>|null $nameMap Our type to the backend's name; null uses Presidio's names.
 	 *
 	 * @return array The request body array ready for JSON encoding.
 	 */
-	private function buildAnalyzeRequestBody(string $text, string $language, ?array $entityTypes): array {
+	private function buildAnalyzeRequestBody(string $text, string $language, ?array $entityTypes, ?array $nameMap = null): array {
 		$requestBody = [
 			'text' => $text,
 			'language' => $language,
@@ -720,9 +763,18 @@ class EntityRecognitionHandler {
 
 		// Add entity types filter if specified.
 		if ($entityTypes !== null && empty($entityTypes) === false) {
-			$presidioEntities = $this->mapToPresidioEntityTypes(entityTypes: $entityTypes);
-			if (empty($presidioEntities) === false) {
-				$requestBody['entities'] = $presidioEntities;
+			$backendEntities = $this->mapToPresidioEntityTypes(entityTypes: $entityTypes);
+			if ($nameMap !== null) {
+				$backendEntities = array_values(
+					array_filter(
+						array_map(static fn ($type) => ($nameMap[$type] ?? null), $entityTypes),
+						static fn ($name) => $name !== null
+					)
+				);
+			}
+
+			if (empty($backendEntities) === false) {
+				$requestBody['entities'] = $backendEntities;
 			}
 		}
 
@@ -768,6 +820,15 @@ class EntityRecognitionHandler {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
+		}
+
+		if (is_int($httpCode) === true && AnalyzeRequestRejectedException::isRequestError(status: $httpCode) === true) {
+			$detail = '';
+			if (is_string($response) === true) {
+				$detail = $response;
+			}
+
+			throw new AnalyzeRequestRejectedException(service: $serviceName, status: $httpCode, detail: $detail);
 		}
 
 		if ($httpCode !== 200) {
