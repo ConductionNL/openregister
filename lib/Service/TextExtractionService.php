@@ -112,6 +112,13 @@ class TextExtractionService {
 	private const MIN_CHUNK_SIZE = 100;
 
 	/**
+	 * Shortest shared run read as chunk overlap when text is stitched back.
+	 *
+	 * @var integer
+	 */
+	private const MIN_OVERLAP_MATCH = 16;
+
+	/**
 	 * Recursive character splitting strategy
 	 *
 	 * @var string
@@ -324,6 +331,72 @@ class TextExtractionService {
 			]
 		);
 	}//end extractFile()
+
+	/**
+	 * The text extracted from a file, read back from its stored chunks.
+	 *
+	 * Extraction keeps no copy of the whole text, only the chunks, so the text
+	 * is stitched back together here. Chunks overlap by design, and the
+	 * recursive chunker's offsets do not count the separators it drops, so
+	 * the overlap is removed by content rather than by offset: each chunk
+	 * contributes what follows the longest stretch its start shares with the
+	 * end of the text so far. Whitespace a chunk was trimmed of at a boundary
+	 * comes back as a single newline. The metadata chunk is not text and is
+	 * left out.
+	 *
+	 * @param int $fileId Nextcloud file ID.
+	 *
+	 * @return string|null The extracted text, or null when the file has no text chunks.
+	 *
+	 * @spec openspec/specs/api-test-coverage/spec.md
+	 */
+	public function getExtractedText(int $fileId): ?string {
+		$text = null;
+		foreach ($this->chunkMapper->findBySource(sourceType: 'file', sourceId: $fileId) as $chunk) {
+			if ($chunk->getChunkIndex() < 0 || (($chunk->getPositionReference() ?? [])['type'] ?? null) === 'metadata') {
+				continue;
+			}
+
+			$content = $chunk->getTextContent();
+			if ($text === null) {
+				$text = $content;
+				continue;
+			}
+
+			$shared = $this->sharedOverlapLength(before: $text, after: $content);
+			if ($shared === 0) {
+				$text .= "\n" . $content;
+				continue;
+			}
+
+			$text .= substr($content, $shared);
+		}//end foreach
+
+		return $text;
+	}//end getExtractedText()
+
+	/**
+	 * How many leading bytes of the next chunk repeat the end of the text so far.
+	 *
+	 * A match shorter than {@see self::MIN_OVERLAP_MATCH} is treated as no
+	 * overlap: a handful of shared characters is a coincidence, and dropping
+	 * them would cut real text.
+	 *
+	 * @param string $before The text so far.
+	 * @param string $after  The next chunk.
+	 *
+	 * @return int The overlap length in bytes, 0 when there is none.
+	 */
+	private function sharedOverlapLength(string $before, string $after): int {
+		$longest = min(strlen($before), strlen($after));
+		for ($length = $longest; $length >= self::MIN_OVERLAP_MATCH; $length--) {
+			if (substr($before, -$length) === substr($after, 0, $length)) {
+				return $length;
+			}
+		}
+
+		return 0;
+	}//end sharedOverlapLength()
 
 	/**
 	 * Extract text from an object by object ID
