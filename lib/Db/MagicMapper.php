@@ -6784,13 +6784,30 @@ class MagicMapper extends AbstractObjectMapper {
 	 * broken register/schema-less `searchObjectsPaginated()` path which always
 	 * fell through to an empty result.
 	 *
+	 * Each table is narrowed IN THE QUERY to the rows the caller may read, with
+	 * the same organisation and RBAC filters the object list applies
+	 * ({@see MagicSearchHandler::applyAccessControlToQuery()}), so a trashed
+	 * object is never shown to someone who could not read it before it was
+	 * deleted, and the total the count answers matches the pages this returns
+	 * (openregister#4078). A table whose schema cannot be resolved is skipped:
+	 * whether the caller may read it cannot be answered, and the answer is no.
+	 *
 	 * @param int|null $limit Maximum rows to return.
 	 * @param int|null $offset Rows to skip (pagination).
+	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
+	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
 	 *
 	 * @return ObjectEntity[] Soft-deleted objects across all magic tables.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function findDeletedAcrossAllMagicTables(?int $limit = null, ?int $offset = null): array {
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
+	public function findDeletedAcrossAllMagicTables(
+		?int $limit = null,
+		?int $offset = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+	): array {
+		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$updatedCol = self::METADATA_PREFIX . 'updated';
 
 		// Collect (entity, sortKey) pairs so the global newest-first ordering is
@@ -6805,9 +6822,13 @@ class MagicMapper extends AbstractObjectMapper {
 			try {
 				$qb = $this->db->getQueryBuilder();
 				$qb->select('*')
-					->from($bareTableName)
+					->from($bareTableName, 't')
 					->where($qb->expr()->isNotNull($deletedCol))
-					->orderBy($updatedCol, 'DESC');
+					->orderBy('t.' . $updatedCol, 'DESC');
+
+				if ($this->scopeDeletedScanToCaller(qb: $qb, table: $info, _rbac: $_rbac, _multitenancy: $_multitenancy) === false) {
+					continue;
+				}
 
 				$rows = $qb->executeQuery()->fetchAll();
 				foreach ($rows as $row) {
@@ -6857,19 +6878,31 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Count all soft-deleted objects across ALL magic tables.
 	 *
+	 * Narrowed per table exactly as {@see findDeletedAcrossAllMagicTables()}
+	 * is, so the total never counts a row the listing would not return.
+	 *
+	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
+	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 *
 	 * @return int Total soft-deleted object count.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function countDeletedAcrossAllMagicTables(): int {
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
+	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true): int {
+		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$total = 0;
 
-		foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
+		foreach ($this->discoverMagicTables() as $fullTableName => $info) {
 			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
 			try {
 				$qb = $this->db->getQueryBuilder();
 				$qb->select($qb->func()->count('*', 'cnt'))
-					->from($bareTableName)
+					->from($bareTableName, 't')
 					->where($qb->expr()->isNotNull($deletedCol));
+
+				if ($this->scopeDeletedScanToCaller(qb: $qb, table: $info, _rbac: $_rbac, _multitenancy: $_multitenancy) === false) {
+					continue;
+				}
 
 				$res = $qb->executeQuery();
 				$row = $res->fetch();
@@ -6882,6 +6915,48 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $total;
 	}//end countDeletedAcrossAllMagicTables()
+
+	/**
+	 * Narrow one magic table's trash scan to the rows the caller may read.
+	 *
+	 * Delegates to the list path's own access control, so the trash and the
+	 * object list cannot disagree about who sees a row.
+	 *
+	 * @param IQueryBuilder $qb The scan, already reading the table as alias `t`.
+	 * @param array{registerId: int, schemaId: int} $table The table's register and schema.
+	 * @param bool $_rbac Apply the schema's read rules.
+	 * @param bool $_multitenancy Apply the organisation boundary.
+	 *
+	 * @return bool False when the table must be skipped because its schema cannot be resolved.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function scopeDeletedScanToCaller(
+		IQueryBuilder $qb,
+		array $table,
+		bool $_rbac,
+		bool $_multitenancy,
+	): bool {
+		if ($_rbac === false && $_multitenancy === false) {
+			return true;
+		}
+
+		try {
+			$schema = $this->schemaMapper->find(id: $table['schemaId'], _rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			return false;
+		}
+
+		$this->searchHandler->applyAccessControlToQuery(
+			qb: $qb,
+			schema: $schema,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			registerId: $table['registerId']
+		);
+
+		return true;
+	}//end scopeDeletedScanToCaller()
 
 	/**
 	 * Find all objects across ALL magic tables that have the given UUID in their relations.
