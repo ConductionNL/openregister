@@ -221,7 +221,7 @@ class ReferentialIntegrityService {
 	): array {
 		// 1. Apply SET_NULL targets first (objects survive with cleared reference).
 		foreach ($analysis->nullifyTargets as $target) {
-			$this->applySetNull(target: $target);
+			$updated = $this->applySetNull(target: $target);
 			$this->logIntegrityAction(
 				action: 'referential_integrity.set_null',
 				objectUuid: $target['objectUuid'],
@@ -234,13 +234,14 @@ class ReferentialIntegrityService {
 					'triggerObject' => $cascadeSource,
 					'triggerSchema' => $triggerSchemaSlug,
 				],
-				userId: $userId
+				userId: $userId,
+				object: $updated
 			);
 		}
 
 		// 2. Apply SET_DEFAULT targets (objects survive with default reference).
 		foreach ($analysis->defaultTargets as $target) {
-			$this->applySetDefault(target: $target);
+			$updated = $this->applySetDefault(target: $target);
 			$this->logIntegrityAction(
 				action: 'referential_integrity.set_default',
 				objectUuid: $target['objectUuid'],
@@ -253,7 +254,8 @@ class ReferentialIntegrityService {
 					'triggerObject' => $cascadeSource,
 					'triggerSchema' => $triggerSchemaSlug,
 				],
-				userId: $userId
+				userId: $userId,
+				object: $updated
 			);
 		}
 
@@ -1294,6 +1296,7 @@ class ReferentialIntegrityService {
 	 * @param string|null $registerId Register ID of the affected object.
 	 * @param array $changed Details of what changed.
 	 * @param string $userId The user who initiated the original deletion.
+	 * @param ObjectEntity|null $object The affected object when the caller already holds it; looked up otherwise.
 	 *
 	 * @return void
 	 *
@@ -1306,6 +1309,7 @@ class ReferentialIntegrityService {
 		?string $registerId,
 		array $changed,
 		string $userId,
+		?ObjectEntity $object = null,
 	): void {
 		try {
 			$auditTrail = new AuditTrail();
@@ -1324,7 +1328,13 @@ class ReferentialIntegrityService {
 				$auditTrail->setRegister((int)$registerId);
 			}
 
-			$auditTrail->setExpires(new DateTime('+30 days'));
+			// Expiry follows the retention of the object the row describes,
+			// not a flat 30 days (or#4101): a cleared reference or a cascade on
+			// a record kept for years must stay explainable for as long.
+			$this->auditTrailMapper->applyRetentionExpiry(
+				auditTrail: $auditTrail,
+				objectEntity: ($object ?? $this->findIntegrityAuditObject(objectUuid: $objectUuid))
+			);
 
 			$this->auditTrailMapper->insert($auditTrail);
 		} catch (\Exception $e) {
@@ -1342,6 +1352,37 @@ class ReferentialIntegrityService {
 	}//end logIntegrityAction()
 
 	/**
+	 * The object an integrity audit row describes, for its retention.
+	 *
+	 * Looked up with deleted objects included (a cascade target is already
+	 * soft-deleted when its row is written) and without RBAC or tenancy
+	 * scoping, since this is the system recording its own action. Null when
+	 * it cannot be found, which keeps the row indefinitely.
+	 *
+	 * @param string $objectUuid The object's uuid.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function findIntegrityAuditObject(string $objectUuid): ?ObjectEntity {
+		try {
+			$object = ($this->objectEntityMapper->findAcrossAllSources(
+				identifier: $objectUuid,
+				includeDeleted: true,
+				_rbac: false,
+				_multitenancy: false
+			)['object'] ?? null);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if ($object instanceof ObjectEntity) {
+			return $object;
+		}
+
+		return null;
+	}//end findIntegrityAuditObject()
+
+	/**
 	 * Apply SET_NULL action: clear the reference in the dependent object.
 	 *
 	 * For array properties, removes the UUID from the array.
@@ -1349,11 +1390,11 @@ class ReferentialIntegrityService {
 	 *
 	 * @param array $target The nullify target from the DeletionAnalysis.
 	 *
-	 * @return void
+	 * @return ObjectEntity|null The updated object, or null when it could not be updated.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applySetNull(array $target): void {
+	private function applySetNull(array $target): ?ObjectEntity {
 		try {
 			$context = $this->objectEntityMapper->findAcrossAllSources(
 				identifier: $target['objectUuid'],
@@ -1390,6 +1431,8 @@ class ReferentialIntegrityService {
 				register: $registerEntity,
 				schema: $schemaEntity
 			);
+
+			return $object;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Failed to apply SET_NULL',
@@ -1400,6 +1443,8 @@ class ReferentialIntegrityService {
 				]
 			);
 		}//end try
+
+		return null;
 	}//end applySetNull()
 
 	/**
@@ -1407,11 +1452,11 @@ class ReferentialIntegrityService {
 	 *
 	 * @param array $target The default target from the DeletionAnalysis.
 	 *
-	 * @return void
+	 * @return ObjectEntity|null The updated object, or null when it could not be updated.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applySetDefault(array $target): void {
+	private function applySetDefault(array $target): ?ObjectEntity {
 		try {
 			$context = $this->objectEntityMapper->findAcrossAllSources(
 				identifier: $target['objectUuid'],
@@ -1432,6 +1477,8 @@ class ReferentialIntegrityService {
 				register: $registerEntity,
 				schema: $schemaEntity
 			);
+
+			return $object;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Failed to apply SET_DEFAULT',
@@ -1442,6 +1489,8 @@ class ReferentialIntegrityService {
 				]
 			);
 		}//end try
+
+		return null;
 	}//end applySetDefault()
 
 	/**

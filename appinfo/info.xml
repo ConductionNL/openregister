@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.33-unstable.20260922123000</version>
+    <version>2.1.33-unstable.20260928180000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -379,6 +379,13 @@ Vrij en open source onder de EUPL-licentie.
 			     and switch off rather than a field in a settings screen. Idempotent
 			     with force: false, so an administrator's edit survives. -->
 			<step>OCA\OpenRegister\Repair\SeedIntakeSourceRegister</step>
+			<!-- Register folders (register-folder-at-import). An app import now
+			     gives each register it makes a Files folder, as the API does at
+			     creation; registers imported before that have none until their
+			     first upload. Last, so it also covers the registers the steps
+			     above just imported. Idempotent, records the id as bookkeeping
+			     (no update event, no organisation check), never throws. -->
+			<step>OCA\OpenRegister\Repair\CreateMissingRegisterFolders</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>

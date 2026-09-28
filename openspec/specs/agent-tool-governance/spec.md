@@ -304,7 +304,6 @@ out-of-vocabulary label independently.
   ADR-035 (frozen `Agent.tools` shape), ADR-041 (cross-app commands), ADR-063 (MCP verb/scope
   hints), ADR-065 (one flow engine).
 
-
 <!--
   Two further scenarios from the same delta. They sit UNDER a requirement the
   promoted spec already carried, so appending the requirement block would have
@@ -326,5 +325,3 @@ out-of-vocabulary label independently.
 - **WHEN** the tool is classified for default-deny, dry-run and approval purposes
 - **THEN** it MUST still classify write/destructive
 - **AND** the narrowing MUST NOT cause it to be treated as read-only or auto-allowed
-
-## ADDED Requirements
