@@ -1430,6 +1430,11 @@ class Application extends App implements IBootstrap {
 				\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class,
 				'GroupProvisioner',
 			],
+			// Classifies, versions and logs the schema changes an import makes (#4102).
+			'setSchemaVersioning' => [
+				SchemaVersioningService::class,
+				'SchemaVersioningService',
+			],
 		];
 
 		foreach ($optional as $setter => $service) {
