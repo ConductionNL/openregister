@@ -54,8 +54,11 @@
       `updateOrganisationSettingsOnly()`, `updateMultitenancySettingsOnly()`, and
       `ObjectRetentionHandler::updateObjectSettingsOnly()`,
       `updateRetentionSettingsOnly()`, `updateArchivalSettingsOnly()`. Proven by
-      `tests/Unit/Service/Settings/OwnSettingsChangeRecorderTest.php`. Not yet
-      wired: the LLM, file, Solr and cache handlers, which save through their own
+      `tests/Unit/Service/Settings/OwnSettingsChangeRecorderTest.php`. Since
+      #4100 also `LlmSettingsHandler::updateLLMSettingsOnly()`,
+      `FileSettingsHandler::updateFileSettingsOnly()` and
+      `SearchBackendHandler::updateSearchBackendConfig()` (same test file). Not
+      yet wired: the Solr and cache handlers, which save through their own
       classes.
 
 ## 2. Reader

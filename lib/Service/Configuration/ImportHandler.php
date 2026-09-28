@@ -52,6 +52,8 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\App\IAppManager;
@@ -281,6 +283,15 @@ class ImportHandler {
 	private ?GroupProvisioner $groupProvisioner = null;
 
 	/**
+	 * Classifies a schema change an import makes, bumps its version and
+	 * writes the changelog, as an edit through the schema API does (#4102).
+	 * Null where it could not be resolved; the import then runs unchanged.
+	 *
+	 * @var SchemaVersioningService|null
+	 */
+	private ?SchemaVersioningService $schemaVersioning = null;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -474,6 +485,22 @@ class ImportHandler {
 	public function setGroupProvisioner(?GroupProvisioner $groupProvisioner): void {
 		$this->groupProvisioner = $groupProvisioner;
 	}//end setGroupProvisioner()
+
+	/**
+	 * Set the schema versioning service.
+	 *
+	 * Optional: when null, imported schema changes are written unclassified,
+	 * as they were before #4102.
+	 *
+	 * @param SchemaVersioningService|null $schemaVersioning Optional versioning service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function setSchemaVersioning(?SchemaVersioningService $schemaVersioning): void {
+		$this->schemaVersioning = $schemaVersioning;
+	}//end setSchemaVersioning()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -1493,6 +1520,83 @@ class ImportHandler {
 	}//end recordShippedBaseline()
 
 	/**
+	 * Classify the definition an import is about to write against the stored one.
+	 *
+	 * Null when there is no versioning service, when the import carries no
+	 * definition, or when classifying failed: the import itself never breaks
+	 * on this, it is only left unclassified, which is how it was before.
+	 *
+	 * @param Schema               $existing The schema already stored.
+	 * @param array<string, mixed> $data     The incoming schema, as it will be written.
+	 *
+	 * @return SchemaChangeSet|null The change set, or null when not classified.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function classifyImportedSchemaChange(Schema $existing, array $data): ?SchemaChangeSet {
+		if ($this->schemaVersioning === null
+			|| (isset($data['properties']) === false && isset($data['required']) === false)
+		) {
+			return null;
+		}
+
+		try {
+			return $this->schemaVersioning->classify(
+				existing: $existing,
+				newDefinition: [
+					'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
+					'required' => ($data['required'] ?? $existing->getRequired() ?? []),
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Could not classify an imported schema change: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schema_id' => $existing->getId()]
+			);
+			return null;
+		}
+	}//end classifyImportedSchemaChange()
+
+	/**
+	 * Write the changelog entry for an imported schema change, and log a breaking one.
+	 *
+	 * @param Schema               $schema    The schema as written.
+	 * @param SchemaChangeSet|null $changeSet The classified change, or null when not classified.
+	 * @param string|null          $appId     The app whose import made the change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function recordImportedSchemaChange(Schema $schema, ?SchemaChangeSet $changeSet, ?string $appId): void {
+		if ($this->schemaVersioning === null || $changeSet === null || $changeSet->hasChanges() === false) {
+			return;
+		}
+
+		$this->schemaVersioning->recordChangelog(
+			schemaId: (int)$schema->getId(),
+			version: $schema->getVersion(),
+			changeSet: $changeSet,
+			acknowledged: false
+		);
+
+		if ($changeSet->isBreaking() === true) {
+			$this->logger->warning(
+				message: '[ImportHandler] A configuration import made a breaking change to a schema; recorded in its changelog.',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema_id' => $schema->getId(),
+					'schema_slug' => $schema->getSlug(),
+					'version' => $schema->getVersion(),
+					'app' => $appId,
+					'changes' => $changeSet->getChanges(),
+				]
+			);
+		}
+	}//end recordImportedSchemaChange()
+
+	/**
 	 * Whether an incoming schema says anything different from the stored one.
 	 *
 	 * @param array<string, mixed> $data The incoming schema definition.
@@ -2220,6 +2324,18 @@ class ImportHandler {
 					appVersion: $version
 				);
 
+				// Classify the change against the stored definition, whatever
+				// path it came in by (#4102). An import has nobody to answer a
+				// breaking-change prompt, so a breaking change is recorded and
+				// logged rather than refused. The version the app ships is kept
+				// when it is newer; otherwise the classification decides it.
+				$changeSet = $this->classifyImportedSchemaChange(existing: $existingSchema, data: $data);
+				if ($changeSet !== null && $changeSet->hasChanges() === true
+					&& version_compare($incomingVersion, $existingVersion, '>') === false
+				) {
+					$data['version'] = $this->schemaVersioning->nextVersion(existing: $existingSchema, changeSet: $changeSet);
+				}
+
 				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
 				if ($owner !== null) {
 					$existingSchema->setOwner($owner);
@@ -2229,7 +2345,10 @@ class ImportHandler {
 					$existingSchema->setApplication($appId);
 				}
 
-				return $this->schemaMapper->update($existingSchema);
+				$existingSchema = $this->schemaMapper->update($existingSchema);
+				$this->recordImportedSchemaChange(schema: $existingSchema, changeSet: $changeSet, appId: $appId);
+
+				return $existingSchema;
 			}//end if
 
 			// Create new schema.
