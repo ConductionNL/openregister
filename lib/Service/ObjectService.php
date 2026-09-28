@@ -1764,7 +1764,8 @@ class ObjectService implements ObjectServiceInterface
 
             $this->checkSavePermissions(
                 uuid: $uuid,
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $object
             );
 
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
@@ -2184,18 +2185,23 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Check permissions for save operation (CREATE or UPDATE).
      *
-     * @param string|null $uuid  Object UUID (null for CREATE, set for UPDATE)
-     * @param bool        $_rbac Whether to apply RBAC checks
+     * @param string|null $uuid   Object UUID (null for CREATE, set for UPDATE)
+     * @param bool        $_rbac  Whether to apply RBAC checks
+     * @param array       $object The incoming object data, which a create rule's match reads
      *
      * @return void
      *
      * @throws Exception If permission check fails
      */
-    private function checkSavePermissions(?string $uuid, bool $_rbac): void
+    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[]): void
     {
         if ($this->currentSchema === null) {
             return;
         }
+
+        // A create rule may carry a `match` on the object being created, so the
+        // create question is asked about the incoming data (openregister#4094).
+        $incoming = $this->buildIncomingObjectForCreateCheck(object: $object);
 
         // No UUID provided, this is a CREATE operation.
         if ($uuid === null) {
@@ -2204,7 +2210,8 @@ class ObjectService implements ObjectServiceInterface
                 action: 'create',
                 userId: null,
                 objectOwner: null,
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $incoming
             );
             return;
         }
@@ -2240,10 +2247,37 @@ class ObjectService implements ObjectServiceInterface
                 action: 'create',
                 userId: null,
                 objectOwner: null,
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $incoming
             );
         }//end try
     }//end checkSavePermissions()
+
+    /**
+     * Build the transient object a create rule's `match` is evaluated against.
+     *
+     * The data is the incoming request body without its `@self` block, so a
+     * caller cannot supply the metadata a match reads. The organisation is the
+     * caller's active organisation, which is the one the save assigns. The owner
+     * stays empty: the permission handler grants an owner every action, so a
+     * caller-chosen owner would bypass the rule.
+     *
+     * @param array $object The incoming object data.
+     *
+     * @return ObjectEntity The transient object, never persisted.
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
+     */
+    private function buildIncomingObjectForCreateCheck(array $object): ObjectEntity
+    {
+        unset($object['@self']);
+
+        $incoming = new ObjectEntity();
+        $incoming->setObject($object);
+        $incoming->setOrganisation($this->permissionHandler->getActiveOrganisationForContext());
+
+        return $incoming;
+    }//end buildIncomingObjectForCreateCheck()
 
     /**
      * Handle cascading relations while preserving context.
