@@ -1417,6 +1417,10 @@ class Application extends App implements IBootstrap {
 		// Setter => [service id, the name the log line used before this list existed].
 		$optional = [
 			'setFileService' => [\OCA\OpenRegister\Service\FileService::class, 'FileService'],
+			'setRegisterFolderProvisioner' => [
+				\OCA\OpenRegister\Service\File\RegisterFolderProvisioner::class,
+				'RegisterFolderProvisioner',
+			],
 			'setNoteService' => [\OCA\OpenRegister\Service\NoteService::class, 'NoteService'],
 			'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
 			'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
